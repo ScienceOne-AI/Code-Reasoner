@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Physics Diagram: Rhombus and Disk</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    canvas {
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="physicsCanvas" width="400" height="550"></canvas>
+  <script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Parameters for drawing
+    // These are chosen to visually match the provided diagram, not from physical equilibrium calculation.
+    const l = 200; // pixels for rod length l
+    const r = 32;  // pixels for disk radius r
+    const theta = 18 * Math.PI / 180; // Angle theta in radians, chosen for visual consistency
+    const rodThickness = 4; // Visual thickness of the rods
+    const hingeRadius = 6; // Visual radius of the hinges
+
+    // Define drawing origin (suspension point O)
+    const cx = canvas.width / 2;
+    const cy = 50;
+    ctx.translate(cx, cy);
+
+    // Helper function to draw a rod as two parallel lines
+    function drawRod(p1, p2) {
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      const offsetX = -dy / len * rodThickness / 2;
+      const offsetY = dx / len * rodThickness / 2;
+
+      ctx.beginPath();
+      ctx.moveTo(p1.x + offsetX, p1.y + offsetY);
+      ctx.lineTo(p2.x + offsetX, p2.y + offsetY);
+      ctx.moveTo(p1.x - offsetX, p1.y - offsetY);
+      ctx.lineTo(p2.x - offsetX, p2.y - offsetY);
+      ctx.stroke();
+    }
+    
+    // Helper function to draw a filled circle (for points)
+    function drawPoint(p, label) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2.5, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText(label, p.x + 8, p.y + 5);
+    }
+
+    // --- Calculate all coordinates ---
+    const sin_t = Math.sin(theta);
+    const cos_t = Math.cos(theta);
+
+    const O = { x: 0, y: 0 };
+    const H_r = { x: l * sin_t, y: l * cos_t }; // Right hinge
+    const H_l = { x: -l * sin_t, y: l * cos_t }; // Left hinge
+    const B = { x: 0, y: 2 * l * cos_t }; // Bottom hinge
+
+    // Center of the disk
+    const y_c = 2 * l * cos_t - r / sin_t;
+    const C = { x: 0, y: y_c };
+
+    // Centers of mass for rods
+    const C1 = { x: 0, y: 0.5 * l * cos_t };
+    const C2 = { x: 0, y: 1.5 * l * cos_t };
+    
+    // Point of tangency for radius 'r' label
+    const T = { x: -r * cos_t, y: y_c + r * sin_t };
+
+
+    // --- Drawing starts here ---
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.2;
+
+    // 1. Draw the vertical dashed line
+    ctx.beginPath();
+    ctx.setLineDash([4, 4]);
+    ctx.moveTo(O.x, O.y - 20);
+    ctx.lineTo(B.x, B.y + 20);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line
+
+    // 2. Draw the four rods
+    drawRod(O, H_r);
+    drawRod(O, H_l);
+    drawRod(H_r, B);
+    drawRod(H_l, B);
+
+    // 3. Draw the disk
+    ctx.beginPath();
+    ctx.arc(C.x, C.y, r, 0, 2 * Math.PI);
+    ctx.stroke();
+    
+    // 4. Draw the hinges (on top of rod ends)
+    [O, H_r, H_l, B].forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, hingeRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+    });
+    
+    // 5. Draw the points C, C1, C2
+    drawPoint(C, 'C');
+    drawPoint(C1, 'C₁');
+    drawPoint(C2, 'C₂');
+
+    // 6. Draw labels and annotations
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 18px Times New Roman';
+
+    // Label O
+    ctx.fillText('O', O.x + 10, O.y + 5);
+    
+    // Label m, l
+    ctx.save();
+    ctx.translate(H_r.x / 2, H_r.y / 2);
+    ctx.rotate(theta);
+    ctx.fillText('m,l', 15, 5);
+    ctx.restore();
+
+    // Label M
+    ctx.fillText('M', C.x - r - 40, C.y);
+
+    // Label theta
+    ctx.beginPath();
+    ctx.arc(O.x, O.y, 40, Math.PI / 2 - theta, Math.PI / 2);
+    ctx.stroke();
+    ctx.fillText('θ', O.x - 25, 30);
+    
+    // Label r
+    ctx.beginPath();
+    ctx.setLineDash([3, 3]);
+    ctx.moveTo(C.x, C.y);
+    ctx.lineTo(T.x, T.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillText('r', (C.x + T.x) / 2 - 20, (C.y + T.y) / 2);
+
+    // 7. Draw the caption
+    ctx.font = '24px KaiTi'; // Using a common Chinese font
+    ctx.fillText('力图 5.11.1', -60, B.y + 80);
+
+  </script>
+</body>
+</html>

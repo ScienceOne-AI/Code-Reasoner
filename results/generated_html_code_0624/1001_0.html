@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Velocity vs. Time Graph</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Drawing parameters
+        const margin = { top: 40, right: 25, bottom: 60, left: 75 };
+        const graphWidth = canvas.width - margin.left - margin.right;
+        const graphHeight = canvas.height - margin.top - margin.bottom;
+        
+        // Coordinate system parameters
+        const xMin = 0;
+        const xMax = 10;
+        const yMin = -10;
+        const yMax = 10;
+
+        // --- Transformation functions to map data coordinates to canvas coordinates ---
+        function mapX(x) {
+            return margin.left + (x - xMin) / (xMax - xMin) * graphWidth;
+        }
+
+        function mapY(y) {
+            // y-axis is inverted in canvas coordinates
+            return margin.top + graphHeight - (y - yMin) / (yMax - yMin) * graphHeight;
+        }
+
+        // --- Clear canvas ---
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // --- Draw Grid ---
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        ctx.font = "bold 16px 'Times New Roman'";
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        
+        // Vertical grid lines and X-axis ticks/labels
+        const xTickStep = 1;
+        ctx.textBaseline = 'top';
+        for (let x = xMin; x <= xMax; x += xTickStep) {
+            const screenX = mapX(x);
+            ctx.beginPath();
+            ctx.moveTo(screenX, margin.top);
+            ctx.lineTo(screenX, margin.top + graphHeight);
+            ctx.stroke();
+            ctx.fillText(x.toString(), screenX, margin.top + graphHeight + 5);
+        }
+        
+        // Horizontal grid lines and Y-axis ticks/labels
+        const yTickStep = 2;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let y = yMin; y <= yMax; y += yTickStep) {
+            const screenY = mapY(y);
+            ctx.beginPath();
+            ctx.moveTo(margin.left, screenY);
+            ctx.lineTo(margin.left + graphWidth, screenY);
+            ctx.stroke();
+            if (y === -10 || y === 0 || y === 10) {
+                 ctx.fillText(y.toString(), margin.left - 10, screenY);
+            }
+        }
+        
+        // --- Draw Axes (thicker lines) ---
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+
+        // X-axis (y=0 line)
+        ctx.beginPath();
+        ctx.moveTo(margin.left, mapY(0));
+        ctx.lineTo(margin.left + graphWidth, mapY(0));
+        ctx.stroke();
+
+        // Y-axis (x=0 line)
+        ctx.beginPath();
+        ctx.moveTo(mapX(0), margin.top);
+        ctx.lineTo(mapX(0), margin.top + graphHeight);
+        ctx.stroke();
+
+        // --- Draw Axis Labels ---
+        ctx.fillStyle = 'black';
+        ctx.font = "bold 20px 'Times New Roman'";
+        
+        // X-axis label
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText("Time (s)", margin.left + graphWidth / 2, margin.top + graphHeight + 30);
+        
+        // Y-axis label
+        ctx.save();
+        ctx.translate(margin.left - 55, margin.top + graphHeight / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText("Velocity (m/s)", 0, 0);
+        ctx.restore();
+
+        // --- Plot the function v(t) = 8 * sin(pi*t / 5) ---
+        // The amplitude is 8 because the peak is on the 4th grid line (4*2=8).
+        // The period is 10s, so omega = 2*pi/10 = pi/5.
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+
+        const func = (t) => 8 * Math.sin(Math.PI * t / 5);
+        
+        const startT = 0;
+        const endT = 10;
+        const steps = 400; // Number of segments to approximate the curve
+        const dt = (endT - startT) / steps;
+
+        ctx.moveTo(mapX(startT), mapY(func(startT)));
+
+        for (let i = 1; i <= steps; i++) {
+            const t = startT + i * dt;
+            const v = func(t);
+            ctx.lineTo(mapX(t), mapY(v));
+        }
+
+        ctx.stroke();
+
+    </script>
+</body>
+</html>

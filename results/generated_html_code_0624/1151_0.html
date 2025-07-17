@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thick Lens Focusing Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="900" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // --- Helper functions ---
+
+        // Function to draw an arrow
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headlen = 10; // length of head in pixels
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Function to draw a dashed line
+        function drawDashedLine(fromX, fromY, toX, toY, dash = [5, 5]) {
+            ctx.beginPath();
+            ctx.setLineDash(dash);
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset to solid line
+        }
+        
+        // Function to draw a dimension line with arrows at both ends
+        function drawDimensionLine(fromX, toX, y, label) {
+            ctx.beginPath();
+            // Line
+            ctx.moveTo(fromX, y);
+            ctx.lineTo(toX, y);
+            // Ticks
+            ctx.moveTo(fromX, y - 5);
+            ctx.lineTo(fromX, y + 5);
+            ctx.moveTo(toX, y - 5);
+            ctx.lineTo(toX, y + 5);
+            ctx.stroke();
+
+            // Arrows for the dimension line itself
+            drawArrow(fromX + 10, y, fromX, y);
+            drawArrow(toX - 10, y, toX, y);
+            
+            // Label
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText(label, (fromX + toX) / 2, y + 5);
+        }
+        
+        // Function to write text with subscript
+        function drawTextWithSub(text, sub, x, y) {
+            ctx.font = '24px Times New Roman';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillText(text, x - textWidth/4, y);
+            
+            ctx.font = '16px Times New Roman';
+            ctx.fillText(sub, x + textWidth/2, y + 5);
+        }
+
+        // --- Main Drawing ---
+        
+        // Use a central origin for easier y-coordinates
+        ctx.translate(0, canvas.height / 2);
+
+        // Parameters
+        const o2_x = 100;
+        const o1_x = 800;
+        
+        const lens_center_x = 320;
+        const lens_thickness = 40;
+        const v_left = lens_center_x - lens_thickness / 2; // 300
+        const v_right = lens_center_x + lens_thickness / 2; // 340
+        const lens_half_height = 110;
+        
+        const R1 = 250;
+        const R2 = 250;
+
+        const C1_x = v_right - R1; // Center for right surface
+        const C2_x = v_left + R2; // Center for left surface
+
+        const focal_length = 250;
+        const F_x = v_right + focal_length; // 590
+
+        const ray_y = 70;
+
+        // 1. Draw Optical Axis
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        drawArrow(50, 0, 850, 0);
+        ctx.fillText('z', 855, 0);
+        
+        // 2. Draw Points and Vertical Dashed Lines
+        ctx.beginPath();
+        ctx.arc(o2_x, 0, 3, 0, 2 * Math.PI);
+        ctx.arc(F_x, 0, 3, 0, 2 * Math.PI);
+        ctx.arc(o1_x, 0, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        drawDashedLine(o2_x, -150, o2_x, 150);
+        drawDashedLine(F_x, -80, F_x, 80);
+        drawDashedLine(o1_x, -150, o1_x, 150);
+        
+        // Labels for points
+        ctx.font = '24px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        drawTextWithSub('O', '2', o2_x, 5);
+        ctx.fillText('F', F_x, 5);
+        drawTextWithSub('O', '1', o1_x, 5);
+        
+        // 3. Draw the Lens
+        const theta_max = Math.asin(lens_half_height / R1);
+        ctx.beginPath();
+        ctx.arc(C2_x, 0, R2, Math.PI + theta_max, Math.PI - theta_max, true);
+        ctx.arc(C1_x, 0, R1, -theta_max, theta_max, false);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(211, 211, 211, 0.8)';
+        ctx.fill();
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+        
+        // 4. Draw Rays
+        ctx.lineWidth = 1;
+        // Intersection points for off-axis rays
+        const intersect_x1 = C2_x - Math.sqrt(R2 * R2 - ray_y * ray_y);
+        const intersect_x2 = C1_x + Math.sqrt(R1 * R1 - ray_y * ray_y);
+        
+        // Top Ray
+        drawArrow(o2_x, -ray_y, intersect_x1, -ray_y);
+        drawDashedLine(intersect_x1, -ray_y, intersect_x2, -ray_y, [3,3]);
+        drawArrow(intersect_x2, -ray_y, F_x, 0);
+
+        // Bottom Ray
+        drawArrow(o2_x, ray_y, intersect_x1, ray_y);
+        drawDashedLine(intersect_x1, ray_y, intersect_x2, ray_y, [3,3]);
+        drawArrow(intersect_x2, ray_y, F_x, 0);
+        
+        // Center Ray
+        drawArrow(o2_x, 0, F_x, 0);
+
+        ctx.lineWidth = 1.5;
+
+        // 5. Coordinate Systems
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        
+        // (x,y) plane
+        drawArrow(v_left, 130, v_left, -130);
+        drawArrow(v_left, -130, v_left, 130);
+        ctx.fillText('x,y', v_left - 25, -135);
+
+        // (x',y') plane and wavefront
+        drawArrow(v_right, 130, v_right, -130);
+        drawArrow(v_right, -130, v_right, 130);
+        
+        const wavefront_radius = F_x - v_right;
+        const wavefront_half_height = 100;
+        const wavefront_angle = Math.asin(wavefront_half_height / wavefront_radius);
+        ctx.beginPath();
+        ctx.arc(F_x, 0, wavefront_radius, Math.PI - wavefront_angle, Math.PI + wavefront_angle, true);
+        ctx.stroke();
+        ctx.fillText("x',y'", v_right + 35, -135);
+        
+        
+        // 6. Dimension Lines
+        ctx.lineWidth = 1;
+
+        // d
+        ctx.beginPath();
+        ctx.moveTo(v_left, 130);
+        ctx.lineTo(v_right, 130);
+        ctx.moveTo(v_left, 130-5);
+        ctx.lineTo(v_left, 130+5);
+        ctx.moveTo(v_right, 130-5);
+        ctx.lineTo(v_right, 130+5);
+        ctx.stroke();
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('d', lens_center_x, 130);
+        
+        // f
+        ctx.beginPath();
+        ctx.moveTo(v_right, 150);
+        ctx.lineTo(F_x, 150);
+        ctx.moveTo(v_right, 150-5);
+        ctx.lineTo(v_right, 150+5);
+        ctx.moveTo(F_x, 150-5);
+        ctx.lineTo(F_x, 150+5);
+        ctx.stroke();
+        drawArrow(v_right + 10, 150, v_right, 150);
+        drawArrow(F_x - 10, 150, F_x, 150);
+        ctx.textBaseline = 'top';
+        ctx.fillText('f', (v_right + F_x) / 2, 155);
+
+        // R2
+        ctx.beginPath();
+        ctx.moveTo(o2_x, 170);
+        ctx.lineTo(v_left, 170);
+        ctx.moveTo(o2_x, 170-5);
+        ctx.lineTo(o2_x, 170+5);
+        ctx.moveTo(v_left, 170-5);
+        ctx.lineTo(v_left, 170+5);
+        ctx.stroke();
+        drawArrow(o2_x + 10, 170, o2_x, 170);
+        drawArrow(v_left - 10, 170, v_left, 170);
+        ctx.font = 'italic 24px Times New Roman';
+        drawTextWithSub('R', '2', (o2_x + v_left) / 2, 175);
+        
+        // R1
+        ctx.beginPath();
+        ctx.moveTo(v_right, 170);
+        ctx.lineTo(o1_x, 170);
+        ctx.moveTo(v_right, 170-5);
+        ctx.lineTo(v_right, 170+5);
+        ctx.moveTo(o1_x, 170-5);
+        ctx.lineTo(o1_x, 170+5);
+        ctx.stroke();
+        drawArrow(v_right + 10, 170, v_right, 170);
+        drawArrow(o1_x - 10, 170, o1_x, 170);
+        drawTextWithSub('R', '1', (v_right + o1_x) / 2, 175);
+
+    </script>
+</body>
+</html>

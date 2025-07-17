@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Fig. 1.1 Redrawing</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="600" height="400"></canvas>
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Style and Font Settings ---
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 1.5;
+  ctx.font = '18px Arial';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  // --- Helper function to draw an arrow ---
+  function drawArrow(ctx, fromx, fromy, tox, toy, doubleEnded = true) {
+    const headlen = 8; // length of head in pixels
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    
+    // Main line
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.stroke();
+
+    // Arrowhead at the end
+    ctx.beginPath();
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+
+    // Arrowhead at the start if doubleEnded
+    if (doubleEnded) {
+      ctx.beginPath();
+      ctx.moveTo(fromx, fromy);
+      ctx.lineTo(fromx + headlen * Math.cos(angle - Math.PI / 6), fromy + headlen * Math.sin(angle - Math.PI / 6));
+      ctx.moveTo(fromx, fromy);
+      ctx.lineTo(fromx + headlen * Math.cos(angle + Math.PI / 6), fromy + headlen * Math.sin(angle + Math.PI / 6));
+      ctx.stroke();
+    }
+  }
+  
+  // --- Block Geometry (with rounded corners) ---
+  const W = 220; // width
+  const H = 50;  // height (thickness)
+  const D = 90;  // perspective depth
+  const R = 40;  // perspective rise
+  const rad = 12; // corner radius
+  const cx = 390; // center x of front face
+  const cy = 175; // center y of front face
+
+  // Define the 8 vertices of the cuboid's bounding box
+  const TFR = { x: cx + W / 2, y: cy - H / 2 }; // Top-Front-Right
+  const BFR = { x: cx + W / 2, y: cy + H / 2 }; // Bottom-Front-Right
+  const TFL = { x: cx - W / 2, y: cy - H / 2 }; // Top-Front-Left
+  const BFL = { x: cx - W / 2, y: cy + H / 2 }; // Bottom-Front-Left
+  const TBR = { x: TFR.x + D, y: TFR.y - R }; // Top-Back-Right
+  const BBR = { x: BFR.x + D, y: BFR.y - R }; // Bottom-Back-Right
+  const TBL = { x: TFL.x + D, y: TFL.y - R }; // Top-Back-Left
+
+  // --- Draw the Block ---
+  // This method draws the visible outline as a single continuous path
+  // and then adds the three internal lines to complete the 3D effect.
+  
+  // 1. Draw the outer visible contour
+  ctx.beginPath();
+  // Start on the line segment between TBL (Top-Back-Left) and TFL (Top-Front-Left)
+  const start_x = TBL.x + (TFL.x - TBL.x) * 0.5;
+  const start_y = TBL.y + (TFL.y - TBL.y) * 0.5;
+  ctx.moveTo(start_x, start_y);
+  
+  // Chain arcTo calls to create the rounded outline
+  ctx.arcTo(TFL.x, TFL.y, BFL.x, BFL.y, rad);
+  ctx.arcTo(BFL.x, BFL.y, BFR.x, BFR.y, rad);
+  ctx.arcTo(BFR.x, BFR.y, BBR.x, BBR.y, rad);
+  ctx.arcTo(BBR.x, BBR.y, TBR.x, TBR.y, rad);
+  ctx.arcTo(TBR.x, TBR.y, TBL.x, TBL.y, rad);
+  ctx.arcTo(TBL.x, TBL.y, TFL.x, TFL.y, rad); // This completes the loop
+  ctx.closePath();
+  ctx.stroke();
+
+  // 2. Draw the three internal lines meeting at TFR (Top-Front-Right)
+  // To simulate a rounded join, these lines are drawn between the outer rounded corners.
+  ctx.beginPath();
+  // Line from TFL-TFR corner
+  ctx.moveTo(TFL.x + rad, TFL.y);
+  ctx.lineTo(TFR.x - rad, TFR.y);
+  // Line from TBR-TFR corner
+  const dx_tr = TFR.x - TBR.x;
+  const dy_tr = TFR.y - TBR.y;
+  const len_tr = Math.sqrt(dx_tr*dx_tr + dy_tr*dy_tr);
+  ctx.moveTo(TBR.x + dx_tr * rad/len_tr, TBR.y + dy_tr * rad/len_tr);
+  ctx.lineTo(TFR.x - dx_tr * rad/len_tr, TFR.y - dy_tr * rad/len_tr);
+  // Line from BFR-TFR corner
+  ctx.moveTo(TFR.x, TFR.y + rad);
+  ctx.lineTo(BFR.x, BFR.y - rad);
+  ctx.stroke();
+
+
+  // --- Thickness Annotation ---
+  ctx.fillText('thickness 2.0 cm', 50, 175);
+  
+  // Dashed lines
+  ctx.save();
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(180, 150);
+  ctx.lineTo(260, 150);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(180, 200);
+  ctx.lineTo(260, 200);
+  ctx.stroke();
+  ctx.restore();
+
+  // Arrow
+  drawArrow(ctx, 220, 150, 220, 200, true);
+
+  // --- Area Annotation ---
+  ctx.fillText('area 0.15 m\u00B2', 350, 60); // \u00B2 is superscript 2
+  
+  // Pointer line
+  ctx.beginPath();
+  ctx.moveTo(425, 75);
+  ctx.lineTo(460, 130);
+  ctx.stroke();
+
+  // --- Figure Caption ---
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 18px Arial';
+  ctx.fillText('Fig. 1.1', 270, 350);
+  ctx.font = '18px Arial';
+  ctx.fillText('(not to scale)', 370, 350);
+
+</script>
+</body>
+</html>

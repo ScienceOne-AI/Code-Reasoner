@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="500" height="480"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.font = '22px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Coordinates
+        const leftX = 100;
+        const rightX = 400;
+        const topY = 120;
+        const bottomY = 320;
+        const centerX = (leftX + rightX) / 2;
+
+        // --- Draw Wires ---
+        ctx.beginPath();
+        // Right vertical wire
+        ctx.moveTo(rightX, topY);
+        ctx.lineTo(rightX, bottomY);
+        
+        // Left vertical wire (with break for resistor)
+        const resTopY = topY + 60;
+        const resBottomY = bottomY - 60;
+        ctx.moveTo(leftX, topY);
+        ctx.lineTo(leftX, resTopY);
+        ctx.moveTo(leftX, resBottomY);
+        ctx.lineTo(leftX, bottomY);
+
+        // Bottom wire (with break for switch)
+        const switchLeftX = centerX - 60;
+        const switchRightX = centerX + 60;
+        ctx.moveTo(leftX, bottomY);
+        ctx.lineTo(switchLeftX, bottomY);
+        ctx.moveTo(switchRightX, bottomY);
+        ctx.lineTo(rightX, bottomY);
+
+        // Top wire (with break for capacitor)
+        const capGap = 30;
+        const capLeftX = centerX - capGap / 2;
+        const capRightX = centerX + capGap / 2;
+        ctx.moveTo(leftX, topY);
+        ctx.lineTo(capLeftX, topY);
+        ctx.moveTo(capRightX, topY);
+        ctx.lineTo(rightX, topY);
+        ctx.stroke();
+
+        // --- Draw Resistor ---
+        ctx.beginPath();
+        const resWidth = 15;
+        const resZigs = 7;
+        const resLen = resBottomY - resTopY;
+        ctx.moveTo(leftX, resTopY);
+        for (let i = 0; i <= resZigs; i++) {
+            const y = resTopY + (i / resZigs) * resLen;
+            const xOffset = (i % 2 === 0) ? resWidth : -resWidth;
+            if (i > 0 && i < resZigs) {
+                ctx.lineTo(leftX + xOffset, y);
+            }
+        }
+        ctx.lineTo(leftX,resBottomY);
+        ctx.stroke();
+        // Label R
+        ctx.fillText('R', leftX - 35, (resTopY + resBottomY) / 2);
+
+        // --- Draw Capacitor ---
+        ctx.beginPath();
+        const plateHeight = 80;
+        // Left plate
+        ctx.moveTo(capLeftX, topY);
+        ctx.lineTo(capLeftX, topY - plateHeight);
+        // Right plate
+        ctx.moveTo(capRightX, topY);
+        ctx.lineTo(capRightX, topY - plateHeight);
+        ctx.stroke();
+
+        // --- Draw Switch ---
+        ctx.beginPath();
+        // Switch blade
+        ctx.moveTo(switchLeftX, bottomY);
+        ctx.lineTo(switchRightX - 10, bottomY - 20);
+        ctx.stroke();
+
+        // --- Annotations ---
+
+        // Label d for capacitor
+        const d_y = topY + 15;
+        ctx.beginPath();
+        ctx.moveTo(capLeftX, d_y);
+        ctx.lineTo(capRightX, d_y);
+        ctx.moveTo(capLeftX, d_y - 5);
+        ctx.lineTo(capLeftX, d_y + 5);
+        ctx.moveTo(capRightX, d_y - 5);
+        ctx.lineTo(capRightX, d_y + 5);
+        ctx.stroke();
+        ctx.fillText('d', centerX, topY + 35);
+
+        // Label r₀ for capacitor
+        const r0_arrow_x = capRightX + 25;
+        const r0_arrow_len = 60;
+        ctx.beginPath();
+        ctx.moveTo(r0_arrow_x, topY);
+        ctx.lineTo(r0_arrow_x, topY - r0_arrow_len);
+        // Arrowhead
+        ctx.moveTo(r0_arrow_x, topY - r0_arrow_len);
+        ctx.lineTo(r0_arrow_x - 5, topY - r0_arrow_len + 8);
+        ctx.moveTo(r0_arrow_x, topY - r0_arrow_len);
+        ctx.lineTo(r0_arrow_x + 5, topY - r0_arrow_len + 8);
+        ctx.stroke();
+        // Label r₀
+        const r0_x = r0_arrow_x + 10;
+        const r0_y = topY - r0_arrow_len / 2;
+        const originalFont = ctx.font;
+        const originalBaseline = ctx.textBaseline;
+        ctx.font = '22px serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('r', r0_x, r0_y);
+        const r_width = ctx.measureText('r').width;
+        ctx.font = '16px serif';
+        ctx.fillText('0', r0_x + r_width - 2, r0_y + 7);
+        ctx.font = originalFont;
+        ctx.textBaseline = originalBaseline;
+        ctx.textAlign = 'center';
+
+        // Arrow x
+        const x_arrow_y = bottomY + 40;
+        const x_arrow_start = centerX - 50;
+        const x_arrow_end = centerX + 50;
+        ctx.beginPath();
+        ctx.moveTo(x_arrow_start, x_arrow_y);
+        ctx.lineTo(x_arrow_end, x_arrow_y);
+        // Arrowhead
+        ctx.moveTo(x_arrow_end, x_arrow_y);
+        ctx.lineTo(x_arrow_end - 10, x_arrow_y - 5);
+        ctx.moveTo(x_arrow_end, x_arrow_y);
+        ctx.lineTo(x_arrow_end - 10, x_arrow_y + 5);
+        ctx.stroke();
+        ctx.fillText('x', centerX, x_arrow_y + 20);
+
+        // Figure label
+        ctx.fillText('Fig. 3.52', centerX, canvas.height - 30);
+    </script>
+</body>
+</html>

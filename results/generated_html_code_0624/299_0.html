@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnet Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="450" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.font = 'italic 22px "Times New Roman"';
+
+        // --- Draw the C-shaped Iron Core ---
+        const dx = 25;
+        const dy = -25;
+
+        // Front face points
+        const p_tr = { x: 280, y: 120 }; // top-right
+        const p_tl = { x: 130, y: 120 }; // top-left
+        const p_br = { x: 280, y: 300 }; // bottom-right
+        const p_bl = { x: 130, y: 300 }; // bottom-left
+        
+        const p_t_arm_bl = { x: 130, y: 180 }; // top arm bottom-left
+        const p_t_arm_br = { x: 180, y: 180 }; // top arm bottom-right (inner)
+        
+        const p_b_arm_tl = { x: 130, y: 220 }; // bottom arm top-left
+        const p_b_arm_tr = { x: 180, y: 220 }; // bottom arm top-right (inner)
+
+        // Draw Core
+        ctx.beginPath();
+        // Outer contour
+        ctx.moveTo(p_tl.x, p_tl.y);
+        ctx.lineTo(p_tr.x, p_tr.y);
+        ctx.lineTo(p_br.x, p_br.y);
+        ctx.lineTo(p_bl.x, p_bl.y);
+        ctx.lineTo(p_b_arm_tl.x, p_b_arm_tl.y);
+        ctx.moveTo(p_t_arm_bl.x, p_t_arm_bl.y);
+        ctx.lineTo(p_tl.x, p_tl.y);
+
+        // Inner contour
+        ctx.moveTo(p_t_arm_bl.x, p_t_arm_bl.y);
+        ctx.lineTo(p_t_arm_br.x, p_t_arm_br.y);
+        ctx.moveTo(p_b_arm_tl.x, p_b_arm_tl.y);
+        ctx.lineTo(p_b_arm_tr.x, p_b_arm_tr.y);
+
+        // 3D perspective lines
+        ctx.moveTo(p_tl.x, p_tl.y); ctx.lineTo(p_tl.x + dx, p_tl.y + dy);
+        ctx.moveTo(p_tr.x, p_tr.y); ctx.lineTo(p_tr.x + dx, p_tr.y + dy);
+        ctx.moveTo(p_br.x, p_br.y); ctx.lineTo(p_br.x + dx, p_br.y + dy);
+
+        // Top and Right surfaces
+        ctx.moveTo(p_tl.x + dx, p_tl.y + dy); ctx.lineTo(p_tr.x + dx, p_tr.y + dy);
+        ctx.moveTo(p_tr.x + dx, p_tr.y + dy); ctx.lineTo(p_br.x + dx, p_br.y + dy);
+        
+        // Inner surfaces
+        ctx.moveTo(p_t_arm_bl.x, p_t_arm_bl.y); ctx.lineTo(p_t_arm_bl.x + dx, p_t_arm_bl.y + dy);
+        ctx.moveTo(p_t_arm_bl.x + dx, p_t_arm_bl.y + dy); ctx.lineTo(p_t_arm_br.x + dx, p_t_arm_br.y + dy);
+        ctx.moveTo(p_t_arm_br.x, p_t_arm_br.y); ctx.lineTo(p_t_arm_br.x + dx, p_t_arm_br.y + dy);
+
+        ctx.moveTo(p_b_arm_tl.x, p_b_arm_tl.y); ctx.lineTo(p_b_arm_tl.x + dx, p_b_arm_tl.y + dy);
+        ctx.moveTo(p_b_arm_tl.x + dx, p_b_arm_tl.y + dy); ctx.lineTo(p_b_arm_tr.x + dx, p_b_arm_tr.y + dy);
+        ctx.moveTo(p_b_arm_tr.x, p_b_arm_tr.y); ctx.lineTo(p_b_arm_tr.x + dx, p_b_arm_tr.y + dy);
+
+        ctx.stroke();
+
+        // --- Draw the Coil (N turns) ---
+        const coil_x = p_tr.x;
+        const wire_out_x = 360;
+        const y_top_wire = 175;
+        const y_bot_wire = 255;
+        
+        ctx.beginPath();
+        // Wires
+        ctx.moveTo(coil_x, y_top_wire); ctx.lineTo(wire_out_x, y_top_wire);
+        ctx.moveTo(coil_x, y_bot_wire); ctx.lineTo(wire_out_x, y_bot_wire);
+        
+        // Windings
+        const num_windings = 3;
+        const y_start = y_bot_wire;
+        const y_end = y_top_wire;
+        const y_step = (y_start - y_end) / (num_windings + 0.5);
+
+        for (let i = 0; i < num_windings; i++) {
+            let y1 = y_start - i * y_step;
+            let y2 = y_start - (i + 1) * y_step;
+            
+            // Front arc
+            ctx.moveTo(coil_x, y1);
+            ctx.quadraticCurveTo(coil_x - 20, (y1 + y2) / 2, coil_x, y2);
+            
+            // Side line
+            ctx.moveTo(coil_x, y1);
+            ctx.lineTo(coil_x + dx, y1 + dy);
+        }
+        // Last side line
+        ctx.moveTo(coil_x, y_end);
+        ctx.lineTo(coil_x + dx, y_end + dy);
+
+        ctx.stroke();
+
+        // Arrows for current (drawn separately to avoid line cap issues)
+        ctx.beginPath();
+        ctx.lineWidth = 2;
+        const arrow_x_pos = 320;
+        const arrow_size = 8;
+        // Top arrow (points right)
+        ctx.moveTo(arrow_x_pos + arrow_size, y_top_wire);
+        ctx.lineTo(arrow_x_pos, y_top_wire - arrow_size/2);
+        ctx.moveTo(arrow_x_pos + arrow_size, y_top_wire);
+        ctx.lineTo(arrow_x_pos, y_top_wire + arrow_size/2);
+        // Bottom arrow (points right)
+        ctx.moveTo(arrow_x_pos + arrow_size, y_bot_wire);
+        ctx.lineTo(arrow_x_pos, y_bot_wire - arrow_size/2);
+        ctx.moveTo(arrow_x_pos + arrow_size, y_bot_wire);
+        ctx.lineTo(arrow_x_pos, y_bot_wire + arrow_size/2);
+        ctx.stroke();
+        ctx.lineWidth = 2.5;
+
+
+        // Label N
+        ctx.fillText("N", p_tr.x + dx + 15, 210);
+
+        // --- Draw Dimensions and Labels ---
+        
+        // Dimension 'd' for the gap
+        const d_x = p_tl.x - 25;
+        const d_y_mid = (p_t_arm_bl.y + p_b_arm_tl.y) / 2;
+        ctx.beginPath();
+        ctx.moveTo(d_x, p_t_arm_bl.y); ctx.lineTo(d_x, p_b_arm_tl.y);
+        ctx.moveTo(d_x - 5, p_t_arm_bl.y); ctx.lineTo(d_x + 5, p_t_arm_bl.y);
+        ctx.moveTo(d_x - 5, p_b_arm_tl.y); ctx.lineTo(d_x + 5, p_b_arm_tl.y);
+        ctx.stroke();
+        ctx.fillText("d", d_x - 20, d_y_mid + 8);
+
+        // Dimension 'l' for the length
+        const l_y = p_bl.y + 30;
+        const l_x_mid = (p_bl.x + p_br.x) / 2;
+        ctx.beginPath();
+        ctx.moveTo(p_bl.x, l_y); ctx.lineTo(p_br.x, l_y);
+        ctx.moveTo(p_bl.x, l_y - 5); ctx.lineTo(p_bl.x, l_y + 5);
+        ctx.moveTo(p_br.x, l_y - 5); ctx.lineTo(p_br.x, l_y + 5);
+        ctx.stroke();
+        ctx.fillText("l", l_x_mid - 5, l_y + 25);
+        
+        // Figure label
+        ctx.font = 'bold 24px "Times New Roman"';
+        ctx.fillText("Fig. 2.19", 170, 390);
+
+    </script>
+</body>
+</html>

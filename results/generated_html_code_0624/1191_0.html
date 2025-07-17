@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Diffraction Grating Interferometer</title>
+</head>
+<body>
+    <canvas id="interferometerCanvas" width="700" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('interferometerCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw arrowheads on a path
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headlen = 8;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+        }
+
+        // --- Define Coordinates & Parameters ---
+        const dg_x = 200;
+        const y_center = 250;
+        const beam_sep = 10;
+
+        const m1_x = 410, m1_y = 100;
+        const bs_x = 450, bs_y = 250;
+        const m2_x = 590;
+        const pd_x = 450, pd_y = 400;
+        const lm_x = 300, lm_y = 350; // Lower mirror
+
+        // --- Draw Components ---
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // DG (Diffraction Grating)
+        ctx.fillStyle = '#C0C0C0';
+        ctx.fillRect(dg_x - 5, y_center - 90, 10, 180);
+        ctx.fillStyle = 'black';
+        ctx.font = '22px sans-serif';
+        ctx.fillText('DG', dg_x - 10, y_center + 110);
+
+        // M1 (Mirror 1)
+        ctx.save();
+        ctx.translate(m1_x, m1_y);
+        ctx.rotate(-35 * Math.PI / 180);
+        ctx.fillRect(-45, -4, 90, 8);
+        ctx.restore();
+        ctx.fillText('M', m1_x + 50, m1_y - 20);
+        ctx.font = '16px sans-serif';
+        ctx.fillText('1', m1_x + 67, m1_y - 15);
+        ctx.font = '22px sans-serif';
+
+        // BS (Beam Splitter)
+        ctx.save();
+        ctx.translate(bs_x, bs_y);
+        ctx.rotate(-45 * Math.PI / 180);
+        ctx.lineWidth = 3;
+        ctx.strokeRect(-65, -2, 130, 4);
+        ctx.restore();
+        ctx.fillText('BS', bs_x + 30, bs_y - 35);
+
+        // M2 (Mirror 2)
+        ctx.fillRect(m2_x, y_center - 30, 8, 60);
+        ctx.fillText('M', m2_x + 20, y_center - 30);
+        ctx.font = '16px sans-serif';
+        ctx.fillText('2', m2_x + 37, y_center - 25);
+        ctx.font = '22px sans-serif';
+
+        // Lower Mirror
+        ctx.save();
+        ctx.translate(lm_x, lm_y);
+        ctx.rotate(45 * Math.PI / 180);
+        ctx.fillRect(-35, -3, 70, 6);
+        ctx.restore();
+
+        // PD (Photodetector)
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(pd_x - 30, pd_y, 60, 20);
+        ctx.fillStyle = 'black';
+        ctx.fillText('PD', pd_x - 70, pd_y + 15);
+
+        // --- Draw Beams ---
+        ctx.beginPath();
+        ctx.lineWidth = 1;
+
+        // 1. Incident Beam
+        ctx.moveTo(80, y_center - beam_sep / 2); ctx.lineTo(dg_x, y_center - beam_sep / 2);
+        drawArrow(135, y_center - beam_sep / 2, 145, y_center - beam_sep / 2);
+        ctx.moveTo(80, y_center + beam_sep / 2); ctx.lineTo(dg_x, y_center + beam_sep / 2);
+        drawArrow(135, y_center + beam_sep / 2, 145, y_center + beam_sep / 2);
+
+        // 2. Beams from DG (crossing effect)
+        // Upper Path (to M1)
+        ctx.moveTo(dg_x, y_center - beam_sep / 2); ctx.lineTo(m1_x - 10, m1_y + 5);
+        drawArrow(295, 180, 305, 174);
+        ctx.moveTo(dg_x, y_center + beam_sep / 2); ctx.lineTo(m1_x + 10, m1_y - 5);
+        drawArrow(305, 180, 315, 174);
+
+        // Lower Path
+        ctx.moveTo(dg_x, y_center - beam_sep / 2); ctx.lineTo(lm_x - 10, lm_y - 5);
+        drawArrow(245, 300, 250, 305);
+        ctx.moveTo(290, 345); ctx.lineTo(dg_x + 15, y_center + 75);
+        drawArrow(255, 332, 250, 330);
+
+        // Straight Path (Zero Order)
+        ctx.moveTo(dg_x, y_center - beam_sep / 2); ctx.lineTo(bs_x-5, y_center - beam_sep / 2);
+        drawArrow(320, y_center - beam_sep / 2, 330, y_center - beam_sep / 2);
+        ctx.moveTo(dg_x, y_center + beam_sep / 2); ctx.lineTo(bs_x-5, y_center + beam_sep / 2);
+        drawArrow(320, y_center + beam_sep / 2, 330, y_center + beam_sep / 2);
+
+        // 3. Paths from Mirrors to PD
+        // From M1 to PD
+        ctx.moveTo(m1_x - 10, m1_y + 5); ctx.lineTo(bs_x - 15, bs_y - 15);
+        drawArrow(400, 160, 405, 165);
+        ctx.moveTo(m1_x + 10, m1_y - 5); ctx.lineTo(bs_x - 5, bs_y - 15);
+        drawArrow(410, 155, 415, 160);
+        ctx.moveTo(bs_x - 15, bs_y - 15); ctx.lineTo(bs_x - 15, pd_y);
+        drawArrow(bs_x - 15, 320, bs_x - 15, 330);
+        ctx.moveTo(bs_x - 5, bs_y - 15); ctx.lineTo(bs_x - 5, pd_y);
+        drawArrow(bs_x - 5, 320, bs_x - 5, 330);
+        
+        // From BS to M2 and back to PD
+        // Beam waist drawn with quadratic curves
+        const waist_y_offset = 8;
+        ctx.moveTo(bs_x + 5, y_center - beam_sep / 2); ctx.quadraticCurveTo((bs_x + m2_x)/2, y_center - beam_sep - waist_y_offset, m2_x, y_center - beam_sep / 2);
+        drawArrow(515, y_center - beam_sep - waist_y_offset/2, 525, y_center - beam_sep - waist_y_offset/2);
+        ctx.moveTo(bs_x + 5, y_center + beam_sep / 2); ctx.quadraticCurveTo((bs_x + m2_x)/2, y_center + beam_sep + waist_y_offset, m2_x, y_center + beam_sep / 2);
+        drawArrow(515, y_center + beam_sep + waist_y_offset/2, 525, y_center + beam_sep + waist_y_offset/2);
+        
+        ctx.moveTo(m2_x, y_center - beam_sep / 2); ctx.quadraticCurveTo((bs_x + m2_x)/2, y_center - beam_sep - waist_y_offset, bs_x + 15, bs_y + 15);
+        drawArrow(525, y_center - beam_sep - waist_y_offset/2, 515, y_center - beam_sep - waist_y_offset/2);
+        ctx.moveTo(m2_x, y_center + beam_sep / 2); ctx.quadraticCurveTo((bs_x + m2_x)/2, y_center + beam_sep + waist_y_offset, bs_x + 5, bs_y + 15);
+        drawArrow(525, y_center + beam_sep + waist_y_offset/2, 515, y_center + beam_sep + waist_y_offset/2);
+
+        ctx.moveTo(bs_x + 15, bs_y + 15); ctx.lineTo(bs_x + 15, pd_y);
+        drawArrow(bs_x + 15, 330, bs_x + 15, 340);
+        ctx.moveTo(bs_x + 5, bs_y + 15); ctx.lineTo(bs_x + 5, pd_y);
+        drawArrow(bs_x + 5, 330, bs_x + 5, 340);
+        ctx.stroke();
+
+        // --- Labels and Vectors ---
+        // λ₀
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText('λ', 100, 240);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('0', 113, 245);
+        
+        // v₁ vector
+        ctx.font = 'italic bold 22px Times New Roman';
+        ctx.fillText('v', 220, 160);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('1', 230, 165);
+        ctx.font = '22px Times New Roman';
+        ctx.fillText('→', 220, 150); // Vector arrow
+        ctx.beginPath();
+        ctx.lineWidth = 2;
+        ctx.moveTo(225, 200); ctx.lineTo(225, 170);
+        drawArrow(225, 200, 225, 170);
+        ctx.stroke();
+
+        // v₂ vector
+        ctx.font = 'italic bold 22px Times New Roman';
+        ctx.fillText('v', m2_x + 20, y_center + 60);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('2', m2_x + 30, y_center + 65);
+        ctx.font = '22px Times New Roman';
+        ctx.fillText('→', m2_x + 20, y_center + 50); // Vector arrow
+        ctx.beginPath();
+        ctx.lineWidth = 2;
+        ctx.moveTo(m2_x + 20, y_center + 80); ctx.lineTo(m2_x + 50, y_center + 80);
+        drawArrow(m2_x + 20, y_center + 80, m2_x + 50, y_center + 80);
+        ctx.stroke();
+
+        // Output signal ũₚ(t)
+        ctx.beginPath();
+        ctx.lineWidth = 1.5;
+        ctx.moveTo(pd_x, pd_y + 20); ctx.lineTo(pd_x, pd_y + 40);
+        ctx.lineTo(pd_x + 120, pd_y + 40);
+        ctx.stroke();
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText('u', pd_x + 130, pd_y + 45);
+        ctx.fillText('~', pd_x + 130, pd_y + 32); // Tilde
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('p', pd_x + 142, pd_y + 50);
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText('(t)', pd_x + 152, pd_y + 45);
+
+    </script>
+</body>
+</html>

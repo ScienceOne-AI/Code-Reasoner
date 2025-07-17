@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram</title>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="400" height="420" style="border:1px solid #d3d3d3;"></canvas>
+
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style settings
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = 2;
+ctx.font = 'italic 18px serif';
+
+const cx = 200;
+const cy = 130;
+const mass_radius = 7;
+
+// Helper function to draw an arrowhead
+function drawArrowhead(fromX, fromY, toX, toY) {
+    const headLength = 10; // length of head in pixels
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const angle = Math.atan2(dy, dx);
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+}
+
+// Helper function to draw a dashed ellipse
+function drawDashedEllipse(ctx, x, y, rx, ry) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.ellipse(x, y, rx, ry, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.restore();
+}
+
+// 1. Draw Coordinate Axes
+ctx.beginPath();
+// z-axis
+ctx.moveTo(cx, cy);
+ctx.lineTo(cx, cy - 100);
+drawArrowhead(cx, cy, cx, cy - 100);
+// y-axis
+ctx.moveTo(cx, cy);
+ctx.lineTo(cx + 120, cy);
+drawArrowhead(cx, cy, cx + 120, cy);
+// x-axis
+const x_end_x = cx - 100;
+const x_end_y = cy + 50;
+ctx.moveTo(cx, cy);
+ctx.lineTo(x_end_x, x_end_y);
+drawArrowhead(cx, cy, x_end_x, x_end_y);
+ctx.stroke();
+
+// Axis Labels
+ctx.textAlign = 'left';
+ctx.fillText('z', cx + 10, cy - 100);
+ctx.fillText('y', cx + 125, cy + 5);
+ctx.fillText('x', x_end_x - 15, x_end_y);
+
+
+// 2. Draw the Cone
+const cone_height = 160;
+const cone_radius = 100;
+const cone_base_y = cy + cone_height;
+const cone_base_rx = cone_radius;
+const cone_base_ry = 30;
+
+ctx.beginPath();
+// Left side
+ctx.moveTo(cx, cy);
+ctx.lineTo(cx - cone_radius, cone_base_y);
+// Right side
+ctx.moveTo(cx, cy);
+ctx.lineTo(cx + cone_radius, cone_base_y);
+ctx.stroke();
+
+// Base (dashed ellipse)
+drawDashedEllipse(ctx, cx, cone_base_y, cone_base_rx, cone_base_ry);
+
+// 5. Draw angle alpha first, so it's behind the mass ropes
+const angle_radius = 40;
+const angle_ref_len = 50;
+const alpha_val = Math.atan(cone_radius / cone_height);
+
+// Dashed line for z-axis reference (downward)
+ctx.save();
+ctx.beginPath();
+ctx.setLineDash([3, 3]);
+ctx.moveTo(cx, cy);
+ctx.lineTo(cx, cy + angle_ref_len);
+ctx.stroke();
+ctx.restore();
+
+// Arc for alpha
+const startAngle = Math.PI / 2 - alpha_val;
+const endAngle = Math.PI / 2;
+ctx.beginPath();
+ctx.arc(cx, cy, angle_radius, startAngle, endAngle);
+ctx.stroke();
+
+// Label alpha ('α')
+ctx.fillText('\u03B1', cx + 18, cy + 38);
+
+// 3. Draw mass m1 (hanging inside)
+const l1_length = 130;
+const m1_center = { x: cx, y: cy + l1_length };
+
+// Rope for m1 - stops at the circle's edge
+ctx.beginPath();
+ctx.moveTo(cx, cy);
+ctx.lineTo(m1_center.x, m1_center.y - mass_radius);
+ctx.stroke();
+
+// Mass m1
+ctx.beginPath();
+ctx.arc(m1_center.x, m1_center.y, mass_radius, 0, 2 * Math.PI);
+ctx.fillStyle = 'white';
+ctx.fill();
+ctx.stroke();
+
+// Label for m1
+ctx.fillStyle = 'black';
+ctx.font = 'italic 18px serif';
+ctx.fillText('m', m1_center.x + mass_radius + 2, m1_center.y + 6);
+ctx.font = 'italic 12px serif';
+ctx.fillText('1', m1_center.x + mass_radius + 10, m1_center.y + 10);
+ctx.font = 'italic 18px serif';
+
+// 4. Draw mass m2 (on the cone)
+const l2_fraction = 0.55;
+const m2_center = {
+    x: cx + l2_fraction * cone_radius,
+    y: cy + l2_fraction * cone_height
+};
+const vec_m2 = { x: m2_center.x - cx, y: m2_center.y - cy };
+const len_m2 = Math.sqrt(vec_m2.x * vec_m2.x + vec_m2.y * vec_m2.y);
+const unit_vec_m2 = { x: vec_m2.x / len_m2, y: vec_m2.y / len_m2 };
+const rope_end_m2 = {
+    x: m2_center.x - mass_radius * unit_vec_m2.x,
+    y: m2_center.y - mass_radius * unit_vec_m2.y
+};
+
+// Rope for m2 - stops at the circle's edge
+ctx.beginPath();
+ctx.moveTo(cx, cy);
+ctx.lineTo(rope_end_m2.x, rope_end_m2.y);
+ctx.stroke();
+
+// Mass m2
+ctx.beginPath();
+ctx.arc(m2_center.x, m2_center.y, mass_radius, 0, 2 * Math.PI);
+ctx.fillStyle = 'white';
+ctx.fill();
+ctx.stroke();
+
+// Label for m2
+ctx.fillStyle = 'black';
+ctx.font = 'italic 18px serif';
+ctx.fillText('m', m2_center.x + mass_radius + 2, m2_center.y + 6);
+ctx.font = 'italic 12px serif';
+ctx.fillText('2', m2_center.x + mass_radius + 10, m2_center.y + 10);
+ctx.font = 'italic 18px serif';
+
+// 6. Draw Figure Caption
+ctx.font = '16px sans-serif';
+ctx.textAlign = 'center';
+ctx.fillStyle = 'black';
+ctx.fillText('Fig. 2.76.', cx, canvas.height - 20);
+
+</script>
+
+</body>
+</html>

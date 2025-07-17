@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spring-Mass System</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="550" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Clear canvas with a white background
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Set default drawing styles
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    // Define main coordinates and dimensions
+    const x_center = 250;
+    const y_top = 80;
+    const sphere_center_y = 250;
+    const sphere_radius = 30;
+    const spring_end_y = sphere_center_y - sphere_radius;
+
+    // --- 1. Draw the support (ceiling) ---
+    ctx.beginPath();
+    ctx.moveTo(x_center - 120, y_top);
+    ctx.lineTo(x_center + 120, y_top);
+    ctx.stroke();
+
+    // Draw hatching for the support
+    ctx.lineWidth = 1;
+    for (let i = x_center - 120; i < x_center + 120; i += 10) {
+        ctx.beginPath();
+        ctx.moveTo(i, y_top);
+        ctx.lineTo(i - 10, y_top - 10);
+        ctx.stroke();
+    }
+    ctx.lineWidth = 2; // Reset line width
+
+    // --- 2. Draw the spring ---
+    ctx.beginPath();
+    ctx.moveTo(x_center, y_top);
+    const turns = 8;
+    const spring_len = spring_end_y - y_top;
+    const step = spring_len / (turns * 2);
+    const width = 20;
+    for (let i = 0; i < turns * 2; i++) {
+        const y_start_segment = y_top + i * step;
+        const y_end_segment = y_top + (i + 1) * step;
+        const y_control = (y_start_segment + y_end_segment) / 2;
+        const sign = (i % 2 === 0) ? 1 : -1;
+        ctx.quadraticCurveTo(x_center + sign * width, y_control, x_center, y_end_segment);
+    }
+    ctx.stroke();
+
+    // --- 3. Draw the steel sphere ---
+    ctx.beginPath();
+    ctx.arc(x_center, sphere_center_y, sphere_radius, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // --- 4. Draw the dimension measurement ---
+    const dim_line_x = 100;
+
+    // Dashed lines from object to dimension line
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.5;
+    // Top dashed line
+    ctx.beginPath();
+    ctx.moveTo(dim_line_x, y_top);
+    ctx.lineTo(x_center, y_top);
+    ctx.stroke();
+    // Bottom dashed line
+    ctx.beginPath();
+    ctx.moveTo(dim_line_x, sphere_center_y);
+    ctx.lineTo(x_center - sphere_radius, sphere_center_y);
+    ctx.stroke();
+    ctx.restore();
+
+    // Vertical dimension line with arrowheads
+    function drawVerticalArrow(ctx, x, y1, y2) {
+        const head_len = 8;
+        ctx.beginPath();
+        // Line
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, y2);
+        // Top arrowhead (points up)
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x - head_len / 2, y1 + head_len);
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x + head_len / 2, y1 + head_len);
+        // Bottom arrowhead (points down)
+        ctx.moveTo(x, y2);
+        ctx.lineTo(x - head_len / 2, y2 - head_len);
+        ctx.moveTo(x, y2);
+        ctx.lineTo(x + head_len / 2, y2 - head_len);
+        ctx.stroke();
+    }
+    ctx.lineWidth = 1.5;
+    drawVerticalArrow(ctx, dim_line_x, y_top, sphere_center_y);
+
+    // Dimension text
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.fillText('8.5 cm', dim_line_x, (y_top + sphere_center_y) / 2);
+    ctx.restore();
+
+    // --- 5. Draw labels and pointers ---
+    ctx.lineWidth = 1.5;
+    // Spring label
+    const spring_label_x = 350;
+    const spring_label_y = 140;
+    ctx.beginPath();
+    ctx.moveTo(x_center + width, y_top + 4*step); // A point on the spring
+    ctx.lineTo(spring_label_x - 5, spring_label_y);
+    ctx.stroke();
+    ctx.fillText('spring', spring_label_x, spring_label_y);
+
+    // Sphere label
+    const sphere_label_x = 350;
+    const sphere_label_y = 280;
+    ctx.beginPath();
+    ctx.moveTo(x_center + sphere_radius * Math.cos(Math.PI/4), sphere_center_y + sphere_radius * Math.sin(Math.PI/4)); // A point on the sphere
+    ctx.lineTo(sphere_label_x - 5, sphere_label_y);
+    ctx.stroke();
+    ctx.textAlign = 'left';
+    ctx.fillText('steel sphere,', sphere_label_x, sphere_label_y);
+    ctx.fillText('mass 0.29 kg', sphere_label_x, sphere_label_y + 25);
+
+    // --- 6. Draw Figure caption ---
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText('Fig. 2.1', canvas.width / 2 - 50, 400);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="canvas" width="500" height="550"></canvas>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const scale = 85;
+    const originX = 120;
+    const originY = 490;
+    const lineWidth = 2;
+
+    // --- Transformation ---
+    ctx.translate(originX, originY);
+    ctx.scale(1, -1);
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // --- Helper function for text ---
+    function drawText(text, x, y, options = {}) {
+        const { font = '16px sans-serif', align = 'center', baseline = 'middle', color = 'black' } = options;
+        ctx.save();
+        ctx.scale(1, -1);
+        ctx.font = font;
+        ctx.textAlign = align;
+        ctx.textBaseline = baseline;
+        ctx.fillStyle = color;
+        ctx.fillText(text, x, -y);
+        ctx.restore();
+    }
+    
+    // --- Define key coordinates ---
+    const h_B = 1.8 * scale;
+    const x_C_load = 2.4 * scale;
+    const davit_curve_end = { x: x_C_load, y: h_B + 1.2 * scale };
+
+    // --- 1. Axes ---
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = '#222';
+    // y-axis
+    ctx.beginPath();
+    ctx.moveTo(0, -70);
+    ctx.lineTo(0, davit_curve_end.y + 40);
+    ctx.stroke();
+    // x-axis
+    ctx.beginPath();
+    ctx.moveTo(-80, 0);
+    ctx.lineTo(x_C_load + 60, 0);
+    ctx.stroke();
+    ctx.restore();
+    drawText('y', 10, davit_curve_end.y + 35, {align: 'left'});
+    drawText('x', x_C_load + 70, 0, {align: 'left'});
+
+    // --- 2. Support Structure ---
+    // Main vertical beam on the left
+    ctx.beginPath();
+    ctx.rect(-55, -80, 20, h_B + 110);
+    ctx.stroke();
+    // Bolts on the beam
+    ctx.beginPath(); ctx.arc(-45, -30, 2.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-45, -50, 2.5, 0, Math.PI*2); ctx.fill();
+    // Horizontal platform
+    const platY = -10;
+    ctx.beginPath();
+    ctx.rect(-55, platY - 15, 65, 15);
+    ctx.save();
+    ctx.clip();
+    ctx.lineWidth = 1;
+    for(let i = -55; i < 10; i += 7) {
+        ctx.beginPath();
+        ctx.moveTo(i, platY);
+        ctx.lineTo(i-7, platY-15);
+        ctx.stroke();
+    }
+    ctx.restore();
+    ctx.lineWidth = lineWidth;
+    ctx.strokeRect(-55, platY - 15, 65, 15);
+    // Bolts on platform
+    for(let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.arc(-42 + i * 15, platY - 7.5, 2, 0, Math.PI*2);
+        ctx.fill();
+    }
+    // Bracket under platform
+    ctx.beginPath();
+    ctx.moveTo(-55, platY - 15);
+    ctx.lineTo(10, platY - 15);
+    ctx.lineTo(10, platY - 40);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Davit guide tube
+    ctx.beginPath();
+    ctx.rect(-9, -5, 18, h_B + 15);
+    ctx.fillStyle = "white";
+    ctx.fill();
+    ctx.stroke();
+
+    // Diagonal brace
+    const collarY = h_B + 25;
+    ctx.beginPath();
+    ctx.moveTo(-45, platY);
+    ctx.lineTo(-5, collarY);
+    ctx.lineTo(5, collarY);
+    ctx.lineTo(-35, platY);
+    ctx.closePath();
+    ctx.fillStyle='white';
+    ctx.fill();
+    ctx.stroke();
+    // Spherical joint at B
+    ctx.beginPath();
+    ctx.arc(0, collarY, 6, 0, 2 * Math.PI);
+    ctx.stroke();
+
+
+    // --- 3. Davit ABC ---
+    ctx.fillStyle = "white";
+    function drawDavitCurve(offset) {
+        ctx.beginPath();
+        ctx.moveTo(offset, 0);
+        ctx.lineTo(offset, h_B);
+        ctx.bezierCurveTo(
+            offset, h_B + scale * 0.9,
+            x_C_load * 0.4 + offset, davit_curve_end.y + 20,
+            davit_curve_end.x, davit_curve_end.y
+        );
+        ctx.stroke();
+    }
+    drawDavitCurve(5);
+    drawDavitCurve(-5);
+    
+    // --- 4. Pulley System ---
+    const pulley_y_start = davit_curve_end.y;
+    // Clevis at C
+    ctx.beginPath();
+    ctx.arc(x_C_load, pulley_y_start, 6, 0, 2 * Math.PI);
+    ctx.stroke();
+    // Top pulley block
+    const top_pulley_y = pulley_y_start - 35;
+    ctx.strokeRect(x_C_load - 12, top_pulley_y - 25, 24, 50);
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x_C_load, top_pulley_y, 10, 0, 2*Math.PI); ctx.stroke();
+    // Bottom pulley block
+    const bottom_pulley_y = top_pulley_y - 70;
+    ctx.strokeRect(x_C_load - 12, bottom_pulley_y - 25, 24, 50);
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x_C_load, bottom_pulley_y, 10, 0, 2*Math.PI); ctx.stroke();
+    // Ropes (simplified representation)
+    ctx.beginPath();
+    ctx.moveTo(x_C_load, top_pulley_y + 25); ctx.lineTo(x_C_load, top_pulley_y - 25);
+    ctx.moveTo(x_C_load, bottom_pulley_y + 25); ctx.lineTo(x_C_load, bottom_pulley_y - 25);
+    ctx.moveTo(x_C_load - 8, top_pulley_y); ctx.lineTo(x_C_load - 8, bottom_pulley_y);
+    ctx.moveTo(x_C_load + 8, top_pulley_y); ctx.lineTo(x_C_load + 8, bottom_pulley_y);
+    ctx.stroke();
+
+    // --- 5. Cradle (Load) ---
+    const hookY = bottom_pulley_y - 25;
+    const slingBarY = hookY - 10;
+    const slingBarWidth = 120;
+    // Slings
+    ctx.beginPath();
+    ctx.moveTo(x_C_load, hookY);
+    ctx.lineTo(x_C_load-slingBarWidth/2, slingBarY);
+    ctx.moveTo(x_C_load, hookY);
+    ctx.lineTo(x_C_load+slingBarWidth/2, slingBarY);
+    const numSlings = 15;
+    for(let i=1; i < numSlings; i++) {
+        const x_pos = x_C_load - slingBarWidth/2 + i * (slingBarWidth / numSlings);
+        ctx.moveTo(x_C_load, hookY);
+        ctx.lineTo(x_pos, slingBarY);
+    }
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+    
+    // Cradle Body
+    ctx.lineWidth = lineWidth;
+    const cradleTopY = slingBarY;
+    const topW = 110;
+    const sideH = 20;
+    const bottomY = cradleTopY - sideH - 35;
+    const tipY = bottomY - 15;
+    const cradlePath = new Path2D();
+    cradlePath.moveTo(x_C_load - topW/2, cradleTopY);
+    cradlePath.lineTo(x_C_load - topW/2, cradleTopY - sideH);
+    cradlePath.quadraticCurveTo(x_C_load - topW/4, bottomY, x_C_load, tipY);
+    cradlePath.quadraticCurveTo(x_C_load + topW/4, bottomY, x_C_load + topW/2, cradleTopY - sideH);
+    cradlePath.lineTo(x_C_load + topW/2, cradleTopY);
+
+    ctx.save();
+    ctx.clip(cradlePath);
+    ctx.lineWidth = 4;
+    for(let i=0; i < topW/4 + 5; i+=4) {
+        ctx.beginPath();
+        ctx.moveTo(x_C_load - topW/2 + i, cradleTopY);
+        ctx.lineTo(x_C_load - topW/2 + i, tipY - 5);
+    }
+    ctx.strokeStyle = '#333';
+    ctx.stroke();
+    ctx.restore();
+    ctx.stroke(cradlePath);
+    
+    // --- 6. Dimensions & Labels ---
+    ctx.lineWidth = 1;
+    // Vertical 1.8m
+    const v_dim_x = 25;
+    ctx.beginPath();
+    ctx.moveTo(v_dim_x - 5, 0); ctx.lineTo(v_dim_x + 5, 0);
+    ctx.moveTo(v_dim_x - 5, h_B); ctx.lineTo(v_dim_x + 5, h_B);
+    ctx.moveTo(v_dim_x, 0); ctx.lineTo(v_dim_x, h_B);
+    ctx.stroke();
+    drawText('1.8 m', v_dim_x + 35, h_B/2, {align: 'center'});
+
+    // Horizontal 2.4m
+    const h_dim_y = 20;
+    ctx.beginPath();
+    ctx.moveTo(0, h_dim_y - 5); ctx.lineTo(0, h_dim_y + 5);
+    ctx.moveTo(x_C_load, h_dim_y - 5); ctx.lineTo(x_C_load, h_dim_y + 5);
+    ctx.moveTo(0, h_dim_y); ctx.lineTo(x_C_load, h_dim_y);
+    ctx.stroke();
+    drawText('2.4 m', x_C_load/2, h_dim_y + 15, {baseline: 'bottom'});
+    
+    // A, B, C Labels
+    drawText('A', 15, -10);
+    drawText('B', 15, h_B + 5, {baseline: 'bottom'});
+    drawText('C', davit_curve_end.x + 15, davit_curve_end.y + 5, {align: 'left'});
+
+</script>
+</body>
+</html>

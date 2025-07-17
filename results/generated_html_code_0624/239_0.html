@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram Fig 3.70</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="700" height="550"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings to mimic a hand-drawn look
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'black';
+    ctx.font = 'bold 20px "Comic Sans MS", cursive, sans-serif';
+    ctx.fillStyle = 'black';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // --- Helper Functions ---
+
+    function drawVerticalResistor(ctx, x, y1, y2, label, labelSide) {
+        const segments = 6;
+        const amplitude = 6;
+        const len = y2 - y1;
+        const segLen = len / segments;
+        ctx.beginPath();
+        ctx.moveTo(x, y1);
+        for (let i = 0; i < segments; i++) {
+            const y_start = y1 + i * segLen;
+            const y_end = y1 + (i + 1) * segLen;
+            if (i % 2 === 0) {
+                ctx.lineTo(x + amplitude, (y_start + y_end) / 2);
+            } else {
+                ctx.lineTo(x - amplitude, (y_start + y_end) / 2);
+            }
+        }
+        ctx.lineTo(x, y2);
+        ctx.stroke();
+        const labelX = labelSide === 'left' ? x - 12 : x + 12;
+        const textAlign = labelSide === 'left' ? 'right' : 'left';
+        ctx.textAlign = textAlign;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, labelX, (y1 + y2) / 2);
+    }
+
+    function drawHorizontalResistor(ctx, x1, x2, y, label, labelPos) {
+        const segments = 6;
+        const amplitude = 6;
+        const len = x2 - x1;
+        const segLen = len / segments;
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        for (let i = 0; i < segments; i++) {
+            const x_start = x1 + i * segLen;
+            const x_end = x1 + (i + 1) * segLen;
+            if (i % 2 === 0) {
+                ctx.lineTo((x_start + x_end) / 2, y + amplitude);
+            } else {
+                ctx.lineTo((x_start + x_end) / 2, y - amplitude);
+            }
+        }
+        ctx.lineTo(x2, y);
+        ctx.stroke();
+        const labelY = labelPos === 'above' ? y - 12 : y + 12;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = labelPos === 'above' ? 'bottom' : 'top';
+        ctx.fillText(label, (x1 + x2) / 2, labelY);
+    }
+
+    function drawNPN(ctx, base_x, base_y, c_x, c_y, e_x, e_y, label){
+        const bar_x = (c_x + e_x)/2;
+        const bar_y_center = base_y;
+        const bar_height = 40;
+        const bar_y1 = bar_y_center - bar_height / 2;
+        const bar_y2 = bar_y_center + bar_height / 2;
+
+        // Base wire
+        ctx.beginPath();
+        ctx.moveTo(base_x, base_y);
+        ctx.lineTo(bar_x, base_y);
+        ctx.stroke();
+
+        // Vertical bar
+        ctx.beginPath();
+        ctx.moveTo(bar_x, bar_y1);
+        ctx.lineTo(bar_x, bar_y2);
+        ctx.stroke();
+
+        // Collector wire
+        ctx.beginPath();
+        ctx.moveTo(c_x, c_y);
+        ctx.lineTo(bar_x, bar_y1);
+        ctx.stroke();
+
+        // Emitter wire
+        ctx.beginPath();
+        ctx.moveTo(e_x, e_y);
+        ctx.lineTo(bar_x, bar_y2);
+        ctx.stroke();
+        
+        // Emitter arrow
+        const arrowAngle = Math.atan2(bar_y2 - e_y, bar_x - e_x);
+        const arrowSize = 12;
+        const arrow_dx = (bar_x - e_x) * 0.4;
+        const arrow_dy = (bar_y2 - e_y) * 0.4;
+        const arrow_x = e_x + arrow_dx;
+        const arrow_y = e_y + arrow_dy;
+
+        ctx.beginPath();
+        ctx.moveTo(arrow_x, arrow_y);
+        ctx.lineTo(arrow_x - arrowSize * Math.cos(arrowAngle - Math.PI / 5), arrow_y - arrowSize * Math.sin(arrowAngle - Math.PI / 5));
+        ctx.moveTo(arrow_x, arrow_y);
+        ctx.lineTo(arrow_x - arrowSize * Math.cos(arrowAngle + Math.PI / 5), arrow_y - arrowSize * Math.sin(arrowAngle + Math.PI / 5));
+        ctx.stroke();
+        
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, bar_x + 35, base_y);
+    }
+
+    function drawDiode(ctx, x, y1, y2, label) {
+        const h = y2 - y1;
+        const triangleHeight = 12;
+        const triangleWidth = 14;
+        const midY = y1 + h / 2;
+        const triTopY = midY - triangleHeight / 2;
+        const triBottomY = midY + triangleHeight / 2;
+        const barY = triBottomY;
+
+        ctx.beginPath(); // Wire to anode
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, triTopY);
+        ctx.stroke();
+
+        ctx.beginPath(); // Triangle (Anode)
+        ctx.moveTo(x, triBottomY);
+        ctx.lineTo(x - triangleWidth / 2, triTopY);
+        ctx.lineTo(x + triangleWidth / 2, triTopY);
+        ctx.closePath();
+        ctx.stroke();
+        
+        ctx.beginPath(); // Bar (Cathode)
+        ctx.moveTo(x - triangleWidth / 2 - 2, barY);
+        ctx.lineTo(x + triangleWidth / 2 + 2, barY);
+        ctx.stroke();
+
+        ctx.beginPath(); // Wire from cathode
+        ctx.moveTo(x, barY);
+        ctx.lineTo(x, y2);
+        ctx.stroke();
+
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, x + 18, y1 + h*0.25);
+    }
+
+    function drawDot(ctx, x, y) {
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+    }
+
+    // --- Main Drawing Logic ---
+
+    // Define coordinates
+    const vccY = 50;
+    const gndY = 470;
+    const t1_x = 220;
+    const t23_x = 420;
+    
+    // Power and Ground Rails
+    ctx.beginPath();
+    ctx.moveTo(t1_x, vccY);
+    ctx.lineTo(t23_x + 50, vccY);
+    ctx.stroke();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('+5V', t23_x + 60, vccY);
+    
+    ctx.beginPath();
+    ctx.moveTo(150, gndY);
+    ctx.lineTo(580, gndY);
+    ctx.stroke();
+
+    // Input Stage (T1)
+    const nodeA_x = 50, nodeA_y = 220;
+    const nodeF_x = 180, nodeF_y = 220;
+    const t1_base_x = t1_x - 30;
+    const t1_base_y = 220;
+
+    drawDot(ctx, nodeA_x, nodeA_y);
+    ctx.textAlign = 'center';
+    ctx.fillText('A', nodeA_x - 15, nodeA_y);
+    ctx.beginPath();
+    ctx.moveTo(nodeA_x, nodeA_y);
+    ctx.lineTo(nodeA_x + 30, nodeA_y);
+    ctx.stroke();
+    drawHorizontalResistor(ctx, nodeA_x + 30, nodeF_x - 20, nodeA_y, '1K', 'above');
+    
+    ctx.beginPath();
+    ctx.moveTo(nodeF_x - 20, nodeF_y);
+    ctx.lineTo(t1_base_x, t1_base_y);
+    ctx.stroke();
+    drawDot(ctx, nodeF_x, nodeF_y);
+    ctx.fillText('F', nodeF_x + 15, nodeF_y - 10);
+
+    drawVerticalResistor(ctx, nodeF_x, nodeF_y + 20, gndY - 20, '5K', 'left');
+    ctx.beginPath();
+    ctx.moveTo(nodeF_x, nodeF_y);
+    ctx.lineTo(nodeF_x, nodeF_y + 20);
+    ctx.moveTo(nodeF_x, gndY - 20);
+    ctx.lineTo(nodeF_x, gndY);
+    ctx.stroke();
+
+    // Transistor T1
+    const t1_collector_y = 150;
+    const t1_emitter_y = 290;
+    drawNPN(ctx, t1_base_x, t1_base_y, t1_x, t1_collector_y, t1_x, t1_emitter_y, 'T₁');
+
+    // T1 Collector circuit (Node C)
+    const nodeC_x = t1_x;
+    const nodeC_y = 120;
+    ctx.beginPath();
+    ctx.moveTo(nodeC_x, t1_collector_y);
+    ctx.lineTo(nodeC_x, nodeC_y);
+    ctx.stroke();
+    drawDot(ctx, nodeC_x, nodeC_y);
+    ctx.fillText('C', nodeC_x + 15, nodeC_y);
+    drawVerticalResistor(ctx, nodeC_x, vccY + 20, nodeC_y - 10, '1.4K', 'left');
+    ctx.beginPath();
+    ctx.moveTo(nodeC_x, nodeC_y - 10);
+    ctx.lineTo(nodeC_x, vccY);
+    ctx.stroke();
+    
+    // T1 Emitter circuit (Node B)
+    const nodeB_x = t1_x;
+    const nodeB_y = t1_emitter_y + 30;
+    ctx.beginPath();
+    ctx.moveTo(nodeB_x, t1_emitter_y);
+    ctx.lineTo(nodeB_x, nodeB_y);
+    ctx.stroke();
+    drawDot(ctx, nodeB_x, nodeB_y);
+    ctx.fillText('B', nodeB_x + 15, nodeB_y);
+    drawVerticalResistor(ctx, nodeB_x, nodeB_y + 20, gndY - 20, '1K', 'right');
+    ctx.beginPath();
+    ctx.moveTo(nodeB_x, nodeB_y);
+    ctx.lineTo(nodeB_x, nodeB_y + 20);
+    ctx.moveTo(nodeB_x, gndY - 20);
+    ctx.lineTo(nodeB_x, gndY);
+    ctx.stroke();
+
+    // Inter-stage connections
+    const t2_base_x = t23_x - 30;
+    const t2_base_y = nodeC_y;
+    ctx.beginPath();
+    ctx.moveTo(nodeC_x, nodeC_y);
+    ctx.lineTo(t2_base_x, t2_base_y);
+    ctx.stroke();
+    
+    const t3_base_x = t23_x - 30;
+    const t3_base_y = nodeB_y;
+    ctx.beginPath();
+    ctx.moveTo(nodeB_x, nodeB_y);
+    ctx.lineTo(t3_base_x, t3_base_y);
+    ctx.stroke();
+
+    // Output Stage (T2, T3, Diode)
+    const t2_collector_y = 80;
+    const nodeD_y = 160;
+    drawNPN(ctx, t2_base_x, t2_base_y, t23_x, t2_collector_y, t23_x, nodeD_y, 'T₂');
+
+    const nodeE_y = 280;
+    const t3_emitter_y = 360;
+    drawNPN(ctx, t3_base_x, t3_base_y, t23_x, nodeE_y, t23_x, t3_emitter_y, 'T₃');
+    
+    ctx.beginPath(); // T3 emitter to ground
+    ctx.moveTo(t23_x, t3_emitter_y);
+    ctx.lineTo(t23_x, gndY);
+    ctx.stroke();
+
+    // T2 Collector circuit (Node G)
+    const nodeG_x = t23_x;
+    const nodeG_y = t2_collector_y;
+    drawDot(ctx, nodeG_x, nodeG_y);
+    ctx.fillText('G', nodeG_x + 15, nodeG_y);
+    drawVerticalResistor(ctx, nodeG_x, vccY, nodeG_y, '100Ω', 'right');
+    
+    // Diode D
+    drawDiode(ctx, t23_x, nodeD_y, nodeE_y, 'D');
+    drawDot(ctx, t23_x, nodeD_y);
+    ctx.textAlign = 'right';
+    ctx.fillText('D', t23_x - 15, nodeD_y + 15);
+
+    // Output E and Load
+    const output_x = 550;
+    drawDot(ctx, t23_x, nodeE_y);
+    ctx.textAlign = 'left';
+    ctx.fillText('E', t23_x + 15, nodeE_y);
+    
+    ctx.beginPath();
+    ctx.moveTo(t23_x, nodeE_y);
+    ctx.lineTo(output_x, nodeE_y);
+    ctx.stroke();
+    
+    drawVerticalResistor(ctx, output_x, nodeE_y + 20, gndY - 20, ' = 1K', 'right');
+    ctx.font = 'bold 20px "Comic Sans MS", cursive, sans-serif';
+    ctx.fillText('R', output_x + 15, 385);
+    ctx.font = 'bold 16px "Comic Sans MS", cursive, sans-serif';
+    ctx.fillText('LOAD', output_x + 28, 393);
+    
+    ctx.beginPath();
+    ctx.moveTo(output_x, nodeE_y);
+    ctx.lineTo(output_x, nodeE_y + 20);
+    ctx.moveTo(output_x, gndY - 20);
+    ctx.lineTo(output_x, gndY);
+    ctx.stroke();
+
+    // Figure Caption
+    ctx.font = 'bold 22px "Comic Sans MS", cursive, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Fig. 3.70', canvas.width / 2, canvas.height - 5);
+
+</script>
+</body>
+</html>

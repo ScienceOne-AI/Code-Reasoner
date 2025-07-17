@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="700" height="550"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  /**
+   * Draws an arrow from (x1, y1) to (x2, y2).
+   */
+  function drawArrow(ctx, x1, y1, x2, y2) {
+    const headlen = 10;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+  }
+
+  /**
+   * Draws text with a subscript.
+   */
+  function drawSubscriptedText(ctx, text, sub, x, y, mainFontSize = 20) {
+      const subFontSize = Math.floor(mainFontSize * 0.7);
+      
+      ctx.save();
+      ctx.font = `italic ${mainFontSize}px Times New Roman`;
+      const textMetrics = ctx.measureText(text);
+      const textWidth = textMetrics.width;
+      ctx.fillText(text, x, y);
+      
+      ctx.font = `italic ${subFontSize}px Times New Roman`;
+      ctx.fillText(sub, x + textWidth * 0.9, y + mainFontSize * 0.2);
+      ctx.restore();
+  }
+
+  // --- Main Drawing Logic ---
+  
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 1.5;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // --- Coordinates and Parameters ---
+  const a = 150;
+  const corner = { x: 220, y: 400 };
+  const P0 = { x: corner.x, y: corner.y - a };
+  const O = { x: corner.x + a, y: corner.y };
+  const Pc = { x: 520, y: 180 };
+
+
+  // --- Dashed Construction Lines (Square) ---
+  ctx.save();
+  ctx.setLineDash([6, 4]);
+  ctx.lineWidth = 1.2;
+
+  // Vertical line
+  ctx.beginPath();
+  ctx.moveTo(corner.x, corner.y);
+  ctx.lineTo(P0.x, P0.y);
+  ctx.stroke();
+
+  // Horizontal line
+  ctx.beginPath();
+  ctx.moveTo(corner.x, corner.y);
+  ctx.lineTo(O.x, O.y);
+  ctx.stroke();
+
+  // Right angle marker at corner
+  ctx.beginPath();
+  ctx.arc(corner.x, corner.y, 20, -Math.PI/2, 0);
+  ctx.stroke();
+  ctx.font = '16px Times New Roman';
+  ctx.fillText("90°", corner.x + 25, corner.y - 25);
+  
+  ctx.restore();
+  
+  // Labels 'a'
+  ctx.font = 'italic 20px Times New Roman';
+  ctx.fillText('a', corner.x - 20, corner.y - a / 2);
+  ctx.fillText('a', corner.x + a / 2, corner.y + 20);
+
+  // --- Force Center O ---
+  ctx.beginPath();
+  ctx.arc(O.x, O.y, 4, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.font = '18px Times New Roman';
+  ctx.fillText('O(力心)', O.x + 35, O.y + 25);
+
+  // --- Position Vector r0 ---
+  ctx.beginPath();
+  ctx.moveTo(O.x, O.y);
+  ctx.lineTo(P0.x, P0.y);
+  ctx.stroke();
+  drawSubscriptedText(ctx, 'r', '0', (P0.x + O.x) / 2 + 10, (P0.y + O.y) / 2 + 15);
+
+  // --- Mass m at P0 ---
+  ctx.beginPath();
+  ctx.arc(P0.x, P0.y, 5, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.font = 'italic 20px Times New Roman';
+  ctx.fillText('m', P0.x - 25, P0.y + 5);
+  drawSubscriptedText(ctx, 'P', '0', P0.x + 10, P0.y - 20);
+  
+  // --- Initial Velocity v0 ---
+  // v0 is perpendicular to r0. r0 vector is (-a, -a). Perpendicular is (a, -a) for right-and-up.
+  const v0_dir_norm = { x: 1/Math.sqrt(2), y: -1/Math.sqrt(2) };
+  const v0_len = 90;
+  const v0_end = { x: P0.x + v0_len * v0_dir_norm.x, y: P0.y + v0_len * v0_dir_norm.y };
+  drawArrow(ctx, P0.x, P0.y, v0_end.x, v0_end.y);
+  drawSubscriptedText(ctx, 'v', '0', v0_end.x + 15, v0_end.y - 10);
+  
+  // Angle between r0 and v0
+  const r0_angle = Math.atan2(P0.y - O.y, P0.x - O.x); 
+  const v0_angle = Math.atan2(v0_dir_norm.y, v0_dir_norm.x);
+  ctx.beginPath();
+  ctx.arc(P0.x, P0.y, 25, r0_angle, v0_angle);
+  ctx.stroke();
+  ctx.font = '16px Times New Roman';
+  ctx.fillText('90°', P0.x + 30, P0.y + 10);
+
+  // --- Initial Force F0 ---
+  // Force is repulsive, along r0 but pointing away from O.
+  const F0_dir_norm = { x: (P0.x - O.x) / (a * Math.sqrt(2)), y: (P0.y - O.y) / (a * Math.sqrt(2)) };
+  const F0_len = 80;
+  const F0_start = { x: P0.x, y: P0.y };
+  const F0_end = { x: P0.x + F0_len * F0_dir_norm.x, y: P0.y + F0_len * F0_dir_norm.y };
+  drawArrow(ctx, F0_start.x, F0_start.y, F0_end.x, F0_end.y);
+  
+  const f_label_x = F0_end.x - 90;
+  const f_label_y = F0_end.y - 20;
+  drawSubscriptedText(ctx, 'F', '0', f_label_x, f_label_y, 18);
+  ctx.font = 'italic 18px Times New Roman';
+  ctx.fillText(' = α', f_label_x + 30, f_label_y);
+  drawSubscriptedText(ctx, 'r', '0', f_label_x + 55, f_label_y, 18);
+  ctx.fillText(', α > 0', f_label_x + 105, f_label_y);
+  
+  // --- Trajectory ---
+  ctx.save();
+  ctx.setLineDash([6, 4]);
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(P0.x, P0.y);
+  const cp1 = { x: P0.x + 150, y: P0.y - 150 };
+  const cp2 = { x: Pc.x - 140, y: Pc.y - 70 };
+  ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, Pc.x, Pc.y);
+  ctx.stroke();
+  
+  // Arrow at the end of trajectory
+  const tangent_end_dx = Pc.x - cp2.x;
+  const tangent_end_dy = Pc.y - cp2.y;
+  const traj_arrow_end = { x: Pc.x + 0.2 * tangent_end_dx, y: Pc.y + 0.2 * tangent_end_dy };
+  drawArrow(ctx, Pc.x, Pc.y, traj_arrow_end.x, traj_arrow_end.y);
+  ctx.restore();
+
+  // --- Point Pc ---
+  drawSubscriptedText(ctx, 'P', 'c', Pc.x - 5, Pc.y - 20);
+
+  // --- Position Vector rc (dashed) ---
+  ctx.save();
+  ctx.setLineDash([6, 4]);
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(O.x, O.y);
+  ctx.lineTo(Pc.x, Pc.y);
+  ctx.stroke();
+  ctx.restore();
+  drawSubscriptedText(ctx, 'r', 'c', (Pc.x + O.x) / 2 + 20, (Pc.y + O.y) / 2);
+
+  // --- Velocity vc ---
+  // Must be perpendicular to rc. rc direction is Pc - O.
+  const rc_dir = { x: Pc.x - O.x, y: Pc.y - O.y };
+  const rc_mag = Math.sqrt(rc_dir.x**2 + rc_dir.y**2);
+  // Perpendicular direction (rotating by +90 deg): (-dy, dx)
+  const vc_dir = { x: -rc_dir.y, y: rc_dir.x };
+  const vc_mag = Math.sqrt(vc_dir.x**2 + vc_dir.y**2);
+  const vc_len = 90;
+  const vc_end = { x: Pc.x + vc_len * vc_dir.x / vc_mag, y: Pc.y + vc_len * vc_dir.y / vc_mag };
+  drawArrow(ctx, Pc.x, Pc.y, vc_end.x, vc_end.y);
+  drawSubscriptedText(ctx, 'v', 'c', vc_end.x + 10, vc_end.y + 10);
+
+  // --- Angle at Pc ---
+  const rc_angle = Math.atan2(rc_dir.y, rc_dir.x);
+  const vc_angle = Math.atan2(vc_dir.y, vc_dir.x);
+  ctx.beginPath();
+  ctx.arc(Pc.x, Pc.y, 30, rc_angle, vc_angle);
+  ctx.stroke();
+  ctx.font = '16px Times New Roman';
+  ctx.fillText('90°', Pc.x + 10, Pc.y + 35);
+
+</script>
+</body>
+</html>

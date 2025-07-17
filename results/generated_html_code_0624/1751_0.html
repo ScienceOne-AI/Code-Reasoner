@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Charge Distribution Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="450" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const R = 150; // Radius
+    const axisLength = 200;
+    const thickLineWidth = 4;
+    const thinLineWidth = 1.5;
+    const arrowSize = 8;
+
+    // Helper function to draw an arrow head on a line ending at (tox, toy)
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        ctx.save();
+        ctx.beginPath();
+        ctx.lineWidth = thinLineWidth;
+        ctx.strokeStyle = 'black';
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - arrowSize * Math.cos(angle - Math.PI / 6), toy - arrowSize * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - arrowSize * Math.cos(angle + Math.PI / 6), toy - arrowSize * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Start Drawing ---
+
+    // 1. Draw Coordinate Axes (dashed lines)
+    ctx.save();
+    ctx.setLineDash([6, 6]);
+    ctx.lineWidth = thinLineWidth;
+    ctx.strokeStyle = 'black';
+    
+    // x-axis
+    ctx.beginPath();
+    ctx.moveTo(centerX - axisLength, centerY);
+    ctx.lineTo(centerX + axisLength, centerY);
+    ctx.stroke();
+
+    // y-axis
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY - axisLength);
+    ctx.lineTo(centerX, centerY + axisLength);
+    ctx.stroke();
+    ctx.restore();
+
+    // 2. Draw Labels for Axes and Origin
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // In the image, 'x' is just below the axis end, 'y' is just left of the axis end.
+    ctx.fillText('x', centerX + axisLength - 10, centerY + 20);
+    ctx.fillText('y', centerX - 20, centerY - axisLength + 10);
+    
+    // The 'O' for the origin is slightly to the right and below the intersection.
+    ctx.font = '24px Times New Roman'; 
+    ctx.fillText('O', centerX + 15, centerY + 15);
+
+    // 3. Draw the Charged Arcs
+    ctx.lineWidth = thickLineWidth;
+    ctx.strokeStyle = 'black';
+    
+    // Arc in 1st quadrant (top-right). In canvas coordinates (y-down), this is
+    // an arc from the -y direction (North, 1.5*PI) to the +x direction (East, 2*PI).
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, R, 1.5 * Math.PI, 2 * Math.PI);
+    ctx.stroke();
+    
+    // Arc in 3rd quadrant (bottom-left). In canvas coordinates, this is
+    // an arc from the +y direction (South, 0.5*PI) to the -x direction (West, PI).
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, R, 0.5 * Math.PI, Math.PI);
+    ctx.stroke();
+
+    // 4. Draw Radius Lines and Labels
+    ctx.lineWidth = thinLineWidth;
+    
+    // Radius in 1st quadrant (pointing to middle of arc, 45 degrees into the quadrant)
+    // The canvas angle for this direction is -45 degrees or 1.75*PI.
+    const angle1 = 1.75 * Math.PI;
+    const endX1 = centerX + R * Math.cos(angle1);
+    const endY1 = centerY + R * Math.sin(angle1);
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(endX1, endY1);
+    ctx.stroke();
+    drawArrow(ctx, centerX, centerY, endX1, endY1);
+    
+    // Radius in 3rd quadrant (pointing to middle of arc, 225 degrees)
+    // The canvas angle for this direction is 135 degrees or 0.75*PI.
+    const angle2 = 0.75 * Math.PI;
+    const endX2 = centerX + R * Math.cos(angle2);
+    const endY2 = centerY + R * Math.sin(angle2);
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(endX2, endY2);
+    ctx.stroke();
+    drawArrow(ctx, centerX, centerY, endX2, endY2);
+
+    // Labels for Radii 'R'. Placed near the midpoint of the radius lines.
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('R', centerX + R/2 * Math.cos(angle1) + 10, centerY + R/2 * Math.sin(angle1) - 10);
+    ctx.fillText('R', centerX + R/2 * Math.cos(angle2) - 15, centerY + R/2 * Math.sin(angle2) + 15);
+
+    // 5. Draw Charge Labels '+Q'
+    ctx.font = '24px Times New Roman';
+
+    // +Q label in 1st quadrant, near the arc.
+    // Visually, this is at about 30 degrees (math angle). In canvas, that's -30 deg or -PI/6.
+    const qAngle1 = -Math.PI / 6;
+    ctx.fillText('+Q', centerX + (R + 25) * Math.cos(qAngle1), centerY + (R + 25) * Math.sin(qAngle1));
+
+    // +Q label in 3rd quadrant, near the arc.
+    // Visually, this is at about 210 degrees (math angle).
+    // A line at 210 deg goes left (negative cos) and down (negative sin).
+    // In canvas (y-down), this means y should increase.
+    // We map math coordinates (x,y) to canvas (cx+x, cy-y).
+    const math_angle_q3 = 210 * Math.PI / 180;
+    const q3_x = centerX + (R + 20) * Math.cos(math_angle_q3);
+    const q3_y = centerY - (R + 20) * Math.sin(math_angle_q3);
+    ctx.fillText('+Q', q3_x, q3_y);
+
+</script>
+</body>
+</html>

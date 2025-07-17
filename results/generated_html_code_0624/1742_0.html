@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Optical Polarizer System</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="400"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Helper Functions ---
+
+function drawSubscript(text, sub, x, y, baseFont = "italic 24px 'Times New Roman'", subFont = "italic 16px 'Times New Roman'") {
+    const originalFont = ctx.font;
+    ctx.font = baseFont;
+    const textMetrics = ctx.measureText(text);
+    ctx.fillText(text, x, y);
+    
+    ctx.font = subFont;
+    ctx.fillText(sub, x + textMetrics.width - 4, y + 5);
+
+    ctx.font = originalFont; // Reset font
+}
+
+function drawArrowhead(x, y, size) {
+    const originalLineWidth = ctx.lineWidth;
+    ctx.lineWidth = 2; 
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - size, y - size / 2);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - size, y + size / 2);
+    ctx.stroke();
+    ctx.lineWidth = originalLineWidth;
+}
+
+// --- General Settings ---
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = 2;
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// --- Left Diagram: Side View ---
+const y_center = 200;
+const p1_x = 140;
+const retarder_x_start = 190;
+const retarder_width = 25;
+const p2_x = 260;
+
+// Main ray line
+ctx.beginPath();
+ctx.moveTo(40, y_center);
+ctx.lineTo(360, y_center);
+ctx.stroke();
+
+// Add arrowheads on the ray
+drawArrowhead(115, y_center, 8);
+drawArrowhead(170, y_center, 8);
+drawArrowhead(235, y_center, 8);
+drawArrowhead(360, y_center, 8);
+
+// Labels for light ray
+drawSubscript('I', '1', 80, y_center + 30);
+drawSubscript('I', '2', 320, y_center + 30);
+
+// Polarizer P1
+ctx.fillStyle = '#CCCCCC';
+ctx.fillRect(p1_x, y_center - 60, 8, 120);
+ctx.strokeRect(p1_x, y_center - 60, 8, 120);
+drawSubscript('P', '1', p1_x + 4, y_center - 85, "24px 'Times New Roman'", "16px 'Times New Roman'");
+
+// Retarder Plate
+ctx.fillStyle = '#E0E0E0';
+ctx.fillRect(retarder_x_start, y_center - 75, retarder_width, 150);
+ctx.strokeRect(retarder_x_start, y_center - 75, retarder_width, 150);
+
+// Dashed line for retarder
+const retarder_center_x = retarder_x_start + retarder_width / 2;
+ctx.beginPath();
+ctx.setLineDash([5, 3]);
+ctx.moveTo(retarder_center_x, y_center - 85);
+ctx.lineTo(retarder_center_x, y_center + 85);
+ctx.stroke();
+ctx.setLineDash([]);
+
+// Labels for retarder
+ctx.font = "24px 'Times New Roman'";
+ctx.fillText("O", retarder_center_x, y_center - 100);
+ctx.fillText("O'", retarder_center_x, y_center + 100);
+
+// Polarizer P2
+ctx.fillStyle = '#CCCCCC';
+ctx.fillRect(p2_x, y_center - 60, 8, 120);
+ctx.strokeRect(p2_x, y_center - 60, 8, 120);
+drawSubscript('P', '2', p2_x + 4, y_center - 85, "24px 'Times New Roman'", "16px 'Times New Roman'");
+
+
+// --- Right Diagram: Front View ---
+const cx = 600;
+const cy = 200;
+const radius_outer = 120;
+const radius_ring_outer = 115;
+const radius_ring_inner = 95;
+const axis_length = 135;
+
+// Concentric Rings
+// Draw from largest to smallest to handle overlap correctly
+ctx.beginPath();
+ctx.arc(cx, cy, radius_outer, 0, 2 * Math.PI);
+ctx.stroke();
+
+ctx.beginPath();
+ctx.arc(cx, cy, radius_ring_outer, 0, 2 * Math.PI, false);
+ctx.arc(cx, cy, radius_ring_inner, 0, 2 * Math.PI, true);
+ctx.fillStyle = '#B0B0B0';
+ctx.fill();
+
+ctx.beginPath();
+ctx.arc(cx, cy, radius_ring_inner, 0, 2 * Math.PI);
+ctx.fillStyle = '#EEEEEE';
+ctx.fill();
+ctx.stroke();
+
+
+// Axes
+// OO' axis (vertical dashed)
+ctx.beginPath();
+ctx.setLineDash([5, 3]);
+ctx.moveTo(cx, cy - axis_length);
+ctx.lineTo(cx, cy + axis_length);
+ctx.stroke();
+ctx.setLineDash([]);
+ctx.font = "24px 'Times New Roman'";
+ctx.fillText("O", cx, cy - axis_length - 10);
+ctx.fillText("O'", cx, cy + axis_length + 10);
+
+// P1 and P2 axes (solid lines)
+ctx.lineWidth = 2.5;
+
+function drawAxis(angle_rad, length) {
+    const x1 = cx + length * Math.cos(angle_rad);
+    const y1 = cy + length * Math.sin(angle_rad);
+    const x2 = cx - length * Math.cos(angle_rad);
+    const y2 = cy - length * Math.sin(angle_rad);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+}
+
+const angle_p2_rad = -Math.PI / 4;      // Top-Right to Bottom-Left
+const angle_p1_rad = -3 * Math.PI / 4;    // Top-Left to Bottom-Right
+
+drawAxis(angle_p2_rad, axis_length);
+drawAxis(angle_p1_rad, axis_length);
+
+// Labels for P1 and P2
+drawSubscript('P', '1', cx - 120, cy - 110, "24px 'Times New Roman'", "16px 'Times New Roman'");
+drawSubscript('P', '2', cx + 105, cy - 110, "24px 'Times New Roman'", "16px 'Times New Roman'");
+
+// Center dot
+ctx.beginPath();
+ctx.arc(cx, cy, 4, 0, 2 * Math.PI);
+ctx.fillStyle = 'black';
+ctx.fill();
+
+// Angle alpha
+ctx.lineWidth = 1.5;
+ctx.beginPath();
+ctx.arc(cx, cy, 40, -Math.PI / 2, -Math.PI / 4); // Arc from vertical to P2 axis
+ctx.stroke();
+ctx.font = "italic 22px 'Times New Roman'";
+ctx.fillText("α", cx + 35, cy - 20);
+
+</script>
+</body>
+</html>

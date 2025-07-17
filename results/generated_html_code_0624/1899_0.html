@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Redrawing</title>
+</head>
+<body>
+<canvas id="physics-diagram" width="550" height="320"></canvas>
+<script>
+    const canvas = document.getElementById('physics-diagram');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = 'italic 22px serif';
+
+    // Helper function to draw a cart
+    function drawCart(x, topY, width, height, wheelRadius, label) {
+        const bottomY = topY + height;
+        // Draw cart body
+        ctx.strokeRect(x, topY, width, height);
+
+        // Define wheel positions
+        // Wheels are centered vertically on the bottom line of the cart rectangle
+        const wheelCenterY = bottomY;
+        const group1_center_x = x + width * 0.25;
+        const group2_center_x = x + width * 0.75;
+        // The offset controls the overlap of the two wheels in a pair
+        const wheel_offset = wheelRadius * 0.5;
+
+        // Draw wheel group 1 (left)
+        ctx.beginPath();
+        ctx.arc(group1_center_x - wheel_offset, wheelCenterY, wheelRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(group1_center_x + wheel_offset, wheelCenterY, wheelRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Draw wheel group 2 (right)
+        ctx.beginPath();
+        ctx.arc(group2_center_x - wheel_offset, wheelCenterY, wheelRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(group2_center_x + wheel_offset, wheelCenterY, wheelRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Draw label inside the cart
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, x + width / 2, topY + height / 2);
+    }
+
+    // Helper function to draw an arrow
+    function drawArrow(x1, y1, x2, y2, arrowSize = 10) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - arrowSize * Math.cos(angle - Math.PI / 6), y2 - arrowSize * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - arrowSize * Math.cos(angle + Math.PI / 6), y2 - arrowSize * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // --- Main Drawing ---
+
+    // Define core coordinates and dimensions
+    const wheel_r = 12;
+    const cart_h = 70;
+    const cart_top_y = 160;
+    const ground_y = cart_top_y + cart_h + wheel_r; // Ground is located below the wheels
+
+    // Draw the ground line
+    ctx.beginPath();
+    ctx.moveTo(10, ground_y);
+    ctx.lineTo(540, ground_y);
+    ctx.stroke();
+
+    // Draw the ground hatches
+    for (let x = 20; x < 540; x += 15) {
+        ctx.beginPath();
+        ctx.moveTo(x, ground_y);
+        ctx.lineTo(x - 10, ground_y + 10);
+        ctx.stroke();
+    }
+
+    // Draw Cart M
+    const cartM_w = 140;
+    const cartM_x = 80;
+    drawCart(cartM_x, cart_top_y, cartM_w, cart_h, wheel_r, 'M');
+
+    // Draw the Pole on Cart M
+    const pole_h = 80;
+    const pole_x = cartM_x + cartM_w / 2;
+    const pole_bottom_y = cart_top_y;
+    const pole_top_y = pole_bottom_y - pole_h;
+    ctx.beginPath();
+    ctx.moveTo(pole_x, pole_bottom_y);
+    ctx.lineTo(pole_x, pole_top_y);
+    ctx.stroke();
+
+    // Draw Pivot point P
+    ctx.beginPath();
+    ctx.arc(pole_x, pole_top_y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('P', pole_x, pole_top_y - 5);
+
+    // Draw the Pendulum (string and bob)
+    const string_len_R = 70;
+    const angle_from_vertical = 35 * Math.PI / 180; // Angle to the right, in radians
+    const bob_x = pole_x + string_len_R * Math.sin(angle_from_vertical);
+    const bob_y = pole_top_y + string_len_R * Math.cos(angle_from_vertical);
+    
+    // Draw the string
+    ctx.beginPath();
+    ctx.moveTo(pole_x, pole_top_y);
+    ctx.lineTo(bob_x, bob_y);
+    ctx.stroke();
+    
+    // Draw the bob
+    ctx.beginPath();
+    ctx.arc(bob_x, bob_y, 8, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Draw labels R and μ for the pendulum
+    const R_label_x = pole_x + (bob_x - pole_x) * 0.5 + 10;
+    const R_label_y = pole_top_y + (bob_y - pole_top_y) * 0.5;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('R', R_label_x, R_label_y);
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('μ', bob_x + 12, bob_y);
+
+    // Draw the Velocity Arrow V
+    const arrow_start_x = cartM_x + cartM_w;
+    const arrow_end_x = arrow_start_x + 60;
+    const arrow_y = cart_top_y + cart_h / 2;
+    drawArrow(arrow_start_x, arrow_y, arrow_end_x, arrow_y);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('V', (arrow_start_x + arrow_end_x) / 2, arrow_y + 5);
+
+    // Draw Cart m
+    const cartm_w = 110;
+    const cartm_x = arrow_end_x + 25;
+    drawCart(cartm_x, cart_top_y, cartm_w, cart_h, wheel_r, 'm');
+
+    // Draw the Figure caption
+    ctx.font = '20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Fig. 1.80.', canvas.width / 2, canvas.height - 5);
+</script>
+</body>
+</html>

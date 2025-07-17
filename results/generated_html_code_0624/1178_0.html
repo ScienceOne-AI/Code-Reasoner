@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Converging Laser Beam through Aperture</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineCap = 'round';
+
+    // Parameters
+    const cy = canvas.height / 2 - 20; // Center Y
+    const startX = 50; // Where rays start appearing
+    const screenX = 350; // X-position of the aperture screen
+    const focusX = 680;  // X-position of the focal point F
+    const axisEndX = 770; // End of the optical axis line
+
+    const aperture_half_width = 80; // Represents D/2
+
+    // Helper function to draw an arrowhead
+    function drawArrowhead(x, y, angle) {
+        const headlen = 9;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headlen, -headlen / 2.5);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headlen, headlen / 2.5);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // 1. Draw Optical Axis (z-axis)
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, cy);
+    ctx.lineTo(axisEndX, cy);
+    ctx.stroke();
+    // Arrowhead for the axis
+    drawArrowhead(axisEndX, cy, 0);
+    // Label for the axis
+    ctx.font = "italic 22px Times New Roman";
+    ctx.fillText("z", axisEndX + 10, cy + 8);
+
+    // 2. Draw Focal Plane and Point F
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.moveTo(focusX, cy - 120);
+    ctx.lineTo(focusX, cy + 120);
+    ctx.stroke();
+    ctx.restore();
+    // Label F
+    ctx.font = "italic bold 24px Times New Roman";
+    ctx.fillText("F", focusX + 15, cy - 10);
+
+    // 3. Draw Converging Rays
+    const ray_start_y_offsets = [-100, -50, 0, 50, 100];
+    ctx.lineWidth = 1.5;
+
+    ray_start_y_offsets.forEach(offset => {
+        const startY = cy + offset;
+        // Rays are aimed at the focal point F (focusX, cy)
+        const slope = (cy - startY) / (focusX - startX);
+        const yAtScreen = startY + slope * (screenX - startX);
+
+        // Only draw rays that pass through the aperture
+        if (Math.abs(yAtScreen - cy) <= aperture_half_width + 1) { // +1 for tolerance
+            const angle = Math.atan2(cy - startY, focusX - startX);
+
+            // Ray segment before the screen
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(screenX, yAtScreen);
+            ctx.stroke();
+            // Arrowhead on the first segment
+            drawArrowhead(startX + (screenX - startX) * 0.5, startY + (yAtScreen - startY) * 0.5, angle);
+            
+            // Ray segment after the screen
+            ctx.beginPath();
+            ctx.moveTo(screenX, yAtScreen);
+            ctx.lineTo(focusX, cy);
+            ctx.stroke();
+            // Arrowhead on the second segment
+            drawArrowhead(screenX + (focusX - screenX) * 0.5, yAtScreen + (cy - yAtScreen) * 0.5, angle);
+        }
+    });
+
+    // 4. Draw Aperture Screen
+    const screenTopY = cy - aperture_half_width;
+    const screenBottomY = cy + aperture_half_width;
+    const screen_ext_len = 50;
+    const screen_cap_width = 18;
+
+    ctx.lineWidth = 4;
+    // Top opaque part
+    ctx.beginPath();
+    ctx.moveTo(screenX, screenTopY);
+    ctx.lineTo(screenX, screenTopY - screen_ext_len);
+    ctx.stroke();
+    // Bottom opaque part
+    ctx.beginPath();
+    ctx.moveTo(screenX, screenBottomY);
+    ctx.lineTo(screenX, screenBottomY + screen_ext_len);
+    ctx.stroke();
+
+    // T-caps for the screen
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(screenX - screen_cap_width / 2, screenTopY);
+    ctx.lineTo(screenX + screen_cap_width / 2, screenTopY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(screenX - screen_cap_width / 2, screenBottomY);
+    ctx.lineTo(screenX + screen_cap_width / 2, screenBottomY);
+    ctx.stroke();
+
+    // 5. Draw Dashed Lines (Geometrical Cone)
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 8]);
+    ctx.beginPath();
+    ctx.moveTo(screenX, screenTopY);
+    ctx.lineTo(focusX, cy);
+    ctx.moveTo(screenX, screenBottomY);
+    ctx.lineTo(focusX, cy);
+    ctx.stroke();
+    ctx.restore();
+
+    // 6. Draw Distance Marker 'z'
+    const z_line_y = cy + 150;
+    const z_tick_height = 10;
+    ctx.lineWidth = 1;
+    
+    // Horizontal line for dimension
+    ctx.beginPath();
+    ctx.moveTo(screenX, z_line_y);
+    ctx.lineTo(focusX, z_line_y);
+    ctx.stroke();
+
+    // Left tick and arrowhead
+    ctx.beginPath();
+    ctx.moveTo(screenX, z_line_y - z_tick_height / 2);
+    ctx.lineTo(screenX, z_line_y + z_tick_height / 2);
+    ctx.stroke();
+    drawArrowhead(screenX, z_line_y, Math.PI);
+
+    // Right tick and arrowhead
+    ctx.beginPath();
+    ctx.moveTo(focusX, z_line_y - z_tick_height / 2);
+    ctx.lineTo(focusX, z_line_y + z_tick_height / 2);
+    ctx.stroke();
+    drawArrowhead(focusX, z_line_y, 0);
+
+    // Label 'z' for the distance
+    ctx.font = "italic 22px Times New Roman";
+    ctx.textAlign = 'center';
+    ctx.fillText('z', (screenX + focusX) / 2, z_line_y + 28);
+    ctx.textAlign = 'start';
+
+</script>
+</body>
+</html>

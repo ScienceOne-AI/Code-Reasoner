@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>容器中的液体压强</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- 样式和绘图参数 ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'butt'; // 线条末端为方形，以匹配原图
+
+        // --- 容器尺寸 ---
+        // 将绘图居中
+        const centerX = canvas.width / 2;
+        
+        // 底部宽大部分的尺寸
+        const baseWidth = 300;
+        const baseHeight = 280;
+        
+        // 顶部窄颈部分的尺寸
+        const neckWidth = 140;
+        const neckHeight = 150; // 绘制出的颈部高度
+
+        // --- 坐标计算 ---
+        const bottomY = 460; // 容器底部Y坐标
+        const baseTopY = bottomY - baseHeight; // 宽大部分顶部的Y坐标
+        const baseLeftX = centerX - baseWidth / 2;
+        const baseRightX = centerX + baseWidth / 2;
+        
+        const neckLeftX = centerX - neckWidth / 2;
+        const neckRightX = centerX + neckWidth / 2;
+        const neckTopY = baseTopY - neckHeight; // 颈部顶部的Y坐标
+
+        // --- 绘制容器轮廓 ---
+        ctx.beginPath();
+        // 从颈部左上角开始
+        ctx.moveTo(neckLeftX, neckTopY);
+        // 向下到左侧“肩膀”
+        ctx.lineTo(neckLeftX, baseTopY);
+        //向外到宽大部分的左上角
+        ctx.lineTo(baseLeftX, baseTopY);
+        // 向下到底部左侧
+        ctx.lineTo(baseLeftX, bottomY);
+        // 横跨底部
+        ctx.lineTo(baseRightX, bottomY);
+        // 向上到底部右侧
+        ctx.lineTo(baseRightX, baseTopY);
+        //向内到右侧“肩膀”
+        ctx.lineTo(neckRightX, baseTopY);
+        // 向上到颈部右上角
+        ctx.lineTo(neckRightX, neckTopY);
+        ctx.stroke();
+
+        // --- 绘制水（虚线表示） ---
+        // 水位在颈部
+        const waterHeightInNeck = 50; // 水在颈部的高度
+        const waterSurfaceY = baseTopY - waterHeightInNeck;
+
+        // 虚线图案参数
+        const dashLength = 20;
+        const dashGap = 15;
+        const rowSpacing = 25;
+
+        ctx.beginPath(); // 为水开始新路径
+        
+        // 垂直循环，绘制每一行虚线
+        // 从底部稍上位置开始，直到水面
+        for (let y = bottomY - rowSpacing / 2; y > waterSurfaceY; y -= rowSpacing) {
+            let startX, endX;
+
+            // 根据当前高度y判断容器的宽度
+            if (y > baseTopY) {
+                // 在宽大部分
+                startX = baseLeftX;
+                endX = baseRightX;
+            } else {
+                // 在窄颈部分
+                startX = neckLeftX;
+                endX = neckRightX;
+            }
+
+            // 水平循环，绘制当前行的短线段
+            // 为了美观，可以给奇偶行设置不同偏移，形成砖墙效果
+            let xOffset = (Math.floor((bottomY - y) / rowSpacing) % 2) * (dashLength + dashGap) / 2;
+            for (let x = startX + xOffset; x < endX; x += (dashLength + dashGap)) {
+                // 确保短线段不会超出容器壁
+                // 考虑线宽，向内收缩一点
+                const dashStartX = x + ctx.lineWidth / 2;
+                const dashEndX = Math.min(x + dashLength, endX - ctx.lineWidth / 2);
+
+                if (dashEndX > dashStartX) {
+                    ctx.moveTo(dashStartX, y);
+                    ctx.lineTo(dashEndX, y);
+                }
+            }
+        }
+        ctx.stroke();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Cylindrical Lens Interference</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-canvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Configuration ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '18px "KaiTi", "STKaiti", sans-serif';
+
+        // --- Geometric Parameters ---
+        const cx = 300; // Center X
+        const w = 400; // Width of the glass plates
+        const x0 = cx - w / 2; // Left edge
+        const x1 = cx + w / 2; // Right edge
+
+        const h_A_side = 60; // Height of lens A at the side
+        const h_B = 60; // Height of plate B
+
+        const y_interface = 250; // Y-coordinate of the interface between A and B
+        const y_top_A = y_interface - h_A_side;
+        const y_bottom_B = y_interface + h_B;
+
+        const d = 25; // Max thickness of the air gap
+
+        // Perspective parameters
+        const p_dx = 100;
+        const p_dy = -50;
+
+        function p(x, y) {
+            return { x: x + p_dx, y: y + p_dy };
+        }
+
+        // --- Drawing Functions ---
+
+        function drawBlockB() {
+            const p0 = { x: x0, y: y_interface };
+            const p1 = { x: x1, y: y_interface };
+            const p2 = { x: x1, y: y_bottom_B };
+            const p3 = { x: x0, y: y_bottom_B };
+            
+            const p0p = p(p0.x, p0.y);
+            const p1p = p(p1.x, p1.y);
+            const p2p = p(p2.x, p2.y);
+            
+            ctx.beginPath();
+            // Right side face
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.lineTo(p2p.x, p2p.y);
+            ctx.lineTo(p1p.x, p1p.y);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Top face
+            ctx.beginPath();
+            ctx.moveTo(p0.x, p0.y);
+            ctx.lineTo(p1.x, p1.y);
+            ctx.lineTo(p1p.x, p1p.y);
+            ctx.lineTo(p0p.x, p0p.y);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Front face (draws over part of top/side for clean corners)
+            ctx.strokeRect(x0, y_interface, w, h_B);
+        }
+
+        function drawBlockA() {
+            // Calculate arc parameters for the concave bottom surface
+            const r_half_w = w / 2;
+            const R_curve = (r_half_w * r_half_w + d * d) / (2 * d);
+            const arc_cx = cx;
+            const arc_cy = y_interface + d - R_curve;
+            
+            const startAngle = Math.atan2(y_interface - arc_cy, x0 - arc_cx);
+            const endAngle = Math.atan2(y_interface - arc_cy, x1 - arc_cx);
+
+            // Back arc
+            const p_arc_cx = arc_cx + p_dx;
+            const p_arc_cy = arc_cy + p_dy;
+            ctx.beginPath();
+            ctx.arc(p_arc_cx, p_arc_cy, R_curve, startAngle, endAngle);
+            ctx.stroke();
+
+            // Top face
+            const p_top_left = p(x0, y_top_A);
+            const p_top_right = p(x1, y_top_A);
+            ctx.beginPath();
+            ctx.moveTo(x0, y_top_A);
+            ctx.lineTo(x1, y_top_A);
+            ctx.lineTo(p_top_right.x, p_top_right.y);
+            ctx.lineTo(p_top_left.x, p_top_left.y);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Right side face
+            ctx.beginPath();
+            ctx.moveTo(x1, y_top_A);
+            ctx.lineTo(x1, y_interface);
+            ctx.lineTo(p(x1, y_interface).x, p(x1, y_interface).y);
+            ctx.lineTo(p(x1, y_top_A).x, p(x1, y_top_A).y);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Front face outline
+            ctx.beginPath();
+            ctx.moveTo(x0, y_interface);
+            ctx.lineTo(x0, y_top_A);
+            ctx.lineTo(x1, y_top_A);
+            ctx.lineTo(x1, y_interface);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(arc_cx, arc_cy, R_curve, startAngle, endAngle);
+            ctx.stroke();
+        }
+
+        function drawHatching() {
+            ctx.lineWidth = 1;
+            
+            // Function to draw a double hatch mark
+            function drawDoubleHatch(x, y, angle_rad, length) {
+                const dx = Math.cos(angle_rad) * length;
+                const dy = Math.sin(angle_rad) * length;
+                ctx.beginPath();
+                ctx.moveTo(x - dx, y - dy);
+                ctx.lineTo(x + dx, y + dy);
+                ctx.moveTo(x - dx - 4, y - dy);
+                ctx.lineTo(x + dx - 4, y + dy);
+                ctx.stroke();
+            }
+
+            // Hatching on side faces
+            const sideAngle = Math.atan2(p_dy, p_dx);
+            const hatchAngle = sideAngle + Math.PI / 2.5; // Slanted relative to perspective lines
+            drawDoubleHatch(x1 + p_dx * 0.5, y_interface + h_B/2 + p_dy * 0.5, hatchAngle, 10);
+            drawDoubleHatch(x1 + p_dx * 0.5 + 20, y_interface + h_B/2 + p_dy * 0.5 - 10, hatchAngle, 10);
+            
+            drawDoubleHatch(x1 + p_dx * 0.5, y_top_A + h_A_side/2 + p_dy * 0.5, hatchAngle, 10);
+            drawDoubleHatch(x1 + p_dx * 0.5 + 20, y_top_A + h_A_side/2 + p_dy * 0.5 - 10, hatchAngle, 10);
+
+            // Hatching on front faces (cross-section)
+            const frontHatchAngle = Math.PI / 4;
+            drawDoubleHatch(x0 + 40, y_interface + 30, frontHatchAngle, 8);
+            drawDoubleHatch(x0 + 70, y_interface + 30, frontHatchAngle, 8);
+            
+            drawDoubleHatch(x0 + 40, y_interface - 30, frontHatchAngle, 8);
+            
+            ctx.lineWidth = 1.5;
+        }
+
+        function drawAnnotations() {
+            // Labels A and B
+            ctx.font = '22px Times New Roman';
+            ctx.fillText('A', x0 - 30, y_top_A + h_A_side / 2 + 8);
+            ctx.fillText('B', x0 - 30, y_interface + h_B / 2 + 8);
+            
+            ctx.font = '18px "KaiTi", "STKaiti", sans-serif';
+
+            // Air gap label
+            ctx.fillText('空气隙', x0 + 40, y_interface + 40);
+            ctx.beginPath();
+            ctx.moveTo(x0 + 70, y_interface + 25);
+            ctx.lineTo(x0 + 110, y_interface + 10);
+            ctx.stroke();
+
+            // Diagonal line in gap
+            ctx.beginPath();
+            ctx.moveTo(x0 + 100, y_interface + 5);
+            ctx.lineTo(x0 + 80, y_interface + 15);
+            ctx.stroke();
+
+            // Thickness d annotation
+            // Arrow
+            ctx.beginPath();
+            ctx.moveTo(cx, y_interface);
+            ctx.lineTo(cx, y_interface + d);
+            ctx.stroke();
+            ctx.beginPath(); // Top arrowhead
+            ctx.moveTo(cx - 4, y_interface + 5);
+            ctx.lineTo(cx, y_interface);
+            ctx.lineTo(cx + 4, y_interface + 5);
+            ctx.stroke();
+            ctx.beginPath(); // Bottom arrowhead
+            ctx.moveTo(cx - 4, y_interface + d - 5);
+            ctx.lineTo(cx, y_interface + d);
+            ctx.lineTo(cx + 4, y_interface + d - 5);
+            ctx.stroke();
+
+            // Label d
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.fillText('d', cx + 10, y_interface + d / 2 + 8);
+            
+            // Dashed center line
+            ctx.beginPath();
+            ctx.setLineDash([4, 4]);
+            ctx.moveTo(cx, y_interface + d);
+            ctx.lineTo(cx, y_bottom_B + 40);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawTitle() {
+            ctx.font = '22px "KaiTi", "STKaiti", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('习题 12-22 图', canvas.width / 2, canvas.height - 30);
+            ctx.textAlign = 'start';
+        }
+
+        // --- Main Drawing Call ---
+        drawBlockB();
+        drawBlockA();
+        drawHatching();
+        drawAnnotations();
+        drawTitle();
+
+    </script>
+</body>
+</html>

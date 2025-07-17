@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Optical Coherence Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="650" height="450" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Helper function for drawing arrowheads on lines/arcs
+    function drawArrowhead(ctx, x, y, angle) {
+        const headlen = 10;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headlen, headlen / 2.5);
+        ctx.lineTo(-headlen, -headlen / 2.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+    
+    // Helper function for drawing arrowheads on axis lines
+    function drawLineArrow(ctx, x, y, angle) {
+        const headlen = 10;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - headlen * Math.cos(angle - Math.PI / 6), y - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(x - headlen * Math.cos(angle + Math.PI / 6), y - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    // Coordinates
+    const s_center = { x: 150, y: 220 };
+    const s_radius_x = 30;
+    const s_radius_y = 90;
+    const p1 = { x: 500, y: 220 };
+
+    // --- Draw Source S and its axes ---
+    // The disk
+    ctx.beginPath();
+    ctx.ellipse(s_center.x, s_center.y, s_radius_x, s_radius_y, 0, 0, 2 * Math.PI);
+    ctx.fillStyle = '#cccccc';
+    ctx.fill();
+    ctx.fillStyle = 'black';
+    ctx.stroke();
+
+    // Axes at S
+    // y-axis
+    ctx.beginPath();
+    ctx.moveTo(s_center.x, s_center.y + s_radius_y + 20);
+    ctx.lineTo(s_center.x, s_center.y - s_radius_y - 20);
+    ctx.stroke();
+    drawLineArrow(ctx, s_center.x, s_center.y - s_radius_y - 20, -Math.PI / 2);
+    ctx.fillText('y', s_center.x - 20, s_center.y - s_radius_y - 30);
+
+    // x-axis
+    const s_x_axis_end = { x: s_center.x + 90, y: s_center.y - 25 };
+    ctx.beginPath();
+    ctx.moveTo(s_center.x, s_center.y);
+    ctx.lineTo(s_x_axis_end.x, s_x_axis_end.y);
+    ctx.stroke();
+    drawLineArrow(ctx, s_x_axis_end.x, s_x_axis_end.y, Math.atan2(s_x_axis_end.y - s_center.y, s_x_axis_end.x - s_center.x));
+    ctx.fillText('x', s_x_axis_end.x + 15, s_x_axis_end.y);
+
+    // Label S
+    ctx.fillText('S', s_center.x - s_radius_x - 35, s_center.y);
+
+    // --- Draw P1, P2 and their system ---
+    // Axes at P1
+    // y-axis
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y + 100);
+    ctx.lineTo(p1.x, p1.y - 100);
+    ctx.stroke();
+    drawLineArrow(ctx, p1.x, p1.y - 100, -Math.PI / 2);
+    ctx.fillText('y', p1.x - 20, p1.y - 110);
+
+    // x-axis
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p1.x + 120, p1.y);
+    ctx.stroke();
+    drawLineArrow(ctx, p1.x + 120, p1.y, 0);
+    ctx.fillText('x', p1.x + 130, p1.y);
+
+    // z-axis
+    const z_axis_end = { x: p1.x + 80, y: p1.y + 50 };
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(z_axis_end.x, z_axis_end.y);
+    ctx.stroke();
+    drawLineArrow(ctx, z_axis_end.x, z_axis_end.y, Math.atan2(z_axis_end.y - p1.y, z_axis_end.x - p1.x));
+    ctx.fillText('z', z_axis_end.x + 15, z_axis_end.y);
+
+    // Point P1
+    ctx.beginPath();
+    ctx.arc(p1.x, p1.y, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('P', p1.x - 20, p1.y - 15);
+    ctx.font = 'italic 14px Times New Roman';
+    ctx.fillText('1', p1.x - 12, p1.y - 10);
+    ctx.font = 'italic 20px Times New Roman';
+
+    // Point P2
+    const p2_dist = 70;
+    const p2 = { x: p1.x + p2_dist, y: p1.y };
+    ctx.beginPath();
+    ctx.arc(p2.x, p2.y, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('P', p2.x + 15, p2.y - 15);
+    ctx.font = 'italic 14px Times New Roman';
+    ctx.fillText('2', p2.x + 23, p2.y - 10);
+    ctx.font = 'italic 20px Times New Roman';
+
+    // Label Lc
+    const lc_y = p1.y + 60;
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p1.x, lc_y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(p2.x, p2.y);
+    ctx.lineTo(p2.x, lc_y);
+    ctx.stroke();
+    ctx.restore();
+
+    // Double arrow for Lc
+    ctx.beginPath();
+    ctx.moveTo(p1.x, lc_y);
+    ctx.lineTo(p2.x, lc_y);
+    ctx.stroke();
+    drawLineArrow(ctx, p1.x, lc_y, Math.PI);
+    drawLineArrow(ctx, p2.x, lc_y, 0);
+    ctx.fillText('L', p1.x + p2_dist / 2, lc_y + 20);
+    ctx.font = 'italic 14px Times New Roman';
+    ctx.fillText('c', p1.x + p2_dist / 2 + 8, lc_y + 25);
+    ctx.font = 'italic 20px Times New Roman';
+
+    // --- Draw rays, angles, and distances ---
+    // Rays from S to P1
+    const top_of_S = { x: s_center.x, y: s_center.y - s_radius_y };
+    const bottom_of_S = { x: s_center.x, y: s_center.y + s_radius_y };
+    ctx.beginPath();
+    ctx.moveTo(top_of_S.x, top_of_S.y);
+    ctx.lineTo(p1.x, p1.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(bottom_of_S.x, bottom_of_S.y);
+    ctx.lineTo(p1.x, p1.y);
+    ctx.stroke();
+
+    // Distance z
+    const z_y = 360;
+    ctx.beginPath();
+    ctx.moveTo(s_center.x, z_y - 10);
+    ctx.lineTo(s_center.x, z_y + 10);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(p1.x, z_y - 10);
+    ctx.lineTo(p1.x, z_y + 10);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(s_center.x, z_y);
+    ctx.lineTo(p1.x, z_y);
+    ctx.stroke();
+    drawLineArrow(ctx, s_center.x, z_y, Math.PI);
+    drawLineArrow(ctx, p1.x, z_y, 0);
+    ctx.fillText('z', (s_center.x + p1.x) / 2, z_y + 25);
+
+    // Angle 2theta
+    const top_ray_angle = Math.atan2(top_of_S.y - p1.y, top_of_S.x - p1.x); // in Q3
+    const bottom_ray_angle = Math.atan2(bottom_of_S.y - p1.y, bottom_of_S.x - p1.x); // in Q2
+    const angle_arc_radius = 100;
+    ctx.beginPath();
+    ctx.arc(p1.x, p1.y, angle_arc_radius, bottom_ray_angle, top_ray_angle);
+    ctx.stroke();
+    // Arrows on arc, pointing away from each other
+    const arrow_pos_1 = {x: p1.x + angle_arc_radius * Math.cos(bottom_ray_angle), y: p1.y + angle_arc_radius * Math.sin(bottom_ray_angle)};
+    const arrow_pos_2 = {x: p1.x + angle_arc_radius * Math.cos(top_ray_angle), y: p1.y + angle_arc_radius * Math.sin(top_ray_angle)};
+    drawArrowhead(ctx, arrow_pos_1.x, arrow_pos_1.y, bottom_ray_angle - Math.PI/2);
+    drawArrowhead(ctx, arrow_pos_2.x, arrow_pos_2.y, top_ray_angle + Math.PI/2);
+    ctx.fillText('2θ', p1.x - 140, p1.y);
+
+    // Small angle near source
+    const small_angle_arc_radius = 60;
+    const central_axis_angle = Math.atan2(p1.y - s_center.y, p1.x - s_center.x); // angle = 0
+    const bottom_ray_s_angle = Math.atan2(p1.y - bottom_of_S.y, p1.x - bottom_of_S.x); // in Q4
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(s_center.x, s_center.y, small_angle_arc_radius, bottom_ray_s_angle, central_axis_angle, false);
+    ctx.stroke();
+    // Arrow on this arc, pointing along the arc towards the central axis (CCW)
+    const arrow_pos_3 = {x: s_center.x + small_angle_arc_radius * Math.cos(bottom_ray_s_angle), y: s_center.y + small_angle_arc_radius * Math.sin(bottom_ray_s_angle)};
+    drawArrowhead(ctx, arrow_pos_3.x, arrow_pos_3.y, bottom_ray_s_angle + Math.PI/2);
+    ctx.restore();
+
+</script>
+</body>
+</html>

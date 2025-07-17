@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="700" height="520"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw filled arrowheads
+    function drawArrowhead(x, y, angle, size = 10) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.lineTo(-size, size / 2);
+        ctx.closePath();
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+
+    // 1. D-shaped chamber
+    const chamberCenterX = 350;
+    const chamberTopY = 180;
+    const chamberRadius = 250;
+    const chamberLeftX = chamberCenterX - chamberRadius;
+    const chamberRightX = chamberCenterX + chamberRadius;
+    
+    ctx.fillStyle = '#E0E0E0'; // Light grey fill
+    ctx.strokeStyle = '#505050'; // Dark grey stroke
+    ctx.lineWidth = 6;
+
+    ctx.beginPath();
+    ctx.moveTo(chamberLeftX, chamberTopY);
+    ctx.lineTo(chamberRightX, chamberTopY);
+    ctx.arc(chamberCenterX, chamberTopY, chamberRadius, 0, Math.PI, false);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // 2. Velocity Selector
+    const selectorTopY = 100;
+    const selectorWidth = 60;
+    const selectorLeftX = 140;
+    const selectorRightX = selectorLeftX + selectorWidth;
+    const slitWidth = 10;
+    const slitCenterX = selectorLeftX + selectorWidth / 2;
+
+    ctx.beginPath();
+    ctx.moveTo(selectorLeftX, chamberTopY);
+    ctx.lineTo(selectorLeftX, selectorTopY);
+    ctx.lineTo(slitCenterX - slitWidth / 2, selectorTopY);
+    ctx.moveTo(slitCenterX + slitWidth / 2, selectorTopY);
+    ctx.lineTo(selectorRightX, selectorTopY);
+    ctx.lineTo(selectorRightX, chamberTopY);
+    ctx.moveTo(slitCenterX + slitWidth / 2, chamberTopY); // Bottom slit
+    ctx.lineTo(selectorLeftX, chamberTopY); // completes bottom left
+    ctx.stroke();
+
+    // 3. Particle Path (Dashed line)
+    const pathEntryX = slitCenterX;
+    const pathDiameter = 400;
+    const pathRadius = pathDiameter / 2;
+    const pathExitX = pathEntryX + pathDiameter;
+    const pathCenter = { x: pathEntryX + pathRadius, y: chamberTopY };
+
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 8]);
+
+    ctx.beginPath();
+    // Vertical part
+    ctx.moveTo(pathEntryX, 70);
+    ctx.lineTo(pathEntryX, chamberTopY);
+    // Semicircular part
+    ctx.arc(pathCenter.x, pathCenter.y, pathRadius, Math.PI, 0, false);
+    ctx.stroke();
+
+    ctx.setLineDash([]); // Reset to solid line
+
+    // 4. Arrows on the path
+    // Arrow on vertical part
+    drawArrowhead(pathEntryX, 130, Math.PI / 2);
+
+    // Arrows on the curve (placed visually to match diagram)
+    // First arrow (down-right)
+    drawArrowhead(240, 335, 3 * Math.PI / 4 + 0.2); 
+    // Second arrow (right)
+    drawArrowhead(370, 380, 0); 
+    // Third arrow (up-right)
+    drawArrowhead(500, 335, -Math.PI / 4 - 0.2); 
+
+    // 5. Dimension Line ("15.0 cm")
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'black';
+    const dimY = chamberTopY - 15;
+    
+    ctx.beginPath();
+    // Ticks
+    ctx.moveTo(pathEntryX, dimY - 5);
+    ctx.lineTo(pathEntryX, dimY + 5);
+    ctx.moveTo(pathExitX, dimY - 5);
+    ctx.lineTo(pathExitX, dimY + 5);
+    // Horizontal line
+    ctx.moveTo(pathEntryX, dimY);
+    ctx.lineTo(pathExitX, dimY);
+    ctx.stroke();
+    
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillStyle = 'black';
+    ctx.fillText('15.0 cm', pathCenter.x, dimY - 5);
+    
+    // 6. Labels and Leader Lines
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    
+    // "velocity selector"
+    ctx.fillText('velocity', 20, 110);
+    ctx.fillText('selector', 20, 130);
+    ctx.beginPath();
+    ctx.moveTo(95, 120);
+    ctx.lineTo(selectorLeftX, 120);
+    ctx.stroke();
+
+    // "path of charged particle"
+    ctx.fillText('path of charged particle', 400, 50);
+    ctx.beginPath();
+    ctx.setLineDash([4, 4]);
+    ctx.moveTo(395, 50);
+    ctx.lineTo(pathEntryX + 15, 50);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Arrowhead for this leader line
+    ctx.beginPath();
+    ctx.moveTo(pathEntryX + 20, 50);
+    ctx.lineTo(pathEntryX + 10, 46);
+    ctx.moveTo(pathEntryX + 20, 50);
+    ctx.lineTo(pathEntryX + 10, 54);
+    ctx.stroke();
+
+    // "uniform magnetic field into page"
+    ctx.textAlign = 'right';
+    ctx.fillText('uniform', 650, 400);
+    ctx.fillText('magnetic field', 650, 420);
+    ctx.fillText('into page', 650, 440);
+    ctx.beginPath();
+    ctx.moveTo(540, 420);
+    ctx.lineTo(chamberRightX - 50, chamberTopY + chamberRadius/2 + 50);
+    ctx.stroke();
+    
+    // "Fig. 8.1"
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Fig. 8.1', chamberCenterX, chamberTopY + chamberRadius + 30);
+
+</script>
+</body>
+</html>

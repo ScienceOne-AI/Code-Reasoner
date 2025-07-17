@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram 4.24.1</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="550" height="420"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        const baseFont = '20px Arial';
+        const subscriptFont = '14px Arial';
+        const labelFont = '24px Arial';
+
+        // Helper function to draw text with a subscript
+        function drawSubscriptText(text, sub, x, y, font, subFont) {
+            ctx.font = font;
+            const textMetrics = ctx.measureText(text);
+            ctx.fillText(text, x, y);
+            ctx.font = subFont;
+            ctx.fillText(sub, x + textMetrics.width - 2, y + 5);
+        }
+
+        // Helper function to draw a resistor
+        function drawResistor(x, y, w, h, label, labelSub, labelPos) {
+            // Clear the wire path underneath the resistor
+            ctx.fillStyle = 'white';
+            if (w > h) { // Horizontal resistor
+                ctx.fillRect(x - 1, y - h / 2 - 1, w + 2, h + 2);
+            } else { // Vertical resistor
+                ctx.fillRect(x - w / 2 - 1, y - 1, w + 2, h + 2);
+            }
+            
+            // Draw the resistor box
+            ctx.strokeStyle = 'black';
+            if (w > h) { // Horizontal resistor
+                ctx.strokeRect(x, y - h / 2, w, h);
+            } else { // Vertical resistor
+                ctx.strokeRect(x - w / 2, y, w, h);
+            }
+
+            // Draw the label
+            ctx.fillStyle = 'black';
+            let labelX, labelY;
+            if (w > h) { // Horizontal
+                labelX = x + w / 2 - 5;
+                if (labelPos === 'top') {
+                    labelY = y - h / 2 - 8;
+                } else { // bottom
+                    labelY = y + h / 2 + 20;
+                }
+            } else { // Vertical
+                labelY = y + h / 2 + 5;
+                if (labelPos === 'right') {
+                    labelX = x + w / 2 + 8;
+                } else { // left
+                    labelX = x - w / 2 - 20;
+                }
+            }
+            drawSubscriptText(label, labelSub, labelX, labelY, baseFont, subscriptFont);
+        }
+
+        // --- Main Drawing ---
+
+        // Define coordinates
+        const xL = 100;
+        const xM = 250;
+        const xR = 400;
+        const yT = 80;
+        const yB = 200;
+        const yMid = (yT + yB) / 2;
+        const yBatt = 320;
+        const xBatt = 250;
+        const resW_h = 70; // horizontal resistor width
+        const resH_h = 25; // horizontal resistor height
+        const resW_v = 25; // vertical resistor width
+        const resH_v = 70; // vertical resistor height
+        const ammeterR = 20;
+        const ammeterX = xR + 50;
+        const ammeterY = yMid;
+
+        // Draw wires
+        ctx.beginPath();
+        // Bridge structure
+        ctx.moveTo(xL, yT); ctx.lineTo(xR, yT); // Top wire
+        ctx.moveTo(xL, yB); ctx.lineTo(xR, yB); // Bottom wire
+        ctx.moveTo(xL, yT); ctx.lineTo(xL, yB); // Left wire (at A)
+        ctx.moveTo(xM, yT); ctx.lineTo(xM, yB); // Middle wire (for r2)
+        ctx.moveTo(xR, yT); ctx.lineTo(xR, yB); // Right wire (at B)
+
+        // Main circuit loop
+        // From battery to A
+        ctx.moveTo(xBatt - 20, yBatt);
+        ctx.lineTo(50, yBatt);
+        ctx.lineTo(50, yMid);
+        ctx.lineTo(xL, yMid);
+
+        // From B to Ammeter and back to battery
+        ctx.moveTo(xR, yMid);
+        ctx.lineTo(ammeterX - ammeterR, ammeterY);
+        ctx.moveTo(ammeterX + ammeterR, ammeterY);
+        ctx.lineTo(ammeterX + 50, ammeterY);
+        ctx.lineTo(ammeterX + 50, yBatt);
+        ctx.lineTo(xBatt + 20, yBatt);
+        ctx.stroke();
+
+        // Draw Resistors
+        // Top-left r
+        drawResistor(xL + (xM - xL - resW_h) / 2, yT, resW_h, resH_h, 'r', '', 'top');
+        // Bottom-left r
+        drawResistor(xL + (xM - xL - resW_h) / 2, yB, resW_h, resH_h, 'r', '', 'bottom');
+        // r1
+        drawResistor(xM + (xR - xM - resW_h) / 2, yT, resW_h, resH_h, 'r', '1', 'top');
+        // r3
+        drawResistor(xM + (xR - xM - resW_h) / 2, yB, resW_h, resH_h, 'r', '3', 'bottom');
+        // r2 (vertical)
+        drawResistor(xM, yT + (yB - yT - resH_v) / 2, resW_v, resH_v, 'r', '2', 'right');
+
+        // Draw Ammeter
+        ctx.beginPath();
+        ctx.arc(ammeterX, ammeterY, ammeterR, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.font = labelFont;
+        ctx.fillText('A', ammeterX - 8, ammeterY + 9);
+
+        // Draw Battery
+        ctx.beginPath();
+        // Positive plate (long)
+        ctx.moveTo(xBatt + 20, yBatt - 20);
+        ctx.lineTo(xBatt + 20, yBatt + 20);
+        // Negative plate (short)
+        ctx.moveTo(xBatt - 20, yBatt - 12);
+        ctx.lineTo(xBatt - 20, yBatt + 12);
+        ctx.stroke();
+        
+        // Draw Labels
+        // A and B points
+        ctx.font = labelFont;
+        ctx.fillText('A', xL - 40, yMid + 8);
+        ctx.fillText('B', xR + 10, yMid + 8);
+
+        // EMF symbol ε
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('ℰ', xBatt - 25, yBatt + 40);
+
+        // Caption
+        ctx.font = '22px "SimSun", "Microsoft YaHei", sans-serif';
+        ctx.fillText('电图 4.24.1', 200, 390);
+
+    </script>
+</body>
+</html>

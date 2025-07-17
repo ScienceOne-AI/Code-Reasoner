@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Physics Diagram</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    canvas {
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="450" height="600"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.translate(0.5, 0.5); // For sharper lines
+
+  // --- Style and Font ---
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 1.5;
+  const baseFont = '22px serif';
+  const italicFont = 'italic 22px serif';
+
+  // --- Parameters ---
+  const centerX = 225;
+  const pivotY = 100;
+  const rodLengthL = 360;
+  const rodWidth = 20;
+  const pointAY = pivotY + (3 / 4) * rodLengthL;
+
+  // --- Helper function for drawing an arrow at the end of a line ---
+  function drawArrow(ctx, x1, y1, x2, y2, size = 8) {
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.save();
+    ctx.translate(x2, y2);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, -size / 2.5);
+    ctx.lineTo(-size, size / 2.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // --- Helper function for drawing a vertical dimension line with arrows ---
+  function drawDimensionLineWithArrows(ctx, x, y1, y2, size = 8) {
+    // Vertical line
+    ctx.beginPath();
+    ctx.moveTo(x, y1);
+    ctx.lineTo(x, y2);
+    ctx.stroke();
+
+    // Top arrowhead (points up)
+    ctx.save();
+    ctx.translate(x, y1);
+    ctx.rotate(-Math.PI / 2);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, -size / 2.5);
+    ctx.lineTo(-size, size / 2.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Bottom arrowhead (points down)
+    ctx.save();
+    ctx.translate(x, y2);
+    ctx.rotate(Math.PI / 2);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, -size / 2.5);
+    ctx.lineTo(-size, size / 2.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // 1. Draw Ceiling Support
+  ctx.save();
+  ctx.fillStyle = '#f0f0f0';
+  ctx.fillRect(centerX - 120, pivotY - 60, 240, 20);
+  ctx.strokeRect(centerX - 120, pivotY - 60, 240, 20);
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = centerX - 115; i < centerX + 120; i += 10) {
+    ctx.moveTo(i, pivotY - 60);
+    ctx.lineTo(i - 10, pivotY - 40);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  // 2. Draw Pivot (O)
+  ctx.lineWidth = 1.5;
+  // Support structure
+  ctx.beginPath();
+  ctx.moveTo(centerX - 20, pivotY - 40);
+  ctx.lineTo(centerX, pivotY - 5);
+  ctx.lineTo(centerX + 20, pivotY - 40);
+  ctx.stroke();
+  // Pivot circle
+  ctx.beginPath();
+  ctx.arc(centerX, pivotY, 6, 0, 2 * Math.PI);
+  ctx.fillStyle = 'white';
+  ctx.fill();
+  ctx.stroke();
+  // Pivot label
+  ctx.fillStyle = 'black';
+  ctx.font = italicFont;
+  ctx.fillText('O', centerX - 35, pivotY + 10);
+
+  // 3. Draw Rod
+  ctx.strokeRect(centerX - rodWidth / 2, pivotY, rodWidth, rodLengthL);
+
+  // 4. Draw Point A
+  ctx.beginPath();
+  ctx.arc(centerX, pointAY, 3.5, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.font = italicFont;
+  ctx.fillText('A', centerX + 15, pointAY + 8);
+
+  // 5. Draw Bullet and its labels
+  const bulletY = pointAY;
+  const bulletTipX = centerX - rodWidth / 2 - 25;
+  const bulletBodyLength = 18;
+  const bulletTipLength = 7;
+  
+  // Bullet shape
+  ctx.fillRect(bulletTipX - bulletBodyLength, bulletY - 5, bulletBodyLength, 10); // main body
+  ctx.fillRect(bulletTipX - bulletBodyLength - bulletTipLength, bulletY - 3.5, bulletTipLength, 7); // tip
+
+  // Velocity arrow and its horizontal guide line
+  const arrowStartX = 60;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(arrowStartX, bulletY);
+  ctx.lineTo(bulletTipX + 5, bulletY);
+  ctx.stroke();
+  ctx.lineWidth = 1.5;
+  drawArrow(ctx, arrowStartX, bulletY, bulletTipX, bulletY, 8);
+  
+  // Labels for bullet
+  ctx.font = italicFont;
+  ctx.fillText('v', 90, bulletY - 12);
+  ctx.fillText('m', 90, bulletY + 28);
+
+  // 6. Draw Dimension Lines
+  ctx.lineWidth = 1;
+
+  // Dimension for 'l'
+  const dimRX = centerX + 100;
+  ctx.beginPath();
+  ctx.moveTo(centerX, pivotY);
+  ctx.lineTo(dimRX, pivotY);
+  ctx.moveTo(centerX, pivotY + rodLengthL);
+  ctx.lineTo(dimRX, pivotY + rodLengthL);
+  ctx.stroke();
+  drawDimensionLineWithArrows(ctx, dimRX, pivotY, pivotY + rodLengthL, 8);
+  ctx.font = italicFont;
+  ctx.fillText('l', dimRX + 15, pivotY + rodLengthL / 2);
+
+  // Dimension for '3/4 l'
+  const dimLX = 50;
+  ctx.beginPath();
+  ctx.moveTo(centerX, pivotY);
+  ctx.lineTo(dimLX, pivotY);
+  // The horizontal line at level A is already drawn as part of the bullet's path
+  ctx.stroke();
+  drawDimensionLineWithArrows(ctx, dimLX, pivotY, pointAY, 8);
+  
+  // Fraction label
+  const fracY = pivotY + (pointAY - pivotY) / 2;
+  const fracX = dimLX - 20;
+  ctx.textAlign = 'center';
+  ctx.font = baseFont;
+  ctx.fillText('3', fracX, fracY - 5);
+  ctx.beginPath();
+  ctx.moveTo(fracX - 12, fracY);
+  ctx.lineTo(fracX + 12, fracY);
+  ctx.stroke();
+  ctx.fillText('4', fracX, fracY + 22);
+  ctx.font = italicFont;
+  ctx.textAlign = 'left';
+  ctx.fillText('l', fracX + 18, fracY + 12);
+  
+  ctx.textAlign = 'start'; // Reset alignment
+
+  // 7. Draw Bottom Text
+  ctx.font = '24px "Songti SC", "SimSun", serif';
+  ctx.fillStyle = '#333';
+  ctx.textAlign = 'center';
+  ctx.fillText('习题 3-22 图', centerX, canvas.height - 30);
+</script>
+</body>
+</html>

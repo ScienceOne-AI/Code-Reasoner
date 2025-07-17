@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electron in Magnetic Field</title>
+    <style>
+        body { margin: 20px; display: flex; justify-content: center; align-items: center; background-color: #f8f9fa; }
+        canvas { border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="750" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'center';
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            ctx.save();
+            ctx.translate(tox, toy);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headlen, headlen / 2);
+            ctx.lineTo(-headlen, -headlen / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Helper function to draw a dashed line
+        function drawDashedLine(ctx, x1, y1, x2, y2, dashLen = 5) {
+            ctx.beginPath();
+            ctx.setLineDash([dashLen, dashLen]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset to solid line
+        }
+
+        // 1. Magnetic Field Region
+        const regionX = 400;
+        const regionY = 80;
+        const regionW = 350;
+        const regionH = 320;
+        ctx.fillStyle = '#E0E0E0';
+        ctx.fillRect(regionX, regionY, regionW, regionH);
+        
+        // Magnetic field lines
+        ctx.lineWidth = 1;
+        const fieldLinesY = [140, 240, 340];
+        fieldLinesY.forEach(y => {
+            const startX = regionX;
+            const endX = regionX + regionW;
+            ctx.beginPath();
+            ctx.moveTo(startX, y);
+            ctx.lineTo(endX, y);
+            ctx.stroke();
+            drawArrow(ctx, startX, y, startX + 150, y, 8); // Arrow in the middle
+        });
+        ctx.lineWidth = 1.5;
+
+        // 2. Electron and its path
+        const entryPoint = { x: regionX, y: 240 };
+        const angle = 30 * Math.PI / 180;
+        const startPoint = { x: 150, y: entryPoint.y + (entryPoint.x - 150) * Math.tan(angle) };
+
+        // Draw electron dot
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(startPoint.x, startPoint.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Draw velocity vector (line and arrow)
+        const dx = entryPoint.x - startPoint.x;
+        const dy = entryPoint.y - startPoint.y;
+        const pathLen = Math.sqrt(dx*dx + dy*dy);
+        const arrowLen = 20; // Length of the solid arrow part
+        const arrowEndPoint = {
+            x: entryPoint.x - arrowLen * Math.cos(angle),
+            y: entryPoint.y + arrowLen * Math.sin(angle)
+        };
+        drawArrow(ctx, startPoint.x, startPoint.y, arrowEndPoint.x, arrowEndPoint.y, 12);
+        
+        // Draw the rest of the path to the entry point
+        ctx.beginPath();
+        ctx.moveTo(arrowEndPoint.x, arrowEndPoint.y);
+        ctx.lineTo(entryPoint.x, entryPoint.y);
+        ctx.stroke();
+
+        // 3. Angle indication (geometrically correct version)
+        const vertex = entryPoint;
+        const dashLen = 100;
+        // Horizontal dashed line (direction of B)
+        drawDashedLine(ctx, vertex.x, vertex.y, vertex.x - dashLen, vertex.y);
+        // Sloped dashed line (extension of v)
+        drawDashedLine(ctx, vertex.x, vertex.y, vertex.x - dashLen * Math.cos(angle), vertex.y - dashLen * Math.sin(angle));
+
+        // Angle arc
+        ctx.beginPath();
+        ctx.arc(vertex.x, vertex.y, 50, -angle, 0);
+        ctx.stroke();
+
+        // Angle text
+        ctx.font = '16px Arial';
+        ctx.fillText("30°", vertex.x - 30, vertex.y - 15);
+        
+        // 4. Labels
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText("electron", 120, 360);
+        ctx.fillText("speed 3.4 \u00d7 10\u2077 ms\u207b\u00b9", 150, 385);
+        
+        ctx.textAlign = 'left';
+        ctx.fillText("region of uniform", 480, 50);
+        ctx.fillText("magnetic flux", 480, 70);
+        ctx.fillText("density 3.2 mT", 480, 90);
+        
+        ctx.beginPath();
+        ctx.moveTo(480, 100);
+        ctx.lineTo(450, 130);
+        ctx.stroke();
+
+        ctx.textAlign = 'center';
+        ctx.fillText("Fig. 8.1", canvas.width / 2, 480);
+    </script>
+</body>
+</html>

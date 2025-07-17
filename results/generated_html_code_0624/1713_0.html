@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 20px Times New Roman';
+
+        // Parameters
+        const centerX = canvas.width / 2;
+        const groundY = 370;
+        const wedgeBase = 320;
+        const wedgeAngleRad = Math.PI / 6; // 30 degrees
+
+        // Wedge vertices
+        const wedgeRightX = centerX + 140;
+        const wedgeLeftX = wedgeRightX - wedgeBase;
+        const wedgeHeight = wedgeBase * Math.tan(wedgeAngleRad);
+        const wedgeTopY = groundY - wedgeHeight;
+
+        // --- Start Drawing ---
+
+        // 1. Ground
+        ctx.save();
+        ctx.strokeStyle = '#808080';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(20, groundY);
+        ctx.lineTo(canvas.width - 20, groundY);
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Inclined Plane (Wedge)
+        ctx.beginPath();
+        ctx.moveTo(wedgeLeftX, groundY);
+        ctx.lineTo(wedgeRightX, groundY);
+        ctx.lineTo(wedgeLeftX, wedgeTopY);
+        ctx.closePath();
+        ctx.stroke();
+
+        // 3. Angle theta
+        ctx.beginPath();
+        ctx.arc(wedgeRightX, groundY, 40, -wedgeAngleRad, 0);
+        ctx.stroke();
+        ctx.fillText('θ', wedgeRightX - 50, groundY - 15);
+
+        // 4. Ball
+        const ballRadius = 22;
+        // Position the ball on the slope
+        // Let's place it at t=0.5 (midpoint) from top of slope
+        const slopeLength = Math.sqrt(wedgeBase*wedgeBase + wedgeHeight*wedgeHeight);
+        const distFromTop = slopeLength * 0.4;
+        const pointOnSlopeX = wedgeLeftX + distFromTop * Math.cos(wedgeAngleRad);
+        const pointOnSlopeY = wedgeTopY + distFromTop * Math.sin(wedgeAngleRad);
+
+        const ballCenterX = pointOnSlopeX + ballRadius * Math.sin(wedgeAngleRad);
+        const ballCenterY = pointOnSlopeY - ballRadius * Math.cos(wedgeAngleRad);
+
+        // Draw the ball with a 3D effect
+        const gradient = ctx.createRadialGradient(
+            ballCenterX - ballRadius * 0.4, ballCenterY - ballRadius * 0.4, ballRadius * 0.1,
+            ballCenterX, ballCenterY, ballRadius
+        );
+        gradient.addColorStop(0, '#e0e0e0');
+        gradient.addColorStop(1, '#606060');
+        ctx.fillStyle = gradient;
+        
+        ctx.beginPath();
+        ctx.arc(ballCenterX, ballCenterY, ballRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke(); // Add a black outline to the ball
+
+        // 5. Rod connecting ball to peg
+        const rodLength = 100;
+        const rodEndX = ballCenterX - rodLength * Math.cos(wedgeAngleRad);
+        const rodEndY = ballCenterY - rodLength * Math.sin(wedgeAngleRad);
+
+        // In the original, the rod is depicted with two parallel lines. Let's simulate that with a thicker line.
+        ctx.save();
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(ballCenterX, ballCenterY);
+        ctx.lineTo(rodEndX, rodEndY);
+        ctx.stroke();
+        ctx.restore();
+        
+        // 6. Peg
+        ctx.save();
+        ctx.fillStyle = '#606060';
+        ctx.translate(rodEndX, rodEndY);
+        ctx.rotate(- (Math.PI / 2 - wedgeAngleRad));
+        ctx.fillRect(-15, -4, 30, 8);
+        ctx.restore();
+
+        // 7. Acceleration arrow 'a'
+        const arrowStartY = wedgeTopY + (groundY - wedgeTopY) * 0.6;
+        const arrowStartX = wedgeLeftX;
+        const arrowEndX = wedgeLeftX - 60;
+        
+        // Vertical line indicating the reference frame
+        ctx.beginPath();
+        ctx.moveTo(arrowStartX, arrowStartY - 15);
+        ctx.lineTo(arrowStartX, arrowStartY + 15);
+        ctx.stroke();
+
+        // Arrow shaft
+        ctx.beginPath();
+        ctx.moveTo(arrowStartX, arrowStartY);
+        ctx.lineTo(arrowEndX, arrowStartY);
+        ctx.stroke();
+        
+        // Arrow head
+        ctx.beginPath();
+        ctx.moveTo(arrowEndX, arrowStartY);
+        ctx.lineTo(arrowEndX + 10, arrowStartY - 6);
+        ctx.moveTo(arrowEndX, arrowStartY);
+        ctx.lineTo(arrowEndX + 10, arrowStartY + 6);
+        ctx.stroke();
+
+        // Label 'a'
+        ctx.fillStyle = 'black';
+        ctx.fillText('a', (arrowStartX + arrowEndX) / 2, arrowStartY - 12);
+
+
+        // 8. Caption
+        ctx.font = '24px KaiTi'; // A common font for Chinese characters
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 1-41 图', centerX, canvas.height - 20);
+
+    </script>
+</body>
+</html>

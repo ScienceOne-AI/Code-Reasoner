@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450" style="border:1px solid #000;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const Ax = 100;
+    const Ay = 150;
+    const d = 400;
+    const b = 150;
+    const Bx = Ax + d;
+    const By = Ay;
+    const Cx = Ax + d / 2;
+    const Cy = Ay + b;
+    
+    // --- Global Styles ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = "italic 24px 'Times New Roman'";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws a hinged support with a hatched ground.
+     * @param {number} x - The x-coordinate of the pin.
+     * @param {number} y - The y-coordinate of the pin.
+     */
+    function drawSupport(x, y) {
+        const groundLineY = y - 30;
+        const armX = 15;
+        const groundWidth = 35;
+
+        ctx.beginPath();
+        // Y-shaped bracket
+        ctx.moveTo(x - armX, groundLineY);
+        ctx.lineTo(x, y);
+        ctx.lineTo(x + armX, groundLineY);
+        ctx.stroke();
+        
+        // Ground line
+        ctx.beginPath();
+        ctx.moveTo(x - groundWidth, groundLineY);
+        ctx.lineTo(x + groundWidth, groundLineY);
+        ctx.stroke();
+        
+        // Hatching
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let i = -groundWidth; i <= groundWidth; i += 8) {
+            ctx.moveTo(x + i, groundLineY);
+            ctx.lineTo(x + i - 8, groundLineY - 10);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    /**
+     * Draws a rod with thickness (as two parallel lines).
+     * @param {number} p1x - Start point x.
+     * @param {number} p1y - Start point y.
+     * @param {number} p2x - End point x.
+     * @param {number} p2y - End point y.
+     * @param {number} thickness - The thickness of the rod.
+     */
+    function drawDoubleRod(p1x, p1y, p2x, p2y, thickness) {
+        const w = thickness / 2;
+        const dx = p2x - p1x;
+        const dy = p2y - p1y;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        const udx = dx / len;
+        const udy = dy / len;
+        const px = -udy; // Perpendicular vector component x
+        const py = udx;  // Perpendicular vector component y
+        
+        ctx.beginPath();
+        ctx.moveTo(p1x + w * px, p1y + w * py);
+        ctx.lineTo(p2x + w * px, p2y + w * py);
+        ctx.moveTo(p1x - w * px, p1y - w * py);
+        ctx.lineTo(p2x - w * px, p2y - w * py);
+        ctx.stroke();
+    }
+    
+    /**
+     * Draws a pin (hinge).
+     * @param {number} x - The x-coordinate of the pin center.
+     * @param {number} y - The y-coordinate of the pin center.
+     */
+    function drawPin(x, y) {
+        const pinRadius = 7;
+        ctx.beginPath();
+        ctx.arc(x, y, pinRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+    }
+
+    // --- Main Drawing Sequence ---
+
+    // 1. Draw Axes
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.5;
+    // x-axis
+    ctx.beginPath();
+    ctx.moveTo(Ax - 50, Ay);
+    ctx.lineTo(Bx + 50, By);
+    ctx.stroke();
+    // y-axis indicator
+    ctx.beginPath();
+    ctx.moveTo(Ax - 20, Ay + 10);
+    ctx.lineTo(Ax - 20, Ay - 50);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = 'black';
+    ctx.fillText("x", Bx + 60, By);
+    ctx.fillText("y", Ax - 40, Ay - 25);
+    
+    // 2. Draw Supports
+    drawSupport(Ax, Ay);
+    drawSupport(Bx, By);
+    
+    // 3. Draw Rods
+    drawDoubleRod(Ax, Ay, Cx, Cy, 8);
+    drawDoubleRod(Bx, By, Cx, Cy, 8);
+
+    // 4. Draw Weight Q
+    const qSize = 40;
+    const qLinkLength = 30;
+    const qRingRadius = 4;
+    ctx.beginPath();
+    ctx.moveTo(Cx, Cy);
+    ctx.lineTo(Cx, Cy + qLinkLength);
+    ctx.stroke();
+    // Ring
+    ctx.beginPath();
+    ctx.arc(Cx, Cy + qLinkLength + qRingRadius, qRingRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+    // Box
+    ctx.strokeRect(Cx - qSize / 2, Cy + qLinkLength + 2 * qRingRadius, qSize, qSize);
+    ctx.fillText("Q", Cx + qSize / 2 + 15, Cy + qLinkLength + 2 * qRingRadius + qSize / 2);
+
+    // 5. Draw Pins (on top of other elements)
+    drawPin(Ax, Ay);
+    drawPin(Bx, By);
+    drawPin(Cx, Cy);
+
+    // 6. Draw Dimensions
+    ctx.fillStyle = 'black';
+    // Dimension 'd'
+    const dim_d_y = Ay - 60;
+    ctx.beginPath();
+    ctx.moveTo(Ax, dim_d_y);
+    ctx.lineTo(Bx, dim_d_y);
+    // Left tick and outward arrow
+    ctx.moveTo(Ax, dim_d_y - 8);
+    ctx.lineTo(Ax, dim_d_y + 8);
+    ctx.moveTo(Ax, dim_d_y);
+    ctx.lineTo(Ax - 10, dim_d_y - 4);
+    ctx.moveTo(Ax, dim_d_y);
+    ctx.lineTo(Ax - 10, dim_d_y + 4);
+    // Right tick and outward arrow
+    ctx.moveTo(Bx, dim_d_y - 8);
+    ctx.lineTo(Bx, dim_d_y + 8);
+    ctx.moveTo(Bx, dim_d_y);
+    ctx.lineTo(Bx + 10, dim_d_y - 4);
+    ctx.moveTo(Bx, dim_d_y);
+    ctx.lineTo(Bx + 10, dim_d_y + 4);
+    ctx.stroke();
+    ctx.fillText("d", Cx, dim_d_y - 15);
+
+    // Dimension 'b'
+    ctx.beginPath();
+    ctx.moveTo(Cx, Cy);
+    ctx.lineTo(Cx, Ay);
+    // Horizontal tick at C
+    ctx.moveTo(Cx - 8, Cy);
+    ctx.lineTo(Cx + 8, Cy);
+    // Arrow head pointing up
+    ctx.moveTo(Cx, Ay);
+    ctx.lineTo(Cx - 5, Ay + 10);
+    ctx.moveTo(Cx, Ay);
+    ctx.lineTo(Cx + 5, Ay + 10);
+    ctx.stroke();
+    ctx.fillText("b", Cx - 25, Ay + b / 2);
+
+    // 7. Draw Point Labels
+    ctx.fillText("A", Ax - 25, Ay + 5);
+    ctx.fillText("B", Bx + 25, By + 5);
+    ctx.fillText("C", Cx + 20, Cy + 10);
+</script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="myCanvas" width="650" height="450" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById("myCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Style
+    ctx.font = "16px 'Times New Roman'";
+    ctx.fillStyle = "black";
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 1;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // Chart dimensions
+    const xStart = 80;
+    const yStart = 60;
+    const chartWidth = 520;
+    const chartHeight = 300;
+    const xEnd = xStart + chartWidth;
+    const yEnd = yStart + chartHeight;
+
+    // Data ranges
+    const vTildeMin = 2300;
+    const vTildeMax = 2700;
+    const absMin = 20;
+    const absMax = 100;
+
+    // Coordinate mapping functions
+    function mapX(vTilde) {
+        return xStart + chartWidth * (vTildeMax - vTilde) / (vTildeMax - vTildeMin);
+    }
+
+    function mapY(absorption) {
+        // Clamp the absorption value to avoid drawing outside the y-range
+        const clampedAbs = Math.max(absMin, Math.min(absMax, absorption));
+        return yStart + chartHeight * (absMax - clampedAbs) / (absMax - absMin);
+    }
+
+    // --- Draw Axes and Labels ---
+
+    // Y-axis line and label
+    ctx.beginPath();
+    ctx.moveTo(xStart, yStart);
+    ctx.lineTo(xStart, yEnd);
+    ctx.stroke();
+    ctx.save();
+    ctx.translate(xStart - 55, yStart + chartHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("Absorption (%)", 0, 0);
+    ctx.restore();
+
+    // Y-axis ticks and numbers
+    for (let i = 0; i <= 4; i++) {
+        const absValue = 20 + i * 20;
+        const yPos = mapY(absValue);
+        ctx.beginPath();
+        ctx.moveTo(xStart, yPos);
+        ctx.lineTo(xStart - 5, yPos);
+        ctx.stroke();
+        ctx.textAlign = "right";
+        ctx.fillText(absValue.toString(), xStart - 10, yPos);
+        ctx.textAlign = "center";
+    }
+
+    // X-axis line (bottom)
+    ctx.beginPath();
+    ctx.moveTo(xStart, yEnd);
+    ctx.lineTo(xEnd, yEnd);
+    ctx.stroke();
+
+    // Wavenumber ticks and labels (bottom)
+    for (let vTilde = 2300; vTilde <= 2700; vTilde += 100) {
+        const xPos = mapX(vTilde);
+        ctx.beginPath();
+        ctx.moveTo(xPos, yEnd);
+        ctx.lineTo(xPos, yEnd + 5);
+        ctx.stroke();
+        ctx.fillText(vTilde.toString(), xPos, yEnd + 20);
+    }
+
+    // Frequency ticks and labels (top)
+    const freqLabels = [
+        { text: "8.1 \u00D7 10", sup: "13", pos: 2700 },
+        { text: "7.8 \u00D7 10", sup: "13", pos: 2600 },
+        { text: "7.5 \u00D7 10", sup: "13", pos: 2500 },
+        { text: "7.2 \u00D7 10", sup: "13", pos: 2400 },
+        { text: "6.9 \u00D7 10", sup: "13", pos: 2300 }
+    ];
+    freqLabels.forEach(label => {
+        const xPos = mapX(label.pos);
+        ctx.beginPath();
+        ctx.moveTo(xPos, yStart);
+        ctx.lineTo(xPos, yStart - 5);
+        ctx.stroke();
+        
+        ctx.font = "16px 'Times New Roman'";
+        ctx.textBaseline = "alphabetic";
+        const textMetrics = ctx.measureText(label.text);
+        ctx.fillText(label.text, xPos, yStart - 15);
+        ctx.font = "11px 'Times New Roman'";
+        ctx.fillText(label.sup, xPos + textMetrics.width / 2 + 2, yStart - 15 - 7);
+    });
+    ctx.font = "16px 'Times New Roman'";
+    ctx.textBaseline = "middle";
+
+    // Axis titles
+    ctx.textAlign = "right";
+    ctx.fillText("\u03BD (Hz)", xEnd, yStart - 25);
+    // Draw wavenumber title with superscript
+    const vTildeTitleX = xEnd;
+    const vTildeTitleY = yEnd + 20;
+    const cmText = " (cm";
+    const vTildeText = "\u1E7D";
+    ctx.fillText(vTildeText + cmText, vTildeTitleX - 10, vTildeTitleY);
+    ctx.font = "11px 'Times New Roman'";
+    ctx.fillText("-1", vTildeTitleX - 10 + ctx.measureText(cmText).width, vTildeTitleY - 7);
+    ctx.fillText(")", vTildeTitleX, vTildeTitleY);
+    ctx.font = "16px 'Times New Roman'";
+    ctx.textAlign = "center";
+
+    // Plot frame (top and right borders)
+    ctx.beginPath();
+    ctx.lineWidth = 3;
+    ctx.moveTo(xStart, yStart);
+    ctx.lineTo(xEnd, yStart);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(xEnd, yStart);
+    ctx.lineTo(xEnd, yEnd);
+    ctx.stroke();
+    
+    // Figure Caption
+    ctx.fillText("Fig. 1.66", xStart + chartWidth / 2, yEnd + 60);
+
+    // --- Draw Spectrum ---
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(xStart, yStart, chartWidth, chartHeight);
+    ctx.clip();
+
+    ctx.lineWidth = 2.5;
+
+    const baseline = 96;
+    const peaks = [
+        // R-branch (higher frequency)
+        { center: 2690, min_y: 88, width: 2.0, split: 3.5 },
+        { center: 2675, min_y: 75, width: 2.0, split: 3.5 },
+        { center: 2658, min_y: 60, width: 2.5, split: 3.5 },
+        { center: 2642, min_y: 40, width: 2.5, split: 3.5 },
+        { center: 2625, min_y: 30, width: 3.0, split: 3.5 },
+        { center: 2608, min_y: 35, width: 3.0, split: 3.5 },
+        { center: 2592, min_y: 45, width: 2.5, split: 3.5 },
+        { center: 2575, min_y: 65, width: 2.0, split: 3.5 },
+        // P-branch (lower frequency)
+        { center: 2545, min_y: 70, width: 2.0, split: 4.0 },
+        { center: 2528, min_y: 50, width: 2.5, split: 4.0 },
+        { center: 2510, min_y: 35, width: 3.0, split: 4.0 },
+        { center: 2490, min_y: 30, width: 3.0, split: 4.0 },
+        { center: 2470, min_y: 32, width: 3.0, split: 4.0 },
+        { center: 2450, min_y: 40, width: 2.5, split: 4.0 },
+        { center: 2428, min_y: 50, width: 2.5, split: 4.0 },
+        { center: 2405, min_y: 65, width: 2.0, split: 4.0 },
+        { center: 2382, min_y: 80, width: 2.0, split: 4.0 },
+        { center: 2360, min_y: 88, width: 2.0, split: 4.0 },
+        { center: 2338, min_y: 90, width: 2.0, split: 4.0 },
+    ];
+
+    const points = [];
+    for (let vt = vTildeMax; vt >= vTildeMin; vt -= 0.25) {
+        let y = baseline + Math.sin(vt / 6) * 1.5; // Baseline with waviness
+        let total_dip = 0;
+        
+        for (const peak of peaks) {
+            const depth = baseline - peak.min_y;
+            const w_sq = peak.width * peak.width;
+            
+            // Isotope 1 (forms doublet)
+            const v1 = peak.center + peak.split / 2;
+            const dip1 = depth * w_sq / (Math.pow(vt - v1, 2) + w_sq);
+            
+            // Isotope 2 (forms doublet)
+            const v2 = peak.center - peak.split / 2;
+            const dip2 = depth * w_sq / (Math.pow(vt - v2, 2) + w_sq);
+            
+            total_dip += dip1 + dip2;
+        }
+        
+        // Add some noise/waviness to the ends
+        if (vt < 2350) {
+            y += Math.sin(vt * 2.5) * 1.5 - 0.5;
+        }
+        if (vt > 2695) {
+            y += Math.sin(vt * 4) * 1;
+        }
+        
+        y -= total_dip;
+        
+        points.push({ x: vt, y: y });
+    }
+    
+    // Draw the spectrum line
+    ctx.beginPath();
+    const firstPoint = points[0];
+    ctx.moveTo(mapX(firstPoint.x), mapY(firstPoint.y));
+
+    for (let i = 1; i < points.length; i++) {
+        const point = points[i];
+        ctx.lineTo(mapX(point.x), mapY(point.y));
+    }
+    ctx.stroke();
+    
+    ctx.restore(); // remove clipping
+
+</script>
+</body>
+</html>

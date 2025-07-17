@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram of a Spherical Pendulum</title>
+</head>
+<body>
+<canvas id="myCanvas" width="500" height="500" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    window.onload = function() {
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.save();
+            ctx.strokeStyle = 'black';
+            ctx.fillStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        // Helper function to draw an arc with an arrow at the end
+        function drawArcWithArrow(ctx, x, y, radius, startAngle, endAngle, anticlockwise = false) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, startAngle, endAngle, anticlockwise);
+            ctx.stroke();
+
+            // Calculate endpoint for the arrowhead
+            const endX = x + radius * Math.cos(endAngle);
+            const endY = y + radius * Math.sin(endAngle);
+            
+            // Calculate a point just before the end on the arc
+            // For CCW (anticlockwise=true), the angle increases, so 'before' is at a slightly smaller angle.
+            // For CW (anticlockwise=false), the angle decreases, so 'before' is at a slightly larger angle.
+            const angleStep = anticlockwise ? -0.1 : 0.1;
+            const beforeX = x + radius * Math.cos(endAngle + angleStep);
+            const beforeY = y + radius * Math.sin(endAngle + angleStep);
+            
+            // Draw the arrow head
+            drawArrow(ctx, beforeX, beforeY, endX, endY, 8);
+        }
+
+        // --- Main Drawing ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        
+        // Origin and parameters
+        const originX = 250;
+        const originY = 350;
+        const l_pixels = 150;
+        const theta0_deg = 50;
+        const theta0_rad = theta0_deg * Math.PI / 180;
+
+        // 1. Draw Coordinate System
+        ctx.font = "italic bold 20px Times New Roman";
+        // z-axis
+        drawArrow(ctx, originX, originY, originX, 150);
+        ctx.fillText("z", originX + 10, 155);
+        // y-axis
+        drawArrow(ctx, originX, originY, 450, originY);
+        ctx.fillText("y", 455, originY + 5);
+        // x-axis
+        drawArrow(ctx, originX, originY, 130, 430);
+        ctx.fillText("x", 115, 435);
+        // Origin label
+        ctx.font = "bold 20px Times New Roman";
+        ctx.fillText("O", originX - 25, originY + 20);
+
+        // 2. Draw Rod and Mass
+        ctx.font = "italic bold 20px Times New Roman";
+        const massX = originX + l_pixels * Math.sin(theta0_rad);
+        const massY = originY - l_pixels * Math.cos(theta0_rad);
+
+        // Rod
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(massX, massY);
+        ctx.stroke();
+        ctx.fillText("l", (originX + massX)/2 + 5, (originY + massY)/2 + 25);
+
+        // Mass m
+        ctx.beginPath();
+        ctx.arc(massX, massY, 6, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText("m", massX - 25, massY);
+        
+        // 3. Draw angle theta_0
+        const arcRadius = 40;
+        const startAngle = -Math.PI / 2; // up (z-axis)
+        const rodAngle_canvas = Math.atan2(massY - originY, massX - originX);
+        drawArcWithArrow(ctx, originX, originY, arcRadius, startAngle, rodAngle_canvas, true); // CCW from z-axis
+        
+        ctx.fillText("θ", originX + 28, originY - 28);
+        ctx.font = "italic bold 14px Times New Roman";
+        ctx.fillText("0", originX + 40, originY - 23);
+        
+        // 4. Draw initial velocity v_0
+        ctx.font = "italic bold 20px Times New Roman";
+        const v0_x = massX + 25;
+        const v0_y = massY - 5;
+        const v0_radius = 8;
+        ctx.beginPath();
+        ctx.arc(v0_x, v0_y, v0_radius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(v0_x - v0_radius * 0.707, v0_y - v0_radius * 0.707);
+        ctx.lineTo(v0_x + v0_radius * 0.707, v0_y + v0_radius * 0.707);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(v0_x + v0_radius * 0.707, v0_y - v0_radius * 0.707);
+        ctx.lineTo(v0_x - v0_radius * 0.707, v0_y + v0_radius * 0.707);
+        ctx.stroke();
+        
+        ctx.fillText("v", v0_x + 18, v0_y + 8);
+        ctx.font = "italic bold 14px Times New Roman";
+        ctx.fillText("0", v0_x + 28, v0_y + 13);
+
+        // 5. Draw gravity vector g
+        ctx.font = "italic bold 20px Times New Roman";
+        const g_x = 150;
+        const g_y_start = 200;
+        const g_y_end = 260;
+        drawArrow(ctx, g_x, g_y_start, g_x, g_y_end);
+        ctx.fillText("g", g_x - 25, (g_y_start + g_y_end) / 2);
+
+        // 6. Draw Figure Caption
+        ctx.font = "20px 'SimSun', 'Songti SC'";
+        ctx.fillStyle = 'black';
+        ctx.fillText("图 1", canvas.width / 2 - 20, 480);
+    };
+</script>
+</body>
+</html>

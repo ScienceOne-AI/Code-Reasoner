@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+    <canvas id="canvas" width="650" height="520"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function for drawing arrows
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 8; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        }
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '20px serif';
+
+        // Coordinates
+        const g1_x = 150, g1_y = 200, g1_w = 100, g1_h = 250;
+        const g2_x = 450, g2_y = 220, g2_w = 100, g2_h = 230;
+        const base_y = g1_y + g1_h;
+
+        // Base Line
+        ctx.beginPath();
+        ctx.moveTo(50, base_y);
+        ctx.lineTo(600, base_y);
+        ctx.stroke();
+
+        // Block G1
+        ctx.fillStyle = '#EAEAEA';
+        ctx.fillRect(g1_x, g1_y, g1_w, g1_h);
+        ctx.strokeRect(g1_x, g1_y, g1_w, g1_h);
+        ctx.fillStyle = 'black';
+        ctx.font = '24px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('G₁', g1_x + g1_w / 2, g1_y + g1_h / 2 + 8);
+
+        // Block G2
+        ctx.fillStyle = '#EAEAEA';
+        ctx.fillRect(g2_x, g2_y, g2_w, g2_h);
+        ctx.strokeRect(g2_x, g2_y, g2_w, g2_h);
+        ctx.fillStyle = 'black';
+        ctx.fillText('G₂', g2_x + g2_w / 2, g2_y + g2_h / 2 + 8);
+        ctx.textAlign = 'start'; // Reset alignment
+
+        // Glass Plate T
+        const a = { x: g1_x, y: g1_y };
+        const c = { x: g2_x, y: g2_y };
+        const slope = (c.y - a.y) / (c.x - a.x);
+        const y_intercept = a.y - slope * a.x;
+        const x_start_T = 100;
+        const x_end_T = 600;
+        const y_start_T = slope * x_start_T + y_intercept;
+        const y_end_T = slope * x_end_T + y_intercept;
+
+        ctx.save();
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(x_start_T, y_start_T);
+        ctx.lineTo(x_end_T, y_end_T);
+        ctx.stroke();
+        ctx.restore();
+
+        // Labels a, b, c, d, T
+        ctx.font = '20px serif';
+        const b = { x: g1_x + g1_w, y: g1_y };
+        const d = { x: g2_x + g2_w, y: g2_y };
+        ctx.fillText('a', a.x - 20, a.y + 5);
+        ctx.fillText('b', b.x + 5, b.y - 5);
+        ctx.fillText('c', c.x - 10, c.y - 5);
+        ctx.fillText('d', d.x + 5, d.y + 5);
+        ctx.font = '24px serif';
+        ctx.fillText('T', x_end_T + 5, y_end_T + 8);
+        ctx.font = '20px serif';
+
+
+        // Incident light arrows
+        ctx.lineWidth = 1.5;
+        const arrow_y_start = 100;
+        const arrow_y_end = y_start_T - 20;
+        for (let i = 0; i < 5; i++) {
+            const arrow_x = 180 + i * 80;
+            const arrow_y_plate = slope * arrow_x + y_intercept;
+            ctx.beginPath();
+            drawArrow(ctx, arrow_x, arrow_y_start, arrow_x, arrow_y_plate - 10);
+            ctx.stroke();
+        }
+
+        // Dimension l
+        const dim_y = base_y + 30;
+        ctx.beginPath();
+        // vertical ticks
+        ctx.moveTo(b.x, base_y);
+        ctx.lineTo(b.x, dim_y);
+        ctx.moveTo(c.x, base_y);
+        ctx.lineTo(c.x, dim_y);
+        // horizontal line with arrows
+        ctx.moveTo(b.x, dim_y);
+        ctx.lineTo(c.x, dim_y);
+        // left arrow
+        ctx.moveTo(b.x + 10, dim_y - 4);
+        ctx.lineTo(b.x, dim_y);
+        ctx.lineTo(b.x + 10, dim_y + 4);
+        // right arrow
+        ctx.moveTo(c.x - 10, dim_y - 4);
+        ctx.lineTo(c.x, dim_y);
+        ctx.lineTo(c.x - 10, dim_y + 4);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.fillText('l', (b.x + c.x) / 2, dim_y + 20);
+        ctx.textAlign = 'start';
+
+        // Angle alpha annotation
+        const horiz_y = b.y;
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        // Horizontal dashed line from 'b'
+        ctx.moveTo(b.x, horiz_y);
+        ctx.lineTo(c.x - 20, horiz_y);
+        
+        // Vertical dashed line from plate T
+        const x_annot = b.x + 80;
+        const y_annot_plate = slope * x_annot + y_intercept;
+        ctx.moveTo(x_annot, y_annot_plate);
+        ctx.lineTo(x_annot, horiz_y);
+        ctx.stroke();
+        ctx.restore();
+
+        // The perpendicular symbol '⊥'
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x_annot, horiz_y - 8);
+        ctx.lineTo(x_annot, horiz_y);
+        ctx.lineTo(x_annot + 8, horiz_y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Arc for alpha
+        ctx.beginPath();
+        const angle_val = Math.atan(slope);
+        ctx.arc(b.x, b.y, 60, 0, angle_val);
+        ctx.stroke();
+
+        // Label alpha
+        ctx.fillText('α', x_annot + 15, horiz_y - 5);
+
+        // Caption
+        ctx.font = '22px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 12-23 图', canvas.width / 2, base_y + 75);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #d3d3d3;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="400" height="550"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper function to draw an arrow (for fluid velocity) ---
+    function drawUpArrow(ctx, x, y, length, headLength = 10) {
+        const fromX = x;
+        const fromY = y;
+        const toX = x;
+        const toY = y - length;
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    // --- Helper function for L0 label with subscript ---
+    function drawL0Label(ctx, x_L, y_L) {
+        ctx.save();
+        ctx.font = 'italic 20px "Times New Roman"';
+        ctx.fillText('L', x_L, y_L);
+        ctx.font = 'italic 12px "Times New Roman"';
+        // Adjust subscript position based on text alignment
+        if (ctx.textAlign === 'center') {
+            ctx.fillText('0', x_L + 8, y_L + 3);
+        } else if (ctx.textAlign === 'left') {
+            ctx.fillText('0', x_L + 8, y_L + 3);
+        } else { // right
+             ctx.fillText('0', x_L + 8, y_L + 3);
+        }
+        ctx.restore();
+    }
+
+    // --- Main Drawing Logic ---
+    // 1. Parameters
+    const L0_px = 180;
+    const centerX = 200;
+    const wallTop = 40;
+    const wallBottom = 480;
+    const y_level_A = 380;
+
+    const xLeft = centerX - L0_px / 2;
+    const xRight = centerX + L0_px / 2;
+    const y_B = y_level_A - L0_px;
+
+    // 2. Styles
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    // 3. Draw Walls
+    ctx.beginPath();
+    ctx.moveTo(xLeft, wallTop);
+    ctx.lineTo(xLeft, wallBottom);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(xRight, wallTop);
+    ctx.lineTo(xRight, wallBottom);
+    ctx.stroke();
+
+    // 4. Draw Flow Arrows
+    const arrowX1 = centerX - L0_px / 4;
+    const arrowX2 = centerX + L0_px / 4;
+    ctx.lineWidth = 1.2;
+    drawUpArrow(ctx, arrowX1, 350, 50);
+    drawUpArrow(ctx, arrowX2, 350, 50);
+    drawUpArrow(ctx, arrowX1, 200, 50);
+    drawUpArrow(ctx, arrowX2, 200, 50);
+    ctx.lineWidth = 1.5;
+
+    // 5. Draw Points A & B
+    ctx.beginPath();
+    ctx.arc(xLeft, y_level_A, 3, 0, 2 * Math.PI);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(xRight, y_B, 3, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 6. Draw Text Labels
+    ctx.font = 'italic 22px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("v", centerX, wallTop + 35);
+
+    ctx.font = '24px "SimSun", "KaiTi"';
+    ctx.fillText("流体", centerX, 260);
+    ctx.fillText("实验室参考系", centerX, wallBottom + 30);
+
+    ctx.font = '22px "Times New Roman"';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("A", xLeft - 10, y_level_A);
+    ctx.textAlign = 'left';
+    ctx.fillText("B", xRight + 10, y_B);
+
+    // 7. Draw Horizontal Dimension L0
+    ctx.beginPath();
+    ctx.lineWidth = 1;
+    let headLengthH = 8;
+    // Main line
+    ctx.moveTo(xLeft, y_level_A);
+    ctx.lineTo(xRight, y_level_A);
+    // Left head
+    ctx.moveTo(xLeft, y_level_A); ctx.lineTo(xLeft + headLengthH, y_level_A - 4);
+    ctx.moveTo(xLeft, y_level_A); ctx.lineTo(xLeft + headLengthH, y_level_A + 4);
+    // Right head
+    ctx.moveTo(xRight, y_level_A); ctx.lineTo(xRight - headLengthH, y_level_A - 4);
+    ctx.moveTo(xRight, y_level_A); ctx.lineTo(xRight - headLengthH, y_level_A + 4);
+    ctx.stroke();
+
+    // Label for horizontal L0
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    drawL0Label(ctx, centerX, y_level_A - 8);
+
+    // 8. Draw Vertical Dimension L0
+    const x_dim_vert = xRight + 25;
+    const y_mid = (y_level_A + y_B) / 2;
+    
+    ctx.beginPath();
+    ctx.lineWidth = 1;
+    // Main line
+    ctx.moveTo(x_dim_vert, y_B);
+    ctx.lineTo(x_dim_vert, y_level_A);
+    // Top head (T-bar shape)
+    ctx.moveTo(x_dim_vert - 4, y_B);
+    ctx.lineTo(x_dim_vert + 4, y_B);
+    // Bottom head (T-bar shape)
+    ctx.moveTo(x_dim_vert - 4, y_level_A);
+    ctx.lineTo(x_dim_vert + 4, y_level_A);
+    ctx.stroke();
+    
+    // Label for vertical L0
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    drawL0Label(ctx, x_dim_vert - 25, y_mid);
+
+</script>
+
+</body>
+</html>

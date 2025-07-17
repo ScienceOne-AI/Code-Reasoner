@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="canvas" width="550" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Parameters
+    const cx = 150;
+    const cy = 200;
+    const R1 = 40;
+    const R2 = 70;
+    const R3 = 100;
+    const y_scale = 0.5; // for perspective
+    const len = 350;
+
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // Helper function to draw a line with an arrowhead
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // Helper function for drawing radius labels with subscripts
+    function drawRadiusLabel(ctx, base_char, sub_char, x, y) {
+        ctx.font = 'italic 20px "Times New Roman"';
+        ctx.fillText(base_char, x, y);
+        ctx.font = 'italic 14px "Times New Roman"';
+        ctx.fillText(sub_char, x + 11, y + 5);
+    }
+
+    // --- Draw the coaxial cable structure ---
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, R1, R1 * y_scale, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, R2, R2 * y_scale, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, R3, R3 * y_scale, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - R3 * y_scale);
+    ctx.lineTo(cx + len, cy - R3 * y_scale);
+    ctx.moveTo(cx, cy + R3 * y_scale);
+    ctx.lineTo(cx + len, cy + R3 * y_scale);
+    ctx.stroke();
+
+    // --- Draw Radius Lines and Labels ---
+    // R1
+    const angle1 = -130 * Math.PI / 180;
+    const r1_ex = cx + R1 * Math.cos(angle1);
+    const r1_ey = cy + R1 * y_scale * Math.sin(angle1);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(r1_ex, r1_ey);
+    ctx.stroke();
+    drawRadiusLabel(ctx, 'R', '1', r1_ex - 18, r1_ey + 18);
+
+    // R2
+    const angle2 = -115 * Math.PI / 180;
+    const r2_ex = cx + R2 * Math.cos(angle2);
+    const r2_ey = cy + R2 * y_scale * Math.sin(angle2);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(r2_ex, r2_ey);
+    ctx.stroke();
+    drawRadiusLabel(ctx, 'R', '2', r2_ex - 22, r2_ey + 22);
+
+    // R3
+    const angle3 = -70 * Math.PI / 180;
+    const r3_ex = cx + R3 * Math.cos(angle3);
+    const r3_ey = cy + R3 * y_scale * Math.sin(angle3);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(r3_ex, r3_ey);
+    ctx.stroke();
+    drawRadiusLabel(ctx, 'R', '3', r3_ex + 5, r3_ey + 15);
+
+    // --- Draw Currents ---
+    // Outer current (to the left)
+    const outer_current_y = cy - R3 * y_scale;
+    const arrow_len_outer = 60;
+    const arrow_start_x_outer = cx + 30 + arrow_len_outer;
+    drawArrow(ctx, arrow_start_x_outer, outer_current_y, arrow_start_x_outer - arrow_len_outer, outer_current_y);
+    ctx.font = 'italic 22px "Times New Roman"';
+    ctx.fillText('I', arrow_start_x_outer - arrow_len_outer / 2 - 5, outer_current_y - 10);
+
+    // Inner current (to the right)
+    ctx.save();
+    // Dashed lines
+    ctx.setLineDash([8, 6]);
+    const current_y_offsets = [-24, -12, 12, 24]; // non-central lines
+    for (const offset of current_y_offsets) {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + offset);
+        ctx.lineTo(cx + len - 10, cy + offset);
+        ctx.stroke();
+    }
+    // Central line (dashed part)
+    const arrow_len_inner = 60;
+    const inner_arrow_start_x = cx + len - arrow_len_inner - 10;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(inner_arrow_start_x, cy);
+    ctx.stroke();
+    
+    ctx.restore(); // Restore to solid line for arrow
+    drawArrow(ctx, inner_arrow_start_x, cy, cx + len - 10, cy);
+
+    ctx.font = 'italic 22px "Times New Roman"';
+    ctx.fillText('I', cx + len / 2, cy + 35);
+
+    // --- Draw Bottom Label ---
+    ctx.font = '22px "SimSun", "STSong"';
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 8-25 图', canvas.width / 2, 370);
+</script>
+</body>
+</html>

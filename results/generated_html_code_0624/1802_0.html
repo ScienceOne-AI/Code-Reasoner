@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Pulley System Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="350" style="border:1px solid #ccc;"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Define drawing parameters and coordinates
+    const X1 = 150;            // x-coordinate of the left pulley center
+    const X2 = 350;            // x-coordinate of the right pulley center
+    const Y_PULLEY = 140;      // y-coordinate of the pulley centers
+    const RADIUS = 60;         // Radius of the pulleys
+    const Y_CEIL = 60;         // y-coordinate of the ceiling
+    const Y_ROPE_HORIZ = 115;  // y-coordinate of the horizontal rope segment
+    const Y_MASS_TOP = 230;    // y-coordinate of the top of the masses
+    const MASS_W_LEFT = 45;    // Width of the left mass
+    const MASS_H_LEFT = 45;    // Height of the left mass
+    const MASS_W_RIGHT = 55;   // Width of the right mass
+    const MASS_H_RIGHT = 40;   // Height of the right mass
+
+    // --- Drawing Functions ---
+
+    function drawCeiling() {
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(30, Y_CEIL);
+        ctx.lineTo(470, Y_CEIL);
+        ctx.stroke();
+
+        // Draw hatching
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = 40; i < 470; i += 20) {
+            ctx.moveTo(i, Y_CEIL);
+            ctx.lineTo(i - 10, Y_CEIL - 10);
+        }
+        ctx.stroke();
+    }
+
+    function drawPulleysAndSupports() {
+        const SUP_W = 12; // Support width
+
+        // Draw pulleys first
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(X1, Y_PULLEY, RADIUS, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(X2, Y_PULLEY, RADIUS, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Draw supports on top of pulleys
+        // Fill with white to create an "inset" look, obscuring the pulley line
+        ctx.fillStyle = 'white';
+        // Left support
+        ctx.fillRect(X1 - SUP_W / 2, Y_CEIL, SUP_W, Y_PULLEY - Y_CEIL);
+        ctx.strokeRect(X1 - SUP_W / 2, Y_CEIL, SUP_W, Y_PULLEY - Y_CEIL);
+        // Right support
+        ctx.fillRect(X2 - SUP_W / 2, Y_CEIL, SUP_W, Y_PULLEY - Y_CEIL);
+        ctx.strokeRect(X2 - SUP_W / 2, Y_CEIL, SUP_W, Y_PULLEY - Y_CEIL);
+    }
+
+    function drawRope() {
+        const ROPE_X_LEFT = X1 - RADIUS;
+        const ROPE_X_RIGHT = X2 + RADIUS;
+
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        // Start from the attachment point of the left mass
+        ctx.moveTo(ROPE_X_LEFT, Y_MASS_TOP);
+        // Draw vertical segment up to the horizontal rope level
+        ctx.lineTo(ROPE_X_LEFT, Y_ROPE_HORIZ);
+        // Draw horizontal segment across
+        ctx.lineTo(ROPE_X_RIGHT, Y_ROPE_HORIZ);
+        // Draw vertical segment down to the right mass
+        ctx.lineTo(ROPE_X_RIGHT, Y_MASS_TOP);
+        ctx.stroke();
+    }
+
+    function drawMasses() {
+        const ROPE_X_LEFT = X1 - RADIUS;
+        const ROPE_X_RIGHT = X2 + RADIUS;
+
+        ctx.lineWidth = 2;
+        ctx.fillStyle = 'white';
+        // Left mass (square)
+        ctx.fillRect(ROPE_X_LEFT - MASS_W_LEFT / 2, Y_MASS_TOP, MASS_W_LEFT, MASS_H_LEFT);
+        ctx.strokeRect(ROPE_X_LEFT - MASS_W_LEFT / 2, Y_MASS_TOP, MASS_W_LEFT, MASS_H_LEFT);
+        // Right mass (rectangle)
+        ctx.fillRect(ROPE_X_RIGHT - MASS_W_RIGHT / 2, Y_MASS_TOP, MASS_W_RIGHT, MASS_H_RIGHT);
+        ctx.strokeRect(ROPE_X_RIGHT - MASS_W_RIGHT / 2, Y_MASS_TOP, MASS_W_RIGHT, MASS_H_RIGHT);
+    }
+
+    function drawLabels() {
+        const ROPE_X_LEFT = X1 - RADIUS;
+        const ROPE_X_RIGHT = X2 + RADIUS;
+        
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+
+        // Mass labels
+        ctx.font = "italic 22px 'Times New Roman'";
+        ctx.fillText("m", ROPE_X_LEFT, Y_MASS_TOP + MASS_H_LEFT + 20);
+        ctx.fillText("2m", ROPE_X_RIGHT, Y_MASS_TOP + MASS_H_RIGHT + 20);
+
+        // Radius 'R' label on the right pulley
+        const r_angle = -Math.PI / 4; // -45 degrees
+        const r_start_x = X2;
+        const r_start_y = Y_PULLEY;
+        const r_end_x = X2 + (RADIUS - 5) * Math.cos(r_angle);
+        const r_end_y = Y_PULLEY + (RADIUS - 5) * Math.sin(r_angle);
+        
+        ctx.beginPath();
+        ctx.moveTo(r_start_x, r_start_y);
+        ctx.lineTo(r_end_x, r_end_y);
+
+        // Arrowhead for the radius
+        const arrow_len = 8;
+        ctx.moveTo(r_end_x, r_end_y);
+        ctx.lineTo(r_end_x - arrow_len * Math.cos(r_angle - Math.PI / 6), r_end_y - arrow_len * Math.sin(r_angle - Math.PI / 6));
+        ctx.moveTo(r_end_x, r_end_y);
+        ctx.lineTo(r_end_x - arrow_len * Math.cos(r_angle + Math.PI / 6), r_end_y - arrow_len * Math.sin(r_angle + Math.PI / 6));
+        ctx.stroke();
+
+        ctx.fillText("R", X2 + RADIUS, Y_PULLEY - RADIUS / 1.5);
+
+        // Bottom label "题 10 图"
+        ctx.font = "20px 'SimSun'"; // Use a font that supports Chinese characters
+        ctx.fillText("题 10 图", canvas.width / 2, 330);
+    }
+
+    // --- Main Drawing Execution ---
+    ctx.strokeStyle = 'black';
+    drawCeiling();
+    drawPulleysAndSupports();
+    drawRope();
+    drawMasses();
+    drawLabels();
+
+</script>
+</body>
+</html>

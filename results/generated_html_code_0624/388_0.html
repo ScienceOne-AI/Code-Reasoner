@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Fraunhofer Diffraction - 3 Slits</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="diffractionCanvas" width="600" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('diffractionCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Style and Configuration ---
+  const cx = 300;
+  const cy = 320;
+  const h_max = 180;        // Max intensity height (I0)
+  const diff_width = 480;   // Width of the central diffraction lobe (between first minima)
+  const p_dist = 75;        // Distance between principal interference maxima
+
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 1;
+  
+  // --- Helper Functions ---
+
+  // sinc(x) = sin(x)/x
+  function sinc(x) {
+    if (x === 0) return 1;
+    return Math.sin(x) / x;
+  }
+
+  // Diffraction envelope height function
+  function envelope(x_rel) {
+    const k_diff = Math.PI / (diff_width / 2);
+    return h_max * Math.pow(sinc(k_diff * x_rel), 2);
+  }
+  
+  // Draw a text label with subscript
+  function drawSubscriptText(text, sub, x, y, font = 'italic 20px serif') {
+      ctx.font = font;
+      const textMetrics = ctx.measureText(text);
+      const textWidth = textMetrics.width;
+      ctx.fillText(text, x, y);
+      
+      ctx.font = 'italic 14px serif';
+      ctx.fillText(sub, x + textWidth - 3, y + 5);
+  }
+
+  // Draw a double-headed vertical arrow
+  function drawVDoubleArrow(x, y_top, y_bottom, arrowSize = 5) {
+    ctx.beginPath();
+    ctx.moveTo(x, y_top);
+    ctx.lineTo(x, y_bottom);
+    // Arrow at top
+    ctx.moveTo(x - arrowSize / 1.5, y_top + arrowSize); ctx.lineTo(x, y_top); ctx.lineTo(x + arrowSize / 1.5, y_top + arrowSize);
+    // Arrow at bottom
+    ctx.moveTo(x - arrowSize / 1.5, y_bottom - arrowSize); ctx.lineTo(x, y_bottom); ctx.lineTo(x + arrowSize / 1.5, y_bottom - arrowSize);
+    ctx.stroke();
+  }
+
+  // Draw a horizontal dimension line with ticks
+  function drawHDimLine(x1, x2, y, tickHeight = 5, ticksPointUp = false) {
+    const dir = ticksPointUp ? -1 : 1;
+    ctx.beginPath();
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x2, y);
+    // Ticks
+    ctx.moveTo(x1, y); ctx.lineTo(x1, y + tickHeight * dir);
+    ctx.moveTo(x2, y); ctx.lineTo(x2, y + tickHeight * dir);
+    ctx.stroke();
+  }
+  
+  // Draw an arrow at the end of a line
+  function drawEndArrow(x1, y1, x2, y2, arrowSize = 8) {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - arrowSize * Math.cos(angle - Math.PI / 6), y2 - arrowSize * Math.sin(angle - Math.PI / 6));
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - arrowSize * Math.cos(angle + Math.PI / 6), y2 - arrowSize * Math.sin(angle + Math.PI / 6));
+      ctx.stroke();
+  }
+
+  // --- Drawing ---
+
+  // 1. Draw Axes
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(20, cy);
+  ctx.lineTo(580, cy);
+  ctx.stroke();
+  drawEndArrow(cx, cy, cx, 50); // Vertical axis arrow
+  
+  // 2. Draw Diffraction Envelope (Dashed Line)
+  ctx.save();
+  ctx.setLineDash([6, 4]);
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  let firstPoint = true;
+  for (let x_rel = -diff_width / 2 - 40; x_rel <= diff_width / 2 + 40; x_rel += 2) {
+    const y_val = cy - envelope(x_rel);
+    if (y_val < cy - 0.5) { 
+      if (firstPoint) {
+        ctx.moveTo(cx + x_rel, y_val);
+        firstPoint = false;
+      } else {
+        ctx.lineTo(cx + x_rel, y_val);
+      }
+    }
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  // 3. Draw Interference Peaks
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+
+  const peak_positions = [];
+  // Principal maxima
+  for(let i = 0; i * p_dist <= diff_width / 2 + 20; i++) {
+      peak_positions.push({ pos: i * p_dist, factor: 1 });
+      if (i > 0) peak_positions.push({ pos: -i * p_dist, factor: 1 });
+  }
+  // Secondary maxima
+  for(let i = 0; (i + 0.5) * p_dist <= diff_width / 2 + 20; i++) {
+      peak_positions.push({ pos: (i + 0.5) * p_dist, factor: 1/9 });
+      peak_positions.push({ pos: -(i + 0.5) * p_dist, factor: 1/9 });
+  }
+
+  peak_positions.forEach(peak => {
+      const x_rel = peak.pos;
+      const h_env = envelope(x_rel);
+      const h_peak = h_env * peak.factor;
+      if (h_peak > 1.5) { // Don't draw tiny peaks
+          ctx.beginPath();
+          ctx.moveTo(cx + x_rel, cy);
+          ctx.lineTo(cx + x_rel, cy - h_peak);
+          ctx.stroke();
+      }
+  });
+  ctx.lineCap = 'butt';
+
+
+  // 4. Draw Labels and Annotations
+  ctx.lineWidth = 1;
+  ctx.font = '20px serif';
+  
+  // Label '0' at origin
+  ctx.textAlign = 'center';
+  ctx.fillText('0', cx, cy + 20);
+
+  // Label 'x' and its dimension line
+  const x_dim_y = cy + 40;
+  drawHDimLine(cx - diff_width / 2, cx + diff_width / 2, x_dim_y, 5, true);
+  ctx.font = 'italic 20px serif';
+  ctx.fillText('x', cx, x_dim_y + 20);
+
+  // Label 'I₀'
+  const h0 = envelope(0);
+  const I0_x = cx + 60;
+  drawVDoubleArrow(I0_x, cy - h0, cy);
+  ctx.textAlign = 'left';
+  drawSubscriptText('I', '0', I0_x + 8, cy - h0 / 2 - 10);
+  
+  // Label 'I₁'
+  const x1_rel = -p_dist / 2;
+  const h1 = envelope(x1_rel) / 9;
+  const I1_x_line = cx + x1_rel;
+  drawVDoubleArrow(I1_x_line, cy - h1, cy);
+  ctx.textAlign = 'right';
+  drawSubscriptText('I', '1', I1_x_line - 8, cy - h1/2 - 5);
+
+  // Label 'D'
+  const D_y = cy - h_max - 10;
+  drawHDimLine(cx - 15, cx + 15, D_y, 5, false);
+  ctx.font = 'italic 20px serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('D', cx, D_y - 8);
+
+  // Label 'Fig. 2.49'
+  ctx.font = 'bold 18px serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Fig. 2.49', cx, cy + 85);
+
+</script>
+</body>
+</html>

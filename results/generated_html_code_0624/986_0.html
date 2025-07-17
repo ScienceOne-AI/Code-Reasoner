@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Experiment Setup</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="650" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 1.5;
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+
+        // Helper function to draw labels with leader lines
+        function drawLabel(text, x_text, y_text, x_point, y_point) {
+            ctx.fillText(text, x_text, y_text);
+            ctx.beginPath();
+            ctx.moveTo(x_text + (text === 'ice' ? 25 : text === 'heater' ? 50 : 0), y_text);
+            if (text === 'pan of balance') {
+                 ctx.lineTo(x_point + 10, y_point);
+            } else if (text === 'beaker') {
+                 ctx.lineTo(x_point + 5, y_point);
+            } else if (text === 'melted ice') {
+                 ctx.lineTo(x_point + 20, y_point);
+            }
+             else {
+                ctx.lineTo(x_point, y_point);
+            }
+            ctx.stroke();
+        }
+
+        // Helper function to draw a single ice chunk
+        function drawIceChunk(x, y, size) {
+            ctx.beginPath();
+            const points = 8;
+            for (let i = 0; i < points; i++) {
+                const angle = (i / points) * 2 * Math.PI;
+                const radius = size * (0.7 + Math.random() * 0.6);
+                const px = x + radius * Math.cos(angle);
+                const py = y + radius * Math.sin(angle);
+                if (i === 0) {
+                    ctx.moveTo(px, py);
+                } else {
+                    ctx.lineTo(px, py);
+                }
+            }
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        // 1. Draw Funnel
+        ctx.beginPath();
+        ctx.moveTo(200, 120);
+        ctx.lineTo(290, 330);
+        ctx.lineTo(290, 350);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(400, 120);
+        ctx.lineTo(310, 330);
+        ctx.lineTo(310, 350);
+        ctx.stroke();
+
+        // 2. Draw Heater
+        ctx.beginPath();
+        ctx.rect(280, 160, 40, 90);
+        ctx.stroke();
+        // Heater leads
+        ctx.beginPath();
+        ctx.moveTo(290, 160);
+        ctx.lineTo(290, 100);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(310, 160);
+        ctx.lineTo(310, 100);
+        ctx.stroke();
+        
+        // 3. Draw Ice
+        const funnelTopY = 120;
+        const funnelBottomY = 330;
+        const heaterLeft = 280;
+        const heaterRight = 320;
+        const heaterTop = 160;
+        for (let i = 0; i < 200; i++) {
+            const y = funnelTopY + Math.random() * (funnelBottomY - funnelTopY);
+            const progress = (y - funnelTopY) / (funnelBottomY - funnelTopY);
+            const funnelWidthAtY = (400 - 200) * (1 - progress) + (310 - 290);
+            const funnelCenterXAtY = (200 + 400) / 2 * (1 - progress) + (290 + 310) / 2 * progress;
+            const x = funnelCenterXAtY - funnelWidthAtY/2 + Math.random() * funnelWidthAtY;
+
+            if (x < heaterLeft || x > heaterRight || y < heaterTop) {
+                 if (x > 200 + progress * 90 && x < 400 - progress * 90) {
+                    drawIceChunk(x, y, 5 + Math.random() * 5);
+                 }
+            }
+        }
+
+
+        // 4. Draw Beaker
+        ctx.beginPath();
+        ctx.moveTo(250, 370);
+        ctx.lineTo(250, 460);
+        ctx.arcTo(250, 470, 260, 470, 10);
+        ctx.lineTo(340, 470);
+        ctx.arcTo(350, 470, 350, 460, 10);
+        ctx.lineTo(350, 370);
+        ctx.stroke();
+
+        // 5. Draw Melted Ice (Water)
+        ctx.beginPath();
+        ctx.fillStyle = '#e0e0e0'; // light grey fill
+        ctx.rect(250.5, 440, 99, 29.5);
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(250.5, 440);
+        ctx.lineTo(349.5, 440);
+        ctx.stroke();
+        
+        // 6. Draw Balance Pan
+        ctx.beginPath();
+        ctx.rect(200, 475, 200, 8);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(300, 483);
+        ctx.lineTo(300, 510);
+        ctx.stroke();
+
+
+        // 7. Draw Circuit
+        ctx.lineWidth = 1;
+        const j1_x = 420, j1_y = 60;
+        const j2_x = 420, j2_y = 170;
+
+        // Wires to heater
+        ctx.beginPath();
+        ctx.moveTo(310, 100);
+        ctx.lineTo(310, j1_y);
+        ctx.lineTo(j1_x, j1_y);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(290, 100);
+        ctx.lineTo(290, j2_y);
+        ctx.lineTo(j2_x, j2_y);
+        ctx.stroke();
+
+        // Junction dots
+        ctx.beginPath();
+        ctx.arc(j1_x, j1_y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(j2_x, j2_y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Voltmeter
+        ctx.beginPath();
+        ctx.moveTo(j1_x, j1_y);
+        ctx.lineTo(j1_x, j2_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(j1_x, (j1_y + j2_y) / 2, 20, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'black';
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('V', j1_x, (j1_y + j2_y) / 2);
+
+        // Ammeter
+        const a_x = 500;
+        ctx.beginPath();
+        ctx.moveTo(j1_x, j1_y);
+        ctx.lineTo(a_x - 20, j1_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(a_x, j1_y, 20, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'black';
+        ctx.fillText('A', a_x, j1_y);
+
+        // Variable Resistor
+        const r_x = 500;
+        ctx.beginPath();
+        ctx.moveTo(j2_x, j2_y);
+        ctx.lineTo(r_x - 30, j2_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.rect(r_x - 30, j2_y - 8, 60, 16);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(r_x - 40, j2_y + 15);
+        ctx.lineTo(r_x + 40, j2_y - 15);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(r_x + 40, j2_y - 15);
+        ctx.lineTo(r_x + 32, j2_y - 15);
+        ctx.moveTo(r_x + 40, j2_y - 15);
+        ctx.lineTo(r_x + 40, j2_y - 23);
+        ctx.stroke();
+
+        // Terminals
+        const term_x = 580;
+        ctx.beginPath();
+        ctx.moveTo(a_x + 20, j1_y);
+        ctx.lineTo(term_x, j1_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(term_x, j1_y, 5, 0, 2*Math.PI);
+        ctx.stroke();
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText('+', term_x + 10, j1_y);
+
+        ctx.beginPath();
+        ctx.moveTo(r_x + 30, j2_y);
+        ctx.lineTo(term_x, j2_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(term_x, j2_y, 5, 0, 2*Math.PI);
+        ctx.stroke();
+        ctx.fillText('−', term_x + 10, j2_y);
+
+        // 8. Labels and Caption
+        ctx.lineWidth = 1.5;
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'left';
+        
+        drawLabel('ice', 150, 150, 230, 170);
+        drawLabel('heater', 150, 240, 275, 220);
+        drawLabel('beaker', 420, 390, 350, 400);
+        drawLabel('melted ice', 420, 450, 350, 450);
+        drawLabel('pan of balance', 80, 480, 200, 480);
+
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 3.1', canvas.width / 2, 530);
+
+    </script>
+</body>
+</html>

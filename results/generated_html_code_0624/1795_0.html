@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cycloid Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="cycloidCanvas" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('cycloidCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const R = 100; // Radius of the circle
+        const centerX = canvas.width / 2;
+        const baseY = 370; // Y-coordinate of the origin O on canvas
+        const theta_snapshot = 1.0; // Angle in radians for the snapshot
+
+        // --- Transformation ---
+        ctx.translate(centerX, baseY);
+        ctx.scale(1, -1); // Flip Y axis for standard Cartesian coordinates
+
+        // --- Helper function for drawing arrows ---
+        function drawArrow(ctx, fromx, fromy, tox, toy, arrowHeadLength = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - arrowHeadLength * Math.cos(angle - Math.PI / 6), toy - arrowHeadLength * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tox - arrowHeadLength * Math.cos(angle + Math.PI / 6), toy - arrowHeadLength * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        // --- Draw Axes ---
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#000';
+        ctx.fillStyle = '#000';
+        
+        // X-axis
+        drawArrow(ctx, -380, 0, 380, 0);
+        // Y-axis
+        drawArrow(ctx, 0, -20, 0, 250);
+
+        ctx.save();
+        ctx.scale(1, -1);
+        ctx.font = '20px Arial';
+        ctx.fillText('x', 385, 8);
+        ctx.fillText('y', -8, -255);
+        ctx.fillText('O', -20, 15);
+        ctx.restore();
+
+        // --- Draw Cycloid Curve ---
+        ctx.beginPath();
+        ctx.lineWidth = 2;
+        for (let th = -Math.PI; th <= Math.PI; th += 0.01) {
+            const x = R * (th - Math.sin(th));
+            const y = R * (1 - Math.cos(th));
+            if (th === -Math.PI) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        }
+        ctx.stroke();
+
+        // --- Draw Top Line MN ---
+        ctx.beginPath();
+        ctx.lineWidth = 1.5;
+        const x_M = -Math.PI * R;
+        const x_N = Math.PI * R;
+        const y_MN = 2 * R;
+        ctx.moveTo(x_M, y_MN);
+        ctx.lineTo(x_N, y_MN);
+        ctx.stroke();
+
+        // Mark points M and N
+        ctx.beginPath();
+        ctx.arc(x_M, y_MN, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x_N, y_MN, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.save();
+        ctx.scale(1, -1);
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('M', x_M - 25, -y_MN - 5);
+        ctx.fillText('N', x_N + 10, -y_MN - 5);
+        ctx.fillText('-πR', x_M - 20, -y_MN + 20);
+        ctx.fillText('πR', x_N - 15, -y_MN + 20);
+        ctx.restore();
+
+
+        // --- Draw Dashed Initial Circle ---
+        const C0_x = 0;
+        const C0_y = R;
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.arc(C0_x, C0_y, R, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // P at origin
+        ctx.beginPath();
+        ctx.setLineDash([]);
+        drawArrow(ctx, 0, 15, 0, 2, 8);
+        ctx.save();
+        ctx.scale(1,-1);
+        ctx.fillText('P', 8, -5);
+        ctx.restore();
+
+        // Center C (initial)
+        ctx.beginPath();
+        ctx.arc(C0_x, C0_y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.save();
+        ctx.scale(1,-1);
+        ctx.fillText('C', C0_x-25, -C0_y+5);
+        ctx.restore();
+
+        // --- Draw Solid Current Circle and related elements ---
+        const th = theta_snapshot;
+        const C_x = R * th;
+        const C_y = R;
+        const A_x = R * (th - Math.sin(th));
+        const A_y = R * (1 - Math.cos(th));
+        const Q_x = C_x;
+        const Q_y = 2 * R;
+
+        // Solid Circle
+        ctx.beginPath();
+        ctx.lineWidth = 2;
+        ctx.arc(C_x, C_y, R, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Center C (current)
+        ctx.beginPath();
+        ctx.arc(C_x, C_y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.save();
+        ctx.scale(1,-1);
+        ctx.fillText('C', C_x+8, -C_y+5);
+        ctx.restore();
+
+        // Point Q
+        ctx.beginPath();
+        ctx.arc(Q_x, Q_y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.save();
+        ctx.scale(1,-1);
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('Q', Q_x-5, -Q_y-5);
+        ctx.restore();
+
+        // Point P at A
+        ctx.beginPath();
+        ctx.arc(A_x, A_y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.save();
+        ctx.scale(1,-1);
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('P', A_x - 20, -A_y + 15);
+        ctx.restore();
+
+        // Vectors CP and QP
+        ctx.fillStyle = '#333';
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2;
+        drawArrow(ctx, C_x, C_y, A_x, A_y, 12);
+        drawArrow(ctx, Q_x, Q_y, A_x, A_y, 12);
+        
+        // Dashed vertical line through C
+        ctx.beginPath();
+        ctx.setLineDash([3, 3]);
+        ctx.lineWidth = 1;
+        ctx.moveTo(C_x, Q_y);
+        ctx.lineTo(C_x, C_y - R * 0.5);
+        ctx.stroke();
+        // Perpendicular tick
+        ctx.beginPath();
+        ctx.moveTo(C_x-5, C_y-R*0.2);
+        ctx.lineTo(C_x+5, C_y-R*0.2);
+        ctx.stroke();
+        
+        // Angle theta
+        ctx.setLineDash([]);
+        const angle_CP = Math.atan2(A_y - C_y, A_x - C_x);
+        ctx.beginPath();
+        ctx.arc(C_x, C_y, 25, -Math.PI / 2, angle_CP, true); // draw clockwise
+        ctx.stroke();
+        ctx.save();
+        ctx.scale(1,-1);
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('θ', C_x + 15, -C_y - 20);
+        ctx.restore();
+
+        // Tangent line and A(x,y) label
+        const slope_QP = (A_y - Q_y) / (A_x - Q_x);
+        const slope_tangent = -1 / slope_QP;
+        const tan_len = 60;
+        const dx_tan = tan_len / Math.sqrt(1 + slope_tangent*slope_tangent);
+        const dy_tan = slope_tangent * dx_tan;
+
+        ctx.beginPath();
+        ctx.lineWidth = 1;
+        ctx.moveTo(A_x - dx_tan, A_y - dy_tan);
+        ctx.lineTo(A_x + dx_tan, A_y + dy_tan);
+        ctx.stroke();
+        
+        // Label "切线" (tangent)
+        ctx.save();
+        ctx.scale(1, -1);
+        ctx.font = '18px sans-serif';
+        const label_x = A_x + dx_tan + 5;
+        const label_y = -(A_y + dy_tan - 5);
+        drawArrow(ctx, label_x + 25, -label_y-15, A_x+10, -(A_y+5));
+        ctx.fillText('切线', label_x + 30, label_y - 20);
+        ctx.font = 'italic 18px Times New Roman';
+        ctx.fillText('A (x, y)', A_x + 10, -A_y + 25);
+        ctx.restore();
+        
+        // Figure caption
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+        ctx.font = '18px sans-serif';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.fillText('图 1', centerX, canvas.height - 15);
+        ctx.restore();
+
+    </script>
+</body>
+</html>

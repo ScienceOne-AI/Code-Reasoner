@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    /**
+     * Draws an arrow on the canvas context.
+     * @param {CanvasRenderingContext2D} ctx The canvas context.
+     * @param {number} fromX The starting x-coordinate.
+     * @param {number} fromY The starting y-coordinate.
+     * @param {number} toX The ending x-coordinate.
+     * @param {number} toY The ending y-coordinate.
+     * @param {number} headLength The length of the arrowhead.
+     */
+    function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 10) {
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    /**
+     * Draws the "l/2" label.
+     * @param {CanvasRenderingContext2D} ctx The canvas context.
+     * @param {number} midX The x-coordinate of the segment's midpoint.
+     * @param {number} midY The y-coordinate of the segment's midpoint.
+     * @param {number} angle_rad The angle of the rod with the vertical.
+     */
+    function drawLOver2(ctx, midX, midY, angle_rad) {
+        const d = 25; // distance from rod
+        // Position for the label, offset perpendicular to the rod
+        const lx = midX + d * Math.cos(angle_rad);
+        const ly = midY - d * Math.sin(angle_rad);
+        
+        ctx.textAlign = 'center';
+        
+        // Draw 'l'
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.fillText('l', lx, ly);
+        
+        // Draw fraction bar
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(lx - 8, ly + 5);
+        ctx.lineTo(lx + 8, ly + 5);
+        ctx.stroke();
+        
+        // Draw '2'
+        ctx.font = '22px "Times New Roman"'; // '2' is not italic
+        ctx.fillText('2', lx, ly + 25);
+
+        ctx.textAlign = 'left'; // Reset alignment
+    }
+
+
+    // --- Main Drawing ---
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Parameters
+    const x_bot = 320;
+    const y_bot = 400;
+    const rod_length_px = 280;
+    const angle_deg = 30;
+    const angle_rad = angle_deg * Math.PI / 180;
+    const mass_radius = 5;
+
+    // Calculate coordinates
+    const x_top = x_bot - rod_length_px * Math.sin(angle_rad);
+    const y_top = y_bot - rod_length_px * Math.cos(angle_rad);
+    const x_c = (x_bot + x_top) / 2;
+    const y_c = (y_bot + y_top) / 2;
+
+    // 1. Draw Ground
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(50, y_bot);
+    ctx.lineTo(480, y_bot);
+    ctx.stroke();
+    // Hatches
+    for (let i = 60; i < 480; i += 20) {
+        ctx.beginPath();
+        ctx.moveTo(i, y_bot);
+        ctx.lineTo(i - 10, y_bot + 10);
+        ctx.stroke();
+    }
+
+    // 2. Draw Rod and Masses
+    ctx.lineWidth = 3;
+    // Rod
+    ctx.beginPath();
+    ctx.moveTo(x_bot, y_bot);
+    ctx.lineTo(x_top, y_top);
+    ctx.stroke();
+    // Masses
+    ctx.beginPath();
+    ctx.arc(x_bot, y_bot, mass_radius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x_top, y_top, mass_radius, 0, 2 * Math.PI);
+    ctx.fill();
+    // Center point C
+    ctx.beginPath();
+    ctx.arc(x_c, y_c, mass_radius / 1.5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 3. Draw Forces and Arrows at C
+    ctx.lineWidth = 2;
+    const force_len = 90;
+    const center_arrow_len = 50;
+    // Force F
+    drawArrow(ctx, x_bot, y_bot, x_bot + force_len, y_bot);
+    // Force N
+    drawArrow(ctx, x_bot, y_bot, x_bot, y_bot - force_len);
+    // Arrow at C (down)
+    drawArrow(ctx, x_c, y_c, x_c, y_c + center_arrow_len);
+    // Arrow at C (left)
+    drawArrow(ctx, x_c, y_c, x_c - center_arrow_len, y_c);
+    
+    // 4. Draw Dashed Line and Angle Arc
+    ctx.lineWidth = 1.5;
+    // Dashed line from top mass
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(x_top, y_top);
+    ctx.lineTo(x_top, y_top - 50);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line
+
+    // Angle arc
+    ctx.beginPath();
+    // Canvas angles: 0 is right, -PI/2 is up.
+    // We draw from vertical (-PI/2) clockwise by angle_rad.
+    ctx.arc(x_bot, y_bot, 40, -Math.PI / 2, -Math.PI / 2 - angle_rad, true); 
+    ctx.stroke();
+
+    // 5. Draw Labels
+    ctx.font = 'italic 22px "Times New Roman"';
+    // Mass 'm'
+    ctx.fillText('m', x_top - 30, y_top);
+    ctx.fillText('m', x_bot, y_bot + 25);
+    // Force 'F', 'N'
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('F', x_bot + force_len + 10, y_bot + 8);
+    ctx.fillText('N', x_bot + 10, y_bot - force_len - 5);
+    // Center 'C'
+    ctx.fillText('C', x_c + 10, y_c + 10);
+    
+    // 'l/2' labels
+    const mid_up_x = (x_c + x_top) / 2;
+    const mid_up_y = (y_c + y_top) / 2;
+    drawLOver2(ctx, mid_up_x, mid_up_y, angle_rad);
+
+    const mid_low_x = (x_c + x_bot) / 2;
+    const mid_low_y = (y_c + y_bot) / 2;
+    drawLOver2(ctx, mid_low_x, mid_low_y, angle_rad);
+
+</script>
+</body>
+</html>

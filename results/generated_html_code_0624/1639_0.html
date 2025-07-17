@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Suspension Cable Diagram</title>
+</head>
+<body>
+<canvas id="physics-diagram" width="600" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physics-diagram');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw filled arrowheads
+    function drawArrowhead(ctx, x, y, angle, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.lineTo(-size, size / 2);
+        ctx.closePath();
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        ctx.restore();
+    }
+    
+    // Helper function to draw the pole attachments
+    function drawAttachment(x, y) {
+        // Draw the black triangular base
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.moveTo(x, y - 10);
+        ctx.lineTo(x - 8, y + 5);
+        ctx.lineTo(x + 8, y + 5);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Draw the white circle (insulator/pulley)
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+
+    // --- Main Drawing Logic ---
+
+    // Define coordinates and dimensions
+    const xA = 100, yA = 100;
+    const xB = 500, yB = 100;
+    const span = xB - xA;
+    const sag = 60; // Visual sag in pixels for clarity
+
+    const xD = xA + span / 2;
+    const yD = yA;
+    const xC = xD;
+    const yC = yD + sag;
+
+    const groundY = 350;
+    const poleWidth = 10;
+
+    // Set global styles
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Draw Ground
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    ctx.lineTo(canvas.width, groundY);
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    // Draw hatching for the ground
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < canvas.width; i += 12) {
+        ctx.beginPath();
+        ctx.moveTo(i, groundY);
+        ctx.lineTo(i - 12, groundY + 12);
+        ctx.stroke();
+    }
+
+    // Draw Poles
+    ctx.lineWidth = 2.5;
+    // Pole A
+    ctx.beginPath();
+    ctx.moveTo(xA - poleWidth / 2, yA);
+    ctx.lineTo(xA - poleWidth / 2, groundY);
+    ctx.moveTo(xA + poleWidth / 2, yA);
+    ctx.lineTo(xA + poleWidth / 2, groundY);
+    ctx.stroke();
+
+    // Pole B
+    ctx.beginPath();
+    ctx.moveTo(xB - poleWidth / 2, yB);
+    ctx.lineTo(xB - poleWidth / 2, groundY);
+    ctx.moveTo(xB + poleWidth / 2, yB);
+    ctx.lineTo(xB + poleWidth / 2, groundY);
+    ctx.stroke();
+
+    // Draw Pole Attachments
+    drawAttachment(xA, yA);
+    drawAttachment(xB, yB);
+
+    // Draw Cable
+    ctx.beginPath();
+    ctx.moveTo(xA - 60, yA + 25); // Extended part left
+    ctx.lineTo(xA, yA);
+    // Calculate control point for a parabolic curve
+    const controlX = xC;
+    const controlY = 2 * yC - yA; // Control point for a quadratic Bézier to have its vertex at C
+    ctx.quadraticCurveTo(controlX, controlY, xB, yB);
+    ctx.lineTo(xB + 60, yB + 25); // Extended part right
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    // Draw Dashed Line AB
+    ctx.beginPath();
+    ctx.setLineDash([7, 5]);
+    ctx.moveTo(xA, yA);
+    ctx.lineTo(xB, yB);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line
+
+    // --- Draw Dimensions and Labels ---
+    
+    // Vertical Sag Dimension (1 m)
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(xD, yD);
+    ctx.lineTo(xD, yC);
+    ctx.stroke();
+    drawArrowhead(ctx, xD, yD, Math.PI / 2, 8); // Arrow pointing down
+    drawArrowhead(ctx, xD, yC, -Math.PI / 2, 8); // Arrow pointing up
+    ctx.font = 'bold 24px serif';
+    ctx.textAlign = 'left';
+    ctx.fillText("1 m", xD - 55, yD + sag / 2);
+
+    // Horizontal Span Dimension (40 m)
+    const y_dim_horiz = yA - 40;
+    ctx.beginPath();
+    ctx.moveTo(xA, y_dim_horiz);
+    ctx.lineTo(xB, y_dim_horiz);
+    ctx.stroke();
+    // Arrowheads pointing inwards
+    drawArrowhead(ctx, xA, y_dim_horiz, 0, 10);
+    drawArrowhead(ctx, xB, y_dim_horiz, Math.PI, 10);
+    // Ticks on the dimension line
+    ctx.beginPath();
+    ctx.moveTo(xA, y_dim_horiz - 5);
+    ctx.lineTo(xA, y_dim_horiz + 5);
+    ctx.moveTo(xB, y_dim_horiz - 5);
+    ctx.lineTo(xB, y_dim_horiz + 5);
+    ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText("40 m", xD, y_dim_horiz - 5);
+    
+    // Draw Labels (A, B, C, D)
+    ctx.font = 'bold 30px serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("A", xA - 30, yA - 10);
+    ctx.fillText("B", xB + 30, yB - 10);
+    ctx.fillText("C", xC, yC + 30);
+    ctx.font = 'bold 26px serif';
+    ctx.fillText("D", xD + 20, yD - 12);
+
+</script>
+</body>
+</html>

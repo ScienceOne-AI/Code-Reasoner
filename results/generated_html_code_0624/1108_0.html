@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pendulum with Nail Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromX, fromY, toX, toY, text = '', textOffset = {x: 10, y: -10}) {
+            const headlen = 10; // length of head in pixels
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+
+            // Main line
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+
+            // Text label
+            if (text) {
+                ctx.fillText(text, toX + textOffset.x, toY + textOffset.y);
+            }
+        }
+        
+        // Drawing parameters
+        const cx = 300;
+        const cy = 80;
+        const L = 220;
+        const r = 80;
+        const alpha_deg = 35;
+        const beta_deg = 20;
+        const theta_deg = 45;
+
+        const bobRadius = 8;
+        const nailRadius = 6;
+
+        // Convert angles to radians
+        const alpha = alpha_deg * Math.PI / 180;
+        const beta = beta_deg * Math.PI / 180;
+        const theta = theta_deg * Math.PI / 180;
+
+        // --- Start Drawing ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // 1. Draw Ceiling
+        ctx.beginPath();
+        ctx.moveTo(cx - 150, cy);
+        ctx.lineTo(cx + 150, cy);
+        ctx.stroke();
+        // Hatching
+        for (let i = -140; i <= 140; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(cx + i, cy);
+            ctx.lineTo(cx + i - 10, cy - 10);
+            ctx.stroke();
+        }
+
+        // 2. Draw Vertical Dashed Lines
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1;
+        // Main vertical
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx, cy + L + 80);
+        ctx.stroke();
+        ctx.restore();
+
+
+        // 3. Draw Left Side (initial state)
+        const pLeft = {
+            x: cx - L * Math.sin(alpha),
+            y: cy + L * Math.cos(alpha)
+        };
+        // String
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(pLeft.x, pLeft.y);
+        ctx.stroke();
+        // Bob
+        ctx.beginPath();
+        ctx.arc(pLeft.x, pLeft.y, bobRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        // Angle alpha
+        ctx.beginPath();
+        const angleRadiusAlpha = 40;
+        ctx.arc(cx, cy, angleRadiusAlpha, Math.PI / 2 - alpha, Math.PI / 2, false);
+        ctx.stroke();
+        // Labels
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('m', pLeft.x - 25, pLeft.y + 10);
+        ctx.fillText('L', cx - 90, cy + 120);
+        ctx.fillText('α', cx - angleRadiusAlpha - 10, cy + angleRadiusAlpha / 1.5);
+
+
+        // 4. Draw Nail and its connecting line
+        const pNail = {
+            x: cx + r * Math.sin(beta),
+            y: cy + r * Math.cos(beta)
+        };
+        // Line to nail
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(pNail.x, pNail.y);
+        ctx.stroke();
+        // Nail (circle)
+        ctx.beginPath();
+        ctx.arc(pNail.x, pNail.y, nailRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'black'; // Reset fill style
+        // Angle beta
+        ctx.beginPath();
+        const angleRadiusBeta = 45;
+        ctx.arc(cx, cy, angleRadiusBeta, Math.PI / 2, Math.PI / 2 + beta, false);
+        ctx.stroke();
+        // Labels for nail
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('r', cx + 25, cy + 45);
+        ctx.fillText('β', cx + angleRadiusBeta, cy + angleRadiusBeta / 1.2);
+        ctx.font = '18px KaiTi'; // Chinese font
+        ctx.fillText('钉子', pNail.x + 15, pNail.y + 5);
+
+
+        // 5. Draw Right Side (swinging around nail)
+        const L_new = L - r;
+        const pRight = {
+            x: pNail.x + L_new * Math.sin(theta),
+            y: pNail.y + L_new * Math.cos(theta)
+        };
+        // Vertical dashed line from nail
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pNail.x, pNail.y);
+        ctx.lineTo(pNail.x, pNail.y + L_new + 20);
+        ctx.stroke();
+        ctx.restore();
+        // String from nail
+        ctx.beginPath();
+        ctx.moveTo(pNail.x, pNail.y);
+        ctx.lineTo(pRight.x, pRight.y);
+        ctx.stroke();
+        // Bob
+        ctx.beginPath();
+        ctx.arc(pRight.x, pRight.y, bobRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        // Angle theta
+        ctx.beginPath();
+        const angleRadiusTheta = 40;
+        ctx.arc(pNail.x, pNail.y, angleRadiusTheta, Math.PI / 2, Math.PI / 2 + theta, false);
+        ctx.stroke();
+        // Labels
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('θ', pNail.x + angleRadiusTheta * 0.9, pNail.y + angleRadiusTheta * 0.9);
+        ctx.fillText('L–r', pNail.x + 60, pNail.y + 80);
+
+
+        // 6. Draw Force and Velocity Vectors on right bob
+        const vecLen = 60;
+        ctx.lineWidth = 1.5;
+        // Gravity (mg)
+        drawArrow(ctx, pRight.x, pRight.y, pRight.x, pRight.y + vecLen, 'mg', {x: 10, y: 0});
+        // Tension (T)
+        const t_angle = Math.atan2(pNail.y - pRight.y, pNail.x - pRight.x);
+        const t_end = {
+            x: pRight.x + (vecLen - 10) * Math.cos(t_angle),
+            y: pRight.y + (vecLen - 10) * Math.sin(t_angle)
+        };
+        drawArrow(ctx, pRight.x, pRight.y, t_end.x, t_end.y, 'T', {x: -30, y: -5});
+        // Velocity (v)
+        const v_angle = t_angle + Math.PI / 2;
+        const v_end = {
+            x: pRight.x + (vecLen - 10) * Math.cos(v_angle),
+            y: pRight.y + (vecLen - 10) * Math.sin(v_angle)
+        };
+        drawArrow(ctx, pRight.x, pRight.y, v_end.x, v_end.y, 'v', {x: 5, y: -10});
+        
+        // Label for right bob mass
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('m', pRight.x + 15, pRight.y + 20);
+
+        // 7. Draw Caption
+        ctx.font = '18px KaiTi';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.fillText('力图 3.5.1', canvas.width / 2, canvas.height - 20);
+    </script>
+</body>
+</html>

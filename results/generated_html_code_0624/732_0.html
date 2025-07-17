@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Double Inclined Plane Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '24px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Geometric parameters
+        const alpha = 30 * Math.PI / 180; // 30 degrees
+        const beta = 60 * Math.PI / 180;  // 60 degrees
+        const wedgeHeight = 200;
+        const p_top = { x: 400, y: 150 };
+        const p_left = { x: p_top.x - wedgeHeight / Math.tan(alpha), y: p_top.y + wedgeHeight };
+        const p_right = { x: p_top.x + wedgeHeight / Math.tan(beta), y: p_top.y + wedgeHeight };
+
+        const pulleyRadius = 22;
+        const blockA_size = { w: 110, h: 60 };
+        const blockB_size = { w: 100, h: 60 };
+
+        // --- Drawing Functions ---
+
+        function drawWedge() {
+            ctx.beginPath();
+            ctx.moveTo(p_left.x, p_left.y);
+            ctx.lineTo(p_top.x, p_top.y);
+            ctx.lineTo(p_right.x, p_right.y);
+            ctx.lineTo(p_left.x, p_left.y);
+            ctx.stroke();
+        }
+
+        function drawAngles() {
+            // Angle alpha
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(p_left.x + 80, p_left.y);
+            ctx.arc(p_left.x, p_left.y, 80, 0, -alpha, true);
+            ctx.stroke();
+            ctx.fillText('α', p_left.x + 60, p_left.y - 25);
+
+            // Angle beta
+            ctx.beginPath();
+            ctx.moveTo(p_right.x - 80, p_right.y);
+            ctx.arc(p_right.x, p_right.y, 80, Math.PI, Math.PI + beta, false);
+            ctx.stroke();
+            ctx.fillText('β', p_right.x - 60, p_right.y - 25);
+            ctx.restore();
+        }
+
+        function drawBlock(center, size, angle, label) {
+            ctx.save();
+            ctx.translate(center.x, center.y);
+            ctx.rotate(angle);
+            ctx.strokeRect(-size.w / 2, -size.h / 2, size.w, size.h);
+            ctx.fillText(label, 0, 0);
+            ctx.restore();
+        }
+        
+        function drawPulley() {
+            const cx = p_top.x;
+            const cy = p_top.y;
+            const r = pulleyRadius;
+        
+            ctx.save();
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+        
+            // Inner structure based on image
+            const r_in = r * 0.7;
+            const u_width = 6;
+        
+            ctx.beginPath();
+            ctx.moveTo(cx - u_width, cy - r);
+            ctx.lineTo(cx - u_width, cy - r_in);
+            ctx.arc(cx, cy - r_in, u_width, Math.PI, 0, false);
+            ctx.lineTo(cx + u_width, cy - r);
+            ctx.stroke();
+        
+            ctx.beginPath();
+            ctx.arc(cx, cy, r_in, Math.PI * 0.55, Math.PI * 0.85, false);
+            ctx.stroke();
+        
+            ctx.beginPath();
+            ctx.arc(cx, cy, r_in, Math.PI * 0.15, Math.PI * 0.45, false);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+
+        function drawSystem() {
+            drawWedge();
+            drawAngles();
+
+            // Block positions
+            const blockA_center = { x: 226.8, y: 250 };
+            const blockB_center = { x: 457.8, y: 250 };
+            
+            // Calculate attachment points and tangent points for the rope
+            // Attachment point on block A (top center)
+            const attach_A_rel = { x: 0, y: -blockA_size.h / 2 };
+            const attach_A = {
+                x: blockA_center.x + attach_A_rel.x * Math.cos(-alpha) - attach_A_rel.y * Math.sin(-alpha),
+                y: blockA_center.y + attach_A_rel.x * Math.sin(-alpha) + attach_A_rel.y * Math.cos(-alpha)
+            };
+
+            // Attachment point on block B (top center)
+            const attach_B_rel = { x: 0, y: -blockB_size.h / 2 };
+            const attach_B = {
+                x: blockB_center.x + attach_B_rel.x * Math.cos(beta) - attach_B_rel.y * Math.sin(beta),
+                y: blockB_center.y + attach_B_rel.x * Math.sin(beta) + attach_B_rel.y * Math.cos(beta)
+            };
+            
+            // Tangent points on pulley
+            const tangentAngleA_normal = alpha + Math.PI / 2;
+            const tangent_A = {
+                x: p_top.x + pulleyRadius * Math.cos(tangentAngleA_normal),
+                y: p_top.y - pulleyRadius * Math.sin(tangentAngleA_normal)
+            };
+
+            const tangentAngleB_normal = -beta + Math.PI / 2;
+            const tangent_B = {
+                x: p_top.x + pulleyRadius * Math.cos(tangentAngleB_normal),
+                y: p_top.y - pulleyRadius * Math.sin(tangentAngleB_normal)
+            };
+
+            // Draw rope
+            ctx.beginPath();
+            ctx.moveTo(attach_A.x, attach_A.y);
+            ctx.lineTo(tangent_A.x, tangent_A.y);
+            ctx.arc(p_top.x, p_top.y, pulleyRadius, tangentAngleA_normal, tangentAngleB_normal, true);
+            ctx.lineTo(attach_B.x, attach_B.y);
+            ctx.stroke();
+
+            // Draw blocks and pulley on top of the rope
+            drawBlock(blockA_center, blockA_size, -alpha, 'A');
+            drawBlock(blockB_center, blockB_size, beta, 'B'); // block B is on a downward slope, but visually its top is aligned with the slope
+            drawPulley();
+            
+            // Draw Caption
+            ctx.font = '28px "KaiTi"';
+            ctx.fillText('习题 1-27 图', 350, 450);
+        }
+
+        // Execute drawing
+        drawSystem();
+
+    </script>
+</body>
+</html>

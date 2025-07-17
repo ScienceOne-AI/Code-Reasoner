@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nuclear Shell Model Energy Levels</title>
+</head>
+<body>
+    <canvas id="nuclearChart" width="700" height="750"></canvas>
+    <script>
+        // Data points [A, E] for each energy level curve
+        // Extracted visually from the original image.
+        const curvesData = [
+            // Levels with labels on the right
+            { label: "3d3/2", points: [[140, 0.2], [180, -0.1], [220, -0.5]] },
+            { label: "2g7/2", points: [[130, -0.2], [180, -0.6], [220, -1.0]] },
+            { label: "4s1/2", points: [[155, 0], [180, -0.8], [220, -1.5]] },
+            { label: "1j15/2", points: [[135, 1.5], [160, 0.5], [220, -2.0]] },
+            { label: "3d5/2", points: [[120, 0], [160, -1.5], [220, -2.5]] },
+            { label: "1i11/2", points: [[80, 0], [120, -1.5], [160, -2.5], [220, -3.5]] },
+            { label: "2g9/2", points: [[70, -1], [120, -2.5], [160, -3.2], [220, -4.0]] },
+            { label: "3p1/2", points: [[100, -2], [140, -3.5], [180, -4.3], [220, -5.0]] },
+            { label: "3p3/2", points: [[90, -3], [130, -4.3], [180, -5.0], [220, -5.5]] },
+            { label: "2f5/2", points: [[80, -4], [120, -5], [160, -5.8], [220, -6.5]] },
+            { label: "1i13/2", points: [[60, -2], [100, -4], [140, -5.5], [220, -7.0]] },
+            { label: "2f7/2", points: [[60, -5], [100, -6.5], [140, -7.2], [220, -8.0]] },
+            { label: "1h9/2", points: [[40, -3], [80, -6], [120, -7.5], [180, -8.5], [220, -9.0]] },
+            { label: "1h11/2", points: [[20, -2], [60, -6], [100, -8], [140, -9.5], [220, -10.5]] },
+            { label: "3s1/2", points: [[40, -7], [80, -9.5], [120, -10.8], [180, -11.5], [220, -12.0]] },
+            { label: "2d3/2", points: [[20, -6], [60, -9.5], [100, -11.2], [160, -12.5], [220, -13.0]] },
+            { label: "2d5/2", points: [[10, -5], [40, -9.5], [80, -12], [140, -13.5], [220, -14.5]] },
+            { label: "1g7/2", points: [[20, -4], [60, -9], [100, -12], [160, -14], [220, -15.5]] },
+            { label: "1g9/2", points: [[0, -1], [40, -8], [80, -12], [120, -14.5], [220, -17.0]] },
+            { label: "2p1/2", points: [[20, -10], [60, -14], [100, -16.5], [160, -18], [220, -19.0]] },
+            { label: "2p3/2", points: [[10, -9], [40, -13.5], [80, -16.5], [140, -18.5], [220, -20.0]] },
+            { label: "1f5/2", points: [[10, -7], [40, -12.5], [80, -16], [140, -19], [220, -21.0]] },
+            { label: "1f7/2", points: [[0, -4], [40, -12], [80, -16.5], [120, -19], [220, -22.5]] },
+            { label: "2s1/2", points: [[0, -4.5], [40, -20], [80, -25], [140, -28], [220, -29.8]] },
+            { label: "1d3/2", points: [[0, -1.5], [40, -18], [80, -23.5], [140, -27], [220, -29.5]] },
+            { label: "1d5/2", points: [[0, -9], [20, -17], [40, -21.5], [80, -26], [140, -29], [220, -30.5]] },
+            { label: "1p1/2", points: [[0, -17], [40, -27], [80, -31], [140, -33.5], [220, -35.0]] },
+            { label: "1p3/2", points: [[0, -21], [40, -30], [80, -33], [120, -34.2], [220, -35.5]] },
+            { label: "1s1/2", points: [[18, -32], [40, -36], [80, -38.5], [120, -39.3], [220, -40.2]] }
+        ];
+
+        // Labels to be drawn on the left side of the plot
+        const leftLabels = [
+            { label: "1d3/2", A: 0, E: -1.5 },
+            { label: "2s1/2", A: 0, E: -4.5 },
+            { label: "1d5/2", A: 0, E: -9 },
+            { label: "1p1/2", A: 0, E: -17 },
+            { label: "1p3/2", A: 0, E: -21 },
+            { label: "1s1/2", A: 18, E: -32 }
+        ];
+
+        window.onload = function() {
+            const canvas = document.getElementById('nuclearChart');
+            const ctx = canvas.getContext('2d');
+
+            // --- Drawing Configuration ---
+            const marginTop = 50, marginBottom = 80, marginLeft = 80, marginRight = 120;
+            const canvasWidth = canvas.width, canvasHeight = canvas.height;
+            const plotWidth = canvasWidth - marginLeft - marginRight;
+            const plotHeight = canvasHeight - marginTop - marginBottom;
+
+            const A_min = 0, A_max = 220;
+            const E_min = -42, E_max = 5;
+
+            // --- Coordinate Mapping Functions ---
+            const mapX = (A) => marginLeft + (A / A_max) * plotWidth;
+            const mapY = (E) => marginTop + plotHeight - ((E - E_min) / (E_max - E_min)) * plotHeight;
+
+            // --- Helper function to draw text with subscript ---
+            function drawSubscriptedLabel(ctx, text, x, y, baseSize = 14) {
+                const subSize = baseSize * 0.75;
+                const match = text.match(/(\d+[a-z])(\d+\/\d+)/);
+                if (!match) {
+                    ctx.font = `${baseSize}px serif`;
+                    ctx.fillText(text, x, y);
+                    return;
+                }
+                const mainPart = match[1];
+                const subPart = match[2];
+
+                ctx.font = `${baseSize}px serif`;
+                ctx.fillText(mainPart, x, y);
+                const mainWidth = ctx.measureText(mainPart).width;
+
+                ctx.font = `${subSize}px serif`;
+                ctx.fillText(subPart, x + mainWidth * 0.95, y + 3);
+            }
+            
+            // --- Main Drawing Function ---
+            function draw() {
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                ctx.fillStyle = "black";
+                ctx.strokeStyle = "black";
+
+                // Draw Axes
+                drawAxes();
+
+                // Draw Curves
+                ctx.lineWidth = 1.5;
+                curvesData.forEach(curve => {
+                    ctx.beginPath();
+                    const startPoint = curve.points[0];
+                    ctx.moveTo(mapX(startPoint[0]), mapY(startPoint[1]));
+                    for (let i = 1; i < curve.points.length; i++) {
+                        ctx.lineTo(mapX(curve.points[i][0]), mapY(curve.points[i][1]));
+                    }
+                    ctx.stroke();
+                });
+
+                // Draw Labels
+                drawLabels();
+            }
+
+            function drawAxes() {
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                // Y-Axis
+                ctx.moveTo(marginLeft, marginTop);
+                ctx.lineTo(marginLeft, marginTop + plotHeight);
+                // X-Axis
+                ctx.moveTo(marginLeft, mapY(0));
+                ctx.lineTo(marginLeft + plotWidth, mapY(0));
+                ctx.stroke();
+
+                // Axis Ticks and Labels
+                ctx.font = "14px serif";
+                ctx.textAlign = "right";
+                ctx.textBaseline = "middle";
+
+                // Y-Axis Ticks (E in MeV)
+                for (let E = -40; E <= 0; E += 10) {
+                    const y = mapY(E);
+                    ctx.fillText(E, marginLeft - 10, y);
+                    ctx.beginPath();
+                    ctx.moveTo(marginLeft - 5, y);
+                    ctx.lineTo(marginLeft, y);
+                    ctx.stroke();
+                }
+                ctx.save();
+                ctx.translate(marginLeft - 50, marginTop + plotHeight / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.textAlign = "center";
+                ctx.fillText("E  MeV", 0, 0);
+                ctx.restore();
+
+                // X-Axis Ticks (A)
+                ctx.textAlign = "center";
+                ctx.textBaseline = "top";
+                 for (let A = 0; A <= 220; A += 20) {
+                    const x = mapX(A);
+                    ctx.fillText(A, x, mapY(0) + 10);
+                    ctx.beginPath();
+                    ctx.moveTo(x, mapY(0));
+                    ctx.lineTo(x, mapY(0) + 5);
+                    ctx.stroke();
+                }
+                ctx.fillText("A", mapX(A_max / 2), mapY(0) + 35);
+
+                // Fig caption
+                ctx.fillText("Fig. 2.16", mapX(A_max / 2), canvasHeight - 30);
+            }
+
+            function drawLabels() {
+                ctx.textAlign = "left";
+                ctx.textBaseline = "middle";
+                const labelX = mapX(A_max) + 10;
+                
+                // Right-side labels
+                curvesData.forEach(curve => {
+                    const lastPoint = curve.points[curve.points.length - 1];
+                    const yPos = mapY(lastPoint[1]);
+                    drawSubscriptedLabel(ctx, curve.label, labelX, yPos);
+                });
+
+                // Left-side labels
+                ctx.textAlign = "right";
+                leftLabels.forEach(lbl => {
+                    const xPos = mapX(lbl.A) - 10;
+                    const yPos = mapY(lbl.E);
+                     drawSubscriptedLabel(ctx, lbl.label, xPos, yPos);
+                });
+            }
+
+            // Execute drawing
+            draw();
+        };
+    </script>
+</body>
+</html>

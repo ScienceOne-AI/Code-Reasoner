@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="450" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General styling
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // --- Drawing components ---
+
+        // 1. Elevator Frame
+        const box = { x: 50, y: 50, w: 350, h: 320 };
+        ctx.strokeRect(box.x, box.y, box.w, box.h);
+
+        // 2. Acceleration vector 'a'
+        const arrowX = box.x + box.w / 2;
+        const arrowStartY = box.y;
+        const arrowEndY = box.y - 30;
+        
+        // Arrow line
+        ctx.beginPath();
+        ctx.moveTo(arrowX, arrowStartY);
+        ctx.lineTo(arrowX, arrowEndY);
+        ctx.stroke();
+        
+        // Arrowhead
+        const arrowHeadSize = 8;
+        ctx.beginPath();
+        ctx.moveTo(arrowX, arrowEndY);
+        ctx.lineTo(arrowX - arrowHeadSize / 1.5, arrowEndY + arrowHeadSize);
+        ctx.moveTo(arrowX, arrowEndY);
+        ctx.lineTo(arrowX + arrowHeadSize / 1.5, arrowEndY + arrowHeadSize);
+        ctx.stroke();
+
+        // Label 'a' for acceleration
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText('a', arrowX - 20, arrowEndY + 15);
+
+
+        // 3. Internal structure (platform and vertical wall)
+        const platformY = box.y + 170;
+        const cornerX = box.x + 270;
+        ctx.beginPath();
+        ctx.moveTo(box.x, platformY);
+        ctx.lineTo(cornerX, platformY);
+        ctx.lineTo(cornerX, box.y + box.h); // Extend to the bottom of the elevator
+        ctx.stroke();
+
+        // 4. Pulley at the corner
+        const pulley = { x: cornerX, y: platformY, r: 15 };
+        ctx.beginPath();
+        ctx.arc(pulley.x, pulley.y, pulley.r, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Small inner circle for detail
+        ctx.beginPath();
+        ctx.arc(pulley.x, pulley.y, pulley.r/4, 0, 2 * Math.PI);
+        ctx.fill();
+
+
+        // 5. Block m1
+        const m1 = { w: 80, h: 50 };
+        m1.x = box.x + 60;
+        m1.y = platformY - m1.h;
+        ctx.fillStyle = '#E0E0E0'; // Light gray fill
+        ctx.fillRect(m1.x, m1.y, m1.w, m1.h);
+        ctx.strokeRect(m1.x, m1.y, m1.w, m1.h);
+
+        // 6. Block m2
+        const m2 = { w: 50, h: 50 };
+        m2.x = pulley.x + 25;
+        m2.y = pulley.y + pulley.r + 50;
+        ctx.fillStyle = '#E0E0E0';
+        ctx.fillRect(m2.x, m2.y, m2.w, m2.h);
+        ctx.strokeRect(m2.x, m2.y, m2.w, m2.h);
+
+        // 7. Rope connecting m1 and m2 over the pulley
+        ctx.beginPath();
+        const ropeHorizontalY = m1.y + m1.h / 2;
+        const ropeVerticalX = m2.x + m2.w / 2;
+        
+        ctx.moveTo(m1.x + m1.w, ropeHorizontalY); // Start from m1
+        ctx.lineTo(pulley.x - pulley.r, ropeHorizontalY); // Horizontal part to pulley tangent
+        // Arc over the pulley
+        ctx.arc(pulley.x, pulley.y, pulley.r, Math.PI, Math.PI/2, true); // Arc from 9 o'clock to 6 o'clock
+        ctx.lineTo(pulley.x, m2.y); // Vertical part down to m2
+        // The above arc logic is complicated if the rope is not at the equator.
+        // A simpler quadratic curve gives a good visual approximation.
+        ctx.beginPath();
+        ctx.moveTo(m1.x + m1.w, m1.y + m1.h / 2);
+        // Using a curve to go over the pulley
+        ctx.quadraticCurveTo(pulley.x, m1.y + m1.h / 2, pulley.x, pulley.y);
+        ctx.lineTo(pulley.x, m2.y);
+        // This makes the vertical part go through the center. Let's adjust.
+        ctx.beginPath();
+        ctx.moveTo(m1.x + m1.w, m1.y + m1.h / 2);
+        ctx.lineTo(pulley.x, m1.y + m1.h / 2);
+        ctx.moveTo(pulley.x, pulley.y); // Reset path for vertical segment
+        ctx.lineTo(pulley.x, m2.y);
+        // Let's draw the rope to tangentially wrap the pulley for a more realistic look
+        ctx.beginPath();
+        const ropeY = m1.y + m1.h / 2;
+        const ropeX = m2.x + m2.w / 2;
+        ctx.moveTo(m1.x + m1.w, ropeY);
+        ctx.lineTo(pulley.x, ropeY); // Horizontal segment
+        ctx.moveTo(ropeX, pulley.y); // Start vertical segment from a point right of the pulley
+        ctx.lineTo(ropeX, m2.y); // Vertical segment
+        ctx.stroke();
+        
+        // Arc to visually connect the rope segments over the pulley
+        ctx.beginPath();
+        ctx.arc(pulley.x, pulley.y, ropeX - pulley.x, Math.PI, 1.5 * Math.PI, false);
+        ctx.stroke();
+
+
+        // 8. Labels for masses
+        ctx.fillStyle = 'black';
+        // Label m1
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText('m', m1.x + 20, m1.y - 8);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('1', m1.x + 36, m1.y - 4);
+
+        // Label m2
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText('m', m2.x + 8, m2.y + m2.h + 22);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('2', m2.x + 24, m2.y + m2.h + 26);
+
+        // 9. Caption
+        ctx.font = '22px SimSun';
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 1-43 图', canvas.width / 2, canvas.height - 20);
+
+    </script>
+</body>
+</html>

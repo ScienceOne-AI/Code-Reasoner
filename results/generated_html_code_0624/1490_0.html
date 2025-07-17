@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>V-I Graph</title>
+</head>
+<body>
+<canvas id="myCanvas" width="600" height="520"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const margin = { top: 40, right: 40, bottom: 60, left: 100 };
+    canvas.width = 600;
+    canvas.height = 520;
+
+    const graphWidth = canvas.width - margin.left - margin.right;
+    const graphHeight = canvas.height - margin.top - margin.bottom;
+
+    const xMin = 0;
+    const xMax = 6.0;
+    const yMin = 0;
+    const yMax = 10.0;
+
+    // --- Helper functions to map data coordinates to canvas coordinates ---
+    function scaleX(x) {
+        return margin.left + (x - xMin) / (xMax - xMin) * graphWidth;
+    }
+
+    function scaleY(y) {
+        return margin.top + graphHeight - (y - yMin) / (yMax - yMin) * graphHeight;
+    }
+
+    // --- Draw Grid ---
+    // Minor grid
+    ctx.beginPath();
+    ctx.strokeStyle = '#dddddd';
+    ctx.lineWidth = 1;
+
+    const xMinorDivisions = 30; // 6.0 / 0.2
+    for (let i = 1; i < xMinorDivisions; i++) {
+        if (i % 5 !== 0) { // If not a major grid line
+            const x = xMin + i * (xMax / xMinorDivisions);
+            ctx.moveTo(scaleX(x), scaleY(yMin));
+            ctx.lineTo(scaleX(x), scaleY(yMax));
+        }
+    }
+
+    const yMinorDivisions = 50; // 10.0 / 0.2
+    for (let i = 1; i < yMinorDivisions; i++) {
+        if (i % 10 !== 0) { // If not a major grid line
+            const y = yMin + i * (yMax / yMinorDivisions);
+            ctx.moveTo(scaleX(xMin), scaleY(y));
+            ctx.lineTo(scaleX(xMax), scaleY(y));
+        }
+    }
+    ctx.stroke();
+
+    // Major grid
+    ctx.beginPath();
+    ctx.strokeStyle = '#bbbbbb';
+    ctx.lineWidth = 1;
+
+    const xMajorStep = 1.0;
+    for (let x = xMin + xMajorStep; x < xMax; x += xMajorStep) {
+        ctx.moveTo(scaleX(x), scaleY(yMin));
+        ctx.lineTo(scaleX(x), scaleY(yMax));
+    }
+
+    const yMajorStep = 2.0;
+    for (let y = yMin + yMajorStep; y < yMax; y += yMajorStep) {
+        ctx.moveTo(scaleX(xMin), scaleY(y));
+        ctx.lineTo(scaleX(xMax), scaleY(y));
+    }
+    ctx.stroke();
+
+    // --- Draw Axes ---
+    ctx.beginPath();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(scaleX(xMin), scaleY(yMin));
+    ctx.lineTo(scaleX(xMax), scaleY(yMin)); // X-axis
+    ctx.moveTo(scaleX(xMin), scaleY(yMin));
+    ctx.lineTo(scaleX(xMin), scaleY(yMax)); // Y-axis
+    ctx.stroke();
+
+    // --- Draw Axis Labels and Ticks ---
+    ctx.fillStyle = 'black';
+    ctx.font = '16px serif';
+
+    // X-axis labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let x = xMin; x <= xMax; x += xMajorStep) {
+        const label = x === 0 ? '0' : x.toFixed(1);
+        ctx.fillText(label, scaleX(x), scaleY(yMin) + 8);
+    }
+    ctx.fillText('current/mA', scaleX(xMin + (xMax - xMin) / 2), scaleY(yMin) + 35);
+
+    // Y-axis labels
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let y = yMin + yMajorStep; y <= yMax; y += yMajorStep) {
+        ctx.fillText(y.toFixed(1), scaleX(xMin) - 8, scaleY(y));
+    }
+
+    // Y-axis title
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('potential difference/V', margin.left - 50, scaleY(7.0));
+
+
+    // --- Draw the Curve ---
+    const detailedPoints = [
+        {x: 0.0, y: 0.0}, {x: 0.2, y: 0.9}, {x: 0.4, y: 1.7}, {x: 0.6, y: 2.5},
+        {x: 0.8, y: 3.3}, {x: 1.0, y: 4.0}, {x: 1.2, y: 4.6}, {x: 1.4, y: 5.1},
+        {x: 1.6, y: 5.5}, {x: 1.8, y: 5.8}, {x: 2.0, y: 6.0}, {x: 2.2, y: 6.4},
+        {x: 2.4, y: 6.8}, {x: 2.6, y: 7.1}, {x: 2.8, y: 7.5}, {x: 3.0, y: 7.8},
+        {x: 3.2, y: 8.1}, {x: 3.4, y: 8.4}, {x: 3.6, y: 8.6}, {x: 3.8, y: 8.8},
+        {x: 4.0, y: 9.0}, {x: 4.2, y: 9.2}, {x: 4.4, y: 9.4}, {x: 4.6, y: 9.6},
+        {x: 4.8, y: 9.7}, {x: 5.0, y: 9.8}, {x: 5.2, y: 9.85}, {x: 5.4, y: 9.9},
+        {x: 5.6, y: 9.95}, {x: 5.8, y: 9.98}, {x: 6.0, y: 10.0}
+    ];
+
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(scaleX(detailedPoints[0].x), scaleY(detailedPoints[0].y));
+    for(let i=1; i < detailedPoints.length; i++) {
+        ctx.lineTo(scaleX(detailedPoints[i].x), scaleY(detailedPoints[i].y));
+    }
+    ctx.stroke();
+
+    // --- Draw Figure Caption ---
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.font = 'bold 16px serif';
+    ctx.fillText('Fig. 10.1', canvas.width / 2, canvas.height - 5);
+</script>
+</body>
+</html>

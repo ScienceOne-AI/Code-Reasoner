@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Damped Oscillation Graph</title>
+</head>
+<body>
+<canvas id="physics_graph" width="800" height="540"></canvas>
+<script>
+    const canvas = document.getElementById('physics_graph');
+    const ctx = canvas.getContext('2d');
+
+    const width = canvas.width;
+    const height = canvas.height;
+
+    // --- Style and Geometry Parameters ---
+    const bgColor = '#FFFFFF';
+    const gridColorThin = '#E0E0E0';
+    const gridColorThick = '#BDBDBD';
+    const axisColor = '#000000';
+    const labelColor = '#000000';
+    const curveColor = '#000000';
+    
+    const fontLabel = '16px sans-serif';
+    const fontAxis = '18px sans-serif';
+    const fontAxisVar = 'italic 18px sans-serif';
+    const fontCaption = 'bold 16px sans-serif';
+
+    const lineWidthThin = 0.5;
+    const lineWidthThick = 1;
+    const lineWidthAxis = 1.5;
+    const lineWidthCurve = 1.75;
+
+    const margin = 50;
+    const graphWidth = width - 2 * margin;
+    const graphHeight = height - 2 * margin;
+
+    // --- Data Coordinate System ---
+    const tMaxRange = 3.5; // in units of T
+    const xMaxRange = 2.2;
+    const xMinRange = -2.2;
+
+    const tScale = graphWidth / tMaxRange;
+    const xScale = graphHeight / (xMaxRange - xMinRange);
+
+    const originX = margin;
+    const originY = margin + xMaxRange * xScale;
+
+    const getPx = t_T => originX + t_T * tScale; // t_T is time in units of T
+    const getPy = x_cm => originY - x_cm * xScale; // x_cm is displacement in cm
+
+    // --- Drawing Functions ---
+
+    function drawGrid() {
+        // Thin grid lines
+        ctx.strokeStyle = gridColorThin;
+        ctx.lineWidth = lineWidthThin;
+        // Vertical thin lines (every T/20)
+        const tThinStep = 1 / 20;
+        for (let t = tThinStep; t < tMaxRange; t += tThinStep) {
+            const px = getPx(t);
+            ctx.beginPath();
+            ctx.moveTo(px, margin);
+            ctx.lineTo(px, height - margin);
+            ctx.stroke();
+        }
+        // Horizontal thin lines (every 0.1 cm)
+        const xThinStep = 0.1;
+        for (let x = xMinRange + xThinStep; x < xMaxRange; x += xThinStep) {
+            if (Math.abs(x) < 1e-9) continue;
+            const py = getPy(x);
+            ctx.beginPath();
+            ctx.moveTo(margin, py);
+            ctx.lineTo(width - margin, py);
+            ctx.stroke();
+        }
+
+        // Thick grid lines
+        ctx.strokeStyle = gridColorThick;
+        ctx.lineWidth = lineWidthThick;
+        // Vertical thick lines (every T/10)
+        const tThickStep = 1 / 10;
+        for (let t = tThickStep; t < tMaxRange; t += tThickStep) {
+            const px = getPx(t);
+            ctx.beginPath();
+            ctx.moveTo(px, margin);
+            ctx.lineTo(px, height - margin);
+            ctx.stroke();
+        }
+        // Horizontal thick lines (every 0.2 cm)
+        const xThickStep = 0.2;
+        for (let x = xMinRange + xThickStep; x < xMaxRange; x += xThickStep) {
+            if (Math.abs(x) < 1e-9) continue;
+            const py = getPy(x);
+            ctx.beginPath();
+            ctx.moveTo(margin, py);
+            ctx.lineTo(width - margin, py);
+            ctx.stroke();
+        }
+    }
+
+    function drawAxes() {
+        ctx.strokeStyle = axisColor;
+        ctx.lineWidth = lineWidthAxis;
+        // Y-axis
+        ctx.beginPath();
+        ctx.moveTo(getPx(0), margin);
+        ctx.lineTo(getPx(0), height - margin);
+        ctx.stroke();
+        // X-axis
+        ctx.beginPath();
+        ctx.moveTo(margin, getPy(0));
+        ctx.lineTo(width - margin, getPy(0));
+        ctx.stroke();
+    }
+
+    function drawLabels() {
+        ctx.fillStyle = labelColor;
+        
+        // Y-axis labels
+        ctx.font = fontLabel;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('+2.0', margin - 8, getPy(2.0));
+        ctx.fillText('+1.0', margin - 8, getPy(1.0));
+        ctx.fillText('−1.0', margin - 8, getPy(-1.0)); // Using U+2212 MINUS SIGN
+
+        // Origin label '0'
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillText('0', margin - 5, getPy(0) + 5);
+
+        // X-axis labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('T', getPx(1), getPy(0) + 8);
+        ctx.fillText('2T', getPx(2), getPy(0) + 8);
+        ctx.fillText('3T', getPx(3), getPy(0) + 8);
+
+        // Axis Titles
+        // Y-axis title: x/cm
+        ctx.save();
+        ctx.translate(margin - 35, height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.font = fontAxisVar;
+        ctx.fillText('x', -12, 2);
+        ctx.font = fontAxis;
+        ctx.fillText('/cm', 10, 2);
+        ctx.restore();
+
+        // X-axis title: t
+        ctx.font = fontAxisVar;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('t', width - margin + 10, getPy(0));
+    }
+    
+    function drawCurve() {
+        ctx.strokeStyle = curveColor;
+        ctx.lineWidth = lineWidthCurve;
+        ctx.beginPath();
+        const tEnd = 3.25;
+        const dt = 0.005;
+        for (let t_T = 0; t_T <= tEnd; t_T += dt) {
+            const x_cm = 2.0 * Math.pow(0.75, t_T) * Math.cos(2 * Math.PI * t_T);
+            const px = getPx(t_T);
+            const py = getPy(x_cm);
+            if (t_T === 0) {
+                ctx.moveTo(px, py);
+            } else {
+                ctx.lineTo(px, py);
+            }
+        }
+        ctx.stroke();
+    }
+    
+    function drawCaption() {
+        ctx.font = fontCaption;
+        ctx.fillStyle = labelColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Fig. 3.3', width / 2, height - 5);
+    }
+
+    // --- Main Execution ---
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, width, height);
+    drawGrid();
+    drawAxes();
+    drawLabels();
+    drawCurve();
+    drawCaption();
+
+</script>
+</body>
+</html>

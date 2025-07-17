@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram 5.11.1</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="500" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws text with a subscript.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {string} text - The main text.
+         * @param {string} sub - The subscript text.
+         * @param {number} x - The x-coordinate.
+         * @param {number} y - The y-coordinate.
+         */
+        function drawSubscriptText(ctx, text, sub, x, y) {
+            const mainFontSize = 24;
+            const subFontSize = 16;
+            
+            ctx.font = `${mainFontSize}px Arial`;
+            const textMetrics = ctx.measureText(text);
+            ctx.fillText(text, x, y);
+            
+            ctx.font = `${subFontSize}px Arial`;
+            ctx.fillText(sub, x + textMetrics.width, y + 5);
+        }
+
+        /**
+         * Draws an inductor (coil).
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x1 - Start x-coordinate.
+         * @param {number} x2 - End x-coordinate.
+         * @param {number} y - The y-coordinate.
+         */
+        function drawInductor(ctx, x1, x2, y) {
+            const numCoils = 4;
+            const coilRadius = 10;
+            const totalCoilWidth = numCoils * 2 * coilRadius;
+            const startX = (x1 + x2 - totalCoilWidth) / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(startX, y);
+            for (let i = 0; i < numCoils; i++) {
+                ctx.arc(startX + coilRadius + i * 2 * coilRadius, y, coilRadius, Math.PI, 0);
+            }
+            ctx.moveTo(startX + totalCoilWidth, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a capacitor.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x1 - Start x-coordinate.
+         * @param {number} x2 - End x-coordinate.
+         * @param {number} y - The y-coordinate.
+         */
+        function drawCapacitor(ctx, x1, x2, y) {
+            const plateGap = 10;
+            const plateLength = 25;
+            const midX = (x1 + x2) / 2;
+
+            ctx.beginPath();
+            // Left wire
+            ctx.moveTo(x1, y);
+            ctx.lineTo(midX - plateGap / 2, y);
+            // Left plate
+            ctx.moveTo(midX - plateGap / 2, y - plateLength / 2);
+            ctx.lineTo(midX - plateGap / 2, y + plateLength / 2);
+
+            // Right wire
+            ctx.moveTo(midX + plateGap / 2, y);
+            ctx.lineTo(x2, y);
+            // Right plate
+            ctx.moveTo(midX + plateGap / 2, y - plateLength / 2);
+            ctx.lineTo(midX + plateGap / 2, y + plateLength / 2);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a resistor.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x1 - Start x-coordinate.
+         * @param {number} x2 - End x-coordinate.
+         * @param {number} y - The y-coordinate.
+         */
+        function drawResistor(ctx, x1, x2, y) {
+            const rectWidth = 80;
+            const rectHeight = 25;
+            const startX = (x1 + x2 - rectWidth) / 2;
+            
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(startX, y);
+            ctx.rect(startX, y - rectHeight / 2, rectWidth, rectHeight);
+            ctx.moveTo(startX + rectWidth, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws an AC source.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x1 - Start x-coordinate.
+         * @param {number} x2 - End x-coordinate.
+         * @param {number} y - The y-coordinate.
+         */
+        function drawACSource(ctx, x1, x2, y) {
+            const radius = 25;
+            const midX = (x1 + x2) / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(midX - radius, y);
+            ctx.moveTo(midX + radius, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(midX, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Sine wave inside
+            ctx.beginPath();
+            ctx.moveTo(midX - radius * 0.7, y);
+            ctx.quadraticCurveTo(midX - radius * 0.35, y - radius * 0.7, midX, y);
+            ctx.quadraticCurveTo(midX + radius * 0.35, y + radius * 0.7, midX + radius * 0.7, y);
+            ctx.stroke();
+        }
+        
+        /**
+         * Draws an arrow head.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x - x-coordinate of the arrow tip.
+         * @param {number} y - y-coordinate of the arrow tip.
+         * @param {number} angle - The angle of the arrow in radians.
+         */
+        function drawArrowHead(ctx, x, y, angle) {
+            const headLength = 10;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headLength, -headLength / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headLength, headLength / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+
+        // Style settings
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        
+        // Coordinates
+        const xLeft = 100;
+        const xRight = 400;
+
+        const y_L1 = 80;
+        const y_i01 = 105;
+        const y_C1 = 130;
+        const y_A = 155;
+        const y_C2 = 180;
+        const y_B = 205;
+        const y_L2 = 230;
+        const y_i02 = 255;
+        const y_switch_hinge = 270;
+        const y_R = 320;
+        const y_switch_contact_line_start = y_R - 10;
+        const y_source = 380;
+        const y_bottom = 440;
+        
+        // Vertical Wires
+        ctx.beginPath();
+        ctx.moveTo(xLeft, y_L1);
+        ctx.lineTo(xLeft, y_bottom); // Left Bus
+        ctx.moveTo(xRight, y_L1);
+        ctx.lineTo(xRight, y_switch_hinge); // Top Right Bus
+        ctx.moveTo(xRight, y_switch_contact_line_start);
+        ctx.lineTo(xRight, y_bottom); // Bottom Right Bus
+        ctx.stroke();
+
+        // Components
+        drawInductor(ctx, xLeft, xRight, y_L1);
+        drawCapacitor(ctx, xLeft, xRight, y_C1);
+        drawCapacitor(ctx, xLeft, xRight, y_C2);
+        drawInductor(ctx, xLeft, xRight, y_L2);
+        drawResistor(ctx, xLeft, xRight, y_R);
+        drawACSource(ctx, xLeft, xRight, y_source);
+
+        // Bottom connecting wire
+        ctx.beginPath();
+        ctx.moveTo(xLeft, y_bottom);
+        ctx.lineTo(xRight, y_bottom);
+        ctx.stroke();
+        
+        // Switch K
+        ctx.beginPath();
+        const switchArmLength = 50;
+        const switchAngle = -Math.PI / 4;
+        const switchEndX = xRight + switchArmLength * Math.cos(switchAngle);
+        const switchEndY = y_switch_hinge + switchArmLength * Math.sin(switchAngle);
+        ctx.moveTo(xRight, y_switch_hinge);
+        ctx.lineTo(switchEndX, switchEndY);
+        ctx.stroke();
+        // Terminal circle
+        ctx.beginPath();
+        ctx.arc(xRight, y_switch_hinge, 3, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Currents and Arrows
+        // i01 (down)
+        drawSubscriptText(ctx, 'i', '01', xRight + 15, y_i01);
+        drawArrowHead(ctx, xRight, y_i01 + 8, Math.PI / 2);
+        
+        // i02 (up)
+        drawSubscriptText(ctx, 'i', '02', xRight + 15, y_i02);
+        drawArrowHead(ctx, xRight, y_i02 - 8, -Math.PI / 2);
+
+        // Labels
+        ctx.font = '24px Arial';
+        // L1, C1, C2, L2, R
+        drawSubscriptText(ctx, 'L', '1', xLeft - 40, y_L1);
+        drawSubscriptText(ctx, 'C', '1', xLeft - 40, y_C1);
+        drawSubscriptText(ctx, 'C', '2', xLeft - 40, y_C2);
+        drawSubscriptText(ctx, 'L', '2', xLeft - 40, y_L2);
+        ctx.fillText('R', xLeft - 30, y_R);
+
+        // A, B, K
+        ctx.fillText('A', xRight + 15, y_A);
+        ctx.fillText('B', xRight + 15, y_B);
+        ctx.fillText('K', switchEndX + 10, switchEndY);
+        
+        // Caption
+        ctx.font = '24px "SimSun", "STSong"';
+        ctx.textAlign = 'center';
+        ctx.fillText('电图 5.11.1', canvas.width / 2, 510);
+    </script>
+</body>
+</html>

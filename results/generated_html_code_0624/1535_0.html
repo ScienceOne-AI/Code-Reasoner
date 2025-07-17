@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Friction Experiment Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="850" height="420"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow
+    function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Helper function to draw a cuboid in oblique projection
+    // (x, y) is the front-bottom-right corner
+    function drawCuboid(x, y, w, h, depth) {
+        const dx = depth.x;
+        const dy = depth.y;
+
+        // Top face (gray)
+        ctx.fillStyle = '#cccccc';
+        ctx.beginPath();
+        ctx.moveTo(x, y - h);
+        ctx.lineTo(x - w, y - h);
+        ctx.lineTo(x - w - dx, y - h + dy);
+        ctx.lineTo(x - dx, y - h + dy);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Right face (white)
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y - h);
+        ctx.lineTo(x - dx, y - h + dy);
+        ctx.lineTo(x - dx, y + dy);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    }
+    
+    // Helper function to draw force labels with subscripts
+    function drawForceLabel(label, sub, x, y) {
+        ctx.save();
+        ctx.fillStyle = 'black';
+        ctx.font = "italic 24px 'Times New Roman'";
+        ctx.fillText(label, x, y);
+        ctx.font = "italic 16px 'Times New Roman'";
+        ctx.fillText(sub, x + 15, y + 5);
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+    
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+
+    // 1. Draw the table surface
+    ctx.save();
+    // Top surface
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.moveTo(20, 340);
+    ctx.lineTo(830, 340);
+    ctx.lineTo(800, 120);
+    ctx.lineTo(0, 120);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // Front edge thickness
+    ctx.fillStyle = '#E0E0E0';
+    ctx.beginPath();
+    ctx.moveTo(20, 340);
+    ctx.lineTo(830, 340);
+    ctx.lineTo(830, 360);
+    ctx.lineTo(20, 360);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // Define common properties
+    const yBase = 310;
+    const perspectiveDepth = { x: 30, y: -15 };
+    const forceLength = 70;
+
+    // 2. Draw Scenario (a)
+    const blockA = { x: 230, y: yBase, w: 100, h: 50 };
+    ctx.lineWidth = 1.5;
+    drawCuboid(blockA.x, blockA.y, blockA.w, blockA.h, perspectiveDepth);
+    drawArrow(blockA.x, blockA.y - blockA.h / 2, blockA.x + forceLength, blockA.y - blockA.h / 2);
+    drawForceLabel('F', '1', blockA.x + forceLength + 10, blockA.y - blockA.h / 2 + 8);
+    ctx.font = "22px Arial";
+    ctx.fillStyle = "black";
+    ctx.fillText("(a)", blockA.x - blockA.w / 2, blockA.y + 50);
+
+    // 3. Draw Scenario (b)
+    const blockB = { x: 480, y: yBase, w: 150, h: 70 };
+    ctx.lineWidth = 1.5;
+    drawCuboid(blockB.x, blockB.y, blockB.w, blockB.h, perspectiveDepth);
+    drawArrow(blockB.x, blockB.y - blockB.h / 2, blockB.x + forceLength, blockB.y - blockB.h / 2);
+    drawForceLabel('F', '2', blockB.x + forceLength + 10, blockB.y - blockB.h / 2 + 8);
+    ctx.fillText("(b)", blockB.x - blockB.w / 2, blockB.y + 50);
+
+    // 4. Draw Scenario (c)
+    const blockC = { x: 740, y: yBase - 15, w: 100, h: 50 }; // y is higher due to rollers
+    // Rollers
+    ctx.save();
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    const rollerY = blockC.y + 8;
+    const rollerStartX = blockC.x - blockC.w;
+    ctx.beginPath();
+    ctx.moveTo(rollerStartX + 15, rollerY);
+    ctx.lineTo(rollerStartX + 15 - perspectiveDepth.x, rollerY + perspectiveDepth.y);
+    ctx.moveTo(rollerStartX + 50, rollerY);
+    ctx.lineTo(rollerStartX + 50 - perspectiveDepth.x, rollerY + perspectiveDepth.y);
+    ctx.moveTo(rollerStartX + 85, rollerY);
+    ctx.lineTo(rollerStartX + 85 - perspectiveDepth.x, rollerY + perspectiveDepth.y);
+    ctx.stroke();
+    ctx.restore();
+    // Block
+    ctx.lineWidth = 1.5;
+    drawCuboid(blockC.x, blockC.y, blockC.w, blockC.h, perspectiveDepth);
+    drawArrow(blockC.x, blockC.y - blockC.h / 2, blockC.x + forceLength, blockC.y - blockC.h / 2);
+    drawForceLabel('F', '3', blockC.x + forceLength + 10, blockC.y - blockC.h / 2 + 8);
+    ctx.fillText("(c)", blockC.x - blockC.w / 2, blockC.y + 50 + 15);
+
+</script>
+</body>
+</html>

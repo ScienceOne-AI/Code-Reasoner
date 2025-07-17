@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>X-ray Attenuation Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="650" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Coordinate Definitions ---
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+        
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const centerX = 325;
+        const centerY = 225;
+
+        // Dimensions from the diagram
+        const tissueWidth = 270;
+        const tissueHeight = 200;
+        const boneWidth = 90;
+        const boneHeight = 120;
+        const cornerRadius = 20;
+
+        const tissueX = centerX - tissueWidth / 2;
+        const tissueY = centerY - tissueHeight / 2;
+
+        // --- Helper Functions ---
+
+        // Draws a line with a right-pointing arrow in the middle
+        function drawLineWithArrow(x1, y, x2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+
+            const arrowX = (x1 + x2) / 2;
+            const headlen = 8;
+            
+            ctx.beginPath();
+            ctx.moveTo(arrowX + headlen / 2, y);
+            ctx.lineTo(arrowX - headlen / 2, y - 4);
+            ctx.moveTo(arrowX + headlen / 2, y);
+            ctx.lineTo(arrowX - headlen / 2, y + 4);
+            ctx.stroke();
+        }
+        
+        // Draws text with a subscript (e.g., I₀)
+        function drawTextWithSubscript(text, sub, x, y) {
+            const originalFont = ctx.font;
+            const originalAlign = ctx.textAlign;
+            const originalBaseline = ctx.textBaseline;
+            
+            ctx.font = 'italic 20px Arial';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, x, y);
+
+            const textWidth = ctx.measureText(text).width;
+            
+            ctx.font = 'italic 14px Arial';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText(sub, x + textWidth - 3, y + 8);
+
+            ctx.font = originalFont;
+            ctx.textAlign = originalAlign;
+            ctx.textBaseline = originalBaseline;
+        }
+
+        // --- Main Drawing ---
+
+        // 1. Draw Soft Tissue (Rounded Rectangle)
+        ctx.beginPath();
+        ctx.moveTo(tissueX + cornerRadius, tissueY);
+        ctx.lineTo(tissueX + tissueWidth - cornerRadius, tissueY);
+        ctx.arcTo(tissueX + tissueWidth, tissueY, tissueX + tissueWidth, tissueY + cornerRadius, cornerRadius);
+        ctx.lineTo(tissueX + tissueWidth, tissueY + tissueHeight - cornerRadius);
+        ctx.arcTo(tissueX + tissueWidth, tissueY + tissueHeight, tissueX + tissueWidth - cornerRadius, tissueY + tissueHeight, cornerRadius);
+        ctx.lineTo(tissueX + cornerRadius, tissueY + tissueHeight);
+        ctx.arcTo(tissueX, tissueY + tissueHeight, tissueX, tissueY + tissueHeight - cornerRadius, cornerRadius);
+        ctx.lineTo(tissueX, tissueY + cornerRadius);
+        ctx.arcTo(tissueX, tissueY, tissueX + cornerRadius, tissueY, cornerRadius);
+        ctx.closePath();
+        ctx.stroke();
+
+        // 2. Draw Bone (Filled Ellipse)
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY, boneWidth / 2, boneHeight / 2, 0, 0, 2 * Math.PI);
+        ctx.fillStyle = '#C0C0C0'; // Gray color
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'black'; // Reset fill style
+
+        // 3. Draw Beam Lines
+        const beamY1 = centerY - 50;
+        const beamY2 = centerY + 50;
+        const incidentStartX = 40, incidentEndX = tissueX;
+        const transmittedStartX = tissueX + tissueWidth, transmittedEndX = canvasWidth - 40;
+
+        // Upper Beam
+        drawLineWithArrow(incidentStartX, beamY1, incidentEndX); // Incident
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(tissueX, beamY1);
+        ctx.lineTo(transmittedStartX, beamY1);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        drawLineWithArrow(transmittedStartX, beamY1, transmittedEndX); // Transmitted
+
+        // Lower Beam
+        drawLineWithArrow(incidentStartX, beamY2, incidentEndX); // Incident
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(tissueX, beamY2);
+        ctx.lineTo(transmittedStartX, beamY2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        drawLineWithArrow(transmittedStartX, beamY2, transmittedEndX); // Transmitted
+
+        // 4. Draw Dimension Lines
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        
+        // 9.0 cm dimension (Bottom)
+        const dimYBottom = tissueY + tissueHeight + 30;
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.moveTo(tissueX, tissueY + tissueHeight);
+        ctx.lineTo(tissueX, dimYBottom + 5);
+        ctx.moveTo(tissueX + tissueWidth, tissueY + tissueHeight);
+        ctx.lineTo(tissueX + tissueWidth, dimYBottom + 5);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(tissueX, dimYBottom);
+        ctx.lineTo(tissueX + tissueWidth, dimYBottom);
+        ctx.moveTo(tissueX, dimYBottom - 5);
+        ctx.lineTo(tissueX, dimYBottom + 5);
+        ctx.moveTo(tissueX + tissueWidth, dimYBottom - 5);
+        ctx.lineTo(tissueX + tissueWidth, dimYBottom + 5);
+        ctx.stroke();
+        ctx.fillText('9.0 cm', centerX, dimYBottom);
+
+        // 3.0 cm dimension (Top)
+        const dimYTop = tissueY - 30;
+        const boneLeftX = centerX - boneWidth / 2;
+        const boneRightX = centerX + boneWidth / 2;
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.moveTo(boneLeftX, tissueY);
+        ctx.lineTo(boneLeftX, dimYTop - 5);
+        ctx.moveTo(boneRightX, tissueY);
+        ctx.lineTo(boneRightX, dimYTop - 5);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(boneLeftX, dimYTop);
+        ctx.lineTo(boneRightX, dimYTop);
+        ctx.moveTo(boneLeftX, dimYTop - 5);
+        ctx.lineTo(boneLeftX, dimYTop + 5);
+        ctx.moveTo(boneRightX, dimYTop - 5);
+        ctx.lineTo(boneRightX, dimYTop + 5);
+        ctx.stroke();
+        ctx.fillText('3.0 cm', centerX, dimYTop);
+
+        // 5. Add Labels and Symbols
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Intensity labels
+        ctx.fillText('incident', 90, centerY - 10);
+        ctx.fillText('intensity', 90, centerY + 10);
+        ctx.fillText('transmitted', canvasWidth - 95, centerY - 10);
+        ctx.fillText('intensity', canvasWidth - 95, centerY + 10);
+
+        // Intensity symbols (I₀, I_C, I_S)
+        drawTextWithSubscript('I', '0', 145, beamY1);
+        drawTextWithSubscript('I', '0', 145, beamY2);
+        drawTextWithSubscript('I', 'C', 470, beamY1);
+        drawTextWithSubscript('I', 'S', 470, beamY2);
+        
+        // Pointer labels
+        ctx.textAlign = 'left';
+        
+        // Bone label
+        const boneLabelX = 180, boneLabelY = 280;
+        ctx.fillText('bone', boneLabelX, boneLabelY);
+        ctx.beginPath();
+        ctx.moveTo(boneLabelX + 38, boneLabelY);
+        ctx.lineTo(centerX - boneWidth/2 + 10, centerY + 25);
+        ctx.stroke();
+        
+        // Soft tissue label
+        const tissueLabelX = 470, tissueLabelY = 300;
+        ctx.fillText('soft tissue', tissueLabelX, tissueLabelY);
+        ctx.beginPath();
+        ctx.moveTo(tissueLabelX, tissueLabelY - 5);
+        ctx.lineTo(centerX + 50, centerY + 75);
+        ctx.stroke();
+        
+        // Figure Caption
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('Fig. 11.1', centerX, tissueY + tissueHeight + 50);
+
+    </script>
+</body>
+</html>

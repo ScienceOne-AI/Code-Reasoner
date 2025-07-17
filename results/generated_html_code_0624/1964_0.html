@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram of a Sliding Mass with a Pendulum</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="450" height="350" style="border:1px solid #000000;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings to mimic the hand-drawn look
+    ctx.lineWidth = 2;
+    // Using a font that resembles handwriting.
+    ctx.font = '22px "Comic Sans MS", cursive, sans-serif';
+    ctx.fillStyle = "black";
+    ctx.strokeStyle = "black";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Drawing functions ---
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 10;
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // --- Define coordinates and dimensions ---
+    const origin = { x: 50, y: 100 };
+    const trackEnd = { x: 400, y: 100 };
+    
+    const blockM = {
+        x_center: 220,
+        y_bottom: 100,
+        width: 70,
+        height: 40
+    };
+    
+    const pendulum = {
+        length_b: 140,
+        angle_theta: 22 * Math.PI / 180, // 22 degrees in radians
+        bob_radius: 8
+    };
+
+    // --- Draw components ---
+
+    // 1. Coordinate System and Track AB
+    // Track AB (part of x-axis)
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(trackEnd.x, trackEnd.y);
+    ctx.stroke();
+
+    // x-axis arrow
+    const xArrowPos = { x: 150, y: 100 };
+    drawArrow(ctx, origin.x, xArrowPos.y, xArrowPos.x, xArrowPos.y);
+    ctx.fillText('x', xArrowPos.x, xArrowPos.y - 20);
+
+    // y-axis
+    const yAxisEnd = { x: 50, y: 20 };
+    drawArrow(ctx, origin.x, origin.y + 40, yAxisEnd.x, yAxisEnd.y);
+    ctx.fillText('y', yAxisEnd.x - 25, yAxisEnd.y + 10);
+
+    // Labels A and B
+    ctx.fillText('A', origin.x, origin.y + 20);
+    ctx.fillText('B', trackEnd.x, origin.y - 20);
+
+    // 2. Block M
+    const blockTopLeft = {
+        x: blockM.x_center - blockM.width / 2,
+        y: blockM.y_bottom - blockM.height
+    };
+    ctx.beginPath();
+    ctx.rect(blockTopLeft.x, blockTopLeft.y, blockM.width, blockM.height);
+    ctx.fillStyle = 'white'; // Fill to cover the track line underneath
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+    ctx.fillText('M', blockM.x_center, blockM.y_bottom - blockM.height / 2);
+
+    // 3. Pendulum (string and mass m)
+    const pivot = { x: blockM.x_center, y: blockM.y_bottom };
+    const bob = {
+        x: pivot.x + pendulum.length_b * Math.sin(pendulum.angle_theta),
+        y: pivot.y + pendulum.length_b * Math.cos(pendulum.angle_theta)
+    };
+
+    // String
+    ctx.beginPath();
+    ctx.moveTo(pivot.x, pivot.y);
+    ctx.lineTo(bob.x, bob.y);
+    ctx.stroke();
+
+    // Mass m (bob)
+    ctx.beginPath();
+    ctx.arc(bob.x, bob.y, pendulum.bob_radius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+    ctx.fillText('m', bob.x + 25, bob.y + 5);
+
+    // Label 'b' for string length
+    ctx.fillText('b', pivot.x + 50, pivot.y + 70);
+
+    // 4. Angle theta and helper lines
+    // Dashed lines
+    ctx.save();
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 1.5;
+    // Vertical dashed line
+    ctx.beginPath();
+    ctx.moveTo(pivot.x, pivot.y);
+    ctx.lineTo(pivot.x, bob.y);
+    ctx.stroke();
+    // Horizontal dashed line
+    ctx.beginPath();
+    ctx.moveTo(pivot.x, bob.y);
+    ctx.lineTo(bob.x, bob.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // Angle arc for theta
+    ctx.beginPath();
+    const arcRadius = 35;
+    const startAngle = Math.PI / 2; // 90 degrees (pointing down)
+    const endAngle = startAngle + pendulum.angle_theta;
+    ctx.arc(pivot.x, pivot.y, arcRadius, startAngle, endAngle);
+    ctx.stroke();
+
+    // Angle label 'θ'
+    ctx.fillText('θ', pivot.x + 22, pivot.y + 30);
+
+    // 5. Figure Caption
+    ctx.font = '20px "Times New Roman"';
+    ctx.fillText('Fig. 2.24.', canvas.width / 2, canvas.height - 25);
+
+</script>
+</body>
+</html>

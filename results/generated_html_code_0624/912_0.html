@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coaxial Cable Diagram</title>
+</head>
+<body>
+<canvas id="coaxialCanvas" width="600" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('coaxialCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow with a label
+    function drawArrow(ctx, fromx, fromy, tox, toy, text = '', textOffset = -10) {
+        const headlen = 10; // length of arrowhead in pixels
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        
+        // Line part of the arrow
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+
+        // Arrowhead
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+        
+        if (text) {
+            ctx.font = 'italic 18px Times New Roman';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const textX = (fromx + tox) / 2;
+            const textY = (fromy + toy) / 2 + textOffset;
+            ctx.fillText(text, textX, textY);
+        }
+        ctx.restore();
+    }
+
+    // --- Drawing Parameters ---
+    const cx = 200;
+    const cy = 250;
+    const yScale = 0.6; // Vertical compression for perspective
+    const rx_a = 50;
+    const ry_a = rx_a * yScale;
+    const rx_b = 100;
+    const ry_b = rx_b * yScale;
+    const rx_c = 115;
+    const ry_c = rx_c * yScale;
+    const length = 350;
+    const skew = 0; // Perspective skew
+
+    // --- Drawing Execution ---
+
+    // 1. Draw 3D perspective lines for the tube body
+    ctx.save();
+    ctx.fillStyle = '#d3d3d3'; // Gray for the tube body surface
+    // Draw the top surface of the outer conductor
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - ry_b);
+    ctx.lineTo(cx + length, cy - ry_b - skew);
+    ctx.lineTo(cx + length, cy - ry_c - skew);
+    ctx.lineTo(cx, cy - ry_c);
+    ctx.closePath();
+    ctx.fill();
+    // Draw the bottom surface of the outer conductor
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + ry_b);
+    ctx.lineTo(cx + length, cy + ry_b - skew);
+    ctx.lineTo(cx + length, cy + ry_c - skew);
+    ctx.lineTo(cx, cy + ry_c);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // 2. Dashed lines for hidden inner boundary of the outer conductor
+    ctx.save();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([7, 7]);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - ry_b);
+    ctx.lineTo(cx + length, cy - ry_b - skew);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + ry_b);
+    ctx.lineTo(cx + length, cy + ry_b - skew);
+    ctx.stroke();
+    ctx.restore();
+
+    // 3. Draw outer current arrows (on top of the tube body)
+    drawArrow(ctx, cx + 280, cy - (ry_b + ry_c) / 2, cx + 230, cy - (ry_b + ry_c) / 2, 'I', -15);
+    drawArrow(ctx, cx + 180, cy + (ry_b + ry_c) / 2, cx + 130, cy + (ry_b + ry_c) / 2, 'I', 25);
+
+    // 4. Draw Cross-section (will be drawn on top of the tube ends)
+    // Outer conductor ring (region b to c)
+    ctx.fillStyle = '#dcdcdc'; // Medium gray
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx_c, ry_c, 0, 0, 2 * Math.PI);
+    ctx.ellipse(cx, cy, rx_b, ry_b, 0, 2 * Math.PI, 0, true); // Create hole
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    
+    // Draw the hatch pattern on the outer rim to match the original's style
+    ctx.save();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 0.5;
+    const numHatchLines = 120;
+    for (let i = 0; i < numHatchLines; i++) {
+        const angle = (i / numHatchLines) * 2 * Math.PI;
+        const x1 = cx + rx_c * Math.cos(angle);
+        const y1 = cy + ry_c * Math.sin(angle);
+        const x2 = cx + (rx_c - 5) * Math.cos(angle);
+        const y2 = cy + (ry_c - 5) * Math.sin(angle);
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    }
+    ctx.restore();
+    
+    // Dielectric ring (region a to b)
+    ctx.fillStyle = '#f5f5f5'; // Light gray
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx_b, ry_b, 0, 0, 2 * Math.PI);
+    ctx.ellipse(cx, cy, rx_a, ry_a, 0, 2 * Math.PI, 0, true); // Create hole
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Inner conductor (region 0 to a) - with hatching
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx_a, ry_a, 0, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke(); // Stroke the boundary before clipping
+    ctx.clip(); // Restrict drawing to the inner ellipse
+    
+    // Draw hatching lines
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    for (let i = -rx_a * 1.5; i < rx_a * 1.5; i += 8) {
+        ctx.beginPath();
+        ctx.moveTo(cx + i - ry_a, cy - ry_a);
+        ctx.lineTo(cx + i + ry_a, cy + ry_a);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 5. Draw Inner Current Arrow and Labels
+    // Inner current I
+    drawArrow(ctx, cx + 80, cy, cx + 220, cy, 'I', -15);
+    
+    ctx.fillStyle = 'black';
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.font = 'italic 20px Times New Roman';
+    
+    // Radius 'a'
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + rx_a * Math.cos(-Math.PI / 3), cy + ry_a * Math.sin(-Math.PI / 3)); ctx.stroke();
+    ctx.fillText('a', cx + 30, cy - 25);
+    
+    // Radius 'b'
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy + ry_b); ctx.stroke();
+    ctx.fillText('b', cx + 5, cy + ry_b + 10);
+    
+    // Radius 'c'
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx - rx_c * Math.cos(Math.PI / 4), cy - ry_c * Math.sin(Math.PI / 4)); ctx.stroke();
+    ctx.fillText('c', cx - rx_c * 0.7 - 20, cy - ry_c * 0.7 - 5);
+    
+    // Permeability 'μ_r' label
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.fillText('μ', cx - rx_b*0.7, cy + 10);
+    ctx.font = 'italic 16px Times New Roman';
+    ctx.fillText('r', cx - rx_b*0.7 + 14, cy + 15);
+
+    // 6. Draw Caption
+    ctx.font = '24px "SimSun"';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 9-29 图', canvas.width / 2, 450);
+
+</script>
+</body>
+</html>

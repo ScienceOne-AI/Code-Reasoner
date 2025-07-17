@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="800" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw a hatched rectangle for supports
+        function drawHatchedRect(x, y, w, h) {
+            ctx.save();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, w, h);
+            ctx.beginPath();
+            for (let i = 0; i < w + h; i += 8) {
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x, y + i);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Helper function to draw dimension lines with vertical ticks
+        function drawDimension(x1, y, x2, text) {
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.font = 'bold 20px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+
+            // Horizontal line
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+
+            // Vertical ticks
+            const tickHeight = 10;
+            ctx.beginPath();
+            ctx.moveTo(x1, y - tickHeight);
+            ctx.lineTo(x1, y + tickHeight);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x2, y - tickHeight);
+            ctx.lineTo(x2, y + tickHeight);
+            ctx.stroke();
+
+            // Text
+            ctx.fillText(text, (x1 + x2) / 2, y + 5);
+            ctx.restore();
+        }
+
+        // Helper function to draw an arrow head
+        function drawArrowHead(x, y, angle, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 3;
+
+        // Coordinates and scale
+        const scale = 60; // pixels per meter
+        const y_beam = 300;
+        const x_A = 100;
+        const x_D = x_A + 4 * scale;
+        const x_B = x_D + 2 * scale;
+        const x_F = x_B + 1 * scale;
+        // Let's assume BC = 2m for drawing purposes
+        const x_C = x_B + 2 * scale;
+
+        // Draw the beam
+        ctx.beginPath();
+        ctx.rect(x_A - 40, y_beam - 10, (x_C - x_A) + 80, 20);
+        ctx.stroke();
+
+        // Points on the beam
+        const points = {
+            A: { x: x_A, y: y_beam },
+            D: { x: x_D, y: y_beam },
+            B: { x: x_B, y: y_beam },
+            F: { x: x_F, y: y_beam },
+            C: { x: x_C, y: y_beam }
+        };
+
+        // Draw pin joints at A, B, C
+        ctx.beginPath();
+        ctx.arc(points.A.x, points.A.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(points.B.x, points.B.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(points.C.x, points.C.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Draw supports and ropes
+        const y_support_top = 100;
+
+        // Support and rope at A
+        const support_A_y = y_support_top + 20;
+        drawHatchedRect(points.A.x - 40, y_support_top, 80, 20);
+        ctx.beginPath();
+        ctx.moveTo(points.A.x, support_A_y);
+        ctx.lineTo(points.A.x, points.A.y);
+        ctx.stroke();
+        
+        // Support and rope at B
+        const support_B_y = y_support_top + 50;
+        const dy_B = points.B.y - support_B_y;
+        const dx_B = dy_B * Math.tan(60 * Math.PI / 180);
+        const support_B_x = points.B.x - dx_B;
+        drawHatchedRect(support_B_x - 40, y_support_top + 30, 80, 20);
+        ctx.beginPath();
+        ctx.moveTo(support_B_x, support_B_y);
+        ctx.lineTo(points.B.x, points.B.y);
+        ctx.stroke();
+
+        // Support and rope at C
+        const support_C_y = y_support_top + 50;
+        const dy_C = points.C.y - support_C_y;
+        const dx_C = dy_C * Math.tan(45 * Math.PI / 180);
+        const support_C_x = points.C.x + dx_C;
+        drawHatchedRect(support_C_x - 40, y_support_top + 30, 80, 20);
+        ctx.beginPath();
+        ctx.moveTo(support_C_x, support_C_y);
+        ctx.lineTo(points.C.x, points.C.y);
+        ctx.stroke();
+
+        // Draw labels for points
+        ctx.font = 'bold 24px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('A', points.A.x, points.A.y - 20);
+        ctx.fillText('D', points.D.x, points.B.y - 20);
+        ctx.fillText('B', points.B.x, points.B.y - 20);
+        ctx.fillText('F', points.F.x, points.F.y - 20);
+        ctx.fillText('C', points.C.x, points.C.y - 20);
+        
+        // Draw dimension lines
+        const y_dim = y_beam + 50;
+        drawDimension(points.A.x, y_dim, points.D.x, '4 m');
+        drawDimension(points.D.x, y_dim, points.B.x, '2 m');
+        drawDimension(points.B.x, y_dim, points.F.x, '1 m');
+
+        // Draw angles
+        ctx.lineWidth = 1;
+        ctx.font = '18px sans-serif';
+
+        // Angle at B (60 degrees)
+        const angle_B_radius = 40;
+        ctx.beginPath();
+        ctx.setLineDash([3, 3]);
+        ctx.moveTo(points.B.x, points.B.y);
+        const vertical_line_end_B = { x: points.B.x, y: points.B.y + angle_B_radius + 10 };
+        ctx.lineTo(vertical_line_end_B.x, vertical_line_end_B.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        ctx.beginPath();
+        ctx.arc(points.B.x, points.B.y, angle_B_radius, Math.PI / 2, Math.PI / 2 + (60 * Math.PI / 180));
+        ctx.stroke();
+        ctx.fillText('60°', points.B.x - 40, points.B.y + 30);
+        
+        // Downward arrow for angle reference at B
+        const arrow_B_y = points.B.y + 20;
+        drawArrowHead(points.B.x, arrow_B_y, Math.PI / 2, 8);
+
+
+        // Angle at C (45 degrees)
+        const angle_C_radius = 40;
+        ctx.beginPath();
+        ctx.setLineDash([3, 3]);
+        ctx.moveTo(points.C.x, points.C.y);
+        const vertical_line_end_C = { x: points.C.x, y: points.C.y + angle_C_radius + 10 };
+        ctx.lineTo(vertical_line_end_C.x, vertical_line_end_C.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        ctx.beginPath();
+        ctx.arc(points.C.x, points.C.y, angle_C_radius, Math.PI / 2 - (45 * Math.PI / 180), Math.PI / 2, false);
+        ctx.stroke();
+        ctx.fillText('45°', points.C.x + 40, points.C.y + 30);
+        
+        // Downward arrow for angle reference at C
+        const arrow_C_y = points.C.y + 20;
+        drawArrowHead(points.C.x, arrow_C_y, Math.PI / 2, 8);
+        
+        // Dashed lines for triangle BCE
+        const line_C_slope = -1; // from 45 degree angle
+        const point_E_y = y_beam + 60;
+        const point_E_x = points.C.x - (point_E_y - points.C.y) / line_C_slope;
+        const point_E = { x: point_E_x, y: point_E_y };
+
+        ctx.font = 'bold 24px serif';
+        ctx.fillText('E', point_E.x - 20, point_E.y + 15);
+        
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 2;
+        ctx.moveTo(points.C.x, points.C.y);
+        ctx.lineTo(point_E.x, point_E.y);
+        ctx.moveTo(points.B.x, points.B.y);
+        ctx.lineTo(point_E.x, point_E.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    </script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="600" height="420" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    // --- Configuration ---
+    const scale = 4.2;
+    const offsetX = 70;
+    const offsetY = 330;
+
+    // --- Geometry (in cm) ---
+    const B1_cm = { x: 0, y: 0 };
+    const B2_cm = { x: 100, y: 0 };
+    const A_cm = { x: 64, y: 48 };
+    // Initial position of P is 20cm from B1 along the slope
+    const P_cm = { x: 16, y: 12 };
+    const Q_cm = A_cm; // Initial position of Q is at A
+
+    // --- Transformation function (from cm to canvas coordinates) ---
+    function t(p) {
+        return { x: offsetX + p.x * scale, y: offsetY - p.y * scale };
+    }
+
+    // --- Helper function to draw an arrow head ---
+    function drawArrow(x1, y1, x2, y2, size = 8) {
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.save();
+        ctx.translate(x2, y2);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+
+    // 1. Ground
+    ctx.beginPath();
+    const ground_start_x = offsetX - 40;
+    const ground_end_x = t(B2_cm).x + 40;
+    const ground_y = offsetY;
+    ctx.moveTo(ground_start_x, ground_y);
+    ctx.lineTo(ground_end_x, ground_y);
+    ctx.stroke();
+
+    // Hatching for ground
+    const oldStrokeStyle = ctx.strokeStyle;
+    const oldLineWidth = ctx.lineWidth;
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1;
+    for (let x = ground_start_x; x < ground_end_x; x += 12) {
+        ctx.beginPath();
+        ctx.moveTo(x, ground_y);
+        ctx.lineTo(x - 6, ground_y + 12);
+        ctx.stroke();
+    }
+    ctx.strokeStyle = oldStrokeStyle;
+    ctx.lineWidth = oldLineWidth;
+
+    // 2. Triangle structure (the wedge)
+    const A = t(A_cm);
+    const B1 = t(B1_cm);
+    const B2 = t(B2_cm);
+    
+    ctx.beginPath();
+    ctx.moveTo(B1.x, B1.y);
+    ctx.lineTo(A.x, A.y);
+    ctx.lineTo(B2.x, B2.y);
+    ctx.stroke();
+
+    // Draw small circles at B1 and B2
+    ctx.beginPath();
+    ctx.arc(B1.x, B1.y, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(B2.x, B2.y, 3, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 3. Objects (P, Q), Pulley, and Rope
+    const P = t(P_cm);
+    const Q = t(Q_cm);
+    const blockSize = 14;
+
+    // Pulley at A
+    ctx.beginPath();
+    ctx.arc(A.x, A.y, 5, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // Rope from P to A
+    ctx.beginPath();
+    ctx.moveTo(P.x, P.y);
+    ctx.lineTo(A.x, A.y);
+    ctx.stroke();
+
+    // Block P
+    const angle1 = Math.atan2(A.y - B1.y, A.x - B1.x);
+    ctx.save();
+    ctx.translate(P.x, P.y);
+    ctx.rotate(angle1);
+    ctx.fillRect(-blockSize / 2, -blockSize / 2, blockSize, blockSize);
+    // Perpendicular symbol at P
+    ctx.beginPath();
+    const s = 8; // symbol size
+    ctx.moveTo(blockSize/2, -blockSize/2);
+    ctx.lineTo(blockSize/2 + s, -blockSize/2);
+    ctx.lineTo(blockSize/2 + s, -blockSize/2 - s);
+    ctx.stroke();
+    ctx.restore();
+
+    // Block Q
+    const angle2 = Math.atan2(B2.y - A.y, B2.x - A.y);
+    ctx.save();
+    ctx.translate(Q.x, Q.y);
+    ctx.rotate(angle2);
+    ctx.fillRect(-blockSize / 2, -blockSize / 2 - 2, blockSize, blockSize);
+    // Perpendicular symbol at Q
+    ctx.beginPath();
+    ctx.moveTo(blockSize/2, -blockSize/2 - 2);
+    ctx.lineTo(blockSize/2 + s, -blockSize/2 - 2);
+    ctx.lineTo(blockSize/2 + s, -blockSize/2 - 2 - s);
+    ctx.stroke();
+    ctx.restore();
+    
+    // Right angle symbol at A
+    const vA_B1 = { x: B1.x - A.x, y: B1.y - A.y };
+    const vA_B2 = { x: B2.x - A.x, y: B2.y - A.y };
+    const len1 = Math.hypot(vA_B1.x, vA_B1.y);
+    const len2 = Math.hypot(vA_B2.x, vA_B2.y);
+    const u1 = { x: vA_B1.x / len1, y: vA_B1.y / len1 };
+    const u2 = { x: vA_B2.x / len2, y: vA_B2.y / len2 };
+    const symbolSize = 12;
+    ctx.beginPath();
+    ctx.moveTo(A.x + symbolSize * u1.x, A.y + symbolSize * u1.y);
+    ctx.lineTo(A.x + symbolSize * u1.x + symbolSize * u2.x, A.y + symbolSize * u1.y + symbolSize * u2.y);
+    ctx.lineTo(A.x + symbolSize * u2.x, A.y + symbolSize * u2.y);
+    ctx.stroke();
+
+    // --- Labels and Dimensions ---
+    ctx.font = '16px Arial';
+    
+    // Point labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('A', A.x + 5, A.y - 18);
+    ctx.fillText('B₁', B1.x - 20, B1.y + 5);
+    ctx.fillText('B₂', B2.x + 20, B2.y + 5);
+    ctx.fillText('P', P.x - 20, P.y + 15);
+    ctx.fillText('Q', Q.x + 20, Q.y - 15);
+    
+    // Dimension Lines
+    // 100cm (Base)
+    const dimY = B1.y + 35;
+    const midX = (B1.x + B2.x) / 2;
+    const textWidth = ctx.measureText('100cm').width;
+    ctx.fillText('100cm', midX, dimY);
+    ctx.beginPath();
+    ctx.moveTo(B1.x, B1.y); ctx.lineTo(B1.x, dimY);
+    ctx.moveTo(B2.x, B2.y); ctx.lineTo(B2.x, dimY);
+    ctx.moveTo(B1.x, dimY); ctx.lineTo(midX - textWidth / 2 - 5, dimY);
+    ctx.moveTo(B2.x, dimY); ctx.lineTo(midX + textWidth / 2 + 5, dimY);
+    ctx.stroke();
+    drawArrow(midX, dimY, B1.x, dimY);
+    drawArrow(midX, dimY, B2.x, dimY);
+    
+    // 80cm (Left Incline)
+    const p1_80 = t({x:1, y:0.75}); // A bit from B1
+    const p2_80 = t({x:63, y:47.25}); // A bit from A
+    ctx.save();
+    ctx.translate((p1_80.x + p2_80.x)/2, (p1_80.y + p2_80.y)/2);
+    ctx.rotate(angle1);
+    ctx.fillText('80cm', 0, -25);
+    ctx.restore();
+    
+    // 60cm (Right Incline)
+    const p1_60R = t({x:65, y:47}); // A bit from A
+    const p2_60R = t({x:99, y:1}); // A bit from B2
+    ctx.save();
+    ctx.translate((p1_60R.x + p2_60R.x)/2, (p1_60R.y + p2_60R.y)/2);
+    ctx.rotate(angle2);
+    ctx.fillText('60cm', 0, -25);
+    ctx.restore();
+    
+    // 60cm (Rope Segment AP)
+    const p1_60L = t({x:17, y:12.75}); // A bit from P
+    const p2_60L = t({x:63, y:47.25}); // A bit from A
+    ctx.save();
+    ctx.translate((p1_60L.x + p2_60L.x)/2, (p1_60L.y + p2_60L.y)/2);
+    ctx.rotate(angle1);
+    ctx.fillText('60cm', 0, 25);
+    ctx.restore();
+
+    // Arrows for sloped dimensions
+    function drawSlopedDimension(p_start_cm, p_end_cm, offset, inward=true){
+        const ps = t(p_start_cm);
+        const pe = t(p_end_cm);
+        const ang = Math.atan2(pe.y-ps.y, pe.x-ps.x);
+        const p_perp = {x: Math.cos(ang+Math.PI/2), y: Math.sin(ang+Math.PI/2)};
+        
+        const line_s = {x: ps.x + offset*p_perp.x, y: ps.y + offset*p_perp.y};
+        const line_e = {x: pe.x + offset*p_perp.x, y: pe.y + offset*p_perp.y};
+        
+        ctx.beginPath();
+        ctx.moveTo(line_s.x, line_s.y);
+        ctx.lineTo(line_e.x, line_e.y);
+        ctx.stroke();
+        
+        if(inward){
+            drawArrow({x:ps.x, y:ps.y}, line_s);
+            drawArrow({x:pe.x, y:pe.y}, line_e);
+        } else {
+             drawArrow(line_e, line_s);
+             drawArrow(line_s, line_e);
+        }
+    }
+    
+    drawSlopedDimension(B1_cm, A_cm, -20);
+    drawSlopedDimension(A_cm, B2_cm, -20);
+    drawSlopedDimension(P_cm, A_cm, 20);
+
+    // Ground Text Label
+    ctx.font = '20px "SimSun", "Songti SC"';
+    ctx.textAlign = 'center';
+    ctx.fillText('水平地面', midX, B1.y + 65);
+
+</script>
+</body>
+</html>

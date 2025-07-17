@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram of Charged Spheres</title>
+</head>
+<body>
+    <canvas id="physics-canvas" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style and Font settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+
+        // --- Parameters ---
+        const FONT_SIZE = 28;
+        const y_center = 180;
+        const cx_A = 300;
+        const r_A = 90;
+        const cx_B = 580;
+        const r_B = 50;
+        const x_dist = 180;
+        const px = cx_A - x_dist;
+
+        // Function to draw text with a tilde over a character
+        function drawTextWithTilde(text, charToTilde, x, y) {
+            ctx.font = `italic ${FONT_SIZE}px "Times New Roman"`;
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(text, x, y);
+            
+            const qIndex = text.indexOf(charToTilde);
+            if (qIndex === -1) return;
+
+            // Measure text parts to locate the character to be marked
+            const fullMetrics = ctx.measureText(text);
+            const preText = text.substring(0, qIndex);
+            const preMetrics = ctx.measureText(preText);
+            const qMetrics = ctx.measureText(charToTilde);
+            
+            const q_x_start = x - fullMetrics.width / 2 + preMetrics.width;
+            const q_width = qMetrics.width;
+            const tilde_y = y - FONT_SIZE * 1.1; // Position tilde above the text
+            
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(q_x_start, tilde_y + 2);
+            ctx.quadraticCurveTo(q_x_start + q_width / 2, tilde_y - 3, q_x_start + q_width, tilde_y + 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+
+        // Sphere A
+        ctx.beginPath();
+        ctx.arc(cx_A, y_center, r_A, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.font = `italic ${FONT_SIZE}px "Times New Roman"`;
+        ctx.textBaseline = 'middle';
+        ctx.fillText("A", cx_A, y_center);
+        drawTextWithTilde("4Q", "Q", cx_A, y_center - r_A - 5);
+
+        // Sphere B
+        ctx.beginPath();
+        ctx.arc(cx_B, y_center, r_B, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fillText("B", cx_B, y_center);
+        drawTextWithTilde("Q", "Q", cx_B, y_center - r_B - 5);
+
+        // Dashed line MN
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([7, 7]);
+        ctx.moveTo(50, y_center);
+        ctx.lineTo(750, y_center);
+        ctx.stroke();
+        ctx.restore();
+
+        // Labels M and N
+        ctx.font = `italic ${FONT_SIZE}px "Times New Roman"`;
+        ctx.fillText("M", 40, y_center + 25);
+        ctx.fillText("N", 760, y_center + 25);
+
+        // Point P
+        ctx.beginPath();
+        ctx.arc(px, y_center, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = '#444444'; // Dark gray fill
+        ctx.fill();
+        ctx.fillStyle = 'black'; // Reset fill color
+        ctx.font = `italic ${FONT_SIZE}px "Times New Roman"`;
+        ctx.textBaseline = 'bottom';
+        ctx.fillText("P", px, y_center - 10);
+        
+        // Holes on spheres
+        function drawHole(x_pos, y_pos) {
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(x_pos, y_pos, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        }
+        drawHole(cx_A - r_A, y_center);
+        drawHole(cx_A + r_A, y_center);
+        drawHole(cx_B - r_B, y_center);
+        drawHole(cx_B + r_B, y_center);
+
+        // --- Dimension Lines ---
+        const y_dim = 360;
+        const tick_height = 20;
+
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#333';
+        const arrowColor = '#555';
+
+        // Helper for drawing filled arrowheads on a horizontal line
+        function drawHArrowhead(x, y, direction, size) {
+            const angle = direction === 'left' ? Math.PI : 0;
+            ctx.save();
+            ctx.beginPath();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size * 0.4);
+            ctx.lineTo(-size, size * 0.4);
+            ctx.closePath();
+            ctx.fillStyle = arrowColor;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Horizontal dimension line
+        ctx.beginPath();
+        ctx.moveTo(px, y_dim);
+        ctx.lineTo(cx_B, y_dim);
+        ctx.stroke();
+
+        // Tick and arrowhead at P
+        ctx.beginPath();
+        ctx.moveTo(px, y_dim - tick_height / 2);
+        ctx.lineTo(px, y_dim + tick_height / 2);
+        ctx.stroke();
+        drawHArrowhead(px, y_dim, 'left', 12);
+
+        // Tick and double arrowhead at A's center
+        ctx.beginPath();
+        ctx.moveTo(cx_A, y_dim - tick_height / 2);
+        ctx.lineTo(cx_A, y_dim + tick_height / 2);
+        ctx.stroke();
+        drawHArrowhead(cx_A, y_dim, 'left', 10);
+        drawHArrowhead(cx_A, y_dim, 'right', 10);
+
+        // Tick and arrowhead at B's center
+        ctx.beginPath();
+        ctx.moveTo(cx_B, y_dim - tick_height / 2);
+        ctx.lineTo(cx_B, y_dim + tick_height / 2);
+        ctx.stroke();
+        drawHArrowhead(cx_B, y_dim, 'right', 12);
+
+        ctx.restore();
+        
+        // Dimension labels
+        ctx.font = `italic 24px "Times New Roman"`;
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = 'black';
+        ctx.fillText("x", (px + cx_A) / 2, y_dim + 15);
+        ctx.fillText("d", (cx_A + cx_B) / 2, y_dim + 15);
+
+    </script>
+</body>
+</html>

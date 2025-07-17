@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electric Field Graph</title>
+<style>
+  body { margin: 20px; font-family: sans-serif; }
+  canvas { border: 1px solid #ccc; }
+</style>
+</head>
+<body>
+
+<canvas id="myCanvas" width="600" height="650"></canvas>
+
+<script>
+const canvas = document.getElementById('myCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Configuration ---
+const margin = { top: 40, right: 20, bottom: 80, left: 80 };
+const graphWidth = canvas.width - margin.left - margin.right;
+const graphHeight = canvas.height - margin.top - margin.bottom;
+
+const rMin = 0, rMax = 6;
+const EMin = 0, EMax = 1.3;
+
+// --- Scaling and Coordinate Functions ---
+const rScale = graphWidth / (rMax - rMin);
+const EScale = graphHeight / (EMax - EMin);
+
+function getCanvasX(r) {
+    return margin.left + (r - rMin) * rScale;
+}
+
+function getCanvasY(E) {
+    return margin.top + graphHeight - (E - EMin) * EScale;
+}
+
+// --- Drawing Functions ---
+
+function drawGrid() {
+    ctx.strokeStyle = '#c0c0c0'; // Light grey for grid
+    ctx.lineWidth = 1;
+
+    // Vertical grid lines (every 0.1)
+    for (let i = 1; i < rMax / 0.1; i++) {
+        const r = i * 0.1;
+        ctx.beginPath();
+        ctx.moveTo(getCanvasX(r), getCanvasY(EMin));
+        ctx.lineTo(getCanvasX(r), getCanvasY(EMax));
+        ctx.stroke();
+    }
+
+    // Horizontal grid lines (every 0.02)
+    // Use a small epsilon to handle floating point inaccuracies
+    for (let i = 1; i * 0.02 < EMax + 0.001; i++) {
+        const E = i * 0.02;
+        ctx.beginPath();
+        ctx.moveTo(getCanvasX(rMin), getCanvasY(E));
+        ctx.lineTo(getCanvasX(rMax), getCanvasY(E));
+        ctx.stroke();
+    }
+}
+
+
+function drawAxes() {
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    // X-Axis
+    ctx.beginPath();
+    ctx.moveTo(getCanvasX(rMin), getCanvasY(EMin));
+    ctx.lineTo(getCanvasX(rMax), getCanvasY(EMin));
+    ctx.stroke();
+    // Y-Axis
+    ctx.beginPath();
+    ctx.moveTo(getCanvasX(rMin), getCanvasY(EMin));
+    ctx.lineTo(getCanvasX(rMin), getCanvasY(EMax));
+    ctx.stroke();
+}
+
+function drawLabels() {
+    ctx.fillStyle = 'black';
+    ctx.font = '16px sans-serif';
+    
+    // X-axis ticks and labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let r = 0; r <= rMax; r += 1) {
+        ctx.fillText(r.toString(), getCanvasX(r), getCanvasY(EMin) + 8);
+    }
+    // X-axis title
+    ctx.fillText('r / cm', getCanvasX(rMin + (rMax - rMin) / 2), getCanvasY(EMin) + 40);
+
+    // Y-axis ticks and labels
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i * 0.1 <= EMax; i++) {
+        const E_val = i * 0.1;
+        ctx.fillText(E_val.toFixed(1), getCanvasX(rMin) - 8, getCanvasY(E_val));
+    }
+
+    // Y-axis title
+    ctx.save();
+    const yLabelX = margin.left - 55;
+    const yLabelY = margin.top + graphHeight / 2;
+    ctx.translate(yLabelX, yLabelY);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    // Unicode for superscripts: ⁵ is U+2075, ⁻ is U+207B, ¹ is U+00B9
+    ctx.fillText('E / 10\u2075 V m\u207B\u00B9', 0, 0);
+    ctx.restore();
+}
+
+function drawCurve() {
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // The curve follows E = k / r^2.
+    // From the graph, at r=2.5cm, E=1.0 x 10^5 V/m.
+    // So, 1.0 = k / 2.5^2 => k = 6.25.
+    const k = 6.25;
+    const rEnd = 6.0;
+
+    // The curve goes off the top of the chart at EMax = 1.3.
+    // Calculate the r value for EMax: 1.3 = k / r^2 => r = sqrt(k / 1.3)
+    const rStart = Math.sqrt(k / EMax); // approximately 2.192
+
+    ctx.beginPath();
+    ctx.moveTo(getCanvasX(rStart), getCanvasY(EMax));
+
+    // Generate points for the curve
+    const step = 0.01;
+    for (let r = rStart; r <= rEnd; r += step) {
+        const E = k / (r * r);
+        ctx.lineTo(getCanvasX(r), getCanvasY(E));
+    }
+    ctx.stroke();
+}
+
+function drawCaption() {
+    ctx.fillStyle = 'black';
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 6.1', canvas.width / 2, canvas.height - 30);
+}
+
+// --- Main Drawing ---
+// Clear canvas with white background
+ctx.fillStyle = 'white';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+drawGrid();
+drawAxes();
+drawLabels();
+drawCurve();
+drawCaption();
+
+</script>
+
+</body>
+</html>

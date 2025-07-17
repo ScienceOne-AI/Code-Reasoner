@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Force vs. Time Graph</title>
+</head>
+<body>
+<canvas id="physics-graph" width="450" height="350"></canvas>
+
+<script>
+    const canvas = document.getElementById('physics-graph');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const originX = 80;
+    const originY = 300;
+    const graphWidth = 300;
+    const graphHeight = 250;
+
+    const timeMax = 3;  // ms
+    const forceMax = 10; // kN
+
+    // Calculate scale factors
+    const scaleX = graphWidth / timeMax;   // pixels per ms
+    const scaleY = graphHeight / forceMax; // pixels per kN
+
+    // --- Helper Functions to convert data coordinates to canvas coordinates ---
+    function toCanvasX(time) {
+        return originX + time * scaleX;
+    }
+
+    function toCanvasY(force) {
+        return originY - force * scaleY;
+    }
+
+    // --- 1. Draw Grid ---
+    ctx.strokeStyle = '#d3d3d3'; // Light gray for the grid
+    ctx.lineWidth = 1;
+
+    // Vertical grid lines (6 divisions, each 0.5 ms)
+    const numVerticalGridLines = 6;
+    for (let i = 1; i <= numVerticalGridLines; i++) {
+        const t = (timeMax / numVerticalGridLines) * i;
+        const x = toCanvasX(t);
+        ctx.beginPath();
+        ctx.moveTo(x, originY);
+        ctx.lineTo(x, toCanvasY(forceMax));
+        ctx.stroke();
+    }
+
+    // Horizontal grid lines (4 divisions, each 2.5 kN)
+    const numHorizontalGridLines = 4;
+    for (let i = 1; i <= numHorizontalGridLines; i++) {
+        const f = (forceMax / numHorizontalGridLines) * i;
+        const y = toCanvasY(f);
+        ctx.beginPath();
+        ctx.moveTo(originX, y);
+        ctx.lineTo(toCanvasX(timeMax), y);
+        ctx.stroke();
+    }
+
+    // --- 2. Draw Axes ---
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // Y-axis
+    ctx.beginPath();
+    ctx.moveTo(originX, originY);
+    ctx.lineTo(originX, toCanvasY(forceMax) - 10);
+    ctx.stroke();
+
+    // X-axis
+    ctx.beginPath();
+    ctx.moveTo(originX, originY);
+    ctx.lineTo(toCanvasX(timeMax) + 10, originY);
+    ctx.stroke();
+
+    // --- 3. Draw Labels and Numbers ---
+    ctx.fillStyle = 'black';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Axis Labels
+    // Y-axis Label
+    ctx.save();
+    ctx.translate(originX - 50, originY - graphHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Force (kN)', 0, 0);
+    ctx.restore();
+
+    // X-axis Label
+    ctx.fillText('Time (ms)', originX + graphWidth / 2, originY + 30);
+
+    // Axis Numbers
+    // Y-axis numbers
+    ctx.textAlign = 'right';
+    ctx.fillText('10', originX - 8, toCanvasY(10));
+    ctx.fillText('5', originX - 8, toCanvasY(5));
+    
+    // X-axis numbers
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('3', toCanvasX(3), originY + 5);
+    
+    // Origin '0'
+    ctx.fillText('0', originX - 10, originY + 5);
+
+
+    // --- 4. Draw the Data Plot (Triangle) ---
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(0), toCanvasY(0)); // Start at (0, 0)
+    ctx.lineTo(toCanvasX(1), toCanvasY(10)); // Peak at (1 ms, 10 kN)
+    ctx.lineTo(toCanvasX(3), toCanvasY(0)); // End at (3 ms, 0 kN)
+    ctx.stroke();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="thermodynamics-diagram"></canvas>
+    <script>
+        const canvas = document.getElementById('thermodynamics-diagram');
+        const ctx = canvas.getContext('2d');
+
+        const canvasWidth = 450;
+        const canvasHeight = 700;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // === Parameters ===
+        const L = 80;
+        const cylinderWidth = 200;
+        const cx = canvasWidth / 2 - 20; // Shift left for dimension lines
+
+        const partThickness = 12;
+        const ringThickness = 10;
+        const ringWidth = 40;
+        const hatchSpacing = 7;
+        const valveGap = 30;
+
+        // === Y-coordinates based on the problem description ===
+        const y_ground = canvasHeight - 70;
+        const y_C_bottom = y_ground - L;
+        const y_C_top = y_C_bottom - partThickness;
+        const y_B_top = y_C_top - L / 2;
+        const y_B_bottom = y_B_top + ringThickness;
+        const y_A_bottom = y_C_top - 4 * L;
+        const y_A_top = y_A_bottom - partThickness;
+
+        // === Helper Functions ===
+
+        /**
+         * Draws a path with a hatched fill.
+         * The hatching consists of diagonal lines from top-right to bottom-left.
+         * @param {Path2D} path - The path to stroke and fill.
+         */
+        function drawHatchedPath(path) {
+            ctx.save();
+            ctx.stroke(path);
+            ctx.clip(path);
+
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            // Draw diagonal hatching lines (slope -1)
+            for (let c = -canvasHeight; c < canvasWidth + canvasHeight; c += hatchSpacing) {
+                ctx.moveTo(c, 0);
+                ctx.lineTo(c - canvasHeight, canvasHeight);
+            }
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        /**
+         * Draws an arrow from a central point to an end point.
+         * @param {number} x1 - start x
+         * @param {number} y1 - start y
+         * @param {number} x2 - end x
+         * @param {number} y2 - end y
+         * @param {number} headlen - length of the arrow head sides
+         */
+        function drawArrow(x1, y1, x2, y2, headlen = 8) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx);
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        /**
+         * Draws a vertical dimension line with arrows at both ends and a label.
+         * @param {number} x - x-coordinate of the line
+         * @param {number} y1 - start y-coordinate
+         * @param {number} y2 - end y-coordinate
+         * @param {string} label - The text label for the dimension
+         */
+        function drawDimension(x, y1, y2, label) {
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, y2);
+            ctx.stroke();
+
+            drawArrow(x, (y1 + y2) / 2, x, y1);
+            drawArrow(x, (y1 + y2) / 2, x, y2);
+
+            ctx.font = '18px serif';
+            const labelXOffset = (label.length > 2) ? 22 : 15;
+            ctx.fillText(label, x + labelXOffset, (y1 + y2) / 2);
+            ctx.restore();
+        }
+        
+        /**
+         * Draws a horizontal tick mark for dimension lines.
+         * @param {number} x - x-coordinate of the tick start on the wall
+         * @param {number} y - y-coordinate of the tick
+         * @param {number} len - length of the tick
+         */
+        function drawTick(x, y, len = 10) {
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + len, y);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // === Main Drawing Logic ===
+
+        // 1. Cylinder Walls
+        const x_left_wall = cx - cylinderWidth / 2;
+        const x_right_wall = cx + cylinderWidth / 2;
+        const top_y = 40;
+        ctx.beginPath();
+        ctx.moveTo(x_left_wall, top_y);
+        ctx.lineTo(x_left_wall, y_ground);
+        ctx.moveTo(x_right_wall, top_y);
+        ctx.lineTo(x_right_wall, y_ground);
+        ctx.stroke();
+
+        // 2. Ground
+        ctx.beginPath();
+        ctx.moveTo(x_left_wall - 20, y_ground);
+        ctx.lineTo(x_right_wall + 20, y_ground);
+        ctx.stroke();
+        // Ground hatching
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 15; i++) {
+            const x_start = x_left_wall - 15 + i * (cylinderWidth + 30) / 14;
+            ctx.beginPath();
+            ctx.moveTo(x_start, y_ground);
+            ctx.lineTo(x_start - 10, y_ground + 10);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // 3. Partition C and Valve K2
+        const c_left_path = new Path2D();
+        c_left_path.rect(x_left_wall, y_C_top, (cylinderWidth - valveGap) / 2, partThickness);
+        drawHatchedPath(c_left_path);
+
+        const c_right_path = new Path2D();
+        c_right_path.rect(cx + valveGap / 2, y_C_top, (cylinderWidth - valveGap) / 2, partThickness);
+        drawHatchedPath(c_right_path);
+
+        // Valve K2
+        const k2_y = y_C_top;
+        const k2_x = cx;
+        const k2_w = valveGap / 2.5;
+        const k2_h = partThickness / 1.5;
+        ctx.beginPath();
+        ctx.moveTo(k2_x - k2_w, k2_y);
+        ctx.lineTo(k2_x + k2_w, k2_y);
+        ctx.lineTo(k2_x, k2_y + k2_h);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.fillText('K', k2_x, y_C_bottom + 15);
+        ctx.font = '14px serif';
+        ctx.fillText('2', k2_x + 9, y_C_bottom + 19);
+        ctx.font = '20px serif';
+        ctx.fillText('C', k2_x + 35, y_B_bottom + 15);
+
+        // 4. Rings B and its counterpart
+        const ring_left_path = new Path2D();
+        ring_left_path.rect(x_left_wall, y_B_top, ringWidth, ringThickness);
+        drawHatchedPath(ring_left_path);
+
+        const ring_right_path = new Path2D();
+        ring_right_path.rect(x_right_wall - ringWidth, y_B_top, ringWidth, ringThickness);
+        drawHatchedPath(ring_right_path);
+        ctx.fillText('B', x_right_wall - ringWidth / 2, y_B_top - 15);
+
+        // 5. Piston A and Valve K1
+        const piston_path = new Path2D();
+        const p_center_w = 70;
+        const p_center_h = 10;
+        const p_valve_notch_w = 20;
+        const p_valve_notch_d = 8;
+        const p_wing_w = (cylinderWidth - p_center_w) / 2;
+
+        // Path of the piston block
+        piston_path.moveTo(x_left_wall, y_A_top);
+        piston_path.lineTo(x_left_wall + p_wing_w, y_A_top);
+        piston_path.lineTo(x_left_wall + p_wing_w, y_A_top - p_center_h);
+        piston_path.lineTo(x_right_wall - p_wing_w, y_A_top - p_center_h);
+        piston_path.lineTo(x_right_wall - p_wing_w, y_A_top);
+        piston_path.lineTo(x_right_wall, y_A_top);
+        piston_path.lineTo(x_right_wall, y_A_bottom);
+        piston_path.lineTo(cx + p_valve_notch_w / 2, y_A_bottom);
+        piston_path.lineTo(cx + p_valve_notch_w / 2, y_A_bottom - p_valve_notch_d);
+        piston_path.lineTo(cx - p_valve_notch_w / 2, y_A_bottom - p_valve_notch_d);
+        piston_path.lineTo(cx - p_valve_notch_w / 2, y_A_bottom);
+        piston_path.lineTo(x_left_wall, y_A_bottom);
+        piston_path.closePath();
+        drawHatchedPath(piston_path);
+
+        // Valve K1 piece
+        const k1_y = y_A_bottom - p_valve_notch_d;
+        const k1_x = cx;
+        const k1_w = p_valve_notch_w / 2;
+        const k1_h = p_valve_notch_d * 0.8;
+        ctx.beginPath();
+        ctx.moveTo(k1_x - k1_w, k1_y);
+        ctx.lineTo(k1_x + k1_w, k1_y);
+        ctx.lineTo(k1_x, k1_y - k1_h);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Labels for A and K1
+        ctx.fillText('A', cx, y_A_top - p_center_h - 15);
+        ctx.fillText('K', cx, y_A_bottom + 15);
+        ctx.font = '14px serif';
+        ctx.fillText('1', cx + 9, y_A_bottom + 19);
+        ctx.font = '20px serif';
+
+        // 6. Dimensions
+        const dim_x_right = x_right_wall + 40;
+        drawTick(x_right_wall, y_A_bottom, 10);
+        drawTick(x_right_wall, y_C_top, 10);
+        drawTick(x_right_wall, y_C_bottom, 10);
+        drawTick(x_right_wall, y_ground, 10);
+        drawDimension(dim_x_right, y_A_bottom, y_C_top, '4L');
+        drawDimension(dim_x_right, y_C_bottom, y_ground, 'L');
+
+        const dim_x_left = x_left_wall - 40;
+        drawTick(x_left_wall, y_B_top, -10);
+        drawTick(x_left_wall, y_C_top, -10);
+        drawDimension(dim_x_left, y_B_top, y_C_top, 'L/2');
+    </script>
+</body>
+</html>

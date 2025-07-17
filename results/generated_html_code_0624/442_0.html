@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="physics-diagram" width="600" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physics-diagram');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const config = {
+        scale: 1.2,
+        x_offset: 80,
+        y_shaft: 200,
+        y_ground: 380,
+        main_lw: 3,
+        dim_lw: 1.5,
+        font_large: 'bold 24px Arial',
+        font_medium: 'bold 18px Arial',
+        font_small: 'bold 16px Arial'
+    };
+
+    // --- Dimensions from diagram ---
+    const L_total = 300;
+    const L_A_P1 = 95;
+    const L_B_P3 = 95;
+    // For visual representation, place P2 approximately. The label is 'x'.
+    const L_B_P2_vis = 165; 
+
+    // --- Calculated Coordinates for drawing ---
+    const x_A = config.x_offset;
+    const x_B = x_A + L_total * config.scale;
+    const x_P1 = x_A + L_A_P1 * config.scale;
+    const x_P2 = x_B - L_B_P2_vis * config.scale;
+    const x_P3 = x_B - L_B_P3 * config.scale;
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws a label with a subscript, e.g., P_1
+     */
+    function drawLabelWithSubscript(text, sub, x, y) {
+        ctx.save();
+        ctx.font = config.font_large;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const textMetrics = ctx.measureText(text);
+        const textWidth = textMetrics.width;
+        
+        ctx.fillText(text, x - 5, y);
+        
+        ctx.font = config.font_small;
+        ctx.fillText(sub, x + textWidth / 2 - 2, y + 8);
+        ctx.restore();
+    }
+
+    /**
+     * Draws a support bearing.
+     */
+    function drawSupport(x, label) {
+        const w = 40;
+        const h = 24;
+        const y_s = config.y_shaft;
+        const y_g = config.y_ground;
+
+        // Vertical post
+        ctx.beginPath();
+        ctx.moveTo(x, y_s + h / 2);
+        ctx.lineTo(x, y_g);
+        ctx.stroke();
+
+        // Bearing housing
+        ctx.strokeRect(x - w / 2, y_s - h / 2, w, h);
+
+        // Internal dashed lines for bearing detail
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(x - w / 2, y_s - h / 4);
+        ctx.lineTo(x + w / 2, y_s - h / 4);
+        ctx.moveTo(x - w / 2, y_s + h / 4);
+        ctx.lineTo(x + w / 2, y_s + h / 4);
+        ctx.stroke();
+        ctx.restore();
+        
+        // Label (A or B)
+        ctx.font = config.font_large;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(label, x, y_s - h / 2 - 25);
+    }
+
+    /**
+     * Draws a wheel on the shaft.
+     */
+    function drawWheel(x, w, h, label, sub) {
+        const y_s = config.y_shaft;
+        ctx.strokeRect(x - w / 2, y_s - h / 2, w, h);
+
+        // Dashed center line inside the wheel
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        ctx.moveTo(x, y_s - h / 2);
+        ctx.lineTo(x, y_s + h / 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // Label (P_1, P_2, etc.)
+        drawLabelWithSubscript(label, sub, x, y_s + h / 2 + 10);
+    }
+    
+    /**
+     * Draws a dimension line with extension lines and a label.
+     */
+    function drawDimension(x1, y1, x2, y2, y_dim, label, position) {
+        ctx.save();
+        ctx.lineWidth = config.dim_lw;
+        ctx.font = config.font_medium;
+        ctx.textAlign = 'center';
+        
+        const labelOffset = (position === 'above') ? -10 : 18;
+        ctx.textBaseline = (position === 'above') ? 'bottom' : 'top';
+        const headlen = 8;
+        
+        // Extension lines from object reference points to the dimension line
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1, y_dim);
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2, y_dim);
+        ctx.stroke();
+        
+        // Horizontal line with arrowheads
+        ctx.beginPath();
+        ctx.moveTo(x1, y_dim);
+        ctx.lineTo(x2, y_dim);
+        // Arrow at start
+        ctx.moveTo(x1 + headlen, y_dim - headlen/2);
+        ctx.lineTo(x1, y_dim);
+        ctx.lineTo(x1 + headlen, y_dim + headlen/2);
+        // Arrow at end
+        ctx.moveTo(x2 - headlen, y_dim - headlen/2);
+        ctx.lineTo(x2, y_dim);
+        ctx.lineTo(x2 - headlen, y_dim + headlen/2);
+        ctx.stroke();
+        
+        // Label
+        ctx.fillStyle = 'black';
+        ctx.fillText(label, (x1 + x2) / 2, y_dim + labelOffset);
+        ctx.restore();
+    }
+
+    // --- Main Drawing Execution ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // --- Draw Ground ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = config.main_lw;
+    ctx.beginPath();
+    ctx.moveTo(0, config.y_ground);
+    ctx.lineTo(canvas.width, config.y_ground);
+    ctx.stroke();
+    // Hatching for the ground
+    ctx.lineWidth = config.dim_lw;
+    for (let i = 0; i < canvas.width + 20; i += 12) {
+        ctx.beginPath();
+        ctx.moveTo(i, config.y_ground);
+        ctx.lineTo(i - 12, config.y_ground + 12);
+        ctx.stroke();
+    }
+
+    // --- Draw Main Components ---
+    ctx.lineWidth = config.main_lw;
+    
+    // Shaft
+    const shaft_overhang = 20 * config.scale;
+    ctx.beginPath();
+    ctx.moveTo(x_A - shaft_overhang, config.y_shaft);
+    ctx.lineTo(x_B + shaft_overhang, config.y_shaft);
+    ctx.stroke();
+
+    // Supports
+    drawSupport(x_A, 'A');
+    drawSupport(x_B, 'B');
+
+    // Wheels
+    const wheel_h13 = 60 * config.scale;
+    const wheel_w13 = 20 * config.scale;
+    const wheel_h2 = 70 * config.scale;
+    const wheel_w2 = 35 * config.scale;
+    drawWheel(x_P1, wheel_w13, wheel_h13, 'P', '1');
+    drawWheel(x_P2, wheel_w2, wheel_h2, 'P', '2');
+    drawWheel(x_P3, wheel_w13, wheel_h13, 'P', '3');
+    
+    // --- Draw Dimensions ---
+    const y_dim_top = 80;
+    const y_dim_mid = 115;
+    const y_dim_bottom = 320;
+    
+    const y_ref_support = config.y_shaft - 12; // Top of bearing housing
+    const y_ref_wheel13 = config.y_shaft - wheel_h13 / 2; // Top of wheels P1, P3
+    const y_ref_wheel2_top = config.y_shaft - wheel_h2 / 2; // Top of wheel P2
+    const y_ref_wheel2_bottom = config.y_shaft + wheel_h2 / 2; // Bottom of wheel P2
+    
+    // Dimension: 300 cm (total length between supports)
+    drawDimension(x_A, y_ref_support, x_B, y_ref_support, y_dim_top, '300 cm', 'above');
+
+    // Dimension: 95 cm (left side)
+    drawDimension(x_A, y_ref_support, x_P1, y_ref_wheel13, y_dim_mid, '95 cm', 'above');
+
+    // Dimension: 95 cm (right side)
+    drawDimension(x_P3, y_ref_wheel13, x_B, y_ref_support, y_dim_mid, '95 cm', 'above');
+    
+    // Dimension: x (from P2 to B)
+    drawDimension(x_P2, y_ref_wheel2_bottom, x_B, y_ref_support, y_dim_bottom, 'x', 'below');
+
+</script>
+</body>
+</html>

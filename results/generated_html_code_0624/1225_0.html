@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sluice Gate Diagram</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+        canvas { border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+<canvas id="physics-canvas" width="500" height="420"></canvas>
+<script>
+const canvas = document.getElementById('physics-canvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style and parameters ---
+const config = {
+    lineWidth: 2,
+    thickLineWidth: 5,
+    font: "italic 22px 'Times New Roman'",
+    charFont: "bold 22px 'Times New Roman'",
+    arrowSize: 8,
+    hatchSpacing: 6
+};
+
+// --- Key coordinates ---
+const floorY = 350;
+const stepStartX = 150;
+const stepHeight = 30;
+const stepTopY = floorY - stepHeight;
+const stepWidth = 100;
+
+// Point A (where gate rests)
+const pA = { x: stepStartX + stepWidth, y: stepTopY };
+
+// Gate angle (alpha)
+const alphaDegrees = 35;
+const alphaRad = alphaDegrees * Math.PI / 180;
+
+// Gate AB
+const gateLength = 250;
+const pB = {
+    x: pA.x + gateLength * Math.cos(alphaRad),
+    y: pA.y - gateLength * Math.sin(alphaRad)
+};
+
+// Hinge O
+const hLength = 80; // Distance from A to O
+const pO = {
+    x: pA.x + hLength * Math.cos(alphaRad),
+    y: pA.y - hLength * Math.sin(alphaRad)
+};
+
+// Water level H
+const H = 200;
+const waterSurfaceY = floorY - H;
+
+// --- Helper Functions ---
+
+function drawArrow(ctx, x, y, angle) {
+    const size = config.arrowSize;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, size / 2.5);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, -size / 2.5);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawDoubleArrow(ctx, x1, y1, x2, y2) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    const angle1 = Math.atan2(y2 - y1, x2 - x1);
+    const angle2 = Math.atan2(y1 - y2, x1 - x2);
+    drawArrow(ctx, x1, y1, angle2);
+    drawArrow(ctx, x2, y2, angle1);
+}
+
+function drawHatching(ctx, polygonPoints, angle_deg = 45, spacing = 5) {
+    ctx.save();
+    const path = new Path2D();
+    path.moveTo(polygonPoints[0].x, polygonPoints[0].y);
+    for (let i = 1; i < polygonPoints.length; i++) {
+        path.lineTo(polygonPoints[i].x, polygonPoints[i].y);
+    }
+    path.closePath();
+    ctx.clip(path);
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    polygonPoints.forEach(p => {
+        minX = Math.min(minX, p.x);
+        minY = Math.min(minY, p.y);
+        maxX = Math.max(maxX, p.x);
+        maxY = Math.max(maxY, p.y);
+    });
+
+    const angle_rad = angle_deg * Math.PI / 180;
+    const maxLength = Math.sqrt(Math.pow(maxX - minX, 2) + Math.pow(maxY - minY, 2));
+
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let d = -maxLength; d < maxLength; d += spacing) {
+        const x1 = minX - 10;
+        const y1 = Math.tan(angle_rad) * (x1 - (minX + maxX)/2) + (minY + maxY)/2 - d / Math.cos(angle_rad);
+        const x2 = maxX + 10;
+        const y2 = Math.tan(angle_rad) * (x2 - (minX + maxX)/2) + (minY + maxY)/2 - d / Math.cos(angle_rad);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+// --- Main Drawing Function ---
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // 1. Draw floor, step and support hatching
+    const groundPolygon = [
+        {x: 0, y: floorY}, {x: stepStartX, y: floorY},
+        {x: stepStartX, y: stepTopY}, {x: pO.x + 60, y: stepTopY},
+        {x: pO.x + 60, y: floorY + 20}, {x: 0, y: floorY + 20}
+    ];
+    drawHatching(ctx, groundPolygon, 135, config.hatchSpacing * 1.5);
+    
+    // 2. Draw water
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([15, 10]);
+    for (let y = waterSurfaceY + 25; y < floorY; y += 20) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        let intersectX = (y - pA.y) / (-Math.tan(alphaRad)) + pA.x;
+        ctx.lineTo(intersectX > 0 ? intersectX-5 : pB.x, y);
+        ctx.stroke();
+    }
+    ctx.restore();
+    
+    // 3. Draw outlines of solid ground
+    ctx.lineWidth = config.lineWidth;
+    ctx.beginPath();
+    ctx.moveTo(0, floorY);
+    ctx.lineTo(stepStartX, floorY);
+    ctx.lineTo(stepStartX, stepTopY);
+    ctx.lineTo(pO.x + 60, stepTopY);
+    ctx.stroke();
+
+    // 4. Draw Sluice Gate AB
+    ctx.lineWidth = config.thickLineWidth;
+    ctx.beginPath();
+    ctx.moveTo(pA.x, pA.y);
+    ctx.lineTo(pB.x, pB.y);
+    ctx.stroke();
+    
+    // 5. Draw Hinge Support
+    const supportStructurePoints = [
+        {x: pO.x - 20, y: stepTopY},
+        {x: pO.x + 40, y: stepTopY},
+        {x: pO.x + 25, y: pO.y + 10},
+        {x: pO.x - 5, y: pO.y + 10},
+    ];
+    drawHatching(ctx, supportStructurePoints, 135, config.hatchSpacing);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(supportStructurePoints[0].x, supportStructurePoints[0].y);
+    ctx.lineTo(supportStructurePoints[3].x, supportStructurePoints[3].y);
+    ctx.lineTo(supportStructurePoints[2].x, supportStructurePoints[2].y);
+    ctx.lineTo(supportStructurePoints[1].x, supportStructurePoints[1].y);
+    ctx.stroke();
+
+    ctx.lineWidth = config.lineWidth;
+    ctx.beginPath();
+    ctx.moveTo(pO.x, pO.y);
+    ctx.lineTo(pO.x - 10, pO.y + 12);
+    ctx.moveTo(pO.x, pO.y);
+    ctx.lineTo(pO.x + 15, pO.y + 8);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(pO.x, pO.y, 6, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+
+    // 6. Water Surface line
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(0, waterSurfaceY);
+    ctx.lineTo(pB.x - 10, waterSurfaceY);
+    ctx.stroke();
+    for (let x = 10; x < pB.x - 20; x+= 30) {
+      ctx.beginPath();
+      ctx.moveTo(x, waterSurfaceY);
+      ctx.lineTo(x+15, waterSurfaceY);
+      ctx.stroke();
+    }
+    
+    // 7. Draw labels and annotations
+    ctx.lineWidth = config.lineWidth;
+    
+    // H annotation
+    const H_line_x = 90;
+    drawDoubleArrow(ctx, H_line_x, waterSurfaceY, H_line_x, floorY);
+    ctx.font = config.charFont;
+    ctx.fillText("H", H_line_x - 30, floorY - H / 2);
+    
+    // h annotation
+    const h_offset = -25;
+    const normVec = { x: Math.sin(alphaRad), y: Math.cos(alphaRad) }; // Perpendicular vector
+    const h_start = { x: pA.x + h_offset * normVec.x, y: pA.y + h_offset * normVec.y };
+    const h_end = { x: pO.x + h_offset * normVec.x, y: pO.y + h_offset * normVec.y };
+    drawDoubleArrow(ctx, h_start.x, h_start.y, h_end.x, h_end.y);
+    ctx.font = config.font;
+    ctx.fillText("h", h_start.x + (h_end.x - h_start.x)/2 - 20, h_start.y + (h_end.y - h_start.y)/2 + 20);
+    
+    // alpha annotation
+    const alpha_arc_radius = 45;
+    ctx.beginPath();
+    ctx.moveTo(pO.x, pO.y);
+    ctx.lineTo(pO.x + alpha_arc_radius + 15, pO.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(pO.x, pO.y, alpha_arc_radius, 0, -alphaRad, true);
+    ctx.stroke();
+    ctx.font = config.font;
+    const alpha_label_angle = -alphaRad / 2;
+    ctx.fillText("α", pO.x + alpha_arc_radius * Math.cos(alpha_label_angle) + 5, pO.y + alpha_arc_radius * Math.sin(alpha_label_angle) - 5);
+
+    // A, B, O labels
+    ctx.font = config.charFont;
+    ctx.fillText("A", pA.x - 30, pA.y + 5);
+    ctx.fillText("B", pB.x, pB.y - 10);
+    ctx.fillText("O", pO.x + 10, pO.y - 12);
+}
+
+draw();
+</script>
+</body>
+</html>

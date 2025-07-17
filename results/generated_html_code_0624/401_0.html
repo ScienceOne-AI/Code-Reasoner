@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Solar Panel Diagram</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #ffffff;
+    }
+    canvas {
+        border: 1px solid #ffffff;
+        background-color: #fff;
+    }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Use a font that mimics handwriting from the original image
+    const handwrittenFont = "bold 21px 'Comic Sans MS', cursive, sans-serif";
+
+    // --- Draw the Solar Panel ---
+    ctx.save();
+    // Position and rotate the panel
+    const panelCenterX = 280;
+    const panelCenterY = 240;
+    const panelAngle = -25 * Math.PI / 180;
+    ctx.translate(panelCenterX, panelCenterY);
+    ctx.rotate(panelAngle);
+
+    // Panel dimensions
+    const L = 240; // Inner length
+    const H = 45;  // Inner height
+    const T = 15;  // Thickness
+
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'black';
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'miter';
+
+    // Create a path for the U-shaped container
+    const containerPath = new Path2D();
+    // This path defines the outline of the solid, hatched material.
+    containerPath.moveTo(-L / 2 - T, -H / 2);
+    containerPath.lineTo(-L / 2 - T, H / 2 + T);
+    containerPath.lineTo(L / 2 + T, H / 2 + T);
+    containerPath.lineTo(L / 2 + T, -H / 2);
+    containerPath.lineTo(L / 2, -H / 2);
+    containerPath.lineTo(L / 2, H / 2);
+    containerPath.lineTo(-L / 2, H / 2);
+    containerPath.lineTo(-L / 2, -H / 2);
+    containerPath.closePath();
+
+    // Create a hatching pattern
+    const hatchCanvas = document.createElement('canvas');
+    const hatchCtx = hatchCanvas.getContext('2d');
+    const hatchSize = 10;
+    hatchCanvas.width = hatchSize;
+    hatchCanvas.height = hatchSize;
+    hatchCtx.strokeStyle = 'black';
+    hatchCtx.lineWidth = 2;
+    hatchCtx.beginPath();
+    hatchCtx.moveTo(0, hatchSize);
+    hatchCtx.lineTo(hatchSize, 0);
+    hatchCtx.stroke();
+    const pattern = ctx.createPattern(hatchCanvas, 'repeat');
+
+    // Fill the container with the pattern and stroke its outline
+    ctx.fillStyle = pattern;
+    ctx.fill(containerPath);
+    ctx.stroke(containerPath);
+
+    // Draw the top glass lid
+    ctx.beginPath();
+    ctx.moveTo(-L / 2, -H / 2);
+    ctx.lineTo(L / 2, -H / 2);
+    ctx.stroke();
+    
+    // Draw the text labels on the panel
+    ctx.font = handwrittenFont;
+    
+    // "water" label
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('water', 15, 10);
+
+    // "α = 0.96" label
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('\u03b1 = 0.96', L / 2 - 20, -H / 2 - 8);
+
+    ctx.restore();
+
+
+    // --- Draw Solar Radiation Arrows ---
+    ctx.save();
+    ctx.lineWidth = 2;
+
+    const arrowAngle = panelAngle - Math.PI / 2; // Perpendicular to panel
+    const cosA = Math.cos(arrowAngle);
+    const sinA = Math.sin(arrowAngle);
+    const arrowLength = 100;
+    const headLength = 10;
+    
+    function drawArrow(x1, y1, x2, y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    const numArrows = 4;
+    const arrowSpacing = 25;
+    const startX = 130;
+    const startY = 100;
+
+    for (let i = 0; i < numArrows; i++) {
+        const currentStartX = startX + i * arrowSpacing;
+        const endX = currentStartX + arrowLength * cosA;
+        const endY = startY + arrowLength * sinA;
+        drawArrow(currentStartX, startY, endX, endY);
+    }
+    ctx.restore();
+
+    // --- Draw Solar Radiation Label ---
+    ctx.save();
+    ctx.translate(110, 215);
+    ctx.rotate(arrowAngle);
+    ctx.font = handwrittenFont;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    const mainText = '800 W/m';
+    ctx.fillText(mainText, 0, 0);
+
+    // Measure the main text to position the superscript
+    const metrics = ctx.measureText(mainText);
+    const superscriptX = metrics.width - 5; // Adjust for 'm' width
+
+    // Draw the superscript '2'
+    ctx.font = "bold 15px 'Comic Sans MS', cursive, sans-serif";
+    ctx.fillText('2', superscriptX, -10);
+    ctx.restore();
+
+
+    // --- Draw Figure Label ---
+    ctx.font = "bold 20px 'Times New Roman', serif";
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 3.21', canvas.width / 2, 420);
+
+</script>
+</body>
+</html>

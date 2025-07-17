@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Redrawing</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'center';
+
+        // Helper function to draw a resistor
+        function drawResistor(x, y, width, height, segments) {
+            const segmentWidth = width / segments;
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + segmentWidth / 2, y);
+            for (let i = 0; i < segments; i++) {
+                const sx = x + segmentWidth / 2 + i * segmentWidth;
+                ctx.lineTo(sx + segmentWidth / 4, y + height / 2);
+                ctx.lineTo(sx + 3 * segmentWidth / 4, y - height / 2);
+            }
+            ctx.lineTo(x + width - segmentWidth / 2, y);
+            ctx.lineTo(x + width, y);
+        }
+
+        // Helper function to draw an inductor
+        function drawInductor(x, y, height, radius, coils) {
+            const coilHeight = height / coils;
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + coilHeight / 2);
+            for (let i = 0; i < coils; i++) {
+                const cy = y + coilHeight / 2 + i * coilHeight;
+                ctx.arc(x, cy, radius, Math.PI / 2, -Math.PI / 2, true);
+            }
+            ctx.lineTo(x, y + height);
+        }
+        
+        // --- Draw Part (a) ---
+        const y_center_a = 140;
+        const x_left_a = 160;
+        const x_right_a = 500;
+        const r_outer_a = 60; // projected outer radius
+        const r_inner_a = 22; // projected inner radius
+        const ellipse_rx = 25;
+
+        // Outer cylinder
+        ctx.beginPath();
+        // Visible part of left ellipse
+        ctx.ellipse(x_left_a, y_center_a, ellipse_rx, r_outer_a, 0, Math.PI / 2, 3 * Math.PI / 2);
+        ctx.stroke();
+        // Right ellipse
+        ctx.beginPath();
+        ctx.ellipse(x_right_a, y_center_a, ellipse_rx, r_outer_a, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Top and bottom lines
+        ctx.beginPath();
+        ctx.moveTo(x_left_a, y_center_a - r_outer_a);
+        ctx.lineTo(x_right_a, y_center_a - r_outer_a);
+        ctx.moveTo(x_left_a, y_center_a + r_outer_a);
+        ctx.lineTo(x_right_a, y_center_a + r_outer_a);
+        ctx.stroke();
+        
+        // Dashed parts of the cylinder
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        // Hidden part of left ellipse
+        ctx.beginPath();
+        ctx.ellipse(x_left_a, y_center_a, ellipse_rx, r_outer_a, 0, -Math.PI / 2, Math.PI / 2);
+        ctx.stroke();
+        
+        // Inner cylinder
+        ctx.beginPath();
+        ctx.ellipse(x_left_a, y_center_a, ellipse_rx * 0.5, r_inner_a, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(x_right_a, y_center_a, ellipse_rx * 0.5, r_inner_a, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x_left_a, y_center_a - r_inner_a);
+        ctx.lineTo(x_right_a, y_center_a - r_inner_a);
+        ctx.moveTo(x_left_a, y_center_a + r_inner_a);
+        ctx.lineTo(x_right_a, y_center_a + r_inner_a);
+        ctx.stroke();
+        ctx.restore();
+
+        // Central axis (dash-dot)
+        ctx.save();
+        ctx.setLineDash([15, 5, 3, 5]);
+        ctx.beginPath();
+        ctx.moveTo(40, y_center_a);
+        ctx.lineTo(x_right_a + 50, y_center_a);
+        ctx.stroke();
+        ctx.restore();
+
+        // Dimensions
+        ctx.textAlign = 'right';
+        // 40 cm
+        ctx.beginPath();
+        ctx.moveTo(x_left_a - 70, y_center_a - r_outer_a);
+        ctx.lineTo(x_left_a - 70, y_center_a + r_outer_a);
+        ctx.moveTo(x_left_a - 75, y_center_a - r_outer_a);
+        ctx.lineTo(x_left_a - 65, y_center_a - r_outer_a);
+        ctx.moveTo(x_left_a - 75, y_center_a + r_outer_a);
+        ctx.lineTo(x_left_a - 65, y_center_a + r_outer_a);
+        ctx.stroke();
+        ctx.fillText('40 cm', x_left_a - 80, y_center_a + 5);
+
+        // 5 cm
+        ctx.beginPath();
+        ctx.moveTo(x_left_a - 40, y_center_a - r_inner_a);
+        ctx.lineTo(x_left_a - 40, y_center_a + r_inner_a);
+        ctx.moveTo(x_left_a - 45, y_center_a - r_inner_a);
+        ctx.lineTo(x_left_a - 35, y_center_a - r_inner_a);
+        ctx.moveTo(x_left_a - 45, y_center_a + r_inner_a);
+        ctx.lineTo(x_left_a - 35, y_center_a + r_inner_a);
+        ctx.stroke();
+        ctx.fillText('5 cm', x_left_a - 50, y_center_a - r_inner_a - 8);
+
+        // Particle beam 'P'
+        const p_start_x = 20, p_start_y = 170;
+        const p_end_x = 100, p_end_y = 150;
+        ctx.beginPath();
+        ctx.moveTo(p_start_x, p_start_y);
+        ctx.lineTo(p_end_x, p_end_y);
+        // Arrowhead
+        ctx.moveTo(p_end_x, p_end_y);
+        ctx.lineTo(p_end_x - 12, p_end_y - 3);
+        ctx.moveTo(p_end_x, p_end_y);
+        ctx.lineTo(p_end_x - 3, p_end_y + 12);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.fillText('P', 50, 180);
+
+        // Angle 'π'
+        const angle_center_x = 80;
+        ctx.beginPath();
+        const angle_rad = -Math.atan((p_end_y - y_center_a) / (p_end_x - angle_center_x));
+        ctx.arc(angle_center_x, y_center_a, 25, 0, angle_rad, true);
+        ctx.stroke();
+        ctx.fillText('π', angle_center_x - 30, y_center_a - 20);
+
+        // Label (a)
+        ctx.fillText('(a)', 320, 250);
+
+
+        // --- Draw Part (b) ---
+        const y_top_b = 370;
+        const y_bot_b = 490;
+        const x_left_loop = 200;
+        const x_c = 280;
+        const x_right_loop = 420;
+
+        // V0 (Voltage Source)
+        ctx.beginPath();
+        ctx.moveTo(x_left_loop, y_top_b + 45); // short plate
+        ctx.lineTo(x_left_loop, y_top_b + 75);
+        ctx.moveTo(x_left_loop - 8, y_top_b + 40); // long plate
+        ctx.lineTo(x_left_loop - 8, y_top_b + 80);
+        ctx.stroke();
+        ctx.textAlign = 'left';
+        ctx.fillText('V\u2080', x_left_loop + 5, y_top_b + 65);
+
+        // Capacitor C
+        ctx.beginPath();
+        ctx.moveTo(x_c - 15, y_top_b + 40);
+        ctx.lineTo(x_c + 15, y_top_b + 40);
+        ctx.moveTo(x_c - 15, y_top_b + 50);
+        ctx.lineTo(x_c + 15, y_top_b + 50);
+        ctx.stroke();
+        ctx.textAlign = 'left';
+        ctx.fillText('C', x_c + 20, y_top_b + 50);
+
+        // Wires
+        ctx.beginPath();
+        // Left loop
+        ctx.moveTo(x_left_loop - 4, y_top_b + 40);
+        ctx.lineTo(x_left_loop - 4, y_top_b);
+        ctx.lineTo(x_c - 30, y_top_b);
+        ctx.lineTo(x_c - 20, y_top_b - 10); // Clipped corner
+        ctx.lineTo(x_c, y_top_b - 10);
+        ctx.lineTo(x_c, y_top_b + 40);
+        ctx.moveTo(x_left_loop - 4, y_top_b + 80);
+        ctx.lineTo(x_left_loop - 4, y_bot_b);
+        ctx.lineTo(x_c, y_bot_b);
+        ctx.lineTo(x_c, y_top_b + 50);
+        // Small tick mark
+        ctx.moveTo(x_c - 20, y_top_b - 10);
+        ctx.lineTo(x_c - 22, y_top_b - 5);
+        
+        // Right loop
+        ctx.moveTo(x_c, y_top_b + 40);
+        ctx.lineTo(x_c, y_top_b);
+        ctx.lineTo(x_c + 40, y_top_b);
+        // Switch (open)
+        ctx.moveTo(x_c + 60, y_top_b);
+        ctx.lineTo(x_right_loop - 80, y_top_b);
+        // Resistor
+        drawResistor(ctx, x_right_loop - 80, y_top_b, 60, 16, 5);
+        ctx.fillText('R', x_right_loop - 10, y_top_b - 10);
+        
+        // Wire down to inductor
+        ctx.moveTo(x_right_loop - 20, y_top_b);
+        ctx.lineTo(x_right_loop, y_top_b);
+        ctx.lineTo(x_right_loop, y_top_b + 40);
+
+        // Inductor
+        drawInductor(ctx, x_right_loop, y_top_b + 40, 60, 8, 4);
+        ctx.fillText('L', x_right_loop + 15, y_top_b + 75);
+        
+        // Bottom wire
+        ctx.moveTo(x_right_loop, y_top_b + 100);
+        ctx.lineTo(x_right_loop, y_bot_b);
+        ctx.lineTo(x_c, y_bot_b);
+        ctx.stroke();
+
+        // Label (b)
+        ctx.textAlign = 'center';
+        ctx.fillText('(b)', 300, 530);
+
+        // Figure caption
+        ctx.fillText('Fig. 3.78', 300, 570);
+
+    </script>
+</body>
+</html>

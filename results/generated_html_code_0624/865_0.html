@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Steam Pile Driver Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="600" height="800" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.lineWidth = 1.2;
+    ctx.lineCap = 'round';
+    ctx.font = '18px KaiTi';
+
+    function line(x1, y1, x2, y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    function text(str, x, y) {
+        ctx.fillStyle = 'black';
+        ctx.fillText(str, x, y);
+    }
+
+    // --- Main Tower ---
+    const tower_cx = 200;
+    const tower_y_base = 690;
+    const tower_y_top = 100;
+    const tower_w_base = 120;
+    const tower_w_top = 40;
+    const num_sections = 11;
+    const section_h = (tower_y_base - tower_y_top) / num_sections;
+
+    const left_leg_x = (y) => tower_cx - (tower_w_base / 2 - (tower_w_base / 2 - tower_w_top / 2) * (tower_y_base - y) / (tower_y_base - tower_y_top));
+    const right_leg_x = (y) => tower_cx + (tower_w_base / 2 - (tower_w_base / 2 - tower_w_top / 2) * (tower_y_base - y) / (tower_y_base - tower_y_top));
+
+    line(left_leg_x(tower_y_base), tower_y_base, left_leg_x(tower_y_top), tower_y_top);
+    line(right_leg_x(tower_y_base), tower_y_base, right_leg_x(tower_y_top), tower_y_top);
+
+    for (let i = 0; i < num_sections; i++) {
+        const y1 = tower_y_base - i * section_h;
+        const y2 = tower_y_base - (i + 1) * section_h;
+        line(left_leg_x(y1), y1, right_leg_x(y1), y1);
+        line(left_leg_x(y1), y1, right_leg_x(y2), y2);
+        line(right_leg_x(y1), y1, left_leg_x(y2), y2);
+    }
+    line(left_leg_x(tower_y_top), tower_y_top, right_leg_x(tower_y_top), tower_y_top);
+
+    // --- Top Structure ---
+    const top_y = tower_y_top;
+    const top_x_left = left_leg_x(top_y);
+    const top_x_right = right_leg_x(top_y);
+    ctx.strokeRect(top_x_left - 5, top_y - 20, tower_w_top + 10, 20);
+    line(tower_cx, top_y - 20, tower_cx, top_y - 35);
+    line(tower_cx - 5, top_y - 35, tower_cx + 5, top_y - 35);
+
+    // --- Guy Wires ---
+    const wire_anchor_x = left_leg_x(tower_y_top + 60);
+    const wire_anchor_y = tower_y_top + 60;
+    ctx.lineWidth = 1;
+    line(wire_anchor_x, wire_anchor_y, -10, 250);
+    line(wire_anchor_x, wire_anchor_y, -10, 280);
+    line(wire_anchor_x, wire_anchor_y, -10, 310);
+    line(wire_anchor_x, wire_anchor_y, -10, 340);
+    ctx.lineWidth = 1.2;
+
+    // --- Guide rail and Tree ---
+    const guide_x = right_leg_x(280);
+    ctx.strokeRect(guide_x - 5, 180, 15, 200);
+    ctx.beginPath();
+    ctx.moveTo(guide_x + 10, 170);
+    ctx.bezierCurveTo(guide_x + 20, 160, guide_x + 20, 180, guide_x + 30, 175);
+    ctx.bezierCurveTo(guide_x + 40, 170, guide_x + 40, 190, guide_x + 30, 185);
+    ctx.bezierCurveTo(guide_x + 25, 195, guide_x + 20, 190, guide_x + 10, 190);
+    ctx.stroke();
+
+    // --- Base and Surroundings ---
+    // Ground dots
+    for(let i=0; i<300; i++){
+        let x = Math.random() * 600;
+        let y = 680 + Math.random() * 120;
+        if (y > 690) ctx.fillRect(x, y, 1, 1);
+    }
+
+    // Tracks
+    const track1_rail_L_x = (y) => 50 + (y - 780) * ( (tower_cx - 75) - 50 ) / (680-780);
+    const track1_rail_R_x = (y) => 320 + (y - 780) * ( (tower_cx + 75) - 320) / (680-780);
+    line(50, 780, tower_cx - 75, 680);
+    line(320, 780, tower_cx + 75, 680);
+    for (let i = 0; i < 15; i++) {
+        let y = 780 - i * 7;
+        line(track1_rail_L_x(y), y, track1_rail_R_x(y), y);
+    }
+
+    const track2_rail_L_x = (y) => 420 + (y - 680) * (480 - 420) / (728-680);
+    const track2_rail_R_x = (y) => 500 + (y - 680) * (560 - 500) / (736-680);
+    line(420, 680, 480, 728);
+    line(500, 680, 560, 736);
+    for (let i = 0; i < 8; i++) {
+        let y = 680 + i * 6;
+        line(track2_rail_L_x(y), y, track2_rail_R_x(y), y);
+    }
+
+    // Ramp
+    line(430, 690, 490, 720);
+    line(445, 690, 505, 720);
+    for (let i = 0; i <= 6; i++) {
+        let p = i / 6;
+        line(430 + p * 60, 690 + p * 30, 445 + p * 60, 690 + p * 30);
+    }
+
+    // Left building
+    ctx.fillStyle = 'white';
+    ctx.fillRect(100, 640, 30, 50);
+    ctx.strokeRect(100, 640, 30, 50);
+    ctx.strokeRect(102, 642, 26, 10);
+    ctx.strokeRect(102, 654, 26, 10);
+    ctx.strokeRect(102, 666, 26, 10);
+    ctx.strokeRect(102, 678, 26, 10);
+    ctx.beginPath();
+    ctx.moveTo(130, 650); ctx.lineTo(140, 650); ctx.lineTo(140, 620); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(138, 620); ctx.lineTo(142, 620); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(138, 622); ctx.lineTo(142, 622); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(138, 624); ctx.lineTo(142, 624); ctx.stroke();
+
+    // Gears at base
+    function drawGear(cx, cy, radius, numTeeth) {
+        ctx.beginPath();
+        for (let i = 0; i < numTeeth * 2; i++) {
+            let angle = i * Math.PI / numTeeth;
+            let r = (i % 2 === 0) ? radius : radius * 0.7;
+            let x = cx + r * Math.cos(angle);
+            let y = cy + r * Math.sin(angle);
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'white'; ctx.fill();
+        ctx.stroke();
+    }
+    drawGear(180, 680, 10, 6);
+    drawGear(220, 680, 10, 6);
+
+    // Right side details
+    ctx.fillStyle = 'black';
+    line(510, 670, 510, 650); line(510, 650, 500, 655); line(510, 650, 500, 645);
+    ctx.beginPath(); ctx.moveTo(510, 655); ctx.lineTo(520, 652); ctx.lineTo(510, 649); ctx.closePath(); ctx.fill();
+    line(530, 670, 530, 650); line(530, 650, 520, 655); line(530, 650, 520, 645);
+    ctx.beginPath(); ctx.moveTo(530, 655); ctx.lineTo(540, 652); ctx.lineTo(530, 649); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(525, 680, 3, 0, 2*Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(525, 683); ctx.lineTo(525, 690); ctx.lineTo(520, 695);
+    ctx.moveTo(525, 690); ctx.lineTo(530, 695); ctx.moveTo(525, 685); ctx.lineTo(530, 688); ctx.stroke();
+
+    // --- Magnified View ---
+    const zoom_x = 300; const zoom_y = 120;
+    const zoom_w = 200; const zoom_h = 380;
+    ctx.strokeRect(zoom_x, zoom_y, zoom_w, zoom_h);
+    line(guide_x + 10, 240, zoom_x, 240);
+    ctx.beginPath(); ctx.moveTo(zoom_x, 240); ctx.lineTo(zoom_x - 10, 235); ctx.moveTo(zoom_x, 240); ctx.lineTo(zoom_x - 10, 245); ctx.stroke();
+
+    const z_cx = zoom_x + zoom_w / 2;
+
+    // Pile (桩)
+    const pile_y_top = zoom_y + 340; const pile_w = 60;
+    ctx.fillStyle='white'; ctx.fillRect(z_cx - pile_w/2, pile_y_top, pile_w, zoom_h - 340);
+    ctx.strokeRect(z_cx - pile_w/2, pile_y_top, pile_w, zoom_h - 340);
+    for (let i = 0; i < 10; i++) {
+        let px = z_cx - pile_w/2 + 5 + Math.random() * (pile_w-10);
+        let py = pile_y_top + 5 + Math.random() * 30;
+        line(px, py, px + Math.random()*4-1, py + Math.random()*2 - 1);
+    }
+    text('桩', z_cx + 40, pile_y_top + 50);
+    line(z_cx + 35, pile_y_top + 45, z_cx + pile_w/2, pile_y_top + 45);
+
+    // Pile Cap (桩帽)
+    const cap_y = pile_y_top - 30; const cap_h = 30; const cap_w = 70;
+    ctx.beginPath();
+    ctx.moveTo(z_cx - cap_w/2, cap_y + cap_h); ctx.lineTo(z_cx - cap_w/2, cap_y + 5);
+    ctx.arc(z_cx, cap_y + 5, cap_w/2, Math.PI, 0); ctx.lineTo(z_cx + cap_w/2, cap_y + cap_h);
+    ctx.fillStyle='white'; ctx.fill(); ctx.stroke();
+    line(z_cx - cap_w/2, cap_y + 10, z_cx + cap_w/2, cap_y + 10);
+    line(z_cx - cap_w/2, cap_y + 15, z_cx + cap_w/2, cap_y + 15);
+    text('桩帽', z_cx + 45, cap_y + 20);
+    line(z_cx + 40, cap_y + 15, z_cx + cap_w/2, cap_y + 15);
+
+    // Hammer (锤)
+    const hammer_y_bottom = cap_y; const hammer_h = 160; const hammer_w = 60;
+    const hammer_y_top = hammer_y_bottom - hammer_h;
+    ctx.strokeRect(z_cx - hammer_w/2, hammer_y_top, hammer_w, hammer_h);
+    for (let i = 1; i < 16; i++) {
+        line(z_cx - hammer_w/2, hammer_y_top + i * 10, z_cx - hammer_w/2 + 5, hammer_y_top + i * 10);
+        line(z_cx + hammer_w/2, hammer_y_top + i * 10, z_cx + hammer_w/2 - 5, hammer_y_top + i * 10);
+    }
+    const rod_w = 10;
+    line(z_cx - rod_w/2, hammer_y_top, z_cx - rod_w/2, hammer_y_top - 20);
+    line(z_cx + rod_w/2, hammer_y_top, z_cx + rod_w/2, hammer_y_top - 20);
+    text('锤', z_cx + 50, hammer_y_top + hammer_h/2);
+    line(z_cx + 45, hammer_y_top + hammer_h/2, z_cx + hammer_w/2, hammer_y_top + hammer_h/2);
+    const arrow_x = z_cx + 75; const arrow_y1 = hammer_y_top + 40; const arrow_y2 = hammer_y_bottom - 40;
+    line(arrow_x, arrow_y1, arrow_x, arrow_y2);
+    line(arrow_x, arrow_y1, arrow_x - 4, arrow_y1 + 6); line(arrow_x, arrow_y1, arrow_x + 4, arrow_y1 + 6);
+    line(arrow_x, arrow_y2, arrow_x - 4, arrow_y2 - 6); line(arrow_x, arrow_y2, arrow_x + 4, arrow_y2 - 6);
+
+    // Valve (气阀)
+    const valve_y = hammer_y_top - 20; const valve_x_left = z_cx - 20; const valve_x_right = z_cx + 20;
+    line(valve_x_left, valve_y, valve_x_right, valve_y);
+    line(z_cx, valve_y, z_cx, valve_y - 10);
+    line(z_cx - 5, valve_y - 10, z_cx + 5, valve_y - 10);
+    ctx.strokeRect(valve_x_right, valve_y, 10, 20);
+    text('气阀', z_cx + 40, valve_y);
+    line(z_cx + 35, valve_y, valve_x_right, valve_y);
+
+    // Steam Inlet (蒸气)
+    const hose_start_x = zoom_x; const hose_start_y = 280;
+    const hose_end_x = valve_x_left; const hose_end_y = valve_y;
+    ctx.beginPath(); ctx.moveTo(hose_start_x, hose_start_y);
+    ctx.bezierCurveTo(320, 300, 350, 240, hose_end_x, hose_end_y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(hose_start_x, hose_start_y + 10);
+    ctx.bezierCurveTo(320, 300 + 10, 350, 240 + 10, hose_end_x, hose_end_y + 10); ctx.stroke();
+    line(310, 285, 312, 295); line(325, 278, 327, 288); line(341, 269, 343, 279); line(356, 260, 358, 270); line(369, 252, 371, 262);
+    text('蒸气', zoom_x + 10, 310);
+    line(zoom_x + 40, 305, 310, 290);
+
+    // Bottom Caption
+    ctx.font = '20px "Songti SC", "SimSun", serif';
+    text('习题 2-31 图', 250, 780);
+</script>
+</body>
+</html>

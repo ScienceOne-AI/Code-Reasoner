@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electromagnet Diagram</title>
+</head>
+<body>
+<canvas id="electromagnetCanvas" width="500" height="420" style="border:1px solid #000000;"></canvas>
+<script>
+    const canvas = document.getElementById("electromagnetCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // --- Style and Parameters ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2.5;
+
+    const cx = 280;
+    const cy = 190;
+    const r_outer = 120;
+    const r_inner = 90;
+    const gap_angle = 0.5; // Total angle of the gap in radians
+    const startAngle = gap_angle / 2;
+    const endAngle = 2 * Math.PI - gap_angle / 2;
+
+    // --- 1. Draw the Iron Core ---
+    // Outer arc of the core
+    ctx.beginPath();
+    ctx.arc(cx, cy, r_outer, startAngle, endAngle);
+    ctx.stroke();
+
+    // Inner arc of the core
+    ctx.beginPath();
+    ctx.arc(cx, cy, r_inner, startAngle, endAngle);
+    ctx.stroke();
+
+    // Top face of the gap
+    ctx.beginPath();
+    ctx.moveTo(cx + r_inner * Math.cos(startAngle), cy + r_inner * Math.sin(startAngle));
+    ctx.lineTo(cx + r_outer * Math.cos(startAngle), cy + r_outer * Math.sin(startAngle));
+    ctx.stroke();
+
+    // Bottom face of the gap
+    ctx.beginPath();
+    ctx.moveTo(cx + r_inner * Math.cos(endAngle), cy + r_inner * Math.sin(endAngle));
+    ctx.lineTo(cx + r_outer * Math.cos(endAngle), cy + r_outer * Math.sin(endAngle));
+    ctx.stroke();
+
+    // --- 2. Draw the Coil and Power Supply ---
+    const coil_start_angle = Math.PI - 0.7;
+    const coil_end_angle = Math.PI + 0.7;
+    
+    // Coil windings (represented by thicker lines)
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    const num_windings = 14;
+    const angle_step = (coil_end_angle - coil_start_angle) / num_windings;
+    for (let i = 0; i <= num_windings; i++) {
+        let angle = coil_start_angle + i * angle_step;
+        // The lines represent the wire crossing the core's cross-section
+        ctx.moveTo(cx + (r_inner - 2) * Math.cos(angle), cy + (r_inner - 2) * Math.sin(angle));
+        ctx.lineTo(cx + (r_outer + 2) * Math.cos(angle), cy + (r_outer + 2) * Math.sin(angle));
+    }
+    ctx.stroke();
+    ctx.lineWidth = 2.5; // Reset line width
+
+    // Leads from coil to the source symbol
+    const term_x = 100; // x-coordinate for the vertical part of the source symbol
+    const lead_start_x = cx + r_inner * Math.cos(coil_start_angle);
+    const lead_start_y = cy + r_inner * Math.sin(coil_start_angle);
+    const lead_end_x = cx + r_inner * Math.cos(coil_end_angle);
+    const lead_end_y = cy + r_inner * Math.sin(coil_end_angle);
+
+    // Connect top of the coil to the terminal
+    ctx.beginPath();
+    ctx.moveTo(lead_start_x, lead_start_y);
+    ctx.lineTo(term_x, lead_start_y);
+    ctx.stroke();
+
+    // Connect bottom of the coil to the terminal
+    ctx.beginPath();
+    ctx.moveTo(lead_end_x, lead_end_y);
+    ctx.lineTo(term_x, lead_end_y);
+    ctx.stroke();
+
+    // Draw the voltage source symbol
+    ctx.beginPath();
+    ctx.moveTo(term_x, lead_start_y);
+    ctx.lineTo(term_x - 10, lead_start_y); // Top tick
+    ctx.moveTo(term_x, lead_start_y);
+    ctx.lineTo(term_x, lead_end_y);       // Vertical line
+    ctx.moveTo(term_x, lead_end_y);
+    ctx.lineTo(term_x - 10, lead_end_y);   // Bottom tick
+    ctx.stroke();
+    
+    // Voltage Label "V"
+    ctx.font = "italic 22px 'Times New Roman'";
+    ctx.fillText("V", term_x - 35, cy + 8);
+
+    // --- 3. Draw Dimension Labels ---
+    
+    // Label 'b' (outer radius)
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx, cy - r_outer);
+    // Arrowhead for 'b'
+    ctx.moveTo(cx, cy - r_outer);
+    ctx.lineTo(cx - 5, cy - r_outer + 8);
+    ctx.moveTo(cx, cy - r_outer);
+    ctx.lineTo(cx + 5, cy - r_outer + 8);
+    ctx.stroke();
+    ctx.fillText("b", cx + 10, cy - r_outer / 2 + 5);
+
+    // Label 'a' (core thickness)
+    const a_x_pos = cx;
+    const a_y_pos_inner = cy + r_inner;
+    const a_y_pos_outer = cy + r_outer;
+    ctx.beginPath();
+    ctx.moveTo(a_x_pos, a_y_pos_inner);
+    ctx.lineTo(a_x_pos, a_y_pos_outer);
+    // Ticks for 'a'
+    ctx.moveTo(a_x_pos - 5, a_y_pos_inner);
+    ctx.lineTo(a_x_pos + 5, a_y_pos_inner);
+    ctx.moveTo(a_x_pos - 5, a_y_pos_outer);
+    ctx.lineTo(a_x_pos + 5, a_y_pos_outer);
+    ctx.stroke();
+    ctx.fillText("a", a_x_pos - 25, cy + r_inner + (r_outer - r_inner) / 2 + 8);
+
+    // Label 'w' (gap width)
+    const w_label_x = cx + r_outer + 20;
+    const w_label_y1 = cy + r_outer * Math.sin(endAngle); // y-coord of upper gap edge
+    const w_label_y2 = cy + r_outer * Math.sin(startAngle); // y-coord of lower gap edge
+    ctx.beginPath();
+    ctx.moveTo(w_label_x, w_label_y1);
+    ctx.lineTo(w_label_x, w_label_y2);
+    // Ticks for 'w'
+    ctx.moveTo(w_label_x - 5, w_label_y1);
+    ctx.lineTo(w_label_x + 5, w_label_y1);
+    ctx.moveTo(w_label_x - 5, w_label_y2);
+    ctx.lineTo(w_label_x + 5, w_label_y2);
+    ctx.stroke();
+    ctx.fillText("w", w_label_x + 10, cy + 5);
+
+    // --- 4. Draw Figure Caption ---
+    ctx.font = "bold 22px 'Times New Roman'";
+    ctx.fillText("Fig. 2.34", cx - 45, cy + r_outer + 60);
+
+</script>
+</body>
+</html>

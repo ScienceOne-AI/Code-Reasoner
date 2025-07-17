@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Charge Distribution Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas size
+        canvas.width = 800;
+        canvas.height = 450;
+
+        // General drawing styles
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // --- Constants and Configuration ---
+        const y1 = 100, y2 = 210, y3 = 320;
+        const x_line_start = 120, x_line_end = 750;
+        const x_label_case = 60;
+        const dot_radius = 4;
+        
+        // Vertical offsets for labels
+        const y_charge_offset = -20;
+        const y_pos_offset = 30;
+
+        // Font settings
+        const font_size = 20;
+        const font_family = "Serif";
+        const font_normal = `${font_size}px ${font_family}`;
+        const font_italic = `italic ${font_size}px ${font_family}`;
+
+        // Horizontal positions on the axis
+        const pos_minus_a_half = 280;
+        const pos_zero = 450;
+        const pos_plus_a_half = 620;
+        const pos_obs_x = 720;
+
+        // --- Helper Functions ---
+
+        function drawDot(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, dot_radius, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        function drawFraction(x_center, y_base, num, den, num_font, den_font) {
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+            
+            ctx.font = num_font;
+            const num_width = ctx.measureText(num).width;
+            ctx.font = den_font;
+            const den_width = ctx.measureText(den).width;
+            
+            const line_width = Math.max(num_width, den_width) + 8;
+            const line_y = y_base;
+
+            ctx.font = num_font;
+            ctx.fillText(num, x_center, line_y - font_size * 0.55);
+            
+            ctx.beginPath();
+            ctx.moveTo(x_center - line_width / 2, line_y);
+            ctx.lineTo(x_center + line_width / 2, line_y);
+            ctx.stroke();
+            
+            ctx.font = den_font;
+            ctx.fillText(den, x_center, line_y + font_size * 0.6);
+        }
+
+        // --- Drawing Logic ---
+
+        // === CASE (I) ===
+        ctx.beginPath();
+        ctx.moveTo(x_line_start, y1);
+        ctx.lineTo(x_line_end, y1);
+        ctx.stroke();
+        
+        ctx.font = font_normal;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText("(I)", x_label_case, y1);
+
+        // Charge q at x'=0
+        drawDot(pos_zero, y1);
+        ctx.font = font_italic;
+        ctx.fillText("q", pos_zero, y1 + y_charge_offset);
+        
+        // Label x'=0
+        {
+            const y = y1 + y_pos_offset;
+            ctx.font = font_italic; const w1 = ctx.measureText("x'").width;
+            ctx.font = font_normal; const w2 = ctx.measureText(" = 0").width;
+            const total_w = w1 + w2;
+            let current_x = pos_zero - total_w / 2;
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.font = font_italic; ctx.fillText("x'", current_x, y);
+            ctx.font = font_normal; ctx.fillText(" = 0", current_x + w1, y);
+        }
+
+        // Observer x
+        drawDot(pos_obs_x, y1);
+        ctx.font = font_italic;
+        ctx.textAlign = 'center';
+        ctx.fillText("x", pos_obs_x, y1 + y_pos_offset);
+
+        // === CASE (II) ===
+        ctx.beginPath();
+        ctx.moveTo(x_line_start, y2);
+        ctx.lineTo(x_line_end, y2);
+        ctx.stroke();
+        
+        ctx.font = font_normal;
+        ctx.textAlign = 'center';
+        ctx.fillText("(II)", x_label_case, y2);
+
+        // Charge -q at x'=-a/2
+        drawDot(pos_minus_a_half, y2);
+        ctx.font = font_normal; ctx.fillText("-", pos_minus_a_half - 7, y2 + y_charge_offset);
+        ctx.font = font_italic; ctx.fillText("q", pos_minus_a_half + 3, y2 + y_charge_offset);
+
+        // Label x' ≡ -a/2
+        {
+            const y = y2 + y_pos_offset;
+            const gap = 2;
+            ctx.font = font_italic; const w1 = ctx.measureText("x'").width;
+            ctx.font = font_normal; const w2 = ctx.measureText(" ≡ -").width;
+            ctx.font = font_italic; const w_num = ctx.measureText("a").width;
+            ctx.font = font_normal; const w_den = ctx.measureText("2").width;
+            const w_frac = Math.max(w_num, w_den) + 8;
+            const total_w = w1 + w2 + gap + w_frac;
+            let current_x = pos_minus_a_half - total_w / 2;
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.font = font_italic; ctx.fillText("x'", current_x, y);
+            current_x += w1;
+            ctx.font = font_normal; ctx.fillText(" ≡ -", current_x, y);
+            current_x += w2 + gap;
+            drawFraction(current_x + w_frac / 2, y, "a", "2", font_italic, font_normal);
+        }
+        
+        // Charge +q at x'=a/2
+        drawDot(pos_plus_a_half, y2);
+        ctx.font = font_normal; ctx.fillText("+", pos_plus_a_half - 7, y2 + y_charge_offset);
+        ctx.font = font_italic; ctx.fillText("q", pos_plus_a_half + 3, y2 + y_charge_offset);
+
+        // Label x' ≡ a/2
+        {
+            const y = y2 + y_pos_offset;
+            const gap = 2;
+            ctx.font = font_italic; const w1 = ctx.measureText("x'").width;
+            ctx.font = font_normal; const w2 = ctx.measureText(" ≡ ").width;
+            ctx.font = font_italic; const w_num = ctx.measureText("a").width;
+            ctx.font = font_normal; const w_den = ctx.measureText("2").width;
+            const w_frac = Math.max(w_num, w_den) + 8;
+            const total_w = w1 + w2 + gap + w_frac;
+            let current_x = pos_plus_a_half - total_w / 2;
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.font = font_italic; ctx.fillText("x'", current_x, y);
+            current_x += w1;
+            ctx.font = font_normal; ctx.fillText(" ≡ ", current_x, y);
+            current_x += w2 + gap;
+            drawFraction(current_x + w_frac / 2, y, "a", "2", font_italic, font_normal);
+        }
+
+        // Observer x
+        drawDot(pos_obs_x, y2);
+        ctx.font = font_italic;
+        ctx.textAlign = 'center';
+        ctx.fillText("x", pos_obs_x, y2 + y_pos_offset);
+
+
+        // === CASE (III) ===
+        ctx.beginPath();
+        ctx.moveTo(x_line_start, y3);
+        ctx.lineTo(x_line_end, y3);
+        ctx.stroke();
+        
+        ctx.font = font_normal;
+        ctx.textAlign = 'center';
+        ctx.fillText("(III)", x_label_case, y3);
+        
+        // Charge q at x'=-a/2
+        drawDot(pos_minus_a_half, y3);
+        ctx.font = font_italic; ctx.fillText("q", pos_minus_a_half, y3 + y_charge_offset);
+        // Label x' = -a/2
+        {
+            const y = y3 + y_pos_offset;
+            const gap = 2;
+            ctx.font = font_italic; const w1 = ctx.measureText("x'").width;
+            ctx.font = font_normal; const w2 = ctx.measureText(" = -").width;
+            ctx.font = font_italic; const w_num = ctx.measureText("a").width;
+            ctx.font = font_normal; const w_den = ctx.measureText("2").width;
+            const w_frac = Math.max(w_num, w_den) + 8;
+            const total_w = w1 + w2 + gap + w_frac;
+            let current_x = pos_minus_a_half - total_w / 2;
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.font = font_italic; ctx.fillText("x'", current_x, y);
+            current_x += w1;
+            ctx.font = font_normal; ctx.fillText(" = -", current_x, y);
+            current_x += w2 + gap;
+            drawFraction(current_x + w_frac / 2, y, "a", "2", font_italic, font_normal);
+        }
+        
+        // Charge -2q at x'=0
+        drawDot(pos_zero, y3);
+        ctx.textAlign = 'center';
+        ctx.font = font_normal; ctx.fillText("-2", pos_zero - 6, y3 + y_charge_offset);
+        ctx.font = font_italic; ctx.fillText("q", pos_zero + 8, y3 + y_charge_offset);
+        // Label x'=0
+        {
+            const y = y3 + y_pos_offset;
+            ctx.font = font_italic; const w1 = ctx.measureText("x'").width;
+            ctx.font = font_normal; const w2 = ctx.measureText(" = 0").width;
+            const total_w = w1 + w2;
+            let current_x = pos_zero - total_w / 2;
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.font = font_italic; ctx.fillText("x'", current_x, y);
+            ctx.font = font_normal; ctx.fillText(" = 0", current_x + w1, y);
+        }
+        
+        // Charge q at x'=a/2
+        drawDot(pos_plus_a_half, y3);
+        ctx.font = font_italic;
+        ctx.textAlign = 'center';
+        ctx.fillText("q", pos_plus_a_half, y3 + y_charge_offset);
+        // Label x' = a/2
+        {
+            const y = y3 + y_pos_offset;
+            const gap = 2;
+            ctx.font = font_italic; const w1 = ctx.measureText("x'").width;
+            ctx.font = font_normal; const w2 = ctx.measureText(" = ").width;
+            ctx.font = font_italic; const w_num = ctx.measureText("a").width;
+            ctx.font = font_normal; const w_den = ctx.measureText("2").width;
+            const w_frac = Math.max(w_num, w_den) + 8;
+            const total_w = w1 + w2 + gap + w_frac;
+            let current_x = pos_plus_a_half - total_w / 2;
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.font = font_italic; ctx.fillText("x'", current_x, y);
+            current_x += w1;
+            ctx.font = font_normal; ctx.fillText(" = ", current_x, y);
+            current_x += w2 + gap;
+            drawFraction(current_x + w_frac / 2, y, "a", "2", font_italic, font_normal);
+        }
+
+        // Observer x
+        drawDot(pos_obs_x, y3);
+        ctx.font = font_italic;
+        ctx.textAlign = 'center';
+        ctx.fillText("x", pos_obs_x, y3 + y_pos_offset);
+        
+        // --- Figure Caption ---
+        ctx.font = font_normal;
+        ctx.textAlign = 'center';
+        ctx.fillText("Fig. 1.3", canvas.width / 2, 400);
+
+    </script>
+</body>
+</html>

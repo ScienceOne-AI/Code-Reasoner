@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Radioactive Decay Graph</title>
+</head>
+<body>
+    <canvas id="decayGraph" width="600" height="520"></canvas>
+    <script>
+        const canvas = document.getElementById('decayGraph');
+        const ctx = canvas.getContext('2d');
+
+        // Define graph properties
+        const margin = { top: 40, right: 20, bottom: 80, left: 70 };
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const plotWidth = canvasWidth - margin.left - margin.right;
+        const plotHeight = canvasHeight - margin.top - margin.bottom;
+
+        // Data ranges
+        const xMin = 0;
+        const xMax = 25;
+        const yMin = 35.0;
+        const yMax = 36.6;
+
+        // Scaling functions to convert data coordinates to canvas coordinates
+        function scaleX(t) {
+            return margin.left + (t - xMin) / (xMax - xMin) * plotWidth;
+        }
+
+        function scaleY(lnA) {
+            // Y-axis is inverted in canvas coordinates
+            return margin.top + (yMax - lnA) / (yMax - yMin) * plotHeight;
+        }
+
+        // Clear canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        // --- Draw Grid ---
+        ctx.strokeStyle = '#cccccc';
+        ctx.lineWidth = 1;
+
+        // Vertical grid lines (every 0.5 min)
+        const xSmallStep = 0.5;
+        for (let t = xMin + xSmallStep; t < xMax; t += xSmallStep) {
+            const x = scaleX(t);
+            ctx.beginPath();
+            ctx.moveTo(x, margin.top);
+            ctx.lineTo(x, margin.top + plotHeight);
+            ctx.stroke();
+        }
+
+        // Horizontal grid lines (every 0.04)
+        const ySmallStep = 0.04;
+        for (let lnA = yMin + ySmallStep; lnA < yMax; lnA += ySmallStep) {
+             // Handle floating point inaccuracies
+            if (Math.abs(lnA - Math.round(lnA/ySmallStep)*ySmallStep) < 1e-9) {
+                const y = scaleY(lnA);
+                ctx.beginPath();
+                ctx.moveTo(margin.left, y);
+                ctx.lineTo(margin.left + plotWidth, y);
+                ctx.stroke();
+            }
+        }
+
+
+        // --- Draw Axes ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Y-axis
+        ctx.beginPath();
+        ctx.moveTo(margin.left, margin.top);
+        ctx.lineTo(margin.left, margin.top + plotHeight);
+        ctx.stroke();
+
+        // X-axis
+        ctx.beginPath();
+        ctx.moveTo(margin.left, margin.top + plotHeight);
+        ctx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+        ctx.stroke();
+
+
+        // --- Draw Labels and Ticks ---
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+
+        // Y-axis labels and ticks
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        const yMajorStep = 0.4;
+        for (let lnA = yMin; lnA <= yMax + 1e-9; lnA += yMajorStep) {
+            const y = scaleY(lnA);
+            ctx.beginPath();
+            ctx.moveTo(margin.left, y);
+            ctx.lineTo(margin.left - 5, y);
+            ctx.stroke();
+            ctx.fillText(lnA.toFixed(1), margin.left - 8, y);
+        }
+
+        // X-axis labels and ticks
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const xMajorStep = 5;
+        for (let t = xMin; t <= xMax; t += xMajorStep) {
+            const x = scaleX(t);
+            ctx.beginPath();
+            ctx.moveTo(x, margin.top + plotHeight);
+            ctx.lineTo(x, margin.top + plotHeight + 5);
+            ctx.stroke();
+            ctx.fillText(t, x, margin.top + plotHeight + 8);
+        }
+
+        // --- Draw Axis Titles ---
+        // Y-axis title: ln (A / Bq)
+        ctx.save();
+        ctx.translate(margin.left - 50, margin.top + plotHeight / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        // Draw text in parts for different font styles
+        const yLabelYPos = 0;
+        ctx.font = '18px Arial';
+        const lnText = 'ln (';
+        const aText = 'A';
+        const bqText = '/ Bq)';
+        const lnTextWidth = ctx.measureText(lnText).width;
+        ctx.font = 'italic 18px Arial';
+        const aTextWidth = ctx.measureText(aText).width;
+        ctx.font = '18px Arial';
+        const bqTextWidth = ctx.measureText(bqText).width;
+        const totalYLabelWidth = lnTextWidth + aTextWidth + bqTextWidth;
+        let currentXPos = -totalYLabelWidth / 2;
+        
+        ctx.font = '18px Arial';
+        ctx.fillText(lnText, currentXPos + lnTextWidth / 2, yLabelYPos);
+        currentXPos += lnTextWidth;
+        ctx.font = 'italic 18px Arial';
+        ctx.fillText(aText, currentXPos + aTextWidth / 2, yLabelYPos);
+        currentXPos += aTextWidth;
+        ctx.font = '18px Arial';
+        ctx.fillText(bqText, currentXPos + bqTextWidth / 2, yLabelYPos);
+        ctx.restore();
+
+        // X-axis title: t / min
+        const xLabelYPos = margin.top + plotHeight + 45;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const tText = 't';
+        const minText = ' / min';
+        ctx.font = 'italic 18px Arial';
+        const tTextWidth = ctx.measureText(tText).width;
+        ctx.font = '18px Arial';
+        const minTextWidth = ctx.measureText(minText).width;
+        const totalXLabelWidth = tTextWidth + minTextWidth;
+        let currentXPos_x = canvasWidth / 2 - totalXLabelWidth / 2;
+
+        ctx.font = 'italic 18px Arial';
+        ctx.fillText(tText, currentXPos_x + tTextWidth/2, xLabelYPos);
+        currentXPos_x += tTextWidth;
+        ctx.font = '18px Arial';
+        ctx.fillText(minText, currentXPos_x + minTextWidth/2, xLabelYPos);
+
+        // --- Draw Data Line ---
+        ctx.beginPath();
+        ctx.moveTo(scaleX(0), scaleY(36.4));
+        ctx.lineTo(scaleX(20), scaleY(35.0));
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // --- Draw Figure Caption ---
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 12.1', canvasWidth / 2, canvasHeight - 15);
+
+    </script>
+</body>
+</html>

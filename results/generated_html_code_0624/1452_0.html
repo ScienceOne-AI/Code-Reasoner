@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Parallel Plate Capacitor with Two Dielectrics</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #999;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="capacitorCanvas" width="500" height="380"></canvas>
+<script>
+const canvas = document.getElementById('capacitorCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Configuration ---
+const rectWidth = 300;
+const d1_h = 60; // Thickness of the first dielectric
+const d2_h = 80; // Thickness of the second dielectric
+const d_h = d1_h + d2_h; // Total dielectric thickness
+const plate_h = 12; // Thickness of the plates
+const x0 = (canvas.width - rectWidth) / 2; // 100
+const x1 = x0 + rectWidth; // 400
+
+const total_h = d_h + 2 * plate_h; // 140 + 24 = 164
+const y0 = (canvas.height - total_h) / 2 - 20; // Start y for the whole drawing
+
+const y_top_plate_outer = y0;
+const y_top_plate_inner = y_top_plate_outer + plate_h;
+const y_interface = y_top_plate_inner + d1_h;
+const y_bottom_plate_inner = y_interface + d2_h;
+const y_bottom_plate_outer = y_bottom_plate_inner + plate_h;
+
+const dim_line_offset_left = 40;
+const dim_line_offset_right = 40;
+const text_offset_left = 20;
+const text_offset_right = 15;
+const arrowSize = 8;
+
+
+// --- Helper Functions ---
+
+/**
+ * Draws a diagonal hatch pattern inside a rectangle.
+ * @param {number} x - The x-coordinate of the rectangle's top-left corner.
+ * @param {number} y - The y-coordinate of the rectangle's top-left corner.
+ * @param {number} w - The width of the rectangle.
+ * @param {number} h - The height of the rectangle.
+ * @param {number} spacing - The distance between hatch lines.
+ */
+function drawHatch(x, y, w, h, spacing) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip(); // Clip drawing to the rectangle
+
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+
+    // Draw diagonal lines (slope -1)
+    for (let i = 0; i < w + h; i += spacing) {
+        ctx.beginPath();
+        ctx.moveTo(x + i, y);
+        ctx.lineTo(x, y + i);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+/**
+ * Draws a filled triangular arrowhead.
+ * @param {number} x - The x-coordinate of the arrow's tip.
+ * @param {number} y - The y-coordinate of the arrow's tip.
+ * @param {number} angle - The angle (in radians) of the arrow's direction.
+ */
+function drawArrowhead(x, y, angle) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-arrowSize, -arrowSize / 2.5);
+    ctx.lineTo(-arrowSize, arrowSize / 2.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+/**
+ * Draws a dimension line with arrowheads at both ends.
+ * @param {number} x1 - The x-coordinate of the start point.
+ * @param {number} y1 - The y-coordinate of the start point.
+ * @param {number} x2 - The x-coordinate of the end point.
+ * @param {number} y2 - The y-coordinate of the end point.
+ */
+function drawDimLine(x1, y1, x2, y2) {
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    // Arrow at start pointing towards end
+    drawArrowhead(x1, y1, angle);
+    // Arrow at end pointing towards start
+    drawArrowhead(x2, y2, angle + Math.PI);
+}
+
+
+// --- Main Drawing ---
+
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+
+// 1. Draw main outlines with thicker lines
+ctx.lineWidth = 2;
+ctx.strokeRect(x0, y_top_plate_outer, rectWidth, y_bottom_plate_outer - y_top_plate_outer);
+ctx.beginPath();
+ctx.moveTo(x0, y_top_plate_inner);
+ctx.lineTo(x1, y_top_plate_inner);
+ctx.moveTo(x0, y_interface);
+ctx.lineTo(x1, y_interface);
+ctx.moveTo(x0, y_bottom_plate_inner);
+ctx.lineTo(x1, y_bottom_plate_inner);
+ctx.stroke();
+
+// 2. Apply hatching
+// Plates (denser pattern)
+drawHatch(x0, y_top_plate_outer, rectWidth, plate_h, 5);
+drawHatch(x0, y_bottom_plate_inner, rectWidth, plate_h, 5);
+// Dielectrics (sparser pattern)
+drawHatch(x0, y_top_plate_inner, rectWidth, d1_h, 15);
+drawHatch(x0, y_interface, rectWidth, d2_h, 15);
+
+// 3. Draw Dimension Lines and Guide Lines
+ctx.lineWidth = 1;
+
+// Dimension d₁
+const dim_x_left = x0 - dim_line_offset_left;
+drawDimLine(dim_x_left, y_top_plate_inner, dim_x_left, y_interface);
+ctx.beginPath();
+ctx.moveTo(dim_x_left, y_top_plate_inner);
+ctx.lineTo(x0, y_top_plate_inner);
+ctx.moveTo(dim_x_left, y_interface);
+ctx.lineTo(x0, y_interface);
+ctx.stroke();
+
+// Dimension d₂
+drawDimLine(dim_x_left, y_interface, dim_x_left, y_bottom_plate_inner);
+ctx.beginPath();
+ctx.moveTo(dim_x_left, y_bottom_plate_inner);
+ctx.lineTo(x0, y_bottom_plate_inner);
+ctx.stroke();
+
+// Dimension d
+const dim_x_right = x1 + dim_line_offset_right;
+drawDimLine(dim_x_right, y_top_plate_inner, dim_x_right, y_bottom_plate_inner);
+ctx.beginPath();
+ctx.moveTo(x1, y_top_plate_inner);
+ctx.lineTo(dim_x_right, y_top_plate_inner);
+ctx.moveTo(x1, y_bottom_plate_inner);
+ctx.lineTo(dim_x_right, y_bottom_plate_inner);
+ctx.stroke();
+
+// 4. Draw Labels
+ctx.fillStyle = 'black';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// d₁, d₂, d labels
+ctx.font = 'italic 20px "Times New Roman"';
+ctx.fillText('d₁', dim_x_left - text_offset_left, y_top_plate_inner + d1_h / 2);
+ctx.fillText('d₂', dim_x_left - text_offset_left, y_interface + d2_h / 2);
+ctx.fillText('d', dim_x_right + text_offset_right, y_top_plate_inner + d_h / 2);
+
+// ε labels (using Unicode for subscripts)
+const epsilon_x = x0 + rectWidth * 0.7;
+const epsilon_y1 = y_top_plate_inner + d1_h / 2;
+const epsilon_y2 = y_interface + d2_h / 2;
+ctx.font = 'italic 22px "Times New Roman"';
+// Unicode: ε (U+03B5), ᵣ (U+1D63), ₁ (U+2081), ₂ (U+2082)
+ctx.fillText('εᵣ₁', epsilon_x, epsilon_y1);
+ctx.fillText('εᵣ₂', epsilon_x, epsilon_y2);
+
+// Bottom caption
+ctx.font = '20px "SimSun", "宋体"';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+ctx.fillText('题 9 图', canvas.width / 2, canvas.height - 20);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="750" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const ox = 60;  // Origin x
+        const oy = 250; // Origin y (beam level)
+        const scale = 30; // pixels per meter
+
+        // --- Styles ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws an arrow from (fromx, fromy) to (tox, toy).
+         */
+        function drawArrow(context, fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            context.save();
+            context.beginPath();
+            context.moveTo(fromx, fromy);
+            context.lineTo(tox, toy);
+            context.stroke();
+            context.beginPath();
+            context.moveTo(tox, toy);
+            context.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            context.moveTo(tox, toy);
+            context.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            context.stroke();
+            context.restore();
+        }
+
+        /**
+         * Draws hatching lines for ground.
+         */
+        function drawHatching(x, y, width) {
+            const hatchHeight = 10;
+            const hatchSpacing = 8;
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + width, y);
+            for (let i = 0; i <= width; i += hatchSpacing) {
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x + i - hatchHeight / 2, y + hatchHeight);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        /**
+         * Draws a pin support.
+         */
+        function drawSupportPin(x, y) {
+            const h = 25; // height of triangle
+            const w = 30; // width of triangle base
+            ctx.save();
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - w / 2, y + h);
+            ctx.lineTo(x + w / 2, y + h);
+            ctx.closePath();
+            ctx.stroke();
+            drawHatching(x - w / 2 - 5, y + h, w + 10);
+            ctx.restore();
+        }
+
+        /**
+         * Draws a roller support.
+         */
+        function drawSupportRoller(x, y) {
+            const h = 20; // height of triangle
+            const w = 30; // width of triangle base
+            const r = 3;  // roller radius
+            const rollerBaseY = y + h;
+            const rollerY = rollerBaseY + r + 2;
+
+            ctx.save();
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - w / 2, rollerBaseY);
+            ctx.lineTo(x + w / 2, rollerBaseY);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Rollers
+            ctx.beginPath();
+            ctx.arc(x - w/4, rollerY, r, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(x + w/4, rollerY, r, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Ground
+            drawHatching(x - w / 2 - 5, rollerY + r, w + 10);
+            ctx.restore();
+        }
+
+        /**
+         * Draws a dimension line with labels.
+         */
+        function drawDimensionLine(x1, x2, y, label) {
+            const tickHeight = 10;
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.font = '16px Arial';
+
+            // Vertical extension lines from beam
+            ctx.beginPath();
+            ctx.moveTo(x1, oy);
+            ctx.lineTo(x1, y + tickHeight);
+            ctx.moveTo(x2, oy);
+            ctx.lineTo(x2, y + tickHeight);
+            ctx.stroke();
+
+            // Main horizontal line with arrows
+            drawArrow(ctx, x1 - 10, y, x1, y, 8);
+            drawArrow(ctx, x2 + 10, y, x2, y, 8);
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+
+            // Label
+            ctx.fillText(label, (x1 + x2) / 2, y - 12);
+            ctx.restore();
+        }
+
+
+        // --- Main Drawing ---
+
+        // Point Coordinates
+        const xA = ox;
+        const xForce = ox + 8 * scale;
+        const xB = ox + 10 * scale;
+        const xD = ox + 15 * scale;
+        const xC = ox + 20 * scale;
+
+        // 1. Draw Beam
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(xA, oy);
+        ctx.lineTo(xC, oy);
+        ctx.stroke();
+        
+        // 2. Draw Supports
+        drawSupportPin(xA, oy);
+        drawSupportRoller(xB, oy);
+        drawSupportRoller(xC, oy);
+        
+        // 3. Draw Internal Hinge at D
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(xD, oy, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+        
+        // 4. Draw Coordinate Axes
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        // Y-axis
+        drawArrow(ctx, ox, oy - 150, ox, oy, 15);
+        ctx.font = 'italic bold 20px Times New Roman';
+        ctx.fillText('y', ox - 20, oy - 160);
+        // X-axis label
+        ctx.fillText('x', xC + 20, oy);
+        ctx.restore();
+        
+        // 5. Draw Concentrated Force (Down and Right)
+        ctx.save();
+        const forceLen = 70;
+        const forceAngleRad = -45 * Math.PI / 180;
+        const forceStartX = xForce - forceLen * Math.cos(forceAngleRad);
+        const forceStartY = oy - forceLen * Math.sin(forceAngleRad);
+        ctx.lineWidth = 3;
+        drawArrow(ctx, forceStartX, forceStartY, xForce, oy, 15);
+        
+        // Angle representation for the force
+        ctx.lineWidth = 1;
+        // Vertical reference line
+        ctx.beginPath();
+        ctx.moveTo(xForce, oy);
+        ctx.lineTo(xForce, forceStartY - 10);
+        ctx.stroke();
+        // Arc
+        ctx.beginPath();
+        ctx.arc(xForce, oy, 30, -90 * Math.PI / 180, -45 * Math.PI / 180, false);
+        ctx.stroke();
+        
+        // Force Labels
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('4 kN', forceStartX, forceStartY);
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('45°', xForce + 8, oy - 25);
+        ctx.restore();
+        
+        // 6. Draw Distributed Load
+        ctx.save();
+        const loadY = oy - 40;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.rect(xB, loadY, xC - xB, 40);
+        ctx.stroke();
+        
+        // Arrows for distributed load
+        const arrowCount = 10;
+        const arrowSpacing = (xC-xB) / (arrowCount);
+        ctx.lineWidth = 1;
+        for (let i = 0; i < arrowCount; i++) {
+            let x = xB + arrowSpacing/2 + i * arrowSpacing;
+            drawArrow(ctx, x, loadY, x, oy, 10);
+        }
+        
+        // Label for distributed load
+        ctx.font = 'italic bold 18px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.fillText('q=2 kN/m', (xB + xC) / 2, loadY - 15);
+        ctx.restore();
+
+        // 7. Draw Dimensions
+        const dimY = oy + 80;
+        drawDimensionLine(xA, xForce, dimY, '8 m');
+        drawDimensionLine(xForce, xB, dimY, '2 m');
+        drawDimensionLine(xB, xD, dimY, '5 m');
+        drawDimensionLine(xD, xC, dimY, '5 m');
+        
+        // 8. Draw Point Labels
+        ctx.font = 'italic bold 20px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('A', xA, oy - 10);
+        ctx.fillText('B', xB, oy - 10);
+        ctx.fillText('C', xC, oy - 10);
+        ctx.textBaseline = 'top';
+        ctx.fillText('D', xD, oy + 10);
+
+    </script>
+</body>
+</html>

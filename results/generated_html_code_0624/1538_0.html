@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Fluid Pressure</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="900" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // --- General Drawing Parameters ---
+        const y_base = 320;
+        const container_height = 200;
+        const container_base_width = 100;
+        const container_top_width = 140; // For conical containers
+        
+        const water_level_1 = 130; // Initial water height
+        const water_level_2 = 160; // Final water height with block
+        
+        const block_width = 60;
+        const block_height = 40;
+        const block_submersion_depth = 20;
+
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '30px "KaiTi", "STKaiti", serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+
+        // --- Helper Function to draw water (dashed lines) ---
+        function drawWater(x_center, type, water_height) {
+            const y_water_surface = y_base - water_height;
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = 'black';
+
+            for (let y = y_base - 10; y > y_water_surface; y -= 12) {
+                let x_left, x_right;
+                if (type === 'cylinder') {
+                    x_left = x_center - container_base_width / 2;
+                    x_right = x_center + container_base_width / 2;
+                } else { // type === 'cone'
+                    const y_top = y_base - container_height;
+                    const ratio = (y - y_base) / (y_top - y_base);
+                    const current_width = container_base_width + (container_top_width - container_base_width) * ratio;
+                    x_left = x_center - current_width / 2;
+                    x_right = x_center + current_width / 2;
+                }
+                ctx.beginPath();
+                ctx.moveTo(x_left + 2, y); // +2 to avoid drawing on the container wall
+                ctx.lineTo(x_right - 2, y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+        
+        // --- Main Drawing ---
+        function drawScene() {
+            // Draw baseline
+            ctx.beginPath();
+            ctx.moveTo(20, y_base);
+            ctx.lineTo(880, y_base);
+            ctx.stroke();
+
+            // --- Figure 甲 (Jia) ---
+            const x_jia = 150;
+            drawWater(x_jia, 'cylinder', water_level_1);
+            // Draw container
+            ctx.beginPath();
+            const jia_x_left = x_jia - container_base_width / 2;
+            const jia_x_right = x_jia + container_base_width / 2;
+            const jia_y_top = y_base - container_height;
+            ctx.moveTo(jia_x_left, y_base);
+            ctx.lineTo(jia_x_left, jia_y_top);
+            ctx.moveTo(jia_x_right, y_base);
+            ctx.lineTo(jia_x_right, jia_y_top);
+            // Water surface
+            ctx.moveTo(jia_x_left, y_base - water_level_1);
+            ctx.lineTo(jia_x_right, y_base - water_level_1);
+            ctx.stroke();
+            ctx.fillText("甲", x_jia, y_base + 20);
+
+            // --- Figure 乙 (Yi) ---
+            const x_yi = 350;
+            drawWater(x_yi, 'cone', water_level_1);
+            // Draw container
+            ctx.beginPath();
+            const yi_x_base_left = x_yi - container_base_width / 2;
+            const yi_x_base_right = x_yi + container_base_width / 2;
+            const yi_x_top_left = x_yi - container_top_width / 2;
+            const yi_x_top_right = x_yi + container_top_width / 2;
+            const yi_y_top = y_base - container_height;
+            ctx.moveTo(yi_x_base_left, y_base);
+            ctx.lineTo(yi_x_top_left, yi_y_top);
+            ctx.moveTo(yi_x_base_right, y_base);
+            ctx.lineTo(yi_x_top_right, yi_y_top);
+            // Water surface
+            const y_water_yi = y_base - water_level_1;
+            const ratio_yi = (y_water_yi - y_base) / (yi_y_top - y_base);
+            const width_yi = container_base_width + (container_top_width - container_base_width) * ratio_yi;
+            ctx.moveTo(x_yi - width_yi/2, y_water_yi);
+            ctx.lineTo(x_yi + width_yi/2, y_water_yi);
+            ctx.stroke();
+            ctx.fillText("乙", x_yi, y_base + 20);
+
+            // --- Figure 丙 (Bing) ---
+            const x_bing = 550;
+            drawWater(x_bing, 'cylinder', water_level_2);
+            // Draw container
+            ctx.beginPath();
+            const bing_x_left = x_bing - container_base_width / 2;
+            const bing_x_right = x_bing + container_base_width / 2;
+            const bing_y_top = y_base - container_height;
+            ctx.moveTo(bing_x_left, y_base);
+            ctx.lineTo(bing_x_left, bing_y_top);
+            ctx.moveTo(bing_x_right, y_base);
+            ctx.lineTo(bing_x_right, bing_y_top);
+            ctx.stroke();
+            // Draw block and water surface
+            ctx.beginPath();
+            const y_water_bing = y_base - water_level_2;
+            const y_block_top_bing = y_water_bing - (block_height - block_submersion_depth);
+            const y_block_bottom_bing = y_water_bing + block_submersion_depth;
+            const x_block_left_bing = x_bing - block_width / 2;
+            const x_block_right_bing = x_bing + block_width / 2;
+            ctx.moveTo(bing_x_left, y_water_bing);
+            ctx.lineTo(x_block_left_bing, y_water_bing);
+            ctx.lineTo(x_block_left_bing, y_block_top_bing);
+            ctx.lineTo(x_block_right_bing, y_block_top_bing);
+            ctx.lineTo(x_block_right_bing, y_water_bing);
+            ctx.lineTo(bing_x_right, y_water_bing);
+            ctx.stroke();
+            // Draw submerged part of block as rectangle
+            ctx.strokeRect(x_block_left_bing, y_block_top_bing, block_width, block_height);
+            ctx.fillText("丙", x_bing, y_base + 20);
+
+
+            // --- Figure 丁 (Ding) ---
+            const x_ding = 750;
+            drawWater(x_ding, 'cone', water_level_2);
+            // Draw container
+            ctx.beginPath();
+            const ding_x_base_left = x_ding - container_base_width / 2;
+            const ding_x_base_right = x_ding + container_base_width / 2;
+            const ding_x_top_left = x_ding - container_top_width / 2;
+            const ding_x_top_right = x_ding + container_top_width / 2;
+            const ding_y_top = y_base - container_height;
+            ctx.moveTo(ding_x_base_left, y_base);
+            ctx.lineTo(ding_x_top_left, ding_y_top);
+            ctx.moveTo(ding_x_base_right, y_base);
+            ctx.lineTo(ding_x_top_right, ding_y_top);
+            ctx.stroke();
+            // Draw block and water surface
+            ctx.beginPath();
+            const y_water_ding = y_base - water_level_2;
+            const y_block_top_ding = y_water_ding - (block_height - block_submersion_depth);
+            const y_block_bottom_ding = y_water_ding + block_submersion_depth;
+            const x_block_left_ding = x_ding - block_width / 2;
+            const x_block_right_ding = x_ding + block_width / 2;
+            // Calculate container width at water level
+            const ratio_ding = (y_water_ding - y_base) / (ding_y_top - y_base);
+            const width_ding = container_base_width + (container_top_width - container_base_width) * ratio_ding;
+            const x_container_left_at_water = x_ding - width_ding/2;
+            const x_container_right_at_water = x_ding + width_ding/2;
+            ctx.moveTo(x_container_left_at_water, y_water_ding);
+            ctx.lineTo(x_block_left_ding, y_water_ding);
+            ctx.lineTo(x_block_left_ding, y_block_top_ding);
+            ctx.lineTo(x_block_right_ding, y_block_top_ding);
+            ctx.lineTo(x_block_right_ding, y_water_ding);
+            ctx.lineTo(x_container_right_at_water, y_water_ding);
+            ctx.stroke();
+            // Draw submerged part of block
+            ctx.strokeRect(x_block_left_ding, y_block_top_ding, block_width, block_height);
+            ctx.fillText("丁", x_ding, y_base + 20);
+        }
+
+        drawScene();
+    </script>
+</body>
+</html>

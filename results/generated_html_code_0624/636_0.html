@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamic Diagram P-V</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+<canvas id="thermoCanvas" width="550" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('thermoCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrowhead
+    function drawArrowhead(ctx, x, y, angle, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.lineTo(-size, size / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Helper function to draw a vertical brace like '}'
+    function drawVerticalBrace(ctx, x_base, y1, y2, x_spine) {
+        const midY = (y1 + y2) / 2;
+        ctx.beginPath();
+        ctx.moveTo(x_base, y1);
+        ctx.quadraticCurveTo(x_spine, y1, x_spine, midY);
+        ctx.quadraticCurveTo(x_spine, y2, x_base, y2);
+        ctx.stroke();
+    }
+    
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Origin and axis limits
+    const origin = { x: 70, y: 400 };
+    const pAxisEnd = { x: origin.x, y: 30 };
+    const vAxisEnd = { x: 520, y: origin.y };
+
+    // Draw P-axis (vertical)
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(pAxisEnd.x, pAxisEnd.y);
+    ctx.stroke();
+    drawArrowhead(ctx, pAxisEnd.x, pAxisEnd.y, -Math.PI / 2, 10);
+    ctx.fillText('P', pAxisEnd.x - 20, pAxisEnd.y + 10);
+
+    // Draw V-axis (horizontal)
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(vAxisEnd.x, vAxisEnd.y);
+    ctx.stroke();
+    drawArrowhead(ctx, vAxisEnd.x, vAxisEnd.y, 0, 10);
+    ctx.fillText('V', vAxisEnd.x - 10, vAxisEnd.y + 20);
+
+    // Label Origin
+    ctx.fillText('O', origin.x - 20, origin.y + 15);
+
+    // Define cycle coordinates
+    const v1_x = 150;
+    const v2_x = 450;
+    
+    const p0_height = 100;
+
+    // Bottom curve (Isothermal T0)
+    const b_start = { x: v2_x, y: 300 }; // right point
+    const b_end = { x: v1_x, y: 200 }; // left point
+    const b_cp1 = { x: 350, y: 280 };
+    const b_cp2 = { x: 230, y: 190 };
+    
+    // Top curve (x process) - shifted up by p0_height
+    const t_start = { x: v1_x, y: b_end.y - p0_height }; // left point
+    const t_end = { x: v2_x, y: b_start.y - p0_height }; // right point
+    const t_cp1 = { x: b_cp2.x, y: b_cp2.y - p0_height };
+    const t_cp2 = { x: b_cp1.x, y: b_cp1.y - p0_height };
+
+    // --- Draw the cycle ---
+    ctx.lineWidth = 1.5;
+
+    // 1. Top curve (x process)
+    ctx.beginPath();
+    ctx.moveTo(t_start.x, t_start.y);
+    ctx.bezierCurveTo(t_cp1.x, t_cp1.y, t_cp2.x, t_cp2.y, t_end.x, t_end.y);
+    ctx.stroke();
+    // Arrow for x process (left to right)
+    drawArrowhead(ctx, 320, 133, 0.45, 8);
+    ctx.fillText('x过程', 280, 80);
+
+    // 2. Right vertical line (isochoric cooling)
+    ctx.beginPath();
+    ctx.moveTo(t_end.x, t_end.y);
+    ctx.lineTo(b_start.x, b_start.y);
+    ctx.stroke();
+
+    // 3. Bottom curve (Isothermal process)
+    ctx.beginPath();
+    ctx.moveTo(b_start.x, b_start.y);
+    ctx.bezierCurveTo(b_cp1.x, b_cp1.y, b_cp2.x, b_cp2.y, b_end.x, b_end.y);
+    ctx.stroke();
+    // Arrow for isothermal process (right to left)
+    drawArrowhead(ctx, 280, 243, Math.PI - 0.5, 8);
+    ctx.fillText('等温过程', 220, 330);
+    ctx.fillText('(T₀)', 220, 355);
+
+    // 4. Left vertical line (isochoric heating)
+    ctx.save();
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(b_end.x, b_end.y);
+    ctx.lineTo(t_start.x, t_start.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // --- Draw Braces and p0 labels ---
+    
+    // Left brace and p0
+    drawVerticalBrace(ctx, v1_x - 10, t_start.y, b_end.y, v1_x - 30);
+    ctx.fillText('p₀', v1_x - 45, (t_start.y + b_end.y) / 2);
+    
+    // Right brace and p0
+    drawVerticalBrace(ctx, v2_x + 10, t_end.y, b_start.y, v2_x + 30);
+    ctx.fillText('p₀', v2_x + 45, (t_end.y + b_start.y) / 2);
+
+    // Caption
+    ctx.font = '22px KaiTi';
+    ctx.fillText('热图 2.2.1', canvas.width / 2, 430);
+
+</script>
+</body>
+</html>

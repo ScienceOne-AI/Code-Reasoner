@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Convergent Spherical Wave</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow at a specific point, with a given angle and size.
+        function drawArrowAtPoint(ctx, arrowX, arrowY, angle, size) {
+            ctx.save();
+            ctx.translate(arrowX, arrowY); // Move origin to the arrow's tip position
+            ctx.rotate(angle); // Rotate the coordinate system
+            ctx.beginPath();
+            ctx.moveTo(0, 0); // Tip of the arrow is at the new origin
+            ctx.lineTo(-size, -size / 2);
+            ctx.lineTo(-size, size / 2);
+            ctx.closePath();
+            ctx.fillStyle = 'black';
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Define coordinate system parameters
+        const cx = 150; // x-coordinate of the origin
+        const cy = 200; // y-coordinate of the origin
+        const z0_dist = 300; // distance to the focal point S'
+        const fx = cx + z0_dist; // x-coordinate of the focal point
+        const fy = cy; // y-coordinate of the focal point
+
+        // 1. Draw Axes
+        // z-axis
+        ctx.beginPath();
+        ctx.moveTo(40, cy);
+        ctx.lineTo(560, cy);
+        ctx.stroke();
+        drawArrowAtPoint(ctx, 560, cy, 0, 12); // Arrowhead for z-axis
+
+        // x,y-axis
+        ctx.beginPath();
+        ctx.moveTo(cx, 40);
+        ctx.lineTo(cx, 360);
+        ctx.stroke();
+        drawArrowAtPoint(ctx, cx, 40, -Math.PI / 2, 12); // Arrowhead for y-axis
+
+        // 2. Draw Parabolic Wavefront
+        ctx.beginPath();
+        const parabola_a = 0.0025; // Controls the curvature of the parabola
+        const y_aperture_max = 120; // Maximum extent of the wavefront from the axis
+        const y_min = cy - y_aperture_max;
+        const y_max = cy + y_aperture_max;
+
+        for (let y_canvas = y_min; y_canvas <= y_max; y_canvas++) {
+            const y_coord = y_canvas - cy;
+            const x_canvas = cx - parabola_a * y_coord * y_coord;
+            if (y_canvas === y_min) {
+                ctx.moveTo(x_canvas, y_canvas);
+            } else {
+                ctx.lineTo(x_canvas, y_canvas);
+            }
+        }
+        ctx.stroke();
+
+        // 3. Draw Focal Point
+        ctx.beginPath();
+        ctx.arc(fx, fy, 3, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+
+        // 4. Draw Rays and Arrowheads
+        const ray_y_offset = 70; // y-offset from axis for top/bottom rays at the wavefront
+
+        // Top Ray
+        const P_top_y = cy - ray_y_offset;
+        const P_top_x = cx - parabola_a * ray_y_offset * ray_y_offset;
+        const slope_top = (fy - P_top_y) / (fx - P_top_x);
+        const startX_ray = 40;
+        const startY_top = P_top_y - slope_top * (P_top_x - startX_ray);
+        ctx.beginPath();
+        ctx.moveTo(startX_ray, startY_top);
+        ctx.lineTo(fx, fy);
+        ctx.stroke();
+        const angle_top = Math.atan2(fy - P_top_y, fx - P_top_x);
+        drawArrowAtPoint(ctx, P_top_x, P_top_y, angle_top, 10);
+
+        // Bottom Ray
+        const P_bot_y = cy + ray_y_offset;
+        const P_bot_x = cx - parabola_a * ray_y_offset * ray_y_offset;
+        const slope_bot = (fy - P_bot_y) / (fx - P_bot_x);
+        const startY_bot = P_bot_y - slope_bot * (P_bot_x - startX_ray);
+        ctx.beginPath();
+        ctx.moveTo(startX_ray, startY_bot);
+        ctx.lineTo(fx, fy);
+        ctx.stroke();
+        const angle_bot = Math.atan2(fy - P_bot_y, fx - P_bot_x);
+        drawArrowAtPoint(ctx, P_bot_x, P_bot_y, angle_bot, 10);
+
+        // Central Ray (on the z-axis)
+        ctx.beginPath();
+        ctx.moveTo(startX_ray, cy);
+        ctx.lineTo(fx, fy);
+        ctx.stroke();
+        drawArrowAtPoint(ctx, cx + 50, cy, 0, 10);
+
+        // 5. Add Labels
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 22px Times New Roman';
+
+        // S' label
+        ctx.fillText("S'", fx - 5, fy - 12);
+
+        // z0 label
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText("z", fx - 5, fy + 28);
+        ctx.font = 'italic 15px Times New Roman';
+        ctx.fillText("0", fx + 4, fy + 31);
+
+        // z-axis label
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText("z", 570, cy + 8);
+        
+        // x,y-axis label
+        ctx.fillText("x, y", cx - 50, 60);
+
+    </script>
+</body>
+</html>

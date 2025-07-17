@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Graph Reproduction</title>
+</head>
+<body>
+<canvas id="myCanvas" width="550" height="550"></canvas>
+<script>
+  const canvas = document.getElementById('myCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Coordinate System Setup ---
+  // Define mapping based on pixels per unit. This makes the grid accurate.
+  const originX = 275; // Canvas x-coordinate for data point x=0
+  const originY = 325; // Canvas y-coordinate for data point a=0
+  const scaleX = 10000; // pixels per meter (0.01m is 100px)
+  const scaleY = 100;   // pixels per m/s^2 (1 m/s^2 is 100px)
+
+  // Mapping functions from data coordinates to canvas coordinates
+  const toCanvasX = (x) => originX + x * scaleX;
+  const toCanvasY = (a) => originY - a * scaleY; // Y-axis is inverted in canvas
+
+  // Data ranges for drawing grid and axes
+  const xRange = { min: -0.02, max: 0.02, step: 0.001, majorStep: 0.01 };
+  const aRange = { min: -2, max: 3, step: 0.1, majorStep: 1 };
+  
+  // Set a white canvas background
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // --- Draw Grid ---
+  // Draw minor grid lines first, so major lines and axes are drawn on top.
+  ctx.lineWidth = 0.5;
+  ctx.strokeStyle = '#e0e0e0'; // Light grey for minor grid
+
+  // Minor vertical grid lines (every 0.001 m)
+  // Use integer loop to avoid floating point inaccuracies
+  for (let i = Math.round(xRange.min / xRange.step); i <= Math.round(xRange.max / xRange.step); i++) {
+    if (i % (xRange.majorStep / xRange.step) !== 0) { // Check if it's not a major line
+      const x = i * xRange.step;
+      ctx.beginPath();
+      ctx.moveTo(toCanvasX(x), toCanvasY(aRange.min));
+      ctx.lineTo(toCanvasX(x), toCanvasY(aRange.max));
+      ctx.stroke();
+    }
+  }
+
+  // Minor horizontal grid lines (every 0.1 m/s^2)
+  for (let i = Math.round(aRange.min / aRange.step); i <= Math.round(aRange.max / aRange.step); i++) {
+    if (i % (aRange.majorStep / aRange.step) !== 0) { // Check if it's not a major line
+      const a = i * aRange.step;
+      ctx.beginPath();
+      ctx.moveTo(toCanvasX(xRange.min), toCanvasY(a));
+      ctx.lineTo(toCanvasX(xRange.max), toCanvasY(a));
+      ctx.stroke();
+    }
+  }
+  
+  // Draw major grid lines
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#c0c0c0'; // Darker grey for major grid
+
+  // Major vertical grid lines (every 0.01 m)
+  for (let i = Math.round(xRange.min / xRange.majorStep); i <= Math.round(xRange.max / xRange.majorStep); i++) {
+    const x = i * xRange.majorStep;
+    if (Math.abs(x) > 1e-9) { // Don't draw over the main Y-axis
+      ctx.beginPath();
+      ctx.moveTo(toCanvasX(x), toCanvasY(aRange.min));
+      ctx.lineTo(toCanvasX(x), toCanvasY(aRange.max));
+      ctx.stroke();
+    }
+  }
+
+  // Major horizontal grid lines (every 1 m/s^2)
+  for (let i = Math.round(aRange.min / aRange.majorStep); i <= Math.round(aRange.max / aRange.majorStep); i++) {
+    const a = i * aRange.majorStep;
+    if (Math.abs(a) > 1e-9) { // Don't draw over the main X-axis
+      ctx.beginPath();
+      ctx.moveTo(toCanvasX(xRange.min), toCanvasY(a));
+      ctx.lineTo(toCanvasX(xRange.max), toCanvasY(a));
+      ctx.stroke();
+    }
+  }
+  
+  // --- Draw Axes ---
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'black';
+  // Y-axis (at x=0)
+  ctx.beginPath();
+  ctx.moveTo(toCanvasX(0), toCanvasY(aRange.min));
+  ctx.lineTo(toCanvasX(0), toCanvasY(aRange.max));
+  ctx.stroke();
+  // X-axis (at a=0)
+  ctx.beginPath();
+  ctx.moveTo(toCanvasX(xRange.min), toCanvasY(0));
+  ctx.lineTo(toCanvasX(xRange.max), toCanvasY(0));
+  ctx.stroke();
+
+  // --- Draw Ticks and Labels ---
+  ctx.fillStyle = 'black';
+  ctx.font = '16px Arial';
+
+  // X-axis ticks and labels
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let i = Math.round(xRange.min / xRange.majorStep); i <= Math.round(xRange.max / xRange.majorStep); i++) {
+    const x = i * xRange.majorStep;
+    const label = x.toFixed(2);
+    if (Math.abs(x) > 1e-9) {
+      ctx.fillText(label, toCanvasX(x), toCanvasY(0) + 8);
+    } else {
+      // Offset the '0' label slightly to avoid overlap with y-axis numbers
+      ctx.fillText('0', toCanvasX(0) - 8, toCanvasY(0) + 8);
+    }
+  }
+  // X-axis main label
+  ctx.fillText('x / m', toCanvasX(0), canvas.height - 35);
+
+  // Y-axis ticks and labels
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for (let i = Math.round(aRange.min / aRange.majorStep); i <= Math.round(aRange.max / aRange.majorStep); i++) {
+    const a = i * aRange.majorStep;
+    if (Math.abs(a) > 1e-9) { // Don't draw the label for a=0
+      ctx.fillText(a.toString(), toCanvasX(0) - 8, toCanvasY(a));
+    }
+  }
+
+  // Y-axis main label "a / ms⁻²"
+  ctx.textAlign = 'center';
+  const yLabelX = toCanvasX(xRange.min) - 40;
+  const yLabelY = toCanvasY(1.5); // Position label vertically centered in the positive range
+  ctx.font = '16px Arial';
+  ctx.fillText('a / ms', yLabelX, yLabelY);
+  ctx.font = '12px Arial'; // Smaller font for superscript
+  ctx.fillText('-2', yLabelX + 26, yLabelY - 7); // Position the superscript
+  
+  // --- Draw the Plotted Line ---
+  // Coordinates from the graph in the image
+  const x1 = -0.02;
+  const a1 = 1.8;
+  const x2 = 0.018;
+  const a2 = -2.0;
+
+  ctx.beginPath();
+  ctx.moveTo(toCanvasX(x1), toCanvasY(a1));
+  ctx.lineTo(toCanvasX(x2), toCanvasY(a2));
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = 'black';
+  ctx.stroke();
+  
+  // --- Draw Figure Caption ---
+  ctx.font = 'bold 16px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('Fig. 3.3', canvas.width / 2, canvas.height - 5);
+</script>
+</body>
+</html>

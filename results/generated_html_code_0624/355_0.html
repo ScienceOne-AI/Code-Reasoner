@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Energy Band Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-canvas" width="600" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.font = 'italic 22px serif';
+
+        // Coordinate system parameters
+        const origin = { x: 70, y: 480 };
+        const xAxisLength = 480;
+        const yAxisLength = 440;
+
+        // Key points on axes
+        const k0_x = origin.x;
+        const k1_x = 150;
+        const k2_x = 220;
+        const k3_x = 330;
+        const k4_x = 430;
+        const k_pi_a_x = 500;
+
+        const e0_y = origin.y;
+        const eC_y = 380; // Energy of conduction band minimum
+        const eF_y = 350; // Fermi energy
+        const eV_y = 310; // Energy of valence band maximum
+
+        // Helper function for subscripts
+        function drawSubscript(text, sub, x, y) {
+            ctx.font = 'italic 22px serif';
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillText(text, x, y);
+            ctx.font = '16px serif';
+            ctx.fillText(sub, x + textWidth -2, y + 6);
+        }
+
+        // 1. Draw Axes
+        ctx.beginPath();
+        // X-axis
+        ctx.moveTo(origin.x, origin.y);
+        ctx.lineTo(origin.x + xAxisLength, origin.y);
+        ctx.lineTo(origin.x + xAxisLength - 10, origin.y - 6);
+        ctx.moveTo(origin.x + xAxisLength, origin.y);
+        ctx.lineTo(origin.x + xAxisLength - 10, origin.y + 6);
+        // Y-axis
+        ctx.moveTo(origin.x, origin.y);
+        ctx.lineTo(origin.x, origin.y - yAxisLength);
+        ctx.lineTo(origin.x - 6, origin.y - yAxisLength + 10);
+        ctx.moveTo(origin.x, origin.y - yAxisLength);
+        ctx.lineTo(origin.x + 6, origin.y - yAxisLength + 10);
+        ctx.stroke();
+
+        // 2. Draw Plot Box End Line
+        ctx.beginPath();
+        ctx.moveTo(k_pi_a_x, origin.y);
+        ctx.lineTo(k_pi_a_x, 150);
+        ctx.stroke();
+
+
+        // 3. Draw Dashed Lines
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 1.5;
+
+        // Vertical dashed lines
+        ctx.beginPath();
+        ctx.moveTo(k1_x, origin.y);
+        ctx.lineTo(k1_x, eC_y);
+        ctx.moveTo(k2_x, origin.y);
+        ctx.lineTo(k2_x, eF_y);
+        
+        // Find y on curve for k3_x
+        // The curve is a quadratic from (k2, eF) to (k4, eF) with peak ( (k2+k4)/2 + 50, eV)
+        // This is complex, let's approximate from the drawing.
+        const y_k3 = 320; // Approx value on curve at k3
+        ctx.moveTo(k3_x, origin.y);
+        ctx.lineTo(k3_x, y_k3);
+
+        ctx.moveTo(k4_x, origin.y);
+        ctx.lineTo(k4_x, eF_y);
+        ctx.stroke();
+
+        // Horizontal dashed lines
+        ctx.beginPath();
+        ctx.moveTo(origin.x-15, eC_y);
+        ctx.lineTo(k1_x, eC_y);
+        ctx.moveTo(origin.x-15, eF_y);
+        ctx.lineTo(k4_x, eF_y);
+        ctx.moveTo(origin.x-15, eV_y);
+        ctx.lineTo(375, eV_y); // Point to peak of lower band
+        ctx.stroke();
+        ctx.restore();
+
+
+        // 4. Draw Energy Bands (Curves)
+        ctx.beginPath();
+        // Lower Band (Valence Band)
+        ctx.moveTo(k0_x, e0_y);
+        ctx.quadraticCurveTo(k1_x - 30, e0_y - 60, k2_x, eF_y);
+        // The bump from k2 to k4 peaking at eV
+        const peak_x = (k2_x + k4_x)/2 + 50; // peak slightly after k3
+        ctx.quadraticCurveTo(peak_x, eV_y, k4_x, eF_y);
+        // Final part of the curve
+        ctx.quadraticCurveTo(k4_x + 30, eF_y + 15, k_pi_a_x, 380);
+        ctx.stroke();
+
+        // Upper Band (Conduction Band)
+        ctx.beginPath();
+        const upper_start_y = 280;
+        ctx.moveTo(k0_x, upper_start_y);
+        // The dip to eC at k1
+        ctx.quadraticCurveTo(k0_x + 20, eC_y, k1_x, eC_y);
+        // The rise and flattening
+        ctx.bezierCurveTo(k2_x + 50, 250, k3_x + 100, 160, k_pi_a_x, 180);
+        ctx.stroke();
+
+        // 5. Add Labels
+        ctx.font = 'italic 22px serif';
+        // Axis labels
+        ctx.fillText('ε', origin.x - 30, origin.y - yAxisLength + 10);
+        ctx.fillText('k', origin.x + xAxisLength, origin.y + 25);
+        
+        // Y-axis energy labels
+        drawSubscript('ε', 'C', origin.x - 45, eC_y + 5);
+        drawSubscript('ε', 'F', origin.x - 45, eF_y + 5);
+        drawSubscript('ε', 'V', origin.x - 45, eV_y + 5);
+
+        // X-axis wave vector labels
+        ctx.font = '20px serif';
+        ctx.fillText('0', origin.x - 5, origin.y + 25);
+        ctx.font = 'italic 20px serif';
+        drawSubscript('k', '1', k1_x - 10, origin.y + 25);
+        drawSubscript('k', '2', k2_x - 10, origin.y + 25);
+        drawSubscript('k', '3', k3_x - 10, origin.y + 25);
+        drawSubscript('k', '4', k4_x - 10, origin.y + 25);
+        
+        // Fraction label π/a
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('π', k_pi_a_x - 5, origin.y + 22);
+        ctx.font = 'bold 20px serif';
+        ctx.fillText('—', k_pi_a_x - 7, origin.y + 28);
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('a', k_pi_a_x - 5, origin.y + 45);
+
+        // Figure caption
+        ctx.font = '18px serif';
+        ctx.fillText('Fig. 1.22', canvas.width / 2 - 40, canvas.height - 15);
+
+    </script>
+</body>
+</html>

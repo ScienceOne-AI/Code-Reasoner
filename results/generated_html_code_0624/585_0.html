@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Recreation</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, arrowHeadLength) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - arrowHeadLength * Math.cos(angle - Math.PI / 6), toy - arrowHeadLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - arrowHeadLength * Math.cos(angle + Math.PI / 6), toy - arrowHeadLength * Math.sin(angle + Math.PI / 6));
+        }
+        
+        // Helper function to draw a dimension line with arrows and text
+        function drawDimensionLine(ctx, p1, p2, text, offset, textOffset = 15, isOutside = true) {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const angle = Math.atan2(dy, dx);
+            const midX = p1.x + dx / 2;
+            const midY = p1.y + dy / 2;
+
+            // Perpendicular direction for offset
+            const perpX = -Math.sin(angle);
+            const perpY = Math.cos(angle);
+
+            // Points for the main dimension line
+            const l1x = p1.x + offset * perpX;
+            const l1y = p1.y + offset * perpY;
+            const l2x = p2.x + offset * perpX;
+            const l2y = p2.y + offset * perpY;
+            
+            ctx.beginPath();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+
+            // Main dimension line
+            ctx.moveTo(l1x, l1y);
+            ctx.lineTo(l2x, l2y);
+            
+            // Arrows
+            drawArrow(ctx, l2x, l2y, l1x, l1y, 8);
+            drawArrow(ctx, l1x, l1y, l2x, l2y, 8);
+            
+            // Extension lines
+            const extLength = isOutside ? 10 : -10;
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p1.x + (offset + extLength) * perpX, p1.y + (offset + extLength) * perpY);
+            ctx.moveTo(p2.x, p2.y);
+            ctx.lineTo(p2.x + (offset + extLength) * perpX, p2.y + (offset + extLength) * perpY);
+
+            ctx.stroke();
+
+            // Text
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.font = '20px sans-serif';
+            ctx.fillStyle = '#000';
+            const textX = midX + (offset + textOffset * (offset > 0 ? 1 : -1)) * perpX;
+            const textY = midY + (offset + textOffset * (offset > 0 ? 1 : -1)) * perpY;
+            ctx.translate(textX, textY);
+            ctx.rotate(angle > Math.PI / 2 || angle < -Math.PI / 2 ? angle + Math.PI : angle);
+            if (dx < 0 && dy > 0) { // Special case for 80cm label
+                 ctx.rotate(Math.PI);
+                 ctx.textBaseline = 'top';
+            }
+             if (dy<0 && dx<0) { // For 60cm on the left
+                 ctx.rotate(Math.PI);
+                 ctx.textBaseline = 'top';
+            }
+            if (text === "100cm") {
+                 ctx.textBaseline = 'top';
+                 ctx.translate(0, 5);
+            }
+            ctx.fillText(text, 0, 0);
+            ctx.restore();
+        }
+
+        // Helper function to draw a rotated rectangle (block)
+        function drawBlock(ctx, x, y, width, height, angle, label) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.rect(-width / 2, -height / 2, width, height);
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw right angle symbol
+            const symbolSize = 8;
+            ctx.beginPath();
+            ctx.moveTo(-width/2, -height/2);
+            ctx.lineTo(-width/2 - symbolSize, -height/2);
+            ctx.lineTo(-width/2 - symbolSize, -height/2 + symbolSize);
+            ctx.stroke();
+            
+            // Label
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 22px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, 0, 0);
+            ctx.restore();
+        }
+
+
+        // Define coordinates based on geometry
+        const scale = 4.5;
+        const B1 = { x: 100, y: 400 };
+        const B2 = { x: B1.x + 100 * scale, y: 400 };
+        const AB1_len = 80 * scale;
+        const AB2_len = 60 * scale;
+        const B1B2_len = 100 * scale;
+
+        // Find coordinate of A by circle-circle intersection
+        const d = B1B2_len;
+        const r1 = AB1_len;
+        const r2 = AB2_len;
+        const Ax_rel = (d*d + r1*r1 - r2*r2) / (2 * d);
+        const Ay_rel = -Math.sqrt(r1*r1 - Ax_rel*Ax_rel); // y is negative because canvas y-axis points down
+        const A = { x: B1.x + Ax_rel, y: B1.y + Ay_rel };
+        
+        // Position of P (60cm from A along AB1)
+        const ratio_P = 60 / 80;
+        const P = {
+            x: A.x + ratio_P * (B1.x - A.x),
+            y: A.y + ratio_P * (B1.y - A.y)
+        };
+
+        // Position of Q (at A)
+        const Q = { x: A.x, y: A.y };
+
+        // --- Start Drawing ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 1. Draw ground
+        ctx.beginPath();
+        ctx.moveTo(B1.x - 50, B1.y);
+        ctx.lineTo(B2.x + 50, B1.y);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#000';
+        ctx.stroke();
+
+        // Ground hatching
+        ctx.lineWidth = 1;
+        for (let i = B1.x - 40; i < B2.x + 40; i += 15) {
+            ctx.moveTo(i, B1.y);
+            ctx.lineTo(i - 10, B1.y + 10);
+        }
+        ctx.stroke();
+        
+        // 2. Draw inclines
+        ctx.beginPath();
+        ctx.lineWidth = 3;
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B1.x, B1.y);
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B2.x, B2.y);
+        ctx.stroke();
+        
+        // 3. Draw Pulley and String
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, 8, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+
+        // String
+        ctx.beginPath();
+        ctx.lineWidth = 1.5;
+        const angle1 = Math.atan2(P.y - A.y, P.x - A.x);
+        const angle2 = Math.atan2(B2.y - A.y, B2.x - A.x);
+        const p_string_x = P.x - 12 * Math.cos(angle1); // 12 is half block height
+        const p_string_y = P.y - 12 * Math.sin(angle1);
+        ctx.moveTo(p_string_x, p_string_y);
+        ctx.lineTo(A.x, A.y);
+        ctx.moveTo(A.x, A.y);
+        // The block Q is at A, so the string to it is very short. Let's draw it along the incline.
+        const q_string_x = A.x + 20 * Math.cos(angle2);
+        const q_string_y = A.y + 20 * Math.sin(angle2);
+        ctx.lineTo(q_string_x, q_string_y);
+        ctx.stroke();
+
+        // 4. Draw Blocks P and Q
+        const blockWidth = 30;
+        const blockHeight = 24;
+        const angleAB1 = Math.atan2(B1.y - A.y, B1.x - A.x);
+        const angleAB2 = Math.atan2(B2.y - A.y, B2.x - A.x);
+        
+        drawBlock(ctx, P.x, P.y, blockWidth, blockHeight, angleAB1, 'P');
+        // Offset Q slightly to make it and pulley visible
+        const Q_draw = {
+            x: A.x + (blockHeight/2) * Math.cos(angleAB2), 
+            y: A.y + (blockHeight/2) * Math.sin(angleAB2)
+        };
+        drawBlock(ctx, Q_draw.x, Q_draw.y, blockWidth, blockHeight, angleAB2, 'Q');
+
+        // 5. Draw Dimensions and Labels
+        // 100cm
+        drawDimensionLine(ctx, B1, B2, '100cm', 40, 10);
+        // 80cm
+        drawDimensionLine(ctx, A, B1, '80cm', -35, 15);
+        // 60cm right
+        drawDimensionLine(ctx, A, B2, '60cm', 35, 15);
+        // 60cm left
+        drawDimensionLine(ctx, A, P, '60cm', 40, 15, false);
+
+        // Labels
+        ctx.font = 'bold 22px serif';
+        ctx.fillStyle = '#000';
+        ctx.textAlign = 'center';
+        
+        ctx.fillText('A', A.x + 5, A.y - 15);
+        ctx.fillText('B₁', B1.x - 20, B1.y + 5);
+        ctx.fillText('B₂', B2.x + 20, B2.y + 5);
+
+        ctx.font = '24px "KaiTi", "SimSun", sans-serif';
+        ctx.fillText('水平地面', (B1.x + B2.x) / 2, B1.y + 80);
+
+    </script>
+</body>
+</html>

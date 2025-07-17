@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="500" height="400" style="border:1px solid #d3d3d3;"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Helper function to draw a resistor (zigzag)
+        function drawResistor(x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            const numZigzags = 7;
+            const zigzagHeight = 8;
+
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            for (let i = 0; i < numZigzags; i++) {
+                const p = (i + 0.5) / numZigzags;
+                const h = (i % 2 === 0 ? -1 : 1) * zigzagHeight;
+                ctx.lineTo(p * len, h);
+            }
+            ctx.lineTo(len, 0);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Helper function to draw a light bulb using a loop symbol, as seen in the original image.
+        function drawBulb(x, y, radius) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            // Draw the filament loop inside
+            ctx.beginPath();
+            ctx.arc(x, y + radius * 0.1, radius * 0.6, Math.PI * 1.1, Math.PI * 1.9);
+            ctx.stroke();
+        }
+
+        // Define coordinates for layout
+        const left_x = 100;
+        const R_x_start = 150;
+        const R_x_end = 320;
+        const R_slider_x = 220;
+        const bulb1_x = 330;
+        const bulb2_x = 410;
+        const junction_x = 370;
+
+        const bottom_y = 350;
+        const battery_y_neg = 320;
+        const battery_y_pos = 300;
+        const r_y_top = 230;
+        const R_y = 100;
+        const top_wire_y = 60;
+        const parallel_junction_y = 150;
+        const bulb_y = 210;
+        const switch_y_top = 270;
+        const switch_y_bottom = 300;
+
+
+        // --- Draw Circuit Components and Wires ---
+
+        // Bottom horizontal wire
+        ctx.beginPath();
+        ctx.moveTo(left_x, bottom_y);
+        ctx.lineTo(bulb2_x, bottom_y);
+        ctx.stroke();
+
+        // Left vertical wire and Battery (Vbat)
+        ctx.beginPath();
+        ctx.moveTo(left_x, bottom_y);
+        ctx.lineTo(left_x, battery_y_neg + 10);
+        ctx.stroke();
+        
+        ctx.beginPath(); // Negative plate (short, thick)
+        ctx.moveTo(left_x - 12, battery_y_neg);
+        ctx.lineTo(left_x + 12, battery_y_neg);
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.beginPath(); // Positive plate (long, thin)
+        ctx.lineWidth = 1.5;
+        ctx.moveTo(left_x - 18, battery_y_pos);
+        ctx.lineTo(left_x + 18, battery_y_pos);
+        ctx.stroke();
+        ctx.lineWidth = 2; // Reset line width
+        
+        ctx.beginPath(); // Connection from positive plate
+        ctx.moveTo(left_x, battery_y_pos);
+        ctx.lineTo(left_x, r_y_top + 40);
+        ctx.stroke();
+        ctx.fillText('V', left_x - 45, (battery_y_pos + battery_y_neg) / 2);
+        ctx.font = '14px Arial';
+        ctx.fillText('bat', left_x - 30, (battery_y_pos + battery_y_neg) / 2 + 5);
+        ctx.font = '18px Arial';
+
+        // Internal resistor r
+        drawResistor(left_x, r_y_top + 40, left_x, r_y_top);
+        ctx.fillText('r', left_x - 20, r_y_top + 20);
+
+        // Wire to variable resistor R
+        ctx.beginPath();
+        ctx.moveTo(left_x, r_y_top);
+        ctx.lineTo(left_x, R_y);
+        ctx.lineTo(R_x_start, R_y);
+        ctx.stroke();
+
+        // Variable resistor R
+        drawResistor(R_x_start, R_y, R_x_end, R_y);
+        ctx.fillText('R', (R_x_start + R_x_end) / 2, R_y - 25);
+
+        // Slider on R and its connections
+        ctx.beginPath();
+        ctx.moveTo(R_slider_x, R_y - 15); // Arrow starts above
+        ctx.lineTo(R_slider_x, R_y + 5);  // Arrow ends on wire
+        ctx.lineTo(R_slider_x - 5, R_y - 5); // Arrowhead left
+        ctx.moveTo(R_slider_x, R_y + 5);
+        ctx.lineTo(R_slider_x + 5, R_y - 5); // Arrowhead right
+        ctx.stroke();
+
+        // Wires from R to parallel branch
+        ctx.beginPath();
+        ctx.moveTo(R_slider_x, R_y);
+        ctx.lineTo(R_slider_x, top_wire_y);
+        ctx.moveTo(R_x_end, R_y);
+        ctx.lineTo(R_x_end, top_wire_y);
+        ctx.moveTo(R_slider_x, top_wire_y);
+        ctx.lineTo(R_x_end, top_wire_y);
+        ctx.moveTo(R_x_end, top_wire_y);
+        ctx.lineTo(junction_x, top_wire_y);
+        ctx.lineTo(junction_x, parallel_junction_y);
+        ctx.stroke();
+
+        // Parallel branches
+        // Branch 1 (Bulb #1)
+        ctx.beginPath();
+        ctx.moveTo(junction_x, parallel_junction_y);
+        ctx.lineTo(bulb1_x, parallel_junction_y);
+        ctx.lineTo(bulb1_x, bulb_y - 20); // 20 is bulb radius
+        ctx.stroke();
+        drawBulb(bulb1_x, bulb_y, 20);
+        ctx.fillText('#1', bulb1_x - 40, bulb_y);
+        ctx.beginPath();
+        ctx.moveTo(bulb1_x, bulb_y + 20);
+        ctx.lineTo(bulb1_x, bottom_y);
+        ctx.stroke();
+
+        // Branch 2 (Bulb #2 and Switch S)
+        ctx.beginPath();
+        ctx.moveTo(junction_x, parallel_junction_y);
+        ctx.lineTo(bulb2_x, parallel_junction_y);
+        ctx.lineTo(bulb2_x, bulb_y - 20);
+        ctx.stroke();
+        drawBulb(bulb2_x, bulb_y, 20);
+        ctx.fillText('#2', bulb2_x + 40, bulb_y);
+        ctx.beginPath();
+        ctx.moveTo(bulb2_x, bulb_y + 20);
+        ctx.lineTo(bulb2_x, switch_y_top);
+        ctx.stroke();
+
+        // Switch S (open)
+        ctx.beginPath(); // Top contact circle
+        ctx.arc(bulb2_x, switch_y_top, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath(); // Bottom contact circle
+        ctx.arc(bulb2_x, switch_y_bottom, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        // Switch blade
+        ctx.beginPath();
+        ctx.moveTo(bulb2_x, switch_y_top);
+        ctx.lineTo(bulb2_x + 20, switch_y_bottom - 5);
+        ctx.stroke();
+        ctx.fillText('S', bulb2_x + 15, (switch_y_top + switch_y_bottom) / 2);
+        
+        // Wire from switch to bottom
+        ctx.beginPath();
+        ctx.moveTo(bulb2_x, switch_y_bottom);
+        ctx.lineTo(bulb2_x, bottom_y);
+        ctx.stroke();
+
+    </script>
+</body>
+</html>

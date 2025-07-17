@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coaxial Cable Circuit</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="450" style="border:1px solid #000000;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = '24px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Helper function for drawing an arrow
+    function drawArrow(fromx, fromy, tox, toy) {
+        const headlen = 8;
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // --- Main Circuit Diagram ---
+
+    // 1. Coaxial Cable (Perspective View)
+    const coax_x_left = 200;
+    const coax_x_right = 500;
+    const coax_y_center = 200;
+
+    const outer_ry = 60;
+    const outer_rx = 20;
+    const inner_ry = 25;
+    const inner_rx = 10;
+
+    // Draw Outer Conductor
+    ctx.beginPath();
+    ctx.ellipse(coax_x_left, coax_y_center, outer_rx, outer_ry, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(coax_x_left, coax_y_center - outer_ry);
+    ctx.lineTo(coax_x_right, coax_y_center - outer_ry);
+    ctx.moveTo(coax_x_left, coax_y_center + outer_ry);
+    ctx.lineTo(coax_x_right, coax_y_center + outer_ry);
+    ctx.stroke();
+    // Right end (dashed back, solid front)
+    ctx.save();
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.ellipse(coax_x_right, coax_y_center, outer_rx, outer_ry, 0, Math.PI / 2, 3 * Math.PI / 2);
+    ctx.stroke();
+    ctx.restore();
+    ctx.beginPath();
+    ctx.ellipse(coax_x_right, coax_y_center, outer_rx, outer_ry, 0, -Math.PI / 2, Math.PI / 2);
+    ctx.stroke();
+
+    // Draw Inner Conductor
+    ctx.beginPath();
+    ctx.ellipse(coax_x_left, coax_y_center, inner_rx, inner_ry, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(coax_x_left, coax_y_center - inner_ry);
+    ctx.lineTo(coax_x_right, coax_y_center - inner_ry);
+    ctx.moveTo(coax_x_left, coax_y_center + inner_ry);
+    ctx.lineTo(coax_x_right, coax_y_center + inner_ry);
+    ctx.stroke();
+    // Right end (dashed back, solid front)
+    ctx.save();
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.ellipse(coax_x_right, coax_y_center, inner_rx, inner_ry, 0, Math.PI / 2, 3 * Math.PI / 2);
+    ctx.stroke();
+    ctx.restore();
+    ctx.beginPath();
+    ctx.ellipse(coax_x_right, coax_y_center, inner_rx, inner_ry, 0, -Math.PI / 2, Math.PI / 2);
+    ctx.stroke();
+
+    // 2. Battery (Voltage Source)
+    const batt_x = 100;
+    const batt_y_top = 150;
+    const batt_y_bottom = 250;
+    ctx.beginPath();
+    ctx.moveTo(batt_x - 20, batt_y_top + 15);
+    ctx.lineTo(batt_x + 20, batt_y_top + 15); // Long plate
+    ctx.moveTo(batt_x - 10, batt_y_top + 35);
+    ctx.lineTo(batt_x + 10, batt_y_top + 35); // Short plate
+    ctx.moveTo(batt_x - 20, batt_y_top + 55);
+    ctx.lineTo(batt_x + 20, batt_y_top + 55); // Long plate
+    ctx.moveTo(batt_x - 10, batt_y_top + 75);
+    ctx.lineTo(batt_x + 10, batt_y_top + 75); // Short plate
+    ctx.stroke();
+    ctx.fillText("V", batt_x - 40, coax_y_center);
+
+
+    // 3. Resistor
+    const res_x = 550;
+    const res_y_top = coax_y_center;
+    const res_y_bottom = batt_y_bottom;
+    ctx.beginPath();
+    ctx.moveTo(res_x, res_y_top);
+    const num_zigs = 5;
+    const zig_height = (res_y_bottom - res_y_top) / num_zigs;
+    for (let i = 0; i < num_zigs; i++) {
+        const x_offset = (i % 2 === 0) ? -10 : 10;
+        ctx.lineTo(res_x + x_offset, res_y_top + (i + 0.5) * zig_height);
+    }
+    ctx.lineTo(res_x, res_y_bottom);
+    ctx.stroke();
+    ctx.fillText("R", res_x + 30, (res_y_top + res_y_bottom) / 2);
+
+    // 4. Wires
+    ctx.beginPath();
+    // Top wire (V+ to inner conductor)
+    ctx.moveTo(batt_x, batt_y_top);
+    ctx.lineTo(batt_x, batt_y_top + 15);
+    ctx.moveTo(batt_x, batt_y_top);
+    ctx.lineTo(150, batt_y_top);
+    ctx.lineTo(150, coax_y_center);
+    ctx.lineTo(coax_x_left, coax_y_center);
+    // Bottom wire (V- to resistor)
+    ctx.moveTo(batt_x, batt_y_bottom);
+    ctx.lineTo(batt_x, batt_y_top + 75);
+    ctx.moveTo(batt_x, batt_y_bottom);
+    ctx.lineTo(res_x, batt_y_bottom);
+    // Resistor to outer conductor
+    ctx.moveTo(coax_x_right, coax_y_center);
+    ctx.lineTo(res_x, coax_y_center);
+    ctx.stroke();
+
+
+    // --- Cross-Section Diagram ---
+    const cs_x = 650;
+    const cs_y = 200;
+    const r1 = 25;
+    const r2 = 50;
+    const r_outer = 60;
+
+    // Draw conductors
+    ctx.beginPath();
+    ctx.arc(cs_x, cs_y, r_outer, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cs_x, cs_y, r2, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // Draw and hatch inner conductor
+    ctx.beginPath();
+    ctx.arc(cs_x, cs_y, r1, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.save();
+    ctx.clip();
+    ctx.lineWidth = 1.5;
+    for (let i = -r1 * 2; i < r1 * 2; i += 6) {
+        ctx.beginPath();
+        ctx.moveTo(cs_x + i - r1, cs_y - r1);
+        ctx.lineTo(cs_x + i + r1, cs_y + r1);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+
+    // Draw radius labels
+    ctx.lineWidth = 1.5;
+    // r1
+    drawArrow(cs_x, cs_y, cs_x, cs_y - r1);
+    // r2
+    drawArrow(cs_x, cs_y, cs_x, cs_y - r2);
+    
+    // Text labels for radii
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.textAlign = 'left';
+    ctx.fillText("r", cs_x - 20, cs_y - r1 - 5);
+    ctx.font = '14px "Times New Roman"';
+    ctx.fillText("1", cs_x - 12, cs_y - r1 - 1);
+    
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText("r", cs_x + 10, cs_y - r2 - 5);
+    ctx.font = '14px "Times New Roman"';
+    ctx.fillText("2", cs_x + 18, cs_y - r2 - 1);
+
+
+    // --- Figure Caption ---
+    ctx.font = 'bold 24px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.fillText("Fig. 2.15", 425, 400);
+
+</script>
+</body>
+</html>

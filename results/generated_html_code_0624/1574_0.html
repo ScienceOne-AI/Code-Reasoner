@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Four-bar Linkage Statics</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="650" height="500"></canvas>
+    <script>
+        /**
+         * Draws a custom arc with arrowheads for representing angles.
+         * @param {CanvasRenderingContext2D} ctx The canvas rendering context.
+         * @param {number} x The x-coordinate of the arc's center.
+         * @param {number} y The y-coordinate of the arc's center.
+         * @param {number} radius The radius of the arc.
+         * @param {number} startAngle The starting angle in radians.
+         * @param {number} endAngle The ending angle in radians.
+         * @param {boolean} anticlockwise Specifies whether the drawing should be counter-clockwise or clockwise.
+         */
+        function drawAngleArc(ctx, x, y, radius, startAngle, endAngle, anticlockwise = false) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, startAngle, endAngle, anticlockwise);
+            ctx.stroke();
+
+            // Draw arrowheads on the arc
+            const arrowHeadSize = 6;
+            let angle = endAngle;
+            let angleDelta = anticlockwise ? Math.PI/2 : -Math.PI/2;
+            
+            const endX = x + radius * Math.cos(endAngle);
+            const endY = y + radius * Math.sin(endAngle);
+
+            ctx.save();
+            ctx.translate(endX, endY);
+            ctx.rotate(angle + angleDelta);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(arrowHeadSize, 0);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        /**
+         * Draws a vector with an arrowhead.
+         * @param {CanvasRenderingContext2D} ctx The canvas rendering context.
+         * @param {number} fromX The starting x-coordinate.
+         * @param {number} fromY The starting y-coordinate.
+         * @param {number} toX The ending x-coordinate.
+         * @param {number} toY The ending y-coordinate.
+         */
+        function drawVector(ctx, fromX, fromY, toX, toY) {
+            const arrowHeadSize = 12;
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            ctx.save();
+            ctx.translate(toX, toY);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowHeadSize, arrowHeadSize / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowHeadSize, -arrowHeadSize / 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Define key points based on the provided image's visual layout
+        const C = { x: 120, y: 400 };
+        const D = { x: 550, y: 400 };
+        const A = { x: 220, y: 150 };
+        const B = { x: 450, y: 100 };
+
+        // Draw the fixed base (ground)
+        const groundY = C.y;
+        ctx.beginPath();
+        ctx.moveTo(C.x - 50, groundY);
+        ctx.lineTo(D.x + 50, groundY);
+        ctx.stroke();
+
+        // Draw hatching for the ground
+        const hatchLength = 15;
+        const hatchAngle = Math.PI / 4;
+        ctx.lineWidth = 1;
+        for (let i = C.x - 40; i < D.x + 50; i += 15) {
+            ctx.beginPath();
+            ctx.moveTo(i, groundY);
+            ctx.lineTo(i - hatchLength * Math.cos(hatchAngle), groundY + hatchLength * Math.sin(hatchAngle));
+            ctx.stroke();
+        }
+        ctx.lineWidth = 3;
+
+        // Draw the linkage bars
+        ctx.beginPath();
+        ctx.moveTo(C.x, C.y);
+        ctx.lineTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.lineTo(D.x, D.y);
+        ctx.stroke();
+
+        // Draw the pivot points
+        [A, B, C, D].forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.strokeStyle = 'black';
+            ctx.stroke();
+        });
+
+        // Draw labels for points
+        ctx.fillStyle = 'black';
+        ctx.fillText('A', A.x - 25, A.y);
+        ctx.fillText('B', B.x + 25, B.y - 5);
+        ctx.fillText('C', C.x - 20, C.y - 20);
+        ctx.fillText('D', D.x + 20, D.y - 20);
+
+
+        // Calculate angles of links for drawing forces and arcs
+        const angle_vec_AC = Math.atan2(C.y - A.y, C.x - A.x);
+        const angle_vec_AB = Math.atan2(B.y - A.y, B.x - A.x);
+        const angle_vec_BA = Math.atan2(A.y - B.y, A.x - B.x);
+        const angle_vec_BD = Math.atan2(D.y - B.y, D.x - B.x);
+        
+        // Define force vectors based on angles
+        const angle_Q = angle_vec_AC - (90 * Math.PI / 180);
+        const angle_R = angle_vec_BA - (30 * Math.PI / 180);
+
+        // Draw force Q at A
+        const Q_len = 90;
+        const Q_end = { x: A.x + Q_len * Math.cos(angle_Q), y: A.y + Q_len * Math.sin(angle_Q) };
+        ctx.lineWidth = 4;
+        drawVector(ctx, A.x, A.y, Q_end.x, Q_end.y);
+        ctx.fillText('Q', Q_end.x + 40, Q_end.y + 10);
+
+        // Draw force R at B
+        const R_len = 90;
+        const R_end = { x: B.x + R_len * Math.cos(angle_R), y: B.y + R_len * Math.sin(angle_R) };
+        drawVector(ctx, B.x, B.y, R_end.x, R_end.y);
+        ctx.fillText('R', R_end.x - 20, R_end.y + 30);
+
+
+        // Draw the angle arcs and labels
+        ctx.lineWidth = 1;
+        ctx.fillStyle = 'black';
+        ctx.font = '20px Arial';
+
+        // Angles at A
+        drawAngleArc(ctx, A.x, A.y, 60, angle_vec_AC, angle_Q, false);
+        ctx.fillText('90°', A.x - 70, A.y + 30);
+
+        drawAngleArc(ctx, A.x, A.y, 45, angle_Q, angle_vec_AB, true);
+        ctx.fillText('45°', A.x + 45, A.y + 25);
+
+
+        // Angles at B
+        drawAngleArc(ctx, B.x, B.y, 40, angle_vec_BA, angle_R, false);
+        ctx.fillText('30°', B.x - 20, B.y - 30);
+
+        drawAngleArc(ctx, B.x, B.y, 60, angle_R, angle_vec_BD, false);
+        ctx.fillText('60°', B.x + 55, B.y + 25);
+
+    </script>
+</body>
+</html>

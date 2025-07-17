@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="450" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+
+        // Clear canvas with a white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, w, h);
+
+        // --- Parameters ---
+        const cx = w / 2;
+        const cy = h / 2 - 20; // Center vertically, shifted up to make space for the caption
+        const R = 150;        // Main radius of the circular spring
+        const r_coil = 5;     // Radius of the individual coils
+        const n_coils = 90;   // Number of coils to make the spring look dense
+        const massRadius = 4; // Radius of the point masses
+        const lineWidth = 2;
+
+        // --- Draw the coiled spring circle ---
+        ctx.beginPath();
+        ctx.lineWidth = lineWidth;
+        ctx.strokeStyle = 'black';
+
+        // We use a parametric equation that adds a sinusoidal ripple to the radius of a circle
+        // This creates the appearance of a coiled spring in 2D.
+        // x(t) = cx + (R + r_coil*cos(n*t))*cos(t)
+        // y(t) = cy + (R + r_coil*cos(n*t))*sin(t)
+        for (let i = 0; i <= 360; i += 0.5) { // Use small steps for a smooth curve
+            const t = i * Math.PI / 180;
+            const currentRadius = R + r_coil * Math.cos(n_coils * t);
+            const x = cx + currentRadius * Math.cos(t);
+            const y = cy + currentRadius * Math.sin(t);
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        // --- Define mass positions ---
+        // The problem implies equal spacing, so 120 degrees (2*PI/3 radians) apart.
+        // We place M at the bottom (90 degrees or PI/2 radians).
+        // The other two masses 'm' are at +/- 120 degrees from M.
+        const angleM = Math.PI / 2;                   // 90 degrees (bottom)
+        const angle_m_left = angleM + (2 * Math.PI / 3); // 210 degrees (bottom-left)
+        const angle_m_right = angleM - (2 * Math.PI / 3); // -30 degrees (bottom-right)
+
+        // --- Function to draw a mass ---
+        function drawMass(angle) {
+            // Position on the main circle (ignoring the small coil radius for simplicity)
+            const x = cx + R * Math.cos(angle);
+            const y = cy + R * Math.sin(angle);
+            ctx.beginPath();
+            ctx.arc(x, y, massRadius, 0, 2 * Math.PI);
+            ctx.fillStyle = 'black';
+            ctx.fill();
+        }
+
+        // Draw the three masses
+        drawMass(angleM);
+        drawMass(angle_m_left);
+        drawMass(angle_m_right);
+
+        // --- Draw labels ---
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 24px serif';
+
+        // Label 'M'
+        const posM = { x: cx + R * Math.cos(angleM), y: cy + R * Math.sin(angleM) };
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('M', posM.x, posM.y + 18);
+
+        // Label 'm' (left)
+        const pos_m_left = { x: cx + R * Math.cos(angle_m_left), y: cy + R * Math.sin(angle_m_left) };
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('m', pos_m_left.x - 15, pos_m_left.y);
+
+        // Label 'm' (right)
+        const pos_m_right = { x: cx + R * Math.cos(angle_m_right), y: cy + R * Math.sin(angle_m_right) };
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('m', pos_m_right.x + 15, pos_m_right.y);
+
+        // --- Draw caption ---
+        ctx.font = '22px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Fig. 2.48.', cx, h - 15);
+    </script>
+</body>
+</html>

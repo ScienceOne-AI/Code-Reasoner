@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram 6.15.1</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws an arrow from (fromx, fromy) to (tox, toy).
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {number} fromx - Start x
+     * @param {number} fromy - Start y
+     * @param {number} tox - End x
+     * @param {number} toy - End y
+     */
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 10;
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    /**
+     * Draws text with a subscript, with alignment control.
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {string} text - Main text
+     * @param {string} sub - Subscript text
+     * @param {number} x - Anchor x
+     * @param {number} y - Anchor y
+     * @param {string} align - 'center' or 'left'
+     */
+    function drawSubscriptedText(ctx, text, sub, x, y, align = 'center') {
+        const baseFont = 'italic 20px Times New Roman';
+        const subFont = 'italic 14px Times New Roman';
+        
+        ctx.font = baseFont;
+        const textWidth = ctx.measureText(text).width;
+        
+        ctx.font = subFont;
+        const subWidth = ctx.measureText(sub).width;
+        
+        const totalWidth = textWidth + subWidth;
+        let startX = x;
+        if (align === 'center') {
+            startX = x - totalWidth / 2;
+        }
+
+        const originalAlign = ctx.textAlign;
+        ctx.textAlign = 'left';
+
+        ctx.font = baseFont;
+        ctx.fillText(text, startX, y);
+
+        ctx.font = subFont;
+        ctx.fillText(sub, startX + textWidth, y + 4);
+        
+        ctx.font = baseFont; // Restore font
+        ctx.textAlign = originalAlign; // Restore alignment
+    }
+
+    /**
+     * Draws a curved arrow for rotation (clockwise).
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {number} cx - Center x
+     * @param {number} cy - Center y
+     * @param {number} radius - Arc radius
+     * @param {number} startAngle - Start angle in radians
+     * @param {number} endAngle - End angle in radians
+     */
+    function drawCurvedArrow(ctx, cx, cy, radius, startAngle, endAngle) {
+        const headlen = 8;
+        // The arc is drawn clockwise
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, startAngle, endAngle, false);
+        ctx.stroke();
+
+        const arrowTipAngle = endAngle;
+        const arrowX = cx + radius * Math.cos(arrowTipAngle);
+        const arrowY = cy + radius * Math.sin(arrowTipAngle);
+        
+        const direction = arrowTipAngle + Math.PI / 2; // Tangent direction for clockwise arc
+
+        ctx.beginPath();
+        ctx.moveTo(arrowX, arrowY);
+        ctx.lineTo(arrowX - headlen * Math.cos(direction - Math.PI / 6), arrowY - headlen * Math.sin(direction - Math.PI / 6));
+        ctx.lineTo(arrowX - headlen * Math.cos(direction + Math.PI / 6), arrowY - headlen * Math.sin(direction + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    // --- Configuration ---
+    const radius = 40;
+    const wheelGap = 30;
+    
+    // Config for diagram (a)
+    const centerX_a = 220;
+    const x1_a = centerX_a + radius + wheelGap / 2;
+    const x2_a = centerX_a - radius - wheelGap / 2;
+    const y_a = 120;
+    const groundY_a = y_a + radius;
+
+    // Config for diagram (b)
+    const centerX_b = 580;
+    const x1_b = centerX_b + radius + wheelGap / 2;
+    const x2_b = centerX_b - radius - wheelGap / 2;
+    const y_b = 120;
+    const groundY_b = y_b + radius;
+
+
+    // --- Draw Diagram (a) ---
+    // Wheels and Rod
+    ctx.font = '20px Times New Roman';
+    // Wheel 1
+    ctx.beginPath();
+    ctx.arc(x1_a, y_a, radius, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.fillText('1', x1_a, y_a - radius - 12);
+    // Wheel 2
+    ctx.beginPath();
+    ctx.arc(x2_a, y_a, radius, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.fillText('2', x2_a, y_a - radius - 12);
+    // Rod connecting centers
+    ctx.beginPath();
+    ctx.moveTo(x2_a, y_a);
+    ctx.lineTo(x1_a, y_a);
+    // Draw the part of the rod extending right from wheel 1's center
+    ctx.lineTo(x1_a + radius, y_a);
+    ctx.stroke();
+
+    // Ground and Labels
+    ctx.beginPath();
+    ctx.moveTo(centerX_a - 150, groundY_a);
+    ctx.lineTo(centerX_a + 150, groundY_a);
+    ctx.stroke();
+    drawSubscriptedText(ctx, 'μ', '1', x1_a, groundY_a + 20, 'center');
+    drawSubscriptedText(ctx, 'μ', '2', x2_a, groundY_a + 20, 'center');
+    ctx.font = '20px Times New Roman';
+    ctx.fillText('(a)', centerX_a, groundY_a + 50);
+
+    // Velocity Arrow v0
+    const v0_startX = x1_a + radius + 15;
+    const v0_endX = v0_startX + 60;
+    drawArrow(ctx, v0_startX, y_a, v0_endX, y_a);
+    drawSubscriptedText(ctx, 'v', '0', v0_endX + 10, y_a, 'left');
+
+
+    // --- Draw Diagram (b) ---
+    // Wheels and Rod
+    ctx.font = '20px Times New Roman';
+    // Wheel 1
+    ctx.beginPath();
+    ctx.arc(x1_b, y_b, radius, 0, 2 * Math.PI);
+    ctx.stroke();
+    // Wheel 2
+    ctx.beginPath();
+    ctx.arc(x2_b, y_b, radius, 0, 2 * Math.PI);
+    ctx.stroke();
+    // Rod connecting centers
+    ctx.beginPath();
+    ctx.moveTo(x2_b, y_b);
+    ctx.lineTo(x1_b, y_b);
+    // Draw the part of the rod extending right from wheel 1's center
+    ctx.lineTo(x1_b + radius, y_b);
+    ctx.stroke();
+
+    // Ground
+    ctx.beginPath();
+    ctx.moveTo(centerX_b - 150, groundY_b);
+    ctx.lineTo(centerX_b + 150, groundY_b);
+    ctx.stroke();
+
+    // Friction Arrows
+    const f_len = 50;
+    drawArrow(ctx, x1_b, groundY_b, x1_b - f_len, groundY_b);
+    drawSubscriptedText(ctx, 'f', '1', x1_b - f_len / 2, groundY_b + 20, 'center');
+    drawArrow(ctx, x2_b, groundY_b, x2_b - f_len, groundY_b);
+    drawSubscriptedText(ctx, 'f', '2', x2_b - f_len / 2, groundY_b + 20, 'center');
+
+    // Rotation Arrows
+    const w_radius = radius + 10;
+    const w_startAngle = -0.85 * Math.PI;
+    const w_endAngle = -0.15 * Math.PI;
+    drawCurvedArrow(ctx, x1_b, y_b, w_radius, w_startAngle, w_endAngle);
+    drawSubscriptedText(ctx, 'ω', '1', x1_b, y_b - w_radius - 12, 'center');
+    drawCurvedArrow(ctx, x2_b, y_b, w_radius, w_startAngle, w_endAngle);
+    drawSubscriptedText(ctx, 'ω', '2', x2_b, y_b - w_radius - 12, 'center');
+    
+    // Acceleration Arrow aC
+    const aC_startX = x1_b + radius + 15;
+    const aC_endX = aC_startX + 60;
+    drawArrow(ctx, aC_startX, y_b, aC_endX, y_b);
+    drawSubscriptedText(ctx, 'a', 'C', aC_endX + 10, y_b, 'left');
+
+    // Label (b)
+    ctx.font = '20px Times New Roman';
+    ctx.fillText('(b)', centerX_b, groundY_b + 50);
+
+
+    // --- Caption ---
+    ctx.font = '20px Times New Roman';
+    ctx.fillText('力图 6.15.1', canvas.width / 2, canvas.height - 30);
+</script>
+</body>
+</html>

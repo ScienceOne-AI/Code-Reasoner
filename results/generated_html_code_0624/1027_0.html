@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="500" height="350"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper function to draw a resistor ---
+        function drawResistor(x, y_start, y_end) {
+            const h = y_end - y_start;
+            const w = 16; // width of the zig-zag
+            const zigs = 6; // number of points on one side
+            const segment_h = h / (2 * zigs);
+
+            ctx.beginPath();
+            ctx.moveTo(x, y_start);
+            for (let i = 0; i < zigs; i++) {
+                ctx.lineTo(x - w / 2, y_start + (2 * i + 1) * segment_h);
+                ctx.lineTo(x + w / 2, y_start + (2 * i + 2) * segment_h);
+            }
+            ctx.lineTo(x, y_end);
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+
+        // Define coordinates
+        const yTop = 50;
+        const yBottom = 300;
+        const xBatt = 80;
+        const xBusStart = 120;
+        const xR1 = 170, xR2 = 250, xR3 = 330, xR4 = 410;
+        const xBusEnd = 450;
+        
+        // --- Draw Battery and main loop ---
+        ctx.beginPath();
+        // Connect battery to top and bottom bus bars
+        ctx.moveTo(xBatt, yTop);
+        ctx.lineTo(xBusStart, yTop);
+        ctx.moveTo(xBatt, yBottom);
+        ctx.lineTo(xBusStart, yBottom);
+
+        // Draw battery symbol
+        const yBattCenter = (yTop + yBottom) / 2;
+        const batt_y_top = yBattCenter - 40;
+        const batt_y_bottom = yBattCenter + 40;
+        ctx.moveTo(xBatt, yTop);
+        ctx.lineTo(xBatt, batt_y_top);
+        ctx.moveTo(xBatt, yBottom);
+        ctx.lineTo(xBatt, batt_y_bottom);
+
+        // Plates (Long is positive, top)
+        ctx.moveTo(xBatt - 20, batt_y_top); ctx.lineTo(xBatt + 20, batt_y_top); // Long
+        ctx.moveTo(xBatt - 10, batt_y_top + 20); ctx.lineTo(xBatt + 10, batt_y_top + 20); // Short
+        ctx.moveTo(xBatt - 20, batt_y_top + 40); ctx.lineTo(xBatt + 20, batt_y_top + 40); // Long
+        ctx.moveTo(xBatt - 10, batt_y_bottom); ctx.lineTo(xBatt + 10, batt_y_bottom); // Short
+        
+        ctx.stroke();
+
+        // Label battery
+        ctx.fillText('12 V', xBatt, yBattCenter + 70);
+
+        // --- Draw top and bottom bus bars ---
+        ctx.beginPath();
+        ctx.moveTo(xBusStart, yTop);
+        ctx.lineTo(xBusEnd, yTop);
+        ctx.moveTo(xBusStart, yBottom);
+        ctx.lineTo(xBusEnd, yBottom);
+        ctx.stroke();
+
+        // --- Draw Parallel Branches ---
+        
+        // Branch 1: 6.0 Ohm Resistor and Ammeter
+        const y_r1_top = yTop + 15;
+        const y_r1_bottom = yTop + 115;
+        const y_ammeter_center = 220;
+        const r_ammeter = 20;
+
+        ctx.beginPath();
+        ctx.moveTo(xR1, yTop);
+        ctx.lineTo(xR1, y_r1_top);
+        drawResistor(xR1, y_r1_top, y_r1_bottom);
+        ctx.moveTo(xR1, y_r1_bottom);
+        ctx.lineTo(xR1, y_ammeter_center - r_ammeter);
+        ctx.moveTo(xR1, y_ammeter_center + r_ammeter);
+        ctx.lineTo(xR1, yBottom);
+        ctx.stroke();
+        // Ammeter circle
+        ctx.beginPath();
+        ctx.arc(xR1, y_ammeter_center, r_ammeter, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Ammeter Label
+        ctx.fillText('A', xR1, y_ammeter_center);
+        // Resistor Label
+        ctx.textAlign = 'left';
+        ctx.fillText('6.0 \u03A9', xR1 + 15, yTop + 75);
+
+        // Branch 2: 12 Ohm Resistor
+        ctx.beginPath();
+        ctx.moveTo(xR2, yTop);
+        ctx.lineTo(xR2, yTop + 15);
+        ctx.stroke();
+        drawResistor(xR2, yTop + 15, yBottom - 15);
+        ctx.beginPath();
+        ctx.moveTo(xR2, yBottom - 15);
+        ctx.lineTo(xR2, yBottom);
+        ctx.stroke();
+        ctx.fillText('12 \u03A9', xR2 + 15, yBattCenter);
+
+        // Branch 3: 36 Ohm Resistor
+        ctx.beginPath();
+        ctx.moveTo(xR3, yTop);
+        ctx.lineTo(xR3, yTop + 15);
+        ctx.stroke();
+        drawResistor(xR3, yTop + 15, yBottom - 15);
+        ctx.beginPath();
+        ctx.moveTo(xR3, yBottom - 15);
+        ctx.lineTo(xR3, yBottom);
+        ctx.stroke();
+        ctx.fillText('36 \u03A9', xR3 + 15, yBattCenter);
+        
+        // Branch 4: 18 Ohm Resistor
+        ctx.beginPath();
+        ctx.moveTo(xR4, yTop);
+        ctx.lineTo(xR4, yTop + 15);
+        ctx.stroke();
+        drawResistor(xR4, yTop + 15, yBottom - 15);
+        ctx.beginPath();
+        ctx.moveTo(xR4, yBottom - 15);
+        ctx.lineTo(xR4, yBottom);
+        ctx.stroke();
+        ctx.fillText('18 \u03A9', xR4 + 15, yBattCenter);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>P-V Diagram</title>
+</head>
+<body>
+<canvas id="pvDiagram" width="610" height="610"></canvas>
+<script>
+    const canvas = document.getElementById('pvDiagram');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const margin = { top: 50, right: 50, bottom: 80, left: 80 };
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const graphWidth = canvasWidth - margin.left - margin.right;
+    const graphHeight = canvasHeight - margin.top - margin.bottom;
+
+    const vMax = 6.0;
+    const pMax = 6.0;
+
+    // --- Coordinate Transformation Functions ---
+    function v_to_x(v) {
+        return margin.left + (v / vMax) * graphWidth;
+    }
+
+    function p_to_y(p) {
+        return canvasHeight - margin.bottom - (p / pMax) * graphHeight;
+    }
+
+    // --- Drawing Functions ---
+
+    // Function to draw the grid
+    function drawGrid() {
+        ctx.strokeStyle = '#D3D3D3'; // Light grey for grid
+        ctx.lineWidth = 1;
+
+        // Vertical grid lines (every 0.2)
+        for (let i = 1; i <= 30; i++) {
+            const v = i * 0.2;
+            ctx.beginPath();
+            ctx.moveTo(v_to_x(v), p_to_y(0));
+            ctx.lineTo(v_to_x(v), p_to_y(pMax));
+            ctx.stroke();
+        }
+
+        // Horizontal grid lines (every 0.2)
+        for (let i = 1; i <= 30; i++) {
+            const p = i * 0.2;
+            ctx.beginPath();
+            ctx.moveTo(v_to_x(0), p_to_y(p));
+            ctx.lineTo(v_to_x(vMax), p_to_y(p));
+            ctx.stroke();
+        }
+    }
+
+    // Function to draw axes
+    function drawAxes() {
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // Y-Axis
+        ctx.beginPath();
+        ctx.moveTo(v_to_x(0), p_to_y(0));
+        ctx.lineTo(v_to_x(0), p_to_y(pMax));
+        ctx.stroke();
+
+        // X-Axis
+        ctx.beginPath();
+        ctx.moveTo(v_to_x(0), p_to_y(0));
+        ctx.lineTo(v_to_x(vMax), p_to_y(0));
+        ctx.stroke();
+    }
+
+    // Function to draw axis labels and ticks
+    function drawLabelsAndTicks() {
+        ctx.fillStyle = 'black';
+        ctx.font = '20px Arial';
+
+        // X-axis ticks and labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let v = 0; v <= vMax; v += 2.0) {
+            ctx.fillText(v.toFixed(1), v_to_x(v), p_to_y(0) + 10);
+        }
+        ctx.fillText('volume / 10\u207B\u2074 m\u00B3', v_to_x(vMax / 2), p_to_y(0) + 45);
+
+        // Y-axis ticks and labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let p = 0; p <= pMax; p += 1.0) {
+            ctx.fillText(p.toFixed(1), v_to_x(0) - 10, p_to_y(p));
+        }
+
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.translate(v_to_x(0) - 60, p_to_y(pMax / 2));
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('pressure / 10\u2075 Pa', 0, 0);
+        ctx.restore();
+    }
+
+    // Function to draw an arrow head
+    function drawArrow(fromX, fromY, toX, toY, size = 12) {
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2.5;
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - size * Math.cos(angle - Math.PI / 6), toY - size * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - size * Math.cos(angle + Math.PI / 6), toY - size * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Function to draw the thermodynamic cycle
+    function drawCycle() {
+        const A = { v: 1.8, p: 5.2 };
+        const B = { v: 5.0, p: 5.2 };
+        const C = { v: 5.0, p: 1.0 };
+
+        const Ax = v_to_x(A.v); const Ay = p_to_y(A.p);
+        const Bx = v_to_x(B.v); const By = p_to_y(B.p);
+        const Cx = v_to_x(C.v); const Cy = p_to_y(C.p);
+
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2.5;
+
+        // Line A -> B
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(Bx, By);
+        ctx.stroke();
+        const arrow_ab_x = v_to_x(3.8);
+        drawArrow(arrow_ab_x - 1, By, arrow_ab_x, By);
+
+        // Line B -> C
+        ctx.beginPath();
+        ctx.moveTo(Bx, By);
+        ctx.lineTo(Cx, Cy);
+        ctx.stroke();
+        const arrow_bc_y = p_to_y(2.8);
+        drawArrow(Bx, arrow_bc_y + 1, Bx, arrow_bc_y);
+
+        // Line A -> C
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(Cx, Cy);
+        ctx.stroke();
+        const arrow_ac_v = 3.4;
+        const slope = (C.p - A.p) / (C.v - A.v);
+        const arrow_ac_p = A.p + slope * (arrow_ac_v - A.v);
+        const arrow_ac_x = v_to_x(arrow_ac_v);
+        const arrow_ac_y = p_to_y(arrow_ac_p);
+        const arrow_ac_x_from = v_to_x(arrow_ac_v - 0.1);
+        const arrow_ac_y_from = p_to_y(A.p + slope * ((arrow_ac_v - 0.1) - A.v));
+        drawArrow(arrow_ac_x_from, arrow_ac_y_from, arrow_ac_x, arrow_ac_y);
+
+        // Point labels
+        ctx.font = '24px Arial';
+        ctx.fillStyle = 'black';
+
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('A', Ax - 5, Ay - 5);
+
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('B', Bx - 5, By - 5);
+
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('C', Cx + 5, Cy);
+    }
+
+    // --- Main Drawing Execution ---
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    drawGrid();
+    drawAxes();
+    drawLabelsAndTicks();
+    drawCycle();
+
+</script>
+</body>
+</html>

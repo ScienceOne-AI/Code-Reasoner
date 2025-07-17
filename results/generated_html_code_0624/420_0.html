@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="500" height="450"></canvas>
+<script>
+    // Helper function to draw labels with subscripts
+    function drawLabelWithSubscript(ctx, base, sub, x, y) {
+        const originalAlign = ctx.textAlign;
+        ctx.textAlign = 'left';
+        ctx.font = "italic 22px 'Times New Roman'";
+        const baseWidth = ctx.measureText(base).width;
+        ctx.fillText(base, x, y);
+        ctx.font = "italic 16px 'Times New Roman'";
+        ctx.fillText(sub, x + baseWidth - 2, y + 6);
+        ctx.textAlign = originalAlign;
+    }
+
+    // Helper function to draw a resistor
+    function drawResistor(ctx, x1, y1, x2, y2) {
+        const w = 24; // width for vertical, height for horizontal
+        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+    }
+
+    // Helper function to draw a capacitor
+    function drawCapacitor(ctx, x, y, plateWidth, gap) {
+        ctx.moveTo(x - plateWidth / 2, y - gap / 2);
+        ctx.lineTo(x + plateWidth / 2, y - gap / 2);
+        ctx.moveTo(x - plateWidth / 2, y + gap / 2);
+        ctx.lineTo(x + plateWidth / 2, y + gap / 2);
+    }
+
+    // Helper function to draw a DC source
+    function drawSource(ctx, x, y, h) {
+        const shortPlateWidth = 12;
+        const longPlateWidth = 24;
+        // Long plate (positive)
+        ctx.moveTo(x - longPlateWidth / 2, y - h / 2);
+        ctx.lineTo(x + longPlateWidth / 2, y - h / 2);
+        // Short plate (negative)
+        ctx.moveTo(x - shortPlateWidth / 2, y + h / 2);
+        ctx.lineTo(x + shortPlateWidth / 2, y + h / 2);
+    }
+
+    // Helper function to draw an arrowhead
+    function drawArrow(ctx, tox, toy, angle) {
+        const headlen = 8;
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    }
+
+    // Main drawing function
+    window.onload = function () {
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = "italic 22px 'Times New Roman'";
+
+        // --- Define coordinates ---
+        const x_source = 80;
+        const x_R2 = 200;
+        const x_C = 280;
+        const x_R3 = 360;
+
+        const y_top = 50;
+        const y_A = 100;
+        const y_B = 350;
+        const y_bottom = 400;
+
+        const nodeA = { x: x_C, y: y_A };
+        const nodeB = { x: x_C, y: y_B };
+
+        // Start drawing paths
+        ctx.beginPath();
+
+        // --- Left loop (Source) ---
+        const source_y_center = 225;
+        const source_h = 40;
+        drawSource(ctx, x_source, source_y_center, source_h);
+        // Wires from source
+        ctx.moveTo(x_source, source_y_center - source_h / 2);
+        ctx.lineTo(x_source, y_top);
+        ctx.moveTo(x_source, source_y_center + source_h / 2);
+        ctx.lineTo(x_source, y_bottom);
+
+        // --- Top and Bottom Wires ---
+        const r1_x1 = 140, r1_x2 = 240, r1_h = 30;
+        ctx.moveTo(x_source, y_top);
+        ctx.lineTo(r1_x1, y_top); // Wire to R1
+        ctx.moveTo(r1_x2, y_top); // Wire from R1
+        ctx.lineTo(nodeA.x, y_top);
+        ctx.lineTo(nodeA.x, nodeA.y);
+
+        ctx.moveTo(x_source, y_bottom);
+        ctx.lineTo(nodeB.x, y_bottom);
+        ctx.moveTo(nodeB.x, nodeB.y);
+        ctx.lineTo(nodeB.x, y_bottom);
+
+        // --- Parallel branches ---
+        // Horizontal wires from A and to B
+        ctx.moveTo(x_R2, nodeA.y);
+        ctx.lineTo(x_R3, nodeA.y);
+        ctx.moveTo(x_R2, nodeB.y);
+        ctx.lineTo(x_R3, nodeB.y);
+
+        // R2 Branch
+        const r2_y1 = 150, r2_y2 = 300;
+        ctx.moveTo(x_R2, nodeA.y);
+        ctx.lineTo(x_R2, r2_y1);
+        ctx.moveTo(x_R2, r2_y2);
+        ctx.lineTo(x_R2, nodeB.y);
+        
+        // C Branch
+        const c_y1 = 180, c_y2 = 210, c_plate_w = 30;
+        ctx.moveTo(x_C, nodeA.y);
+        ctx.lineTo(x_C, c_y1);
+        drawCapacitor(ctx, x_C, (c_y1 + c_y2)/2, c_plate_w, c_y2 - c_y1);
+        ctx.moveTo(x_C, c_y2);
+        ctx.lineTo(x_C, nodeB.y);
+
+        // R3 Branch
+        const r3_y1 = 150, r3_y2 = 300;
+        const switch_x = x_R3, switch_y = nodeA.y;
+        ctx.moveTo(switch_x, switch_y);
+        ctx.lineTo(switch_x, r3_y1);
+        ctx.moveTo(x_R3, r3_y2);
+        ctx.lineTo(x_R3, nodeB.y);
+
+        // Switch K
+        ctx.moveTo(switch_x, switch_y);
+        ctx.lineTo(switch_x + 30, switch_y - 20);
+
+        // Draw components on the paths
+        drawResistor(ctx, r1_x1, y_top - r1_h / 2, r1_x2, y_top + r1_h / 2);
+        drawResistor(ctx, x_R2 - 12, r2_y1, x_R2 + 12, r2_y2);
+        drawResistor(ctx, x_R3 - 12, r3_y1, x_R3 + 12, r3_y2);
+        
+        // Stroke all solid lines
+        ctx.stroke();
+        
+        // --- Nodes A and B ---
+        ctx.beginPath();
+        ctx.arc(nodeA.x, nodeA.y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(nodeB.x, nodeB.y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // --- Labels ---
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+
+        // Component Labels
+        ctx.fillText("ε", x_source - 30, source_y_center + 8);
+        drawLabelWithSubscript(ctx, "R", "1", r1_x1 + 35, y_top - 45);
+        drawLabelWithSubscript(ctx, "R", "2", x_R2 - 50, (r2_y1 + r2_y2) / 2);
+        ctx.fillText("C", x_C - 30, (c_y1 + c_y2) / 2 + 8);
+        drawLabelWithSubscript(ctx, "R", "3", x_R3 + 25, (r3_y1 + r3_y2) / 2);
+        ctx.fillText("K", switch_x + 25, switch_y - 25);
+        ctx.fillText("A", nodeA.x + 15, nodeA.y + 5);
+        ctx.fillText("B", nodeB.x + 15, nodeB.y + 15);
+
+        // --- Currents ---
+        ctx.beginPath();
+        ctx.save();
+        ctx.setLineDash([4, 3]);
+
+        // I1
+        const i1_y = y_top + 25;
+        const i1_x_start = 200, i1_x_end = 170;
+        ctx.moveTo(i1_x_start, i1_y);
+        ctx.lineTo(i1_x_end, i1_y);
+        
+        // I2
+        const i2_x = x_R2;
+        const i2_y_start = y_A + 15, i2_y_end = r2_y1 - 10;
+        ctx.moveTo(i2_x, i2_y_start);
+        ctx.lineTo(i2_x, i2_y_end);
+
+        // Ic
+        const ic_x = x_C;
+        const ic_y_start = y_A + 25, ic_y_end = c_y1 - 10;
+        ctx.moveTo(ic_x, ic_y_start);
+        ctx.lineTo(ic_x, ic_y_end);
+        
+        // I3
+        const i3_x = x_R3;
+        const i3_y_start = y_A + 15, i3_y_end = r3_y1 - 10;
+        ctx.moveTo(i3_x, i3_y_start);
+        ctx.lineTo(i3_x, i3_y_end);
+        
+        ctx.stroke();
+        ctx.restore();
+        
+        // Arrow heads
+        ctx.beginPath();
+        drawArrow(ctx, i1_x_end, i1_y, Math.PI);
+        drawArrow(ctx, i2_x, i2_y_end, Math.PI / 2);
+        drawArrow(ctx, ic_x, ic_y_end, Math.PI / 2);
+        drawArrow(ctx, i3_x, i3_y_end, Math.PI / 2);
+        ctx.stroke();
+
+        // Current Labels
+        drawLabelWithSubscript(ctx, "I", "1", i1_x_start - 25, i1_y - 5);
+        drawLabelWithSubscript(ctx, "I", "2", i2_x - 45, (i2_y_start + i2_y_end) / 2 - 10);
+        drawLabelWithSubscript(ctx, "I", "C", ic_x - 45, (ic_y_start + ic_y_end) / 2 - 10);
+        drawLabelWithSubscript(ctx, "I", "3", i3_x + 15, (i3_y_start + i3_y_end) / 2 - 10);
+    };
+</script>
+</body>
+</html>

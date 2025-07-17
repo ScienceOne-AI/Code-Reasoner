@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Birefringence Diagram</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+        canvas { border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="600" height="450"></canvas>
+    <script>
+        // Helper function to draw an arrow on a line segment
+        function drawArrow(ctx, x1, y1, x2, y2, arrowSize) {
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.save();
+            ctx.translate(x2, y2);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowSize, -arrowSize / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowSize, arrowSize / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Helper function to draw a double-headed arrow
+        function drawDoubleArrow(ctx, x1, y1, x2, y2, arrowSize) {
+            drawArrow(ctx, x1, y1, x2, y2, arrowSize);
+            drawArrow(ctx, x2, y2, x1, y1, arrowSize);
+        }
+
+        // Helper function to draw a dashed line
+        function drawDashedLine(ctx, x1, y1, x2, y2, dashLen) {
+            ctx.beginPath();
+            ctx.setLineDash([dashLen, dashLen]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset to solid line
+        }
+
+        // Main drawing function
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Styles ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = 'italic 20px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'black';
+
+        // --- Clear canvas ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // --- Coordinates and Parameters ---
+        const blockX = 50, blockY = 150, blockW = 500, blockH = 150;
+        const incidencePointX = 300, incidencePointY = 150;
+        const incidentBeamAngle = 45 * Math.PI / 180;
+        const D_pixels = 30;
+        const beamSurfaceWidth = D_pixels / Math.cos(incidentBeamAngle);
+        const incidentBeamXOffset = 100;
+
+        // --- Draw Crystal Block ---
+        ctx.fillStyle = '#EBEBEB';
+        ctx.fillRect(blockX, blockY, blockW, blockH);
+        ctx.strokeStyle = 'black';
+        ctx.strokeRect(blockX, blockY, blockW, blockH);
+        ctx.fillStyle = 'black';
+
+        // --- Draw Normal ---
+        drawDashedLine(ctx, incidencePointX, incidencePointY - 40, incidencePointX, incidencePointY + 40, 5);
+
+        // --- Draw Incident Beam (3 rays) ---
+        ctx.beginPath();
+        const in_left_x = incidencePointX - beamSurfaceWidth / 2;
+        const in_right_x = incidencePointX + beamSurfaceWidth / 2;
+        const start_y_offset = incidentBeamXOffset * Math.tan(incidentBeamAngle);
+        // Central ray
+        ctx.moveTo(incidencePointX - incidentBeamXOffset, incidencePointY - start_y_offset);
+        ctx.lineTo(incidencePointX, incidencePointY);
+        drawArrow(ctx, incidencePointX - incidentBeamXOffset, incidencePointY - start_y_offset, incidencePointX, incidencePointY, 10);
+        // Left ray
+        ctx.moveTo(in_left_x - incidentBeamXOffset, incidencePointY - start_y_offset);
+        ctx.lineTo(in_left_x, incidencePointY);
+        drawArrow(ctx, in_left_x - incidentBeamXOffset, incidencePointY - start_y_offset, in_left_x, incidencePointY, 10);
+        // Right ray
+        ctx.moveTo(in_right_x - incidentBeamXOffset, incidencePointY - start_y_offset);
+        ctx.lineTo(in_right_x, incidencePointY);
+        drawArrow(ctx, in_right_x - incidentBeamXOffset, incidencePointY - start_y_offset, in_right_x, incidencePointY, 10);
+        ctx.stroke();
+
+        // --- Draw Reflected Beam (2 rays) ---
+        ctx.beginPath();
+        const reflect_end_y = 50;
+        const reflect_dx = incidencePointY - reflect_end_y;
+        ctx.moveTo(in_left_x, incidencePointY);
+        ctx.lineTo(in_left_x + reflect_dx, reflect_end_y);
+        drawArrow(ctx, in_left_x, incidencePointY, in_left_x + reflect_dx, reflect_end_y, 10);
+        ctx.moveTo(in_right_x, incidencePointY);
+        ctx.lineTo(in_right_x + reflect_dx, reflect_end_y);
+        drawArrow(ctx, in_right_x, incidencePointY, in_right_x + reflect_dx, reflect_end_y, 10);
+        ctx.stroke();
+
+        // --- Calculate and Draw Refracted/Emergent Beams ---
+        const dx_o = 70; // Lateral shift for o-beam to match image
+        const o_out_left_x = in_left_x + dx_o;
+        const o_out_center_x = incidencePointX + dx_o;
+        const o_out_right_x = in_right_x + dx_o;
+
+        const gap = 10;
+        const e_out_left_x = o_out_right_x + gap;
+        const e_out_center_x = e_out_left_x + beamSurfaceWidth / 2;
+        const e_out_right_x = e_out_left_x + beamSurfaceWidth;
+
+        // Draw internal refracted rays
+        ctx.beginPath();
+        // o-beam
+        ctx.moveTo(in_left_x, incidencePointY); ctx.lineTo(o_out_left_x, blockY + blockH);
+        ctx.moveTo(incidencePointX, incidencePointY); ctx.lineTo(o_out_center_x, blockY + blockH);
+        ctx.moveTo(in_right_x, incidencePointY); ctx.lineTo(o_out_right_x, blockY + blockH);
+        // e-beam
+        ctx.moveTo(in_left_x, incidencePointY); ctx.lineTo(e_out_left_x, blockY + blockH);
+        ctx.moveTo(incidencePointX, incidencePointY); ctx.lineTo(e_out_center_x, blockY + blockH);
+        ctx.moveTo(in_right_x, incidencePointY); ctx.lineTo(e_out_right_x, blockY + blockH);
+        ctx.stroke();
+
+        // Draw emergent rays
+        const emergent_len = 100;
+        const emergent_dx = emergent_len * Math.cos(incidentBeamAngle);
+        const emergent_dy = emergent_len * Math.sin(incidentBeamAngle);
+        // o-beam
+        ctx.beginPath();
+        ctx.moveTo(o_out_left_x, blockY + blockH); ctx.lineTo(o_out_left_x + emergent_dx, blockY + blockH + emergent_dy);
+        drawArrow(ctx, o_out_left_x, blockY + blockH, o_out_left_x + emergent_dx, blockY + blockH + emergent_dy, 10);
+        ctx.moveTo(o_out_center_x, blockY + blockH); ctx.lineTo(o_out_center_x + emergent_dx, blockY + blockH + emergent_dy);
+        drawArrow(ctx, o_out_center_x, blockY + blockH, o_out_center_x + emergent_dx, blockY + blockH + emergent_dy, 10);
+        ctx.moveTo(o_out_right_x, blockY + blockH); ctx.lineTo(o_out_right_x + emergent_dx, blockY + blockH + emergent_dy);
+        drawArrow(ctx, o_out_right_x, blockY + blockH, o_out_right_x + emergent_dx, blockY + blockH + emergent_dy, 10);
+        ctx.stroke();
+        // e-beam
+        ctx.beginPath();
+        ctx.moveTo(e_out_left_x, blockY + blockH); ctx.lineTo(e_out_left_x + emergent_dx, blockY + blockH + emergent_dy);
+        drawArrow(ctx, e_out_left_x, blockY + blockH, e_out_left_x + emergent_dx, blockY + blockH + emergent_dy, 10);
+        ctx.moveTo(e_out_center_x, blockY + blockH); ctx.lineTo(e_out_center_x + emergent_dx, blockY + blockH + emergent_dy);
+        drawArrow(ctx, e_out_center_x, blockY + blockH, e_out_center_x + emergent_dx, blockY + blockH + emergent_dy, 10);
+        ctx.moveTo(e_out_right_x, blockY + blockH); ctx.lineTo(e_out_right_x + emergent_dx, blockY + blockH + emergent_dy);
+        drawArrow(ctx, e_out_right_x, blockY + blockH, e_out_right_x + emergent_dx, blockY + blockH + emergent_dy, 10);
+        ctx.stroke();
+
+        // --- Labels and Annotations ---
+        // Label d
+        ctx.beginPath();
+        ctx.moveTo(blockX + blockW + 10, blockY);
+        ctx.lineTo(blockX + blockW + 10, blockY + blockH);
+        ctx.moveTo(blockX + blockW + 5, blockY);
+        ctx.lineTo(blockX + blockW + 15, blockY);
+        ctx.moveTo(blockX + blockW + 5, blockY + blockH);
+        ctx.lineTo(blockX + blockW + 15, blockY + blockH);
+        ctx.stroke();
+        ctx.fillText('d', blockX + blockW + 25, blockY + blockH / 2);
+
+        // Label D
+        const d_line_p1 = {x: 240, y: 110};
+        const d_line_p2 = {x: 260, y: 90};
+        ctx.beginPath();
+        ctx.moveTo(d_line_p1.x, d_line_p1.y);
+        ctx.lineTo(d_line_p2.x, d_line_p2.y);
+        drawDoubleArrow(ctx, d_line_p1.x, d_line_p1.y, d_line_p2.x, d_line_p2.y, 8);
+        ctx.stroke();
+        ctx.fillText('D', 230, 95);
+
+        // Label alpha_0
+        ctx.beginPath();
+        ctx.arc(incidencePointX, incidencePointY, 30, -Math.PI * 3/4, -Math.PI / 2);
+        ctx.stroke();
+        ctx.fillText('α₀', incidencePointX - 25, incidencePointY - 15);
+
+        // Label O-O'
+        ctx.fillText("O-O'", 150, 225);
+        ctx.beginPath();
+        ctx.arc(120, 225, 3, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // --- Polarization symbols and labels ---
+        // Incident polarization
+        const pol_inc_x = 240;
+        const pol_inc_y = 90;
+        ctx.beginPath();
+        ctx.arc(pol_inc_x, pol_inc_y, 3, 0, 2 * Math.PI); // dot
+        ctx.fill();
+        ctx.beginPath();
+        const arrow_len = 8;
+        const dx_pol = arrow_len * Math.cos(incidentBeamAngle);
+        const dy_pol = arrow_len * Math.sin(incidentBeamAngle);
+        ctx.moveTo(pol_inc_x - dy_pol, pol_inc_y + dx_pol);
+        ctx.lineTo(pol_inc_x + dy_pol, pol_inc_y - dx_pol);
+        drawDoubleArrow(ctx, pol_inc_x - dy_pol, pol_inc_y + dx_pol, pol_inc_x + dy_pol, pol_inc_y - dx_pol, 6);
+        ctx.stroke();
+
+        // Emergent 'o' beam dimension and label
+        const o_marker_x = o_out_center_x + 40;
+        const o_marker_y = blockY + blockH + 40;
+        const o_dim_len = 15;
+        const dx_o_dim = o_dim_len * Math.cos(incidentBeamAngle);
+        const dy_o_dim = o_dim_len * Math.sin(incidentBeamAngle);
+        const o_dim_p1 = {x: o_marker_x - dy_o_dim, y: o_marker_y + dx_o_dim};
+        const o_dim_p2 = {x: o_marker_x + dy_o_dim, y: o_marker_y - dx_o_dim};
+        ctx.beginPath();
+        ctx.moveTo(o_dim_p1.x, o_dim_p1.y);
+        ctx.lineTo(o_dim_p2.x, o_dim_p2.y);
+        drawDoubleArrow(ctx, o_dim_p1.x, o_dim_p1.y, o_dim_p2.x, o_dim_p2.y, 8);
+        ctx.stroke();
+        ctx.fillText('o', o_dim_p1.x - 10, o_dim_p1.y + 10);
+        
+        // Emergent 'e' beam polarization symbol and label
+        const e_marker_x = e_out_center_x + 40;
+        const e_marker_y = blockY + blockH + 40;
+        ctx.beginPath();
+        ctx.arc(e_marker_x, e_marker_y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('e', e_marker_x + 15, e_marker_y + 10);
+
+    </script>
+</body>
+</html>

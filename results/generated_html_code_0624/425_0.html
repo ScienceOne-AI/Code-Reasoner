@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="circuitCanvas" width="650" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = '18px sans-serif';
+
+    // Helper to draw a horizontal resistor's zig-zag
+    function drawHResistorShape(ctx, x, y, len) {
+        const zigzag_h = 8;
+        const zigzag_n = 6;
+        const seg_len = len / (zigzag_n + 2);
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + seg_len, y);
+        for (let i = 0; i < zigzag_n; i++) {
+            ctx.lineTo(x + seg_len * (i + 1.5), y + zigzag_h * ((i % 2 === 0) ? -1 : 1));
+        }
+        ctx.lineTo(x + seg_len * (zigzag_n + 1), y);
+        ctx.lineTo(x + len, y);
+    }
+
+    // Helper to draw a vertical resistor's zig-zag
+    function drawVResistorShape(ctx, x, y, len) {
+        const zigzag_w = 8;
+        const zigzag_n = len > 120 ? 6 : 4; // Use more zigs for longer resistors
+        const seg_len = len / (zigzag_n + 2);
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y + seg_len);
+        for (let i = 0; i < zigzag_n; i++) {
+            ctx.lineTo(x + zigzag_w * ((i % 2 === 0) ? -1 : 1), y + seg_len * (i + 1.5));
+        }
+        ctx.lineTo(x, y + seg_len * (zigzag_n + 1));
+        ctx.lineTo(x, y + len);
+    }
+    
+    // Helper to draw a node
+    function drawNode(ctx, x, y) {
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+
+    // -- Coordinates --
+    const x_batt = 80;
+    const y_batt_center = 200;
+    const y_top = 50;
+    const y_bottom = 350;
+
+    const x_r1_start = 120, x_r1_end = 220;
+    const x_node1 = 280;
+
+    const x_branch23 = 280;
+    const y_r2_start = 80, y_r2_end = 160;
+    const y_r3_start = 160, y_r3_end = 260;
+
+    const x_r4_start = 330, x_r4_end = 430;
+    const x_node2 = 480;
+
+    const x_branch5 = 480;
+    const y_r5_start = 80, y_r5_end = 260;
+
+    const x_branch67 = 580;
+    const y_r6_start = 80, y_r6_end = 160;
+    const y_r7_start = 160, y_r7_end = 260;
+
+    // -- Draw Wires & Components --
+    ctx.beginPath();
+    
+    // Battery and connections
+    ctx.moveTo(x_batt, y_batt_center - 15); ctx.lineTo(x_batt, y_top);
+    ctx.moveTo(x_batt, y_batt_center + 15); ctx.lineTo(x_batt, y_bottom);
+    // Battery plates
+    ctx.moveTo(x_batt - 20, y_batt_center - 15); ctx.lineTo(x_batt + 20, y_batt_center - 15);
+    ctx.moveTo(x_batt - 10, y_batt_center + 15); ctx.lineTo(x_batt + 10, y_batt_center + 15);
+
+    // Top horizontal wires
+    ctx.moveTo(x_batt, y_top); ctx.lineTo(x_r1_start, y_top);
+    ctx.moveTo(x_r1_end, y_top); ctx.lineTo(x_node1, y_top);
+    ctx.moveTo(x_node1, y_top); ctx.lineTo(x_r4_start, y_top);
+    ctx.moveTo(x_r4_end, y_top); ctx.lineTo(x_node2, y_top);
+    ctx.moveTo(x_node2, y_top); ctx.lineTo(x_branch67, y_top);
+    
+    // Bottom horizontal wire
+    ctx.moveTo(x_batt, y_bottom); ctx.lineTo(x_branch67, y_bottom);
+
+    // Vertical Wires
+    ctx.moveTo(x_node1, y_top); ctx.lineTo(x_branch23, y_r2_start);
+    ctx.moveTo(x_branch23, y_r2_end); ctx.lineTo(x_branch23, y_r3_start);
+    ctx.moveTo(x_branch23, y_r3_end); ctx.lineTo(x_branch23, y_bottom);
+    ctx.moveTo(x_node2, y_top); ctx.lineTo(x_branch5, y_r5_start);
+    ctx.moveTo(x_branch5, y_r5_end); ctx.lineTo(x_branch5, y_bottom);
+    ctx.moveTo(x_branch67, y_top); ctx.lineTo(x_branch67, y_r6_start);
+    ctx.moveTo(x_branch67, y_r6_end); ctx.lineTo(x_branch67, y_r7_start);
+    ctx.moveTo(x_branch67, y_r7_end); ctx.lineTo(x_branch67, y_bottom);
+
+    // Resistor shapes
+    drawHResistorShape(ctx, x_r1_start, y_top, x_r1_end - x_r1_start);
+    drawVResistorShape(ctx, x_branch23, y_r2_start, y_r2_end - y_r2_start);
+    drawVResistorShape(ctx, x_branch23, y_r3_start, y_r3_end - y_r3_start);
+    drawHResistorShape(ctx, x_r4_start, y_top, x_r4_end - x_r4_start);
+    drawVResistorShape(ctx, x_branch5, y_r5_start, y_r5_end - y_r5_start);
+    drawVResistorShape(ctx, x_branch67, y_r6_start, y_r6_end - y_r6_start);
+    drawVResistorShape(ctx, x_branch67, y_r7_start, y_r7_end - y_r7_start);
+    
+    ctx.stroke();
+
+    // -- Draw Labels --
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText("5 V", x_batt - 30, y_batt_center);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText("+", x_batt, y_batt_center - 25);
+    
+    // R1 Label
+    const r1_center_x = (x_r1_start + x_r1_end) / 2;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText("R1", r1_center_x, y_top - 25);
+    ctx.fillText("4 \u03A9", r1_center_x, y_top - 5);
+
+    // R4 Label
+    const r4_center_x = (x_r4_start + x_r4_end) / 2;
+    ctx.fillText("R4", r4_center_x, y_top - 25);
+    ctx.fillText("10 \u03A9", r4_center_x, y_top - 5);
+    
+    // Vertical resistor labels
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText("R2", x_branch23 + 15, (y_r2_start + y_r2_end) / 2 - 10);
+    ctx.fillText("4 \u03A9", x_branch23 + 15, (y_r2_start + y_r2_end) / 2 + 10);
+
+    ctx.fillText("R3", x_branch23 + 15, (y_r3_start + y_r3_end) / 2 - 10);
+    ctx.fillText("8 \u03A9", x_branch23 + 15, (y_r3_start + y_r3_end) / 2 + 10);
+
+    ctx.fillText("R5", x_branch5 + 15, (y_r5_start + y_r5_end) / 2 - 10);
+    ctx.fillText("4 \u03A9", x_branch5 + 15, (y_r5_start + y_r5_end) / 2 + 10);
+    
+    ctx.fillText("R6", x_branch67 + 15, (y_r6_start + y_r6_end) / 2 - 10);
+    ctx.fillText("2 \u03A9", x_branch67 + 15, (y_r6_start + y_r6_end) / 2 + 10);
+
+    ctx.fillText("R7", x_branch67 + 15, (y_r7_start + y_r7_end) / 2 - 10);
+    ctx.fillText("2 \u03A9", x_branch67 + 15, (y_r7_start + y_r7_end) / 2 + 10);
+    
+    // -- Draw Nodes --
+    drawNode(ctx, x_node1, y_top);
+    drawNode(ctx, x_node2, y_top);
+    drawNode(ctx, x_branch23, y_bottom);
+    drawNode(ctx, x_branch5, y_bottom);
+    drawNode(ctx, x_branch67, y_bottom);
+
+</script>
+</body>
+</html>

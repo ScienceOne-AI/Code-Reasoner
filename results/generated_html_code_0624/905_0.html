@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+    <canvas id="physics-canvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Global Settings ---
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws text with a subscript, e.g., "l₁"
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {string} text - The main part of the text.
+         * @param {string} sub - The subscript part.
+         * @param {number} x - The x-coordinate for the start of the main text.
+         * @param {number} y - The y-coordinate for the baseline of the main text.
+         */
+        function drawSubscriptedLabel(ctx, text, sub, x, y) {
+            const baseFont = 'italic 20px Times New Roman';
+            ctx.font = baseFont;
+            const mainTextMetrics = ctx.measureText(text);
+            
+            // Draw main text
+            ctx.fillText(text, x, y);
+
+            // Set smaller font for subscript
+            const subFont = 'italic 14px Times New Roman';
+            ctx.font = subFont;
+            // Position subscript slightly after and below the main text
+            ctx.fillText(sub, x + mainTextMetrics.width - 2, y + 6);
+
+            ctx.font = baseFont; // Reset font
+        }
+
+        /**
+         * Draws a dimension line with ticks at the ends and a label.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x1 - Start x-coordinate.
+         * @param {number} y1 - Start y-coordinate.
+         * @param {number} x2 - End x-coordinate.
+         * @param {number} y2 - End y-coordinate.
+         * @param {string} labelText - The main part of the label.
+         * @param {string} subText - The subscript part of the label.
+         * @param {string} position - 'above', 'below', 'left', or 'right' of the line.
+         */
+        function drawDimensionLine(ctx, x1, y1, x2, y2, labelText, subText, position) {
+            const tickSize = 10;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+
+            let labelX, labelY;
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const labelOffset = 15;
+
+            // Draw ticks at the ends of the dimension line
+            if (y1 === y2) { // Horizontal line
+                ctx.moveTo(x1, y1 - tickSize / 2);
+                ctx.lineTo(x1, y1 + tickSize / 2);
+                ctx.moveTo(x2, y2 - tickSize / 2);
+                ctx.lineTo(x2, y2 + tickSize / 2);
+                labelX = midX;
+                labelY = (position === 'above') ? y1 - labelOffset : y1 + labelOffset;
+            } else { // Vertical line
+                ctx.moveTo(x1 - tickSize / 2, y1);
+                ctx.lineTo(x1 + tickSize / 2, y1);
+                ctx.moveTo(x2 - tickSize / 2, y2);
+                ctx.lineTo(x2 + tickSize / 2, y2);
+                labelY = midY;
+                labelX = (position === 'left') ? x1 - labelOffset : x1 + labelOffset;
+            }
+            ctx.stroke();
+
+            // Draw the label
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            drawSubscriptedLabel(ctx, labelText, subText, labelX, labelY);
+        }
+
+        /**
+         * Draws an upward pointing arrow.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x - The x-coordinate of the arrow's center.
+         * @param {number} y_tip - The y-coordinate of the arrow's tip.
+         * @param {number} size - The length of the arrowhead.
+         */
+        function drawUpArrow(ctx, x, y_tip, size = 8) {
+            ctx.beginPath();
+            ctx.moveTo(x, y_tip);
+            ctx.lineTo(x - size / 2, y_tip + size);
+            ctx.moveTo(x, y_tip);
+            ctx.lineTo(x + size / 2, y_tip + size);
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Logic ---
+
+        // Define coordinates and dimensions for the diagram elements
+        const leftWireX = 100;
+        const rightWireX = 160;
+        const wireTopY = 50;
+        const wireHeight = 300;
+        const wireBottomY = wireTopY + wireHeight;
+        const wireDashExtension = 20;
+
+        const rectLeftX = 240;
+        const rectTopY = 80;
+        const rectWidth = 120; // Represents l₂
+        const rectHeight = 200; // Represents l₁
+        const rectRightX = rectLeftX + rectWidth;
+        const rectBottomY = rectTopY + rectHeight;
+
+        // 1. Draw the two parallel wires
+        [leftWireX, rightWireX].forEach(x => {
+            // Main solid part of the wire
+            ctx.beginPath();
+            ctx.moveTo(x, wireTopY);
+            ctx.lineTo(x, wireBottomY);
+            ctx.stroke();
+
+            // Dashed extensions to indicate infinite length
+            ctx.save();
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(x, wireTopY);
+            ctx.lineTo(x, wireTopY - wireDashExtension);
+            ctx.moveTo(x, wireBottomY);
+            ctx.lineTo(x, wireBottomY + wireDashExtension);
+            ctx.stroke();
+            ctx.restore();
+
+            // Arrow indicating upward current
+            const arrowTipY = wireTopY + 40;
+            drawUpArrow(ctx, x, arrowTipY);
+
+            // Label for current 'I'
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('I', x - 20, arrowTipY + 4);
+        });
+
+        // 2. Draw the rectangular loop
+        ctx.beginPath();
+        ctx.rect(rectLeftX, rectTopY, rectWidth, rectHeight);
+        ctx.stroke();
+
+        // 3. Draw all dimension lines with their labels
+        // Dimension d₁
+        drawDimensionLine(ctx, rightWireX, rectTopY + 80, rectLeftX, rectTopY + 80, 'd', '1', 'above');
+        // Dimension d₂
+        drawDimensionLine(ctx, leftWireX, rectTopY + 140, rectLeftX, rectTopY + 140, 'd', '2', 'above');
+        // Dimension l₂
+        drawDimensionLine(ctx, rectLeftX, rectTopY - 30, rectRightX, rectTopY - 30, 'l', '2', 'above');
+        // Dimension l₁
+        drawDimensionLine(ctx, rectRightX + 30, rectTopY, rectRightX + 30, rectBottomY, 'l', '1', 'right');
+
+        // 4. Draw the caption at the bottom
+        ctx.font = '24px SimHei'; // Use a common Chinese font
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('习题 9-1 图', canvas.width / 2, canvas.height - 10);
+    </script>
+</body>
+</html>

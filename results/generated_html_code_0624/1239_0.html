@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style and font settings
+    const baseLineWidth = 3;
+    const thickLineWidth = 4;
+    const thinLineWidth = 2;
+    const labelFont = 'bold 24px "Times New Roman"';
+    const axisFont = 'italic 24px "Times New Roman"';
+    const symbolFont = 'italic bold 24px "Times New Roman"';
+    const angleFont = 'italic 22px "Times New Roman"';
+
+    // Define key coordinates based on a starting point and dimensions
+    const Ax = 120, Ay = 400;
+    const length_AC = 220;
+    const alpha_rad = Math.PI / 4; // 45 degrees
+    const length_BC = length_AC * Math.tan(alpha_rad);
+
+    const Cx = Ax, Cy = Ay - length_AC;
+    const Bx = Ax + length_BC, By = Cy;
+
+    // Function to draw a pin/hinge joint
+    function drawJoint(x, y) {
+        ctx.beginPath();
+        ctx.arc(x, y, 7, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.lineWidth = baseLineWidth;
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+    }
+
+    // Function to draw a wall support
+    function drawSupport(x, y, wallX) {
+        ctx.beginPath();
+        ctx.moveTo(wallX, y - 18);
+        ctx.lineTo(x, y);
+        ctx.lineTo(wallX, y + 18);
+        ctx.lineWidth = baseLineWidth;
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+    }
+    
+    // 1. Draw Coordinate Axes
+    ctx.lineWidth = thinLineWidth;
+    ctx.font = axisFont;
+    ctx.fillStyle = 'black';
+    // y-axis
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay + 50);
+    ctx.lineTo(Cx, Cy - 50);
+    ctx.stroke();
+    ctx.fillText('y', Ax - 30, Cy - 40);
+    // x-axis
+    ctx.beginPath();
+    ctx.moveTo(Ax - 50, Ay);
+    ctx.lineTo(Bx + 80, Ay);
+    ctx.stroke();
+    ctx.fillText('x', Bx + 70, Ay - 10);
+
+    // 2. Draw the Wall and Supports
+    const wallX = 80;
+    // Wall outline
+    ctx.beginPath();
+    ctx.moveTo(wallX, Ay + 30);
+    ctx.lineTo(wallX, Cy - 30);
+    ctx.stroke();
+    // Wall hatching
+    for (let y = Cy - 25; y <= Ay + 25; y += 15) {
+        ctx.beginPath();
+        ctx.moveTo(wallX, y);
+        ctx.lineTo(wallX - 20, y + 10);
+        ctx.stroke();
+    }
+    // Draw supports at A and C
+    drawSupport(Ax, Ay, wallX);
+    drawSupport(Cx, Cy, wallX);
+
+    // 3. Draw the Truss Members
+    ctx.lineWidth = thickLineWidth;
+    // Member AB (slanted beam)
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay);
+    ctx.lineTo(Bx, By);
+    ctx.stroke();
+    // Member BC (horizontal rope)
+    ctx.beginPath();
+    ctx.moveTo(Cx, Cy);
+    ctx.lineTo(Bx, By);
+    ctx.stroke();
+    
+    // 4. Draw the Joints (over the members)
+    drawJoint(Ax, Ay);
+    drawJoint(Bx, By);
+    drawJoint(Cx, Cy);
+
+    // 5. Draw the Force P
+    const P_len = 80;
+    const P_endY = By + P_len;
+    ctx.lineWidth = thickLineWidth;
+    // Force vector line
+    ctx.beginPath();
+    ctx.moveTo(Bx, By);
+    ctx.lineTo(Bx, P_endY);
+    ctx.stroke();
+    // Force arrowhead
+    ctx.beginPath();
+    ctx.moveTo(Bx, P_endY);
+    ctx.lineTo(Bx - 10, P_endY - 15);
+    ctx.moveTo(Bx, P_endY);
+    ctx.lineTo(Bx + 10, P_endY - 15);
+    ctx.stroke();
+    // Force label
+    ctx.font = symbolFont;
+    ctx.fillText('P', Bx + 20, By + P_len / 2 + 10);
+
+    // 6. Draw the Angle α
+    const arcRadius = 50;
+    const arcStartAngle = -Math.PI / 2; // -90 deg (on y-axis)
+    const arcEndAngle = -Math.PI / 2 - alpha_rad; // -135 deg (on beam AB)
+    ctx.lineWidth = thinLineWidth;
+    // Arc
+    ctx.beginPath();
+    ctx.arc(Ax, Ay, arcRadius, arcEndAngle, arcStartAngle);
+    ctx.stroke();
+
+    // Arrowheads on the arc
+    // Arrow at the start of the arc (on beam AB)
+    let startPointX = Ax + arcRadius * Math.cos(arcEndAngle);
+    let startPointY = Ay + arcRadius * Math.sin(arcEndAngle);
+    ctx.save();
+    ctx.translate(startPointX, startPointY);
+    ctx.rotate(arcEndAngle - Math.PI / 2); // Rotate to be tangential
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(12, 6);
+    ctx.stroke();
+    ctx.restore();
+
+    // Arrow at the end of the arc (on y-axis)
+    let endPointX = Ax + arcRadius * Math.cos(arcStartAngle);
+    let endPointY = Ay + arcRadius * Math.sin(arcStartAngle);
+    ctx.save();
+    ctx.translate(endPointX, endPointY);
+    ctx.rotate(arcStartAngle + Math.PI / 2); // Rotate to be tangential
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-12, 6);
+    ctx.stroke();
+    ctx.restore();
+
+    // Angle label 'α'
+    const labelAngle = (arcStartAngle + arcEndAngle) / 2;
+    const labelRadius = arcRadius * 0.8;
+    ctx.font = angleFont;
+    ctx.fillText('α', Ax + labelRadius * Math.cos(labelAngle) - 10, Ay + labelRadius * Math.sin(labelAngle) + 10);
+
+    // 7. Draw Point Labels
+    ctx.font = labelFont;
+    ctx.fillStyle = 'black';
+    ctx.fillText('A', Ax - 35, Ay + 10);
+    ctx.fillText('B', Bx + 10, By - 10);
+    ctx.fillText('C', Cx - 35, Cy + 10);
+
+</script>
+</body>
+</html>

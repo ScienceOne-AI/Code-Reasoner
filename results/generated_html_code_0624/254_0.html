@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="400" style="border:1px solid #000;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings to match the image
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = 'italic 20px "Times New Roman"';
+
+    // Center origin
+    const ox = 250;
+    const oy = 200;
+
+    // Helper function to draw an arrow
+    function drawArrow(fromx, fromy, tox, toy) {
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        
+        const headlen = 10;
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    // Helper function to draw a dashed arc
+    function dashedArc(x, y, radius, startAngle, endAngle, clockwise) {
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.arc(x, y, radius, startAngle, endAngle, clockwise);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // 1. Draw the cone
+    ctx.beginPath();
+    ctx.ellipse(ox, oy - 130, 90, 25, 0, 0, 2 * Math.PI);
+    ctx.moveTo(ox - 90, oy - 130);
+    ctx.lineTo(ox, oy);
+    ctx.lineTo(ox + 90, oy - 130);
+    ctx.stroke();
+
+    // 2. Draw the horizontal plane and vectors on it
+    // Main axis line in the horizontal plane
+    ctx.beginPath();
+    ctx.moveTo(ox - 200, oy + 50);
+    ctx.lineTo(ox + 200, oy - 50);
+    ctx.stroke();
+
+    // Vector R
+    const Rx = ox + 160, Ry = oy + 40;
+    drawArrow(ox, oy, Rx, Ry);
+    ctx.fillText('R', Rx + 10, Ry + 15);
+
+    // Vector r x J
+    const rJx = ox - 110, rJy = oy + 77.5;
+    drawArrow(ox, oy, rJx, rJy);
+    ctx.font = '20px "Times New Roman"';
+    ctx.fillText('r \u00D7 J', rJx - 70, rJy + 15);
+    ctx.font = 'italic 20px "Times New Roman"';
+
+    // 3. Draw vertical vectors and vectors on the cone
+    // Vector J (vertical)
+    const Jx = ox, Jy = oy - 100;
+    drawArrow(ox, oy, Jx, Jy);
+    ctx.fillText('J', Jx + 10, Jy + 5);
+
+    // Vector r (on the cone)
+    const rx = ox + 70, ry = oy - 98;
+    drawArrow(ox, oy, rx, ry);
+    ctx.fillText('r', rx + 10, ry + 5);
+
+    // 4. Draw angles and symbols
+    // Angle E (between J and r)
+    const angle_r = Math.atan2(ry - oy, rx - ox);
+    ctx.beginPath();
+    ctx.arc(ox, oy, 30, -Math.PI / 2, angle_r);
+    ctx.stroke();
+    ctx.fillText('E', ox + 20, oy - 35);
+
+    // Angle φ (in the horizontal plane)
+    // The angle starts from the back-left axis line
+    const angle_ref = Math.atan2(50, -200);
+    const angle_R = Math.atan2(Ry - oy, Rx - ox);
+    const angle_rJ = Math.atan2(rJy - oy, rJx - ox);
+    
+    // The arc for phi is composed of a solid part and a dashed part
+    const phi_radius = 85;
+    ctx.beginPath();
+    ctx.arc(ox, oy, phi_radius, angle_ref, angle_rJ); // Solid part of the arc
+    ctx.stroke();
+    dashedArc(ox, oy, phi_radius, angle_rJ, angle_R); // Dashed part of the arc
+    ctx.fillText('φ', ox - 35, oy + 40);
+
+    // Perpendicular symbol between R and r x J
+    const perp_radius = 25;
+    ctx.beginPath();
+    ctx.arc(ox, oy, perp_radius, angle_R, angle_rJ);
+    ctx.stroke();
+    // Dot for the right angle
+    const midAngle = (angle_R + angle_rJ) / 2;
+    ctx.beginPath();
+    ctx.arc(ox + perp_radius * Math.cos(midAngle), oy + perp_radius * Math.sin(midAngle), 2, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // 5. Add the figure caption
+    ctx.font = '20px "Times New Roman"';
+    ctx.fillText('Fig. 1.18.', ox - 40, oy + 170);
+
+</script>
+</body>
+</html>

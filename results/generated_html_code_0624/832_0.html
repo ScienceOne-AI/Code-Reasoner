@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Circular Motion Diagram</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    canvas {
+        border: 1px solid #ccc;
+        background-color: #fff;
+    }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style and global parameters ---
+const primaryColor = '#000000';
+const diskColor = '#CCCCCC';
+const diskSideColor = '#AAAAAA';
+const diskTopGradientStart = '#E0E0E0';
+const diskTopGradientEnd = '#BDBDBD';
+
+ctx.strokeStyle = primaryColor;
+ctx.fillStyle = primaryColor;
+ctx.lineWidth = 1.5;
+ctx.textBaseline = 'middle';
+
+
+// --- Helper function for drawing text with a subscript ---
+function drawTextWithSubscript(text, sub, x, y, font = '20px Times New Roman', subFont = '14px Times New Roman') {
+    ctx.font = font;
+    const textMetrics = ctx.measureText(text);
+    const textWidth = textMetrics.width;
+    
+    ctx.font = subFont;
+    const subMetrics = ctx.measureText(sub);
+    const subWidth = subMetrics.width;
+    
+    const totalWidth = textWidth + subWidth;
+    
+    // Calculate the starting x-position to center the entire label (text + subscript) at the given x.
+    const startX = x - totalWidth / 2;
+
+    // Set alignment to left for precise placement
+    ctx.textAlign = 'left';
+    
+    // Draw main text
+    ctx.font = font;
+    ctx.fillText(text, startX, y);
+
+    // Draw subscript
+    ctx.font = subFont;
+    ctx.fillText(sub, startX + textWidth, y + 4);
+
+    // Restore default text alignment
+    ctx.textAlign = 'center';
+}
+
+
+// --- Main drawing function ---
+function drawDiagram() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // --- Define geometry ---
+    const cx = canvas.width / 2;
+    const cy = 240;
+    const ellipseRx = 220;
+    const ellipseRy = 70;
+    const diskThickness = 30;
+
+    // 1. Draw the disk (turntable)
+    ctx.save();
+    ctx.lineWidth = 1;
+    // Side of the disk
+    ctx.fillStyle = diskSideColor;
+    ctx.beginPath();
+    ctx.moveTo(cx - ellipseRx, cy);
+    ctx.lineTo(cx - ellipseRx, cy + diskThickness);
+    ctx.ellipse(cx, cy + diskThickness, ellipseRx, ellipseRy, 0, Math.PI, 0);
+    ctx.lineTo(cx + ellipseRx, cy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Top surface of the disk with a gradient for a 3D effect
+    const gradient = ctx.createRadialGradient(cx, cy, 10, cx, cy, ellipseRx);
+    gradient.addColorStop(0, diskTopGradientStart);
+    gradient.addColorStop(1, diskTopGradientEnd);
+    ctx.fillStyle = gradient;
+    
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, ellipseRx, ellipseRy, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // 2. Draw the axis of rotation
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - ellipseRy - 80);
+    ctx.lineTo(cx, cy + diskThickness + ellipseRy + 40);
+    ctx.stroke();
+
+    // 3. Draw rotation arrow and the angular velocity symbol 'ω'
+    const arrowY = cy - ellipseRy - 45;
+    const arrowRadius = 40;
+    ctx.beginPath();
+    // Draw an arc behind the axis to indicate rotation
+    ctx.arc(cx, arrowY, arrowRadius, 1.25 * Math.PI, 1.75 * Math.PI, false);
+    ctx.stroke();
+
+    // Draw the arrowhead
+    const angle = 1.75 * Math.PI;
+    const headX = cx + arrowRadius * Math.cos(angle);
+    const headY = arrowY + arrowRadius * Math.sin(angle);
+    ctx.save();
+    ctx.translate(headX, headY);
+    ctx.rotate(angle + Math.PI / 2); // Rotate to be tangent to the arc
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-5, 5);
+    ctx.lineTo(5, 5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.fillText('ω', cx + arrowRadius + 25, arrowY + 5);
+
+    // 4. Draw masses, rope, and labels
+    const r1_px = 90;
+    const r2_px = 180;
+    const massRadius = 7;
+
+    const x1 = cx - r1_px;
+    const x2 = cx + r2_px;
+    const y_mass = cy;
+
+    // Draw the rope connecting the masses
+    ctx.beginPath();
+    ctx.moveTo(x1, y_mass);
+    ctx.lineTo(x2, y_mass);
+    ctx.stroke();
+    
+    // Draw the center point on the disk
+    ctx.beginPath();
+    ctx.arc(cx, y_mass, 3, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Draw mass m1
+    ctx.beginPath();
+    ctx.arc(x1, y_mass, massRadius, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Draw mass m2
+    ctx.beginPath();
+    ctx.arc(x2, y_mass, massRadius, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Add labels for masses and radii using the helper function
+    ctx.fillStyle = primaryColor;
+    
+    // Label for m1
+    drawTextWithSubscript('m', '1', x1, y_mass - 28);
+    // Label for r1
+    drawTextWithSubscript('r', '1', cx - r1_px / 2, y_mass + 25);
+    
+    // Label for m2
+    drawTextWithSubscript('m', '2', x2, y_mass - 28);
+    // Label for r2
+    drawTextWithSubscript('r', '2', cx + r2_px / 2, y_mass + 25);
+
+    // 5. Draw the caption at the bottom
+    ctx.font = '22px SimHei'; // A common font for Chinese characters
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 1-34 图', cx, canvas.height - 30);
+}
+
+// Execute the drawing function
+drawDiagram();
+</script>
+</body>
+</html>

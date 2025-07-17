@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="staticsCanvas" width="600" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('staticsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style Configuration ---
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = 'bold 20px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Helper Function to Draw Arrowheads ---
+    function drawArrowhead(fromX, fromY, toX, toY, size) {
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        ctx.save();
+        ctx.translate(toX, toY);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2.5);
+        ctx.lineTo(-size, size / 2.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Helper Function to Draw Hatched Supports ---
+    function drawHatchLines(x1, y1, x2, y2, angle, spacing, length) {
+        ctx.save();
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        const len = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+        const lineAngle = Math.atan2(y2 - y1, x2 - x1);
+
+        for (let i = 0; i <= len; i += spacing) {
+            const px = x1 + i * Math.cos(lineAngle);
+            const py = y1 + i * Math.sin(lineAngle);
+            
+            const hx1 = px + length/2 * Math.cos(lineAngle + angle);
+            const hy1 = py + length/2 * Math.sin(lineAngle + angle);
+            
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(hx1, hy1);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    // --- Define Coordinates ---
+    const scale = 100;
+    const Ax = 100, Ay = 200;
+    const Cx = Ax + 2 * scale;
+    const Cy = Ay;
+    const Bx = Cx + 1 * scale;
+    const By = Ay;
+    const Dx = Cx + 1.2 * scale;
+    const Dy = Cy - 1.2 * scale;
+
+    // --- Draw Structural Elements ---
+
+    // 1. Supports
+    // Support at A (Wall)
+    drawHatchLines(Ax - 15, Ay - 30, Ax - 15, Ay + 30, Math.PI / 4, 10, 15);
+    ctx.beginPath();
+    ctx.moveTo(Ax - 15, Ay - 15);
+    ctx.lineTo(Ax, Ay);
+    ctx.lineTo(Ax - 15, Ay + 15);
+    ctx.stroke();
+    
+    // Support at D (Ceiling)
+    drawHatchLines(Dx - 40, Dy - 15, Dx + 40, Dy - 15, -Math.PI / 4, 10, 15);
+    ctx.beginPath();
+    ctx.moveTo(Dx-15, Dy-15);
+    ctx.lineTo(Dx-8, Dy-2);
+    ctx.arc(Dx, Dy, 9, Math.PI * 0.8, Math.PI * 0.2, true); // U-shaped holder
+    ctx.lineTo(Dx+15, Dy-15);
+    ctx.stroke();
+
+    // 2. Beam and Rod
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay);
+    ctx.lineTo(Bx, By); // Beam AB
+    ctx.moveTo(Cx, Cy);
+    ctx.lineTo(Dx, Dy); // Rod CD
+    ctx.stroke();
+
+    // 3. Joints (Hinges)
+    // Pin at A (hollow with dot)
+    ctx.beginPath();
+    ctx.arc(Ax, Ay, 7, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(Ax, Ay, 2.5, 0, 2 * Math.PI);
+    ctx.fillStyle = 'black';
+    ctx.fill();
+
+    // Pin at C (solid)
+    ctx.beginPath();
+    ctx.arc(Cx, Cy, 7, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Pin at D (solid)
+    ctx.beginPath();
+    ctx.arc(Dx, Dy, 7, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // --- Draw Forces, Dimensions, and Angles ---
+
+    // 4. Force F
+    const forceLength = 80;
+    ctx.beginPath();
+    ctx.moveTo(Bx, By);
+    ctx.lineTo(Bx, By + forceLength);
+    ctx.stroke();
+    drawArrowhead(Bx, By, Bx, By + forceLength, 12);
+    
+    // 5. Dimension Lines
+    const dimY = Ay + 50;
+    const delimHeight = 8;
+    
+    // Dimension "2 m"
+    ctx.beginPath();
+    ctx.moveTo(Ax, dimY);
+    ctx.lineTo(Cx, dimY);
+    ctx.moveTo(Ax, dimY - delimHeight / 2); ctx.lineTo(Ax, dimY + delimHeight / 2);
+    ctx.moveTo(Cx, dimY - delimHeight / 2); ctx.lineTo(Cx, dimY + delimHeight / 2);
+    ctx.stroke();
+    drawArrowhead(Cx, dimY, Ax, dimY, 10);
+    drawArrowhead(Ax, dimY, Cx, dimY, 10);
+    
+    // Dimension "1 m"
+    ctx.beginPath();
+    ctx.moveTo(Cx, dimY);
+    ctx.lineTo(Bx, dimY);
+    ctx.moveTo(Bx, dimY - delimHeight / 2); ctx.lineTo(Bx, dimY + delimHeight / 2);
+    ctx.stroke();
+    drawArrowhead(Bx, dimY, Cx, dimY, 10);
+    drawArrowhead(Cx, dimY, Bx, dimY, 10);
+
+    // 6. Angle Measurement
+    const angleRadius = 45;
+    const rodAngle = Math.atan2(Dy - Cy, Dx - Cx); // Angle of Rod CD
+    const verticalAngle = Math.PI / 2; // Downward vertical
+    
+    // Vertical reference line with arrow
+    ctx.beginPath();
+    ctx.moveTo(Cx, Cy);
+    ctx.lineTo(Cx, Cy + angleRadius + 10);
+    ctx.stroke();
+    drawArrowhead(Cx, Cy + angleRadius, Cx, Cy + angleRadius + 10, 8);
+    
+    // Arc for the angle
+    ctx.beginPath();
+    ctx.arc(Cx, Cy, angleRadius, rodAngle, verticalAngle, false); // From rod to vertical
+    ctx.stroke();
+    
+    // Arrowhead on the arc
+    const arcArrowAngle = rodAngle + 0.1; // Position on arc near the start
+    const arcArrowX = Cx + angleRadius * Math.cos(arcArrowAngle);
+    const arcArrowY = Cy + angleRadius * Math.sin(arcArrowAngle);
+    const tangentAngle = arcArrowAngle + Math.PI / 2; // Tangent for CCW arc
+    drawArrowhead(arcArrowX - Math.cos(tangentAngle), arcArrowY - Math.sin(tangentAngle), arcArrowX, arcArrowY, 8);
+
+    // --- Add Labels ---
+    ctx.fillStyle = 'black';
+    // Point labels
+    ctx.fillText('A', Ax - 25, Ay);
+    ctx.fillText('B', Bx, By - 25);
+    ctx.fillText('C', Cx + 5, Cy - 20);
+    ctx.fillText('D', Dx + 20, Dy - 10);
+    // Force label
+    ctx.fillText('F', Bx + 25, By + forceLength);
+    // Dimension labels
+    ctx.fillText('2 m', (Ax + Cx) / 2, dimY + 20);
+    ctx.fillText('1 m', (Cx + Bx) / 2, dimY + 20);
+    // Angle label
+    ctx.fillText('45°', Cx + 35, Cy + 25);
+
+</script>
+</body>
+</html>

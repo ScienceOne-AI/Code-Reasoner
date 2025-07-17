@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Position vs. Time Graph</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="510" height="560"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Configuration ---
+// These dimensions are chosen to make the grid cells (1s x 0.5m) square.
+// Grid width unit: 400px / 10s = 40px/s
+// Grid height unit: 480px / (6m / 0.5m) = 480px / 12 = 40px/0.5m
+const margin = { top: 20, right: 20, bottom: 60, left: 70 };
+canvas.width = 400 + margin.left + margin.right; // 510
+canvas.height = 480 + margin.top + margin.bottom; // 560
+
+const plotWidth = canvas.width - margin.left - margin.right;
+const plotHeight = canvas.height - margin.top - margin.bottom;
+
+const xMin = 0;
+const xMax = 10;
+const yMin = 0;
+const yMax = 6;
+
+// --- Coordinate mapping functions ---
+function xToCanvas(x) {
+    return margin.left + (x - xMin) / (xMax - xMin) * plotWidth;
+}
+
+function yToCanvas(y) {
+    return margin.top + plotHeight - (y - yMin) / (yMax - yMin) * plotHeight;
+}
+
+// --- Drawing functions ---
+
+function drawGridAndBox() {
+    ctx.beginPath();
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1;
+
+    // Bounding Box
+    ctx.rect(margin.left, margin.top, plotWidth, plotHeight);
+
+    // Vertical grid lines
+    for (let i = xMin + 1; i < xMax; i += 1) {
+        const x = xToCanvas(i);
+        ctx.moveTo(x, margin.top);
+        ctx.lineTo(x, margin.top + plotHeight);
+    }
+
+    // Horizontal grid lines
+    for (let i = yMin + 0.5; i < yMax; i += 0.5) {
+        const y = yToCanvas(i);
+        ctx.moveTo(margin.left, y);
+        ctx.lineTo(margin.left + plotWidth, y);
+    }
+    ctx.stroke();
+}
+
+function drawLabels() {
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 16px Arial';
+
+    // X-axis labels and title
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('0', xToCanvas(0), yToCanvas(0) + 8);
+    ctx.fillText('5', xToCanvas(5), yToCanvas(0) + 8);
+    ctx.fillText('10', xToCanvas(10), yToCanvas(0) + 8);
+    ctx.fillText('Time (s)', xToCanvas(5), yToCanvas(0) + 30);
+
+    // Y-axis labels and title
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i <= 6; i += 1) {
+        const y = yToCanvas(i);
+        ctx.fillText(i.toFixed(1), margin.left - 8, y);
+    }
+
+    // Y-axis title
+    ctx.save();
+    ctx.translate(margin.left - 50, margin.top + plotHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Position (m)', 0, 0);
+    ctx.restore();
+}
+
+function drawCurve() {
+    ctx.beginPath();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2.5;
+
+    const dt = 0.01;
+    // Equation of motion derived from the graph: y(t) = Equilibrium + Amplitude * cos(omega*t + phase)
+    // Equilibrium = (5+3)/2 = 4.0 m
+    // Amplitude = (5-3)/2 = 1.0 m
+    // Period T = 8 s, so omega = 2*pi/8 = pi/4
+    // Starts at minimum, so it's a -cos function.
+    // y(t) = 4.0 - 1.0 * cos( (pi/4) * t )
+    
+    let t_start = 0;
+    let y_start = 4.0 - Math.cos( (Math.PI / 4) * t_start );
+    ctx.moveTo(xToCanvas(t_start), yToCanvas(y_start));
+
+    for (let t = t_start + dt; t <= 10; t += dt) {
+        const y = 4.0 - Math.cos( (Math.PI / 4) * t );
+        ctx.lineTo(xToCanvas(t), yToCanvas(y));
+    }
+    ctx.stroke();
+}
+
+// --- Main execution ---
+ctx.fillStyle = 'white';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+drawGridAndBox();
+drawLabels();
+drawCurve();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram - Streetlight Shadow</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = 2;
+ctx.font = 'italic 20px Times New Roman';
+ctx.lineCap = 'butt';
+
+// --- Define coordinates and dimensions ---
+const groundY = 380;
+const poleX = 500;
+const lampHeight_h = 280; // Corresponds to h
+const personHeight_l = 70;  // Corresponds to l
+const personX = 220;
+const lampArmOffsetX = 60; // Horizontal offset of the lamp from the pole
+const lampX = poleX - lampArmOffsetX;
+const lampY = groundY - lampHeight_h;
+const personTopY = groundY - personHeight_l;
+
+// --- Calculate shadow tip for drawing ---
+// The light ray is a line from the lamp (lampX, lampY)
+// that grazes the top of the person's head (personX, personTopY).
+const slope = (personTopY - lampY) / (personX - lampX);
+// We find where this line intersects the ground (y = groundY).
+// The line equation is y - y1 = m(x - x1).
+// Let's use the lamp as (x1, y1).
+// groundY - lampY = slope * (shadowTipX - lampX)
+const shadowTipX = lampX + (groundY - lampY) / slope;
+
+
+// --- Drawing ---
+
+// 1. Ground line
+ctx.beginPath();
+ctx.moveTo(40, groundY);
+ctx.lineTo(560, groundY);
+ctx.stroke();
+
+// 2. Streetlight pole
+// Main pole (double line for thickness)
+ctx.beginPath();
+ctx.moveTo(poleX, groundY);
+ctx.lineTo(poleX, groundY - lampHeight_h - 20);
+ctx.moveTo(poleX - 4, groundY);
+ctx.lineTo(poleX - 4, groundY - lampHeight_h - 20);
+ctx.stroke();
+
+// Top cap of pole
+ctx.beginPath();
+ctx.moveTo(poleX - 10, groundY - lampHeight_h - 20);
+ctx.lineTo(poleX + 6, groundY - lampHeight_h - 20);
+ctx.stroke();
+
+// Curved arm
+ctx.beginPath();
+ctx.moveTo(poleX - 4, groundY - lampHeight_h);
+ctx.quadraticCurveTo(poleX - 50, groundY - lampHeight_h - 20, lampX, lampY);
+ctx.stroke();
+
+// Lamp head
+ctx.beginPath();
+ctx.arc(lampX, lampY, 12, Math.PI, 0, false); // Semicircle
+ctx.moveTo(lampX - 12, lampY);
+ctx.lineTo(lampX - 12, lampY - 6);
+ctx.moveTo(lampX + 12, lampY);
+ctx.lineTo(lampX + 12, lampY - 6);
+ctx.stroke();
+
+// Fixture on the pole
+ctx.beginPath();
+ctx.arc(poleX - 2, groundY - lampHeight_h, 9, Math.PI, 0, false);
+ctx.stroke();
+
+
+// 3. Person (stick figure)
+const personHeadRadius = 5;
+const personBodyTopY = personTopY + personHeadRadius;
+// Body
+ctx.beginPath();
+ctx.moveTo(personX, groundY - 15); // Start from hips
+ctx.lineTo(personX, personBodyTopY + 5);
+// Legs
+ctx.moveTo(personX, groundY - 15);
+ctx.lineTo(personX - 8, groundY);
+ctx.moveTo(personX, groundY - 15);
+ctx.lineTo(personX + 8, groundY);
+ctx.stroke();
+// Head
+ctx.beginPath();
+ctx.arc(personX, personBodyTopY, personHeadRadius, 0, 2 * Math.PI);
+ctx.stroke();
+
+
+// 4. Light ray / Shadow line
+ctx.beginPath();
+ctx.moveTo(lampX, lampY);
+ctx.lineTo(shadowTipX, groundY);
+ctx.stroke();
+
+
+// --- Annotations ---
+
+// Height 'h'
+ctx.beginPath();
+ctx.moveTo(poleX + 40, lampY);
+ctx.lineTo(poleX + 40, groundY);
+// Ticks for h
+ctx.moveTo(poleX, lampY);
+ctx.lineTo(poleX + 40, lampY);
+ctx.moveTo(poleX - 4, groundY);
+ctx.lineTo(poleX + 40, groundY);
+ctx.stroke();
+// Arrowheads for h
+ctx.beginPath();
+ctx.moveTo(poleX + 40, lampY);
+ctx.lineTo(poleX + 35, lampY + 8);
+ctx.moveTo(poleX + 40, lampY);
+ctx.lineTo(poleX + 45, lampY + 8);
+ctx.moveTo(poleX + 40, groundY);
+ctx.lineTo(poleX + 35, groundY - 8);
+ctx.moveTo(poleX + 40, groundY);
+ctx.lineTo(poleX + 45, groundY - 8);
+ctx.stroke();
+// 'h' label
+ctx.fillText('h', poleX + 50, groundY - lampHeight_h / 2 + 5);
+
+// Height 'l'
+const l_dim_x = personX + 30;
+ctx.beginPath();
+ctx.moveTo(l_dim_x, personTopY);
+ctx.lineTo(l_dim_x, groundY);
+// Ticks for l
+ctx.moveTo(personX, personTopY);
+ctx.lineTo(l_dim_x, personTopY);
+ctx.moveTo(personX, groundY);
+ctx.lineTo(l_dim_x, groundY);
+ctx.stroke();
+// Arrowheads for l
+ctx.beginPath();
+ctx.moveTo(l_dim_x, personTopY);
+ctx.lineTo(l_dim_x - 5, personTopY + 8);
+ctx.moveTo(l_dim_x, personTopY);
+ctx.lineTo(l_dim_x + 5, personTopY + 8);
+ctx.moveTo(l_dim_x, groundY);
+ctx.lineTo(l_dim_x - 5, groundY - 8);
+ctx.moveTo(l_dim_x, groundY);
+ctx.lineTo(l_dim_x + 5, groundY - 8);
+ctx.stroke();
+// 'l' label
+ctx.fillText('l', l_dim_x + 10, groundY - personHeight_l / 2 + 5);
+
+// Velocity 'v₀'
+const vArrowY = personTopY - 10;
+// Arrow line
+ctx.beginPath();
+ctx.moveTo(personX, vArrowY);
+ctx.lineTo(personX + 70, vArrowY);
+// Arrow head
+ctx.lineTo(personX + 60, vArrowY - 5);
+ctx.moveTo(personX + 70, vArrowY);
+ctx.lineTo(personX + 60, vArrowY + 5);
+ctx.stroke();
+// 'v₀' label
+ctx.font = 'italic bold 20px Times New Roman';
+ctx.fillText('v', personX - 25, vArrowY + 6);
+ctx.font = 'italic bold 14px Times New Roman';
+ctx.fillText('0', personX - 15, vArrowY + 11);
+
+// Diagram label "习题 1-6 图"
+ctx.font = '22px "SimSun", "Songti SC"';
+ctx.fillStyle = 'black';
+ctx.textAlign = 'center';
+ctx.fillText('习题 1-6 图', 300, groundY + 45);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Pulley System</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-canvas" width="400" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration & Parameters ---
+        const groundY = 380;
+        const blockStrokeColor = '#000000';
+        const blockFillColor = '#D3D3D3';
+        const lineWidth = 2;
+
+        // Block A properties
+        const blockA_w = 80;
+        const blockA_h = 120;
+        const blockA_x = 110;
+        const blockA_y = groundY - blockA_h;
+
+        // Block B properties
+        const blockB_w = 60;
+        const blockB_h = 60;
+        const blockB_x = 230;
+        const blockB_y = groundY - blockB_h;
+
+        // Pulley and Rope properties
+        const rope1X = blockA_x + blockA_w / 2;
+        const rope2X = blockB_x + blockB_w / 2;
+        const pulleyX = (rope1X + rope2X) / 2;
+        const pulleyR = (rope2X - rope1X) / 2;
+        const pulleyY = 120;
+        const pulleyFillColor = '#808080';
+        const pulleyHolderFillColor = '#C0C0C0';
+        
+        // --- Drawing Functions ---
+
+        /**
+         * Draws the ground surface.
+         */
+        function drawGround() {
+            ctx.beginPath();
+            ctx.moveTo(40, groundY);
+            ctx.lineTo(360, groundY);
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#666';
+            ctx.stroke();
+
+            // Add texture to the ground
+            ctx.beginPath();
+            for (let i = 45; i < 360; i += 15) {
+                ctx.moveTo(i, groundY);
+                ctx.lineTo(i + Math.random() * 8 - 4, groundY + 8);
+            }
+            ctx.stroke();
+            ctx.lineWidth = lineWidth; // Reset line width
+            ctx.strokeStyle = blockStrokeColor;
+        }
+
+        /**
+         * Draws a block with a label.
+         * @param {number} x - The x-coordinate of the top-left corner.
+         * @param {number} y - The y-coordinate of the top-left corner.
+         * @param {number} w - The width of the block.
+         * @param {number} h - The height of the block.
+         * @param {string} label - The text label inside the block.
+         */
+        function drawBlock(x, y, w, h, label) {
+            ctx.fillStyle = blockFillColor;
+            ctx.strokeStyle = blockStrokeColor;
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeRect(x, y, w, h);
+
+            ctx.fillStyle = blockStrokeColor;
+            ctx.font = 'bold 30px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, x + w / 2, y + h / 2);
+        }
+        
+        /**
+         * Draws the pulley system including the wheel, holder, and rope.
+         */
+        function drawPulleySystem() {
+            // Draw the rope first so it appears behind the pulley wheel
+            ctx.beginPath();
+            ctx.moveTo(rope1X, blockA_y);
+            ctx.lineTo(rope1X, pulleyY);
+            ctx.arc(pulleyX, pulleyY, pulleyR, Math.PI, 0);
+            ctx.lineTo(rope2X, blockB_y);
+            ctx.stroke();
+
+            // Draw the pulley wheel
+            ctx.fillStyle = pulleyFillColor;
+            ctx.beginPath();
+            ctx.arc(pulleyX, pulleyY, pulleyR, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw the holder bracket inside the pulley
+            const holderWidth = 20;
+            const holderHeight = 50;
+            ctx.fillStyle = pulleyHolderFillColor;
+            ctx.fillRect(pulleyX - holderWidth / 2, pulleyY - holderHeight / 2, holderWidth, holderHeight);
+            ctx.strokeRect(pulleyX - holderWidth / 2, pulleyY - holderHeight / 2, holderWidth, holderHeight);
+        }
+
+        /**
+         * Draws the upward force F vector.
+         */
+        function drawForceF() {
+            const holderWidth = 20;
+            const holderTopY = pulleyY - 25;
+            const shaftHeight = 40;
+            const shaftTopY = holderTopY - shaftHeight;
+
+            // Shaft for the force to act on
+            ctx.fillStyle = pulleyHolderFillColor;
+            ctx.fillRect(pulleyX - holderWidth / 2, shaftTopY, holderWidth, shaftHeight);
+            ctx.strokeRect(pulleyX - holderWidth / 2, shaftTopY, holderWidth, shaftHeight);
+
+            // Force Arrow
+            const arrowStartY = shaftTopY;
+            const arrowEndY = 30;
+            const arrowHeadSize = 12;
+            ctx.beginPath();
+            ctx.moveTo(pulleyX, arrowStartY);
+            ctx.lineTo(pulleyX, arrowEndY);
+            // Arrowhead
+            ctx.moveTo(pulleyX, arrowEndY);
+            ctx.lineTo(pulleyX - arrowHeadSize / 2, arrowEndY + arrowHeadSize);
+            ctx.moveTo(pulleyX, arrowEndY);
+            ctx.lineTo(pulleyX + arrowHeadSize / 2, arrowEndY + arrowHeadSize);
+            ctx.stroke();
+
+            // Force Label 'F'
+            ctx.fillStyle = blockStrokeColor;
+            ctx.font = 'italic bold 24px Times New Roman';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('F', pulleyX + 15, arrowEndY + 5);
+        }
+        
+        /**
+         * Draws the title/label at the bottom.
+         */
+        function drawLabel() {
+            ctx.fillStyle = blockStrokeColor;
+            ctx.font = '24px "KaiTi", "SimSun", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('习题 1-29 图', canvas.width / 2, groundY + 20);
+        }
+
+        // --- Main Drawing Execution ---
+        
+        ctx.lineWidth = lineWidth;
+        ctx.strokeStyle = blockStrokeColor;
+
+        drawGround();
+        drawBlock(blockA_x, blockA_y, blockA_w, blockA_h, 'A');
+        drawBlock(blockB_x, blockB_y, blockB_w, blockB_h, 'B');
+        drawPulleySystem();
+        drawForceF();
+        drawLabel();
+
+    </script>
+</body>
+</html>

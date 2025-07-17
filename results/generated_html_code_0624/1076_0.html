@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="550" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#000';
+        ctx.fillStyle = '#000';
+        ctx.font = '22px "Times New Roman"';
+        ctx.textAlign = 'center';
+
+        // Helper function to draw a capacitor
+        function drawCapacitor(x, y, label, subscript) {
+            const plateWidth = 2;
+            const plateHeight = 30;
+            const plateSpacing = 15;
+            const wireLength = 30;
+
+            ctx.beginPath();
+            // Left wire and plate
+            ctx.moveTo(x - wireLength, y);
+            ctx.lineTo(x, y);
+            ctx.moveTo(x, y - plateHeight / 2);
+            ctx.lineTo(x, y + plateHeight / 2);
+            
+            // Right wire and plate
+            ctx.moveTo(x + plateSpacing, y - plateHeight / 2);
+            ctx.lineTo(x + plateSpacing, y + plateHeight / 2);
+            ctx.moveTo(x + plateSpacing, y);
+            ctx.lineTo(x + plateSpacing + wireLength, y);
+            ctx.stroke();
+
+            // Label
+            ctx.font = 'italic 22px "Times New Roman"';
+            ctx.fillText(label, x + plateSpacing / 2, y - 20);
+            ctx.font = '16px "Times New Roman"';
+            ctx.fillText(subscript, x + plateSpacing / 2 + 12, y - 15);
+            ctx.font = '22px "Times New Roman"'; // Reset font
+        }
+
+        // --- Main Drawing ---
+
+        // Capacitors C1, C2, C3 are on a central line
+        const y_cap = 250;
+        const x_c1 = 150;
+        const x_c2 = 270;
+        const x_c3 = 390;
+
+        drawCapacitor(x_c1, y_cap, 'C', '1');
+        drawCapacitor(x_c2, y_cap, 'C', '2');
+        drawCapacitor(x_c3, y_cap, 'C', '3');
+
+        // Connect C1, C2, C3 in series
+        ctx.beginPath();
+        ctx.moveTo(x_c1 + 17, y_cap);
+        ctx.lineTo(x_c2 - 30, y_cap);
+        ctx.moveTo(x_c2 + 17, y_cap);
+        ctx.lineTo(x_c3 - 30, y_cap);
+        ctx.stroke();
+        
+        // Resistor R and switch k4
+        const x_R_branch = 80;
+        const y_R_top = 180;
+        const y_R_bottom = 220;
+        ctx.beginPath();
+        // Resistor
+        ctx.rect(x_R_branch - 10, y_R_top, 20, y_R_bottom - y_R_top);
+        ctx.stroke();
+        ctx.fillText('R', x_R_branch - 25, y_R_top + 25);
+        // Wires for R branch
+        ctx.beginPath();
+        ctx.moveTo(x_R_branch, y_R_bottom);
+        ctx.lineTo(x_R_branch, y_cap);
+        ctx.lineTo(x_c1 - 30, y_cap);
+        const k4_y = 130;
+        ctx.moveTo(x_R_branch, y_R_top);
+        ctx.lineTo(x_R_branch, k4_y);
+        ctx.stroke();
+        // Switch k4
+        ctx.beginPath();
+        ctx.arc(x_R_branch, k4_y, 4, 0, 2 * Math.PI);
+        ctx.moveTo(x_R_branch, k4_y);
+        ctx.lineTo(x_R_branch + 30, k4_y - 20);
+        ctx.stroke();
+        ctx.fillText('k', x_R_branch + 20, k4_y + 10);
+        ctx.font = '16px "Times New Roman"';
+        ctx.fillText('4', x_R_branch + 30, k4_y + 15);
+        ctx.font = '22px "Times New Roman"';
+
+        // Top horizontal wire
+        const y_top_wire = 100;
+        ctx.beginPath();
+        ctx.moveTo(x_R_branch, k4_y);
+        ctx.lineTo(x_R_branch, y_top_wire);
+        ctx.lineTo(x_c3 + 30 + 50, y_top_wire); // x=470
+        ctx.stroke();
+
+        // Switch k3
+        const x_k3_branch = 210;
+        ctx.beginPath();
+        ctx.moveTo(x_k3_branch, y_top_wire);
+        const k3_y = 170;
+        ctx.lineTo(x_k3_branch, k3_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x_k3_branch, k3_y, 4, 0, 2 * Math.PI);
+        ctx.moveTo(x_k3_branch, k3_y);
+        ctx.lineTo(x_k3_branch + 25, k3_y - 25);
+        ctx.stroke();
+        ctx.fillText('k', x_k3_branch + 25, k3_y + 5);
+        ctx.font = '16px "Times New Roman"';
+        ctx.fillText('3', x_k3_branch + 35, k3_y + 10);
+        ctx.font = '22px "Times New Roman"';
+        ctx.beginPath();
+        ctx.moveTo(x_k3_branch, y_cap);
+        ctx.lineTo(x_c1 + 17, y_cap); // connect to node between C1 and C2
+        ctx.stroke();
+        
+        // Right side connection
+        const x_right_wire = x_c3 + 30 + 50; // x=470
+        ctx.beginPath();
+        ctx.moveTo(x_c3 + 17, y_cap);
+        ctx.lineTo(x_right_wire, y_cap);
+        ctx.lineTo(x_right_wire, y_top_wire);
+        ctx.stroke();
+
+        // Battery and bottom connections
+        const y_batt = 420;
+        const x_batt_center = 280;
+        // Battery symbol
+        ctx.beginPath();
+        ctx.moveTo(x_batt_center - 15, y_batt - 20); ctx.lineTo(x_batt_center - 15, y_batt + 20); // Long plate
+        ctx.moveTo(x_batt_center - 5, y_batt - 10); ctx.lineTo(x_batt_center - 5, y_batt + 10);   // Short plate
+        ctx.moveTo(x_batt_center + 5, y_batt - 20); ctx.lineTo(x_batt_center + 5, y_batt + 20);  // Long plate
+        ctx.moveTo(x_batt_center + 15, y_batt - 10); ctx.lineTo(x_batt_center + 15, y_batt + 10);  // Short plate
+        ctx.stroke();
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('𝓔', x_batt_center, y_batt + 45);
+        ctx.font = '22px "Times New Roman"';
+
+        // Connection from C1 bottom to battery negative
+        const y_bottom_wire = 350;
+        ctx.beginPath();
+        ctx.moveTo(x_c1 - 30, y_cap); // Left of C1
+        ctx.lineTo(x_c1 - 30, y_bottom_wire);
+        ctx.lineTo(x_batt_center - 15, y_bottom_wire); // to battery neg terminal
+        ctx.lineTo(x_batt_center - 15, y_batt);
+        ctx.stroke();
+
+        // Switch k2
+        const k2_x = 240;
+        const k2_y = 350;
+        ctx.beginPath();
+        ctx.moveTo(x_c2 - 30, y_cap); // connect to node between C1 and C2
+        ctx.lineTo(x_c2 - 30, k2_y); // to k2
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x_c2 - 30, k2_y, 4, 0, 2 * Math.PI); // Hinge
+        ctx.moveTo(x_c2 - 30, k2_y);
+        ctx.lineTo(x_c2 - 30 - 30, k2_y + 10);
+        ctx.stroke();
+        ctx.fillText('k', x_c2 - 30 - 30, k2_y - 5);
+        ctx.font = '16px "Times New Roman"';
+        ctx.fillText('2', x_c2 - 30 - 20, k2_y);
+        ctx.font = '22px "Times New Roman"';
+
+        // Switch k1 and connection to battery positive
+        const k1_y = 380;
+        ctx.beginPath();
+        ctx.moveTo(x_right_wire, y_cap);
+        ctx.lineTo(x_right_wire, k1_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x_right_wire, k1_y, 4, 0, 2*Math.PI);
+        ctx.moveTo(x_right_wire, k1_y);
+        ctx.lineTo(x_right_wire - 30, k1_y + 20);
+        ctx.stroke();
+        ctx.fillText('k', x_right_wire - 20, k1_y + 35);
+        ctx.font = '16px "Times New Roman"';
+        ctx.fillText('1', x_right_wire - 10, k1_y + 40);
+        ctx.font = '22px "Times New Roman"';
+        ctx.beginPath();
+        ctx.moveTo(x_batt_center + 15, y_batt);
+        ctx.lineTo(x_batt_center + 15, k1_y + 30);
+        ctx.lineTo(x_right_wire-30, k1_y + 20); // Connect to k1
+        ctx.stroke();
+
+
+        // Caption
+        ctx.font = '24px "SimSun"';
+        ctx.fillText('电图 4.33.1', 275, 520);
+
+    </script>
+</body>
+</html>

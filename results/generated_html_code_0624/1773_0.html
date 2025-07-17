@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Thermodynamics Process Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="350"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const config = {
+        boxWidth: 220,
+        boxHeight: 140,
+        gap: 160,
+        yBox: 80,
+        baseFontSize: 30,
+        superFontSize: 20,
+        figFontSize: 24,
+        fontFamily: 'Arial',
+        superYOffset: 12,
+        lineHeight: 45,
+        lineWidth: 2,
+        arrowheadLength: 15,
+        arrowheadWidth: 8,
+    };
+
+    // --- Calculate dynamic positions ---
+    const xBox1 = (canvas.width - config.boxWidth * 2 - config.gap) / 2;
+    const xBox2 = xBox1 + config.boxWidth + config.gap;
+    const yArrow = config.yBox + config.boxHeight / 2;
+    const xArrowStart = xBox1 + config.boxWidth;
+    const xArrowEnd = xBox2;
+    const xTextLeft = xBox1 + 30;
+    const xTextRight = xBox2 + 30;
+
+    // Y positions for text lines inside the boxes
+    const yLine1 = config.yBox + config.lineHeight - 5;
+    const yLine2 = yLine1 + config.lineHeight;
+    const yLine3 = yLine2 + config.lineHeight;
+
+    /**
+     * Draws text with potential superscripts and styles.
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {Array<Object>} parts - An array of text parts {text, type, style}.
+     * @param {number} x - The starting x-coordinate.
+     * @param {number} y - The baseline y-coordinate for normal text.
+     */
+    function drawFormattedText(ctx, parts, x, y) {
+        let currentX = x;
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+
+        parts.forEach(part => {
+            const fontStyle = part.style === 'italic' ? 'italic ' : '';
+            const isSuper = part.type === 'super';
+            const fontSize = isSuper ? config.superFontSize : config.baseFontSize;
+            
+            ctx.font = fontStyle + fontSize + 'px ' + config.fontFamily;
+            const yPos = isSuper ? y - config.superYOffset : y;
+            
+            ctx.fillText(part.text, currentX, yPos);
+            currentX += ctx.measureText(part.text).width;
+        });
+    }
+
+    /**
+     * Draws a line with a filled arrowhead.
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {number} fromX - Starting x-coordinate of the line.
+     * @param {number} fromY - Starting y-coordinate of the line.
+     * @param {number} toX - Ending x-coordinate of the line (tip of the arrow).
+     * @param {number} toY - Ending y-coordinate of the line (tip of the arrow).
+     */
+    function drawArrow(ctx, fromX, fromY, toX, toY) {
+        // Line
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+
+        // Arrowhead
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - config.arrowheadLength, toY - config.arrowheadWidth);
+        ctx.lineTo(toX - config.arrowheadLength, toY + config.arrowheadWidth);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    // --- Main Drawing Logic ---
+
+    // Set global styles
+    ctx.lineWidth = config.lineWidth;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // -- Draw Left Box and its contents --
+    ctx.strokeRect(xBox1, config.yBox, config.boxWidth, config.boxHeight);
+    
+    const text1_line1 = [
+        { text: '4.7 × 10', type: 'base' },
+        { text: '4', type: 'super' },
+        { text: ' cm', type: 'base' },
+        { text: '3', type: 'super' }
+    ];
+    const text1_line2 = [
+        { text: '2.6 × 10', type: 'base' },
+        { text: '5', type: 'super' },
+        { text: ' Pa', type: 'base' }
+    ];
+    const text1_line3 = [{ text: '173°C', type: 'base' }];
+
+    drawFormattedText(ctx, text1_line1, xTextLeft, yLine1);
+    drawFormattedText(ctx, text1_line2, xTextLeft, yLine2);
+    drawFormattedText(ctx, text1_line3, xTextLeft, yLine3);
+
+    // -- Draw Right Box and its contents --
+    ctx.strokeRect(xBox2, config.yBox, config.boxWidth, config.boxHeight);
+
+    const text2_line1 = [
+        { text: '4.7 × 10', type: 'base' },
+        { text: '4', type: 'super' },
+        { text: ' cm', type: 'base' },
+        { text: '3', type: 'super' }
+    ];
+    const text2_line2 = [{ text: 'p', type: 'base', style: 'italic' }];
+    const text2_line3 = [{ text: 'T', type: 'base', style: 'italic' }];
+
+    drawFormattedText(ctx, text2_line1, xTextRight, yLine1);
+    drawFormattedText(ctx, text2_line2, xTextRight, yLine2);
+    drawFormattedText(ctx, text2_line3, xTextRight, yLine3);
+
+    // -- Draw Arrow and its label --
+    drawArrow(ctx, xArrowStart, yArrow, xArrowEnd, yArrow);
+    
+    ctx.font = config.baseFontSize + 'px ' + config.fontFamily;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('2900 J', (xArrowStart + xArrowEnd) / 2, yArrow - 10);
+
+    // -- Draw Figure Label --
+    ctx.font = `bold ${config.figFontSize}px ${config.fontFamily}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const yFigLabel = config.yBox + config.boxHeight + 40;
+    ctx.fillText('Fig. 2.1', canvas.width / 2, yFigLabel);
+
+</script>
+</body>
+</html>

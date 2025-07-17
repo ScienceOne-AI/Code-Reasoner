@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram: Spring on a Cone</title>
+</head>
+<body>
+    <canvas id="physics-canvas" width="500" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Geometric parameters
+        const cx = canvas.width / 2;
+        const cy = 100;
+        const theta = Math.PI / 8; // Half-angle of the cone (22.5 degrees)
+        const coneDrawHeight = 300;
+        const coneBaseRadius = coneDrawHeight * Math.tan(theta);
+        const baseY = cy + coneDrawHeight;
+
+        // --- Drawing functions ---
+
+        // Function to draw the spring as a series of coils
+        function drawSpring(ctx, x1, y1, x2, y2, coils, amplitude) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+            
+            const step = length / coils;
+            
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            for (let i = 0; i < coils; i++) {
+                const x_mid = (i + 0.5) * step;
+                const y_mid = amplitude * ((i % 2 === 0) ? -1 : 1);
+                const x_end = (i + 1) * step;
+                ctx.quadraticCurveTo(x_mid, y_mid, x_end, 0);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+
+        // 1. Draw Axis of Symmetry
+        const axisGap = 48; // Gap for angle markings
+        // Segment above cone (solid)
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 60);
+        ctx.lineTo(cx, cy);
+        ctx.stroke();
+        // Dashed segment inside cone (leaving a gap near apex)
+        ctx.save();
+        ctx.setLineDash([8, 4]); // Dash-space pattern
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + axisGap);
+        ctx.lineTo(cx, baseY);
+        ctx.stroke();
+        ctx.restore();
+        // Segment below cone (solid)
+        ctx.beginPath();
+        ctx.moveTo(cx, baseY);
+        ctx.lineTo(cx, baseY + 60);
+        ctx.stroke();
+
+        // 2. Draw Cone
+        // Slopes
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx - coneBaseRadius, baseY);
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + coneBaseRadius, baseY);
+        ctx.stroke();
+        // Base
+        const ellipseRy = 40;
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.ellipse(cx, baseY, coneBaseRadius, ellipseRy, 0, Math.PI, 2 * Math.PI);
+        ctx.stroke();
+        ctx.restore();
+        ctx.beginPath();
+        ctx.ellipse(cx, baseY, coneBaseRadius, ellipseRy, 0, 0, Math.PI);
+        ctx.stroke();
+
+        // 3. Draw Angle Markings in the gap
+        const arcRadius = 35;
+        ctx.beginPath();
+        ctx.arc(cx, cy, arcRadius, Math.PI / 2 - theta, Math.PI / 2);
+        ctx.stroke();
+        ctx.font = '22px "Times New Roman"';
+        ctx.fillText('θ', cx + 22, cy + 22);
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, arcRadius, Math.PI / 2, Math.PI / 2 + theta);
+        ctx.stroke();
+        ctx.fillText('θ', cx - 22, cy + 22);
+
+        // 4. Draw Spring System
+        // The fixed support point indicator
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + 25, cy - 15);
+        ctx.stroke();
+        
+        // Define spring geometry on the cone's surface
+        const springStartDist = 20;
+        const springEndDist = 220;
+        const springStartX = cx + springStartDist * Math.sin(theta);
+        const springStartY = cy + springStartDist * Math.cos(theta);
+        const springEndX = cx + springEndDist * Math.sin(theta);
+        const springEndY = cy + springEndDist * Math.cos(theta);
+        
+        // Connector from support to spring start
+        ctx.beginPath();
+        ctx.moveTo(cx + 25, cy - 15);
+        ctx.lineTo(springStartX, springStartY);
+        ctx.stroke();
+
+        // Draw the spring
+        drawSpring(ctx, springStartX, springStartY, springEndX, springEndY, 8, 10);
+
+        // Define mass properties and position
+        const massRadius = 18;
+        const connectorLength = 5;
+        const massDistFromApex = springEndDist + connectorLength + massRadius;
+        const massCenterX = cx + massDistFromApex * Math.sin(theta);
+        const massCenterY = cy + massDistFromApex * Math.cos(theta);
+
+        // Connector from spring end to mass
+        ctx.beginPath();
+        ctx.moveTo(springEndX, springEndY);
+        ctx.lineTo(massCenterX - massRadius * Math.sin(theta), massCenterY - massRadius * Math.cos(theta));
+        ctx.stroke();
+        
+        // Draw the mass
+        ctx.beginPath();
+        ctx.arc(massCenterX, massCenterY, massRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // Label 'm' inside the mass
+        ctx.font = 'italic 20px "Times New Roman"';
+        ctx.fillText('m', massCenterX, massCenterY + 2);
+
+        // 5. Draw Caption
+        ctx.font = '24px "KaiTi"'; // Use a Chinese font for the caption
+        ctx.fillText('习题 1-36 图', cx, canvas.height - 30);
+    </script>
+</body>
+</html>

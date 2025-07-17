@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="520"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrowhead at a point, pointing in a given direction (angle)
+        function drawArrowhead(ctx, x, y, angle, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0); // Tip of the arrow
+            ctx.lineTo(-size, -size / 2.5);
+            ctx.lineTo(-size, size / 2.5);
+            ctx.closePath();
+            ctx.fillStyle = 'black';
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+
+        const cx = 250;
+        const cy = 240; // Center Y, shifted up to make space for caption
+        const R = 150;
+        const annulusHalfWidth = 20;
+
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.fillStyle = 'black';
+
+        // 1. Draw the Annulus (two solid circles)
+        ctx.beginPath();
+        ctx.arc(cx, cy, R + annulusHalfWidth, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, R - annulusHalfWidth, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 2. Draw the central dashed path
+        ctx.beginPath();
+        ctx.setLineDash([10, 8]);
+        ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 3. Draw the dashed radius line 'R'
+        const r_angle = 220 * Math.PI / 180; // Angle for the radius line
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + R * Math.cos(r_angle), cy + R * Math.sin(r_angle));
+        ctx.stroke();
+
+        // Reset to solid lines for subsequent drawings
+        ctx.setLineDash([]);
+
+        // Label for R
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('R', cx + R * 0.55 * Math.cos(r_angle), cy + R * 0.55 * Math.sin(r_angle) + 10);
+
+        // 4. Draw arrows on the path to show direction
+        const arrow1_angle = 135 * Math.PI / 180;
+        const arrow1_x = cx + R * Math.cos(arrow1_angle);
+        const arrow1_y = cy + R * Math.sin(arrow1_angle);
+        drawArrowhead(ctx, arrow1_x, arrow1_y, arrow1_angle + Math.PI / 2, 12);
+
+        const arrow2_angle = 245 * Math.PI / 180;
+        const arrow2_x = cx + R * Math.cos(arrow2_angle);
+        const arrow2_y = cy + R * Math.sin(arrow2_angle);
+        drawArrowhead(ctx, arrow2_x, arrow2_y, arrow2_angle + Math.PI / 2, 12);
+
+        // 5. Draw Point P and the divergence angle structure
+        const p_angle_rad = -25 * Math.PI / 180; // Angle for point P
+        const px = cx + R * Math.cos(p_angle_rad);
+        const py = cy + R * Math.sin(p_angle_rad);
+
+        // Draw point P and its label
+        ctx.beginPath();
+        ctx.arc(px, py, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.fillText('P', px + 18, py + 10);
+
+        // Define angle properties based on visual representation (radial bisector)
+        const alpha0_visual_deg = 18;
+        const alpha0_visual_rad = alpha0_visual_deg * Math.PI / 180;
+        const v_line_len = 45;
+        const inward_bisector_angle = p_angle_rad + Math.PI; // Points towards center
+
+        const line1_angle = inward_bisector_angle - alpha0_visual_rad;
+        const line2_angle = inward_bisector_angle + alpha0_visual_rad;
+
+        // Draw the V-shape with solid lines
+        ctx.beginPath();
+        ctx.moveTo(px + v_line_len * Math.cos(line1_angle), py + v_line_len * Math.sin(line1_angle));
+        ctx.lineTo(px, py);
+        ctx.lineTo(px + v_line_len * Math.cos(line2_angle), py + v_line_len * Math.sin(line2_angle));
+        ctx.stroke();
+
+        // Draw the dashed radial bisector inside the V
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(px + 25 * Math.cos(inward_bisector_angle), py + 25 * Math.sin(inward_bisector_angle));
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw the angle arc
+        const arc_radius = 20;
+        ctx.beginPath();
+        ctx.arc(px, py, arc_radius, line1_angle, line2_angle);
+        ctx.stroke();
+
+        // Add label 2*alpha_0 for the angle
+        const label_angle = inward_bisector_angle;
+        const label_radius = arc_radius + 15;
+        const lx = px + label_radius * Math.cos(label_angle);
+        const ly = py + label_radius * Math.sin(label_angle);
+        
+        ctx.font = 'italic 20px "Times New Roman"';
+        ctx.textAlign = 'right';
+        ctx.fillText('2α', lx + 8, ly);
+        ctx.font = 'italic 14px "Times New Roman"';
+        ctx.textAlign = 'left';
+        ctx.fillText('0', lx + 8, ly + 6);
+
+
+        // 6. Draw the caption
+        ctx.fillStyle = 'black';
+        ctx.font = '28px "Songti SC", "SimSun"';
+        ctx.textAlign = 'center';
+        ctx.fillText('电图 2.16.1', cx, cy + R + 60);
+
+    </script>
+</body>
+</html>

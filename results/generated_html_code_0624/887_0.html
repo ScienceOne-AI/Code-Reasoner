@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram of a Current-Carrying Wire</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="500"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Parameters
+  const cx = 300;
+  const cy = 270;
+  const R = 120;
+  const lineWidth = 2;
+  
+  // Angle definitions in radians
+  const startAngle = 210 * Math.PI / 180; // 7π/6
+  const endAngle = 330 * Math.PI / 180;   // 11π/6
+  const topAngle = 270 * Math.PI / 180;   // 3π/2
+
+  // Endpoints of the arc
+  const x_start = cx + R * Math.cos(startAngle);
+  const y_pos = cy + R * Math.sin(startAngle); // y is the same for start and end
+  const x_end = cx + R * Math.cos(endAngle);
+
+  // Helper function to draw an arrow from a point to another
+  function drawArrow(ctx, fromx, fromy, tox, toy, armAngle, headlen) {
+    const angle = Math.atan2(toy - fromy, tox - fromx);
+    ctx.save();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = lineWidth;
+    ctx.beginPath();
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - armAngle), toy - headlen * Math.sin(angle - armAngle));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + armAngle), toy - headlen * Math.sin(angle + armAngle));
+    ctx.stroke();
+    ctx.restore();
+  }
+  
+  // General style
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+
+  // --- Start Drawing ---
+
+  // 1. Dashed Lines
+  ctx.setLineDash([5, 5]);
+  ctx.lineWidth = 1;
+
+  // Dashed part of the circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, endAngle, startAngle, true); // From 330 to 210 degrees clockwise
+  ctx.stroke();
+
+  // Dashed vertical line
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx, cy - R);
+  ctx.stroke();
+
+  // Dashed radii for angles
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(x_start, y_pos);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(x_end, y_pos);
+  ctx.stroke();
+  
+  // Dashed radius for R label (as seen in crops)
+  const r_label_angle = 195 * Math.PI / 180;
+  const r_label_end_x = cx + R * Math.cos(r_label_angle);
+  const r_label_end_y = cy + R * Math.sin(r_label_angle);
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(r_label_end_x, r_label_end_y);
+  ctx.stroke();
+
+  // 2. Solid Lines (The wire)
+  ctx.setLineDash([]);
+  ctx.lineWidth = lineWidth;
+
+  // Circular arc part of the wire
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, startAngle, endAngle, false);
+  ctx.stroke();
+  
+  // Left straight wire
+  const left_wire_start_x = x_start - 150;
+  ctx.beginPath();
+  ctx.moveTo(left_wire_start_x, y_pos);
+  ctx.lineTo(x_start, y_pos);
+  ctx.stroke();
+
+  // Right straight wire
+  const right_wire_end_x = x_end + 150;
+  ctx.beginPath();
+  ctx.moveTo(x_end, y_pos);
+  ctx.lineTo(right_wire_end_x, y_pos);
+  ctx.stroke();
+
+  // 3. Arrows for current
+  // Arrow on left wire
+  drawArrow(ctx, x_start - 85, y_pos, x_start - 75, y_pos, Math.PI / 6, 12);
+  // Arrow on right wire
+  drawArrow(ctx, x_end + 75, y_pos, x_end + 85, y_pos, Math.PI / 6, 12);
+  // Arrow on arc
+  const arrow_arc_x = cx;
+  const arrow_arc_y = cy - R;
+  drawArrow(ctx, arrow_arc_x - 5, arrow_arc_y, arrow_arc_x + 5, arrow_arc_y, Math.PI / 6, 10);
+  
+  // 4. Labels and Angles
+  ctx.font = 'italic 24px Times New Roman';
+  
+  // I labels
+  ctx.fillText('I', x_start - 120, y_pos - 15);
+  ctx.fillText('I', x_end + 100, y_pos - 15);
+
+  // O label
+  ctx.fillText('O', cx + 8, cy + 10);
+  
+  // R label
+  ctx.fillText('R', cx + R * 0.5 * Math.cos(r_label_angle) - 10, cy + R * 0.5 * Math.sin(r_label_angle) + 5);
+
+  // Angle markings
+  ctx.font = '20px Times New Roman';
+  const angle_arc_radius = 25;
+  
+  // Left 60 degree arc
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, angle_arc_radius, topAngle, startAngle, true); // from 270 to 210 clockwise
+  ctx.stroke();
+  
+  // Right 60 degree arc
+  ctx.beginPath();
+  ctx.arc(cx, cy, angle_arc_radius, topAngle, endAngle, false); // from 270 to 330 counter-clockwise
+  ctx.stroke();
+  
+  // Angle text
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const left_angle_text_angle = (topAngle + startAngle) / 2;
+  ctx.fillText('60°', cx + (angle_arc_radius + 20) * Math.cos(left_angle_text_angle), 
+                     cy + (angle_arc_radius + 20) * Math.sin(left_angle_text_angle));
+
+  const right_angle_text_angle = (topAngle + endAngle) / 2;
+  ctx.fillText('60°', cx + (angle_arc_radius + 20) * Math.cos(right_angle_text_angle), 
+                     cy + (angle_arc_radius + 20) * Math.sin(right_angle_text_angle));
+                     
+  // Caption
+  ctx.font = '22px SimSun';
+  ctx.fillText('习题 8-12 图', canvas.width / 2, canvas.height - 30);
+
+</script>
+</body>
+</html>

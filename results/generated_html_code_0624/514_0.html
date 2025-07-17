@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram: Block, Spring, and Friction</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f8f9fa;
+  }
+  canvas {
+    border: 1px solid #dee2e6;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="550"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Style and Color Constants ---
+  const platformColor = '#3b5998';
+  const boxColor = '#FFA500';
+  const springColor = 'black';
+  const textColor = 'black';
+  const velocityArrowColor = '#3b5998';
+
+  // --- Geometry and Scale Constants ---
+  const yTopPlatform = 200;
+  const yBottomPlatform = 450;
+  const platformHeight = 20;
+  const boxSize = 60;
+  const wallWidth = 30;
+  const springRadiusY = 20; // Vertical radius for the elliptical spring coils
+
+  // Scale: Let 600 mm = 400 pixels
+  const scale = 400 / 600;
+  const dist_A_to_spring_px = 600 * scale; // 400px
+  const dist_compression_px = 120 * scale; // 80px
+
+  // X-coordinates based on scale
+  const xA = 100;
+  const xSpringEquilibrium = xA + dist_A_to_spring_px; // 500
+  const springUncompressedLength = 200;
+  const xWall = xSpringEquilibrium + springUncompressedLength; // 700
+  const xPlatformStart = 50;
+  const xPlatformEnd = xWall + wallWidth;
+
+  const xB = xSpringEquilibrium; // Position of the box's left face when it first touches the spring
+  const xB_final = xSpringEquilibrium + dist_compression_px; // 580. Final position of the box's left face.
+
+  // --- Drawing Helper Functions ---
+
+  /**
+   * Draws a platform and a wall at its right end.
+   */
+  function drawPlatformAndWall(y, x_platform_end, x_wall) {
+    ctx.fillStyle = platformColor;
+    // Platform
+    ctx.fillRect(xPlatformStart, y, x_platform_end - xPlatformStart, platformHeight);
+    // Wall
+    ctx.fillRect(x_wall, y - 150, wallWidth, 150 + platformHeight);
+  }
+
+  /**
+   * Draws the orange box.
+   */
+  function drawBox(x_left, y_platform) {
+    ctx.fillStyle = boxColor;
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.fillRect(x_left, y_platform - boxSize, boxSize, boxSize);
+    ctx.strokeRect(x_left, y_platform - boxSize, boxSize, boxSize);
+  }
+
+  /**
+   * Draws the spring with elliptical coils.
+   */
+  function drawSpring(x_start, x_end, y_center, num_coils, radiusY) {
+    ctx.strokeStyle = springColor;
+    ctx.lineWidth = 2;
+    const length = x_end - x_start;
+    if (length <= 0) return;
+    const coil_width = length / num_coils;
+    const radiusX = coil_width / 2;
+
+    // Draw top arcs
+    ctx.beginPath();
+    for (let i = 0; i < num_coils; i++) {
+        const mid_x = x_start + i * coil_width + radiusX;
+        ctx.ellipse(mid_x, y_center, radiusX, radiusY, 0, Math.PI, 0, false);
+    }
+    ctx.stroke();
+
+    // Draw bottom line to complete the spring visual
+    ctx.beginPath();
+    ctx.moveTo(x_start, y_center);
+    ctx.lineTo(x_end, y_center);
+    ctx.stroke();
+  }
+
+  /**
+   * Draws a dimension line with vertical ticks at the ends.
+   */
+  function drawDimensionLine(x1, x2, y, label) {
+    ctx.strokeStyle = textColor;
+    ctx.fillStyle = textColor;
+    ctx.lineWidth = 1;
+    const tickHeight = 10;
+
+    // Main horizontal line
+    ctx.beginPath();
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x2, y);
+    ctx.stroke();
+
+    // Left tick
+    ctx.beginPath();
+    ctx.moveTo(x1, y - tickHeight / 2);
+    ctx.lineTo(x1, y + tickHeight / 2);
+    ctx.stroke();
+
+    // Right tick
+    ctx.beginPath();
+    ctx.moveTo(x2, y - tickHeight / 2);
+    ctx.lineTo(x2, y + tickHeight / 2);
+    ctx.stroke();
+
+    // Text label
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, (x1 + x2) / 2, y - 8);
+    ctx.textAlign = 'start'; // Reset alignment for other text
+  }
+
+  // --- Main Drawing ---
+
+  // === TOP DIAGRAM: Initial State ===
+  const yTopCenterline = yTopPlatform + platformHeight / 2;
+  drawPlatformAndWall(yTopPlatform, xPlatformEnd, xWall);
+  drawBox(xA, yTopPlatform);
+
+  // Uncompressed Spring
+  drawSpring(xSpringEquilibrium, xWall, yTopCenterline, 8, springRadiusY);
+
+  // Dashed line for equilibrium position
+  ctx.beginPath();
+  ctx.setLineDash([5, 5]);
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 1;
+  ctx.moveTo(xSpringEquilibrium, yTopPlatform - boxSize - 10);
+  ctx.lineTo(xSpringEquilibrium, yTopPlatform);
+  ctx.stroke();
+  ctx.setLineDash([]); // Reset to solid line
+
+  // Velocity arrow and text
+  const arrowY = yTopPlatform - boxSize - 30;
+  ctx.strokeStyle = velocityArrowColor;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(xA, arrowY);
+  ctx.lineTo(xA + 120, arrowY);
+  ctx.lineTo(xA + 110, arrowY - 5);
+  ctx.moveTo(xA + 120, arrowY);
+  ctx.lineTo(xA + 110, arrowY + 5);
+  ctx.stroke();
+
+  ctx.fillStyle = textColor;
+  ctx.font = 'bold 18px Arial';
+  ctx.fillText('v = 3.0 ms⁻¹', xA, arrowY - 15);
+
+  // Dimension line for 600 mm
+  drawDimensionLine(xA, xSpringEquilibrium, yTopPlatform + 35, '600 mm');
+
+  // Label 'A'
+  ctx.font = 'bold 16px Arial';
+  ctx.fillText('A', xA, yTopPlatform + 55);
+
+
+  // === BOTTOM DIAGRAM: Final State ===
+  const yBottomCenterline = yBottomPlatform + platformHeight / 2;
+  drawPlatformAndWall(yBottomPlatform, xPlatformEnd, xWall);
+
+  // Box in final position
+  const xBoxFinalRight = xB_final + boxSize;
+  drawBox(xB_final, yBottomPlatform);
+
+  // Compressed Spring
+  drawSpring(xBoxFinalRight, xWall, yBottomCenterline, 8, springRadiusY);
+
+  // Velocity text (v=0)
+  ctx.fillStyle = textColor;
+  ctx.font = '18px Arial';
+  ctx.fillText('v = 0', xB_final + 10, yBottomPlatform - boxSize - 15);
+
+  // Dimension lines
+  drawDimensionLine(xA, xSpringEquilibrium, yBottomPlatform + 35, '600 mm');
+  drawDimensionLine(xSpringEquilibrium, xB_final, yBottomPlatform + 55, '120 mm');
+  
+  // Vertical helper lines for dimensioning
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'black';
+  ctx.beginPath();
+  ctx.moveTo(xSpringEquilibrium, yBottomPlatform);
+  ctx.lineTo(xSpringEquilibrium, yBottomPlatform + 55);
+  ctx.stroke();
+
+  // Labels 'A' and 'B'
+  ctx.font = 'bold 16px Arial';
+  ctx.fillText('A', xA, yBottomPlatform + 75);
+  ctx.fillText('B', xB_final, yBottomPlatform + 75);
+
+</script>
+</body>
+</html>

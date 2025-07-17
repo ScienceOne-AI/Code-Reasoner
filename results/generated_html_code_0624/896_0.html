@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="600" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Configuration ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '18px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a resistor (rectangle)
+         * @param {CanvasRenderingContext2D} ctx The canvas context.
+         * @param {number} x The center x-coordinate.
+         * @param {number} y The center y-coordinate.
+         * @param {number} width The width of the resistor.
+         * @param {number} height The height of the resistor.
+         * @param {boolean} isVertical True if the resistor is vertical.
+         */
+        function drawResistor(ctx, x, y, width, height, isVertical = false) {
+            const rectW = isVertical ? height : width;
+            const rectH = isVertical ? width : height;
+            ctx.save();
+            ctx.fillStyle = 'white'; // Fill to erase wire underneath
+            ctx.fillRect(x - rectW / 2, y - rectH / 2, rectW, rectH);
+            ctx.strokeRect(x - rectW / 2, y - rectH / 2, rectW, rectH);
+            ctx.restore();
+        }
+
+        /**
+         * Draws a voltage source (battery symbol).
+         * @param {CanvasRenderingContext2D} ctx The canvas context.
+         * @param {number} x The center x-coordinate.
+         * @param {number} y The center y-coordinate.
+         * @param {number} length The length of the longer plate.
+         * @param {boolean} isVertical True if the source is vertical.
+         * @param {boolean} isPositiveUpOrRight True if positive terminal is up or right.
+         */
+        function drawSource(ctx, x, y, length, isVertical = false, isPositiveUpOrRight = true) {
+            const shortPlateFactor = 0.6;
+            const plateSpacing = 8;
+            ctx.save();
+            ctx.lineWidth = 1; // Thinner line for positive plate
+            if (isVertical) {
+                const y1 = isPositiveUpOrRight ? y - length / 2 : y + length / 2;
+                const y2 = isPositiveUpOrRight ? y + length * shortPlateFactor / 2 : y - length * shortPlateFactor / 2;
+                // Positive plate (long, thin)
+                ctx.beginPath();
+                ctx.moveTo(x - plateSpacing, y1);
+                ctx.lineTo(x + plateSpacing, y1);
+                ctx.stroke();
+                // Negative plate (short, thick)
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(x - plateSpacing, y2);
+                ctx.lineTo(x + plateSpacing, y2);
+                ctx.stroke();
+            } else { // Horizontal
+                const x1 = isPositiveUpOrRight ? x + length / 2 : x - length / 2;
+                const x2 = isPositiveUpOrRight ? x - length / 2 : x + length / 2;
+                // Positive plate (long, thin)
+                ctx.beginPath();
+                ctx.moveTo(x1, y - plateSpacing * 1.5);
+                ctx.lineTo(x1, y + plateSpacing * 1.5);
+                ctx.stroke();
+                // Negative plate (short, thick)
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(x2, y - plateSpacing);
+                ctx.lineTo(x2, y + plateSpacing);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        /**
+         * Draws text with a subscript.
+         * @param {CanvasRenderingContext2D} ctx The canvas context.
+         * @param {string} base The base text.
+         * @param {string} sub The subscript text.
+         * @param {number} x The x-coordinate for the start of the base text.
+         * @param {number} y The y-coordinate for the baseline.
+         */
+        function drawTextWithSubscript(ctx, base, sub, x, y) {
+            const baseFontSize = parseInt(ctx.font.match(/\d+/)[0], 10);
+            const subFontSize = baseFontSize * 0.7;
+            const originalBaseline = ctx.textBaseline;
+            ctx.textBaseline = 'bottom';
+            
+            ctx.fillText(base, x, y);
+            const baseWidth = ctx.measureText(base).width;
+
+            const originalFont = ctx.font;
+            ctx.font = `${subFontSize}px ${originalFont.split('px ')[1]}`;
+            ctx.fillText(sub, x + baseWidth * 0.95, y + 2);
+            ctx.font = originalFont;
+            ctx.textBaseline = originalBaseline;
+        }
+
+        // --- Main Drawing ---
+
+        // Define coordinates and dimensions
+        const lx = 100, rx = 500;
+        const ty = 80, my = 250, by = 420;
+        const resW = 60, resH = 25;
+        const srcL = 20;
+
+        // Draw wires
+        ctx.beginPath();
+        // Outer loop
+        ctx.moveTo(lx, ty);
+        ctx.lineTo(rx, ty);
+        ctx.lineTo(rx, by);
+        ctx.lineTo(lx, by);
+        ctx.lineTo(lx, ty);
+        // Left vertical
+        ctx.moveTo(lx, ty);
+        ctx.lineTo(lx, by);
+        // Right vertical
+        ctx.moveTo(rx, ty);
+        ctx.lineTo(rx, by);
+        // Middle horizontal
+        ctx.moveTo(lx, my);
+        ctx.lineTo(lx + 80, my);
+        // Middle part 2
+        ctx.moveTo(lx + 140, my);
+        ctx.lineTo(rx, my);
+        ctx.stroke();
+
+        // --- Draw Components ---
+
+        // Left Branch
+        const res1Y = ty + (my - ty) / 2;
+        const res2Y = my + (by - my) / 2;
+        drawResistor(ctx, lx, res1Y, resH, resW, true);
+        drawResistor(ctx, lx, res2Y, resH, resW, true);
+
+        // Right Branch
+        const res3Y = ty + (my - ty) / 2;
+        const res4Y = my + (by - my) / 2;
+        drawResistor(ctx, rx, res3Y, resH, resW, true);
+        drawResistor(ctx, rx, res4Y, resH, resW, true);
+
+        // Top Branch
+        const src1X = lx + (rx - lx) / 2;
+        drawSource(ctx, src1X, ty, srcL, false, true);
+
+        // Bottom Branch
+        const src3X = lx + (rx - lx) / 2;
+        drawSource(ctx, src3X, by, srcL, false, true);
+
+        // Middle Branch
+        const src2X = lx + 180;
+        const res5X = rx - 100;
+        drawSource(ctx, src2X, my, srcL, false, true);
+        drawResistor(ctx, res5X, my, resW, resH, false);
+        // Terminals c and d
+        ctx.beginPath();
+        ctx.arc(lx + 80, my, 4, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(lx + 140, my, 4, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // --- Draw Labels ---
+        
+        ctx.font = 'italic 18px Times New Roman';
+        const E_char = '\u2130'; // Script E character
+
+        // Resistor labels
+        ctx.textAlign = 'right';
+        drawTextWithSubscript(ctx, 'R', '1', lx - 15, res1Y);
+        drawTextWithSubscript(ctx, 'R', '2', lx - 15, res2Y);
+        ctx.textAlign = 'left';
+        drawTextWithSubscript(ctx, 'R', '3', rx + 15, res3Y);
+        drawTextWithSubscript(ctx, 'R', '4', rx + 15, res4Y);
+        ctx.textAlign = 'center';
+        drawTextWithSubscript(ctx, 'R', '5', res5X, my - 25);
+
+        // Source labels
+        // E1, Ri1
+        drawTextWithSubscript(ctx, E_char, '1', src1X - 35, ty - 20);
+        drawTextWithSubscript(ctx, 'R', 'i1', src1X + 25, ty - 20);
+        // E2, Ri2
+        drawTextWithSubscript(ctx, E_char, '2', src2X - 35, my - 25);
+        drawTextWithSubscript(ctx, 'R', 'i2', src2X + 25, my - 25);
+        // E3, Ri3
+        drawTextWithSubscript(ctx, E_char, '3', src3X - 35, by + 25);
+        drawTextWithSubscript(ctx, 'R', 'i3', src3X + 25, by + 25);
+
+        // Node labels
+        ctx.font = '18px Times New Roman';
+        ctx.textAlign = 'right';
+        ctx.fillText('a', lx - 8, my);
+        ctx.textAlign = 'left';
+        ctx.fillText('b', rx + 8, my);
+        ctx.textAlign = 'center';
+        ctx.fillText('c', lx + 80, my + 20);
+        ctx.fillText('d', lx + 140, my + 20);
+
+        // Bottom Caption
+        ctx.font = '20px SimHei'; // Or another Chinese font like "Microsoft YaHei"
+        ctx.fillText('习题 8-3 图', canvas.width / 2, canvas.height - 30);
+
+    </script>
+</body>
+</html>

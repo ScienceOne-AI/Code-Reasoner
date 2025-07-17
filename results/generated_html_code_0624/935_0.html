@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>X-ray Attenuation Diagram</title>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="600" height="420"></canvas>
+
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style settings
+ctx.lineWidth = 1.5;
+ctx.font = '16px Arial';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+
+// Function to draw an arrow
+function drawArrow(x1, y1, x2, y2) {
+    const headlen = 8; // length of head in pixels
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const angle = Math.atan2(dy, dx);
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+    ctx.restore();
+}
+
+// Parameters
+const scale = 40; // pixels per cm
+const w_main_cm = 5.6;
+const w_bone_cm = 2.4;
+
+const w_main = w_main_cm * scale;
+const w_bone = w_bone_cm * scale;
+
+const h_main = 220;
+const h_bone = 100;
+
+const x_main = 180;
+const y_main = 80;
+
+// Draw main rectangle (soft tissue boundary)
+ctx.strokeRect(x_main, y_main, w_main, h_main);
+
+// Draw bone rectangle
+const x_bone_offset = (w_main - w_bone) / 2;
+const x_bone = x_main + x_bone_offset;
+const y_bone = y_main;
+
+ctx.fillStyle = '#D3D3D3'; // light gray
+ctx.fillRect(x_bone, y_bone, w_bone, h_bone);
+ctx.strokeRect(x_bone, y_bone, w_bone, h_bone);
+ctx.fillStyle = 'black';
+
+
+// Draw X-rays
+const incident_x_start = 20;
+const incident_x_end = x_main - 5;
+const detected_x_start = x_main + w_main + 5;
+const detected_x_end = 580;
+
+const y_ray_q = y_main + h_bone / 2;
+const y_ray_middle = y_main + h_bone + 50;
+const y_ray_p = y_main + h_main - 30;
+
+// Ray through Q (bone)
+drawArrow(incident_x_start, y_ray_q, incident_x_end, y_ray_q);
+drawArrow(detected_x_start, y_ray_q, detected_x_end, y_ray_q);
+
+// Ray through soft tissue
+drawArrow(incident_x_start, y_ray_middle, incident_x_end, y_ray_middle);
+drawArrow(detected_x_start, y_ray_middle, detected_x_end, y_ray_middle);
+
+// Ray through P (soft tissue)
+drawArrow(incident_x_start, y_ray_p, incident_x_end, y_ray_p);
+drawArrow(detected_x_start, y_ray_p, detected_x_end, y_ray_p);
+
+
+// Draw Dimensions
+ctx.lineWidth = 1;
+
+// 5.6 cm dimension
+const y_dim_main = y_main + h_main + 40;
+ctx.setLineDash([5, 5]);
+ctx.beginPath();
+ctx.moveTo(x_main, y_main + h_main);
+ctx.lineTo(x_main, y_dim_main);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(x_main + w_main, y_main + h_main);
+ctx.lineTo(x_main + w_main, y_dim_main);
+ctx.stroke();
+
+ctx.setLineDash([]);
+ctx.beginPath();
+ctx.moveTo(x_main, y_dim_main);
+ctx.lineTo(x_main + w_main, y_dim_main);
+ctx.moveTo(x_main, y_dim_main - 5);
+ctx.lineTo(x_main, y_dim_main + 5);
+ctx.moveTo(x_main + w_main, y_dim_main - 5);
+ctx.lineTo(x_main + w_main, y_dim_main + 5);
+ctx.stroke();
+ctx.fillText('5.6 cm', x_main + w_main / 2, y_dim_main);
+ctx.textBaseline = 'bottom';
+ctx.fillText('5.6 cm', x_main + w_main / 2, y_dim_main - 8);
+ctx.textBaseline = 'middle';
+
+// 2.4 cm dimension
+const y_dim_bone = y_main - 40;
+ctx.setLineDash([5, 5]);
+ctx.beginPath();
+ctx.moveTo(x_bone, y_main);
+ctx.lineTo(x_bone, y_dim_bone);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(x_bone + w_bone, y_main);
+ctx.lineTo(x_bone + w_bone, y_dim_bone);
+ctx.stroke();
+
+ctx.setLineDash([]);
+ctx.beginPath();
+ctx.moveTo(x_bone, y_dim_bone);
+ctx.lineTo(x_bone + w_bone, y_dim_bone);
+ctx.moveTo(x_bone, y_dim_bone - 5);
+ctx.lineTo(x_bone, y_dim_bone + 5);
+ctx.moveTo(x_bone + w_bone, y_dim_bone - 5);
+ctx.lineTo(x_bone + w_bone, y_dim_bone + 5);
+ctx.stroke();
+ctx.textBaseline = 'bottom';
+ctx.fillText('2.4 cm', x_bone + w_bone / 2, y_dim_bone - 8);
+ctx.textBaseline = 'middle';
+
+
+// Draw labels
+ctx.lineWidth = 1.5;
+
+// incident/detected X-rays
+const y_label_avg = y_ray_middle;
+ctx.fillText('incident', 60, y_label_avg - 10);
+ctx.fillText('X-rays', 60, y_label_avg + 10);
+
+ctx.fillText('detected', 540, y_label_avg - 10);
+ctx.fillText('X-rays', 540, y_label_avg + 10);
+
+// tissue/bone labels
+ctx.textAlign = 'left';
+// soft tissue
+ctx.fillText('soft tissue', 90, 100);
+ctx.beginPath();
+ctx.moveTo(170, 105);
+ctx.lineTo(x_main + 15, y_main + 20);
+ctx.stroke();
+
+// bone
+ctx.textAlign = 'right';
+ctx.fillText('bone', 480, 100);
+ctx.beginPath();
+ctx.moveTo(440, 105);
+ctx.lineTo(x_bone + w_bone - 15, y_bone + h_bone / 2);
+ctx.stroke();
+
+// Points P and Q
+const x_points = x_main + w_main;
+ctx.beginPath();
+ctx.arc(x_points, y_ray_q, 3, 0, 2 * Math.PI);
+ctx.fill();
+ctx.textAlign = 'left';
+ctx.fillText('Q', x_points + 10, y_ray_q);
+
+ctx.beginPath();
+ctx.arc(x_points, y_ray_p, 3, 0, 2 * Math.PI);
+ctx.fill();
+ctx.fillText('P', x_points + 10, y_ray_p);
+
+// Fig label
+ctx.textAlign = 'center';
+ctx.fillText('Fig. 9.1', canvas.width / 2, y_dim_main + 40);
+
+</script>
+
+</body>
+</html>

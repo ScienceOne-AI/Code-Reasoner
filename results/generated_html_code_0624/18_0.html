@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Projectile Motion Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="400" height="370"></canvas>
+<script>
+    const canvas = document.getElementById("physicsCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Style and parameter settings
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "black";
+    ctx.lineWidth = 2;
+    ctx.font = "italic bold 20px Times New Roman";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // Define geometric parameters
+    const cx = 200;
+    const cy = 195;
+    const radius_R = 100;
+
+    // 1. Draw the Earth (sphere)
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius_R, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 2. Draw the center dot and the radius line 'R'
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, 2 * Math.PI);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + radius_R, cy);
+    ctx.stroke();
+    ctx.fillText("R", cx + radius_R / 2, cy - 15);
+
+    // 3. Draw the projectile's trajectory using a quadratic Bezier curve
+    const startX = cx - 35;
+    const startY = cy - Math.sqrt(radius_R**2 - (startX - cx)**2);
+    const controlX = cx + 20; // Determines the peak and curvature
+    const controlY = cy - radius_R - 65;
+    const endX = cx + 80;
+    const endY = cy - radius_R - 15;
+
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.quadraticCurveTo(controlX, controlY, endX, endY);
+    ctx.stroke();
+
+    // 4. Helper function to draw arrowheads on the trajectory
+    function drawArrowhead(ctx, x, y, angle) {
+        const headlen = 10;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headlen, -headlen / 2.5);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headlen, headlen / 2.5);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Helper function to get a point and its tangent angle on the quadratic curve
+    function getQuadraticCurvePoint(x0, y0, x1, y1, x2, y2, t) {
+        const x = (1 - t)**2 * x0 + 2 * (1 - t) * t * x1 + t**2 * x2;
+        const y = (1 - t)**2 * y0 + 2 * (1 - t) * t * y1 + t**2 * y2;
+        const tx = 2 * (1 - t) * (x1 - x0) + 2 * t * (x2 - x1);
+        const ty = 2 * (1 - t) * (y1 - y0) + 2 * t * (y2 - y1);
+        const angle = Math.atan2(ty, tx);
+        return { x, y, angle };
+    }
+
+    // Place arrows on the trajectory
+    const arrow1 = getQuadraticCurvePoint(startX, startY, controlX, controlY, endX, endY, 0.1);
+    drawArrowhead(ctx, arrow1.x, arrow1.y, arrow1.angle);
+
+    const arrow2 = getQuadraticCurvePoint(startX, startY, controlX, controlY, endX, endY, 0.95);
+    drawArrowhead(ctx, arrow2.x, arrow2.y, arrow2.angle);
+
+    // 5. Draw the maximum height 'H'
+    // Find the mathematical peak of the drawn curve for accuracy
+    const t_peak_y = (startY - controlY) / (startY - 2 * controlY + endY);
+    const peakPoint = getQuadraticCurvePoint(startX, startY, controlX, controlY, endX, endY, t_peak_y);
+    const peakX = peakPoint.x;
+    const peakY = peakPoint.y;
+
+    // Find the point on the Earth's surface directly below the peak
+    const vecX = peakX - cx;
+    const vecY = peakY - cy;
+    const dist = Math.sqrt(vecX**2 + vecY**2);
+    const surfaceX = cx + (vecX / dist) * radius_R;
+    const surfaceY = cy + (vecY / dist) * radius_R;
+
+    // Draw the dashed line for H
+    ctx.beginPath();
+    ctx.setLineDash([5, 3]);
+    ctx.moveTo(peakX, peakY);
+    ctx.lineTo(surfaceX, surfaceY);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line
+
+    // Label 'H'
+    ctx.textAlign = "left";
+    ctx.fillText("H", peakX + 10, (peakY + surfaceY) / 2);
+
+    // 6. Draw the figure caption
+    ctx.textAlign = "center";
+    ctx.font = "18px Times New Roman";
+    ctx.fillText("Fig. 1.29.", cx, cy + radius_R + 45);
+
+</script>
+</body>
+</html>

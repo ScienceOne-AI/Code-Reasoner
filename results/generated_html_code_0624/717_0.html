@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Define parameters and coordinates
+        const Ox = 250;
+        const Oy_axis = 220;
+        const l_px = 160;
+        const s_px = l_px / 4; // s = 0.2m, l = 0.8m -> s = l/4
+        const loop_height = l_px;
+
+        // Set drawing styles
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = 'italic 18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Draw the square loop 'abcd' ---
+        const loop_x_left = Ox - l_px;
+        const loop_x_right = Ox;
+        const loop_y_bottom = Oy_axis;
+        const loop_y_top = Oy_axis - loop_height;
+
+        ctx.beginPath();
+        ctx.rect(loop_x_left, loop_y_top, l_px, loop_height);
+        ctx.stroke();
+
+        // Labels for the loop corners
+        ctx.fillText('a', loop_x_left - 12, loop_y_top - 12);
+        ctx.fillText('b', loop_x_right + 12, loop_y_top - 12);
+        ctx.fillText('c', loop_x_right + 12, loop_y_bottom + 12);
+        ctx.fillText('d', loop_x_left - 12, loop_y_bottom + 12);
+
+        // --- Draw the magnetic field region ---
+        const field_top = loop_y_top - 30;
+        const field_bottom = loop_y_bottom + 30;
+
+        const oldLineWidth = ctx.lineWidth;
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.moveTo(Ox, field_top);
+        ctx.lineTo(Ox, field_bottom);
+        ctx.moveTo(Ox + s_px, field_top);
+        ctx.lineTo(Ox + s_px, field_bottom);
+        ctx.stroke();
+        ctx.lineWidth = oldLineWidth;
+
+        // Function to draw the magnetic field symbol (cross in a circle)
+        function drawCrossInCircle(x, y, radius) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            const d = radius / Math.sqrt(2);
+            ctx.moveTo(x - d, y - d);
+            ctx.lineTo(x + d, y + d);
+            ctx.moveTo(x + d, y - d);
+            ctx.lineTo(x - d, y + d);
+            ctx.stroke();
+        }
+
+        // Draw B symbols
+        drawCrossInCircle(Ox + s_px / 2, Oy_axis - 100, 10);
+        drawCrossInCircle(Ox + s_px / 2, Oy_axis - 40, 10);
+
+        // Draw B label
+        ctx.font = 'bold italic 22px Arial';
+        ctx.fillText('B', Ox + s_px / 2, Oy_axis);
+        ctx.font = 'italic 18px Arial'; // Reset font
+
+        // --- Draw the coordinate system and dimensions ---
+        // x-axis
+        ctx.beginPath();
+        const axis_start_x = loop_x_left - 30;
+        const axis_end_x = Ox + s_px + 40;
+        ctx.moveTo(axis_start_x, Oy_axis);
+        ctx.lineTo(axis_end_x, Oy_axis);
+        ctx.stroke();
+
+        // Arrowhead for x-axis
+        ctx.beginPath();
+        ctx.moveTo(axis_end_x, Oy_axis);
+        ctx.lineTo(axis_end_x - 10, Oy_axis - 5);
+        ctx.moveTo(axis_end_x, Oy_axis);
+        ctx.lineTo(axis_end_x - 10, Oy_axis + 5);
+        ctx.stroke();
+        ctx.fillText('x', axis_end_x + 15, Oy_axis);
+        ctx.fillText('O', Ox, Oy_axis + 20);
+
+        // Function to draw a horizontal dimension line with arrows and ticks
+        function drawDimLine(x1, y, x2, label, labelPos) {
+            const tickHeight = 5;
+            const headlen = 8;
+            ctx.beginPath();
+            // Main line
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            // Ticks
+            ctx.moveTo(x1, y - tickHeight);
+            ctx.lineTo(x1, y + tickHeight);
+            ctx.moveTo(x2, y - tickHeight);
+            ctx.lineTo(x2, y + tickHeight);
+            // Arrowheads
+            ctx.moveTo(x1 + headlen, y - 4);
+            ctx.lineTo(x1, y);
+            ctx.lineTo(x1 + headlen, y + 4);
+            ctx.moveTo(x2 - headlen, y - 4);
+            ctx.lineTo(x2, y);
+            ctx.lineTo(x2 - headlen, y + 4);
+            ctx.stroke();
+            // Label
+            if (labelPos === 'above') {
+                 ctx.fillText(label, (x1 + x2) / 2, y - 12);
+            } else { // below
+                 ctx.fillText(label, (x1 + x2) / 2, y + 15);
+            }
+        }
+        
+        // Dimension 'l'
+        const dim_l_y = Oy_axis + 60;
+        drawDimLine(loop_x_left, dim_l_y, loop_x_right, 'l', 'above');
+
+        // Dimension 's'
+        const dim_s_y = Oy_axis + 35;
+        drawDimLine(Ox, dim_s_y, Ox + s_px, 's', 'below');
+
+        // --- Draw the velocity vector 'v0' ---
+        const v_y = Oy_axis - 20;
+        const v_start_x = Ox;
+        const v_end_x = Ox + 70;
+
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(v_start_x, v_y);
+        ctx.lineTo(v_end_x, v_y);
+        ctx.stroke();
+        
+        // Arrowhead
+        ctx.beginPath();
+        ctx.moveTo(v_end_x, v_y);
+        ctx.lineTo(v_end_x - 10, v_y - 5);
+        ctx.lineTo(v_end_x - 10, v_y + 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+
+        // Label 'v0'
+        ctx.font = 'italic 20px Arial';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('v', v_start_x + 30, v_y-2);
+        ctx.font = 'italic 14px Arial';
+        ctx.fillText('0', v_start_x + 42, v_y-1);
+
+        // --- Draw the caption ---
+        ctx.font = '20px "KaiTi", "SimSun"';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('电图 3.18.1', canvas.width / 2, canvas.height - 10);
+    </script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Diffraction Grating Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="450"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style and Configuration ---
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = 1.2;
+
+// --- Helper Functions ---
+function drawArrow(x1, y1, x2, y2, size = 5) {
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    ctx.save();
+    ctx.lineWidth = 1.2; // Ensure arrows have consistent line width
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 6), y2 - size * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 6), y2 - size * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawFocalLengthAnnotation(x1, x2, y, label) {
+    const tickSize = 10;
+    
+    // Main horizontal line
+    ctx.beginPath();
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x2, y);
+    ctx.stroke();
+
+    // Ticks
+    ctx.beginPath();
+    ctx.moveTo(x1, y - tickSize / 2);
+    ctx.lineTo(x1, y + tickSize / 2);
+    ctx.moveTo(x2, y - tickSize / 2);
+    ctx.lineTo(x2, y + tickSize / 2);
+    ctx.stroke();
+    
+    // Arrows (pointing inwards)
+    const arrowSize = 6;
+    const offset = 12;
+    ctx.beginPath();
+    ctx.moveTo(x1 + offset, y - arrowSize/2);
+    ctx.lineTo(x1, y);
+    ctx.lineTo(x1 + offset, y + arrowSize/2);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(x2 - offset, y - arrowSize/2);
+    ctx.lineTo(x2, y);
+    ctx.lineTo(x2 - offset, y + arrowSize/2);
+    ctx.stroke();
+    
+    // Label
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText(label, (x1 + x2) / 2, y - 5);
+    ctx.restore();
+}
+
+function drawDeltaXAnnotation(x_focal, y_top, y_mid, y_bot, label) {
+    const line_x_offset = 30;
+    const line_x = x_focal + line_x_offset;
+    const arrow_size = 6;
+    
+    // Top part
+    ctx.beginPath();
+    ctx.moveTo(x_focal, y_top);
+    ctx.lineTo(line_x, y_top); 
+    ctx.moveTo(x_focal, y_mid);
+    ctx.lineTo(line_x, y_mid); 
+    ctx.moveTo(line_x, y_top);
+    ctx.lineTo(line_x, y_mid); 
+    ctx.stroke();
+    drawArrow(line_x, y_top - 8, line_x, y_top, arrow_size);
+    drawArrow(line_x, y_mid + 8, line_x, y_mid, arrow_size);
+    ctx.save();
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, line_x + 8, (y_top + y_mid) / 2);
+    ctx.restore();
+
+    // Bottom part
+    ctx.beginPath();
+    ctx.moveTo(x_focal, y_bot);
+    ctx.lineTo(line_x, y_bot);
+    ctx.moveTo(line_x, y_mid);
+    ctx.lineTo(line_x, y_bot);
+    ctx.stroke();
+    drawArrow(line_x, y_mid - 8, line_x, y_mid, arrow_size);
+    drawArrow(line_x, y_bot + 8, line_x, y_bot, arrow_size);
+}
+
+// --- Main Drawing ---
+
+// --- Coordinates ---
+const yCenter = 225;
+const xGrating = 150;
+const xLens = 425;
+const xFocalPlane = 700;
+const f_pixels = xLens - xGrating; 
+
+const incomingRaySpacing = 40;
+const focusYOffset = 80;
+
+// 1. Optical Axis
+ctx.beginPath();
+ctx.moveTo(0, yCenter);
+ctx.lineTo(canvas.width, yCenter);
+ctx.stroke();
+
+// 2. Incoming Rays
+const xRayStart = 20;
+for (let i = -1; i <= 1; i++) {
+    const y = yCenter + i * incomingRaySpacing;
+    drawArrow(xRayStart, y, xGrating, y);
+}
+
+// 3. Diffraction Grating (DG)
+const gratingHeight = 150;
+ctx.save();
+ctx.beginPath();
+ctx.moveTo(xGrating, yCenter - gratingHeight / 2);
+ctx.lineTo(xGrating, yCenter + gratingHeight / 2);
+ctx.lineWidth = 2.5;
+ctx.stroke();
+ctx.fillRect(xGrating - 6, yCenter - gratingHeight / 2 - 10, 12, 10);
+ctx.restore();
+ctx.font = '20px Arial';
+ctx.fillText('DG', xGrating - 12, yCenter - gratingHeight / 2 - 20);
+
+// 4. Lens (L)
+const lensHeight = 280;
+const lensWidth = 40;
+ctx.beginPath();
+ctx.moveTo(xLens, yCenter - lensHeight / 2);
+ctx.quadraticCurveTo(xLens + lensWidth, yCenter, xLens, yCenter + lensHeight / 2);
+ctx.quadraticCurveTo(xLens - lensWidth, yCenter, xLens, yCenter - lensHeight / 2);
+ctx.save();
+ctx.fillStyle = 'rgba(220, 220, 220, 0.6)';
+ctx.fill();
+ctx.strokeStyle = 'black';
+ctx.lineWidth = 1.5;
+ctx.stroke();
+ctx.restore();
+ctx.font = 'italic 20px Times New Roman';
+ctx.fillText('L', xLens - 5, yCenter - lensHeight / 2 - 10);
+
+// 5. Focal Plane
+const focalPlaneHeight = 250;
+ctx.beginPath();
+ctx.moveTo(xFocalPlane, yCenter - focalPlaneHeight / 2);
+ctx.lineTo(xFocalPlane, yCenter + focalPlaneHeight / 2);
+ctx.stroke();
+
+// --- Ray Tracing ---
+const focus_0 = { x: xFocalPlane, y: yCenter };
+const focus_p1 = { x: xFocalPlane, y: yCenter - focusYOffset };
+const focus_n1 = { x: xFocalPlane, y: yCenter + focusYOffset };
+
+const slope_p1 = (focus_0.y - focus_p1.y) / f_pixels; 
+const slope_n1 = -slope_p1;
+
+for (let i = -1; i <= 1; i++) {
+    const y_start = yCenter + i * incomingRaySpacing;
+    
+    // Order 0 (undiffracted)
+    const y_lens_0 = y_start;
+    drawArrow(xGrating, y_start, xLens, y_lens_0);
+    ctx.beginPath();
+    ctx.moveTo(xLens, y_lens_0);
+    ctx.lineTo(focus_0.x, focus_0.y);
+    ctx.stroke();
+
+    // Order +1 (upward diffraction)
+    const y_lens_p1 = y_start - slope_p1 * f_pixels;
+    drawArrow(xGrating, y_start, xLens, y_lens_p1);
+    ctx.beginPath();
+    ctx.moveTo(xLens, y_lens_p1);
+    ctx.lineTo(focus_p1.x, focus_p1.y);
+    ctx.stroke();
+
+    // Order -1 (downward diffraction)
+    const y_lens_n1 = y_start - slope_n1 * f_pixels;
+    drawArrow(xGrating, y_start, xLens, y_lens_n1);
+    ctx.beginPath();
+    ctx.moveTo(xLens, y_lens_n1);
+    ctx.lineTo(focus_n1.x, focus_n1.y);
+    ctx.stroke();
+}
+
+// --- Annotations ---
+ctx.save();
+ctx.lineWidth = 1;
+
+const dimY = yCenter + 150;
+drawFocalLengthAnnotation(xGrating, xLens, dimY, 'f');
+drawFocalLengthAnnotation(xLens, xFocalPlane, dimY, 'f');
+
+drawDeltaXAnnotation(xFocalPlane, focus_p1.y, focus_0.y, focus_n1.y, '\u0394x');
+ctx.restore();
+
+</script>
+</body>
+</html>

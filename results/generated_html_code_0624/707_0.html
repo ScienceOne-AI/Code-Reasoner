@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="forceDiagram" width="500" height="350"></canvas>
+    <script>
+        const canvas = document.getElementById('forceDiagram');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen) {
+            headlen = headlen || 10;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke(); // Draw line first
+            ctx.beginPath(); // Start new path for arrowhead
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Drawing Parameters ---
+        const x_wall = 80;
+        const y_A = 100;
+        const h = 80; // Vertical distance AB
+        const L_AC = 2 * h; // Length of rod AC, as L_AC = L_BD = 2 * AB
+        
+        // --- Coordinates ---
+        const Ax = x_wall, Ay = y_A;
+        const Bx = x_wall, By = y_A + h;
+        const AD = h * Math.sqrt(3);
+        const Dx = x_wall + AD, Dy = y_A;
+        const Cx = x_wall + L_AC, Cy = y_A;
+        const Ex = x_wall + L_AC / 2, Ey = y_A; // E is midpoint of AC
+        const Fx = (Bx + Dx) / 2, Fy = (By + Dy) / 2; // F is midpoint of BD
+
+        // --- Start Drawing ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // --- 1. Draw Wall ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x_wall, Ay - 50);
+        ctx.lineTo(x_wall, By + 50);
+        ctx.stroke();
+
+        // Hatching for the wall
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 10; i++) {
+            const y_hatch = (Ay - 40) + i * 20;
+            ctx.beginPath();
+            ctx.moveTo(x_wall, y_hatch);
+            ctx.lineTo(x_wall - 10, y_hatch + 10);
+            ctx.stroke();
+        }
+
+        // --- 2. Draw Axes ---
+        // Y-axis
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('y', x_wall - 25, Ay - 55);
+        
+        // X-axis (dashed line)
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(x_wall - 20, Ay);
+        ctx.lineTo(Cx + 50, Ay);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid lines
+        ctx.fillText('x', Cx + 55, Ay + 8);
+        
+        // --- 3. Draw Rods ---
+        ctx.lineWidth = 4;
+        // Rod AC
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(Cx, Cy);
+        ctx.stroke();
+        // Rod BD
+        ctx.beginPath();
+        ctx.moveTo(Bx, By);
+        ctx.lineTo(Dx, Dy);
+        ctx.stroke();
+
+        // --- 4. Draw Joints and Points ---
+        // Hinge A
+        ctx.beginPath();
+        ctx.arc(Ax, Ay, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        
+        // Hinge B
+        ctx.beginPath();
+        ctx.arc(Bx, By, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+        
+        // Pin D
+        ctx.beginPath();
+        ctx.arc(Dx, Dy, 7, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Point C
+        ctx.beginPath();
+        ctx.arc(Cx, Cy, 4, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+
+        // --- 5. Draw Forces ---
+        ctx.lineWidth = 2.5;
+        const forceLen = 50;
+
+        // Force P1 at E
+        drawArrow(ctx, Ex, Ey, Ex, Ey + forceLen);
+        ctx.font = 'italic bold 22px serif';
+        ctx.fillText('P', Ex - 25, Ey + 30);
+        ctx.font = 'italic bold 16px serif';
+        ctx.fillText('1', Ex - 15, Ey + 38);
+
+        // Force P2 at F
+        drawArrow(ctx, Fx, Fy, Fx, Fy + forceLen);
+        ctx.font = 'italic bold 22px serif';
+        ctx.fillText('P', Fx + 10, Fy + 35);
+        ctx.font = 'italic bold 16px serif';
+        ctx.fillText('2', Fx + 20, Fy + 43);
+
+        // Force Q at C
+        const angleQ = 225 * Math.PI / 180; // 45 degrees down and left
+        const qLen = 60;
+        const Q_tox = Cx + qLen * Math.cos(angleQ);
+        const Q_toy = Cy + qLen * Math.sin(angleQ);
+        drawArrow(ctx, Cx, Cy, Q_tox, Q_toy);
+        ctx.font = 'italic bold 24px serif';
+        ctx.fillText('Q', Q_tox - 35, Q_toy);
+
+        // --- 6. Draw Angles ---
+        ctx.lineWidth = 1;
+        // Angle 60° at B
+        const angle60_rad = 30;
+        const angle60_start = -Math.PI / 2; // Vertical up
+        const angle60_end = -Math.PI / 3;   // 60 deg from vertical
+        ctx.beginPath();
+        ctx.arc(Bx, By, angle60_rad, angle60_start, angle60_end);
+        ctx.stroke();
+        drawArrow(ctx, Bx + angle60_rad * Math.cos(angle60_end), By + angle60_rad * Math.sin(angle60_end), Bx + (angle60_rad + 0.1) * Math.cos(angle60_end), By + (angle60_rad + 0.1) * Math.sin(angle60_end), 6);
+        ctx.font = '18px serif';
+        ctx.fillText('60°', Bx + 20, By - 20);
+
+        // Angle 45° for Q
+        const angle45_rad = 30;
+        const angle45_start = Math.PI; // Horizontal left
+        const angle45_end = 5 * Math.PI / 4; // 45 deg down from horizontal left
+        ctx.beginPath();
+        ctx.arc(Cx, Cy, angle45_rad, angle45_start, angle45_end);
+        ctx.stroke();
+        drawArrow(ctx, Cx + angle45_rad * Math.cos(angle45_end), Cy + angle45_rad * Math.sin(angle45_end), Cx + (angle45_rad + 0.1) * Math.cos(angle45_end), Cy + (angle45_rad + 0.1) * Math.sin(angle45_end), 6);
+        ctx.font = '18px serif';
+        ctx.fillText('45°', Cx - 45, Cy + 25);
+
+
+        // --- 7. Draw Labels ---
+        ctx.font = 'bold 22px serif';
+        ctx.fillStyle = 'black';
+        ctx.fillText('A', Ax - 25, Ay + 8);
+        ctx.fillText('B', Bx - 25, By + 8);
+        ctx.fillText('C', Cx + 10, Cy - 5);
+        ctx.fillText('D', Dx - 8, Dy - 12);
+        ctx.fillText('E', Ex - 5, Ey - 12);
+        ctx.fillText('F', Fx - 25, Fy + 5);
+
+    </script>
+</body>
+</html>

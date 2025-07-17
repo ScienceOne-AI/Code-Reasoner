@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Waveform Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="600" height="400"></canvas>
+<script>
+const canvas = document.getElementById('myCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Configuration ---
+// Define coordinate system mapping
+// origin on canvas for (0,0) in physics coords
+const origin = { x: 80, y: 200 };
+// scale factor: pixels per physics unit
+// x-axis is in cm, y-axis is in m
+const scale = { x: 600, y: 2000 }; // 600px/cm, 2000px/m (i.e. 0.04m -> 80px)
+
+// --- Drawing Functions ---
+
+function drawAxes() {
+    ctx.beginPath();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = '20px Times New Roman';
+
+    // Y-axis
+    ctx.moveTo(origin.x, 40);
+    ctx.lineTo(origin.x, 360);
+    // Y-axis arrow
+    ctx.moveTo(origin.x, 40);
+    ctx.lineTo(origin.x - 6, 50);
+    ctx.moveTo(origin.x, 40);
+    ctx.lineTo(origin.x + 6, 50);
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('y/m', origin.x - 15, 50);
+
+    // X-axis
+    ctx.beginPath();
+    ctx.moveTo(origin.x - 10, origin.y);
+    ctx.lineTo(550, origin.y);
+    // X-axis arrow
+    ctx.moveTo(550, origin.y);
+    ctx.lineTo(540, origin.y - 6);
+    ctx.moveTo(550, origin.y);
+    ctx.lineTo(540, origin.y + 6);
+    ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.fillText('x/cm', 525, origin.y + 25);
+}
+
+function drawTicksAndLabels() {
+    ctx.font = '18px Times New Roman';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    // Origin label '0'
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText('0', origin.x - 5, origin.y + 3);
+
+    // X-axis ticks and labels
+    const xTicks = [0.2, 0.4, 0.6];
+    ctx.textAlign = 'center';
+    xTicks.forEach(tick => {
+        const xPos = origin.x + tick * scale.x;
+        ctx.beginPath();
+        ctx.moveTo(xPos, origin.y);
+        ctx.lineTo(xPos, origin.y + 5);
+        ctx.stroke();
+        ctx.fillText(tick.toString(), xPos, origin.y + 8);
+    });
+
+    // Y-axis tick and label for amplitude
+    const yTick = 0.04;
+    const yPos = origin.y - yTick * scale.y;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(yTick.toString(), origin.x - 8, yPos);
+
+    // Dashed line from y-axis to the wave peak
+    ctx.beginPath();
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    const peakX_cm = 0.1; // Peak is at lambda/4 = 0.4/4 = 0.1 cm
+    const peakX_canvas = origin.x + peakX_cm * scale.x;
+    ctx.moveTo(origin.x, yPos);
+    ctx.lineTo(peakX_canvas, yPos);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset line dash
+}
+
+function drawWave() {
+    ctx.beginPath();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+
+    const A_m = 0.04;      // Amplitude in meters
+    const lambda_cm = 0.4; // Wavelength in cm
+    const k_per_cm = (2 * Math.PI) / lambda_cm; // Wave number, using cm for x
+
+    const x_start_cm = 0;
+    const x_end_cm = 0.67; // Wave ends just after 1.5 wavelengths
+    const step = 0.002;
+
+    // Move to the starting point
+    ctx.moveTo(origin.x, origin.y);
+
+    // Draw the curve
+    for (let x_cm = step; x_cm <= x_end_cm; x_cm += step) {
+        const y_m = A_m * Math.sin(k_per_cm * x_cm);
+        const canvasX = origin.x + x_cm * scale.x;
+        const canvasY = origin.y - y_m * scale.y;
+        ctx.lineTo(canvasX, canvasY);
+    }
+    ctx.stroke();
+}
+
+function drawVelocityArrow() {
+    ctx.beginPath();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+
+    const arrowStartX = origin.x + 0.22 * scale.x;
+    const arrowEndX = origin.x + 0.32 * scale.x;
+    const arrowY = origin.y - 110;
+
+    // Arrow line
+    ctx.moveTo(arrowStartX, arrowY);
+    ctx.lineTo(arrowEndX, arrowY);
+
+    // Arrowhead
+    ctx.moveTo(arrowEndX, arrowY);
+    ctx.lineTo(arrowEndX - 10, arrowY - 5);
+    ctx.moveTo(arrowEndX, arrowY);
+    ctx.lineTo(arrowEndX - 10, arrowY + 5);
+    ctx.stroke();
+
+    // Label 'u'
+    ctx.font = 'italic bold 20px Times New Roman';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('u', arrowEndX + 8, arrowY);
+}
+
+function drawCaption() {
+    ctx.font = '24px "KaiTi", "SimSun"'; // Use common Chinese fonts
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    // Center the caption
+    ctx.fillText('习题 11-7 图', canvas.width / 2.2, canvas.height - 20);
+}
+
+
+// --- Main Drawing Execution ---
+// Set a white background
+ctx.fillStyle = 'white';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+drawAxes();
+drawTicksAndLabels();
+drawWave();
+drawVelocityArrow();
+drawCaption();
+
+</script>
+</body>
+</html>

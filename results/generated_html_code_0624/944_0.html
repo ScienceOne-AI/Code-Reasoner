@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Apparatus for Latent Heat Experiment</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General Styling
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '18px Arial';
+
+        // --- Geometric Constants ---
+        const BEAKER_CENTER_X = 250;
+        const BEAKER_WIDTH = 160;
+        const BEAKER_LEFT = BEAKER_CENTER_X - BEAKER_WIDTH / 2;
+        const BEAKER_RIGHT = BEAKER_CENTER_X + BEAKER_WIDTH / 2;
+        const PAN_Y = 420;
+        const BEAKER_TOP_Y = 180;
+        const BEAKER_BOTTOM_Y = PAN_Y - 2;
+        const LIQUID_Y = 240;
+        const HEATER_Y1 = 320;
+        const HEATER_Y2 = 350;
+        const HEATER_WIDTH = 100;
+        const HEATER_LEFT = BEAKER_CENTER_X - HEATER_WIDTH / 2;
+        const HEATER_RIGHT = BEAKER_CENTER_X + HEATER_WIDTH / 2;
+
+        // --- Draw Pan of Balance and Support ---
+        ctx.beginPath();
+        ctx.moveTo(BEAKER_LEFT - 40, PAN_Y);
+        ctx.lineTo(BEAKER_RIGHT + 40, PAN_Y);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(BEAKER_CENTER_X, PAN_Y);
+        ctx.lineTo(BEAKER_CENTER_X, 480);
+        // Jagged line for broken support
+        ctx.moveTo(BEAKER_CENTER_X, 480);
+        ctx.lineTo(BEAKER_CENTER_X - 10, 475);
+        ctx.moveTo(BEAKER_CENTER_X, 480);
+        ctx.lineTo(BEAKER_CENTER_X + 5, 485);
+        ctx.moveTo(BEAKER_CENTER_X, 480);
+        ctx.lineTo(BEAKER_CENTER_X - 5, 495);
+        ctx.moveTo(BEAKER_CENTER_X, 480);
+        ctx.lineTo(BEAKER_CENTER_X + 10, 490);
+        ctx.stroke();
+
+        // --- Draw Beaker ---
+        ctx.beginPath();
+        ctx.moveTo(BEAKER_LEFT, BEAKER_TOP_Y);
+        ctx.lineTo(BEAKER_LEFT, BEAKER_BOTTOM_Y);
+        ctx.lineTo(BEAKER_RIGHT, BEAKER_BOTTOM_Y);
+        ctx.lineTo(BEAKER_RIGHT, BEAKER_TOP_Y);
+        ctx.stroke();
+
+        // --- Draw Liquid ---
+        ctx.beginPath();
+        ctx.moveTo(BEAKER_LEFT, LIQUID_Y);
+        ctx.lineTo(BEAKER_RIGHT, LIQUID_Y);
+        ctx.stroke();
+        // Meniscus effect
+        ctx.beginPath();
+        ctx.moveTo(BEAKER_LEFT, LIQUID_Y);
+        ctx.quadraticCurveTo(BEAKER_LEFT + 5, LIQUID_Y - 4, BEAKER_LEFT + 10, LIQUID_Y);
+        ctx.moveTo(BEAKER_RIGHT, LIQUID_Y);
+        ctx.quadraticCurveTo(BEAKER_RIGHT - 5, LIQUID_Y - 4, BEAKER_RIGHT - 10, LIQUID_Y);
+        ctx.stroke();
+        // Dashes to indicate liquid volume
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        for (let y = LIQUID_Y + 15; y < BEAKER_BOTTOM_Y - 10; y += 15) {
+            ctx.beginPath();
+            ctx.moveTo(BEAKER_LEFT + 10, y);
+            ctx.lineTo(BEAKER_RIGHT - 10, y);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // --- Draw Heater ---
+        ctx.beginPath();
+        ctx.rect(HEATER_LEFT, HEATER_Y1, HEATER_WIDTH, HEATER_Y2 - HEATER_Y1);
+        ctx.stroke();
+        // Heater internal divisions
+        for (let i = 1; i < 4; i++) {
+            const x = HEATER_LEFT + i * HEATER_WIDTH / 4;
+            ctx.beginPath();
+            ctx.moveTo(x, HEATER_Y1);
+            ctx.lineTo(x, HEATER_Y2);
+            ctx.stroke();
+        }
+
+        // --- Draw Circuit ---
+        const C_WIRE_LEFT_X = HEATER_LEFT + 20;
+        const C_WIRE_RIGHT_X = HEATER_RIGHT - 20;
+        const C_TOP_Y = 100;
+        const C_BOTTOM_Y = 160;
+        const C_END_X = 540;
+        const V_CONN_X = 400;
+        const A_CENTER_X = 460;
+        const METER_RADIUS = 20;
+
+        // Top wire from heater to positive terminal
+        ctx.beginPath();
+        ctx.moveTo(C_WIRE_LEFT_X, HEATER_Y1);
+        ctx.lineTo(C_WIRE_LEFT_X, C_TOP_Y);
+        ctx.lineTo(C_END_X, C_TOP_Y);
+        ctx.stroke();
+
+        // Bottom wire from heater to negative terminal (with Ammeter)
+        ctx.beginPath();
+        ctx.moveTo(C_WIRE_RIGHT_X, HEATER_Y1);
+        ctx.lineTo(C_WIRE_RIGHT_X, C_BOTTOM_Y);
+        ctx.lineTo(A_CENTER_X - METER_RADIUS, C_BOTTOM_Y);
+        ctx.moveTo(A_CENTER_X + METER_RADIUS, C_BOTTOM_Y);
+        ctx.lineTo(C_END_X, C_BOTTOM_Y);
+        ctx.stroke();
+
+        // Voltmeter (in parallel)
+        ctx.beginPath();
+        ctx.arc(V_CONN_X, (C_TOP_Y + C_BOTTOM_Y) / 2, METER_RADIUS, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fillText("V", V_CONN_X, (C_TOP_Y + C_BOTTOM_Y) / 2);
+        // Voltmeter connections
+        ctx.beginPath();
+        ctx.moveTo(V_CONN_X, C_TOP_Y);
+        ctx.lineTo(V_CONN_X, (C_TOP_Y + C_BOTTOM_Y) / 2 - METER_RADIUS);
+        ctx.moveTo(V_CONN_X, C_BOTTOM_Y);
+        ctx.lineTo(V_CONN_X, (C_TOP_Y + C_BOTTOM_Y) / 2 + METER_RADIUS);
+        ctx.stroke();
+        // Connection points
+        ctx.beginPath();
+        ctx.arc(V_CONN_X, C_TOP_Y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(V_CONN_X, C_BOTTOM_Y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Ammeter (in series)
+        ctx.beginPath();
+        ctx.arc(A_CENTER_X, C_BOTTOM_Y, METER_RADIUS, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fillText("A", A_CENTER_X, C_BOTTOM_Y);
+
+        // Terminals
+        ctx.beginPath();
+        ctx.arc(C_END_X, C_TOP_Y, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(C_END_X, C_BOTTOM_Y, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Terminal labels
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText("+", C_END_X + 10, C_TOP_Y);
+        ctx.fillText("-", C_END_X + 10, C_BOTTOM_Y);
+
+        // --- Labels and Arrows ---
+        // "liquid" label
+        ctx.textAlign = 'right';
+        ctx.fillText("liquid", 150, 220);
+        ctx.beginPath();
+        ctx.moveTo(155, 220);
+        ctx.lineTo(BEAKER_LEFT + 25, LIQUID_Y - 5);
+        ctx.stroke();
+
+        // "heater" label
+        ctx.fillText("heater", 150, 335);
+        ctx.beginPath();
+        ctx.moveTo(155, 335);
+        ctx.lineTo(HEATER_LEFT, HEATER_Y1 + 15);
+        ctx.stroke();
+
+        // "pan of balance" label
+        ctx.textAlign = 'left';
+        ctx.fillText("pan of balance", 420, 400);
+        ctx.beginPath();
+        ctx.moveTo(415, 400);
+        ctx.lineTo(BEAKER_RIGHT + 40, PAN_Y - 2);
+        ctx.stroke();
+
+        // --- Figure Caption ---
+        ctx.textAlign = 'center';
+        ctx.fillText("Fig. 3.1", BEAKER_CENTER_X + 100, 520);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamics Diagram 1.4.1</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="400" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // --- Define Geometry ---
+        // This geometry aims to replicate the visual appearance of the schematic.
+        const x_center = 200;
+        const y_top = 80;
+        const y_bend = 320;
+        
+        // Define boundaries of the tube walls
+        const x_left_out = 130;
+        const x_left_in = 170;
+        const x_right_in = 230;
+        const x_right_out = 270;
+        
+        // Radii for the bend, derived from the wall boundaries
+        const r_outer = (x_right_out - x_left_out) / 2; // (270 - 130) / 2 = 70
+        const r_inner = (x_right_in - x_left_in) / 2; // (230 - 170) / 2 = 30
+        
+        // Liquid and piston levels
+        const y_water_level = 260;
+        const piston_height = 8;
+        const y_piston_bottom = y_water_level;
+        const y_piston_top = y_piston_bottom - piston_height;
+
+        // --- Draw U-Tube ---
+        ctx.beginPath();
+        // Outer wall path
+        ctx.moveTo(x_left_out, y_top);
+        ctx.lineTo(x_left_out, y_bend);
+        ctx.arc(x_center, y_bend, r_outer, Math.PI, 0, false);
+        ctx.lineTo(x_right_out, y_top);
+        // Inner wall path
+        ctx.moveTo(x_right_in, y_top);
+        ctx.lineTo(x_right_in, y_bend);
+        ctx.arc(x_center, y_bend, r_inner, 0, Math.PI, true);
+        ctx.lineTo(x_left_in, y_top);
+        // Top cap for sealed left tube
+        ctx.moveTo(x_left_out, y_top);
+        ctx.lineTo(x_left_in, y_top);
+        ctx.stroke();
+
+        // --- Draw Liquid ---
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 2]);
+        ctx.strokeStyle = 'black';
+        ctx.beginPath();
+        
+        // Liquid in left arm (straight part)
+        for (let y = y_water_level; y <= y_bend; y += 5) {
+            ctx.moveTo(x_left_out + ctx.lineWidth/2, y);
+            ctx.lineTo(x_left_in - ctx.lineWidth/2, y);
+        }
+
+        // Liquid in right arm (straight part)
+        for (let y = y_water_level; y <= y_bend; y += 5) {
+            ctx.moveTo(x_right_in + ctx.lineWidth/2, y);
+            ctx.lineTo(x_right_out - ctx.lineWidth/2, y);
+        }
+
+        // Liquid in the bend
+        const y_bend_bottom_outer = y_bend + r_outer;
+        for (let y = y_bend; y < y_bend_bottom_outer; y += 5) {
+            const dy = y - y_bend;
+            if (dy * dy < r_outer * r_outer) {
+                const x_o = Math.sqrt(r_outer * r_outer - dy * dy);
+                if (dy * dy < r_inner * r_inner) {
+                    const x_i = Math.sqrt(r_inner * r_inner - dy * dy);
+                    // Draw left side of bend
+                    ctx.moveTo(x_center - x_o, y);
+                    ctx.lineTo(x_center - x_i, y);
+                    // Draw right side of bend
+                    ctx.moveTo(x_center + x_i, y);
+                    ctx.lineTo(x_center + x_o, y);
+                } else {
+                    // Draw full width at bottom of bend
+                    ctx.moveTo(x_center - x_o, y);
+                    ctx.lineTo(x_center + x_o, y);
+                }
+            }
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // --- Draw Piston ---
+        ctx.fillStyle = '#E0E0E0'; // Light gray
+        const piston_width = x_right_out - x_right_in;
+        ctx.fillRect(x_right_in, y_piston_top, piston_width, piston_height);
+        ctx.strokeRect(x_right_in, y_piston_top, piston_width, piston_height);
+
+        // --- Draw Annotations ---
+
+        // h1
+        const h1_x = 70;
+        ctx.beginPath();
+        ctx.moveTo(h1_x, y_top);
+        ctx.lineTo(h1_x, y_water_level);
+        // Ticks
+        ctx.moveTo(h1_x - 5, y_top);
+        ctx.lineTo(h1_x + 5, y_top);
+        ctx.moveTo(h1_x - 5, y_water_level);
+        ctx.lineTo(h1_x + 5, y_water_level);
+        ctx.stroke();
+        // Text h1
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('h', h1_x - 25, (y_top + y_water_level) / 2 + 8);
+        ctx.font = '14px Times New Roman';
+        ctx.fillText('1', h1_x - 17, (y_top + y_water_level) / 2 + 13);
+
+        // h2
+        const h2_x = x_right_out + 20; // 290
+        ctx.beginPath();
+        ctx.moveTo(h2_x, y_top);
+        ctx.lineTo(h2_x, y_piston_top);
+        // Tick (bottom)
+        ctx.moveTo(h2_x - 5, y_piston_top);
+        ctx.lineTo(h2_x + 5, y_piston_top);
+        // Arrowhead (top)
+        ctx.moveTo(h2_x, y_top);
+        ctx.lineTo(h2_x - 5, y_top + 10);
+        ctx.moveTo(h2_x, y_top);
+        ctx.lineTo(h2_x + 5, y_top + 10);
+        ctx.stroke();
+        // Text h2
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('h', h2_x + 10, (y_top + y_piston_top) / 2 + 8);
+        ctx.font = '14px Times New Roman';
+        ctx.fillText('2', h2_x + 18, (y_top + y_piston_top) / 2 + 13);
+
+        // Text "理想气体" (Ideal Gas)
+        ctx.font = '22px KaiTi';
+        const gasTextX = 40;
+        ctx.fillText('理想', gasTextX, 160);
+        ctx.fillText('气体', gasTextX, 190);
+        ctx.beginPath();
+        ctx.moveTo(gasTextX + ctx.measureText('气体').width, 175);
+        ctx.lineTo(x_left_out - 5, 200);
+        ctx.stroke();
+
+        // Text "薄活塞" (Thin Piston)
+        ctx.font = '22px KaiTi';
+        const pistonTextX = x_right_out + 40;
+        ctx.fillText('薄活塞', pistonTextX, y_piston_top + 15);
+        ctx.beginPath();
+        ctx.moveTo(pistonTextX - 5, y_piston_top + 4);
+        ctx.lineTo(x_right_out, y_piston_top + 4);
+        ctx.stroke();
+
+        // Caption "热图 1.4.1"
+        ctx.font = '24px KaiTi';
+        ctx.fillText('热图 1.4.1', x_center - ctx.measureText('热图 1.4.1').width / 2, 450);
+    </script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Shear Deformation Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings to mimic the hand-drawn look
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        // A web-safe font stack that approximates a handwritten style
+        ctx.font = '22px "Comic Sans MS", "Patrick Hand", cursive';
+
+        // Helper function to draw text, accounting for the flipped y-axis
+        function drawText(text, x, y, font = ctx.font, align = 'center') {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(1, -1);
+            ctx.textAlign = align;
+            ctx.font = font;
+            ctx.fillText(text, 0, 0);
+            ctx.restore();
+        }
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 10; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        // --- Main Drawing ---
+        
+        // Set origin to bottom-left and flip Y-axis for standard math coordinates
+        const originX = 80;
+        const originY = 350;
+        ctx.translate(originX, originY);
+        ctx.scale(1, -1);
+        
+        // 1. Draw Coordinate Axes
+        drawArrow(ctx, -60, 0, 450, 0); // y-axis
+        drawArrow(ctx, 0, -30, 0, 250); // x-axis
+        drawText('y', 465, 0);
+        drawText('x', 0, 260);
+
+        // 2. Draw the fixed surface (hatching)
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let i = -50; i < 450; i += 15) {
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i - 10, -10);
+        }
+        ctx.stroke();
+        ctx.lineWidth = 2.5;
+        
+        // 3. Define the geometry of the sheared block
+        const y_start = 40;
+        const width = 280;
+        const l = 180; // height
+        const u = 50;  // horizontal shear displacement
+
+        // Calculate vertices of the parallelogram
+        const p1 = { x: y_start, y: 0 };
+        const p2 = { x: y_start + width, y: 0 };
+        const p3 = { x: y_start + width + u, y: l };
+        const p4 = { x: y_start + u, y: l };
+
+        // 4. Draw the sheared block (parallelogram)
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.lineTo(p3.x, p3.y);
+        ctx.lineTo(p4.x, p4.y);
+        ctx.closePath();
+        ctx.stroke();
+
+        // 5. Add labels and annotations
+        
+        // Label for height 'l'
+        ctx.beginPath();
+        ctx.moveTo(0, l);
+        ctx.lineTo(-5, l);
+        ctx.stroke();
+        drawText('l', -15, l + 5, undefined, 'right');
+
+        // Label for force 'F'
+        drawArrow(ctx, p3.x, p3.y, p3.x + 80, p3.y);
+        drawText('F', p3.x + 95, p3.y + 5);
+
+        // Annotation for displacement 'u'
+        const u_brace_y = l + 25;
+        const u_start_x = p3.x - u;
+        const u_end_x = p3.x;
+        
+        ctx.beginPath();
+        // Horizontal brace line
+        ctx.moveTo(u_start_x, u_brace_y);
+        ctx.lineTo(u_end_x, u_brace_y);
+        // Ticks at ends of brace
+        ctx.moveTo(u_start_x, u_brace_y - 5);
+        ctx.lineTo(u_start_x, u_brace_y + 5);
+        ctx.moveTo(u_end_x, u_brace_y - 5);
+        ctx.lineTo(u_end_x, u_brace_y + 5);
+        ctx.stroke();
+
+        // Dotted line from brace down to original position reference
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(u_start_x, u_brace_y);
+        ctx.lineTo(u_start_x, l);
+        ctx.stroke();
+        ctx.restore();
+        
+        drawText('u', u_start_x + u / 2, u_brace_y + 20);
+
+        // Annotation for shear angle 'φ'
+        const angle_radius = 35;
+        const phi = Math.atan(u / l);
+        const startAngle = -Math.PI / 2 - phi;
+        const endAngle = -Math.PI / 2;
+
+        // Angle on the right side
+        ctx.beginPath();
+        ctx.arc(p3.x, p3.y, angle_radius, startAngle, endAngle);
+        ctx.stroke();
+        const midAngleR = (startAngle + endAngle) / 2;
+        const angle_text_pos_r_x = p3.x + (angle_radius + 8) * Math.cos(midAngleR);
+        const angle_text_pos_r_y = p3.y + (angle_radius + 8) * Math.sin(midAngleR);
+        drawText('\u03C6', angle_text_pos_r_x, angle_text_pos_r_y);
+
+        // Angle on the left side
+        ctx.beginPath();
+        ctx.arc(p4.x, p4.y, angle_radius, startAngle, endAngle);
+        ctx.stroke();
+        const midAngleL = (startAngle + endAngle) / 2;
+        const angle_text_pos_l_x = p4.x + (angle_radius + 8) * Math.cos(midAngleL);
+        const angle_text_pos_l_y = p4.y + (angle_radius + 8) * Math.sin(midAngleL);
+        drawText('\u03C6', angle_text_pos_l_x, angle_text_pos_l_y);
+
+        // 6. Draw the figure caption
+        drawText('Fig. 2.77.', 200, -80, '24px "Times New Roman", serif');
+
+    </script>
+</body>
+</html>

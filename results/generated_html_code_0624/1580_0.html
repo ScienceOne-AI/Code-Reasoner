@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Potential Diagram</title>
+</head>
+<body>
+<canvas id="potentialCanvas" width="800" height="400" style="border:1px solid #000;"></canvas>
+
+<script>
+    const canvas = document.getElementById('potentialCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Parameters ---
+    ctx.fillStyle = '#000';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.font = 'bold 18px Times, serif';
+    ctx.textAlign = 'center';
+
+    const y_base = 200;
+    const well_depth = 50;
+    const well_width = 40; // Total width of the V-shape at the top
+    const a = 250; // Period, distance between molecule centers
+    const b = 80;  // Separation within a molecule
+
+    const x0_center = 150;
+    const xa_center = x0_center + a;
+    const xN_center = 700;
+
+    // --- Helper function to draw a V-shaped well ---
+    // The path is not stroked here, allowing for a single stroke call for the whole potential line.
+    function drawWell(cx) {
+        ctx.lineTo(cx - well_width / 2, y_base);
+        ctx.lineTo(cx, y_base + well_depth);
+        ctx.lineTo(cx + well_width / 2, y_base);
+    }
+
+    // --- 1. Draw the Potential Line ---
+    ctx.beginPath();
+    // Line from left edge to the first molecule
+    ctx.moveTo(30, y_base);
+
+    // First molecule (n=0)
+    drawWell(x0_center - b / 2); // Atom at -b/2
+    ctx.lineTo(x0_center + b / 2 - well_width / 2, y_base); // Connect atoms within the molecule
+    drawWell(x0_center + b / 2); // Atom at +b/2
+
+    // Line between first and second molecules
+    ctx.lineTo(xa_center - b / 2 - well_width / 2, y_base);
+
+    // Second molecule (n=1)
+    drawWell(xa_center - b / 2);
+    ctx.lineTo(xa_center + b / 2 - well_width / 2, y_base);
+    drawWell(xa_center + b / 2);
+
+    // Line segment before ellipsis
+    const ellipsis_start_x = xa_center + b / 2 + well_width / 2;
+    ctx.lineTo(ellipsis_start_x + 40, y_base);
+
+    // Line segment after ellipsis
+    const ellipsis_end_x = xN_center - b / 2 - well_width / 2;
+    ctx.moveTo(ellipsis_end_x - 40, y_base);
+
+    // Last molecule (n=N-1)
+    drawWell(xN_center - b / 2);
+    ctx.lineTo(xN_center + b / 2 - well_width / 2, y_base);
+    drawWell(xN_center + b / 2);
+
+    // Line from last molecule to the right edge
+    ctx.lineTo(770, y_base);
+    ctx.stroke();
+
+    // --- 2. Draw Annotations ---
+
+    // Ellipsis (...)
+    ctx.save();
+    ctx.font = 'bold 30px Times, serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('...', (ellipsis_start_x + 40 + ellipsis_end_x - 40) / 2, y_base);
+    ctx.restore();
+
+    // Dimension b
+    const y_b_dim = y_base + well_depth + 30;
+    const tick_h_b = 10;
+    ctx.beginPath();
+    ctx.moveTo(x0_center - b / 2, y_b_dim - tick_h_b / 2);
+    ctx.lineTo(x0_center - b / 2, y_b_dim + tick_h_b / 2);
+    ctx.moveTo(x0_center + b / 2, y_b_dim - tick_h_b / 2);
+    ctx.lineTo(x0_center + b / 2, y_b_dim + tick_h_b / 2);
+    ctx.moveTo(x0_center - b / 2, y_b_dim);
+    ctx.lineTo(x0_center + b / 2, y_b_dim);
+    ctx.stroke();
+    ctx.textBaseline = 'top';
+    ctx.fillText('b', x0_center, y_b_dim + 5);
+    ctx.textBaseline = 'bottom'; // Reset baseline
+
+    // Dimension a and Position Pointers (x=0, x=a)
+    const y_dim_a_top = y_base - 80;
+    const y_pointer_end = y_base - 15; // Where the vertical pointer lines end
+    const y_label_top = y_dim_a_top - 5;
+
+    // 'a' label
+    ctx.fillText('a', (x0_center + xa_center) / 2, y_label_top);
+    // 'a' dimension line
+    ctx.beginPath();
+    ctx.moveTo(x0_center, y_dim_a_top);
+    ctx.lineTo(xa_center, y_dim_a_top);
+    ctx.stroke();
+    
+    // Pointer for x=0
+    ctx.fillText('x = 0', x0_center, y_label_top);
+    ctx.beginPath();
+    ctx.setLineDash([5, 3]);
+    ctx.moveTo(x0_center, y_dim_a_top); // Dashed vertical line
+    ctx.lineTo(x0_center, y_pointer_end);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(x0_center, y_dim_a_top); // Top tick for dimension line
+    ctx.lineTo(x0_center - 10, y_dim_a_top);
+    ctx.stroke();
+
+    // Pointer for x=a
+    ctx.fillText('x = a', xa_center, y_label_top);
+    ctx.beginPath();
+    ctx.setLineDash([5, 3]);
+    ctx.moveTo(xa_center, y_dim_a_top); // Dashed vertical line
+    ctx.lineTo(xa_center, y_pointer_end);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(xa_center, y_dim_a_top); // Top tick for dimension line
+    ctx.lineTo(xa_center - 10, y_dim_a_top);
+    ctx.stroke();
+
+    // Pointer for x=(N-1)a
+    ctx.fillText('x = (N-1)a', xN_center, y_label_top);
+    ctx.beginPath();
+    ctx.moveTo(xN_center, y_dim_a_top); // Solid vertical line
+    ctx.lineTo(xN_center, y_pointer_end);
+    ctx.moveTo(xN_center, y_dim_a_top); // Top tick
+    ctx.lineTo(xN_center - 10, y_dim_a_top);
+    ctx.stroke();
+
+    // --- 3. Figure Caption ---
+    ctx.font = '20px Times, serif';
+    ctx.fillText('Fig. 1.18', canvas.width / 2, canvas.height - 20);
+
+</script>
+</body>
+</html>

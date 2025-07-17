@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circular Motion Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="400" height="450"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Clear canvas with a white background
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // --- Define parameters ---
+    const cx = canvas.width / 2;
+    const cy = 190; // Y-center of the sphere
+    const R = 120; // Radius of the sphere
+    // The angle theta is the polar angle, measured from the top vertical axis.
+    // From the diagram, the object is in the lower hemisphere, so theta > 90 degrees.
+    const theta_deg = 130;
+    const theta_rad = theta_deg * Math.PI / 180;
+
+    // --- Set drawing styles ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // 1. Draw Axis of Rotation (Vertical Line)
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - R - 40);
+    ctx.lineTo(cx, cy + R + 40);
+    ctx.stroke();
+
+    // 2. Draw Rotation Symbol (ω)
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    const omegaY = cy - R - 20;
+    ctx.beginPath();
+    // Arc for the rotation direction
+    ctx.arc(cx, omegaY, 25, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.stroke();
+    // Arrowhead for the arc
+    const arrowAngle = Math.PI * 1.85;
+    const arrowX = cx + 25 * Math.cos(arrowAngle);
+    const arrowY = omegaY + 25 * Math.sin(arrowAngle);
+    ctx.beginPath();
+    ctx.moveTo(arrowX, arrowY);
+    ctx.lineTo(arrowX - 7, arrowY - 6);
+    ctx.moveTo(arrowX, arrowY);
+    ctx.lineTo(arrowX - 1, arrowY + 8);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillText("ω", cx + 40, omegaY);
+
+    // 3. Draw the Sphere (Outer Circle)
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 4. Calculate Object's Position
+    // We use the standard physics spherical-to-cartesian conversion
+    // z-axis is vertical (up is positive). canvas y-axis is inverted.
+    // Physics coords: x = R*sin(theta), z = R*cos(theta)
+    // Canvas coords: canvas_x = cx + x, canvas_y = cy - z
+    const objX = cx + R * Math.sin(theta_rad);
+    const objY = cy - R * Math.cos(theta_rad);
+
+    // 5. Draw Dashed Circular Path (Ellipse in 2D perspective)
+    ctx.save();
+    ctx.setLineDash([5, 4]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    const ellipseRx = R * Math.sin(theta_rad);
+    const ellipseRy = ellipseRx * 0.25; // Controls the "tilt" of the ellipse
+    ctx.ellipse(cx, objY, ellipseRx, ellipseRy, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.restore();
+
+    // 6. Draw the small object
+    ctx.beginPath();
+    ctx.arc(objX, objY, 6, 0, 2 * Math.PI);
+    ctx.fillStyle = '#333333'; // A dark gray for the object
+    ctx.fill();
+    ctx.stroke(); // Add a black outline
+
+    // 7. Draw Radius Line (R)
+    ctx.fillStyle = 'black';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(objX, objY);
+    ctx.stroke();
+
+    // 8. Draw Angle Arc (θ)
+    // The arc starts from the upward vertical axis (canvas angle -PI/2)
+    // and sweeps clockwise (in the diagram's sense) by theta.
+    const radius_canvas_angle = Math.atan2(objY - cy, objX - cx);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 35, -Math.PI / 2, radius_canvas_angle);
+    ctx.stroke();
+
+    // 9. Draw Labels
+    // Label O (Origin)
+    ctx.fillText("O", cx - 25, cy - 5);
+
+    // Label R (Radius)
+    ctx.save();
+    // Position the label along the radius line
+    ctx.translate((cx + objX) / 2, (cy + objY) / 2);
+    ctx.rotate(radius_canvas_angle);
+    ctx.fillText("R", 15, -15); // Offset from the line
+    ctx.restore();
+
+    // Label θ (Angle)
+    const angle_label_mid_rad = (-Math.PI / 2 + radius_canvas_angle) / 2;
+    const angle_label_radius = 50;
+    ctx.fillText("θ", cx + angle_label_radius * Math.cos(angle_label_mid_rad), cy + angle_label_radius * Math.sin(angle_label_mid_rad));
+
+    // 10. Draw Bottom Text
+    ctx.font = '20px "Songti SC", "SimSun"'; // Use a common Chinese font
+    ctx.fillText("习题 1-38 图", cx, canvas.height - 25);
+
+</script>
+</body>
+</html>

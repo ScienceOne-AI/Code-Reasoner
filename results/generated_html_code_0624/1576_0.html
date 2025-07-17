@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Particle Collision in Magnetic Field</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particleCanvas" width="650" height="480"></canvas>
+    <script>
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+
+        /**
+         * Draws a symbol for a magnetic field pointing into the page (a circle with a cross).
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} x - The center x-coordinate.
+         * @param {number} y - The center y-coordinate.
+         * @param {number} radius - The radius of the circle.
+         * @param {string} [label] - An optional label (e.g., 'B').
+         * @param {string} [labelPosition] - Position of the label ('left', 'right').
+         */
+        function drawBFieldSymbol(ctx, x, y, radius, label, labelPosition) {
+            ctx.save();
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = 'black';
+            
+            // Draw circle
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Draw cross
+            const r = radius / Math.sqrt(2);
+            ctx.beginPath();
+            ctx.moveTo(x - r, y - r);
+            ctx.lineTo(x + r, y + r);
+            ctx.moveTo(x + r, y - r);
+            ctx.lineTo(x - r, y + r);
+            ctx.stroke();
+
+            if (label) {
+                ctx.font = 'bold 24px "Times New Roman"';
+                ctx.fillStyle = 'black';
+                let labelX = x;
+                if (labelPosition === 'left') {
+                    labelX = x - radius - 25;
+                } else if (labelPosition === 'right') {
+                    labelX = x + radius + 15;
+                }
+                ctx.fillText(label, labelX, y + 8);
+            }
+            ctx.restore();
+        }
+
+        /**
+         * Draws an arrowhead at the end of a path defined by a control point and an end point.
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} fromX - The x-coordinate of the control point defining the tangent.
+         * @param {number} fromY - The y-coordinate of the control point defining the tangent.
+         * @param {number} toX - The x-coordinate of the arrowhead's tip.
+         * @param {number} toY - The y-coordinate of the arrowhead's tip.
+         * @param {number} size - The length of the arrowhead's sides.
+         */
+        function drawArrowhead(ctx, fromX, fromY, toX, toY, size) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            ctx.save();
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - size * Math.cos(angle - Math.PI / 8), toY - size * Math.sin(angle - Math.PI / 8));
+            ctx.lineTo(toX - size * Math.cos(angle + Math.PI / 8), toY - size * Math.sin(angle + Math.PI / 8));
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+        
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw B-field symbols
+        drawBFieldSymbol(ctx, 100, 100, 20, 'B', 'left');
+        drawBFieldSymbol(ctx, 550, 100, 20);
+        drawBFieldSymbol(ctx, 100, 400, 20);
+        drawBFieldSymbol(ctx, 550, 400, 20, 'B', 'right');
+
+        // Interaction point and initial particles
+        const startX = 325;
+        const startY = 180;
+
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 24px "Times New Roman"';
+
+        // K- particle
+        ctx.beginPath();
+        ctx.arc(startX, startY - 25, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('K', startX + 15, startY - 20);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText('−', startX + 15 + 14, startY - 20 - 5);
+        
+        // p particle
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.beginPath();
+        ctx.arc(startX, startY - 5, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('p', startX + 15, startY);
+
+        // Draw trajectories
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // Path for π+
+        const pi_p0 = { x: startX, y: startY };
+        const pi_p1 = { x: 180, y: 350 };
+        const pi_p2 = { x: 90, y: 320 };
+        ctx.beginPath();
+        ctx.moveTo(pi_p0.x, pi_p0.y);
+        ctx.quadraticCurveTo(pi_p1.x, pi_p1.y, pi_p2.x, pi_p2.y);
+        ctx.stroke();
+        drawArrowhead(ctx, pi_p1.x, pi_p1.y, pi_p2.x, pi_p2.y, 15);
+
+        // Path for x
+        const x_p0 = { x: startX, y: startY };
+        const x_p1 = { x: 470, y: 350 };
+        const x_p2 = { x: 560, y: 320 };
+        ctx.beginPath();
+        ctx.moveTo(x_p0.x, x_p0.y);
+        ctx.quadraticCurveTo(x_p1.x, x_p1.y, x_p2.x, x_p2.y);
+        ctx.stroke();
+        drawArrowhead(ctx, x_p1.x, x_p1.y, x_p2.x, x_p2.y, 15);
+
+        // Labels for final particles
+        // π+ dot and label
+        // Calculate a point on the Bezier curve for the dot's position (t=0.7)
+        const t = 0.7;
+        const pi_dotX = Math.pow(1 - t, 2) * pi_p0.x + 2 * (1 - t) * t * pi_p1.x + Math.pow(t, 2) * pi_p2.x;
+        const pi_dotY = Math.pow(1 - t, 2) * pi_p0.y + 2 * (1 - t) * t * pi_p1.y + Math.pow(t, 2) * pi_p2.y;
+        
+        ctx.beginPath();
+        ctx.arc(pi_dotX, pi_dotY, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('π', pi_dotX - 5, pi_dotY + 30);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText('+', pi_dotX - 5 + 13, pi_dotY + 30 - 12);
+        
+        // x label
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('x', x_p2.x - 10, x_p2.y + 35);
+    </script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electric Quadrupole Moment Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  canvas {
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Style and Parameter Setup ---
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 2.5;
+  const mainFont = 'italic 20px serif';
+  const labelFont = '18px serif';
+  
+  // --- Parameters ---
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const l = 130; // Represents length 'l' in pixels
+  const angle = Math.PI / 7; // Approx 25.7 degrees, similar to the image
+
+  // --- Utility Function to Draw Arrows ---
+  function drawArrow(ctx, fromX, fromY, toX, toY) {
+    const headlen = 10; // length of head in pixels
+    const dx = toX - fromY;
+    const dy = toY - fromY;
+    const arrowAngle = Math.atan2(toY - fromY, toX - fromX);
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headlen * Math.cos(arrowAngle - Math.PI / 6), toY - headlen * Math.sin(arrowAngle - Math.PI / 6));
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headlen * Math.cos(arrowAngle + Math.PI / 6), toY - headlen * Math.sin(arrowAngle + Math.PI / 6));
+    ctx.stroke();
+  }
+  
+  // --- Start Drawing ---
+  
+  // Set origin to center and flip Y axis for standard math coordinates
+  ctx.translate(cx, cy);
+  ctx.scale(1, -1);
+
+  // 1. Draw Axes
+  const axisLength = 190;
+  ctx.lineWidth = 2;
+  drawArrow(ctx, -axisLength, 0, axisLength, 0);
+  drawArrow(ctx, 0, -axisLength * 0.9, 0, axisLength * 0.9);
+  
+  // Axis labels (need to handle flipped Y)
+  ctx.font = mainFont;
+  ctx.scale(1, -1); // Un-flip for text drawing
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('x', axisLength + 20, 5);
+  ctx.fillText('y', 0, -axisLength * 0.9 - 15);
+  ctx.fillText('O', -15, 15);
+  ctx.scale(1, -1); // Re-flip
+  
+  // 2. Draw the Rotating Rod
+  ctx.lineWidth = 2.5;
+  const x1 = l * Math.cos(angle);
+  const y1 = l * Math.sin(angle);
+  const x2 = -x1;
+  const y2 = -y1;
+
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x1, y1);
+  ctx.stroke();
+
+  // 3. Draw Charges and their labels
+  const chargeRadius = 4;
+  ctx.beginPath();
+  ctx.arc(x1, y1, chargeRadius, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x2, y2, chargeRadius, 0, 2 * Math.PI);
+  ctx.fill();
+
+  ctx.font = mainFont;
+  ctx.scale(1, -1); // Un-flip for text
+  ctx.fillText('e', x1 + 18, -y1 - 5);
+  ctx.fillText('e', x2 - 18, -y2 + 5);
+  ctx.scale(1, -1); // Re-flip
+
+  // 4. Draw Length Labels 'l'
+  const l_label_pos_r = 0.5 * l;
+  const l_label_x1 = l_label_pos_r * Math.cos(angle);
+  const l_label_y1 = l_label_pos_r * Math.sin(angle);
+  
+  ctx.scale(1, -1); // Un-flip for text
+  ctx.fillText('l', l_label_x1 - 5, -l_label_y1 - 10);
+  ctx.fillText('l', -l_label_x1 + 5, l_label_y1 + 10);
+  ctx.scale(1, -1); // Re-flip
+
+  // 5. Draw Angle Arc and Label
+  ctx.lineWidth = 1.5;
+  const arcRadius = 50;
+  ctx.beginPath();
+  ctx.arc(0, 0, arcRadius, 0, angle, false);
+  ctx.stroke();
+
+  // Angle Label "ωt/2"
+  const labelAngle = angle / 2;
+  const labelRadius = arcRadius + 28;
+  const labelX = labelRadius * Math.cos(labelAngle);
+  const labelY = labelRadius * Math.sin(labelAngle);
+  
+  ctx.scale(1, -1); // Un-flip for text
+  ctx.font = mainFont;
+  ctx.fillText('ωt', labelX, -labelY);
+  ctx.beginPath();
+  ctx.moveTo(labelX - 12, -labelY + 11);
+  ctx.lineTo(labelX + 12, -labelY + 11);
+  ctx.stroke();
+  ctx.fillText('2', labelX, -labelY + 22);
+  ctx.scale(1, -1); // Re-flip
+  
+  // 6. Draw Velocity Vectors
+  ctx.lineWidth = 2;
+  const v_len = 45;
+  // Vector 1 (top right)
+  const v1_endX = x1 - v_len * Math.sin(angle);
+  const v1_endY = y1 + v_len * Math.cos(angle);
+  drawArrow(ctx, x1, y1, v1_endX, v1_endY);
+  
+  // Vector 2 (bottom left)
+  const v2_endX = x2 + v_len * Math.sin(angle);
+  const v2_endY = y2 - v_len * Math.cos(angle);
+  drawArrow(ctx, x2, y2, v2_endX, v2_endY);
+  
+  // Velocity labels 'v'
+  ctx.font = mainFont;
+  ctx.scale(1, -1); // Un-flip for text
+  ctx.fillText('v', v1_endX, -(v1_endY + 15));
+  ctx.fillText('v', v2_endX, -(v2_endY - 15));
+  ctx.scale(1, -1); // Re-flip
+
+  // 7. Draw Figure Caption
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset all transformations
+  ctx.font = labelFont;
+  ctx.fillStyle = 'black';
+  ctx.textAlign = 'center';
+  ctx.fillText('Fig. 4.31', canvas.width / 2, canvas.height - 25);
+
+</script>
+</body>
+</html>

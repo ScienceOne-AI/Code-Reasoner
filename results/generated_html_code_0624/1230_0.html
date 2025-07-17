@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mechanical Linkage Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="650" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style and helper functions
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'white';
+        ctx.lineWidth = 3;
+        ctx.font = 'italic bold 24px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        function drawPivot(x, y, radius = 8) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function drawBearing(x, y) {
+            const outerRadius = 12;
+            const innerRadius = 5;
+            // Bearing housing
+            ctx.beginPath();
+            ctx.arc(x, y, outerRadius, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            // Axle
+            ctx.beginPath();
+            ctx.arc(x, y, innerRadius, 0, 2 * Math.PI);
+            const oldFill = ctx.fillStyle;
+            ctx.fillStyle = 'black';
+            ctx.fill();
+            ctx.fillStyle = oldFill;
+
+            // Support stand part
+            ctx.beginPath();
+            ctx.moveTo(x, y + outerRadius);
+            ctx.lineTo(x, y + outerRadius + 8);
+            ctx.stroke();
+        }
+
+        function hatchPolygon(points) {
+            if (points.length === 0) return;
+            
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.closePath();
+
+            ctx.save();
+            ctx.stroke();
+            ctx.clip();
+
+            const oldWidth = ctx.lineWidth;
+            ctx.lineWidth = 1;
+            const spacing = 8;
+            let minX = points[0].x, maxX = points[0].x;
+            let minY = points[0].y, maxY = points[0].y;
+            points.forEach(p => {
+                minX = Math.min(minX, p.x);
+                maxX = Math.max(maxX, p.x);
+                minY = Math.min(minY, p.y);
+                maxY = Math.max(maxY, p.y);
+            });
+
+            ctx.beginPath();
+            const diagLength = maxY - minY;
+            for (let i = minX - diagLength; i < maxX; i += spacing) {
+                ctx.moveTo(i, minY);
+                ctx.lineTo(i + diagLength, maxY);
+            }
+            ctx.stroke();
+            ctx.restore();
+            ctx.lineWidth = oldWidth;
+        }
+
+        function drawHatchedRect(x, y, w, h) {
+            const points = [
+                {x: x, y: y},
+                {x: x + w, y: y},
+                {x: x + w, y: y + h},
+                {x: x, y: y + h}
+            ];
+            hatchPolygon(points);
+        }
+
+        // --- Define Coordinates ---
+        const B = { x: 400, y: 380 };
+        const E = { x: 400, y: 210 };
+        const A = { x: 150, y: 380 };
+        const C = { x: 150, y: 210 };
+        const D = { x: 550, y: 210 };
+
+        // --- Draw Scene ---
+
+        // 1. Draw Supports
+        // Support for A
+        drawHatchedRect(100, 385, 50, 30);
+        
+        // Support for E
+        drawHatchedRect(370, 215, 60, 30);
+        
+        // Stepped support for B
+        const supportBPoints = [
+            {x: 350, y: 410}, {x: 480, y: 410},
+            {x: 480, y: 360}, {x: 430, y: 360},
+            {x: 430, y: 380}, {x: 350, y: 380}
+        ];
+        hatchPolygon(supportBPoints);
+
+        // 2. Draw Dashed/Dotted Lines
+        // Dashed-dotted line between E and B
+        ctx.save();
+        ctx.setLineDash([10, 4, 2, 4]);
+        ctx.beginPath();
+        ctx.moveTo(E.x, E.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Dashed arc for path of A
+        ctx.save();
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        const radiusAB = B.x - A.x;
+        ctx.beginPath();
+        ctx.arc(B.x, B.y, radiusAB, Math.PI, Math.PI * 0.88, true);
+        ctx.stroke();
+        ctx.restore();
+
+        // 3. Draw Main Links
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y); // Link AB (bridge)
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(C.x, C.y); // Link AC (vertical rod)
+        ctx.moveTo(C.x, C.y);
+        ctx.lineTo(D.x, D.y); // Link CED (lever arm)
+        ctx.stroke();
+        
+        // 4. Draw Counterweight P
+        const P_box = { w: 70, h: 50 };
+        const P_rect_x = D.x - 15;
+        const P_rect_y = D.y + 5;
+        
+        ctx.beginPath();
+        ctx.rect(P_rect_x, P_rect_y, P_box.w, P_box.h);
+        ctx.stroke();
+        
+        // The pin D inside the box.
+        const oldFill = ctx.fillStyle;
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(D.x, D.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = oldFill;
+
+        // 5. Draw Pivots
+        drawPivot(A.x, A.y);
+        drawPivot(C.x, C.y);
+        drawBearing(B.x, B.y);
+        drawBearing(E.x, E.y);
+
+        // 6. Draw Labels
+        ctx.fillStyle = 'black';
+        ctx.fillText("C", C.x, C.y - 25);
+        ctx.fillText("A", A.x, A.y - 25);
+        ctx.fillText("B", B.x, B.y + 35);
+        ctx.fillText("E", E.x + 25, E.y - 20);
+        ctx.fillText("D", D.x + 25, D.y - 5);
+        ctx.fillText("P", D.x, P_rect_y + P_box.h + 20);
+
+        // 7. Small details from original
+        // Small dot
+        ctx.beginPath();
+        ctx.arc(115, 360, 2, 0, 2 * Math.PI);
+        ctx.fill();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Vibration Curve</title>
+</head>
+<body>
+<canvas id="myCanvas" width="600" height="500" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const cx = 80;      // Origin x on canvas
+    const cy = 250;     // Origin y on canvas
+    const scaleX = 200; // Pixels per second
+    const scaleY = 1500; // Pixels per meter
+
+    // --- Draw Axes ---
+    ctx.beginPath();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // t-axis (horizontal)
+    const t_axis_end = cx + 2.5 * scaleX;
+    ctx.moveTo(cx - 20, cy);
+    ctx.lineTo(t_axis_end, cy);
+    ctx.stroke();
+    // Arrow for t-axis
+    ctx.moveTo(t_axis_end, cy);
+    ctx.lineTo(t_axis_end - 10, cy - 5);
+    ctx.moveTo(t_axis_end, cy);
+    ctx.lineTo(t_axis_end - 10, cy + 5);
+    ctx.stroke();
+    ctx.fillText('t/s', t_axis_end - 20, cy + 20);
+
+    // x-axis (vertical)
+    const x_axis_end = cy - 0.15 * scaleY;
+    ctx.moveTo(cx, cy + 0.15 * scaleY);
+    ctx.lineTo(cx, x_axis_end);
+    ctx.stroke();
+    // Arrow for x-axis
+    ctx.moveTo(cx, x_axis_end);
+    ctx.lineTo(cx - 5, x_axis_end + 10);
+    ctx.moveTo(cx, x_axis_end);
+    ctx.lineTo(cx + 5, x_axis_end + 10);
+    ctx.stroke();
+    ctx.fillText('x/m', cx + 25, x_axis_end + 10);
+
+    // --- Draw Ticks and Labels ---
+    ctx.textAlign = 'right';
+    // Y-axis ticks
+    ctx.fillText('0.10', cx - 10, cy - 0.10 * scaleY);
+    ctx.fillText('0.05', cx - 10, cy - 0.05 * scaleY);
+    ctx.fillText('-0.10', cx - 10, cy + 0.10 * scaleY);
+    ctx.textAlign = 'center';
+    ctx.fillText('0', cx - 15, cy + 15);
+
+    // X-axis ticks
+    ctx.fillText('1.0', cx + 1.0 * scaleX, cy + 20);
+
+    // --- Draw the sinusoidal curve ---
+    // The kinematic equation for simple harmonic motion is x(t) = A * cos(ωt + φ).
+    // From the graph, the amplitude A = 0.10 m.
+    // At t=0, x(0) = 0.05 m. So, 0.05 = 0.10 * cos(φ), which gives cos(φ) = 0.5.
+    // The initial slope is positive, so velocity v(0) > 0. Since v(t) = -Aω*sin(ωt+φ), v(0) = -Aω*sin(φ) > 0.
+    // This implies sin(φ) < 0. Therefore, the initial phase φ = -π/3.
+    // At t=1.0 s, x(1.0) = 0. So, 0.10 * cos(ω*1.0 - π/3) = 0.
+    // This means the phase (ω*1.0 - π/3) is π/2 (the first zero-crossing after the peak).
+    // So, ω - π/3 = π/2, which gives the angular frequency ω = 5π/6 rad/s.
+    // The final kinematic equation is x(t) = 0.10 * cos(5π/6 * t - π/3).
+    const A = 0.10;
+    const omega = 5 * Math.PI / 6;
+    const phi = -Math.PI / 3;
+
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+
+    const t_start = 0;
+    const t_end = 2.3; // Match the visual extent of the original image's curve
+    const dt = 0.01;
+
+    for (let t = t_start; t <= t_end; t += dt) {
+        const x = A * Math.cos(omega * t + phi);
+        const canvasX = cx + t * scaleX;
+        const canvasY = cy - x * scaleY;
+        if (t === t_start) {
+            ctx.moveTo(canvasX, canvasY);
+        } else {
+            ctx.lineTo(canvasX, canvasY);
+        }
+    }
+    ctx.stroke();
+
+    // --- Draw Annotations ---
+    // Point P and dashed line
+    const t_peak = (0 - phi) / omega; // Phase is 0 at the peak
+    const x_peak = A;
+    const canvasX_peak = cx + t_peak * scaleX;
+    const canvasY_peak = cy - x_peak * scaleY;
+
+    ctx.font = 'italic 18px Arial';
+    ctx.fillText('P', canvasX_peak + 15, canvasY_peak - 5);
+    ctx.font = '16px Arial'; // Reset font
+
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'black';
+    ctx.moveTo(cx, canvasY_peak);
+    ctx.lineTo(canvasX_peak, canvasY_peak);
+    ctx.stroke();
+
+    // Dashed line for trough
+    const t_trough = (Math.PI - phi) / omega; // Phase is π at the trough
+    const x_trough = -A;
+    const canvasX_trough = cx + t_trough * scaleX;
+    const canvasY_trough = cy - x_trough * scaleY;
+    
+    ctx.beginPath();
+    ctx.moveTo(cx, canvasY_trough);
+    ctx.lineTo(canvasX_trough, canvasY_trough);
+    ctx.stroke();
+    
+    ctx.setLineDash([]); // Reset line dash
+
+    // --- Draw bottom text ---
+    ctx.font = '20px "SimSun", "Songti SC"'; // Use a common Chinese font
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 10-3 图', canvas.width / 2, canvas.height - 30);
+
+</script>
+</body>
+</html>

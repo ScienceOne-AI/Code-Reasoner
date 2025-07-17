@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="600" height="350"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // Parameters
+    const centerX = 160;
+    const centerY = 150;
+    const radius = 80;
+    const pointP_x = 450;
+    const pointP_y = centerY;
+    const dimLineY = 250;
+    const arrowHeadLength = 10;
+
+    // Function to draw an arrowhead at the 'to' point of a line
+    function drawArrowhead(ctx, fromX, fromY, toX, toY, headLength) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.beginPath();
+        ctx.translate(toX, toY);
+        ctx.rotate(angle);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headLength, -headLength / 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headLength, headLength / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // A simplified arrowhead function that matches the image better for the dimension line.
+    function drawOutwardArrow(ctx, x, y, size, direction) {
+         ctx.beginPath();
+         if (direction === 'left') {
+            ctx.moveTo(x + size, y - size/1.5);
+            ctx.lineTo(x, y);
+            ctx.lineTo(x + size, y + size/1.5);
+         } else { // right
+            ctx.moveTo(x - size, y - size/1.5);
+            ctx.lineTo(x, y);
+            ctx.lineTo(x - size, y + size/1.5);
+         }
+         ctx.stroke();
+    }
+
+
+    // --- Drawing starts here ---
+
+    // 1. Draw the sphere
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 2. Draw the radius R line and label
+    // Using standard math angle (0 rad on +x, increasing CCW) and converting to canvas coordinates
+    const radiusAngleMath = 135 * Math.PI / 180;
+    const radiusEndX = centerX + radius * Math.cos(radiusAngleMath);
+    const radiusEndY = centerY - radius * Math.sin(radiusAngleMath); // Subtract for Y to go up
+
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(radiusEndX, radiusEndY);
+    ctx.stroke();
+    drawArrowhead(ctx, centerX, centerY, radiusEndX, radiusEndY, arrowHeadLength);
+
+    // Label R
+    ctx.font = "italic 24px 'Times New Roman'";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('R', centerX - 35, centerY - 35);
+
+    // 3. Draw the dashed horizontal axis
+    ctx.beginPath();
+    ctx.setLineDash([6, 6]);
+    ctx.moveTo(centerX, centerY); // Starts from the center
+    ctx.lineTo(canvas.width - 50, centerY);
+    ctx.stroke();
+    
+    // 4. Draw point P
+    ctx.setLineDash([]); // Reset dash for point P
+    ctx.beginPath();
+    ctx.arc(pointP_x, pointP_y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Label P
+    ctx.font = "bold 24px 'Times New Roman'";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('P', pointP_x, pointP_y - 8);
+
+    // 5. Draw the dimension 'x'
+    // Vertical dashed lines
+    ctx.beginPath();
+    ctx.setLineDash([6, 6]);
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(centerX, dimLineY + 10);
+    ctx.moveTo(pointP_x, pointP_y);
+    ctx.lineTo(pointP_x, dimLineY + 10);
+    ctx.stroke();
+    
+    // Reset to solid line for the dimension line itself
+    ctx.setLineDash([]);
+    
+    // Horizontal dimension line
+    ctx.beginPath();
+    ctx.moveTo(centerX, dimLineY);
+    ctx.lineTo(pointP_x, dimLineY);
+    ctx.stroke();
+    
+    // Arrowheads for dimension x, pointing outwards
+    drawOutwardArrow(ctx, centerX, dimLineY, 8, 'left');
+    drawOutwardArrow(ctx, pointP_x, dimLineY, 8, 'right');
+
+    // Label x
+    ctx.font = "italic 24px 'Times New Roman'";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('x', (centerX + pointP_x) / 2, dimLineY + 8);
+
+    // 6. Draw the figure caption
+    ctx.font = "20px Arial";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Fig. 7.1', canvas.width / 2, canvas.height - 10);
+
+</script>
+
+</body>
+</html>

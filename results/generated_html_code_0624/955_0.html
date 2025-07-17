@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Pendulum Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #999;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="pendulumCanvas" width="600" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('pendulumCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Drawing parameters ---
+        const pivot = { x: 300, y: 100 };
+        const L = 200;
+        const sphereRadius = 25;
+        const angle = Math.PI / 7; // A suitable angle for visual clarity
+
+        // --- Calculated positions ---
+        const equilibriumPos = { x: pivot.x, y: pivot.y + L };
+        const displacedPos = {
+            x: pivot.x + L * Math.sin(angle),
+            y: pivot.y + L * Math.cos(angle)
+        };
+        const horizontalDisplacement = displacedPos.x - equilibriumPos.x;
+
+        // --- Style settings ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '20px Arial';
+
+        // 1. Draw the fixed support
+        ctx.beginPath();
+        const supportWidth = 240;
+        ctx.moveTo(pivot.x - supportWidth / 2, pivot.y);
+        ctx.lineTo(pivot.x + supportWidth / 2, pivot.y);
+        ctx.stroke();
+
+        // Hatching for the support
+        ctx.save();
+        ctx.lineWidth = 1;
+        for (let i = pivot.x - supportWidth / 2 + 5; i < pivot.x + supportWidth / 2; i += 12) {
+            ctx.beginPath();
+            ctx.moveTo(i, pivot.y);
+            ctx.lineTo(i - 10, pivot.y - 10); // Slanted lines above the support line
+            ctx.stroke();
+        }
+        ctx.restore();
+
+
+        // 2. Draw the pendulum at the displaced position (dashed)
+        ctx.beginPath();
+        ctx.setLineDash([6, 4]);
+        // Dashed thread
+        ctx.moveTo(pivot.x, pivot.y);
+        ctx.lineTo(displacedPos.x, displacedPos.y);
+        ctx.stroke();
+        // Dashed sphere
+        ctx.beginPath();
+        ctx.arc(displacedPos.x, displacedPos.y, sphereRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+
+        // 3. Draw the pendulum at equilibrium (solid)
+        ctx.beginPath();
+        // Solid thread
+        ctx.moveTo(pivot.x, pivot.y);
+        ctx.lineTo(equilibriumPos.x, equilibriumPos.y);
+        ctx.stroke();
+        // Solid sphere
+        ctx.beginPath();
+        ctx.arc(equilibriumPos.x, equilibriumPos.y, sphereRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+
+        // 4. Draw measurement lines and labels
+
+        // Helper lines for L and x from sphere centers
+        ctx.beginPath();
+        ctx.setLineDash([3, 3]);
+        // Horizontal helper line for L from center of P
+        ctx.moveTo(pivot.x - 120, equilibriumPos.y);
+        ctx.lineTo(equilibriumPos.x, equilibriumPos.y);
+        // Vertical helper line for x from center of P
+        const x_line_y = equilibriumPos.y + 60;
+        ctx.moveTo(equilibriumPos.x, equilibriumPos.y);
+        ctx.lineTo(equilibriumPos.x, x_line_y);
+        // Vertical helper line for x from displaced sphere
+        ctx.moveTo(displacedPos.x, displacedPos.y);
+        ctx.lineTo(displacedPos.x, x_line_y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // L measurement line
+        const L_line_x = pivot.x - 120;
+        ctx.beginPath();
+        ctx.moveTo(L_line_x, pivot.y);
+        ctx.lineTo(L_line_x, equilibriumPos.y);
+        // Top arrowhead (points up)
+        ctx.moveTo(L_line_x - 5, pivot.y + 7);
+        ctx.lineTo(L_line_x, pivot.y);
+        ctx.lineTo(L_line_x + 5, pivot.y + 7);
+        // Bottom arrowhead (points down)
+        ctx.moveTo(L_line_x - 5, equilibriumPos.y - 7);
+        ctx.lineTo(L_line_x, equilibriumPos.y);
+        ctx.lineTo(L_line_x + 5, equilibriumPos.y - 7);
+        ctx.stroke();
+        ctx.textAlign = 'right';
+        ctx.fillText('L', L_line_x - 10, pivot.y + L / 2 + 5);
+
+        // x measurement line
+        ctx.beginPath();
+        ctx.moveTo(equilibriumPos.x, x_line_y);
+        ctx.lineTo(displacedPos.x, x_line_y);
+        // Left arrowhead (points left)
+        ctx.moveTo(equilibriumPos.x + 7, x_line_y - 5);
+        ctx.lineTo(equilibriumPos.x, x_line_y);
+        ctx.lineTo(equilibriumPos.x + 7, x_line_y + 5);
+        // Right arrowhead (points right)
+        ctx.moveTo(displacedPos.x - 7, x_line_y - 5);
+        ctx.lineTo(displacedPos.x, x_line_y);
+        ctx.lineTo(displacedPos.x - 7, x_line_y + 5);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.fillText('x', equilibriumPos.x + horizontalDisplacement / 2, x_line_y + 25);
+
+
+        // 5. Draw text labels
+
+        // "thread" label
+        ctx.textAlign = 'left';
+        ctx.fillText('thread', pivot.x + 130, pivot.y + 40);
+        ctx.beginPath();
+        ctx.moveTo(pivot.x + 125, pivot.y + 45);
+        const threadMidPoint = {
+            x: (pivot.x + displacedPos.x) / 2,
+            y: (pivot.y + displacedPos.y) / 2
+        };
+        ctx.lineTo(threadMidPoint.x + 10, threadMidPoint.y);
+        ctx.stroke();
+
+        // "metal sphere P" label
+        ctx.fillText('metal sphere P', pivot.x - 220, equilibriumPos.y - 10);
+        ctx.beginPath();
+        ctx.moveTo(pivot.x - 85, equilibriumPos.y - 5);
+        ctx.lineTo(equilibriumPos.x - sphereRadius - 5, equilibriumPos.y);
+        ctx.stroke();
+
+        // Figure caption
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 3.1', canvas.width / 2, canvas.height - 30);
+
+    </script>
+</body>
+</html>

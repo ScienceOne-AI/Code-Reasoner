@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram Fig. 3.55</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="550" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.textAlign = 'center';
+
+        // Helper function for drawing a resistor (zigzag)
+        function drawResistor(x1, y1, x2, y2, numZigzags = 7) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            const segmentLength = len / (numZigzags * 2);
+            const zigHeight = 8;
+
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            for (let i = 0; i < numZigzags; i++) {
+                ctx.lineTo((i * 2 + 1) * segmentLength, (i % 2 === 0) ? -zigHeight : zigHeight);
+                ctx.lineTo((i * 2 + 2) * segmentLength, 0);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Helper function for drawing a ground symbol
+        function drawGround(x, y) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + 15);
+            ctx.moveTo(x - 15, y + 15);
+            ctx.lineTo(x + 15, y + 15);
+            ctx.moveTo(x - 10, y + 20);
+            ctx.lineTo(x + 10, y + 20);
+            ctx.moveTo(x - 5, y + 25);
+            ctx.lineTo(x + 5, y + 25);
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+
+        // Amplifier Box
+        const ampX = 250;
+        const ampY = 150;
+        const ampW = 120;
+        const ampH = 100;
+        ctx.strokeRect(ampX, ampY, ampW, ampH);
+
+        // --- Input Side ---
+        const inputNodeX = ampX;
+        const inputNodeY = ampY + ampH / 2;
+        const groundY = ampY + ampH;
+        
+        // R1 position
+        const r1EndX = inputNodeX - 30;
+        const r1StartX = r1EndX - 70;
+        
+        // Input wires
+        const lineBeforeR1Start = 100;
+        const terminalStartX = 80;
+        ctx.beginPath();
+        ctx.moveTo(terminalStartX, inputNodeY);
+        ctx.lineTo(r1StartX, inputNodeY); // Wire before R1
+        ctx.moveTo(r1EndX, inputNodeY);
+        ctx.lineTo(inputNodeX, inputNodeY); // Wire after R1
+        ctx.moveTo(terminalStartX, groundY);
+        ctx.lineTo(inputNodeX, groundY); // Bottom wire
+        ctx.stroke();
+
+        // Input Ground
+        drawGround(160, groundY);
+
+        // Input Resistor R1
+        drawResistor(r1StartX, inputNodeY, r1EndX, inputNodeY);
+        
+        // --- Output Side ---
+        const outputNodeX = ampX + ampW;
+        const outputNodeY = inputNodeY;
+        const outputEndX = outputNodeX + 100;
+
+        // Output wires
+        ctx.beginPath();
+        ctx.moveTo(outputNodeX, outputNodeY);
+        ctx.lineTo(outputEndX, outputNodeY);
+        ctx.moveTo(outputNodeX, groundY);
+        ctx.lineTo(outputEndX, groundY);
+        ctx.stroke();
+        
+        // Output terminal
+        ctx.beginPath();
+        ctx.arc(outputEndX, outputNodeY, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Output Ground
+        drawGround(420, groundY);
+        
+        // --- Feedback Path ---
+        const feedbackTopY = ampY - 40;
+        const r2StartX = outputNodeX - 20;
+        const r2EndX = r2StartX - 60;
+
+        ctx.beginPath();
+        // From output node up
+        ctx.moveTo(outputNodeX, outputNodeY);
+        ctx.lineTo(outputNodeX, feedbackTopY);
+        // Across the top
+        ctx.moveTo(outputNodeX, feedbackTopY);
+        ctx.lineTo(r2StartX, feedbackTopY); // Wire before R2
+        ctx.moveTo(r2EndX, feedbackTopY);
+        ctx.lineTo(inputNodeX, feedbackTopY); // Wire after R2
+        // Down to input node
+        ctx.lineTo(inputNodeX, inputNodeY);
+        ctx.stroke();
+
+        // Feedback Resistor R2
+        drawResistor(r2StartX, feedbackTopY, r2EndX, feedbackTopY);
+        
+        // --- Labels, Arrows, and Text ---
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 2;
+
+        // A0 in amplifier
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText("A", ampX + ampW/2 - 10, ampY + ampH/2 + 10);
+        ctx.font = 'italic 18px "Times New Roman"';
+        ctx.fillText("0", ampX + ampW/2 + 4, ampY + ampH/2 + 15);
+        
+        // Vi
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.fillText("V", 60, 240);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText("i", 68, 245);
+
+        // V
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.fillText("V", r1EndX + 15, groundY - 15);
+
+        // Vo
+        ctx.fillText("V", outputEndX - 20, groundY - 15);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText("o", outputEndX - 12, groundY - 10);
+
+        // R1
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.fillText("R", r1StartX + 35, inputNodeY - 20);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText("1", r1StartX + 48, inputNodeY - 15);
+        
+        // R2
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.fillText("R", r2EndX + 30, feedbackTopY - 20);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText("2", r2EndX + 43, feedbackTopY - 15);
+        
+        // Current i1
+        const i1x = lineBeforeR1Start + 25;
+        const i1y = inputNodeY;
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.fillText("i", i1x, i1y - 15);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText("1", i1x + 6, i1y - 10);
+        // Arrow for i1
+        ctx.beginPath();
+        ctx.moveTo(i1x - 10, i1y);
+        ctx.lineTo(i1x + 10, i1y);
+        ctx.lineTo(i1x + 5, i1y - 4);
+        ctx.moveTo(i1x + 10, i1y);
+        ctx.lineTo(i1x + 5, i1y + 4);
+        ctx.stroke();
+
+        // Current i2
+        const i2x = r2EndX + 30; // Centered over R2
+        const i2y = feedbackTopY;
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.fillText("i", i2x, i2y - 15);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText("2", i2x + 6, i2y - 10);
+        // Arrow for i2
+        ctx.beginPath();
+        ctx.moveTo(i2x + 10, i2y);
+        ctx.lineTo(i2x - 10, i2y);
+        ctx.lineTo(i2x - 5, i2y - 4);
+        ctx.moveTo(i2x - 10, i2y);
+        ctx.lineTo(i2x - 5, i2y + 4);
+        ctx.stroke();
+
+        // Figure Caption
+        ctx.font = 'bold 20px "Times New Roman"';
+        ctx.fillText("Fig. 3.55", canvas.width / 2, 350);
+    </script>
+</body>
+</html>

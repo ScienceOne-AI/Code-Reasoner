@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical Path Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="opticalCanvas" width="850" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('opticalCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration and Coordinates ---
+        const axisY = 250;
+        const L1_x = 250;
+        const f_len = 160;
+        const u_len = 150;
+
+        const S_x = L1_x - u_len;
+        const P_x = L1_x + f_len;
+        const L2_x = P_x + f_len;
+        const Q_x = L2_x + f_len;
+
+        // --- Helper Drawing Functions ---
+
+        // Draws a convex lens
+        function drawLens(x, label) {
+            const height = 140;
+            const arrowSize = 8;
+            ctx.beginPath();
+            ctx.moveTo(x, axisY - height / 2);
+            ctx.lineTo(x, axisY + height / 2);
+            // Top arrow
+            ctx.moveTo(x - arrowSize, axisY - height / 2 - arrowSize * 1.2);
+            ctx.lineTo(x, axisY - height / 2);
+            ctx.lineTo(x + arrowSize, axisY - height / 2 - arrowSize * 1.2);
+            // Bottom arrow
+            ctx.moveTo(x - arrowSize, axisY + height / 2 + arrowSize * 1.2);
+            ctx.lineTo(x, axisY + height / 2);
+            ctx.lineTo(x + arrowSize, axisY + height / 2 + arrowSize * 1.2);
+            ctx.stroke();
+
+            ctx.save();
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, x, axisY - height / 2 - 25);
+            ctx.restore();
+        }
+
+        // Draws a jagged edge for screens
+        function drawJaggedEdge(x, y_start, y_end) {
+            const numJags = Math.floor((y_end - y_start) / 10);
+            const jagLength = 6;
+            ctx.beginPath();
+            for (let i = 0; i <= numJags; i++) {
+                const y = y_start + i * (y_end - y_start) / numJags;
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + jagLength, y + 5);
+            }
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Logic ---
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Set default styles
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // 1. Draw Principal Axis
+        ctx.beginPath();
+        ctx.moveTo(0, axisY);
+        ctx.lineTo(canvas.width, axisY);
+        ctx.stroke();
+
+        // 2. Draw Light Source S
+        ctx.beginPath();
+        ctx.arc(S_x, axisY, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('S', S_x - 30, axisY - 10);
+
+        // 3. Draw Lens L1
+        drawLens(L1_x, 'L₁');
+
+        // 4. Draw Screen P with Small Hole
+        const screenHeightP = 220;
+        const holeRadius = 30;
+        ctx.beginPath();
+        ctx.moveTo(P_x, axisY - screenHeightP / 2);
+        ctx.lineTo(P_x, axisY - holeRadius);
+        ctx.moveTo(P_x, axisY + holeRadius);
+        ctx.lineTo(P_x, axisY + screenHeightP / 2);
+        ctx.stroke();
+        drawJaggedEdge(P_x, axisY - screenHeightP / 2, axisY + screenHeightP / 2);
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('P', P_x - 5, axisY - screenHeightP / 2 - 20);
+        ctx.font = '24px "SimSun"'; // Font for Chinese characters
+        ctx.fillText('小孔', P_x - 55, axisY + 5);
+
+        // 5. Draw Lens L2
+        drawLens(L2_x, 'L₂');
+
+        // 6. Draw Screen Q
+        const screenHeightQ = 260;
+        ctx.beginPath();
+        ctx.moveTo(Q_x, axisY - screenHeightQ / 2);
+        ctx.lineTo(Q_x, axisY + screenHeightQ / 2);
+        ctx.stroke();
+        drawJaggedEdge(Q_x, axisY - screenHeightQ / 2, axisY + screenHeightQ / 2);
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('Q', Q_x - 5, axisY - screenHeightQ / 2 - 20);
+
+        // 7. Draw Distance Markers
+        ctx.lineWidth = 1;
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // 'u' marker
+        const u_marker_y = axisY + 60;
+        ctx.beginPath();
+        ctx.moveTo(S_x, u_marker_y);
+        ctx.lineTo(L1_x, u_marker_y);
+        // Tick at S
+        ctx.moveTo(S_x, u_marker_y - 5);
+        ctx.lineTo(S_x, u_marker_y + 5);
+        // Tick at L1
+        ctx.moveTo(L1_x, axisY);
+        ctx.lineTo(L1_x, u_marker_y + 5);
+        // Arrowhead at S, pointing left
+        ctx.moveTo(S_x + 10, u_marker_y - 4);
+        ctx.lineTo(S_x, u_marker_y);
+        ctx.lineTo(S_x + 10, u_marker_y + 4);
+        ctx.stroke();
+        ctx.fillText('u', (S_x + L1_x) / 2, u_marker_y - 15);
+
+        // 'f' markers
+        const f_marker_y = axisY + 120;
+        
+        // Segment L1 to P
+        ctx.beginPath();
+        ctx.moveTo(L1_x, f_marker_y - 5); ctx.lineTo(L1_x, f_marker_y + 5); // Tick
+        ctx.moveTo(P_x, f_marker_y - 5); ctx.lineTo(P_x, f_marker_y + 5);   // Tick
+        ctx.moveTo(L1_x, f_marker_y); ctx.lineTo(P_x, f_marker_y); // Line
+        ctx.moveTo(L1_x + 10, f_marker_y - 4); ctx.lineTo(L1_x, f_marker_y); ctx.lineTo(L1_x + 10, f_marker_y + 4); // Arrow
+        ctx.moveTo(P_x - 10, f_marker_y - 4); ctx.lineTo(P_x, f_marker_y); ctx.lineTo(P_x - 10, f_marker_y + 4);     // Arrow
+        ctx.stroke();
+        ctx.fillText('f', (L1_x + P_x) / 2, f_marker_y - 15);
+
+        // Segment P to L2 (special symbol)
+        const mid_pl2_x = (P_x + L2_x) / 2;
+        ctx.beginPath();
+        ctx.moveTo(P_x, f_marker_y - 5); ctx.lineTo(P_x, f_marker_y + 5);   // Tick
+        ctx.moveTo(L2_x, f_marker_y - 5); ctx.lineTo(L2_x, f_marker_y + 5);  // Tick
+        ctx.moveTo(P_x, f_marker_y); ctx.lineTo(L2_x, f_marker_y); // Line
+        // Symbol in middle
+        ctx.moveTo(mid_pl2_x - 12, f_marker_y); ctx.lineTo(mid_pl2_x - 4, f_marker_y - 4);
+        ctx.moveTo(mid_pl2_x - 12, f_marker_y); ctx.lineTo(mid_pl2_x - 4, f_marker_y + 4);
+        ctx.moveTo(mid_pl2_x + 12, f_marker_y); ctx.lineTo(mid_pl2_x + 4, f_marker_y - 4);
+        ctx.moveTo(mid_pl2_x + 12, f_marker_y); ctx.lineTo(mid_pl2_x + 4, f_marker_y + 4);
+        ctx.stroke();
+        
+        // Segment L2 to Q
+        ctx.beginPath();
+        ctx.moveTo(L2_x, f_marker_y - 5); ctx.lineTo(L2_x, f_marker_y + 5); // Tick
+        ctx.moveTo(Q_x, f_marker_y - 5); ctx.lineTo(Q_x, f_marker_y + 5);   // Tick
+        ctx.moveTo(L2_x, f_marker_y); ctx.lineTo(Q_x, f_marker_y); // Line
+        ctx.moveTo(L2_x + 10, f_marker_y - 4); ctx.lineTo(L2_x, f_marker_y); ctx.lineTo(L2_x + 10, f_marker_y + 4); // Arrow
+        ctx.moveTo(Q_x - 10, f_marker_y - 4); ctx.lineTo(Q_x, f_marker_y); ctx.lineTo(Q_x - 10, f_marker_y + 4);     // Arrow
+        ctx.stroke();
+        ctx.fillText('f', (L2_x + Q_x) / 2, f_marker_y - 15);
+
+    </script>
+</body>
+</html>

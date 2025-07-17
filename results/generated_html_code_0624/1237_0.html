@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crane Static Force Analysis</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #999;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+<canvas id="craneCanvas" width="550" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('craneCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // --- Helper Functions ---
+    function drawArrow(ctx, x1, y1, x2, y2, headlen = 8) {
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+    }
+
+    function drawHatching(ctx, x, y, width, height) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, width, height);
+        ctx.clip();
+        ctx.lineWidth = 1.2;
+        const spacing = 8;
+        for (let i = -height; i < width; i += spacing) {
+            ctx.moveTo(x + i, y);
+            ctx.lineTo(x + i + height, y + height);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // --- Coordinates and Scale ---
+    const wallX = 100;
+    const groundY = 420;
+    const scale = 50;
+
+    // Crane points
+    const pA = { x: wallX, y: groundY - 5 * scale }; // (100, 170)
+    const pB_y_offset = 3.5 * scale; // Assumed based on visual proportions
+    const pB = { x: wallX, y: pA.y + pB_y_offset }; // (100, 345)
+    const pC = { x: wallX + 5 * scale, y: pA.y }; // (350, 170)
+    
+    // Center of gravity D
+    const pD_x = wallX + 2 * scale; // 200
+    const slopeBC = (pC.y - pB.y) / (pC.x - pB.x);
+    const pD_y = slopeBC * (pD_x - pB.x) + pB.y;
+    const pD = { x: pD_x, y: pD_y }; // (200, 240)
+
+    const pE = { x: wallX, y: pD.y };
+    const pN_y = pB.y + 40; // Position of the thrust bearing symbol
+    
+    // --- Drawing Start ---
+    
+    // 1. Wall and Ground
+    drawHatching(ctx, 0, 0, wallX, 500);
+    drawHatching(ctx, 0, groundY, 550, 80);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(wallX, 0);
+    ctx.lineTo(wallX, groundY);
+    ctx.lineTo(550, groundY);
+    ctx.stroke();
+
+    // 2. Coordinate Axes
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    // y-axis
+    ctx.beginPath();
+    drawArrow(ctx, wallX, groundY + 50, wallX, 80);
+    ctx.stroke();
+    // x-axis
+    ctx.beginPath();
+    ctx.moveTo(wallX, groundY);
+    ctx.lineTo(480, groundY);
+    ctx.stroke();
+    ctx.restore();
+    ctx.font = '24px serif';
+    ctx.fillText('y', wallX - 25, 85);
+    ctx.fillText('x', 490, groundY);
+
+    // 3. Crane Structure
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(pA.x, pA.y); ctx.lineTo(pC.x, pC.y); // AC
+    ctx.moveTo(pA.x, pA.y); ctx.lineTo(pB.x, pB.y); // AB
+    ctx.moveTo(pB.x, pB.y); ctx.lineTo(pC.x, pC.y); // BC
+    ctx.stroke();
+
+    // 4. Supports M and N
+    // Support M at A
+    ctx.beginPath();
+    ctx.moveTo(pA.x, pA.y - 20);
+    ctx.lineTo(pA.x - 20, pA.y - 20);
+    ctx.lineTo(pA.x - 20, pA.y + 20);
+    ctx.lineTo(pA.x, pA.y + 20);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(pA.x - 20, pA.y);
+    ctx.lineTo(pA.x - 30, pA.y - 10);
+    ctx.moveTo(pA.x - 20, pA.y);
+    ctx.lineTo(pA.x - 30, pA.y + 10);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(pA.x, pA.y, 6, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // Support N
+    ctx.beginPath();
+    ctx.moveTo(wallX, pB.y);
+    ctx.lineTo(wallX, pN_y);
+    ctx.moveTo(wallX - 15, pN_y);
+    ctx.lineTo(wallX + 15, pN_y);
+    ctx.moveTo(wallX - 10, pN_y); ctx.lineTo(wallX - 10, pN_y + 10);
+    ctx.moveTo(wallX, pN_y); ctx.lineTo(wallX, pN_y + 10);
+    ctx.moveTo(wallX + 10, pN_y); ctx.lineTo(wallX + 10, pN_y + 10);
+    ctx.stroke();
+
+    // 5. Load at C
+    const pulleyY = pC.y;
+    ctx.lineWidth = 2;
+    // Pulley wheels
+    ctx.beginPath(); ctx.arc(pC.x - 10, pulleyY, 7, 0, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(pC.x + 10, pulleyY, 7, 0, 2 * Math.PI); ctx.fill();
+    // Pulley frame
+    ctx.beginPath(); ctx.moveTo(pC.x - 20, pulleyY - 7); ctx.lineTo(pC.x + 20, pulleyY - 7); ctx.stroke();
+    // Yoke
+    const yokeTopY = pulleyY + 7;
+    const yokeBottomY = yokeTopY + 25;
+    ctx.beginPath(); ctx.moveTo(pC.x - 10, yokeTopY); ctx.lineTo(pC.x, yokeBottomY); ctx.lineTo(pC.x + 10, yokeTopY); ctx.stroke();
+    // Rope and block
+    const loadTopY = yokeBottomY + 25;
+    ctx.beginPath(); ctx.moveTo(pC.x, yokeBottomY); ctx.lineTo(pC.x, loadTopY); ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.strokeRect(pC.x - 25, loadTopY, 50, 30);
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(pC.x - 5, loadTopY); ctx.lineTo(pC.x + 5, loadTopY); ctx.stroke();
+
+    // 6. Dimensions
+    ctx.font = '20px serif';
+    // 5 m horizontal
+    const dim_y1 = pA.y - 30;
+    ctx.lineWidth = 1.5; ctx.beginPath();
+    drawArrow(ctx, pA.x, dim_y1, pC.x, dim_y1); drawArrow(ctx, pC.x, dim_y1, pA.x, dim_y1);
+    ctx.stroke();
+    ctx.fillText('5 m', (pA.x + pC.x) / 2, dim_y1 - 15);
+    ctx.beginPath(); ctx.moveTo(pA.x, pA.y); ctx.lineTo(pA.x, dim_y1);
+    ctx.moveTo(pC.x, pC.y); ctx.lineTo(pC.x, dim_y1); ctx.stroke();
+
+    // 2 m horizontal
+    const dim_y2 = pB.y - 50;
+    ctx.beginPath();
+    drawArrow(ctx, pE.x, dim_y2, pD.x, dim_y2); drawArrow(ctx, pD.x, dim_y2, pE.x, dim_y2);
+    ctx.stroke();
+    ctx.fillText('2 m', (pE.x + pD.x) / 2, dim_y2 - 15);
+    ctx.beginPath(); ctx.moveTo(pE.x, pE.y); ctx.lineTo(pE.x, dim_y2);
+    ctx.moveTo(pD.x, pD.y); ctx.lineTo(pD.x, dim_y2); ctx.stroke();
+
+    // 5 m vertical
+    const dim_x1 = pC.x + 80;
+    ctx.beginPath();
+    drawArrow(ctx, dim_x1, pC.y, dim_x1, groundY); drawArrow(ctx, dim_x1, groundY, dim_x1, pC.y);
+    ctx.stroke();
+    ctx.save();
+    ctx.translate(dim_x1 + 15, (pC.y + groundY) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('5 m', 0, 0);
+    ctx.restore();
+    ctx.beginPath(); ctx.moveTo(pC.x, pC.y); ctx.lineTo(dim_x1, pC.y);
+    ctx.save(); ctx.setLineDash([3,3]);
+    ctx.moveTo(pC.x, groundY); ctx.lineTo(dim_x1, groundY); ctx.stroke(); ctx.restore();
+
+    // 7. Labels
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(pD.x, pD.y, 4, 0, 2 * Math.PI); ctx.fill();
+    ctx.font = '24px serif';
+    ctx.fillText('M', pA.x + 25, pA.y - 5);
+    ctx.fillText('A', pA.x - 25, pA.y);
+    ctx.fillText('B', pB.x - 25, pB.y);
+    ctx.fillText('C', pC.x + 25, pC.y);
+    ctx.fillText('D', pD.x + 15, pD.y + 10);
+    ctx.fillText('E', pE.x - 20, pE.y);
+    ctx.fillText('N', wallX - 25, pN_y);
+</script>
+</body>
+</html>

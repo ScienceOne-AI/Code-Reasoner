@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Reconstruction</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+
+        // Define main coordinates and dimensions
+        const cx = canvas.width / 2;
+        const cy = 270; // Center Y for the dashed circle
+        const r = 130;  // Radius of the dashed circle
+
+        // 1. Draw the dashed circular path
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([8, 4]);
+        ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.restore(); // Restore to solid line
+
+        // 2. Draw the circuit (Galvanometer + Coil + Wires)
+        const coilY = cy - r; // y-position of the coil
+        const gY = 60; // y-position of the galvanometer
+        const gRadius = 25;
+        const circuitWidth = 160;
+        const circuitX1 = cx - circuitWidth / 2;
+        const circuitX2 = cx + circuitWidth / 2;
+
+        // Draw connecting wires
+        ctx.beginPath();
+        ctx.moveTo(circuitX1, coilY);
+        ctx.lineTo(circuitX1, gY);
+        ctx.lineTo(cx - gRadius, gY);
+        ctx.moveTo(cx + gRadius, gY);
+        ctx.lineTo(circuitX2, gY);
+        ctx.lineTo(circuitX2, coilY);
+        ctx.stroke();
+
+        // Draw Galvanometer (G)
+        ctx.beginPath();
+        ctx.arc(cx, gY, gRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.font = 'bold 30px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('G', cx, gY + 2);
+
+        // Draw the Coil (Inductor)
+        const numLoops = 6;
+        const loopWidth = circuitWidth / numLoops;
+        const loopRadius = loopWidth / 2;
+        ctx.beginPath();
+        // The coil is drawn as a series of connected upper semicircles
+        for (let i = 0; i < numLoops; i++) {
+            ctx.arc(circuitX1 + i * loopWidth + loopRadius, coilY, loopRadius, Math.PI, 0, false);
+        }
+        ctx.stroke();
+        
+        // Draw the label for the coil "n匝"
+        ctx.font = '24px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('n匝', cx, coilY + 15);
+
+
+        // 3. Draw the moving particle and its direction arrow
+        
+        // Arrow indicating direction of motion (counter-clockwise)
+        const arrowEndAngle = (5/4) * Math.PI - 0.1; // Ends just before the particle
+        const arrowStartAngle = arrowEndAngle - 0.35; // A short arc for the arrow body
+        
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, arrowStartAngle, arrowEndAngle, false);
+        ctx.stroke();
+
+        // Draw the arrowhead at the end of the arc
+        const headX = cx + r * Math.cos(arrowEndAngle);
+        const headY = cy + r * Math.sin(arrowEndAngle);
+        const tangentAngle = arrowEndAngle + Math.PI / 2; // Angle of the tangent
+        const arrowSize = 12;
+
+        ctx.save();
+        ctx.translate(headX, headY);
+        ctx.rotate(tangentAngle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0); // Tip of the arrow
+        ctx.lineTo(-arrowSize / 2, -arrowSize);
+        ctx.lineTo(arrowSize / 2, -arrowSize);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // Particle with magnetic charge q_m
+        const particleAngle = (5/4) * Math.PI; // 225 degrees, lower-left quadrant
+        const particleX = cx + r * Math.cos(particleAngle);
+        const particleY = cy + r * Math.sin(particleAngle);
+
+        ctx.beginPath();
+        ctx.arc(particleX, particleY, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Label for the particle "q_m"
+        ctx.font = 'italic 24px serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        const q_x = particleX + 10;
+        const q_y = particleY + 5;
+        ctx.fillText('q', q_x, q_y);
+        ctx.font = 'italic 16px serif';
+        ctx.fillText('m', q_x + 12, q_y + 2);
+
+
+        // 4. Draw the bottom text label "电图 5.19.1"
+        ctx.font = '24px "Songti SC", "SimSun", sans-serif'; // Use fonts that support Chinese
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('电图 5.19.1', cx, canvas.height - 20);
+
+    </script>
+</body>
+</html>

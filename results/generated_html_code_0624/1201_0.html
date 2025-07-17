@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="450" height="650" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2.5;
+    ctx.font = '24px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Coordinates chosen to visually match the source image
+    const wallX = 100;
+    const A = { x: 320, y: 250 };
+    const B = { x: wallX, y: 100 };
+    const D = { x: wallX, y: 350 };
+    const C = { x: wallX, y: 520 };
+
+    // --- Helper function to draw angle arcs with arrows ---
+    function drawAngle(center, radius, startAngle, endAngle, label) {
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, radius, startAngle, endAngle, false);
+        ctx.stroke();
+
+        // Arrow 1 at startAngle
+        let x1 = center.x + radius * Math.cos(startAngle);
+        let y1 = center.y + radius * Math.sin(startAngle);
+        let tangent1 = startAngle + Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 - 8 * Math.cos(tangent1 - 0.4), y1 - 8 * Math.sin(tangent1 - 0.4));
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 - 8 * Math.cos(tangent1 + 0.4), y1 - 8 * Math.sin(tangent1 + 0.4));
+        ctx.stroke();
+
+        // Arrow 2 at endAngle
+        let x2 = center.x + radius * Math.cos(endAngle);
+        let y2 = center.y + radius * Math.sin(endAngle);
+        let tangent2 = endAngle - Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - 8 * Math.cos(tangent2 - 0.4), y2 - 8 * Math.sin(tangent2 - 0.4));
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - 8 * Math.cos(tangent2 + 0.4), y2 - 8 * Math.sin(tangent2 + 0.4));
+        ctx.stroke();
+        
+        // Label
+        const labelAngle = (startAngle + endAngle) / 2;
+        ctx.fillText(label, center.x + radius * 0.7 * Math.cos(labelAngle), center.y + radius * 0.7 * Math.sin(labelAngle));
+        ctx.restore();
+    }
+
+    // --- Draw Wall ---
+    ctx.fillStyle = 'black';
+    ctx.fillRect(wallX - 40, 0, 40, canvas.height);
+    // Hatching
+    ctx.save();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 1.5;
+    for (let i = -40; i < canvas.height; i += 20) {
+        ctx.beginPath();
+        ctx.moveTo(wallX - 40, i);
+        ctx.lineTo(wallX, i + 40);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+
+    // --- Draw Main Structure ---
+    // Rod AB
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y);
+    ctx.lineTo(B.x, B.y);
+    ctx.stroke();
+
+    // Rod AC
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y);
+    ctx.lineTo(C.x, C.y);
+    ctx.stroke();
+    
+    // Line AD (for pulley chain)
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y);
+    ctx.lineTo(D.x, D.y);
+    ctx.stroke();
+
+    // Pulley at A
+    ctx.beginPath();
+    ctx.arc(A.x, A.y, 12, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white'; // To see the lines behind
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(A.x, A.y, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = 'black';
+    ctx.fill();
+
+    // Pulley at D
+    ctx.save();
+    ctx.lineWidth = 2;
+    // Bracket
+    ctx.strokeRect(D.x-1, D.y + 12, 2, 18);
+    ctx.strokeRect(D.x - 20, D.y + 30, 40, 8);
+    // Pulley wheel
+    ctx.beginPath();
+    ctx.arc(D.x, D.y, 12, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(D.x, D.y, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = 'black';
+    ctx.fill();
+    ctx.restore();
+
+    // Weight P
+    const weightTopY = 420;
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y + 12);
+    ctx.lineTo(A.x, weightTopY);
+    ctx.stroke();
+    ctx.strokeRect(A.x - 25, weightTopY, 50, 50);
+    
+    
+    // --- Draw Angles and Labels ---
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.font = '24px serif';
+    ctx.fillStyle = 'black';
+    
+    // Vertical reference lines for angles
+    ctx.beginPath();
+    ctx.moveTo(B.x, B.y);
+    ctx.lineTo(B.x, B.y + 65);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(D.x, D.y);
+    ctx.lineTo(D.x, D.y - 75);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(C.x, C.y);
+    ctx.lineTo(C.x, C.y - 85);
+    ctx.stroke();
+
+    // Angle 60°
+    const angle_AB_rod = Math.atan2(A.y - B.y, A.x - B.x);
+    const angle_AB_vert = Math.PI / 2; // Vertical Down
+    drawAngle(B, 50, angle_AB_rod, angle_AB_vert, '60°');
+
+    // Angle top 30°
+    const angle_AD_rod = Math.atan2(A.y - D.y, A.x - D.x);
+    const angle_AD_vert = -Math.PI / 2; // Vertical Up
+    drawAngle(D, 60, angle_AD_rod, angle_AD_vert, '30°');
+    
+    // Angle bottom 30°
+    const angle_AC_rod = Math.atan2(A.y - C.y, A.x - C.x);
+    const angle_AC_vert = -Math.PI / 2; // Vertical Up
+    drawAngle(C, 70, angle_AC_rod, angle_AC_vert, '30°');
+    ctx.restore();
+
+    // Labels for points and weight
+    ctx.font = '28px serif';
+    ctx.fillText('A', A.x + 25, A.y - 10);
+    ctx.fillText('B', B.x - 25, B.y);
+    ctx.fillText('C', C.x + 25, C.y + 15);
+    ctx.fillText('D', D.x - 25, D.y + 5);
+    ctx.fillText('P', A.x + 45, weightTopY + 25);
+</script>
+</body>
+</html>

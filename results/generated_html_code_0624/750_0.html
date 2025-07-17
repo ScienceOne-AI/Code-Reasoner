@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper function to draw a resistor (zig-zag line) ---
+        function drawResistor(x1, y1, x2, y2, windings = 6, height = 12) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+
+            const segmentLength = length / (2 * windings + 1);
+            let currentX = segmentLength / 2;
+
+            for (let i = 0; i < windings; i++) {
+                ctx.lineTo(currentX, -height);
+                currentX += segmentLength;
+                ctx.lineTo(currentX, height);
+                currentX += segmentLength;
+            }
+            ctx.lineTo(length, 0);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Helper function to draw an arrow ---
+        function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Draw Left Circuit ---
+        const leftCircuitX = 180;
+        
+        // Battery
+        ctx.beginPath();
+        // Positive terminal (long line)
+        ctx.moveTo(leftCircuitX, 80);
+        ctx.lineTo(leftCircuitX, 130);
+        // Negative terminal (short line)
+        ctx.moveTo(leftCircuitX - 15, 140);
+        ctx.lineTo(leftCircuitX + 15, 140);
+        ctx.stroke();
+
+        // Label V
+        ctx.font = 'bold 30px serif';
+        ctx.fillText('V', leftCircuitX, 60);
+
+        // Wires
+        ctx.beginPath();
+        ctx.moveTo(leftCircuitX, 80); // Top of battery
+        ctx.lineTo(80, 80);            // Top wire left
+        ctx.lineTo(80, 240);           // Left wire down
+        ctx.lineTo(150, 240);          // Wire to slider
+        
+        ctx.moveTo(250, 270);          // Right end of rheostat
+        ctx.lineTo(250, 140);          // Right wire up
+        ctx.lineTo(leftCircuitX + 15, 140); // To negative terminal
+        ctx.stroke();
+        
+        // Rheostat
+        drawResistor(100, 270, 250, 270, 5, 15);
+        
+        // Slider Arrow
+        drawArrow(150, 240, 150, 270);
+        
+        // Label R_left
+        ctx.font = 'italic bold 30px serif';
+        ctx.fillText('R', 165, 310);
+        ctx.font = 'italic bold 20px serif';
+        ctx.fillText('left', 190, 315);
+        
+        // Point P
+        const pX = leftCircuitX;
+        const pY = 180;
+        ctx.beginPath();
+        ctx.moveTo(pX, pY - 6);
+        ctx.lineTo(pX + 5, pY);
+        ctx.lineTo(pX, pY + 6);
+        ctx.lineTo(pX - 5, pY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = 'bold 30px serif';
+        ctx.fillText('P', pX + 20, pY);
+
+
+        // --- Draw Right Circuit ---
+        const rightCircuitX_A = 400;
+        const rightCircuitX_B = 600;
+        const topY = 100;
+        const bottomY = 270;
+
+        // Wires
+        ctx.beginPath();
+        ctx.moveTo(rightCircuitX_A, topY);
+        ctx.lineTo(rightCircuitX_A, bottomY);
+        ctx.lineTo(rightCircuitX_B, bottomY);
+        ctx.lineTo(rightCircuitX_B, topY);
+        ctx.stroke();
+
+        // Resistor on top
+        ctx.fillStyle = 'white'; // Cut out a section for the resistor
+        ctx.fillRect(rightCircuitX_A + 20, topY - 2, rightCircuitX_B - rightCircuitX_A - 40, 4);
+        drawResistor(rightCircuitX_A + 20, topY, rightCircuitX_B - 20, topY, 6, 15);
+        
+        // Terminals A and B
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(rightCircuitX_A, topY, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(rightCircuitX_B, topY, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Labels A, B, R_right
+        ctx.font = 'bold 30px serif';
+        ctx.fillText('A', rightCircuitX_A, topY - 25);
+        ctx.fillText('B', rightCircuitX_B, topY - 25);
+        
+        ctx.font = 'italic bold 30px serif';
+        ctx.fillText('R', 490, 150);
+        ctx.font = 'italic bold 20px serif';
+        ctx.fillText('right', 520, 155);
+        
+    </script>
+</body>
+</html>

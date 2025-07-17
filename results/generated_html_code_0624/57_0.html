@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 20px serif';
+
+        // Center and Radius
+        const cx = 250;
+        const cy = 200;
+        const R = 90;
+
+        // Helper function to draw an arrow on a line segment
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 10;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        }
+
+        // Helper for dashed lines
+        function drawDashedLine(ctx, x1, y1, x2, y2, dashArray) {
+            ctx.beginPath();
+            ctx.setLineDash(dashArray);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // 1. Draw the sphere
+        ctx.beginPath();
+        ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 2. Draw the central axis
+        ctx.beginPath();
+        ctx.moveTo(50, cy);
+        ctx.lineTo(cx - R, cy);
+        ctx.stroke();
+        drawDashedLine(ctx, cx - R, cy, 550, cy, [10, 4, 3, 4]);
+
+        // 3. Define ray points schematically to match the image
+        const p1_top = { x: 185, y: 145 };
+        const p_exit_top = { x: 330, y: 235 };
+        const p_cross = { x: 450, y: cy };
+
+        // 4. Draw the top ray path
+        // Incoming ray
+        ctx.beginPath();
+        ctx.moveTo(50, p1_top.y);
+        ctx.lineTo(p1_top.x, p1_top.y);
+        drawArrow(ctx, 100, p1_top.y, 110, p1_top.y);
+        ctx.stroke();
+
+        // Normal at top incidence
+        const normal_top_angle = Math.atan2(p1_top.y - cy, p1_top.x - cx);
+        const norm_ext_x = p1_top.x + 30 * Math.cos(normal_top_angle);
+        const norm_ext_y = p1_top.y + 30 * Math.sin(normal_top_angle);
+        drawDashedLine(ctx, norm_ext_x, norm_ext_y, cx, cy, [5, 5]);
+
+        // Ray inside sphere (top)
+        drawDashedLine(ctx, p1_top.x, p1_top.y, p_exit_top.x, p_exit_top.y, [5, 5]);
+        
+        // Exiting ray (top)
+        drawDashedLine(ctx, p_exit_top.x, p_exit_top.y, p_cross.x, p_cross.y, [5, 5]);
+
+        // 5. Draw the bottom ray path (symmetrically)
+        const p1_bot = { x: p1_top.x, y: cy + (cy - p1_top.y) };
+        const p_exit_bot = { x: p_exit_top.x, y: cy - (p_exit_top.y - cy) };
+
+        // Incoming ray (bottom)
+        ctx.beginPath();
+        ctx.moveTo(50, p1_bot.y);
+        ctx.lineTo(p1_bot.x, p1_bot.y);
+        drawArrow(ctx, 100, p1_bot.y, 110, p1_bot.y);
+        ctx.stroke();
+
+        // Ray inside sphere (bottom)
+        drawDashedLine(ctx, p1_bot.x, p1_bot.y, p_exit_bot.x, p_exit_bot.y, [5, 5]);
+        
+        // Exiting ray (bottom)
+        drawDashedLine(ctx, p_exit_bot.x, p_exit_bot.y, p_cross.x, p_cross.y, [5, 5]);
+
+        // 6. Draw angles and labels
+        // Angle phi
+        ctx.beginPath();
+        ctx.arc(p1_top.x, p1_top.y, 25, normal_top_angle, Math.PI, false);
+        ctx.stroke();
+        ctx.fillText('ϕ', p1_top.x - 30, p1_top.y - 15);
+
+        // Angle r (unlabeled refraction angle)
+        const ray_in_angle = Math.atan2(p_exit_top.y - p1_top.y, p_exit_top.x - p1_top.x);
+        ctx.beginPath();
+        ctx.arc(p1_top.x, p1_top.y, 18, ray_in_angle, normal_top_angle);
+        ctx.stroke();
+        
+        // Angle alpha
+        const alpha_center = { x: 280, y: cy };
+        const alpha_ray_angle = Math.atan2(p_exit_top.y - alpha_center.y, p_exit_top.x - alpha_center.x);
+        ctx.beginPath();
+        ctx.arc(alpha_center.x, alpha_center.y, 25, alpha_ray_angle, 0);
+        ctx.stroke();
+        ctx.fillText('α', alpha_center.x + 10, alpha_center.y - 30);
+        
+        // Unlabeled angle at the exit point, inside the sphere
+        const normal_exit_angle = Math.atan2(cy - p_exit_top.y, cx - p_exit_top.x);
+        const ray_in_angle_rev = Math.atan2(p1_top.y - p_exit_top.y, p1_top.x - p_exit_top.x);
+        ctx.beginPath();
+        ctx.arc(p_exit_top.x, p_exit_top.y, 20, normal_exit_angle, ray_in_angle_rev);
+        ctx.stroke();
+
+        // Observer's eye and angle delta
+        const eye_pos = { x: p_cross.x + 10, y: p_cross.y };
+        ctx.beginPath();
+        ctx.arc(eye_pos.x, eye_pos.y, 12, Math.PI * 0.8, Math.PI * 0.2, true);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(eye_pos.x, eye_pos.y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Delta angle and label
+        const angle_out_top = Math.atan2(eye_pos.y - p_exit_top.y, eye_pos.x - p_exit_top.x);
+        const angle_out_bot = Math.atan2(eye_pos.y - p_exit_bot.y, eye_pos.x - p_exit_bot.x);
+        ctx.beginPath();
+        ctx.arc(eye_pos.x, eye_pos.y, 25, angle_out_top, angle_out_bot);
+        ctx.stroke();
+        ctx.fillText('δ', eye_pos.x, eye_pos.y + 35);
+        
+        // Figure caption
+        ctx.font = 'bold 20px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 1.21', cx + 50, cy + R + 80);
+
+    </script>
+</body>
+</html>

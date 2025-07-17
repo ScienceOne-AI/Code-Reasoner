@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electron Path in Magnetic Field</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Set canvas dimensions to match the image aspect ratio
+    canvas.width = 800;
+    canvas.height = 550;
+
+    // Clear canvas
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // --- Drawing Parameters ---
+    const rectX = 320;
+    const rectY = 150;
+    const rectWidth = 250;
+    const rectHeight = 220;
+    const pathY = 280;
+    const pathStartX = 100;
+
+    const arcRadius = 350;
+    const arcCenterX = rectX;
+    const arcCenterY = pathY + arcRadius;
+    const arcStartX = rectX;
+    const arcStartY = pathY;
+
+    // Arc angles
+    const startAngle = -Math.PI / 2;
+    const endAngle = -0.9; // Visually determined angle for a good curve
+
+    // Calculate exit point based on this angle.
+    const arcExitX = arcCenterX + arcRadius * Math.cos(endAngle);
+    const arcExitY = arcCenterY + arcRadius * Math.sin(endAngle);
+
+    // Tangent line properties
+    const tangentAngle = endAngle + Math.PI / 2; // Angle of the velocity vector
+    const tangentLength = 250;
+    const tangentEndX = arcExitX + tangentLength * Math.cos(tangentAngle);
+    const tangentEndY = arcExitY + tangentLength * Math.sin(tangentAngle);
+
+    // --- Helper function for drawing arrowheads ---
+    function drawArrowhead(ctx, x_tip, y_tip, angle) {
+        const size = 12;
+        ctx.save();
+        ctx.translate(x_tip, y_tip);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.lineTo(-size, size / 2);
+        ctx.closePath();
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Start Drawing ---
+
+    // 1. Draw the shaded region for the magnetic field
+    ctx.fillStyle = '#e0e0e0';
+    ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
+
+    // 2. Draw the electron's path
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    // Part 1: Initial straight path
+    ctx.moveTo(pathStartX, pathY);
+    ctx.lineTo(arcStartX, arcStartY);
+    // Part 2: Curved path in the field
+    ctx.arc(arcCenterX, arcCenterY, arcRadius, startAngle, endAngle);
+    // Part 3: Final straight path
+    ctx.lineTo(tangentEndX, tangentEndY);
+    ctx.stroke();
+
+    // 3. Draw arrows on the path to show direction
+    // Arrow on the initial path
+    drawArrowhead(ctx, pathStartX + (arcStartX - pathStartX) * 0.5, pathY, 0);
+
+    // Arrow on the curved path
+    const midAngle = (startAngle + endAngle) / 2;
+    const midArcX = arcCenterX + arcRadius * Math.cos(midAngle);
+    const midArcY = arcCenterY + arcRadius * Math.sin(midAngle);
+    const midTangentAngle = midAngle + Math.PI / 2;
+    drawArrowhead(ctx, midArcX, midArcY, midTangentAngle);
+
+    // Arrow on the final path
+    const midFinalPathX = (arcExitX + tangentEndX) / 2;
+    const midFinalPathY = (arcExitY + tangentEndY) / 2;
+    drawArrowhead(ctx, midFinalPathX, midFinalPathY, tangentAngle);
+
+    // 4. Add text labels and pointers
+    ctx.fillStyle = 'black';
+    ctx.font = '22px sans-serif';
+
+    // Label: "path of electron"
+    ctx.textAlign = 'left';
+    ctx.fillText('path of', 100, 245);
+    ctx.fillText('electron', 100, 270);
+
+    // Label: "region of uniform magnetic field"
+    ctx.textAlign = 'center';
+    ctx.fillText('region of uniform', 580, 100);
+    ctx.fillText('magnetic field', 580, 125);
+    // Pointer for this label
+    ctx.beginPath();
+    ctx.moveTo(560, 135);
+    ctx.lineTo(470, 210);
+    ctx.stroke();
+
+    // Label: "Fig. 9.1"
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillText('Fig. 9.1', canvas.width / 2, 520);
+</script>
+</body>
+</html>

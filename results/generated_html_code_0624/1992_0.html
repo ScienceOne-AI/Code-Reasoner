@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="400" height="500"></canvas>
+    <script>
+        // Main function to draw the diagram
+        function draw() {
+            const canvas = document.getElementById('physicsCanvas');
+            if (!canvas.getContext) {
+                return;
+            }
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas and set background
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // --- Parameters ---
+            const centerX = 200;
+            const O_y = 380;
+            const rodLength = 230;
+            const theta = Math.PI / 6; // 30 degrees
+
+            // Calculate coordinates of point P
+            const P_x = centerX + rodLength * Math.sin(theta);
+            const P_y = O_y - rodLength * Math.cos(theta);
+            
+            // Coordinates of O' (center of the circular path)
+            const O_prime_y = P_y;
+            
+            // Parameters for the perspective ellipse
+            const ellipseRadiusX = rodLength * Math.sin(theta);
+            const ellipseRadiusY = ellipseRadiusX * 0.22;
+            
+            // --- Drawing Functions ---
+            
+            // Draw the axis of rotation (OO')
+            drawAxis(ctx, centerX, O_y, P_y);
+            
+            // Draw the circular path of point P
+            drawPath(ctx, centerX, O_prime_y, ellipseRadiusX, ellipseRadiusY);
+            
+            // Draw the conducting rod OP
+            // This is drawn after the axis so it can be filled with white to appear on top
+            drawRod(ctx, centerX, O_y, P_x, P_y, theta);
+            
+            // Draw the magnetic field vector B
+            drawBVector(ctx, centerX, O_y);
+            
+            // Draw the angle θ
+            drawAngle(ctx, centerX, O_y, theta);
+            
+            // Add all text labels
+            drawLabels(ctx, centerX, O_y, P_x, P_y, O_prime_y, ellipseRadiusX, theta);
+            
+            // Add the caption at the bottom
+            drawCaption(ctx, centerX, canvas.height);
+        }
+
+        // Draws the dash-dot axis of rotation
+        function drawAxis(ctx, cx, oy, py) {
+            ctx.save();
+            ctx.setLineDash([8, 4, 2, 4]); // Dash-dot line style
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'black';
+            ctx.beginPath();
+            ctx.moveTo(cx, oy + 40);
+            ctx.lineTo(cx, py - 60); // Extend above the circle
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Draws the dashed elliptical path
+        function drawPath(ctx, cx, cy, rx, ry) {
+            ctx.save();
+            ctx.setLineDash([5, 5]); // Dashed line style
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'black';
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        // Draws the thick conducting rod
+        function drawRod(ctx, ox, oy, px, py, theta) {
+            ctx.save();
+            const w = 3; // Half-thickness of the rod
+            
+            // The offset vector perpendicular to the rod's direction
+            const offsetX = w * Math.cos(theta);
+            const offsetY = w * Math.sin(theta);
+            
+            // Calculate the four corners of the thin rectangle representing the rod
+            const o1x = ox - offsetX;
+            const o1y = oy - offsetY;
+            const o2x = ox + offsetX;
+            const o2y = oy + offsetY;
+            
+            const p1x = px - offsetX;
+            const p1y = py - offsetY;
+            const p2x = px + offsetX;
+            const p2y = py + offsetY;
+
+            // Draw the rod's filled shape and outline
+            ctx.beginPath();
+            ctx.moveTo(o1x, o1y);
+            ctx.lineTo(p1x, p1y);
+            ctx.lineTo(p2x, p2y);
+            ctx.lineTo(o2x, o2y);
+            ctx.closePath();
+            
+            // Fill with white to obscure the axis line underneath
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'black';
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        // Draws the magnetic field vector B
+        function drawBVector(ctx, cx, oy) {
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'black';
+            
+            const arrowTopY = 80;
+            const arrowBaseY = arrowTopY + 10;
+            const arrowWidth = 5;
+
+            // Vector line
+            ctx.beginPath();
+            ctx.moveTo(cx, oy + 20);
+            ctx.lineTo(cx, arrowTopY);
+            ctx.stroke();
+            
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(cx, arrowTopY);
+            ctx.lineTo(cx - arrowWidth, arrowBaseY);
+            ctx.moveTo(cx, arrowTopY);
+            ctx.lineTo(cx + arrowWidth, arrowBaseY);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Draws the angle arc for θ
+        function drawAngle(ctx, cx, oy, theta) {
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(cx, oy, 40, -Math.PI / 2, -Math.PI / 2 + theta, false);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Adds all text labels to the canvas
+        function drawLabels(ctx, cx, oy, px, py, opy, erx, theta) {
+            ctx.fillStyle = 'black';
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.textBaseline = 'middle';
+            
+            // Label B
+            ctx.textAlign = 'center';
+            ctx.fillText('B', cx - 25, 90);
+            
+            // Label ω
+            ctx.textAlign = 'left';
+            ctx.fillText('ω', cx + erx, opy - 20);
+            
+            // Label O
+            ctx.textAlign = 'right';
+            ctx.fillText('O', cx - 15, oy);
+
+            // Label O'
+            ctx.textAlign = 'right';
+            ctx.fillText("O'", cx - 15, opy);
+
+            // Label P
+            ctx.textAlign = 'left';
+            ctx.fillText('P', px + 10, py);
+            
+            // Label θ
+            ctx.textAlign = 'center';
+            ctx.fillText('θ', cx + 25, oy - 30);
+        }
+
+        // Adds the caption at the bottom
+        function drawCaption(ctx, cx, ch) {
+            ctx.save();
+            ctx.fillStyle = 'black';
+            ctx.font = '18px "SimSun", "Songti SC", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('习题 9-7 图', cx, ch - 20);
+            ctx.restore();
+        }
+
+        // Run the main draw function when the script loads
+        draw();
+    </script>
+</body>
+</html>

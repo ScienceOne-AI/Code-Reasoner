@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Brake Mechanism Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #d3d3d3;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="650" height="500"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper Functions ---
+
+    // Draws an arrow from (fromx, fromy) to (tox, toy)
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    // Draws a double-headed arrow line
+    function drawDoubleArrow(ctx, x1, y1, x2, y2, headlen = 8) {
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        // line
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        // head at x2
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        // head at x1
+        const rev_angle = angle + Math.PI;
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 - headlen * Math.cos(rev_angle - Math.PI / 6), y1 - headlen * Math.sin(rev_angle - Math.PI / 6));
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 - headlen * Math.cos(rev_angle + Math.PI / 6), y1 - headlen * Math.sin(rev_angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+
+    // --- Parameters and Coordinates ---
+    const scale = 320; // pixels per meter
+    const pivotA = { x: 100, y: 150 };
+    const leverHalfHeight = 6;
+    const shoeWidth = 40;
+    const shoeHeight = 15;
+
+    const dist_A_shoe = 0.5; // m
+    const dist_shoe_F = 0.75; // m
+    const flywheel_d = 0.5; // m
+
+    const shoeX = pivotA.x + dist_A_shoe * scale;
+    const forceX = shoeX + dist_shoe_F * scale;
+    const leverEndX = forceX;
+
+    const shoeTopY = pivotA.y + leverHalfHeight;
+    const shoeBottomY = shoeTopY + shoeHeight;
+
+    const flywheelRadius = (flywheel_d / 2) * scale;
+    const flywheelCenter = {
+        x: shoeX,
+        y: shoeBottomY + flywheelRadius
+    };
+
+    // --- Drawing ---
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // 1. Wall Support
+    ctx.save();
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(pivotA.x - 40, pivotA.y - 120, 10, 240);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i < 12; i++) {
+        ctx.moveTo(pivotA.x-40, pivotA.y - 120 + i*20);
+        ctx.lineTo(pivotA.x-30, pivotA.y - 110 + i*20);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // Pivot Support Bracket
+    ctx.beginPath();
+    ctx.moveTo(pivotA.x - 30, pivotA.y - 25);
+    ctx.lineTo(pivotA.x, pivotA.y);
+    ctx.lineTo(pivotA.x - 30, pivotA.y + 25);
+    ctx.closePath();
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+
+    // 2. Lever
+    const leverStartX = pivotA.x - 20;
+    const leverWidth = leverEndX - leverStartX;
+    ctx.beginPath();
+    ctx.rect(leverStartX, pivotA.y - leverHalfHeight, leverWidth, 2 * leverHalfHeight);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    // Pivot Pin
+    ctx.beginPath();
+    ctx.arc(pivotA.x, pivotA.y, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+
+    // Label A
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.fillText("A", pivotA.x - 20, pivotA.y + 35);
+
+
+    // 3. Brake Shoe
+    ctx.fillStyle = '#BDBDBD';
+    ctx.fillRect(shoeX - shoeWidth / 2, shoeTopY, shoeWidth, shoeHeight);
+    ctx.strokeRect(shoeX - shoeWidth / 2, shoeTopY, shoeWidth, shoeHeight);
+    // Label 闸瓦
+    ctx.font = "20px 'KaiTi'";
+    ctx.beginPath();
+    ctx.moveTo(shoeX + shoeWidth/2 + 5, shoeTopY + shoeHeight / 2);
+    ctx.lineTo(shoeX + shoeWidth/2 + 25, shoeTopY - 15);
+    ctx.stroke();
+    ctx.fillText("闸瓦", shoeX + shoeWidth/2 + 55, shoeTopY - 20);
+
+    // 4. Flywheel
+    ctx.beginPath();
+    ctx.arc(flywheelCenter.x, flywheelCenter.y, flywheelRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+    // Axle
+    ctx.beginPath();
+    ctx.arc(flywheelCenter.x, flywheelCenter.y, 8, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    // Diameter line
+    const angleD = Math.PI / 4.5;
+    ctx.beginPath();
+    ctx.moveTo(flywheelCenter.x - flywheelRadius * Math.cos(angleD), flywheelCenter.y + flywheelRadius * Math.sin(angleD));
+    ctx.lineTo(flywheelCenter.x + flywheelRadius * Math.cos(angleD), flywheelCenter.y - flywheelRadius * Math.sin(angleD));
+    ctx.stroke();
+    // Labels for flywheel
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.fillText("d", flywheelCenter.x - 20, flywheelCenter.y + 20);
+    ctx.fillText("O", flywheelCenter.x - 20, flywheelCenter.y);
+    // Inner patterns
+    ctx.save();
+    ctx.lineWidth = 1;
+    for (let r = flywheelRadius * 0.3; r < flywheelRadius - 10; r += 5) {
+        ctx.beginPath();
+        ctx.arc(flywheelCenter.x, flywheelCenter.y, r, 1.2 * Math.PI, 1.8 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(flywheelCenter.x, flywheelCenter.y, r, 0.2 * Math.PI, 0.8 * Math.PI);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 5. Angular Velocity ω
+    const omegaRadius = flywheelRadius + 25;
+    const startAngle = 0.05 * Math.PI;
+    const endAngle = 0.5 * Math.PI;
+    ctx.beginPath();
+    ctx.arc(flywheelCenter.x, flywheelCenter.y, omegaRadius, startAngle, endAngle);
+    ctx.stroke();
+    // Arrowhead for ω
+    const arrowAngle = endAngle;
+    const arrowX = flywheelCenter.x + omegaRadius * Math.cos(arrowAngle);
+    const arrowY = flywheelCenter.y + omegaRadius * Math.sin(arrowAngle);
+    const tangent = arrowAngle + Math.PI / 2;
+    drawArrow(ctx, arrowX - Math.cos(tangent), arrowY - Math.sin(tangent), arrowX, arrowY, 10);
+    // Label ω
+    ctx.font = "italic 22px 'Times New Roman'";
+    const omega_label_angle = 0.75 * Math.PI;
+    ctx.fillText("ω", flywheelCenter.x + omegaRadius * Math.cos(omega_label_angle) -5, flywheelCenter.y + omegaRadius * Math.sin(omega_label_angle) + 5);
+
+
+    // 6. Force F
+    const forceStartY = pivotA.y - 60;
+    const forceEndY = pivotA.y - 5;
+    drawArrow(ctx, forceX, forceStartY, forceX, forceEndY);
+    ctx.font = "italic 22px 'Times New Roman'";
+    ctx.fillText("F", forceX, forceStartY - 15);
+
+    // 7. Dimension Lines
+    const dimY = pivotA.y - 50;
+    const tickHeight = 5;
+    ctx.save();
+    ctx.lineWidth = 1;
+    // Ticks
+    ctx.beginPath();
+    ctx.moveTo(pivotA.x, dimY + tickHeight);
+    ctx.lineTo(pivotA.x, pivotA.y - leverHalfHeight);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(shoeX, dimY + tickHeight);
+    ctx.lineTo(shoeX, pivotA.y - leverHalfHeight);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(forceX, dimY + tickHeight);
+    ctx.lineTo(forceX, pivotA.y - leverHalfHeight);
+    ctx.stroke();
+    // Dimension lines with arrows and text
+    drawDoubleArrow(ctx, pivotA.x, dimY, shoeX, dimY);
+    ctx.font = "18px Arial";
+    ctx.fillStyle = "black";
+    ctx.fillText("0.5 m", pivotA.x + (shoeX - pivotA.x) / 2, dimY - 15);
+
+    drawDoubleArrow(ctx, shoeX, dimY, forceX, dimY);
+    ctx.fillText("0.75 m", shoeX + (forceX - shoeX) / 2, dimY - 15);
+    ctx.restore();
+
+    // 8. Bottom Label
+    ctx.font = "22px 'KaiTi'";
+    ctx.fillStyle = 'black';
+    const bottomTextY = flywheelCenter.y + flywheelRadius + 60;
+    ctx.fillText("习题 3-2 图", canvas.width / 2 - 50, bottomTextY);
+
+    // 9. Smudge from original image (for faithfulness)
+    ctx.save();
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = '#666';
+    ctx.beginPath();
+    ctx.ellipse(canvas.width / 2 - 100, bottomTextY + 10, 60, 20, -Math.PI/8, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.restore();
+</script>
+
+</body>
+</html>

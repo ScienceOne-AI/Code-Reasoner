@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Simple Harmonic Motion</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="650"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        /**
+         * Draws a line with an arrowhead at the end.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} fromx - The starting x-coordinate.
+         * @param {number} fromy - The starting y-coordinate.
+         * @param {number} tox - The ending x-coordinate.
+         * @param {number} toy - The ending y-coordinate.
+         * @param {number} arrowheadSize - The size of the arrowhead.
+         */
+        function drawArrow(ctx, fromx, fromy, tox, toy, arrowheadSize = 8) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.save();
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+
+            ctx.translate(tox, toy);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowheadSize, -arrowheadSize / 2);
+            ctx.lineTo(-arrowheadSize, arrowheadSize / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        /**
+         * Draws a spring.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x - The x-coordinate of the spring.
+         * @param {number} y1 - The starting y-coordinate.
+         * @param {number} y2 - The ending y-coordinate.
+         * @param {number} coils - The number of coils.
+         * @param {number} width - The width of the coils.
+         */
+        function drawSpring(ctx, x, y1, y2, coils, width) {
+            const totalHeight = y2 - y1;
+            const segmentHeight = 20; // Height of straight segments at ends
+            const coilHeight = totalHeight - 2 * segmentHeight;
+            const coilSegmentHeight = coilHeight / coils;
+
+            ctx.beginPath();
+            // Top straight part
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, y1 + segmentHeight);
+            
+            // Coils
+            for (let i = 0; i < coils; i++) {
+                const y_start = y1 + segmentHeight + i * coilSegmentHeight;
+                ctx.lineTo(x - width / 2, y_start + coilSegmentHeight * 0.25);
+                ctx.lineTo(x + width / 2, y_start + coilSegmentHeight * 0.75);
+            }
+            // Connect to bottom straight part
+            ctx.lineTo(x, y2 - segmentHeight);
+            // Bottom straight part
+            ctx.lineTo(x, y2);
+            ctx.stroke();
+        }
+        
+        // --- Main Drawing ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // --- Parameters ---
+        const l = 150;
+        const pivot = { x: 350, y: 250 };
+        const theta = 0.25; // Angle in radians
+
+        // --- Draw Displaced Rod (Dashed) ---
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        const horizEndDisp = {
+            x: pivot.x - l * Math.cos(theta),
+            y: pivot.y + l * Math.sin(theta)
+        };
+        ctx.moveTo(pivot.x, pivot.y);
+        ctx.lineTo(horizEndDisp.x, horizEndDisp.y);
+        
+        const vertEndDisp = {
+            x: pivot.x + 2 * l * Math.sin(theta),
+            y: pivot.y + 2 * l * Math.cos(theta)
+        };
+        ctx.moveTo(pivot.x, pivot.y);
+        ctx.lineTo(vertEndDisp.x, vertEndDisp.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // --- Draw Ceiling ---
+        const ceilingY = 80;
+        const springX = pivot.x - l;
+        ctx.beginPath();
+        ctx.moveTo(springX - 60, ceilingY);
+        ctx.lineTo(springX + 60, ceilingY);
+        ctx.stroke();
+        for (let i = 0; i < 10; i++) {
+            ctx.beginPath();
+            ctx.moveTo(springX - 50 + i * 11, ceilingY);
+            ctx.lineTo(springX - 60 + i * 11, ceilingY - 10);
+            ctx.stroke();
+        }
+
+        // --- Draw Spring ---
+        drawSpring(ctx, springX, ceilingY, pivot.y, 8, 20);
+        ctx.fillText('k', springX + 15, ceilingY + 70);
+
+        // --- Draw Equilibrium Rod (Solid) ---
+        ctx.beginPath();
+        ctx.moveTo(springX, pivot.y);
+        ctx.lineTo(pivot.x, pivot.y);
+        ctx.lineTo(pivot.x, pivot.y + 2 * l);
+        ctx.stroke();
+
+        // --- Draw Forces ---
+        const arrowLength = 50;
+        // Force mg on horizontal rod
+        const mg_pos = {
+            x: pivot.x - (l / 2) * Math.cos(theta),
+            y: pivot.y + (l / 2) * Math.sin(theta)
+        };
+        drawArrow(ctx, mg_pos.x, mg_pos.y, mg_pos.x, mg_pos.y + arrowLength);
+        ctx.fillText('mg', mg_pos.x + 5, mg_pos.y + arrowLength + 20);
+
+        // Force 2mg on vertical rod
+        const mg2_pos = {
+            x: pivot.x + l * Math.sin(theta),
+            y: pivot.y + l * Math.cos(theta)
+        };
+        drawArrow(ctx, mg2_pos.x, mg2_pos.y, mg2_pos.x, mg2_pos.y + 1.6 * arrowLength);
+        ctx.fillText('2mg', mg2_pos.x + 5, mg2_pos.y + 1.6 * arrowLength + 20);
+        
+        // --- Draw Annotations ---
+        ctx.fillText('O', pivot.x + 5, pivot.y - 5);
+        ctx.fillText('l', pivot.x - l / 2, pivot.y - 10);
+        ctx.fillText('2l', pivot.x + 10, pivot.y + l);
+        
+        // Angle theta (horizontal)
+        ctx.beginPath();
+        ctx.arc(pivot.x, pivot.y, l * 0.4, 0, theta);
+        ctx.stroke();
+        ctx.fillText('θ', pivot.x - 55, pivot.y + 25);
+
+        // Angle theta (vertical)
+        ctx.beginPath();
+        ctx.arc(pivot.x, pivot.y, l * 0.5, Math.PI / 2, Math.PI / 2 + theta);
+        ctx.stroke();
+        ctx.fillText('θ', pivot.x + 30, pivot.y + 70);
+
+        // Displacements x0 and x
+        const dim_line_x = pivot.x - l - 60;
+        const y_eq = pivot.y;
+        const y_disp = horizEndDisp.y;
+        const x_h = y_disp - y_eq;
+        const x0_h = 45;
+        const y_x0_top = y_eq - x0_h;
+        const tick_len = 10;
+        
+        ctx.beginPath();
+        // vertical line
+        ctx.moveTo(dim_line_x, y_x0_top);
+        ctx.lineTo(dim_line_x, y_disp);
+        // top tick for x0
+        ctx.moveTo(dim_line_x - tick_len/2, y_x0_top);
+        ctx.lineTo(dim_line_x + tick_len/2, y_x0_top);
+        // middle tick for x0 bottom / x top
+        ctx.moveTo(dim_line_x - tick_len/2, y_eq);
+        ctx.lineTo(dim_line_x + tick_len/2, y_eq);
+        // bottom tick for x
+        ctx.moveTo(dim_line_x - tick_len/2, y_disp);
+        ctx.lineTo(dim_line_x + tick_len/2, y_disp);
+        ctx.stroke();
+        
+        // x label
+        ctx.fillText('x', dim_line_x - 20, y_eq + x_h/2 + 5);
+        
+        // x0 label with subscript
+        const label_x0_x = dim_line_x - 25;
+        const label_x0_y = y_eq - x0_h/2 + 5;
+        ctx.fillText('x', label_x0_x, label_x0_y);
+        ctx.save();
+        ctx.font = 'italic 14px Times New Roman';
+        ctx.fillText('0', label_x0_x + 8, label_x0_y + 4);
+        ctx.restore();
+
+        // --- Caption ---
+        ctx.font = '24px KaiTi'; // A common Chinese font
+        ctx.fillText('力图 7.6.1', canvas.width / 2 - 60, canvas.height - 30);
+
+    </script>
+</body>
+</html>

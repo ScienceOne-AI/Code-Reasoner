@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Projectile Motion over a Planet</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="400" height="350"></canvas>
+
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Helper Function for Arrows ---
+// Draws an arrow head at (x, y) pointing in the direction of 'angle'.
+function drawArrow(ctx, x, y, angle, size) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, -size / 2);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, size / 2);
+    ctx.stroke();
+    ctx.restore();
+}
+
+// --- Drawing Parameters ---
+const cx = 200;
+const cy = 200;
+const radiusR = 120;
+const lineWidth = 2;
+
+// --- Trajectory Points ---
+// P0: Start point on the circle
+const x0 = cx - 35;
+const y0 = cy - Math.sqrt(radiusR * radiusR - (x0 - cx) * (x0 - cx));
+// P2: End point on the circle
+const x2 = cx + 60;
+const y2 = cy - Math.sqrt(radiusR * radiusR - (x2 - cx) * (x2 - cx));
+// P1: Control point for the quadratic curve (defines the peak)
+const cpx = cx + 10;
+const cpy = y0 - 55; // This sets the peak altitude H relative to the launch point
+
+// --- Clear Canvas ---
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+// --- Set Styles ---
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = lineWidth;
+ctx.font = "italic bold 20px 'Times New Roman'";
+
+// 1. Draw the Planet (Circle)
+ctx.beginPath();
+ctx.arc(cx, cy, radiusR, 0, 2 * Math.PI);
+ctx.stroke();
+
+// 2. Draw the center dot
+ctx.beginPath();
+ctx.arc(cx, cy, 3, 0, 2 * Math.PI);
+ctx.fill();
+
+// 3. Draw the radius line and label 'R'
+ctx.beginPath();
+ctx.moveTo(cx, cy);
+ctx.lineTo(cx + radiusR, cy);
+ctx.stroke();
+ctx.fillText('R', cx + radiusR / 2 - 5, cy - 8);
+
+// 4. Draw the trajectory
+ctx.beginPath();
+ctx.moveTo(x0, y0);
+ctx.quadraticCurveTo(cpx, cpy, x2, y2);
+ctx.stroke();
+
+// 5. Draw arrows on the trajectory
+// Tangent calculation: B'(t) = 2(1-t)(P1-P0) + 2t(P2-P1) where P1 is the control point
+// Arrow 1 (ascending) at t=0.2
+let t1 = 0.2;
+let P1_P0 = {x: cpx - x0, y: cpy - y0};
+let P2_P1 = {x: x2 - cpx, y: y2 - cpy};
+let tan1_vec = {
+    x: 2 * (1 - t1) * P1_P0.x + 2 * t1 * P2_P1.x,
+    y: 2 * (1 - t1) * P1_P0.y + 2 * t1 * P2_P1.y
+};
+let angle1 = Math.atan2(tan1_vec.y, tan1_vec.x);
+let p1_x = Math.pow(1 - t1, 2) * x0 + 2 * (1 - t1) * t1 * cpx + Math.pow(t1, 2) * x2;
+let p1_y = Math.pow(1 - t1, 2) * y0 + 2 * (1 - t1) * t1 * cpy + Math.pow(t1, 2) * y2;
+drawArrow(ctx, p1_x, p1_y, angle1, 10);
+
+// Arrow 2 (descending) at t=0.8
+let t2 = 0.8;
+let tan2_vec = {
+    x: 2 * (1 - t2) * P1_P0.x + 2 * t2 * P2_P1.x,
+    y: 2 * (1 - t2) * P1_P0.y + 2 * t2 * P2_P1.y
+};
+let angle2 = Math.atan2(tan2_vec.y, tan2_vec.x);
+let p2_x = Math.pow(1 - t2, 2) * x0 + 2 * (1 - t2) * t2 * cpx + Math.pow(t2, 2) * x2;
+let p2_y = Math.pow(1 - t2, 2) * y0 + 2 * (1 - t2) * t2 * cpy + Math.pow(t2, 2) * y2;
+drawArrow(ctx, p2_x, p2_y, angle2, 10);
+
+
+// 6. Draw the height 'H' line and label
+// The diagram shows H as a vertical line from the surface to the trajectory peak.
+// Using the control point as an approximation of the peak's location.
+const apex_x = cpx;
+const apex_y = cpy;
+// Y-coordinate on the planet's surface directly below the apex
+const y_surf_at_apex = cy - Math.sqrt(radiusR * radiusR - (apex_x - cx) * (apex_x - cx));
+
+ctx.beginPath();
+ctx.setLineDash([4, 4]);
+ctx.moveTo(apex_x, y_surf_at_apex);
+ctx.lineTo(apex_x, apex_y);
+ctx.stroke();
+ctx.setLineDash([]); // Reset dash
+
+ctx.fillText('H', apex_x + 8, apex_y + (y_surf_at_apex - apex_y) / 2 + 8);
+
+// 7. Draw the figure caption
+ctx.font = "bold 18px 'Times New Roman'";
+ctx.fillStyle = "black";
+ctx.fillText("Fig. 1.29.", cx - 40, cy + radiusR + 40);
+
+</script>
+
+</body>
+</html>

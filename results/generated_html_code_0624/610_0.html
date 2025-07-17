@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical Path Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="650" height="500" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Coordinates
+    const s1 = { x: 100, y: 150 };
+    const s2 = { x: 100, y: 350 };
+    const p = { x: 550, y: 150 };
+
+    // Draw source screen
+    ctx.beginPath();
+    ctx.moveTo(s1.x, 50);
+    ctx.lineTo(s1.x, 450);
+    ctx.stroke();
+
+    // Draw paths
+    // Path S1 -> P
+    ctx.beginPath();
+    ctx.moveTo(s1.x, s1.y);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+
+    // Path S2 -> P
+    ctx.beginPath();
+    ctx.moveTo(s2.x, s2.y);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+
+    // Helper to draw filled arrowhead
+    function drawArrowhead(ctx, toX, toY, angle) {
+        const headlen = 12;
+        ctx.beginPath();
+        // Points of the arrowhead triangle
+        const p1 = { x: toX, y: toY };
+        const p2 = { x: toX - headlen * Math.cos(angle - Math.PI / 6), y: toY - headlen * Math.sin(angle - Math.PI / 6) };
+        const p3 = { x: toX - headlen * Math.cos(angle + Math.PI / 6), y: toY - headlen * Math.sin(angle + Math.PI / 6) };
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.lineTo(p3.x, p3.y);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    // Draw arrows on paths
+    // Arrow on S1P
+    const arrow1_pos = { x: 400, y: 150 };
+    const angle1 = Math.atan2(p.y - s1.y, p.x - s1.x); // Should be 0
+    drawArrowhead(ctx, arrow1_pos.x, arrow1_pos.y, angle1);
+    
+    // Arrow on S2P
+    const angle2 = Math.atan2(p.y - s2.y, p.x - s2.x);
+    const arrow2_pos = { x: s2.x + 0.65 * (p.x - s2.x), y: s2.y + 0.65 * (p.y - s2.y) };
+    drawArrowhead(ctx, arrow2_pos.x, arrow2_pos.y, angle2);
+
+
+    // Draw medium blocks
+    // Block 1 (on S1P)
+    const block1_center = { x: 220, y: 150 };
+    const block1_w = 25;
+    const block1_h = 70;
+    ctx.save();
+    ctx.fillStyle = 'white'; // Use white to erase the line underneath
+    ctx.fillRect(block1_center.x - block1_w/2, block1_center.y - block1_h/2, block1_w, block1_h);
+    ctx.restore();
+    ctx.strokeRect(block1_center.x - block1_w/2, block1_center.y - block1_h/2, block1_w, block1_h);
+
+    // Block 2 (on S2P)
+    const block2_center = { x: s2.x + 0.4 * (p.x - s2.x), y: s2.y + 0.4 * (p.y - s2.y) };
+    const block2_w = 25; // thickness dimension
+    const block2_h = 70; // transverse dimension
+    ctx.save();
+    ctx.translate(block2_center.x, block2_center.y);
+    ctx.rotate(angle2);
+    ctx.fillStyle = 'white'; // Use white to erase the line underneath
+    ctx.fillRect(-block2_w/2, -block2_h/2, block2_w, block2_h);
+    ctx.strokeRect(-block2_w/2, -block2_h/2, block2_w, block2_h);
+    ctx.restore();
+
+    // Draw labels
+    ctx.fillStyle = 'black'; // Set fill back to black for text
+
+    // S1, S2, P
+    ctx.fillText('S', 65, 150);
+    ctx.font = 'italic 16px "Times New Roman"';
+    ctx.fillText('1', 78, 158);
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('S', 65, 350);
+    ctx.font = 'italic 16px "Times New Roman"';
+    ctx.fillText('2', 78, 358);
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('P', p.x + 20, p.y);
+
+    // r1, r2
+    ctx.fillText('r', 440, 130);
+    ctx.font = 'italic 16px "Times New Roman"';
+    ctx.fillText('1', 448, 135);
+    ctx.font = 'italic 24px "Times New Roman"';
+    
+    const r2_label_pos = { x: arrow2_pos.x, y: arrow2_pos.y + 35};
+    ctx.fillText('r', r2_label_pos.x, r2_label_pos.y);
+    ctx.font = 'italic 16px "Times New Roman"';
+    ctx.fillText('2', r2_label_pos.x + 8, r2_label_pos.y + 5);
+    ctx.font = 'italic 24px "Times New Roman"';
+    
+    // t1, n1
+    ctx.fillText('t', block1_center.x, block1_center.y - 55);
+    ctx.font = 'italic 16px "Times New Roman"';
+    ctx.fillText('1', block1_center.x + 6, block1_center.y - 50);
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('n', block1_center.x, block1_center.y + 55);
+    ctx.font = 'italic 16px "Times New Roman"';
+    ctx.fillText('1', block1_center.x + 8, block1_center.y + 60);
+    ctx.font = 'italic 24px "Times New Roman"';
+    
+    // t2, n2
+    const label_offset = 48;
+    const t2_pos = {
+        x: block2_center.x + label_offset * Math.cos(angle2 + Math.PI/2),
+        y: block2_center.y + label_offset * Math.sin(angle2 + Math.PI/2)
+    };
+    const n2_pos = {
+        x: block2_center.x + label_offset * Math.cos(angle2 - Math.PI/2),
+        y: block2_center.y + label_offset * Math.sin(angle2 - Math.PI/2)
+    };
+    
+    ctx.fillText('t', t2_pos.x, t2_pos.y);
+    ctx.font = 'italic 16px "Times New Roman"';
+    ctx.fillText('2', t2_pos.x + 6, t2_pos.y + 5);
+    ctx.font = 'italic 24px "Times New Roman"';
+
+    ctx.fillText('n', n2_pos.x, n2_pos.y);
+    ctx.font = 'italic 16px "Times New Roman"';
+    ctx.fillText('2', n2_pos.x + 8, n2_pos.y + 5);
+
+</script>
+</body>
+</html>

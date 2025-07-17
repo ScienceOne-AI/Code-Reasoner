@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Harmonic Wave</title>
+</head>
+<body>
+    <canvas id="physicsWaveCanvas" width="600" height="350"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsWaveCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Coordinate system parameters
+        const originX = 150;
+        const originY = 175;
+        const scaleX = 35; // pixels per meter
+        const scaleY = 750; // pixels per meter for y-axis
+
+        // Helper function to transform graph coordinates to canvas coordinates
+        function transform(gx, gy) {
+            return {
+                x: originX + gx * scaleX,
+                y: originY - gy * scaleY
+            };
+        }
+
+        // --- Draw Axes ---
+        ctx.beginPath();
+        // X-axis
+        ctx.moveTo(0, originY);
+        ctx.lineTo(canvas.width - 20, originY);
+        ctx.stroke();
+        // X-axis arrowhead
+        ctx.moveTo(canvas.width, originY);
+        ctx.lineTo(canvas.width - 10, originY - 5);
+        ctx.lineTo(canvas.width - 10, originY + 5);
+        ctx.closePath();
+        ctx.fill();
+
+        // Y-axis
+        ctx.beginPath();
+        ctx.moveTo(originX, canvas.height);
+        ctx.lineTo(originX, 10);
+        ctx.stroke();
+        // Y-axis arrowhead
+        ctx.moveTo(originX, 0);
+        ctx.lineTo(originX - 5, 10);
+        ctx.lineTo(originX + 5, 10);
+        ctx.closePath();
+        ctx.fill();
+
+        // --- Draw Wave Function: y(x) = 0.10 * sin( (pi/5)x + 5pi/6 ) ---
+        // This function matches A=0.1, lambda=10, y(0)=0.05, and y'(0)<0
+        ctx.beginPath();
+        ctx.lineWidth = 2;
+        let firstPoint = true;
+        for (let cx = 0; cx < canvas.width; cx++) {
+            const gx = (cx - originX) / scaleX;
+            const gy = 0.10 * Math.sin((Math.PI / 5) * gx + (5 * Math.PI / 6));
+            const p = transform(gx, gy);
+            if (firstPoint) {
+                ctx.moveTo(p.x, p.y);
+                firstPoint = false;
+            } else {
+                ctx.lineTo(p.x, p.y);
+            }
+        }
+        ctx.stroke();
+        ctx.lineWidth = 1;
+
+
+        // --- Draw Labels and Ticks ---
+        // Axis labels
+        ctx.fillText('y/m', originX + 20, 15);
+        ctx.fillText('x/m', canvas.width - 15, originY + 20);
+        ctx.fillText('0', originX - 15, originY + 15);
+
+        // Y-axis ticks and labels
+        const ticks = [0.10, 0.05, -0.10];
+        ticks.forEach(gy => {
+            const p = transform(0, gy);
+            ctx.beginPath();
+            ctx.moveTo(p.x - 5, p.y);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+            ctx.textAlign = 'right';
+            ctx.fillText(gy.toFixed(2), p.x - 10, p.y);
+        });
+        
+        // Dashed lines for amplitude
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        let p_amp_pos = transform(0, 0.10);
+        let peak_gx = -5/3;
+        let peak_pos = transform(peak_gx, 0.10);
+        ctx.moveTo(peak_pos.x, peak_pos.y);
+        ctx.lineTo(p_amp_pos.x, p_amp_pos.y);
+        
+        let p_amp_neg = transform(0, -0.10);
+        let trough_gx = 10/3;
+        let trough_pos = transform(trough_gx, -0.10);
+        ctx.moveTo(trough_pos.x, trough_pos.y);
+        ctx.lineTo(p_amp_neg.x, p_amp_neg.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.textAlign = 'center';
+
+        // --- Draw Point P and Velocity Vector ---
+        const p_gx = 20 / 3; // Approx 6.67 m
+        const p_gy = 0.05;
+        const p_canvas = transform(p_gx, p_gy);
+
+        // Point P
+        ctx.beginPath();
+        ctx.arc(p_canvas.x, p_canvas.y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Label P
+        ctx.font = 'italic 18px Arial';
+        ctx.fillText('P', p_canvas.x - 15, p_canvas.y);
+        ctx.font = '16px Arial';
+
+        // Velocity arrow
+        ctx.beginPath();
+        ctx.lineWidth = 1.5;
+        ctx.moveTo(p_canvas.x, p_canvas.y);
+        ctx.lineTo(p_canvas.x, p_canvas.y - 25);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(p_canvas.x, p_canvas.y - 30);
+        ctx.lineTo(p_canvas.x - 4, p_canvas.y - 22);
+        ctx.lineTo(p_canvas.x + 4, p_canvas.y - 22);
+        ctx.closePath();
+        ctx.fill();
+        ctx.lineWidth = 1;
+
+        // --- Draw Wavelength Indicator ---
+        // Let's place it between the first and second troughs
+        const trough1_gx = 10 / 3; // Approx 3.33 m
+        const trough2_gx = trough1_gx + 10; // Wavelength is 10 m
+        
+        const start_p = transform(trough1_gx, 0);
+        const end_p = transform(trough2_gx, 0);
+
+        const indicator_y = originY + 50;
+        
+        // Vertical lines from axis
+        ctx.beginPath();
+        ctx.moveTo(start_p.x, originY);
+        ctx.lineTo(start_p.x, indicator_y + 5);
+        ctx.moveTo(end_p.x, originY);
+        ctx.lineTo(end_p.x, indicator_y + 5);
+        ctx.stroke();
+
+        // Horizontal double arrow
+        ctx.beginPath();
+        ctx.moveTo(start_p.x, indicator_y);
+        ctx.lineTo(end_p.x, indicator_y);
+        ctx.stroke();
+        // Arrowhead left
+        ctx.beginPath();
+        ctx.moveTo(start_p.x + 8, indicator_y - 4);
+        ctx.lineTo(start_p.x, indicator_y);
+        ctx.lineTo(start_p.x + 8, indicator_y + 4);
+        ctx.stroke();
+        // Arrowhead right
+        ctx.beginPath();
+        ctx.moveTo(end_p.x - 8, indicator_y - 4);
+        ctx.lineTo(end_p.x, indicator_y);
+        ctx.lineTo(end_p.x - 8, indicator_y + 4);
+        ctx.stroke();
+
+        // Label
+        ctx.fillStyle = 'black'; // Ensure text is black
+        ctx.fillText('10.0m', (start_p.x + end_p.x) / 2, indicator_y);
+
+    </script>
+</body>
+</html>

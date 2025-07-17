@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cantilever Bridge Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bridgeCanvas" width="1300" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('bridgeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Parameters and Coordinates ---
+        const scale = 10;
+        const x_start = 50;
+        const y_deck = 250;
+        const y_dim = 40;
+
+        // X-coordinates
+        const x_C = x_start;
+        const x_A = x_C + 20 * scale;
+        const x_E = x_A + 15 * scale;
+        const x_F = x_E + 50 * scale;
+        const x_B = x_F + 15 * scale;
+        const x_D = x_B + 20 * scale;
+
+        // Y-coordinates for loads
+        const y_main_truss_top = y_deck - 80;
+        const y_side_truss_peak = y_deck - 50;
+        const y_train_offset = 35;
+
+        // --- Helper Functions ---
+
+        // Function to draw hatching inside a clipped path
+        function drawHatch(pathFunction, hatchType, spacing) {
+            ctx.save();
+            
+            // Create and stroke the path outline
+            ctx.beginPath();
+            pathFunction(ctx);
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'black';
+            ctx.stroke();
+
+            // Clip to the path
+            ctx.clip();
+
+            // Draw hatching lines
+            ctx.lineWidth = 1.5;
+            const bounds = { x_min: 0, x_max: canvas.width, y_min: 0, y_max: canvas.height }; // Simple bounding box
+            
+            if (hatchType === 'forward') { // "////"
+                for (let i = -bounds.y_max; i < bounds.x_max; i += spacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i + bounds.y_max, bounds.y_max);
+                    ctx.stroke();
+                }
+            } else if (hatchType === 'backward') { // "\\\\"
+                for (let i = 0; i < bounds.x_max + bounds.y_max; i += spacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i - bounds.y_max, bounds.y_max);
+                    ctx.stroke();
+                }
+            } else if (hatchType === 'solid') { // "solid" hatching for piers/ground
+                 for (let i = -bounds.y_max; i < bounds.x_max; i += spacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i + bounds.y_max, bounds.y_max);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+
+        // Function to draw dimension lines
+        function drawDimLine(x1, x2, y, text) {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1;
+            
+            // Main horizontal line
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+            
+            // Arrow heads
+            ctx.beginPath();
+            ctx.moveTo(x1 + 10, y - 5);
+            ctx.lineTo(x1, y);
+            ctx.lineTo(x1 + 10, y + 5);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(x2 - 10, y - 5);
+            ctx.lineTo(x2, y);
+            ctx.lineTo(x2 - 10, y + 5);
+            ctx.stroke();
+
+            // Vertical dashed lines
+            ctx.save();
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x1, y_deck - 10);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(x2, y);
+            ctx.lineTo(x2, y_deck - 10);
+            ctx.stroke();
+            ctx.restore();
+
+            // Text
+            ctx.fillStyle = 'black';
+            ctx.font = '24px "Times New Roman"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(text, (x1 + x2) / 2, y - 5);
+        }
+
+        // Function to draw a support triangle
+        function drawSupport(x, y_base) {
+            const size = 15;
+            ctx.beginPath();
+            ctx.moveTo(x - size, y_base);
+            ctx.lineTo(x, y_base - size);
+            ctx.lineTo(x + size, y_base);
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 1. Draw Dimensions
+        drawDimLine(x_C, x_A, y_dim, '20 m');
+        drawDimLine(x_A, x_E, y_dim, '15 m');
+        drawDimLine(x_E, x_F, y_dim, '50 m');
+        drawDimLine(x_F, x_B, y_dim, '15 m');
+        drawDimLine(x_B, x_D, y_dim, '20 m');
+
+        // 2. Draw Ground, Piers, and Water
+        const y_pier_top = y_deck + 15;
+        const y_pier_bottom = 520;
+        const pier_width = 40;
+
+        // Left Abutment
+        drawHatch(c => {
+            c.rect(0, y_deck, x_C, 300);
+        }, 'forward', 10);
+        
+        // Right Abutment
+        drawHatch(c => {
+            c.rect(x_D, y_deck, canvas.width - x_D, 300);
+        }, 'forward', 10);
+
+        // Pier E
+        drawHatch(c => {
+            c.rect(x_E - pier_width / 2, y_pier_top, pier_width, y_pier_bottom - y_pier_top);
+        }, 'forward', 8);
+
+        // Pier F
+        drawHatch(c => {
+            c.rect(x_F - pier_width / 2, y_pier_top, pier_width, y_pier_bottom - y_pier_top);
+        }, 'forward', 8);
+        
+        // Riverbed
+        ctx.beginPath();
+        ctx.moveTo(x_C, 450);
+        ctx.bezierCurveTo(x_C + 100, 480, x_E - 50, 520, x_E + pier_width/2, y_pier_bottom);
+        ctx.lineTo(x_F - pier_width/2, y_pier_bottom);
+        ctx.bezierCurveTo(x_F + pier_width/2 + 200, 520, x_B, 480, x_D, 460);
+        ctx.stroke();
+
+        // Water
+        const y_water = 370;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x_C, y_water);
+        ctx.lineTo(x_D, y_water);
+        ctx.stroke();
+        for(let x = x_C; x < x_D; x += 30) {
+            ctx.beginPath();
+            ctx.moveTo(x, y_water + 10);
+            ctx.lineTo(x+15, y_water + 10);
+            ctx.stroke();
+        }
+
+        // 3. Draw Bridge Structure
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'black';
+        ctx.beginPath();
+        ctx.moveTo(x_C, y_deck);
+        ctx.lineTo(x_D, y_deck);
+        ctx.stroke();
+
+        // 4. Draw Loads (hatched areas)
+        // Self-weight loads
+        drawHatch(c => { // Load AC
+            c.moveTo(x_C, y_deck);
+            c.quadraticCurveTo((x_C + x_A) / 2, y_side_truss_peak, x_A, y_deck);
+            c.closePath();
+        }, 'forward', 10);
+        
+        drawHatch(c => { // Load AEFB
+            c.moveTo(x_A, y_deck);
+            c.lineTo(x_E, y_main_truss_top);
+            c.lineTo(x_F, y_main_truss_top);
+            c.lineTo(x_B, y_deck);
+            c.closePath();
+        }, 'forward', 10);
+        
+        drawHatch(c => { // Load BD
+            c.moveTo(x_B, y_deck);
+            c.quadraticCurveTo((x_B + x_D) / 2, y_side_truss_peak, x_D, y_deck);
+            c.closePath();
+        }, 'forward', 10);
+
+        // Train load on span FD
+        drawHatch(c => { // Train load on FB
+            c.moveTo(x_F, y_main_truss_top);
+            c.lineTo(x_B, y_deck);
+            c.lineTo(x_B, y_deck - y_train_offset);
+            c.lineTo(x_F, y_main_truss_top - y_train_offset);
+            c.closePath();
+        }, 'backward', 10);
+
+        drawHatch(c => { // Train load on BD
+            c.moveTo(x_B, y_deck);
+            c.quadraticCurveTo((x_B + x_D) / 2, y_side_truss_peak, x_D, y_deck);
+            c.lineTo(x_D, y_deck - y_train_offset);
+            c.quadraticCurveTo((x_B + x_D) / 2, y_side_truss_peak - y_train_offset, x_B, y_deck - y_train_offset);
+            c.closePath();
+        }, 'backward', 10);
+        
+        // 5. Draw Supports and Hinges (on top of loads)
+        ctx.fillStyle = 'white';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // Supports
+        drawSupport(x_C, y_deck);
+        drawSupport(x_E, y_pier_top);
+        drawSupport(x_F, y_pier_top);
+        drawSupport(x_D, y_deck);
+        
+        // Hinges (small circles)
+        const hingeRadius = 5;
+        [x_C, x_A, x_E, x_F, x_B, x_D].forEach(x => {
+            let y_pos = y_deck;
+            if (x === x_E || x === x_F) y_pos = y_pier_top - 15;
+            
+            ctx.beginPath();
+            ctx.arc(x, y_pos, hingeRadius, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+        });
+        
+        // Re-draw hinge at supports to be on top
+        [x_C, x_D].forEach(x => {
+            ctx.beginPath();
+            ctx.arc(x, y_deck-15, hingeRadius, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+        })
+
+
+        // 6. Draw Labels
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 28px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const label_y = y_deck + 20;
+
+        ctx.fillText('C', x_C, label_y);
+        ctx.fillText('A', x_A, label_y);
+        ctx.fillText('E', x_E, label_y);
+        ctx.fillText('F', x_F, label_y);
+        ctx.fillText('B', x_B, label_y);
+        ctx.fillText('D', x_D, label_y);
+
+    </script>
+</body>
+</html>

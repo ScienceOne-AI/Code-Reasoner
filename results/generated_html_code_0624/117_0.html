@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rectangular Waveguide Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- 3D Projection Setup ---
+        const origin = { x: 150, y: 300 };
+        const scale = 50;
+
+        // Projection vectors for a visually similar axonometric projection
+        const vy_dx = 0.5;
+        const vy_dy = -0.4; 
+
+        function project(x, y, z) {
+            const canvasX = origin.x + scale * (x + y * vy_dx);
+            const canvasY = origin.y + scale * (-z + y * vy_dy);
+            return { x: canvasX, y: canvasY };
+        }
+
+        // --- Helper function to draw arrows ---
+        function drawArrow(from, to, label) {
+            const headlen = 10; // length of head in pixels
+            const angle = Math.atan2(to.y - from.y, to.x - from.x);
+            
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(to.x, to.y);
+            ctx.lineTo(to.x - headlen * Math.cos(angle - Math.PI / 6), to.y - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(to.x - headlen * Math.cos(angle + Math.PI / 6), to.y - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+            
+            // Label
+            ctx.fillText(label, to.x + 15 * Math.cos(angle), to.y + 15 * Math.sin(angle));
+        }
+
+        // --- Draw Coordinate System ---
+        ctx.fillStyle = 'black';
+        const axisLength = 3 * scale;
+        const yAxisLength = 2.5 * scale;
+        drawArrow({ x: origin.x, y: origin.y }, { x: origin.x + axisLength, y: origin.y }, 'x');
+        drawArrow({ x: origin.x, y: origin.y }, { x: origin.x, y: origin.y - axisLength * 0.7 }, 'z');
+        drawArrow({ x: origin.x, y: origin.y }, { x: origin.x + yAxisLength * vy_dx, y: origin.y + yAxisLength * vy_dy }, 'y');
+        ctx.fillText('0', origin.x - 10, origin.y + 10);
+
+        // --- Waveguide Dimensions ---
+        const h = 1; // height in cm
+        const w = 2; // width in cm
+        const l = 4.5; // length for drawing purposes
+
+        // --- Calculate corner points ---
+        const p000 = project(0, 0, 0);
+        const pL00 = project(l, 0, 0);
+        const p0w0 = project(0, w, 0);
+        const pLw0 = project(l, w, 0);
+        const p00h = project(0, 0, h);
+        const pL0h = project(l, 0, h);
+        const p0wh = project(0, w, h);
+        const pLwh = project(l, w, h);
+
+        // --- Draw Dashed (Hidden) Lines ---
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(p000.x, p000.y);
+        ctx.lineTo(p0w0.x, p0w0.y);
+        ctx.moveTo(p0w0.x, p0w0.y);
+        ctx.lineTo(p0wh.x, p0wh.y);
+        ctx.moveTo(p0w0.x, p0w0.y);
+        ctx.lineTo(pLw0.x, pLw0.y);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid line
+
+        // --- Draw Solid (Visible) Lines ---
+        ctx.beginPath();
+        ctx.moveTo(p000.x, p000.y);
+        ctx.lineTo(p00h.x, p00h.y);
+        ctx.moveTo(p00h.x, p00h.y);
+        ctx.lineTo(p0wh.x, p0wh.y);
+        ctx.moveTo(p000.x, p000.y);
+        ctx.lineTo(pL00.x, pL00.y);
+        ctx.moveTo(p00h.x, p00h.y);
+        ctx.lineTo(pL0h.x, pL0h.y);
+        ctx.moveTo(p0wh.x, p0wh.y);
+        ctx.lineTo(pLwh.x, pLwh.y);
+        ctx.stroke();
+
+        // --- Draw Jagged "Broken" Edge ---
+        ctx.beginPath();
+        ctx.moveTo(pL0h.x, pL0h.y);
+        ctx.quadraticCurveTo(pL0h.x + 10, (pL0h.y + pLwh.y)/2, pLwh.x, pLwh.y);
+        ctx.quadraticCurveTo(pLwh.x - 5, (pLwh.y + pLw0.y)/2 + 10, pLw0.x, pLw0.y);
+        ctx.quadraticCurveTo((pLw0.x + pL00.x)/2 - 10, (pLw0.y + pL00.y)/2, pL00.x, pL00.y);
+        ctx.stroke();
+
+        // --- Draw Dimensions ---
+        // 1 cm height
+        const dimZ_start = project(-0.5, 0, 0);
+        const dimZ_end = project(-0.5, 0, h);
+        ctx.beginPath();
+        ctx.moveTo(dimZ_start.x, dimZ_start.y);
+        ctx.lineTo(dimZ_end.x, dimZ_end.y);
+        // Ticks
+        ctx.moveTo(dimZ_start.x, dimZ_start.y);
+        ctx.lineTo(dimZ_start.x + 5, dimZ_start.y);
+        ctx.moveTo(dimZ_end.x, dimZ_end.y);
+        ctx.lineTo(dimZ_end.x + 5, dimZ_end.y);
+        ctx.stroke();
+        ctx.fillText('1 cm', dimZ_start.x - 20, (dimZ_start.y + dimZ_end.y) / 2);
+
+        // 2 cm width
+        const dimY_start = project(-0.2, 0, h + 0.2);
+        const dimY_end = project(-0.2, w, h + 0.2);
+        ctx.beginPath();
+        ctx.moveTo(dimY_start.x, dimY_start.y);
+        ctx.lineTo(dimY_end.x, dimY_end.y);
+        // Ticks (perpendicular to the dimension line)
+        const tickLen = 5;
+        const tickDir = { x: -vy_dy, y: vy_dx }; // Perpendicular vector
+        ctx.moveTo(dimY_start.x, dimY_start.y);
+        ctx.lineTo(dimY_start.x - tickLen * tickDir.x, dimY_start.y - tickLen * tickDir.y);
+        ctx.moveTo(dimY_end.x, dimY_end.y);
+        ctx.lineTo(dimY_end.x - tickLen * tickDir.x, dimY_end.y - tickLen * tickDir.y);
+        ctx.stroke();
+        ctx.save();
+        ctx.translate((dimY_start.x + dimY_end.x) / 2, (dimY_start.y + dimY_end.y) / 2);
+        ctx.rotate(Math.atan2(vy_dy, vy_dx));
+        ctx.fillText('2 cm', 0, -12);
+        ctx.restore();
+        
+        // --- Figure Caption ---
+        ctx.fillText('Fig. 4.13', canvas.width / 2, canvas.height - 20);
+
+    </script>
+</body>
+</html>

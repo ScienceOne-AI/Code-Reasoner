@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Arch Truss Bridge Diagram</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+        canvas { border: 1px solid #999; }
+    </style>
+</head>
+<body>
+<canvas id="trussCanvas" width="750" height="550"></canvas>
+<script>
+    const canvas = document.getElementById('trussCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Drawing Parameters ---
+    const scale = 20; // pixels per meter
+    const xB = 150;
+    const yB = 380;
+    const span = 20 * scale; // 20m span = 400px
+    const xA = xB + span; // 150 + 400 = 550
+    const yA = yB;
+    const archHeight = 7.5 * scale; // Estimated height = 150px
+    const xC = xB + span / 2;
+    const yC = yB;
+    const forceHeight = 4 * scale; // 4m height = 80px
+    const forceY = yB - forceHeight;
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws an arrow from one point to another.
+     */
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    /**
+     * Draws a hatched pattern for ground representation.
+     */
+    function drawHatch(ctx, x1, y1, x2, y2, angle = -Math.PI / 3, spacing = 8, length = 10) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        const lineLength = Math.hypot(x2 - x1, y2 - y1);
+        const lineAngle = Math.atan2(y2 - y1, x2 - x1);
+        const numHatches = Math.floor(lineLength / spacing);
+
+        for (let i = 1; i <= numHatches; i++) {
+            const pX = x1 + i * spacing * Math.cos(lineAngle);
+            const pY = y1 + i * spacing * Math.sin(lineAngle);
+            const hX = pX + length * Math.cos(lineAngle + Math.PI / 2 + angle);
+            const hY = pY + length * Math.sin(lineAngle + Math.PI / 2 + angle);
+            ctx.beginPath();
+            ctx.moveTo(pX, pY);
+            ctx.lineTo(hX, hY);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    // --- Main Drawing Logic ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // 1. Draw Truss Structure
+    ctx.lineWidth = 3;
+    const numPanels = 8;
+    const panelWidth = span / numPanels;
+
+    // Calculate upper node positions on a parabola: y = a(x-h)^2 + k
+    const h = xC;
+    const k = yB - archHeight;
+    const a = (yB - k) / ((xB - h) * (xB - h));
+    const getUpperY = x => a * (x - h) * (x - h) + k;
+
+    const upperPoints = [];
+    for (let i = 0; i <= numPanels; i++) {
+        const x = xB + i * panelWidth;
+        upperPoints.push({ x: x, y: getUpperY(x) });
+    }
+
+    // Draw chords and web members
+    ctx.beginPath();
+    ctx.moveTo(xB, yB);
+    ctx.lineTo(xA, yA); // Lower chord
+    for (let i = 0; i < numPanels; i++) {
+        ctx.moveTo(upperPoints[i].x, upperPoints[i].y);
+        ctx.lineTo(upperPoints[i+1].x, upperPoints[i+1].y); // Upper chord segments
+    }
+    // Verticals
+    for (let i = 1; i < numPanels; i++) {
+        ctx.moveTo(upperPoints[i].x, upperPoints[i].y);
+        ctx.lineTo(xB + i * panelWidth, yB);
+    }
+    // Diagonals
+    for (let i = 0; i < numPanels; i++) {
+        if (i < numPanels / 2) {
+            ctx.moveTo(upperPoints[i+1].x, upperPoints[i+1].y);
+            ctx.lineTo(xB + i * panelWidth, yB);
+        } else {
+            ctx.moveTo(upperPoints[i].x, upperPoints[i].y);
+            ctx.lineTo(xB + (i + 1) * panelWidth, yB);
+        }
+    }
+    ctx.stroke();
+
+    // 2. Draw Supports
+    ctx.lineWidth = 2;
+    // Support A (Pin)
+    ctx.beginPath();
+    ctx.arc(xA, yA, 7, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white'; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'black';
+    ctx.beginPath();
+    ctx.moveTo(xA, yA + 7);
+    ctx.lineTo(xA - 18, yA + 35);
+    ctx.lineTo(xA + 18, yA + 35);
+    ctx.closePath();
+    ctx.stroke();
+    drawHatch(ctx, xA - 28, yA + 35, xA + 28, yA + 35);
+
+    // Support B (Roller on incline)
+    ctx.beginPath();
+    ctx.arc(xB, yB, 7, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white'; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'black';
+    const linkBaseY = yB + 35;
+    ctx.beginPath();
+    ctx.moveTo(xB, yB + 7);
+    ctx.lineTo(xB - 15, linkBaseY);
+    ctx.moveTo(xB, yB + 7);
+    ctx.lineTo(xB + 15, linkBaseY);
+    ctx.moveTo(xB - 15, linkBaseY);
+    ctx.lineTo(xB + 15, linkBaseY);
+    ctx.stroke();
+    const rollerY = linkBaseY + 5;
+    ctx.beginPath(); ctx.arc(xB - 10, rollerY, 4.5, 0, 2 * Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(xB + 10, rollerY, 4.5, 0, 2 * Math.PI); ctx.stroke();
+    const angle30 = 30 * Math.PI / 180;
+    const groundY = rollerY + 4.5;
+    const groundLength = 80;
+    const p1 = { x: xB - groundLength/2, y: groundY - (groundLength/2) * Math.tan(angle30) };
+    const p2 = { x: xB + groundLength/2, y: groundY + (groundLength/2) * Math.tan(angle30) };
+    drawHatch(ctx, p1.x, p1.y, p2.x, p2.y);
+
+    // 3. Draw Axes
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath(); ctx.moveTo(xB - 120, yB); ctx.lineTo(xA + 120, yA); ctx.stroke(); // X-axis
+    ctx.beginPath(); ctx.moveTo(xB, yB + 120); ctx.lineTo(xB, yB - archHeight - 40); ctx.stroke(); // Y-axis
+    ctx.restore();
+
+    // 4. Draw Labels, Forces, and Dimensions
+    ctx.font = '24px serif';
+    ctx.fillText('A', xA, yA - 15);
+    ctx.fillText('B', xB, yB - 15);
+    ctx.fillText('C', xC - 10, yC - 10);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(xC, yC, 6, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white'; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'black';
+
+    // Force F
+    ctx.lineWidth = 2.5;
+    drawArrow(ctx, xA + 90, forceY, xA + 10, forceY, 12);
+    ctx.font = 'bold 26px serif';
+    ctx.fillText('F', xA + 95, forceY + 8);
+
+    // Dimension 4m
+    ctx.lineWidth = 1.5;
+    const dimX = xA + 50;
+    drawArrow(ctx, dimX, yA, dimX, forceY, 8);
+    drawArrow(ctx, dimX, forceY, dimX, yA, 8);
+    ctx.save();
+    ctx.translate(dimX + 10, (yA + forceY) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.font = '20px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('4 m', 0, 0);
+    ctx.restore();
+
+    // Dimension 20m
+    const dimY = yC - 35;
+    ctx.beginPath();
+    ctx.moveTo(xB, dimY); ctx.lineTo(xA, dimY); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(xB, dimY - 5); ctx.lineTo(xB, dimY + 5); ctx.stroke();
+    ctx.moveTo(xA, dimY - 5); ctx.lineTo(xA, dimY + 5); ctx.stroke();
+    ctx.font = '20px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('20 m', xC, dimY - 5);
+
+    // Angle 30°
+    const angleOrigX = xB - 40, angleOrigY = yB + 70, angleLen = 70, arcRadius = 35;
+    ctx.save();
+    ctx.setLineDash([4, 4]); ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(angleOrigX - angleLen, angleOrigY); ctx.lineTo(angleOrigX, angleOrigY); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(angleOrigX, angleOrigY);
+    ctx.lineTo(angleOrigX - angleLen * Math.cos(angle30), angleOrigY - angleLen * Math.sin(angle30));
+    ctx.stroke();
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(angleOrigX, angleOrigY, arcRadius, -angle30, 0); ctx.stroke();
+    const arrowTipAngle = 0;
+    const arrowX = angleOrigX + arcRadius * Math.cos(arrowTipAngle);
+    const arrowY = angleOrigY + arcRadius * Math.sin(arrowTipAngle);
+    const tangent = arrowTipAngle + Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(arrowX, arrowY);
+    ctx.lineTo(arrowX - 8 * Math.cos(tangent - Math.PI / 6), arrowY - 8 * Math.sin(tangent - Math.PI / 6));
+    ctx.lineTo(arrowX - 8 * Math.cos(tangent + Math.PI / 6), arrowY - 8 * Math.sin(tangent + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+    ctx.font = '20px serif';
+    ctx.fillText('30°', angleOrigX - 25, angleOrigY - arcRadius - 5);
+
+    // Axis labels
+    ctx.font = 'italic 24px serif';
+    ctx.fillText('x', xA + 125, yA + 8);
+    ctx.fillText('y', xB + 10, yB - archHeight - 45);
+</script>
+</body>
+</html>

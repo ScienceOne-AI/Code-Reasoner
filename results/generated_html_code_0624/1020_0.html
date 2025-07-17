@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = "24px sans-serif";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper function to draw a vertical resistor ---
+        function drawResistor(x_center, y_start, y_end) {
+            const h = y_end - y_start;
+            const amp = 10;
+            const num_segments = 8;
+            const seg_h = h / num_segments;
+
+            ctx.beginPath();
+            ctx.moveTo(x_center, y_start);
+            for (let i = 0; i < num_segments; i++) {
+                let sign = (i % 2 === 0) ? 1 : -1;
+                ctx.lineTo(x_center + sign * amp, y_start + (i + 0.5) * seg_h);
+            }
+            ctx.lineTo(x_center, y_end);
+            ctx.stroke();
+        }
+        
+        // --- Main Drawing ---
+
+        // Draw outer frame
+        ctx.strokeRect(10, 60, 580, 280);
+
+        // Draw Title
+        ctx.font = "bold 36px serif";
+        ctx.textAlign = 'left';
+        ctx.fillText("Circuit 1", 20, 40);
+
+        // Reset font for component labels
+        ctx.font = "24px sans-serif";
+        
+        // --- Left side: Battery and Switch ---
+        const batX = 80;
+        const batTopY = 160;
+        const batBottomY = 240;
+        
+        // Battery
+        ctx.beginPath();
+        // Top terminal line
+        ctx.moveTo(batX, batTopY - 20);
+        ctx.lineTo(batX, batTopY);
+        // Plates
+        ctx.moveTo(batX - 20, batTopY);      // Long plate
+        ctx.lineTo(batX + 20, batTopY);
+        ctx.moveTo(batX - 10, batTopY + 15); // Short plate
+        ctx.lineTo(batX + 10, batTopY + 15);
+        ctx.moveTo(batX - 20, batBottomY - 15); // Long plate
+        ctx.lineTo(batX + 20, batBottomY - 15);
+        ctx.moveTo(batX - 10, batBottomY); // Short plate
+        ctx.lineTo(batX + 10, batBottomY);
+        // Internal connection
+        ctx.moveTo(batX, batTopY + 15);
+        ctx.lineTo(batX, batBottomY - 15);
+        // Bottom terminal line
+        ctx.moveTo(batX, batBottomY);
+        ctx.lineTo(batX, batBottomY + 40);
+        ctx.stroke();
+
+        // Battery Label
+        ctx.textAlign = 'center';
+        ctx.fillText("12 V", batX - 45, (batTopY + batBottomY) / 2);
+
+        // Switch
+        const switchPivotX = 150;
+        const switchPivotY = 120;
+        const switchContactX = 220;
+
+        ctx.beginPath();
+        // Wires to switch
+        ctx.moveTo(batX, batTopY - 20);
+        ctx.lineTo(batX, switchPivotY);
+        ctx.lineTo(switchPivotX, switchPivotY);
+        
+        // Switch components
+        ctx.moveTo(switchPivotX, switchPivotY);
+        ctx.lineTo(switchContactX, switchPivotY - 20); // The open switch arm
+        ctx.stroke();
+        // Switch terminals (circles)
+        ctx.beginPath();
+        ctx.arc(switchPivotX, switchPivotY, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(switchContactX, switchPivotY, 4, 0, 2 * Math.PI);
+        ctx.stroke(); // Open contact is not filled
+
+        // --- Right side: Resistor Bridge ---
+        const leftBranchX = 250;
+        const rightBranchX = 450;
+        const topWireY = 120;
+        const midWireY = 200;
+        const bottomWireY = 280;
+
+        // Top and Bottom Rails
+        ctx.beginPath();
+        ctx.moveTo(switchContactX, topWireY);
+        ctx.lineTo(rightBranchX, topWireY);
+        ctx.moveTo(batX, bottomWireY);
+        ctx.lineTo(rightBranchX, bottomWireY);
+        ctx.stroke();
+
+        // Left Branch
+        ctx.beginPath();
+        ctx.moveTo(leftBranchX, topWireY);
+        ctx.lineTo(leftBranchX, topWireY + 20);
+        ctx.moveTo(leftBranchX, topWireY + 60);
+        ctx.lineTo(leftBranchX, midWireY);
+        ctx.moveTo(leftBranchX, midWireY);
+        ctx.lineTo(leftBranchX, midWireY + 20);
+        ctx.moveTo(leftBranchX, midWireY + 60);
+        ctx.lineTo(leftBranchX, bottomWireY);
+        ctx.stroke();
+        drawResistor(leftBranchX, topWireY + 20, topWireY + 60); // 100 Ohm
+        drawResistor(leftBranchX, midWireY + 20, midWireY + 60); // 300 Ohm
+        
+        // Right Branch
+        ctx.beginPath();
+        ctx.moveTo(rightBranchX, topWireY);
+        ctx.lineTo(rightBranchX, topWireY + 20);
+        ctx.moveTo(rightBranchX, topWireY + 60);
+        ctx.lineTo(rightBranchX, midWireY);
+        ctx.moveTo(rightBranchX, midWireY);
+        ctx.lineTo(rightBranchX, midWireY + 20);
+        ctx.moveTo(rightBranchX, midWireY + 60);
+        ctx.lineTo(rightBranchX, bottomWireY);
+        ctx.stroke();
+        drawResistor(rightBranchX, topWireY + 20, topWireY + 60); // 400 Ohm
+        drawResistor(rightBranchX, midWireY + 20, midWireY + 60); // 200 Ohm
+
+        // Resistor Labels
+        ctx.textAlign = 'right';
+        ctx.fillText("100 \u03A9", leftBranchX - 50, topWireY + 40);
+        ctx.fillText("300 \u03A9", leftBranchX - 50, midWireY + 40);
+        ctx.textAlign = 'left';
+        ctx.fillText("400 \u03A9", rightBranchX + 20, topWireY + 40);
+        ctx.fillText("200 \u03A9", rightBranchX + 20, midWireY + 40);
+
+        // Capacitor and Point X
+        const capX = (leftBranchX + rightBranchX) / 2;
+        const capSpacing = 15;
+        const plateLength = 30;
+
+        // Wires to capacitor
+        ctx.beginPath();
+        ctx.moveTo(leftBranchX, midWireY);
+        ctx.lineTo(capX - capSpacing / 2, midWireY);
+        ctx.moveTo(capX + capSpacing / 2, midWireY);
+        ctx.lineTo(rightBranchX, midWireY);
+        ctx.stroke();
+
+        // Capacitor plates
+        ctx.beginPath();
+        ctx.moveTo(capX - capSpacing / 2, midWireY - plateLength / 2);
+        ctx.lineTo(capX - capSpacing / 2, midWireY + plateLength / 2);
+        ctx.moveTo(capX + capSpacing / 2, midWireY - plateLength / 2);
+        ctx.lineTo(capX + capSpacing / 2, midWireY + plateLength / 2);
+        ctx.stroke();
+
+        // Point X
+        ctx.beginPath();
+        ctx.arc(leftBranchX, midWireY, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.textAlign = 'center';
+        ctx.fillText("X", leftBranchX, midWireY + 20);
+    </script>
+</body>
+</html>

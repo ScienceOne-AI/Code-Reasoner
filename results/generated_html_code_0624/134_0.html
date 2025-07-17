@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electromagnetic Field Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="420"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style settings
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = 2.5;
+ctx.font = 'bold 20px serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// Helper function to draw an arrowhead
+function drawArrowhead(ctx, fromX, fromY, toX, toY, angle, length) {
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const headAngle = Math.atan2(dy, dx);
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - length * Math.cos(headAngle - angle), toY - length * Math.sin(headAngle - angle));
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - length * Math.cos(headAngle + angle), toY - length * Math.sin(headAngle + angle));
+}
+
+// --- Main Drawing ---
+const canvasCenterX = canvas.width / 2;
+
+// 1. Coordinate System
+const axisOrigin = { x: 120, y: 80 };
+const axisLength = 50;
+const axisArrowLength = 10;
+const axisArrowAngle = Math.PI / 6;
+
+// Z-axis (vertical)
+ctx.beginPath();
+ctx.moveTo(axisOrigin.x, axisOrigin.y + axisLength / 2);
+ctx.lineTo(axisOrigin.x, axisOrigin.y - axisLength / 2);
+drawArrowhead(ctx, axisOrigin.x, axisOrigin.y + axisLength / 2, axisOrigin.x, axisOrigin.y - axisLength / 2, axisArrowAngle, axisArrowLength);
+ctx.stroke();
+ctx.fillText('z', axisOrigin.x - 15, axisOrigin.y - axisLength / 2 - 5);
+
+// Y-axis (horizontal)
+ctx.beginPath();
+ctx.moveTo(axisOrigin.x, axisOrigin.y);
+ctx.lineTo(axisOrigin.x + axisLength, axisOrigin.y);
+drawArrowhead(ctx, axisOrigin.x, axisOrigin.y, axisOrigin.x + axisLength, axisOrigin.y, axisArrowAngle, axisArrowLength);
+ctx.stroke();
+ctx.fillText('y', axisOrigin.x + axisLength + 10, axisOrigin.y);
+
+// 2. Fixed Support
+const supportY = 110;
+const supportStartX = 80;
+const supportEndX = 420;
+ctx.beginPath();
+ctx.moveTo(supportStartX, supportY);
+ctx.lineTo(supportEndX, supportY);
+// Hatching
+const hatchLength = 15;
+const hatchAngle = Math.PI / 4;
+for (let i = supportStartX; i <= supportEndX; i += 20) {
+    ctx.moveTo(i, supportY);
+    ctx.lineTo(i - hatchLength * Math.cos(hatchAngle), supportY + hatchLength * Math.sin(hatchAngle));
+}
+ctx.stroke();
+
+// 3. Torsion Spring
+const springTop = { x: canvasCenterX, y: supportY };
+const loopTopY = 210; // Y-coordinate of the top edge of the loop
+const springConstantLabelPos = { x: springTop.x + 25, y: 165 };
+
+ctx.beginPath();
+// Rod part 1
+ctx.moveTo(springTop.x, springTop.y);
+ctx.lineTo(springTop.x, springTop.y + 20);
+
+// Zigzag part
+let currentY = springTop.y + 20;
+const springWindings = 5;
+const springHeight = 50;
+const springWidth = 15;
+const dy = springHeight / (2 * springWindings);
+
+ctx.moveTo(springTop.x, currentY);
+for (let i = 0; i < springWindings; i++) {
+    ctx.lineTo(springTop.x - springWidth / 2, currentY + dy);
+    currentY += dy;
+    ctx.lineTo(springTop.x + springWidth / 2, currentY + dy);
+    currentY += dy;
+}
+ctx.lineTo(springTop.x, currentY);
+
+// Rod part 2 connects to loop top
+ctx.lineTo(springTop.x, loopTopY);
+ctx.stroke();
+
+// Spring constant 'k'
+ctx.fillText('k', springConstantLabelPos.x, springConstantLabelPos.y);
+
+// 4. Conducting Loop
+const loopWidth = 110;
+const loopHeight = 70;
+const bevelSize = 15;
+
+const loopBottom = loopTopY + loopHeight;
+const loopLeft = springTop.x - loopWidth / 2;
+const loopRight = springTop.x + loopWidth / 2;
+
+ctx.beginPath();
+// Loop body is one continuous path
+ctx.moveTo(loopLeft + bevelSize, loopTopY);
+ctx.lineTo(loopRight - bevelSize, loopTopY);
+ctx.lineTo(loopRight, loopTopY + bevelSize);
+ctx.lineTo(loopRight, loopBottom - bevelSize);
+ctx.lineTo(loopRight - bevelSize, loopBottom);
+ctx.lineTo(loopLeft + bevelSize, loopBottom);
+ctx.lineTo(loopLeft, loopBottom - bevelSize);
+ctx.lineTo(loopLeft, loopTopY + bevelSize);
+ctx.closePath();
+ctx.stroke();
+
+// 5. Magnetic Field B
+const fieldStartX = 140;
+const fieldEndX = 360;
+const fieldArrowLength = 10;
+const fieldArrowAngle = Math.PI / 6;
+
+const fieldYPositions = [225, 250, 275];
+ctx.beginPath();
+fieldYPositions.forEach(y => {
+    ctx.moveTo(fieldStartX, y);
+    ctx.lineTo(fieldEndX, y);
+    drawArrowhead(ctx, fieldStartX, y, fieldEndX, y, fieldArrowAngle, fieldArrowLength);
+});
+const B_line_y_pos = 300;
+ctx.moveTo(fieldStartX, B_line_y_pos);
+ctx.lineTo(fieldEndX, B_line_y_pos);
+drawArrowhead(ctx, fieldStartX, B_line_y_pos, fieldEndX, B_line_y_pos, fieldArrowAngle, fieldArrowLength);
+
+ctx.stroke();
+ctx.fillText('B', fieldEndX + 25, 275);
+
+
+// 6. Figure Caption
+ctx.font = 'bold 24px serif';
+ctx.fillText('Fig. 2.74(a)', canvasCenterX, 380);
+
+</script>
+</body>
+</html>

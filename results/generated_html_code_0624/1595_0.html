@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pulley System with Friction</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-canvas" width="500" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Drawing parameters
+        const cx = canvas.width / 2;
+        const cy = 200;
+        const R = 80;
+        const massSize = 60;
+        const ropeDropLength = 250;
+        const ceilingY = 60;
+
+        // General style
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Helper function to draw arrowheads
+        function drawArrowhead(fromX, fromY, toX, toY, angle, length) {
+            const headAngle = Math.atan2(toY - fromY, toX - fromX);
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - length * Math.cos(headAngle - angle), toY - length * Math.sin(headAngle - angle));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - length * Math.cos(headAngle + angle), toY - length * Math.sin(headAngle + angle));
+            ctx.stroke();
+        }
+
+        // 1. Draw the ceiling
+        ctx.beginPath();
+        ctx.moveTo(cx - 150, ceilingY);
+        ctx.lineTo(cx + 150, ceilingY);
+        ctx.stroke();
+        // Hatching for the fixed surface
+        for (let i = 0; i < 15; i++) {
+            const x = cx - 140 + i * 20;
+            ctx.beginPath();
+            ctx.moveTo(x, ceilingY);
+            ctx.lineTo(x - 10, ceilingY - 10);
+            ctx.stroke();
+        }
+        
+        // Invert the hatching as in the source image (sloping down from the line)
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 18; i++) {
+            const x = cx - 140 + i * 16;
+            ctx.beginPath();
+            ctx.moveTo(x, ceilingY);
+            ctx.lineTo(x - 10, ceilingY + 10);
+            ctx.stroke();
+        }
+        ctx.lineWidth = 2;
+
+
+        // 2. Draw the pulley suspension
+        ctx.beginPath();
+        ctx.moveTo(cx, ceilingY);
+        ctx.lineTo(cx, cy);
+        ctx.stroke();
+
+        // 3. Draw the pulley wheel
+        ctx.beginPath();
+        ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 4. Draw the rope
+        ctx.beginPath();
+        // Left vertical part
+        const leftRopeX = cx - R;
+        const ropeTopY = cy;
+        const ropeBottomY = ropeTopY + ropeDropLength;
+        ctx.moveTo(leftRopeX, ropeTopY);
+        ctx.lineTo(leftRopeX, ropeBottomY);
+        // Right vertical part
+        const rightRopeX = cx + R;
+        ctx.moveTo(rightRopeX, ropeTopY);
+        ctx.lineTo(rightRopeX, ropeBottomY);
+        // Arc over the pulley
+        ctx.arc(cx, cy, R, Math.PI, 2 * Math.PI);
+        ctx.stroke();
+
+        // 5. Draw the masses
+        // Mass M (left)
+        ctx.strokeRect(leftRopeX - massSize / 2, ropeBottomY, massSize, massSize);
+        // Mass m (right)
+        ctx.strokeRect(rightRopeX - massSize / 2, ropeBottomY, massSize, massSize);
+
+        // 6. Add labels and annotations
+        
+        // Mass labels
+        ctx.font = 'italic 28px "Times New Roman"';
+        ctx.fillText('M', leftRopeX - massSize / 2 - 20, ropeBottomY + massSize / 2);
+        ctx.fillText('m', rightRopeX + massSize / 2 + 20, ropeBottomY + massSize / 2);
+
+        // Annotations on the pulley
+        // Radius R
+        ctx.font = 'italic 28px "Times New Roman"';
+        // The image shows R label separate from the line indicating radius.
+        // Let's draw the specific radius line shown in the image.
+        const radiusAngleForR = (5 * Math.PI) / 4; // Pointing down-left
+        const rStartX = cx;
+        const rStartY = cy;
+        const rEndX = cx + R * Math.cos(radiusAngleForR);
+        const rEndY = cy + R * Math.sin(radiusAngleForR);
+        ctx.beginPath();
+        ctx.moveTo(rStartX, rStartY);
+        ctx.lineTo(rEndX, rEndY);
+        ctx.stroke();
+        // The image shows double arrowheads, which is unusual for a radius but we replicate it.
+        drawArrowhead(rStartX, rStartY, rEndX, rEndY, Math.PI / 6, 12);
+        drawArrowhead(rEndX, rEndY, rStartX, rStartY, Math.PI / 6, 12);
+        // Label R
+        ctx.fillText('R', cx - 40, cy - 40);
+
+
+        // Angle theta
+        const theta = Math.PI / 7; // Approx. 25.7 degrees, looks similar to image
+        // Dashed horizontal line
+        ctx.save();
+        ctx.setLineDash([5, 3]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + R + 50, cy);
+        ctx.stroke();
+        ctx.restore();
+        
+        // Chinese Label for horizontal line
+        ctx.font = '24px "SimSun", "Songti SC"';
+        ctx.textAlign = 'left';
+        ctx.fillText('水平线', cx + R + 10, cy);
+        ctx.textAlign = 'center';
+
+        // Radius for angle theta
+        const thetaRadius = R;
+        const thetaEndX = cx + thetaRadius * Math.cos(-theta);
+        const thetaEndY = cy + thetaRadius * Math.sin(-theta);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(thetaEndX, thetaEndY);
+        ctx.stroke();
+        drawArrowhead(cx, cy, thetaEndX, thetaEndY, Math.PI / 6, 12);
+
+        // Arc for angle theta
+        const arcRadius = R / 2.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, arcRadius, 0, -theta, true); // counter-clockwise
+        ctx.stroke();
+        // Arrowhead on the arc
+        const arcArrowFromAngle = -theta + 0.2; // small offset for direction
+        const arcArrowToAngle = -theta;
+        const arcArrowFromX = cx + arcRadius * Math.cos(arcArrowFromAngle);
+        const arcArrowFromY = cy + arcRadius * Math.sin(arcArrowFromAngle);
+        const arcArrowToX = cx + arcRadius * Math.cos(arcArrowToAngle);
+        const arcArrowToY = cy + arcRadius * Math.sin(arcArrowToAngle);
+        drawArrowhead(arcArrowFromX, arcArrowFromY, arcArrowToX, arcArrowToY, Math.PI / 4, 8);
+
+
+        // Label theta
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('θ', cx + arcRadius + 15, cy - 15);
+
+    </script>
+</body>
+</html>

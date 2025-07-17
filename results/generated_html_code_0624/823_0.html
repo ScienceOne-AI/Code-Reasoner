@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-diagram" width="450" height="480"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-diagram');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineCap = 'round';
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromy;
+            const dy = toy - fromy;
+            const angle = Math.atan2(toy - fromy, tox - fromx);
+            
+            // Draw line
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+
+            // Draw arrowhead
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        // --- Main Drawing Logic ---
+
+        const centerX = 220;
+        const pulleyY = 150;
+        const pulleyRadius = 65;
+
+        // 1. Draw Ceiling
+        const ceilingY = 50;
+        ctx.beginPath();
+        ctx.moveTo(20, ceilingY);
+        ctx.lineTo(430, ceilingY);
+        ctx.stroke();
+
+        // Hatching for ceiling
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        for (let i = 35; i < 430; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(i, ceilingY);
+            ctx.lineTo(i - 15, ceilingY + 15);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // 2. Draw Pulley Support
+        ctx.beginPath();
+        ctx.rect(centerX - 12, ceilingY, 24, 70); // Support bracket
+        ctx.stroke();
+        // Axle
+        ctx.beginPath();
+        ctx.arc(centerX, pulleyY - 50, 6, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 3. Draw Pulley
+        ctx.beginPath();
+        ctx.arc(centerX, pulleyY, pulleyRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Label 'O'
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('O', centerX - 8, pulleyY + 10);
+
+        // 4. Draw Radius 'r'
+        const rAngle = 3 * Math.PI / 4; // 135 degrees
+        const rEndX = centerX + pulleyRadius * Math.cos(rAngle);
+        const rEndY = pulleyY + pulleyRadius * Math.sin(rAngle);
+        drawArrow(ctx, centerX, pulleyY, rEndX, rEndY);
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.fillText('r', centerX - 30, pulleyY - 30);
+
+        // 5. Draw Rope
+        const ropeLeftX = centerX - pulleyRadius;
+        const ropeRightX = centerX + pulleyRadius;
+        ctx.beginPath();
+        // Left side
+        ctx.moveTo(ropeLeftX, pulleyY);
+        ctx.lineTo(ropeLeftX, 280);
+        // Right side
+        ctx.moveTo(ropeRightX, pulleyY);
+        ctx.lineTo(ropeRightX, 380);
+        // Top arc
+        ctx.arc(centerX, pulleyY, pulleyRadius, Math.PI, 2 * Math.PI);
+        ctx.stroke();
+
+        // 6. Draw Mass m1
+        const m1TopY = 280;
+        const m1Height = 70;
+        const m1Width = 90;
+        const m1LeftX = ropeLeftX - m1Width / 2;
+        
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(m1LeftX, m1TopY, m1Width, m1Height);
+        ctx.stroke(); // Draw the rectangle border first
+        // Hatching for m1
+        ctx.clip(); // Clip to the rectangle's path
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 1;
+        const step = 10;
+        // Draw diagonal lines \
+        for (let i = -m1Height; i < m1Width; i += step) {
+            ctx.moveTo(m1LeftX + i, m1TopY);
+            ctx.lineTo(m1LeftX + i + m1Height, m1TopY + m1Height);
+        }
+        // Draw diagonal lines /
+        for (let i = 0; i < m1Width + m1Height; i += step) {
+            ctx.moveTo(m1LeftX + i, m1TopY);
+            ctx.lineTo(m1LeftX + i - m1Height, m1TopY + m1Height);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // Label m1
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('m', m1LeftX + m1Width / 2 - 20, m1TopY + m1Height + 30);
+        ctx.font = 'italic 18px "Times New Roman"';
+        ctx.fillText('1', m1LeftX + m1Width / 2 - 2, m1TopY + m1Height + 35);
+
+        // 7. Draw Mass m2 (Ring)
+        const m2Y = 280;
+        const m2Height = 30;
+        const m2Width = 80;
+        const m2LeftX = ropeRightX - m2Width / 2;
+        ctx.beginPath();
+        ctx.rect(m2LeftX, m2Y, m2Width, m2Height);
+        // The divisions inside
+        ctx.moveTo(m2LeftX + m2Width / 3, m2Y);
+        ctx.lineTo(m2LeftX + m2Width / 3, m2Y + m2Height);
+        ctx.moveTo(m2LeftX + 2 * m2Width / 3, m2Y);
+        ctx.lineTo(m2LeftX + 2 * m2Width / 3, m2Y + m2Height);
+        ctx.stroke();
+
+        // Label m2
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('m', m2LeftX - 35, m2Y + 20);
+        ctx.font = 'italic 18px "Times New Roman"';
+        ctx.fillText('2', m2LeftX - 18, m2Y + 25);
+
+        // 8. Draw Acceleration a2
+        const a2ArrowX = m2LeftX + m2Width + 40;
+        const a2ArrowStartY = m2Y + 5;
+        const a2ArrowEndY = m2Y + 55;
+        drawArrow(ctx, a2ArrowX, a2ArrowStartY, a2ArrowX, a2ArrowEndY);
+        
+        // Label a2
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('a', a2ArrowX + 10, a2ArrowStartY + 30);
+        ctx.font = 'italic 18px "Times New Roman"';
+        ctx.fillText('2', a2ArrowX + 25, a2ArrowStartY + 35);
+        
+        // 9. Bottom Text
+        ctx.font = '24px "SimSun", "STSong"'; // Use a font that supports Chinese characters
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 1-28 图', canvas.width / 2, 450);
+    </script>
+</body>
+</html>

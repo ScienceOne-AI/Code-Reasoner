@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hall Effect Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="hallEffectCanvas" width="450" height="300"></canvas>
+    <script>
+        const canvas = document.getElementById('hallEffectCanvas');
+        const ctx = canvas.getContext('2d');
+
+        /**
+         * Draws an arrow from (x1, y1) to (x2, y2).
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x1 - The x-coordinate of the start point.
+         * @param {number} y1 - The y-coordinate of the start point.
+         * @param {number} x2 - The x-coordinate of the end point.
+         * @param {number} y2 - The y-coordinate of the end point.
+         * @param {number} angle - The angle of the arrowhead wings.
+         * @param {number} length - The length of the arrowhead wings.
+         */
+        function drawArrow(ctx, x1, y1, x2, y2, angle = Math.PI / 8, length = 10) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const lineAngle = Math.atan2(dy, dx);
+            
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - length * Math.cos(lineAngle - angle), y2 - length * Math.sin(lineAngle - angle));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - length * Math.cos(lineAngle + angle), y2 - length * Math.sin(lineAngle + angle));
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a double-ended arrow between (x1, y1) and (x2, y2).
+         */
+        function drawDoubleArrow(ctx, x1, y1, x2, y2, angle = Math.PI / 8, length = 8) {
+            // Draw the main line
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // Arrowhead at (x2, y2)
+            let lineAngle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - length * Math.cos(lineAngle - angle), y2 - length * Math.sin(lineAngle - angle));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - length * Math.cos(lineAngle + angle), y2 - length * Math.sin(lineAngle + angle));
+            ctx.stroke();
+
+            // Arrowhead at (x1, y1)
+            lineAngle = Math.atan2(y1 - y2, x1 - x2);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 - length * Math.cos(lineAngle - angle), y1 - length * Math.sin(lineAngle - angle));
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 - length * Math.cos(lineAngle + angle), y1 - length * Math.sin(lineAngle + angle));
+            ctx.stroke();
+        }
+
+        // --- General Style Settings ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Define Conductor Block Coordinates ---
+        const p_ftl = {x: 120, y: 100}; // Front Top Left
+        const p_ftr = {x: 320, y: 100}; // Front Top Right
+        const p_fbl = {x: 120, y: 180}; // Front Bottom Left
+        const p_fbr = {x: 320, y: 180}; // Front Bottom Right
+        const p_btl = {x: 100, y: 80};  // Back Top Left
+        const p_btr = {x: 300, y: 80};  // Back Top Right
+
+        // --- Draw the Conductor Block ---
+        ctx.beginPath();
+        // Right side profile with curves
+        ctx.moveTo(p_btr.x, p_btr.y);
+        ctx.quadraticCurveTo(p_btr.x + 8, p_btr.y + 10, p_ftr.x, p_ftr.y);
+        ctx.quadraticCurveTo(p_ftr.x - 5, (p_ftr.y + p_fbr.y) / 2, p_fbr.x, p_fbr.y);
+
+        // Left side profile with curves
+        ctx.moveTo(p_btl.x, p_btl.y);
+        ctx.quadraticCurveTo(p_btl.x + 8, p_btl.y + 10, p_ftl.x, p_ftl.y);
+        ctx.lineTo(p_fbl.x, p_fbl.y);
+
+        // Connecting edges
+        ctx.moveTo(p_btl.x, p_btl.y);
+        ctx.lineTo(p_btr.x, p_btr.y); // Top back edge
+        ctx.moveTo(p_ftl.x, p_ftl.y);
+        ctx.lineTo(p_ftr.x, p_ftr.y); // Top front edge
+        ctx.moveTo(p_fbl.x, p_fbl.y);
+        ctx.lineTo(p_fbr.x, p_fbr.y); // Bottom front edge
+        ctx.stroke();
+        
+        // --- Draw Magnetic Field B ---
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        drawArrow(ctx, 110, 190, 190, 110);
+        drawArrow(ctx, 150, 190, 230, 110);
+        drawArrow(ctx, 240, 130, 290, 80);
+        drawArrow(ctx, 280, 130, 330, 80);
+        ctx.restore();
+        
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('B', 200, 75);
+
+        // --- Draw Current I ---
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        drawArrow(ctx, 150, 140, 250, 140);
+        ctx.restore();
+        ctx.fillText('I', 265, 140);
+
+        // --- Draw Voltage U ---
+        ctx.beginPath();
+        ctx.moveTo(p_ftr.x, p_ftr.y + 10);
+        ctx.lineTo(p_ftr.x + 40, p_ftr.y + 10);
+        ctx.lineTo(p_ftr.x + 40, p_fbr.y - 10);
+        ctx.lineTo(p_fbr.x, p_fbr.y - 10);
+        ctx.stroke();
+        ctx.fillText('U', p_ftr.x + 55, 140);
+
+        // --- Draw Thickness D ---
+        // Extension lines
+        ctx.beginPath();
+        ctx.moveTo(p_ftl.x, p_ftl.y);
+        ctx.lineTo(p_ftl.x - 30, p_ftl.y);
+        ctx.moveTo(p_fbl.x, p_fbl.y);
+        ctx.lineTo(p_fbl.x - 30, p_fbl.y);
+        ctx.stroke();
+        // Double arrow line
+        drawDoubleArrow(ctx, p_ftl.x - 20, p_ftl.y, p_fbl.x - 20, p_fbl.y);
+        ctx.fillText('D', p_ftl.x - 40, 140);
+
+        // --- Label Area S ---
+        ctx.fillText('S', p_ftr.x-10, 125);
+
+        // --- Draw Bottom Text ---
+        ctx.font = '20px "SimSun", "Songti SC", "STSong"';
+        ctx.fillText('题 7 图', 225, 270);
+    </script>
+</body>
+</html>

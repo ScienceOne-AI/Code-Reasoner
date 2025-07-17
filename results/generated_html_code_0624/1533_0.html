@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical System Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="opticalCanvas" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('opticalCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Parameters
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2 - 20; // Shift up slightly to make room for distance markers
+        const f = 130; // Focal length in pixels
+        const lensHeight = 80;
+        const mirrorHeight = 65;
+        const mirrorGap = 8;
+
+        ctx.strokeStyle = '#000';
+        ctx.fillStyle = '#000';
+        ctx.lineWidth = 1.5;
+        ctx.font = '20px Arial';
+
+        // Helper function to draw an arrow
+        function drawArrow(fromx, fromy, tox, toy) {
+            const headlen = 10; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        // Helper function to draw a tick mark
+        function drawTick(x, y, h) {
+            ctx.beginPath();
+            ctx.moveTo(x, y - h / 2);
+            ctx.lineTo(x, y + h / 2);
+            ctx.stroke();
+        }
+
+
+        // 1. Draw Principal Axis (dashed line)
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([10, 5]);
+        ctx.moveTo(0, cy);
+        ctx.lineTo(canvas.width, cy);
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Draw Convex Lens
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - lensHeight);
+        ctx.lineTo(cx, cy + lensHeight);
+        ctx.stroke();
+        // Arrowhead top
+        ctx.beginPath();
+        ctx.moveTo(cx - 6, cy - lensHeight + 12);
+        ctx.lineTo(cx, cy - lensHeight);
+        ctx.lineTo(cx + 6, cy - lensHeight + 12);
+        ctx.stroke();
+        // Arrowhead bottom
+        ctx.beginPath();
+        ctx.moveTo(cx - 6, cy + lensHeight - 12);
+        ctx.lineTo(cx, cy + lensHeight);
+        ctx.lineTo(cx + 6, cy + lensHeight - 12);
+        ctx.stroke();
+
+
+        // 3. Draw Plane Mirrors
+        // Left Mirror
+        const leftMirrorX = cx - f;
+        ctx.beginPath();
+        ctx.moveTo(leftMirrorX, cy - mirrorHeight);
+        ctx.lineTo(leftMirrorX, cy - mirrorGap);
+        ctx.moveTo(leftMirrorX, cy + mirrorGap);
+        ctx.lineTo(leftMirrorX, cy + mirrorHeight);
+        ctx.stroke();
+        // Hatching for left mirror
+        ctx.save();
+        ctx.lineWidth = 1;
+        for (let y = -mirrorHeight; y <= mirrorHeight; y += 8) {
+            if (Math.abs(y) > mirrorGap) {
+                ctx.beginPath();
+                ctx.moveTo(leftMirrorX, cy + y);
+                ctx.lineTo(leftMirrorX - 8, cy + y + 8);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+
+        // Right Mirror
+        const rightMirrorX = cx + f;
+        ctx.beginPath();
+        ctx.moveTo(rightMirrorX, cy - mirrorHeight);
+        ctx.lineTo(rightMirrorX, cy - mirrorGap);
+        ctx.moveTo(rightMirrorX, cy + mirrorGap);
+        ctx.lineTo(rightMirrorX, cy + mirrorHeight);
+        ctx.stroke();
+        // Hatching for right mirror
+        ctx.save();
+        ctx.lineWidth = 1;
+        for (let y = -mirrorHeight; y <= mirrorHeight; y += 8) {
+             if (Math.abs(y) > mirrorGap) {
+                ctx.beginPath();
+                ctx.moveTo(rightMirrorX, cy + y);
+                ctx.lineTo(rightMirrorX + 8, cy + y + 8);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+
+        // 4. Draw Points and Labels
+        ctx.textAlign = 'center';
+        
+        // Point S at 2F
+        const pointSX = cx - 2 * f;
+        ctx.beginPath();
+        ctx.arc(pointSX, cy, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('S', pointSX, cy + 28);
+        ctx.fillText('2F', pointSX, cy - 12);
+        
+        // Focal points F
+        ctx.fillText('F', leftMirrorX, cy + 28);
+        ctx.fillText('F', rightMirrorX, cy + 28);
+        
+        // Optical Center O
+        ctx.fillText('O', cx, cy + 28);
+
+        // 5. Draw Distance Markers
+        const distY = cy + 120;
+        const tickHeight = 20;
+
+        // Segment 1: S to F
+        let x1 = pointSX;
+        let x2 = leftMirrorX;
+        let x_mid = (x1 + x2) / 2;
+        drawTick(x1, distY, tickHeight);
+        drawTick(x2, distY, tickHeight);
+        drawArrow(x_mid, distY, x1, distY);
+        drawArrow(x_mid, distY, x2, distY);
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('f', x_mid, distY - 8);
+
+        // Segment 2: F to O
+        x1 = leftMirrorX;
+        x2 = cx;
+        x_mid = (x1 + x2) / 2;
+        drawTick(x1, distY, tickHeight);
+        drawTick(x2, distY, tickHeight);
+        drawArrow(x_mid, distY, x1, distY);
+        drawArrow(x_mid, distY, x2, distY);
+        ctx.fillText('f', x_mid, distY - 8);
+        
+        // Segment 3: O to F
+        x1 = cx;
+        x2 = rightMirrorX;
+        x_mid = (x1 + x2) / 2;
+        drawTick(x1, distY, tickHeight);
+        drawTick(x2, distY, tickHeight);
+        drawArrow(x_mid, distY, x1, distY);
+        drawArrow(x_mid, distY, x2, distY);
+        ctx.fillText('f', x_mid, distY - 8);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="myCanvas" width="600" height="450" style="background-color: #FFFFFF;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = '#000000';
+    ctx.fillStyle = '#000000';
+    ctx.lineWidth = 1.5;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Helper function to draw a cross
+    function drawCross(x, y, size) {
+        ctx.save();
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x - size / 2, y - size / 2);
+        ctx.lineTo(x + size / 2, y + size / 2);
+        ctx.moveTo(x + size / 2, y - size / 2);
+        ctx.lineTo(x - size / 2, y + size / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Helper function to draw an arrowhead at 'to', with direction given by the vector from 'from' to 'to'
+    function drawArrowHead(to, from, size = 8) {
+        const angle = Math.atan2(to.y - from.y, to.x - from.x);
+        ctx.save();
+        ctx.translate(to.x, to.y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2.5);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2.5);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Coordinates
+    const S1 = { x: 150, y: 100 };
+    const S2 = { x: 150, y: 350 };
+    const A = { x: 550, y: 225 };
+    const O = { x: 150, y: 225 };
+
+    // 1. Draw central axis and dashed line
+    ctx.beginPath();
+    ctx.moveTo(80, O.y);
+    ctx.lineTo(A.x + 30, O.y);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(O.x, S1.y);
+    ctx.lineTo(O.x, S2.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // 2. Draw sources S1 and S2
+    drawCross(S1.x, S1.y, 12);
+    drawCross(S2.x, S2.y, 12);
+
+    // 3. Draw light paths
+    // Path S2 -> A
+    ctx.beginPath();
+    ctx.moveTo(S2.x, S2.y);
+    ctx.lineTo(A.x, A.y);
+    ctx.stroke();
+    const arrowS2A_pos = { x: S2.x + 0.6 * (A.x - S2.x), y: S2.y + 0.6 * (A.y - S2.y) };
+    drawArrowHead(arrowS2A_pos, S2, 10);
+
+    // Path S1 -> A is drawn with a gap for the slab
+    const slabCenterRatio = 0.4;
+    const slabWidth = 25;
+    const pathLength = Math.sqrt(Math.pow(A.x - S1.x, 2) + Math.pow(A.y - S1.y, 2));
+    const startRatio = slabCenterRatio - (slabWidth / 2) / pathLength;
+    const endRatio = slabCenterRatio + (slabWidth / 2) / pathLength;
+    
+    const slabStart = { x: S1.x + startRatio * (A.x - S1.x), y: S1.y + startRatio * (A.y - S1.y) };
+    const slabEnd = { x: S1.x + endRatio * (A.x - S1.x), y: S1.y + endRatio * (A.y - S1.y) };
+
+    ctx.beginPath();
+    ctx.moveTo(S1.x, S1.y);
+    ctx.lineTo(slabStart.x, slabStart.y);
+    ctx.moveTo(slabEnd.x, slabEnd.y);
+    ctx.lineTo(A.x, A.y);
+    ctx.stroke();
+    
+    // Arrowhead for S1->A
+    const arrowS1A_pos = { x: S1.x + 0.6 * (A.x - S1.x), y: S1.y + 0.6 * (A.y - S1.y) };
+    drawArrowHead(arrowS1A_pos, S1, 10);
+
+    // 4. Draw the glass slab
+    const slabCenter = { x: S1.x + slabCenterRatio * (A.x - S1.x), y: S1.y + slabCenterRatio * (A.y - S1.y) };
+    const slabAngle = Math.atan2(A.y - S1.y, A.x - S1.x);
+    const slabHeight = 50;
+
+    ctx.save();
+    ctx.translate(slabCenter.x, slabCenter.y);
+    ctx.rotate(slabAngle);
+    ctx.beginPath();
+    ctx.rect(-slabWidth / 2, -slabHeight / 2, slabWidth, slabHeight);
+    ctx.stroke();
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.fillText('n', 0, 5);
+    ctx.restore();
+
+    // 5. Draw dimension 'e'
+    ctx.save();
+    ctx.translate(slabCenter.x, slabCenter.y);
+    ctx.rotate(slabAngle);
+    
+    const e_dim_y_offset = -40;
+    const arrowSize = 6;
+
+    // Faint extension lines from slab corners to dimension line
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#555555';
+    ctx.beginPath();
+    ctx.moveTo(-slabWidth / 2, -slabHeight / 2);
+    ctx.lineTo(-slabWidth / 2, e_dim_y_offset);
+    ctx.moveTo(slabWidth / 2, -slabHeight / 2);
+    ctx.lineTo(slabWidth / 2, e_dim_y_offset);
+    ctx.stroke();
+    ctx.restore();
+
+    // Dimension line
+    ctx.beginPath();
+    ctx.moveTo(-slabWidth / 2, e_dim_y_offset);
+    ctx.lineTo(slabWidth / 2, e_dim_y_offset);
+    ctx.stroke();
+
+    // Arrowheads for 'e' pointing towards each other
+    drawArrowHead({x: -slabWidth / 2, y: e_dim_y_offset}, {x: -slabWidth / 2 - 10, y: e_dim_y_offset}, arrowSize);
+    drawArrowHead({x: slabWidth / 2, y: e_dim_y_offset}, {x: slabWidth / 2 + 10, y: e_dim_y_offset}, arrowSize);
+    
+    // Label 'e'
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.fillText('e', 0, e_dim_y_offset - 12);
+    ctx.restore();
+
+    // 6. Draw labels for points
+    // S1
+    ctx.font = "24px 'Times New Roman'";
+    ctx.fillText('S', S1.x - 28, S1.y + 5);
+    ctx.font = "16px 'Times New Roman'";
+    ctx.fillText('1', S1.x - 18, S1.y + 12);
+    // S2
+    ctx.font = "24px 'Times New Roman'";
+    ctx.fillText('S', S2.x - 28, S2.y + 5);
+    ctx.font = "16px 'Times New Roman'";
+    ctx.fillText('2', S2.x - 18, S2.y + 12);
+    // A
+    ctx.font = "italic 24px 'Times New Roman'";
+    ctx.fillText('A', A.x + 20, A.y + 5);
+</script>
+</body>
+</html>

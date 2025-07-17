@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wave Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="550" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Settings ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    const axisFont = "italic 18px 'Times New Roman'";
+    const labelFont = "18px 'Times New Roman'";
+    const titleFont = "20px 'KaiTi'";
+
+    // --- Coordinate System Transformation ---
+    const originX = 80;
+    const originY = 230;
+    const scale = 7;
+
+    function toCanvasX(x) {
+        return originX + x * scale;
+    }
+
+    function toCanvasY(y) {
+        return originY - y * scale;
+    }
+
+    // --- Helper function for drawing arrows ---
+    function drawArrow(x1, y1, x2, y2, headlen = 8) {
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // --- Draw Axes ---
+    ctx.font = axisFont;
+    // X-axis
+    drawArrow(toCanvasX(-10), toCanvasY(0), toCanvasX(60), toCanvasY(0));
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText("x/cm", toCanvasX(61), toCanvasY(0));
+
+    // Y-axis
+    drawArrow(toCanvasX(0), toCanvasY(-18), toCanvasX(0), toCanvasY(18));
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText("y/cm", toCanvasX(0) - 5, toCanvasY(18));
+
+    // --- Draw the Wave ---
+    // From the problem analysis, the snapshot equation is y(x) = 10 * cos(2*PI/3 - (PI/20)*x)
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+    const x_start = -3;
+    const x_end = 55;
+    const dx = 0.1;
+    for (let x = x_start; x <= x_end; x += dx) {
+        const y = 10 * Math.cos(2 * Math.PI / 3 - (Math.PI / 20) * x);
+        if (x === x_start) {
+            ctx.moveTo(toCanvasX(x), toCanvasY(y));
+        } else {
+            ctx.lineTo(toCanvasX(x), toCanvasY(y));
+        }
+    }
+    ctx.stroke();
+    ctx.lineWidth = 1.5; // Reset line width
+
+    // --- Draw Labels and Markings ---
+    ctx.font = labelFont;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("10", toCanvasX(-1), toCanvasY(10));
+    ctx.fillText("0", toCanvasX(-1), toCanvasY(0));
+    ctx.fillText("-5", toCanvasX(-1.5), toCanvasY(-5));
+
+    // Dashed line for amplitude
+    const x_peak = 40 / 3;
+    ctx.beginPath();
+    ctx.setLineDash([4, 3]);
+    ctx.moveTo(toCanvasX(0), toCanvasY(10));
+    ctx.lineTo(toCanvasX(x_peak), toCanvasY(10));
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line
+
+    // Distance '20' marker
+    const x1 = 10 / 3; // First zero crossing
+    const x2 = 70 / 3; // Second zero crossing (Point P)
+    const y_marker_level = -12;
+
+    // Vertical lines from axis to marker
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(x1), toCanvasY(0));
+    ctx.lineTo(toCanvasX(x1), toCanvasY(y_marker_level));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(x2), toCanvasY(0));
+    ctx.lineTo(toCanvasX(x2), toCanvasY(y_marker_level));
+    ctx.stroke();
+
+    // Horizontal double-arrow line
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(x1), toCanvasY(y_marker_level));
+    ctx.lineTo(toCanvasX(x2), toCanvasY(y_marker_level));
+    // Arrowhead left
+    ctx.moveTo(toCanvasX(x1) + 6, toCanvasY(y_marker_level) - 4);
+    ctx.lineTo(toCanvasX(x1), toCanvasY(y_marker_level));
+    ctx.lineTo(toCanvasX(x1) + 6, toCanvasY(y_marker_level) + 4);
+    // Arrowhead right
+    ctx.moveTo(toCanvasX(x2) - 6, toCanvasY(y_marker_level) - 4);
+    ctx.lineTo(toCanvasX(x2), toCanvasY(y_marker_level));
+    ctx.lineTo(toCanvasX(x2) - 6, toCanvasY(y_marker_level) + 4);
+    ctx.stroke();
+    
+    // Text '20'
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText("20", toCanvasX((x1 + x2) / 2), toCanvasY(y_marker_level) - 4);
+
+    // Label P
+    ctx.font = labelFont;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText("P", toCanvasX(x2) + 5, toCanvasY(0));
+
+    // Propagation vector u
+    ctx.font = "italic 18px 'Times New Roman'";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText("u", toCanvasX(16), toCanvasY(16));
+    
+    drawArrow(toCanvasX(12), toCanvasY(14), toCanvasX(20), toCanvasY(14), 6);
+    drawArrow(toCanvasX(10), toCanvasY(12), toCanvasX(24), toCanvasY(12), 6);
+
+
+    // Bottom Title Label
+    ctx.font = titleFont;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText("习题 11-5 图", canvas.width / 2, 400);
+
+</script>
+</body>
+</html>

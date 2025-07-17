@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="900" height="450"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Helper Functions ---
+function drawArrow(ctx, fromx, fromy, tox, toy) {
+    const headlen = 10; // length of head in pixels
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+}
+
+// --- Main Drawing ---
+ctx.fillStyle = 'white';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+ctx.fillStyle = 'black';
+ctx.strokeStyle = 'black';
+
+// --- Figure 甲 ---
+ctx.save();
+ctx.lineWidth = 1.5;
+
+// Wall
+const wallX = 50;
+ctx.beginPath();
+ctx.moveTo(wallX, 160);
+ctx.lineTo(wallX, 260);
+ctx.stroke();
+// Hatching for the wall
+ctx.lineWidth = 1;
+ctx.beginPath();
+for (let y = 165; y < 260; y += 10) {
+    ctx.moveTo(wallX, y);
+    ctx.lineTo(wallX - 10, y + 10);
+}
+ctx.stroke();
+ctx.lineWidth = 1.5;
+
+// Pivot O
+const pivotX = 60;
+const pivotY = 210;
+ctx.beginPath();
+ctx.arc(pivotX, pivotY, 5, 0, 2 * Math.PI);
+ctx.stroke();
+ctx.beginPath();
+ctx.arc(pivotX, pivotY, 1.5, 0, 2 * Math.PI);
+ctx.fill();
+ctx.font = '20px "Times New Roman"';
+ctx.fillText('O', pivotX - 20, pivotY + 5);
+
+// Rod
+const rodStartX = pivotX;
+const rodLength = 320;
+const rodTopY = pivotY - 2;
+ctx.fillRect(rodStartX, rodTopY, rodLength, 4);
+
+// Force F
+const forceX = rodStartX + 250;
+ctx.beginPath();
+drawArrow(ctx, forceX, rodTopY, forceX, rodTopY - 50);
+ctx.stroke();
+ctx.font = 'italic 20px "Times New Roman"';
+ctx.fillText('F', forceX + 10, rodTopY - 45);
+
+// Distance x
+const distanceY = rodTopY - 30;
+ctx.beginPath();
+const linePartEndX = forceX - 5;
+ctx.moveTo(rodStartX, distanceY);
+ctx.lineTo(linePartEndX, distanceY);
+ctx.arc(linePartEndX, distanceY + 5, 5, -Math.PI / 2, 0);
+ctx.stroke();
+ctx.font = 'italic 20px "Times New Roman"';
+ctx.fillText('x', rodStartX + 120, distanceY - 15);
+
+// Label 甲
+ctx.font = '22px KaiTi';
+ctx.fillText('甲', 180, 350);
+ctx.restore();
+
+
+// --- Figure 乙 ---
+ctx.save();
+const originX = 480;
+const originY = 380;
+const scaleXUnit = 20; // pixels per 0.1m
+const scaleY = 4;   // pixels per Newton
+
+function toCanvasX(x) {
+    return originX + x / 0.1 * scaleXUnit;
+}
+
+function toCanvasY(F) {
+    return originY - F * scaleY;
+}
+
+// Grid
+const gridCols = 18;
+const gridRows = 9;
+const gridWidth = gridCols * scaleXUnit;
+const gridHeight = gridRows * 5 * scaleY;
+const graphTopY = originY - gridHeight;
+const graphRightX = originX + gridWidth;
+
+ctx.lineWidth = 1;
+ctx.strokeStyle = '#cccccc';
+ctx.beginPath();
+// Vertical grid lines
+for (let i = 1; i <= gridCols; i++) {
+    const x = originX + i * scaleXUnit;
+    ctx.moveTo(x, originY);
+    ctx.lineTo(x, graphTopY);
+}
+// Horizontal grid lines
+for (let i = 1; i <= gridRows; i++) {
+    const y = originY - i * 5 * scaleY;
+    ctx.moveTo(originX, y);
+    ctx.lineTo(graphRightX, y);
+}
+ctx.stroke();
+
+// Axes
+ctx.lineWidth = 1.5;
+ctx.strokeStyle = 'black';
+ctx.beginPath();
+drawArrow(ctx, originX, originY, graphRightX + 10, originY);
+drawArrow(ctx, originX, originY, originX, graphTopY - 20);
+ctx.stroke();
+
+// Axis Labels and Ticks
+ctx.fillStyle = 'black';
+ctx.textAlign = 'left';
+ctx.textBaseline = 'bottom';
+ctx.font = 'italic 20px "Times New Roman"';
+ctx.fillText('F', originX + 10, graphTopY);
+ctx.font = '20px "Times New Roman"';
+ctx.fillText('/N', originX + 22, graphTopY);
+ctx.textBaseline = 'top';
+ctx.font = 'italic 20px "Times New Roman"';
+ctx.fillText('x', graphRightX - 15, originY + 10);
+ctx.font = '20px "Times New Roman"';
+ctx.fillText('/m', graphRightX, originY + 10);
+
+// Y-axis labels
+ctx.font = '16px "Times New Roman"';
+ctx.textAlign = 'right';
+ctx.textBaseline = 'middle';
+const yLabels = [5, 10, 20, 40];
+yLabels.forEach(F_val => {
+    ctx.fillText(F_val, originX - 8, toCanvasY(F_val));
+});
+
+// X-axis labels
+ctx.textAlign = 'center';
+ctx.textBaseline = 'top';
+for (let i = 0; i <= 4; i++) {
+    const xVal = i * 0.4;
+    const label = (xVal === 0) ? '0' : xVal.toFixed(1);
+    ctx.fillText(label, toCanvasX(xVal), originY + 5);
+}
+
+// Curve F = 8/x
+ctx.beginPath();
+ctx.lineWidth = 2;
+ctx.moveTo(toCanvasX(0.2), toCanvasY(40));
+for (let x = 0.21; x <= 1.6; x += 0.01) {
+    const F = 8 / x;
+    ctx.lineTo(toCanvasX(x), toCanvasY(F));
+}
+ctx.stroke();
+
+// Data Points
+const points = [{x: 0.2, F: 40}, {x: 0.4, F: 20}, {x: 0.8, F: 10}, {x: 1.6, F: 5}];
+ctx.fillStyle = 'black';
+points.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(toCanvasX(p.x), toCanvasY(p.F), 4, 0, 2 * Math.PI);
+    ctx.fill();
+});
+
+// Label 乙
+ctx.font = '22px KaiTi';
+ctx.textAlign = 'center';
+ctx.fillText('乙', originX + gridWidth / 2, 430);
+
+ctx.restore();
+
+</script>
+</body>
+</html>

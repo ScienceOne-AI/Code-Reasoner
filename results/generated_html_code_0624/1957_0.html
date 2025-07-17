@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="400" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = "italic 22px 'Times New Roman'";
+
+    // --- Define Geometry ---
+    // Inclined Plane
+    const inclineTop = { x: 100, y: 90 };
+    const inclineBottomRight = { x: 550, y: 350 };
+    const inclineBottomLeft = { x: 100, y: 350 };
+    const angleRad = Math.atan2(inclineBottomRight.y - inclineTop.y, inclineBottomRight.x - inclineTop.x); // approx 30 deg
+
+    // Flywheel M
+    const flywheelCenter = { x: 105, y: 65 };
+    const flywheelRadius = 35;
+
+    // Block m
+    const blockCenter = { x: 380, y: 252 };
+    const blockWidth = 80;
+    const blockHeight = 50;
+
+    // --- Drawing Functions ---
+
+    // 1. Draw the inclined plane
+    ctx.beginPath();
+    ctx.moveTo(inclineTop.x, inclineTop.y);
+    ctx.lineTo(inclineBottomRight.x, inclineBottomRight.y);
+    ctx.lineTo(inclineBottomLeft.x, inclineBottomLeft.y);
+    ctx.closePath();
+    ctx.stroke();
+
+    // 2. Draw the 30 degree angle indicator
+    ctx.beginPath();
+    ctx.arc(inclineBottomRight.x, inclineBottomRight.y, 40, Math.PI, Math.PI - angleRad, true);
+    ctx.stroke();
+    ctx.font = "20px 'Times New Roman'";
+    ctx.fillText('30°', inclineBottomRight.x - 70, inclineBottomRight.y - 20);
+
+    // 3. Draw the flywheel system (M)
+    // Support structure
+    ctx.beginPath();
+    ctx.moveTo(inclineTop.x, inclineTop.y);
+    ctx.lineTo(120, 80);
+    ctx.lineTo(flywheelCenter.x, flywheelCenter.y);
+    ctx.lineTo(90, 50);
+    ctx.closePath();
+    ctx.stroke();
+    
+    // Flywheel (circle)
+    ctx.beginPath();
+    ctx.arc(flywheelCenter.x, flywheelCenter.y, flywheelRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // Axle (dot at center O)
+    ctx.beginPath();
+    ctx.arc(flywheelCenter.x, flywheelCenter.y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 4. Draw the rope
+    // Tangent point on flywheel. Radius to tangent is perpendicular to rope.
+    // Rope angle is `angleRad`. Perpendicular is `angleRad - PI/2`.
+    const tangentAngle = angleRad - Math.PI / 2;
+    const tangentPoint = {
+        x: flywheelCenter.x + flywheelRadius * Math.cos(tangentAngle),
+        y: flywheelCenter.y + flywheelRadius * Math.sin(tangentAngle)
+    };
+
+    // Rope wrapped around flywheel (arc)
+    ctx.beginPath();
+    ctx.arc(flywheelCenter.x, flywheelCenter.y, flywheelRadius, Math.PI, tangentAngle);
+    ctx.stroke();
+
+    // Straight part of the rope
+    const ropeEnd = {
+        x: blockCenter.x - blockHeight/2 * Math.sin(angleRad) - 10,
+        y: blockCenter.y - blockHeight/2 * Math.cos(angleRad) - 10 * Math.tan(angleRad)
+    };
+    ctx.beginPath();
+    ctx.moveTo(tangentPoint.x, tangentPoint.y);
+    ctx.lineTo(ropeEnd.x, ropeEnd.y);
+    ctx.stroke();
+
+    // 5. Draw the block (m)
+    ctx.save();
+    ctx.translate(blockCenter.x, blockCenter.y);
+    ctx.rotate(angleRad);
+    ctx.strokeRect(-blockWidth / 2, -blockHeight / 2, blockWidth, blockHeight);
+    ctx.restore();
+
+    // 6. Draw the radius line (r)
+    ctx.beginPath();
+    ctx.moveTo(flywheelCenter.x, flywheelCenter.y);
+    ctx.lineTo(tangentPoint.x, tangentPoint.y);
+    ctx.stroke();
+    
+    // 7. Add labels
+    ctx.font = "italic 22px 'Times New Roman'";
+    ctx.fillText('M', 60, 85);
+    ctx.fillText('O', flywheelCenter.x - 25, flywheelCenter.y);
+    ctx.fillText('r', flywheelCenter.x + 10, flywheelCenter.y - 15);
+    ctx.fillText('m', blockCenter.x + blockWidth/2 + 5, blockCenter.y + blockHeight/2);
+
+    // Label at the bottom
+    ctx.font = "20px 'SimSun'"; // Use a standard font for Chinese characters
+    ctx.textAlign = 'center';
+    ctx.fillText('题 3 图', canvas.width / 2, canvas.height - 20);
+
+</script>
+</body>
+</html>

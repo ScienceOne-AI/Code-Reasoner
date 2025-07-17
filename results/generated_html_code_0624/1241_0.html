@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Symmetric Roof Truss Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="trussCanvas" width="750" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('trussCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Configuration ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.font = '24px sans-serif';
+        const jointRadius = 5;
+
+        // --- Geometry Calculations ---
+        const scale = 80;
+        const L = 6; // Length AB in meters
+        const angle30 = Math.PI / 6;
+
+        // Base coordinates
+        const xA = 125;
+        const yA = 450;
+        const xB = xA + L * scale;
+        const yB = yA;
+        
+        // Apex coordinate C
+        const height = (L * scale / 2) * Math.tan(angle30);
+        const xC = xA + (L * scale) / 2;
+        const yC = yA - height;
+
+        // Intermediate joints on bottom chord (A-B)
+        const xD1 = xA + (L * scale) / 3;
+        const yD1 = yA;
+        const xD2 = xA + 2 * (L * scale) / 3;
+        const yD2 = yA;
+
+        // Intermediate joints on top chords (A-C and B-C)
+        // E1 is the midpoint of AC, E2 is the midpoint of BC
+        const xE1 = (xA + xC) / 2;
+        const yE1 = (yA + yC) / 2;
+        const xE2 = (xB + xC) / 2;
+        const yE2 = (yB + yC) / 2;
+
+        // --- Drawing Functions ---
+
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        function drawJoint(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, jointRadius, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = 'black';
+        }
+        
+        function drawArrow(fromx, fromy, tox, toy, headLength = 10) {
+            const angle = Math.atan2(toy - fromy, tox - fromx);
+            drawLine(fromx, fromy, tox, toy);
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headLength * Math.cos(angle - Math.PI / 6), toy - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headLength * Math.cos(angle + Math.PI / 6), toy - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function drawHatching(x, y, width, height, spacing = 8) {
+            ctx.save();
+            ctx.lineWidth = 1;
+            for (let i = -width; i < width; i += spacing) {
+                ctx.beginPath();
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x + i + height, y + height);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+        
+        // --- Draw Components ---
+        
+        // 1. Draw Supports
+        function drawSupports() {
+            // Support A (Hinge)
+            const supportA_h = 30;
+            const supportA_w = 40;
+            ctx.beginPath();
+            ctx.moveTo(xA, yA);
+            ctx.lineTo(xA - supportA_w / 2, yA + supportA_h);
+            ctx.lineTo(xA + supportA_w / 2, yA + supportA_h);
+            ctx.closePath();
+            ctx.stroke();
+            drawHatching(xA - supportA_w, yA + supportA_h, supportA_w * 2, 15);
+
+            // Support B (Roller)
+            const supportB_h = 30;
+            const supportB_w = 40;
+            const rollerRadius = 5;
+            ctx.beginPath();
+            ctx.moveTo(xB, yB);
+            ctx.lineTo(xB - supportB_w / 2, yB + supportB_h - rollerRadius*2);
+            ctx.lineTo(xB + supportB_w / 2, yB + supportB_h - rollerRadius*2);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Rollers
+            const rollerY = yB + supportB_h - rollerRadius;
+            ctx.beginPath();
+            ctx.arc(xB - supportB_w/4, rollerY, rollerRadius, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(xB + supportB_w/4, rollerY, rollerRadius, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Ground for roller
+            drawLine(xB - supportB_w, yB + supportB_h + rollerRadius, xB + supportB_w, yB + supportB_h + rollerRadius);
+            drawHatching(xB - supportB_w * 1.5, yB + supportB_h + rollerRadius, supportB_w * 3, 15);
+        }
+
+        // 2. Draw Truss Members
+        function drawTruss() {
+            // Outer Chords
+            drawLine(xA, yA, xC, yC);
+            drawLine(xC, yC, xB, yB);
+
+            // Bottom Chord
+            drawLine(xA, yA, xB, yB);
+
+            // Internal Web Members
+            // Connections from C
+            drawLine(xC, yC, xD1, yD1);
+            drawLine(xC, yC, xD2, yD2);
+            // Connections from E1
+            drawLine(xE1, yE1, xD1, yD1);
+            drawLine(xE1, yE1, xD2, yD2);
+            // Connections from E2
+            drawLine(xE2, yE2, xD1, yD1);
+            drawLine(xE2, yE2, xD2, yD2);
+        }
+        
+        // 3. Draw Axes and Annotations
+        function drawAnnotations() {
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            
+            // Axes
+            ctx.setLineDash([5, 5]);
+            drawArrow(xA - 20, yA, xB + 70, yA); // x-axis
+            drawArrow(xA, yA + 20, xA, yA - height - 50); // y-axis
+            ctx.setLineDash([]);
+            
+            // Labels
+            ctx.font = '28px serif';
+            ctx.fillText('A', xA - 40, yA + 10);
+            ctx.fillText('B', xB + 20, yB + 10);
+            ctx.fillText('C', xC - 8, yC - 20);
+            ctx.fillText('x', xB + 75, yA + 15);
+            ctx.font = 'italic 28px serif';
+            ctx.fillText('y', xA - 10, yA - height - 55);
+            ctx.font = '24px sans-serif';
+
+            // Angle markers (30 degrees)
+            const angleRadius = 45;
+            // Left Angle
+            const angleCenterL = { x: xC - 70, y: yA };
+            const pTopL = { x: angleCenterL.x, y: yA - (angleCenterL.x - xA) * Math.tan(angle30) };
+            drawArrow(pTopL.x, pTopL.y, angleCenterL.x, angleCenterL.y);
+            ctx.beginPath();
+            ctx.arc(angleCenterL.x, angleCenterL.y, angleRadius, Math.PI, Math.PI - angle30, true);
+            ctx.stroke();
+            ctx.fillText('30°', angleCenterL.x - 55, yA - 20);
+
+            // Right Angle
+            const angleCenterR = { x: xC + 70, y: yA };
+            const pTopR = { x: angleCenterR.x, y: yA - (xB - angleCenterR.x) * Math.tan(angle30) };
+            drawArrow(pTopR.x, pTopR.y, angleCenterR.x, angleCenterR.y);
+            ctx.beginPath();
+            ctx.arc(angleCenterR.x, angleCenterR.y, angleRadius, 0, angle30, false);
+            ctx.stroke();
+            ctx.fillText('30°', angleCenterR.x + 20, yA - 20);
+
+            // Perpendicularity markers
+            const perpSize = 12;
+            ctx.lineWidth = 2;
+            
+            // Left marker at E1
+            // Vector E1 -> A (normalized)
+            const vE1A = {x: xA - xE1, y: yA - yE1};
+            const magE1A = Math.sqrt(vE1A.x**2 + vE1A.y**2);
+            const uE1A = {x: vE1A.x/magE1A, y:vE1A.y/magE1A};
+            // Vector E1 -> D1 (normalized)
+            const vE1D1 = {x: xD1 - xE1, y: yD1 - yE1};
+            const magE1D1 = Math.sqrt(vE1D1.x**2 + vE1D1.y**2);
+            const uE1D1 = {x: vE1D1.x/magE1D1, y:vE1D1.y/magE1D1};
+            
+            ctx.beginPath();
+            ctx.moveTo(xE1 + perpSize * uE1A.x, yE1 + perpSize * uE1A.y);
+            ctx.lineTo(xE1, yE1);
+            ctx.lineTo(xE1 + perpSize * uE1D1.x, yE1 + perpSize * uE1D1.y);
+            ctx.stroke();
+
+            // Right marker at E2
+            const vE2B = {x: xB - xE2, y: yB - yE2};
+            const magE2B = Math.sqrt(vE2B.x**2 + vE2B.y**2);
+            const uE2B = {x: vE2B.x/magE2B, y:vE2B.y/magE2B};
+            const vE2D2 = {x: xD2 - xE2, y: yD2 - yE2};
+            const magE2D2 = Math.sqrt(vE2D2.x**2 + vE2D2.y**2);
+            const uE2D2 = {x: vE2D2.x/magE2D2, y:vE2D2.y/magE2D2};
+
+            ctx.beginPath();
+            ctx.moveTo(xE2 + perpSize * uE2B.x, yE2 + perpSize * uE2B.y);
+            ctx.lineTo(xE2, yE2);
+            ctx.lineTo(xE2 + perpSize * uE2D2.x, yE2 + perpSize * uE2D2.y);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+        
+        function drawAllJoints() {
+            drawJoint(xA, yA);
+            drawJoint(xB, yB);
+            drawJoint(xC, yC);
+            drawJoint(xD1, yD1);
+            drawJoint(xD2, yD2);
+            drawJoint(xE1, yE1);
+            drawJoint(xE2, yE2);
+        }
+
+        // --- Main Drawing Execution ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawSupports();
+        drawTruss();
+        drawAnnotations();
+        drawAllJoints();
+
+    </script>
+</body>
+</html>

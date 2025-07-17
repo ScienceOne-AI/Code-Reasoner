@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Parallel Charged Rings</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-diagram" width="550" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-diagram');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const config = {
+            centerX: canvas.width / 2,
+            centerY: canvas.height / 2.2,
+            R: 95, // Vertical radius of the rings in pixels
+            l: 130, // Distance between the rings in pixels
+            perspective: 0.3, // Ratio of horizontal to vertical radius for perspective
+            axisLength: 250,
+            arrowSize: 8,
+            font: 'italic 20px Times New Roman',
+            labelFont: '20px Times New Roman',
+            textColor: 'black',
+            axisColor: 'black',
+            ringColor: 'black',
+            ringOuterWidth: 4,
+            ringInnerWidth: 1,
+        };
+
+        const radiusY = config.R;
+        const radiusX = config.R * config.perspective;
+        const ringBandWidth = config.ringOuterWidth + 2;
+
+        // --- Helper Function for Arrows ---
+        function drawArrow(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.lineTo(x2 - config.arrowSize * Math.cos(angle - Math.PI / 6), y2 - config.arrowSize * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - config.arrowSize * Math.cos(angle + Math.PI / 6), y2 - config.arrowSize * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Logic ---
+        ctx.translate(config.centerX, config.centerY);
+        
+        // 1. Draw Axes
+        ctx.strokeStyle = config.axisColor;
+        ctx.fillStyle = config.textColor;
+        ctx.lineWidth = 1.5;
+        
+        // Y-axis
+        drawArrow(0, config.axisLength / 2, 0, -config.axisLength / 2.2);
+        ctx.font = config.font;
+        ctx.fillText('y', 15, -config.axisLength / 2.2 - 10);
+
+        // Z-axis (drawn before rings to be in the background)
+        const zAngle = 2.4; // Angle in radians for z-axis (pointing down-left)
+        const zx = (config.axisLength / 2.5) * Math.cos(zAngle);
+        const zy = (config.axisLength / 2.5) * Math.sin(zAngle);
+        drawArrow(0, 0, zx, zy);
+        ctx.fillText('z', zx - 15, zy + 5);
+
+        // X-axis
+        drawArrow(-config.axisLength / 1.8, 0, config.axisLength / 1.8, 0);
+        ctx.fillText('x', config.axisLength / 1.8 + 10, -10);
+
+
+        // 2. Draw Rings
+        ctx.strokeStyle = config.ringColor;
+        const leftRingX = -config.l / 2;
+        const rightRingX = config.l / 2;
+
+        // --- Left Ring (-q) ---
+        // Outer band
+        ctx.lineWidth = config.ringOuterWidth;
+        ctx.beginPath(); // Front solid arc
+        ctx.ellipse(leftRingX, 0, radiusX, radiusY, 0, -Math.PI / 2, Math.PI / 2);
+        ctx.stroke();
+        ctx.beginPath(); // Back dashed arc
+        ctx.setLineDash([6, 4]);
+        ctx.ellipse(leftRingX, 0, radiusX, radiusY, 0, Math.PI / 2, 3 * Math.PI / 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Inner band
+        ctx.lineWidth = config.ringInnerWidth;
+        ctx.beginPath(); // Front solid arc
+        ctx.ellipse(leftRingX, 0, radiusX - ringBandWidth, radiusY - ringBandWidth, 0, -Math.PI / 2, Math.PI / 2);
+        ctx.stroke();
+        ctx.beginPath(); // Back dashed arc
+        ctx.setLineDash([5, 4]);
+        ctx.ellipse(leftRingX, 0, radiusX - ringBandWidth, radiusY - ringBandWidth, 0, Math.PI / 2, 3 * Math.PI / 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Shading
+        ctx.save();
+        ctx.lineWidth = config.ringOuterWidth + 1;
+        ctx.strokeStyle = '#555';
+        ctx.beginPath();
+        ctx.ellipse(leftRingX, 0, radiusX, radiusY, 0, -Math.PI * 0.6, -Math.PI * 0.4);
+        ctx.stroke();
+        ctx.restore();
+
+
+        // --- Right Ring (+q) ---
+        // Outer band
+        ctx.lineWidth = config.ringOuterWidth;
+        ctx.beginPath();
+        ctx.ellipse(rightRingX, 0, radiusX, radiusY, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Inner band
+        ctx.lineWidth = config.ringInnerWidth;
+        ctx.beginPath();
+        ctx.ellipse(rightRingX, 0, radiusX - ringBandWidth, radiusY - ringBandWidth, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Shading
+        ctx.save();
+        ctx.lineWidth = config.ringOuterWidth + 1;
+        ctx.strokeStyle = '#555';
+        ctx.beginPath();
+        ctx.ellipse(rightRingX, 0, radiusX, radiusY, 0, -Math.PI * 0.6, -Math.PI * 0.4);
+        ctx.stroke();
+        ctx.restore();
+
+        // 3. Draw Labels and Dimensions
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = config.textColor;
+        
+        // Charges
+        ctx.font = config.labelFont;
+        ctx.fillText('+q', rightRingX + radiusX + 20, -radiusY);
+        ctx.fillText('–q', leftRingX - radiusX - 20, -radiusY);
+        
+        // Radius R
+        ctx.font = config.font;
+        // Right ring
+        ctx.beginPath();
+        ctx.moveTo(rightRingX, 0);
+        ctx.lineTo(rightRingX + radiusX * 0.8, -radiusY * 0.8);
+        ctx.stroke();
+        ctx.fillText('R', rightRingX + radiusX * 0.8 + 10, -radiusY * 0.8 + 10);
+        
+        // Left ring
+        ctx.beginPath();
+        ctx.moveTo(leftRingX, 0);
+        ctx.lineTo(leftRingX - radiusX * 0.8, -radiusY * 0.8);
+        ctx.stroke();
+        ctx.fillText('R', leftRingX - radiusX * 0.8 - 20, -radiusY * 0.8 + 10);
+
+        // Distance l
+        const l_y = radiusY + 40;
+        ctx.beginPath();
+        ctx.moveTo(leftRingX, l_y);
+        ctx.lineTo(rightRingX, l_y);
+        // Left arrow
+        ctx.moveTo(leftRingX + 10, l_y - 5);
+        ctx.lineTo(leftRingX, l_y);
+        ctx.lineTo(leftRingX + 10, l_y + 5);
+        // Right arrow
+        ctx.moveTo(rightRingX - 10, l_y - 5);
+        ctx.lineTo(rightRingX, l_y);
+        ctx.lineTo(rightRingX - 10, l_y + 5);
+        ctx.stroke();
+        ctx.font = config.font;
+        ctx.fillText('l', 0, l_y);
+
+        // 4. Draw Bottom Text
+        ctx.resetTransform();
+        ctx.textAlign = 'center';
+        ctx.font = '22px KaiTi, sans-serif';
+        ctx.fillText('习题 7-31 图', config.centerX, canvas.height - 25);
+    </script>
+</body>
+</html>

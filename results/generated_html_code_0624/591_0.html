@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Physics Force Diagram</title>
+</head>
+<body>
+  <canvas id="physics-diagram" width="500" height="550"></canvas>
+  <script>
+    const canvas = document.getElementById('physics-diagram');
+    const ctx = canvas.getContext('2d');
+
+    // Define drawing parameters and coordinates
+    const pivotX = 250;
+    const pivotY = 100;
+    const rodLength = 300;
+    const rodWidth = 8;
+    const angle = 25 * Math.PI / 180; // Angle theta in radians for visualization
+    const bugDistance = 150; // Distance 'l' of the bug from the pivot
+
+    // Helper function to draw arrowheads
+    function drawArrowhead(ctx, fromX, fromY, toX, toY, headLength) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.translate(toX, toY);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headLength, -headLength / 2.5);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headLength, headLength / 2.5);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Set default drawing styles
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    
+    // 1. Draw the ceiling
+    ctx.beginPath();
+    ctx.moveTo(50, pivotY);
+    ctx.lineTo(450, pivotY);
+    ctx.stroke();
+    // Draw hatching lines
+    for (let i = 60; i < 450; i += 20) {
+        ctx.beginPath();
+        ctx.moveTo(i, pivotY);
+        ctx.lineTo(i - 10, pivotY - 10);
+        ctx.stroke();
+    }
+
+    // 2. Draw the dashed vertical line
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(pivotX, pivotY);
+    ctx.lineTo(pivotX, pivotY + rodLength + 40);
+    ctx.stroke();
+    ctx.restore();
+
+    // 3. Draw the rod
+    ctx.save();
+    ctx.translate(pivotX, pivotY);
+    ctx.rotate(angle);
+    ctx.fillRect(-rodWidth / 2, 0, rodWidth, rodLength);
+    ctx.restore();
+
+    // 4. Draw the angle arc and label
+    const arcRadius = 50;
+    ctx.beginPath();
+    ctx.arc(pivotX, pivotY, arcRadius, Math.PI / 2, Math.PI / 2 + angle);
+    ctx.stroke();
+    // Label 'θ'
+    ctx.font = 'italic 24px Times New Roman';
+    const thetaX = pivotX + (arcRadius + 15) * Math.sin(angle / 2);
+    const thetaY = pivotY + (arcRadius + 15) * Math.cos(angle / 2);
+    ctx.fillText('θ', thetaX - 5, thetaY + 5);
+
+    // Calculate bug position
+    const bugX = pivotX + bugDistance * Math.sin(angle);
+    const bugY = pivotY + bugDistance * Math.cos(angle);
+
+    // 5. Draw the bug (point mass)
+    ctx.beginPath();
+    ctx.arc(bugX, bugY, 5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 6. Draw forces and labels
+    ctx.font = 'italic 22px Times New Roman';
+
+    // Force 'mg' (gravity)
+    const mgLength = 80;
+    const mgEndX = bugX;
+    const mgEndY = bugY + mgLength;
+    ctx.beginPath();
+    ctx.moveTo(bugX, bugY);
+    ctx.lineTo(mgEndX, mgEndY);
+    ctx.stroke();
+    drawArrowhead(ctx, bugX, bugY, mgEndX, mgEndY, 12);
+    ctx.fillText('mg', mgEndX - 45, mgEndY - mgLength / 2 + 10);
+
+    // Force 'f' (up the rod)
+    const fLength = 60;
+    const fEndX = bugX - fLength * Math.sin(angle);
+    const fEndY = bugY - fLength * Math.cos(angle);
+    ctx.beginPath();
+    ctx.moveTo(bugX, bugY);
+    ctx.lineTo(fEndX, fEndY);
+    ctx.stroke();
+    drawArrowhead(ctx, bugX, bugY, fEndX, fEndY, 12);
+    ctx.fillText('f', fEndX - 25 * Math.cos(angle), fEndY + 15 * Math.sin(angle));
+
+    // Force 'mlθ̇²' (down the rod)
+    const radialLength = 70;
+    const radialEndX = bugX + radialLength * Math.sin(angle);
+    const radialEndY = bugY + radialLength * Math.cos(angle);
+    ctx.beginPath();
+    ctx.moveTo(bugX, bugY);
+    ctx.lineTo(radialEndX, radialEndY);
+    ctx.stroke();
+    drawArrowhead(ctx, bugX, bugY, radialEndX, radialEndY, 12);
+    // Render "mlθ̇²" using Unicode for combining dot and superscript
+    ctx.fillText('mlθ\u0307\u00b2', radialEndX + 5, radialEndY + 5);
+
+    // 7. Add remaining labels
+    // Label 'M' for the rod
+    ctx.font = 'italic 24px Times New Roman';
+    const MX = pivotX + (rodLength + 15) * Math.sin(angle);
+    const MY = pivotY + (rodLength + 10) * Math.cos(angle);
+    ctx.fillText('M', MX, MY);
+
+    // Figure Caption
+    ctx.font = '22px KaiTi'; // Use a Chinese font like KaiTi or SimSun
+    ctx.fillText('力图 7.21.1', 190, 500);
+
+  </script>
+</body>
+</html>

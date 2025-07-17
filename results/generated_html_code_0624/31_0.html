@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical System Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Parameters ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.font = 'bold 24px serif';
+        ctx.textAlign = 'center';
+
+        const axisY = 220;
+        const scale = 22; // pixels per cm
+
+        // --- Object and Lens Positions ---
+        const lens1X = 300;
+        const objectDist = 10 * scale;
+        const lensDist = 5 * scale;
+        const objectX = lens1X - objectDist;
+        const lens2X = lens1X + lensDist;
+
+        // --- Drawing Functions ---
+
+        // 1. Draw the principal axis
+        function drawAxis() {
+            ctx.beginPath();
+            ctx.moveTo(0, axisY);
+            ctx.lineTo(canvas.width, axisY);
+            ctx.stroke();
+        }
+
+        // 2. Draw the object arrow
+        function drawObject() {
+            const objectHeight = 50;
+            const arrowHeadSize = 10;
+            ctx.beginPath();
+            // Stem
+            ctx.moveTo(objectX, axisY);
+            ctx.lineTo(objectX, axisY - objectHeight);
+            // Arrowhead
+            ctx.moveTo(objectX, axisY - objectHeight);
+            ctx.lineTo(objectX - arrowHeadSize / 2, axisY - objectHeight + arrowHeadSize);
+            ctx.moveTo(objectX, axisY - objectHeight);
+            ctx.lineTo(objectX + arrowHeadSize / 2, axisY - objectHeight + arrowHeadSize);
+            ctx.stroke();
+        }
+
+        // 3. Draw the converging lens (L1)
+        function drawConvergingLens() {
+            const lensHeight = 120;
+            const lensCurvature = 30;
+            ctx.beginPath();
+            ctx.moveTo(lens1X, axisY - lensHeight / 2);
+            ctx.quadraticCurveTo(lens1X + lensCurvature, axisY, lens1X, axisY + lensHeight / 2);
+            ctx.quadraticCurveTo(lens1X - lensCurvature, axisY, lens1X, axisY - lensHeight / 2);
+            ctx.stroke();
+            // Center line
+            ctx.beginPath();
+            ctx.moveTo(lens1X, axisY - lensHeight / 2);
+            ctx.lineTo(lens1X, axisY + lensHeight / 2);
+            ctx.stroke();
+        }
+
+        // 4. Draw the diverging lens (L2)
+        function drawDivergingLens() {
+            const lensHeight = 120;
+            const lensWidth = 40;
+            const x_left = lens2X - lensWidth / 2;
+            const x_right = lens2X + lensWidth / 2;
+
+            // Left arc
+            ctx.beginPath();
+            ctx.moveTo(x_left, axisY - lensHeight / 2);
+            ctx.quadraticCurveTo(lens2X, axisY, x_left, axisY + lensHeight / 2);
+            ctx.stroke();
+
+            // Right arc
+            ctx.beginPath();
+            ctx.moveTo(x_right, axisY - lensHeight / 2);
+            ctx.quadraticCurveTo(lens2X, axisY, x_right, axisY + lensHeight / 2);
+            ctx.stroke();
+
+            // Top and bottom caps
+            ctx.beginPath();
+            ctx.moveTo(x_left, axisY - lensHeight / 2);
+            ctx.lineTo(x_right, axisY - lensHeight / 2);
+            ctx.moveTo(x_left, axisY + lensHeight / 2);
+            ctx.lineTo(x_right, axisY + lensHeight / 2);
+            ctx.stroke();
+
+            // Center line
+            ctx.beginPath();
+            ctx.moveTo(lens2X, axisY - lensHeight / 2);
+            ctx.lineTo(lens2X, axisY + lensHeight / 2);
+            ctx.stroke();
+        }
+
+        // 5. Draw the dimension lines and labels
+        function drawDimensionLine(x1, x2, label) {
+            const y_dim_line = axisY + 60;
+            const arrowSize = 8;
+
+            // Vertical ticks from axis to dimension line
+            ctx.beginPath();
+            ctx.moveTo(x1, axisY);
+            ctx.lineTo(x1, y_dim_line);
+            ctx.moveTo(x2, axisY);
+            ctx.lineTo(x2, y_dim_line);
+            ctx.stroke();
+
+            // Horizontal line with arrowheads
+            ctx.beginPath();
+            ctx.moveTo(x1, y_dim_line);
+            ctx.lineTo(x2, y_dim_line);
+            ctx.moveTo(x1 + arrowSize, y_dim_line - 4);
+            ctx.lineTo(x1, y_dim_line);
+            ctx.lineTo(x1 + arrowSize, y_dim_line + 4);
+            ctx.moveTo(x2 - arrowSize, y_dim_line - 4);
+            ctx.lineTo(x2, y_dim_line);
+            ctx.lineTo(x2 - arrowSize, y_dim_line + 4);
+            ctx.stroke();
+
+            // Text label
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(label, (x1 + x2) / 2, y_dim_line - 5);
+        }
+
+        // 6. Draw all text labels
+        function drawText() {
+            // Focal length labels
+            ctx.textBaseline = 'bottom';
+            ctx.fillText("f\u2081 = 10 cm", lens1X, 120);
+            ctx.fillText("f\u2082 = -15 cm", lens2X, 120);
+
+            // Figure caption
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText("Fig. 1.27", canvas.width / 2, canvas.height - 30);
+        }
+
+        // --- Main Drawing Execution ---
+        drawAxis();
+        drawObject();
+        drawConvergingLens();
+        drawDivergingLens();
+        drawDimensionLine(objectX, lens1X, "10 cm");
+        drawDimensionLine(lens1X, lens2X, "5 cm");
+        drawText();
+    </script>
+</body>
+</html>

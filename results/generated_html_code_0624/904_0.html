@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Electromagnetism Diagram</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      background-color: #fff;
+    }
+  </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="520"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Helper Functions ---
+
+  /**
+   * Draws a dimension line with arrows and a subscripted label.
+   * @param {CanvasRenderingContext2D} ctx - The canvas context.
+   * @param {number} x1 - Start x-coordinate.
+   * @param {number} y1 - Start y-coordinate.
+   * @param {number} x2 - End x-coordinate.
+   * @param {number} y2 - End y-coordinate.
+   * @param {string} label - The main part of the label (e.g., 'l').
+   * @param {string} sub - The subscript part of the label (e.g., '1').
+   */
+  function drawDimensionLine(ctx, x1, y1, x2, y2, label, sub) {
+    const headlen = 8;
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#333';
+    ctx.fillStyle = '#333';
+
+    // Main line
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    // Arrows
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    // Start arrow
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 + headlen * Math.cos(angle + Math.PI / 6), y1 + headlen * Math.sin(angle + Math.PI / 6));
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 + headlen * Math.cos(angle - Math.PI / 6), y1 + headlen * Math.sin(angle - Math.PI / 6));
+    ctx.stroke();
+    // End arrow
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+
+    // Label with subscript
+    const baseFont = 'italic 20px Times New Roman';
+    const subFont = 'italic 14px Times New Roman';
+
+    ctx.font = baseFont;
+    const labelMetrics = ctx.measureText(label);
+    ctx.font = subFont;
+    const subMetrics = ctx.measureText(sub);
+    const totalLabelWidth = labelMetrics.width + subMetrics.width;
+
+    if (y1 === y2) { // Horizontal line
+        const center_x = (x1 + x2) / 2;
+        const label_y = y1 - 8;
+        const start_x = center_x - totalLabelWidth / 2;
+        
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.font = baseFont;
+        ctx.fillText(label, start_x, label_y);
+        ctx.font = subFont;
+        ctx.fillText(sub, start_x + labelMetrics.width, label_y + 2);
+
+    } else { // Vertical line
+        const center_y = (y1 + y2) / 2;
+        const label_x = x1 + 10;
+        
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.font = baseFont;
+        ctx.fillText(label, label_x, center_y);
+        ctx.font = subFont;
+        ctx.fillText(sub, label_x + labelMetrics.width - 2, center_y + 5);
+    }
+    ctx.restore();
+  }
+
+  /**
+   * Draws an upward-pointing arrow for the current.
+   * @param {CanvasRenderingContext2D} ctx - The canvas context.
+   * @param {number} x - The x-coordinate of the arrow.
+   * @param {number} y_start - The y-coordinate of the arrow's base.
+   */
+  function drawCurrentArrow(ctx, x, y_start) {
+    const len = 25;
+    const head = 10;
+    const y_end = y_start - len;
+    
+    ctx.beginPath();
+    ctx.moveTo(x, y_start);
+    ctx.lineTo(x, y_end); // shaft
+    ctx.moveTo(x, y_end);
+    ctx.lineTo(x - head / 2, y_end + head); // left barb
+    ctx.moveTo(x, y_end);
+    ctx.lineTo(x + head / 2, y_end + head); // right barb
+    ctx.stroke();
+  }
+
+  // --- Main Drawing ---
+  
+  // Style settings for main elements
+  ctx.strokeStyle = '#333';
+  ctx.fillStyle = '#333';
+  ctx.lineWidth = 2;
+
+  // --- Define coordinates and dimensions ---
+  const l1_val = 240;
+  const l2_val = 150;
+  const d1_val = 80;
+  const dist_wires = 80;
+  
+  const rect_x = 320;
+  const rect_y = (canvas.height - l1_val) / 2 - 20; // Vertically center the main group
+  const wire_r_x = rect_x - d1_val;
+  const wire_l_x = wire_r_x - dist_wires;
+  const d2_val = rect_x - wire_l_x;
+
+  const wire_top_y = 60;
+  const wire_bottom_y = canvas.height - 60;
+  const dash_len = 15;
+  const dash_gap = 10;
+
+  // --- Draw Wires ---
+  function drawWire(x) {
+    ctx.beginPath();
+    // Top dash
+    ctx.moveTo(x, wire_top_y);
+    ctx.lineTo(x, wire_top_y + dash_len);
+    // Main line
+    ctx.moveTo(x, wire_top_y + dash_len + dash_gap);
+    ctx.lineTo(x, wire_bottom_y - dash_len - dash_gap);
+    // Bottom dash
+    ctx.moveTo(x, wire_bottom_y - dash_len);
+    ctx.lineTo(x, wire_bottom_y);
+    ctx.stroke();
+  }
+  drawWire(wire_l_x);
+  drawWire(wire_r_x);
+
+  // --- Draw Current Arrows and Labels ---
+  const arrow_y_start = 160;
+  ctx.font = 'italic 20px Times New Roman';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  // Left current
+  drawCurrentArrow(ctx, wire_l_x, arrow_y_start);
+  ctx.fillText('I', wire_l_x - 25, arrow_y_start - 12);
+
+  // Right current
+  drawCurrentArrow(ctx, wire_r_x, arrow_y_start);
+  ctx.fillText('I', wire_r_x + 25, arrow_y_start - 12);
+
+  // --- Draw Rectangle ---
+  ctx.strokeRect(rect_x, rect_y, l2_val, l1_val);
+
+  // --- Draw Dimension Lines ---
+  // l2
+  drawDimensionLine(ctx, rect_x, rect_y - 25, rect_x + l2_val, rect_y - 25, 'l', '2');
+  
+  // l1
+  drawDimensionLine(ctx, rect_x + l2_val + 25, rect_y, rect_x + l2_val + 25, rect_y + l1_val, 'l', '1');
+  
+  // d1
+  const d1_y_pos = rect_y + 50;
+  drawDimensionLine(ctx, wire_r_x, d1_y_pos, rect_x, d1_y_pos, 'd', '1');
+  
+  // d2
+  const d2_y_pos = rect_y + 100;
+  drawDimensionLine(ctx, wire_l_x, d2_y_pos, rect_x, d2_y_pos, 'd', '2');
+
+  // --- Draw Bottom Text ---
+  ctx.font = '24px Simsun';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillStyle = '#333';
+  ctx.fillText('习题 9-1 图', canvas.width / 2, canvas.height - 10);
+
+</script>
+</body>
+</html>

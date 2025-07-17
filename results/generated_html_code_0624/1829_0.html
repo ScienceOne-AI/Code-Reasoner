@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Birefringence Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="550" height="400" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById("myCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // --- Style and Settings ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // --- Helper Functions ---
+    function drawLineWithArrow(x1, y1, x2, y2, arrowSize = 8) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - arrowSize * Math.cos(angle - Math.PI / 6), y2 - arrowSize * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - arrowSize * Math.cos(angle + Math.PI / 6), y2 - arrowSize * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    function drawPolarizationMarker(x, y, size) {
+        const halfSize = size / 2;
+        const arrowHeadSize = 6;
+        
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        // Vertical line
+        ctx.beginPath();
+        ctx.moveTo(x, y - halfSize);
+        ctx.lineTo(x, y + halfSize);
+        ctx.stroke();
+        
+        // Top arrowhead
+        ctx.beginPath();
+        ctx.moveTo(x, y - halfSize);
+        ctx.lineTo(x - arrowHeadSize / 2, y - halfSize + arrowHeadSize);
+        ctx.moveTo(x, y - halfSize);
+        ctx.lineTo(x + arrowHeadSize / 2, y - halfSize + arrowHeadSize);
+        ctx.stroke();
+
+        // Bottom arrowhead
+        ctx.beginPath();
+        ctx.moveTo(x, y + halfSize);
+        ctx.lineTo(x - arrowHeadSize / 2, y + halfSize - arrowHeadSize);
+        ctx.moveTo(x, y + halfSize);
+        ctx.lineTo(x + arrowHeadSize / 2, y + halfSize - arrowHeadSize);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+    const crystalX = 200;
+    const crystalWidth = 120;
+    const crystalY = 50;
+    const crystalHeight = 300;
+    
+    // Draw crystal block
+    ctx.lineWidth = 2;
+    ctx.fillStyle = '#EBEBEB';
+    ctx.fillRect(crystalX, crystalY, crystalWidth, crystalHeight);
+    ctx.strokeStyle = 'black';
+    ctx.strokeRect(crystalX, crystalY, crystalWidth, crystalHeight);
+    
+    ctx.lineWidth = 1.5;
+
+    // --- Top Ray System ---
+    const rayY1 = 125;
+    const incidentStartX = 50;
+    const polarizationX1 = 110;
+    const e_displacement = 30;
+    const exitEndX = 480;
+
+    // Incident ray 1
+    drawLineWithArrow(incidentStartX, rayY1, crystalX, rayY1);
+    drawPolarizationMarker(polarizationX1, rayY1, 30);
+
+    // Rays inside crystal 1
+    ctx.beginPath();
+    ctx.moveTo(crystalX, rayY1); // o-ray
+    ctx.lineTo(crystalX + crystalWidth, rayY1);
+    ctx.moveTo(crystalX, rayY1); // e-ray
+    ctx.lineTo(crystalX + crystalWidth, rayY1 + e_displacement);
+    ctx.stroke();
+
+    // Optic axis 1 (dashed line)
+    const beta_rad = Math.PI / 4.5; // Approx 40 degrees, similar to the image
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    const axisLength1 = 90;
+    ctx.moveTo(crystalX, rayY1);
+    ctx.lineTo(crystalX + axisLength1 * Math.cos(beta_rad), rayY1 + axisLength1 * Math.sin(beta_rad));
+    ctx.stroke();
+    ctx.restore();
+
+    // Angle beta
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(crystalX, rayY1, 35, 0, beta_rad);
+    ctx.stroke();
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText("β", crystalX + 45, rayY1 + 20);
+    ctx.lineWidth = 1.5;
+
+    // Exiting rays 1
+    drawLineWithArrow(crystalX + crystalWidth, rayY1, exitEndX, rayY1);
+    drawLineWithArrow(crystalX + crystalWidth, rayY1 + e_displacement, exitEndX, rayY1 + e_displacement);
+    ctx.font = 'italic 22px "Times New Roman"';
+    ctx.fillText("o", exitEndX + 10, rayY1 + 5);
+    ctx.fillText("e", exitEndX + 10, rayY1 + e_displacement + 5);
+
+    // --- Bottom Ray System ---
+    const rayY2 = 275;
+    const polarizationX2 = 110;
+
+    // Incident ray 2
+    drawLineWithArrow(incidentStartX, rayY2, crystalX, rayY2);
+    drawPolarizationMarker(polarizationX2, rayY2, 30);
+
+    // Rays inside crystal 2
+    ctx.beginPath();
+    ctx.moveTo(crystalX, rayY2); // o-ray
+    ctx.lineTo(crystalX + crystalWidth, rayY2);
+    ctx.moveTo(crystalX, rayY2); // e-ray
+    ctx.lineTo(crystalX + crystalWidth, rayY2 + e_displacement);
+    ctx.stroke();
+
+    // Optic axis 2 (dashed line)
+    const axisLength2 = 100;
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(crystalX, rayY2);
+    ctx.lineTo(crystalX + axisLength2 * Math.cos(beta_rad), rayY2 + axisLength2 * Math.sin(beta_rad));
+    ctx.stroke();
+    ctx.restore();
+
+    // O-O' label with connector line
+    ctx.font = '22px "Times New Roman"';
+    const labelX = 170;
+    const labelY = 350;
+    ctx.fillText("O-O'", labelX, labelY);
+    ctx.beginPath();
+    ctx.lineWidth = 1;
+    ctx.moveTo(210, 342); // Start near the label text
+    ctx.lineTo(240, 315); // End on the dashed line
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+
+    // Exiting rays 2
+    drawLineWithArrow(crystalX + crystalWidth, rayY2, exitEndX, rayY2);
+    drawLineWithArrow(crystalX + crystalWidth, rayY2 + e_displacement, exitEndX, rayY2 + e_displacement);
+    ctx.font = 'italic 22px "Times New Roman"';
+    ctx.fillText("o", exitEndX + 10, rayY2 + 5);
+    ctx.fillText("e", exitEndX + 10, rayY2 + e_displacement + 5);
+
+</script>
+</body>
+</html>

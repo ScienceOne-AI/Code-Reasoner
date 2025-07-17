@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rotor Ride Acceleration</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="600"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style and layout parameters
+    const margin = {top: 50, right: 30, bottom: 60, left: 70};
+    const plotWidth = canvas.width - margin.left - margin.right;
+    const plotHeight = canvas.height - margin.top - margin.bottom;
+
+    // Data scale
+    const tMax = 250;
+    const aMax = 30;
+
+    // Coordinate transformation functions
+    function tx(t) {
+        return margin.left + (t / tMax) * plotWidth;
+    }
+
+    function ty(a) {
+        return margin.top + plotHeight - (a / aMax) * plotHeight;
+    }
+
+    // Main draw function
+    function draw() {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        drawGrid();
+        drawAxesAndLabels();
+        drawData();
+    }
+
+    function drawGrid() {
+        ctx.strokeStyle = '#e0e0e0'; // Light grey for minor grid
+        ctx.lineWidth = 1;
+
+        // Minor vertical lines (every 10 seconds)
+        for (let t = 10; t < tMax; t += 10) {
+            if (t % 50 !== 0) {
+                ctx.beginPath();
+                ctx.moveTo(tx(t), margin.top);
+                ctx.lineTo(tx(t), margin.top + plotHeight);
+                ctx.stroke();
+            }
+        }
+
+        // Minor horizontal lines (every 1 m/s^2)
+        for (let a = 1; a < aMax; a++) {
+            if (a % 5 !== 0) {
+                ctx.beginPath();
+                ctx.moveTo(margin.left, ty(a));
+                ctx.lineTo(margin.left + plotWidth, ty(a));
+                ctx.stroke();
+            }
+        }
+        
+        ctx.strokeStyle = '#cccccc'; // Darker grey for major grid
+        ctx.lineWidth = 1;
+
+        // Major vertical lines (every 50 seconds)
+        for (let t = 0; t <= tMax; t += 50) {
+            ctx.beginPath();
+            ctx.moveTo(tx(t), margin.top);
+            ctx.lineTo(tx(t), margin.top + plotHeight);
+            ctx.stroke();
+        }
+
+        // Major horizontal lines (every 5 m/s^2)
+        for (let a = 0; a <= aMax; a += 5) {
+            ctx.beginPath();
+            ctx.moveTo(margin.left, ty(a));
+            ctx.lineTo(margin.left + plotWidth, ty(a));
+            ctx.stroke();
+        }
+    }
+
+    function drawAxesAndLabels() {
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1;
+
+        // Y-axis
+        ctx.beginPath();
+        ctx.moveTo(margin.left, margin.top);
+        ctx.lineTo(margin.left, margin.top + plotHeight);
+        ctx.stroke();
+
+        // X-axis
+        ctx.beginPath();
+        ctx.moveTo(margin.left, margin.top + plotHeight);
+        ctx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+        ctx.stroke();
+        
+        // Labels and Title
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = 'bold 16px Arial';
+
+        // Title
+        ctx.fillText('Rotor Ride (6 meter diameter)', canvas.width / 2, margin.top / 2);
+
+        // X-axis Label
+        ctx.fillText('Time (Seconds)', canvas.width / 2, canvas.height - margin.bottom / 2 + 10);
+
+        // Y-axis Label
+        ctx.save();
+        ctx.translate(margin.left / 2 - 10, canvas.height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('Acceleration m/s^2', 0, 0);
+        ctx.restore();
+
+        // Axis Ticks
+        ctx.font = '14px Arial';
+        // X-axis ticks
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let t = 0; t <= tMax; t += 50) {
+            ctx.fillText(t, tx(t), margin.top + plotHeight + 5);
+        }
+
+        // Y-axis ticks
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let a = 0; a <= aMax; a += 5) {
+            ctx.fillText(a, margin.left - 5, ty(a));
+        }
+    }
+
+    function drawData() {
+        // Draw thick average line
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(tx(0), ty(10.1));
+        ctx.lineTo(tx(15), ty(10.0));
+        ctx.bezierCurveTo(tx(25), ty(10.5), tx(35), ty(9.5), tx(42), ty(9.9));
+        // Ramp up
+        ctx.bezierCurveTo(tx(55), ty(10.5), tx(60), ty(16), tx(70), ty(21));
+        ctx.bezierCurveTo(tx(80), ty(26), tx(83), ty(27.5), tx(88), ty(27.8));
+        // Plateau
+        ctx.bezierCurveTo(tx(95), ty(28.2), tx(105), ty(27.4), tx(115), ty(27.6));
+        ctx.bezierCurveTo(tx(125), ty(27.8), tx(130), ty(27.9), tx(135), ty(27.5));
+        // Ramp down
+        ctx.bezierCurveTo(tx(140), ty(26.5), tx(145), ty(22), tx(155), ty(16));
+        ctx.bezierCurveTo(tx(165), ty(10), tx(170), ty(10.2), tx(175), ty(10));
+        // Final section
+        ctx.bezierCurveTo(tx(190), ty(9.5), tx(210), ty(10.5), tx(230), ty(9.8));
+        ctx.stroke();
+        
+        // Draw scatter points
+        ctx.fillStyle = 'black';
+
+        const drawPoints = (numPoints, tMin, tMax, aBaseFunc, noiseFunc) => {
+            for (let i = 0; i < numPoints; i++) {
+                const t = tMin + Math.random() * (tMax - tMin);
+                const aBase = aBaseFunc(t);
+                const noise = noiseFunc();
+                const a = aBase + noise;
+                if(a > 0 && a < aMax) {
+                    // Check for streaky noise in the last section
+                    if (t > 170 && Math.random() < 0.2) {
+                        ctx.fillRect(tx(t)-0.5, ty(a)-2, 1, 4);
+                    } else {
+                        ctx.fillRect(tx(t)-0.5, ty(a)-0.5, 1.5, 1.5);
+                    }
+                }
+            }
+        };
+
+        // Phase 1: Before spin up (0-42s)
+        drawPoints(1500, 0, 42, t => 10, () => (Math.random() - 0.5) * 10);
+        
+        // Phase 2: Spin up (42-88s)
+        drawPoints(1000, 42, 88, 
+            t => { // Approximate S-curve
+                const t_norm = (t-42)/(88-42);
+                const a_s = 10 + 17.8 * (3*t_norm*t_norm - 2*t_norm*t_norm*t_norm);
+                return a_s;
+            }, 
+            () => (Math.random() - 0.5) * 3
+        );
+
+        // Phase 3: Plateau (88-135s)
+        drawPoints(2500, 88, 135, t => 27.7, 
+            () => { // Tighter band with spikes
+                if (Math.random() > 0.9) return (Math.random() - 0.5) * 5;
+                return (Math.random() - 0.5) * 2;
+            }
+        );
+
+        // Phase 4: Spin down (135-175s)
+        drawPoints(1000, 135, 175, 
+            t => { // Approximate S-curve down
+                const t_norm = (t-135)/(175-135);
+                const a_s = 27.7 - 17.7 * (3*t_norm*t_norm - 2*t_norm*t_norm*t_norm);
+                return a_s;
+            }, 
+            () => (Math.random() - 0.5) * 5
+        );
+        
+        // Phase 5: After spin down (175-230s)
+        drawPoints(3000, 175, 230, t => 10, () => (Math.random() - 0.5) * 18);
+
+        // Add some sparse, far-out points
+        drawPoints(50, 0, 250, t => 15, () => (Math.random() - 0.5) * 30);
+    }
+
+    // Run the drawing function
+    draw();
+</script>
+</body>
+</html>

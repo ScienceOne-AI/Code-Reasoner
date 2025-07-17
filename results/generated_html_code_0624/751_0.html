@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Optical Coherence Diagram</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    canvas {
+        border: 1px solid #ccc;
+        background-color: white;
+    }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = 'italic 18px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Helper function to draw an arrow at the end of a line
+    function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 10) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+    }
+    
+    // Helper function to draw a line with outward-pointing arrows at both ends
+    function drawOutwardDoubleArrow(ctx, fromX, fromY, toX, toY, headLength = 10) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        // Arrow head at 'to'
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        // Arrow head at 'from'
+        const revAngle = angle + Math.PI;
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(fromX - headLength * Math.cos(revAngle + Math.PI / 6), fromY - headLength * Math.sin(revAngle + Math.PI / 6));
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(fromX - headLength * Math.cos(revAngle - Math.PI / 6), fromY - headLength * Math.sin(revAngle - Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    // Helper function to draw a line with inward-pointing arrows at both ends
+    function drawInwardDoubleArrow(ctx, fromX, fromY, toX, toY, headLength = 10) {
+        drawArrow(ctx, fromX, fromY, toX, toY, headLength);
+        drawArrow(ctx, toX, toY, fromX, fromY, headLength);
+    }
+
+    // --- Drawing ---
+
+    // 1. Source (S)
+    const s_cx = 120;
+    const s_cy = 130;
+    
+    // Source axes
+    drawArrow(ctx, s_cx, s_cy + 60, s_cx, s_cy - 70); // y-axis
+    ctx.fillText('y', s_cx - 20, s_cy - 70);
+    drawArrow(ctx, s_cx, s_cy, s_cx + 80, s_cy - 20); // x-axis
+    ctx.fillText('x', s_cx + 90, s_cy - 25);
+    
+    // Source disk S
+    ctx.beginPath();
+    ctx.ellipse(s_cx, s_cy, 18, 45, 0, 0, 2 * Math.PI);
+    ctx.fillStyle = '#cccccc';
+    ctx.fill();
+    ctx.strokeStyle = 'black';
+    ctx.stroke();
+    
+    // Line on the disk to give 3D impression
+    ctx.beginPath();
+    ctx.moveTo(s_cx, s_cy - 45);
+    ctx.lineTo(s_cx, s_cy + 45);
+    ctx.stroke();
+    
+    // Label S
+    ctx.fillStyle = 'black';
+    ctx.fillText('S', s_cx - 50, s_cy);
+
+    // 2. Observation Plane
+    const o_cx = 460;
+    const o_cy = 320;
+    
+    // Observation axes
+    drawArrow(ctx, o_cx, o_cy + 50, o_cx, o_cy - 60); // y-axis
+    ctx.fillText('y', o_cx - 20, o_cy - 60);
+    drawArrow(ctx, o_cx, o_cy, o_cx + 80, o_cy - 20); // x-axis
+    ctx.fillText('x', o_cx + 90, o_cy - 25);
+    drawArrow(ctx, o_cx, o_cy, o_cx + 60, o_cy + 40); // z-axis
+    ctx.fillText('z', o_cx + 70, o_cy + 45);
+    
+    // 3. Propagation Lines and distance z
+    // Points P1 and P2 are on the observation x-axis
+    const p1_x = o_cx - 40;
+    const p1_y = o_cy + 10;
+    const p2_x = o_cx + 40;
+    const p2_y = o_cy - 10;
+
+    // The top long line from source area to observation area
+    ctx.beginPath();
+    ctx.moveTo(s_cx, s_cy);
+    ctx.lineTo(p1_x, p1_y);
+    ctx.stroke();
+
+    // The bottom long line that represents distance 'z'
+    const z_start_x = s_cx;
+    const z_start_y = s_cy + 60;
+    const z_end_x = o_cx;
+    const z_end_y = o_cy + 30; 
+    
+    drawOutwardDoubleArrow(ctx, z_start_x, z_start_y, z_end_x, z_end_y, 10);
+    ctx.fillText('z', (z_start_x + z_end_x) / 2, (z_start_y + z_end_y) / 2 + 15);
+
+    // 4. Points P1, P2 and spacing Δρc
+    ctx.fillStyle = 'black';
+    // Point P1
+    ctx.beginPath();
+    ctx.arc(p1_x, p1_y, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('P', p1_x - 15, p1_y - 12);
+    ctx.font = 'italic 12px Arial';
+    ctx.fillText('1', p1_x - 6, p1_y - 9);
+    ctx.font = 'italic 18px Arial';
+
+    // Point P2
+    ctx.beginPath();
+    ctx.arc(p2_x, p2_y, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('P', p2_x + 15, p2_y - 12);
+    ctx.font = 'italic 12px Arial';
+    ctx.fillText('2', p2_x + 24, p2_y - 9);
+    ctx.font = 'italic 18px Arial';
+    
+    // Spacing Δρc
+    const d_line_y = o_cy + 55;
+    // Dashed lines (vertical)
+    ctx.beginPath();
+    ctx.setLineDash([4, 3]);
+    ctx.moveTo(p1_x, p1_y);
+    ctx.lineTo(p1_x, d_line_y);
+    ctx.moveTo(p2_x, p2_y);
+    ctx.lineTo(p2_x, d_line_y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Double arrow for spacing
+    drawInwardDoubleArrow(ctx, p1_x, d_line_y, p2_x, d_line_y, 8);
+    
+    // Label Δρc
+    const label_x = (p1_x + p2_x) / 2;
+    const label_y = d_line_y + 20;
+    ctx.fillText("Δρ", label_x, label_y);
+    ctx.font = 'italic 12px Arial';
+    ctx.fillText("c", label_x + 15, label_y + 4);
+</script>
+</body>
+</html>

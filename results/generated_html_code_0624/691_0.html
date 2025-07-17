@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 20px Times New Roman';
+
+        // Coordinates and dimensions
+        const x_left = 50;
+        const x_right = 450;
+        const y_top = 100;
+        const y_bottom = 350;
+        const cx = (x_left + x_right) / 2; // 250
+        const cy = 230;
+        const r0 = 80;
+
+        // --- Main Drawing ---
+
+        // 1. Draw the rectangular part of the circuit (sides BC, CD, DA)
+        ctx.beginPath();
+        ctx.moveTo(x_left, y_top); // Point B
+        ctx.lineTo(x_left, y_bottom); // Line BC
+        ctx.lineTo(x_right, y_bottom); // Line CD
+        ctx.lineTo(x_right, y_top); // Line DA
+        ctx.stroke();
+        
+        // 2. Draw the circular loop
+        ctx.beginPath();
+        ctx.arc(cx, cy, r0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 3. Draw the top wire (segment AB) with the crossover
+        // This part is drawn visually to match the schematic's appearance.
+        const cross = { x: cx, y: y_top + 20 };
+        
+        // Clear a small part of the main top line for a cleaner look where the dip starts
+        ctx.clearRect(cx - 70, y_top - 2, 140, 4);
+        // Clear small parts of the circle for the wire connections
+        ctx.clearRect(cx - 15, cy - r0 - 2, 30, 4);
+
+
+        // Draw the wire from B (left) which goes underneath at the crossover
+        ctx.beginPath();
+        ctx.moveTo(x_left, y_top);
+        // Curve from B to just before the crossover point
+        ctx.quadraticCurveTo(x_left + 80, y_top, cross.x - 7, cross.y);
+        ctx.stroke();
+        // Curve from just after the crossover point to the circle
+        ctx.beginPath();
+        ctx.moveTo(cross.x + 7, cross.y);
+        ctx.quadraticCurveTo(cross.x - r0/2, cross.y + r0/2, cx - 5, cy - r0);
+        ctx.stroke();
+
+
+        // Draw the wire from A (right) which goes over at the crossover
+        ctx.beginPath();
+        ctx.moveTo(x_right, y_top);
+        // Curve from A, through the crossover point, to the circle
+        ctx.bezierCurveTo(x_right - 80, y_top, cross.x, cross.y, cross.x + 5, cy - r0);
+        ctx.stroke();
+
+        // 4. Draw the magnetic field (dots indicating field out of page)
+        ctx.lineWidth = 0.5;
+        const dotSpacing = 35;
+        const dotRadius = 1.5;
+        for (let i = cx - 2 * dotSpacing; i <= cx + 2 * dotSpacing; i += dotSpacing) {
+            for (let j = cy - 2 * dotSpacing; j <= cy + 2 * dotSpacing; j += dotSpacing) {
+                ctx.beginPath();
+                ctx.arc(i, j, dotRadius, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+        ctx.lineWidth = 2; // Reset line width
+
+        // 5. Draw labels and symbols
+        // Vertices A, B, C, D
+        ctx.font = 'italic bold 24px Times New Roman';
+        ctx.fillText('B', x_left - 30, y_top + 10);
+        ctx.fillText('A', x_right + 15, y_top + 10);
+        ctx.fillText('C', x_left - 30, y_bottom + 5);
+        ctx.fillText('D', x_right + 15, y_bottom + 5);
+
+        // Force F
+        const arrowStartX = x_right + 5;
+        const arrowEndX = x_right + 65;
+        const arrowY = y_top - 20;
+        ctx.beginPath();
+        ctx.moveTo(arrowStartX, arrowY);
+        ctx.lineTo(arrowEndX, arrowY);
+        ctx.moveTo(arrowEndX, arrowY);
+        ctx.lineTo(arrowEndX - 10, arrowY - 5);
+        ctx.moveTo(arrowEndX, arrowY);
+        ctx.lineTo(arrowEndX - 10, arrowY + 5);
+        ctx.stroke();
+        ctx.fillText('F', arrowEndX + 10, arrowY + 8);
+        
+        // Radius r₀
+        ctx.beginPath();
+        ctx.setLineDash([4, 3]);
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx - r0 * Math.cos(Math.PI / 4), cy + r0 * Math.sin(Math.PI / 4));
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid line
+        ctx.fillText('r', cx - r0 * 0.5 - 12, cy + r0 * 0.5 + 5);
+        ctx.font = 'italic bold 16px Times New Roman';
+        ctx.fillText('0', cx - r0 * 0.5, cy + r0 * 0.5 + 10);
+        
+        // Magnetic field B
+        ctx.font = 'italic bold 24px Times New Roman';
+        ctx.fillText('B', cx + r0/2 + 30, cy + r0/2 + 40);
+        ctx.beginPath();
+        ctx.arc(cx + r0/2 + 20, cy + r0/2 + 35, 2, 0, 2 * Math.PI);
+        ctx.fill();
+
+
+        // Caption
+        ctx.font = '20px "SimSun", "Songti SC", serif';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.fillText('电图 3.2.1', canvas.width / 2, y_bottom + 60);
+
+    </script>
+</body>
+</html>

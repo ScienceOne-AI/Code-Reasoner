@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coupled RLC Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="500" height="380"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style ---
+        ctx.lineWidth = 2.5; // Thicker lines like the original
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 22px Georgia, serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper Functions ---
+        function drawResistor(ctx, x, y, width, height) {
+            const segments = 7;
+            const segmentWidth = width / segments;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            for (let i = 0; i < segments; i++) {
+                ctx.lineTo(x + (i + 0.5) * segmentWidth, y + (i % 2 === 0 ? -height / 2 : height / 2));
+            }
+            ctx.lineTo(x + width, y);
+            ctx.stroke();
+        }
+
+        function drawInductor(ctx, x, y1, y2, loops, radius) {
+            const height = y2 - y1;
+            const leadLength = 20;
+            const coilHeight = height - 2 * leadLength;
+            const segmentHeight = coilHeight / loops;
+            ctx.beginPath();
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, y1 + leadLength);
+            for (let i = 0; i < loops; i++) {
+                const y_center = y1 + leadLength + i * segmentHeight + segmentHeight / 2;
+                ctx.arc(x, y_center, radius, Math.PI / 2, -Math.PI / 2, true);
+            }
+            ctx.lineTo(x, y2 - leadLength);
+            ctx.lineTo(x, y2);
+            ctx.stroke();
+        }
+
+        function drawCapacitor(ctx, x, y1, y2) {
+            const plateWidth = 30;
+            const gap = 10;
+            const y_center = (y1 + y2) / 2;
+            ctx.beginPath();
+            ctx.moveTo(x, y1); // Top wire
+            ctx.lineTo(x, y_center - gap / 2);
+            ctx.moveTo(x - plateWidth / 2, y_center - gap / 2); // Top plate
+            ctx.lineTo(x + plateWidth / 2, y_center - gap / 2);
+            ctx.moveTo(x - plateWidth / 2, y_center + gap / 2); // Bottom plate
+            ctx.lineTo(x + plateWidth / 2, y_center + gap / 2);
+            ctx.moveTo(x, y_center + gap / 2); // Bottom wire
+            ctx.lineTo(x, y2);
+            ctx.stroke();
+        }
+
+        function drawArrow(ctx, x, y, size, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2.5);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2.5);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Coordinates ---
+        const x_src = 90;
+        const x_res_start = 130, x_res_end = 210;
+        const x_L1 = 260;
+        const x_L2 = 320;
+        const x_cap = 410;
+
+        const y_top = 70;
+        const y_bottom = 270;
+        const y_mid = (y_top + y_bottom) / 2;
+
+        // --- Draw Left Circuit ---
+        // AC Source
+        const src_radius = 25;
+        ctx.beginPath();
+        ctx.arc(x_src, y_mid, src_radius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x_src - src_radius * 0.7, y_mid);
+        ctx.bezierCurveTo(x_src - src_radius * 0.35, y_mid - src_radius * 0.9, x_src + src_radius * 0.35, y_mid + src_radius * 0.9, x_src + src_radius * 0.7, y_mid);
+        ctx.stroke();
+
+        // Wires
+        ctx.beginPath();
+        ctx.moveTo(x_src, y_mid - src_radius);
+        ctx.lineTo(x_src, y_top);
+        ctx.lineTo(x_res_start, y_top);
+        ctx.moveTo(x_res_end, y_top);
+        ctx.lineTo(x_L1, y_top);
+        ctx.moveTo(x_L1, y_bottom);
+        ctx.lineTo(x_src, y_bottom);
+        ctx.lineTo(x_src, y_mid + src_radius);
+        ctx.stroke();
+
+        // Resistor
+        drawResistor(ctx, x_res_start, y_top, x_res_end - x_res_start, 14);
+
+        // Inductor L1
+        drawInductor(ctx, x_L1, y_top, y_bottom, 5, 10);
+
+        // --- Draw Right Circuit ---
+        // Wires
+        ctx.beginPath();
+        ctx.moveTo(x_L2, y_top);
+        ctx.lineTo(x_cap, y_top);
+        ctx.moveTo(x_cap, y_bottom);
+        ctx.lineTo(x_L2, y_bottom);
+        ctx.stroke();
+
+        // Inductor L2
+        drawInductor(ctx, x_L2, y_top, y_bottom, 5, 10);
+
+        // Capacitor
+        drawCapacitor(ctx, x_cap, y_top, y_bottom);
+
+        // --- Coupling & Dots ---
+        const x_core = (x_L1 + x_L2) / 2;
+        ctx.beginPath();
+        ctx.moveTo(x_core, y_top + 10);
+        ctx.lineTo(x_core, y_bottom - 10);
+        ctx.moveTo(x_core + 4, y_top + 10);
+        ctx.lineTo(x_core + 4, y_bottom - 10);
+        ctx.stroke();
+
+        // Dots
+        ctx.beginPath();
+        ctx.arc(x_L1 - 18, y_top + 25, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x_L2 - 18, y_top + 25, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // --- Labels and Arrows ---
+        // V = V0 cos wt
+        ctx.textAlign = 'left';
+        ctx.font = 'italic 22px Georgia, serif';
+        ctx.fillText('V = V', x_src, y_mid + 45);
+        ctx.font = 'italic 16px Georgia, serif';
+        ctx.fillText('0', x_src + 48, y_mid + 50);
+        ctx.font = '22px Georgia, serif';
+        ctx.fillText(' cos ωt', x_src + 58, y_mid + 45);
+        
+        // R
+        ctx.textAlign = 'center';
+        ctx.font = 'italic 24px Georgia, serif';
+        ctx.fillText('R', (x_res_start + x_res_end) / 2, y_top - 30);
+
+        // L1
+        ctx.fillText('L', x_L1 - 40, y_mid);
+        ctx.font = 'italic 16px Georgia, serif';
+        ctx.fillText('1', x_L1 - 32, y_mid + 8);
+
+        // L2
+        ctx.font = 'italic 24px Georgia, serif';
+        ctx.fillText('L', x_L2 + 40, y_mid);
+        ctx.font = 'italic 16px Georgia, serif';
+        ctx.fillText('2', x_L2 + 48, y_mid + 8);
+
+        // C
+        ctx.font = 'italic 24px Georgia, serif';
+        ctx.fillText('C', x_cap + 35, y_mid);
+
+        // i1
+        const i1_x = 175;
+        const i1_y = y_bottom;
+        ctx.font = 'italic 24px Georgia, serif';
+        ctx.fillText('i', i1_x - 5, i1_y + 25);
+        ctx.font = 'italic 16px Georgia, serif';
+        ctx.fillText('1', i1_x + 5, i1_y + 31);
+        drawArrow(ctx, i1_x + 25, i1_y, 10, 0);
+
+        // i2
+        const i2_x = 365;
+        const i2_y = y_bottom;
+        ctx.font = 'italic 24px Georgia, serif';
+        ctx.fillText('i', i2_x - 5, i2_y + 25);
+        ctx.font = 'italic 16px Georgia, serif';
+        ctx.fillText('2', i2_x + 5, i2_y + 31);
+        drawArrow(ctx, i2_x + 25, i2_y, 10, 0);
+
+        // --- Caption ---
+        ctx.font = 'bold 24px Georgia, serif';
+        ctx.fillText('Fig. 3.35', (x_L1 + x_L2) / 2, y_bottom + 80);
+    </script>
+</body>
+</html>

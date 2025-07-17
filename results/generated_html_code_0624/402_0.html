@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="550" height="350"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrowhead
+    function drawArrowhead(ctx, x, y, angle, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.lineTo(-size, size / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Helper function to draw the spring
+    function drawSpring(ctx, x1, y1, x2, y2, coils, radius) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
+        const lead = 15; // Straight part at each end
+
+        ctx.save();
+        ctx.translate(x1, y1);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        
+        // Start straight section
+        ctx.moveTo(0, 0);
+        ctx.lineTo(lead, 0);
+
+        // Coils
+        const coilLength = length - 2 * lead;
+        const step = coilLength / coils;
+        for (let i = 0; i < coils; i++) {
+            const currentX = lead + i * step;
+            // Draw one loop (like a 'C')
+            ctx.arc(currentX + step / 2, 0, radius, Math.PI * 1.4, Math.PI * 0.6, false);
+        }
+
+        // End straight section
+        // moveTo is needed because arc doesn't connect to the endpoint
+        ctx.moveTo(length - lead, 0);
+        ctx.lineTo(length, 0);
+        
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+    
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = '20px "Times New Roman"';
+
+    // Define coordinates and dimensions
+    const origin = { x: 130, y: 240 };
+    const railDist = 100;
+    const x2_pos = 180;
+    const rail_start_x = 50;
+    const rail_end_x = 500;
+    const rail_thickness = 4;
+    
+    const block_w = 50;
+    const block_h = 25;
+
+    // Block positions
+    const posA = { x: origin.x, y: origin.y - railDist };
+    const posB = { x: origin.x + x2_pos, y: origin.y };
+
+    // 1. Draw Frame (vertical bars)
+    ctx.beginPath();
+    ctx.moveTo(rail_start_x, posA.y - rail_thickness * 2);
+    ctx.lineTo(rail_start_x, posB.y + rail_thickness * 2);
+    ctx.moveTo(rail_end_x, posA.y - rail_thickness * 2);
+    ctx.lineTo(rail_end_x, posB.y + rail_thickness * 2);
+    ctx.stroke();
+
+    // 2. Draw Rails (two pairs of horizontal lines)
+    ctx.beginPath();
+    // Top rail
+    ctx.moveTo(rail_start_x, posA.y - rail_thickness / 2);
+    ctx.lineTo(rail_end_x, posA.y - rail_thickness / 2);
+    ctx.moveTo(rail_start_x, posA.y + rail_thickness / 2);
+    ctx.lineTo(rail_end_x, posA.y + rail_thickness / 2);
+    // Bottom rail
+    ctx.moveTo(rail_start_x, posB.y - rail_thickness / 2);
+    ctx.lineTo(rail_end_x, posB.y - rail_thickness / 2);
+    ctx.moveTo(rail_start_x, posB.y + rail_thickness / 2);
+    ctx.lineTo(rail_end_x, posB.y + rail_thickness / 2);
+    ctx.stroke();
+    
+    // 3. Draw Blocks A and B
+    ctx.lineWidth = 1.8;
+    // Block A
+    ctx.strokeRect(posA.x - block_w / 2, posA.y - block_h / 2, block_w, block_h);
+    ctx.beginPath();
+    ctx.moveTo(posA.x - block_w / 2, posA.y - block_h / 2);
+    ctx.lineTo(posA.x + block_w / 2, posA.y + block_h / 2);
+    ctx.stroke();
+    ctx.fillText('A', posA.x - block_w / 2 - 25, posA.y + 8);
+    
+    // Block B
+    ctx.strokeRect(posB.x - block_w / 2, posB.y - block_h / 2, block_w, block_h);
+    ctx.beginPath();
+    ctx.moveTo(posB.x - block_w / 2, posB.y);
+    ctx.lineTo(posB.x + block_w / 2, posB.y);
+    ctx.stroke();
+    ctx.fillText('B', posB.x + block_w / 2 + 10, posB.y - 15);
+    ctx.lineWidth = 1.5;
+
+    // 4. Draw Spring
+    drawSpring(ctx, posA.x, posA.y, posB.x, posB.y, 8, 7);
+
+    // 5. Draw Coordinate System
+    const axis_y = origin.y + 50;
+    const axis_start_x = origin.x - 20;
+    const axis_end_x = origin.x + x2_pos + 120;
+    ctx.beginPath();
+    ctx.moveTo(axis_start_x, axis_y);
+    ctx.lineTo(axis_end_x, axis_y);
+    ctx.stroke();
+    drawArrowhead(ctx, axis_end_x, axis_y, 0, 10);
+    ctx.fillText('x', axis_end_x + 10, axis_y + 8);
+    ctx.fillText('O', origin.x - 8, axis_y + 25);
+    
+    // 6. Draw Dashed Line from A to O
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(origin.x, posA.y + block_h / 2);
+    ctx.lineTo(origin.x, axis_y);
+    ctx.stroke();
+    ctx.restore();
+
+    // 7. Draw dimension line for x2
+    const dim_y = origin.y + 25;
+    const dim_start_x = origin.x;
+    const dim_end_x = posB.x;
+    ctx.beginPath();
+    // Main line
+    ctx.moveTo(dim_start_x, dim_y);
+    ctx.lineTo(dim_end_x, dim_y);
+    // Ticks
+    ctx.moveTo(dim_start_x, dim_y - 5);
+    ctx.lineTo(dim_start_x, dim_y + 5);
+    ctx.moveTo(dim_end_x, posB.y - block_h/2); // tick up to block B
+    ctx.lineTo(dim_end_x, dim_y + 5);
+    ctx.stroke();
+    // Arrowheads
+    drawArrowhead(ctx, dim_start_x, dim_y, Math.PI, 8);
+    drawArrowhead(ctx, dim_end_x, dim_y, 0, 8);
+    // Label
+    ctx.font = '18px "Times New Roman"';
+    ctx.fillText('x', (dim_start_x + dim_end_x) / 2 - 10, dim_y - 8);
+    ctx.font = '12px "Times New Roman"';
+    ctx.fillText('2', (dim_start_x + dim_end_x) / 2, dim_y - 6);
+    
+    // 8. Draw Caption
+    ctx.font = '20px "SimSun", "Microsoft YaHei"';
+    ctx.fillText('习题 2-37 图', canvas.width / 2 - 60, canvas.height - 20);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Semi-infinite LC Network</title>
+<style>
+    body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f8f9fa; }
+    canvas { background-color: white; border: 1px solid #ccc; }
+</style>
+</head>
+<body>
+<canvas id="circuitCanvas" width="650" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // --- Style and Configuration ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = '20px "Times New Roman", serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Drawing Functions ---
+
+    /**
+     * Draws a capacitor symbol on a horizontal line.
+     * @param {number} x1 - Start x-coordinate of the wire segment.
+     * @param {number} y - The y-coordinate of the wire.
+     * @param {number} x2 - End x-coordinate of the wire segment.
+     */
+    function drawCapacitor(x1, y, x2) {
+        const plateHeight = 25;
+        const gap = 8;
+        const midX = (x1 + x2) / 2;
+
+        ctx.beginPath();
+        // Line before capacitor
+        ctx.moveTo(x1, y);
+        ctx.lineTo(midX - gap / 2, y);
+        // First plate
+        ctx.moveTo(midX - gap / 2, y - plateHeight / 2);
+        ctx.lineTo(midX - gap / 2, y + plateHeight / 2);
+        // Second plate
+        ctx.moveTo(midX + gap / 2, y - plateHeight / 2);
+        ctx.lineTo(midX + gap / 2, y + plateHeight / 2);
+        // Line after capacitor
+        ctx.moveTo(midX + gap / 2, y);
+        ctx.lineTo(x2, y);
+        ctx.stroke();
+    }
+
+    /**
+     * Draws an inductor symbol on a vertical line.
+     * @param {number} x - The x-coordinate of the inductor.
+     * @param {number} y1 - Start y-coordinate.
+     * @param {number} y2 - End y-coordinate.
+     */
+    function drawInductor(x, y1, y2) {
+        const coils = 3;
+        const radius = 8;
+        const totalHeight = y2 - y1;
+        const leadHeight = totalHeight * 0.2;
+        const coilSectionHeight = totalHeight - 2 * leadHeight;
+        const loopHeight = coilSectionHeight / coils;
+
+        ctx.beginPath();
+        // Top lead
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, y1 + leadHeight);
+        ctx.stroke();
+
+        // Coils (as separate arcs, visually connected by line thickness)
+        for (let i = 0; i < coils; i++) {
+            ctx.beginPath();
+            ctx.arc(x, y1 + leadHeight + i * loopHeight + loopHeight / 2, radius, -Math.PI / 2, Math.PI / 2, false);
+            ctx.stroke();
+        }
+        
+        // Bottom lead
+        ctx.beginPath();
+        ctx.moveTo(x, y2 - leadHeight);
+        ctx.lineTo(x, y2);
+        ctx.stroke();
+    }
+    
+    // --- Main Drawing ---
+    
+    const yTop = 150;
+    const yBot = 280;
+    let x = 60;
+
+    // Terminals A and B
+    ctx.fillText('A', x - 25, yTop);
+    ctx.beginPath();
+    ctx.arc(x, yTop, 5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    ctx.fillText('B', x - 25, yBot);
+    ctx.beginPath();
+    ctx.arc(x, yBot, 5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Bottom rail
+    ctx.beginPath();
+    ctx.moveTo(x, yBot);
+    ctx.lineTo(canvas.width - 20, yBot);
+    ctx.stroke();
+
+    // Start of top rail
+    ctx.beginPath();
+    ctx.moveTo(x, yTop);
+    ctx.lineTo(x + 20, yTop);
+    ctx.stroke();
+    x += 20;
+
+    const capSegmentLength = 60;
+    const nodeSegmentLength = 60;
+
+    // --- Section 1 ---
+    let startX = x;
+    drawCapacitor(startX, yTop, startX + capSegmentLength);
+    ctx.fillText('C', startX + capSegmentLength / 2, yTop - 30);
+    x = startX + capSegmentLength;
+    
+    ctx.beginPath();
+    ctx.moveTo(x, yTop);
+    ctx.lineTo(x + nodeSegmentLength, yTop);
+    ctx.stroke();
+    x += nodeSegmentLength;
+    drawInductor(x, yTop, yBot);
+    ctx.fillText('L', x - 25, (yTop + yBot) / 2);
+
+    // --- Section 2 ---
+    startX = x;
+    drawCapacitor(startX, yTop, startX + capSegmentLength);
+    ctx.fillText('C', startX + capSegmentLength / 2, yTop - 30);
+    x = startX + capSegmentLength;
+
+    ctx.beginPath();
+    ctx.moveTo(x, yTop);
+    ctx.lineTo(x + nodeSegmentLength, yTop);
+    ctx.stroke();
+    x += nodeSegmentLength;
+    drawInductor(x, yTop, yBot);
+    ctx.fillText('L', x - 25, (yTop + yBot) / 2);
+
+    // --- Ellipses 1 ---
+    ctx.font = '30px "Times New Roman", serif';
+    ctx.fillText('...', x + 30, yTop);
+    ctx.font = '20px "Times New Roman", serif';
+    x += 60;
+    
+    // --- Section 3 ---
+    startX = x;
+    drawCapacitor(startX, yTop, startX + capSegmentLength);
+    ctx.fillText('C', startX + capSegmentLength / 2, yTop - 30);
+    x = startX + capSegmentLength;
+    
+    ctx.beginPath();
+    ctx.moveTo(x, yTop);
+    ctx.lineTo(x + nodeSegmentLength, yTop);
+    ctx.stroke();
+    x += nodeSegmentLength;
+    drawInductor(x, yTop, yBot);
+    ctx.fillText('L', x - 25, (yTop + yBot) / 2);
+
+    // --- Ellipses 2 & end line ---
+    ctx.beginPath();
+    ctx.moveTo(x, yTop);
+    ctx.lineTo(x + 10, yTop);
+    ctx.stroke();
+    x += 10;
+    
+    ctx.font = '30px "Times New Roman", serif';
+    ctx.fillText('...', x + 20, yTop);
+    x += 40;
+    
+    ctx.beginPath();
+    ctx.moveTo(x, yTop);
+    ctx.lineTo(x + 20, yTop);
+    ctx.stroke();
+    
+    // --- Caption ---
+    ctx.font = '24px "Times New Roman", serif';
+    ctx.fillText('Fig. 3.84', canvas.width / 2, yBot + 60);
+
+</script>
+</body>
+</html>

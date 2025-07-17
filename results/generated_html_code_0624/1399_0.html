@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Elliptical Orbit</title>
+</head>
+<body>
+<canvas id="canvas" width="550" height="420"></canvas>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const W = canvas.width;
+    const H = canvas.height;
+    // Center of the coordinate system on the canvas
+    const CX = W / 2;
+    const CY = H / 2 + 10; // Shift down slightly for top labels
+
+    // Parameters for the ellipse and points
+    const A = 220;
+    const B = 140;
+    const x1_val = -120;
+    const x2_val = 150;
+    const xM_val = 80;
+
+    // --- Helper function to draw arrow heads on a path ---
+    function drawArrowHead(x, y, angle, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0); // Tip of the arrow is at (x,y)
+        ctx.lineTo(-size, size / 3);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 3);
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // --- Main Drawing ---
+    ctx.translate(CX, CY);
+
+    // 1. Draw Axes
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // X-axis
+    ctx.beginPath();
+    ctx.moveTo(-W / 2 + 20, 0);
+    ctx.lineTo(W / 2 - 20, 0);
+    ctx.lineTo(W / 2 - 35, 5);
+    ctx.moveTo(W / 2 - 20, 0);
+    ctx.lineTo(W / 2 - 35, -5);
+    ctx.stroke();
+
+    // Y-axis
+    ctx.beginPath();
+    ctx.moveTo(0, -H / 2 + 30);
+    ctx.lineTo(0, H / 2 - 30);
+    ctx.lineTo(-5, H / 2 - 45);
+    ctx.moveTo(0, H / 2 - 30);
+    ctx.lineTo(5, H / 2 - 45);
+    ctx.stroke();
+
+    // Invert Y-axis for drawing in a standard Cartesian coordinate system
+    ctx.scale(1, -1);
+
+    // 2. Draw Ellipse
+    ctx.beginPath();
+    ctx.ellipse(0, 0, A, B, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 3. Draw Points and Dashed Lines
+    const point_radius = 3;
+    ctx.fillStyle = 'black';
+
+    // Point M
+    ctx.beginPath();
+    ctx.arc(xM_val, 0, point_radius, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Point m at x1
+    const y1_val = B * Math.sqrt(1 - Math.pow(x1_val / A, 2));
+    ctx.beginPath();
+    ctx.arc(x1_val, y1_val, point_radius, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Point at x2
+    const y2_val = B * Math.sqrt(1 - Math.pow(x2_val / A, 2));
+    ctx.beginPath();
+    ctx.arc(x2_val, y2_val, point_radius, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Dashed lines
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    // Line for x1
+    ctx.beginPath();
+    ctx.moveTo(x1_val, y1_val);
+    ctx.lineTo(x1_val, 0);
+    ctx.stroke();
+    // Line for x2
+    ctx.beginPath();
+    ctx.moveTo(x2_val, y2_val);
+    ctx.lineTo(x2_val, 0);
+    ctx.stroke();
+    ctx.restore();
+
+    // 4. Draw motion arrows on ellipse
+    ctx.lineWidth = 1.5;
+    // Parametric angles for arrow locations, chosen to match the visual representation
+    const arrow_params = [
+        Math.PI * 0.65, // Top-left
+        Math.PI * 0.30, // Top-right
+        Math.PI * 1.30, // Bottom-left
+        Math.PI * 1.70  // Bottom-right
+    ];
+
+    arrow_params.forEach(t => {
+        const pX = A * Math.cos(t);
+        const pY = B * Math.sin(t);
+        // Velocity vector for counter-clockwise motion: v = (-A*sin(t), B*cos(t))
+        const vX = -A * Math.sin(t);
+        const vY = B * Math.cos(t);
+        const tangentAngle = Math.atan2(vY, vX);
+
+        drawArrowHead(pX, pY, tangentAngle, 10);
+    });
+    
+    // 5. Draw Labels
+    // Flip back for normal text rendering
+    ctx.scale(1, -1); 
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'black';
+
+    // Axes labels
+    ctx.fillText('y', 15, -H / 2 + 40);
+    ctx.fillText('x', W / 2 - 30, 15);
+    ctx.fillText('O', -12, 12);
+
+    // Intercept labels
+    ctx.fillText('A', A, 20);
+    ctx.fillText('–A', -A, 20);
+    ctx.fillText('B', 12, -B - 12);
+    ctx.fillText('–B', -15, B + 15);
+
+    // Point labels
+    ctx.fillText('M', xM_val, 20);
+    ctx.fillText('m', x1_val - 10, -y1_val - 15);
+
+    // Coordinate labels x1, x2 with subscripts
+    ctx.font = 'italic 18px Times New Roman';
+    ctx.fillText('x', x1_val - 3, 20);
+    ctx.font = 'italic 12px Times New Roman';
+    ctx.fillText('1', x1_val + 5, 25);
+    
+    ctx.font = 'italic 18px Times New Roman';
+    ctx.fillText('x', x2_val - 3, 20);
+    ctx.font = 'italic 12px Times New Roman';
+    ctx.fillText('2', x2_val + 5, 25);
+
+    // Figure caption
+    ctx.font = '16px "SimSun"';
+    ctx.fillText('图 1', 0, CY - 20);
+
+</script>
+</body>
+</html>

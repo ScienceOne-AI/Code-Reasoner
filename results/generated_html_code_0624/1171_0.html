@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical Path Diagram</title>
+</head>
+<body>
+    <canvas id="opticalCanvas" width="600" height="400" style="border:1px solid #d3d3d3;"></canvas>
+    <script>
+        const canvas = document.getElementById('opticalCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 8; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        // Helper function to draw a dashed line
+        function drawDashedLine(ctx, x1, y1, x2, y2, dashLen) {
+            dashLen = dashLen === undefined ? 5 : dashLen;
+            ctx.beginPath();
+            ctx.setLineDash([dashLen, dashLen]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset to solid lines
+        }
+
+        // --- Drawing Parameters ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '18px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Geometric Parameters ---
+        const y0 = 200; // y-coordinate of the optical axis
+        const x_start = 50; // x-coordinate for the start of the setup
+        const D_pixels = 120; // Diameter of the source in pixels
+        const source_width = 15; // Thickness of the source rectangle
+        const x_source_front = x_start + source_width;
+        const fx = 480; // x-coordinate of the focus point
+
+        // --- Draw z-axis ---
+        ctx.beginPath();
+        ctx.moveTo(x_source_front, y0);
+        ctx.lineTo(580, y0);
+        ctx.stroke();
+        drawArrow(ctx, 570, y0, 580, y0);
+        ctx.fillText('z', 570, y0 + 20);
+        
+        // --- Draw Source S ---
+        ctx.fillStyle = '#cccccc'; // Light gray
+        ctx.fillRect(x_start, y0 - D_pixels / 2, source_width, D_pixels);
+        ctx.strokeStyle = 'black';
+        ctx.strokeRect(x_start, y0 - D_pixels / 2, source_width, D_pixels);
+        ctx.fillStyle = 'black';
+        ctx.fillText('S', x_start + source_width / 2, y0 + D_pixels / 2 + 25);
+
+        // --- Draw Diameter D ---
+        const x_D_arrow = x_start - 20;
+        drawArrow(ctx, x_D_arrow, y0 + D_pixels / 2, x_D_arrow, y0 - D_pixels / 2);
+        drawArrow(ctx, x_D_arrow, y0 - D_pixels / 2, x_D_arrow, y0 + D_pixels / 2);
+        ctx.fillText('D', x_D_arrow - 20, y0);
+
+        // --- Draw Converging Beam ---
+        ctx.beginPath();
+        ctx.moveTo(x_source_front, y0 - D_pixels / 2);
+        ctx.lineTo(fx, y0);
+        ctx.lineTo(x_source_front, y0 + D_pixels / 2);
+        ctx.stroke();
+
+        // --- Draw Angle 2θ ---
+        const x_arc_pos = 150;
+        const half_D = D_pixels / 2;
+        const focus_dist = fx - x_source_front;
+        const theta = Math.atan(half_D / focus_dist);
+        const r_arc = fx - x_arc_pos;
+        
+        ctx.beginPath();
+        ctx.arc(fx, y0, r_arc, Math.PI - theta, Math.PI + theta);
+        ctx.stroke();
+
+        const y_arc_top = y0 - r_arc * Math.sin(theta);
+        drawArrow(ctx, x_arc_pos, y_arc_top - 15, x_arc_pos, y_arc_top);
+        ctx.fillText('2θ', x_arc_pos, y_arc_top - 35);
+        
+        // --- Draw small angle arrows ---
+        const x_theta_arrow = 220;
+        const y_on_beam_top = y0 - half_D * (fx - x_theta_arrow) / focus_dist;
+        const y_on_beam_bot = y0 + half_D * (fx - x_theta_arrow) / focus_dist;
+        drawArrow(ctx, x_theta_arrow, y_on_beam_top - 20, x_theta_arrow, y_on_beam_top);
+        drawArrow(ctx, x_theta_arrow, y_on_beam_bot + 20, x_theta_arrow, y_on_beam_bot);
+
+        // --- Draw Longitudinal Coherence Length Lc ---
+        const Lc_pixels = 70;
+        const x_lc1 = fx - Lc_pixels / 2;
+        const x_lc2 = fx + Lc_pixels / 2;
+        const y_dashed_half_height = 25;
+
+        drawDashedLine(ctx, x_lc1, y0 - y_dashed_half_height, x_lc1, y0 + y_dashed_half_height, 5);
+        drawDashedLine(ctx, x_lc2, y0 - y_dashed_half_height, x_lc2, y0 + y_dashed_half_height, 5);
+        
+        const y_lc_arrow = y0 + 35;
+        drawArrow(ctx, x_lc1, y_lc_arrow, x_lc2, y_lc_arrow);
+        drawArrow(ctx, x_lc2, y_lc_arrow, x_lc1, y_lc_arrow);
+        
+        // Label for Lc with subscript
+        ctx.font = '18px Times New Roman';
+        ctx.fillText('L', fx - 5, y_lc_arrow + 15);
+        ctx.font = '14px Times New Roman';
+        ctx.fillText('c', fx + 4, y_lc_arrow + 18);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PV Diagram</title>
+</head>
+<body>
+    <canvas id="pvDiagramCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('pvDiagramCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style and parameters
+        const margin = 70;
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const plotWidth = canvasWidth - 1.5 * margin;
+        const plotHeight = canvasHeight - 1.5 * margin;
+        const originX = margin;
+        const originY = canvasHeight - margin;
+
+        const pMax = 2.5; // Virtual units for pressure axis
+        const vMax = 2.5; // Virtual units for volume axis
+
+        // Scaling factors
+        const scaleX = plotWidth / vMax;
+        const scaleY = plotHeight / pMax;
+
+        // Helper function to convert physics coordinates to canvas coordinates
+        function toCanvasX(v) {
+            return originX + v * scaleX;
+        }
+
+        function toCanvasY(p) {
+            return originY - p * scaleY;
+        }
+
+        // Helper function to draw an arrow head
+        function drawArrowHead(x, y, angle) {
+            const arrowSize = 10;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowSize, -arrowSize / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowSize, arrowSize / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        // Helper function to draw an arrow in the middle of a line segment
+        function drawPathArrow(x1, y1, x2, y2) {
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const arrowSize = 12;
+            ctx.save();
+            ctx.translate(midX, midY);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(-arrowSize/2, 0);
+            ctx.lineTo(arrowSize/2, 0);
+            ctx.moveTo(arrowSize/2, 0);
+            ctx.lineTo(arrowSize/2 - 6, -4);
+            ctx.moveTo(arrowSize/2, 0);
+            ctx.lineTo(arrowSize/2 - 6, 4);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+        // --- Draw Axes ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 20px Arial';
+
+        // P-axis (vertical)
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(originX, originY - plotHeight - 10);
+        ctx.stroke();
+        drawArrowHead(originX, originY - plotHeight - 10, -Math.PI / 2);
+        ctx.fillText('P', originX - 30, originY - plotHeight);
+
+        // V-axis (horizontal)
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(originX + plotWidth + 10, originY);
+        ctx.stroke();
+        drawArrowHead(originX + plotWidth + 10, originY, 0);
+        ctx.fillText('V', originX + plotWidth - 10, originY + 30);
+
+        // --- Define cycle points ---
+        const v0 = 1;
+        const v20 = 2;
+        const p0 = 1;
+        const p20 = 2;
+
+        const Ax = toCanvasX(v0);
+        const Ay = toCanvasY(p0);
+        const Bx = toCanvasX(v20);
+        const By = toCanvasY(p0);
+        const Cx = toCanvasX(v20);
+        const Cy = toCanvasY(p20);
+        const Dx = toCanvasX(v0);
+        const Dy = toCanvasY(p20);
+        
+        // --- Draw dashed lines and labels ---
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        ctx.font = '18px Arial';
+        const subZero = '\u2080';
+
+        // Ticks and labels on V-axis
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(Ax, originY);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('V' + subZero, Ax, originY + 5);
+
+        ctx.beginPath();
+        ctx.moveTo(Bx, By);
+        ctx.lineTo(Bx, originY);
+        ctx.stroke();
+        ctx.fillText('2V' + subZero, Bx, originY + 5);
+
+        // Ticks and labels on P-axis
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(originX, Ay);
+        ctx.stroke();
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('P' + subZero, originX - 10, Ay);
+
+        ctx.beginPath();
+        ctx.moveTo(Dx, Dy);
+        ctx.lineTo(originX, Dy);
+        ctx.stroke();
+        ctx.fillText('2P' + subZero, originX - 10, Dy);
+
+        ctx.setLineDash([]); // Reset to solid lines
+
+        // --- Draw the thermodynamic cycle ---
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(Bx, By);
+        ctx.lineTo(Cx, Cy);
+        ctx.lineTo(Dx, Dy);
+        ctx.closePath();
+        ctx.stroke();
+
+        // --- Draw arrows on the cycle path ---
+        ctx.lineWidth = 1.5;
+        drawPathArrow(Ax, Ay, Bx, By); // A -> B
+        drawPathArrow(Bx, By, Cx, Cy); // B -> C
+        drawPathArrow(Cx, Cy, Dx, Dy); // C -> D
+        drawPathArrow(Dx, Dy, Ax, Ay); // D -> A
+
+        // --- Draw and label the points ---
+        const pointRadius = 4;
+        ctx.fillStyle = 'black';
+        ctx.beginPath(); ctx.arc(Ax, Ay, pointRadius, 0, 2 * Math.PI); ctx.fill();
+        ctx.beginPath(); ctx.arc(Bx, By, pointRadius, 0, 2 * Math.PI); ctx.fill();
+        ctx.beginPath(); ctx.arc(Cx, Cy, pointRadius, 0, 2 * Math.PI); ctx.fill();
+        ctx.beginPath(); ctx.arc(Dx, Dy, pointRadius, 0, 2 * Math.PI); ctx.fill();
+        
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('A', Ax - 10, Ay + 5);
+        ctx.textBaseline = 'top';
+        ctx.textAlign = 'center';
+        ctx.fillText('B', Bx + 10, By + 5);
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('C', Cx + 10, Cy - 5);
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('D', Dx - 10, Cy - 5);
+
+    </script>
+</body>
+</html>

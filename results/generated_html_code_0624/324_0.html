@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Logic Gate Symbols</title>
+</head>
+<body>
+<canvas id="myCanvas" width="600" height="420"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style ---
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 3.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.font = 'bold 24px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Gate Parameters ---
+    const gateWidth = 50;
+    const gateHeight = 40;
+    const lineLen = 30;
+    const bubbleRadius = 4;
+    const inputSpacing = gateHeight / 2; // vertical distance between inputs
+
+    // --- Generic Gate Drawing Function ---
+    function drawGate(x_center, y_center, shape, inputBubbled, outputBubbled) {
+        const gw = gateWidth;
+        const gh = gateHeight;
+
+        // --- Draw Body ---
+        ctx.beginPath();
+        if (shape === 'AND') {
+            const r = gh / 2;
+            const rect_w = gw - r;
+            const rect_x_start = x_center - gw / 2;
+            const arc_cx = rect_x_start + rect_w;
+            
+            ctx.moveTo(rect_x_start, y_center - r);
+            ctx.lineTo(arc_cx, y_center - r);
+            ctx.arc(arc_cx, y_center, r, -Math.PI / 2, Math.PI / 2, false);
+            ctx.lineTo(rect_x_start, y_center + r);
+            ctx.closePath();
+        } else { // OR shape
+            const x_start = x_center - gw / 2;
+            const x_end = x_center + gw / 2;
+            const y_top = y_center - gh / 2;
+            const y_bot = y_center + gh / 2;
+            const back_indent = gw / 4;
+            
+            ctx.moveTo(x_start, y_top);
+            ctx.quadraticCurveTo(x_start + back_indent, y_center, x_start, y_bot);
+            ctx.quadraticCurveTo(x_center, y_bot, x_end, y_center);
+            ctx.quadraticCurveTo(x_center, y_top, x_start, y_top);
+        }
+        // Fill the shape with white to hide lines passing through
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+
+        // --- Draw Inputs ---
+        const input_y1 = y_center - inputSpacing / 2;
+        const input_y2 = y_center + inputSpacing / 2;
+        let input_line_end_x = x_center - gw / 2;
+        
+        if (inputBubbled) {
+            const bubble_cx = input_line_end_x - bubbleRadius;
+            const line_start_x = bubble_cx - bubbleRadius - lineLen;
+            
+            // Draw lines first
+            ctx.beginPath();
+            ctx.moveTo(line_start_x, input_y1);
+            ctx.lineTo(bubble_cx - bubbleRadius, input_y1);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(line_start_x, input_y2);
+            ctx.lineTo(bubble_cx - bubbleRadius, input_y2);
+            ctx.stroke();
+            
+            // Draw bubbles on top
+            ctx.beginPath();
+            ctx.arc(bubble_cx, input_y1, bubbleRadius, 0, 2 * Math.PI);
+            ctx.fill(); // fill with white
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(bubble_cx, input_y2, bubbleRadius, 0, 2 * Math.PI);
+            ctx.fill(); // fill with white
+            ctx.stroke();
+            
+        } else {
+            const line_start_x = input_line_end_x - lineLen;
+            
+            ctx.beginPath();
+            ctx.moveTo(line_start_x, input_y1);
+            ctx.lineTo(input_line_end_x, input_y1);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(line_start_x, input_y2);
+            ctx.lineTo(input_line_end_x, input_y2);
+            ctx.stroke();
+        }
+        
+        // --- Draw Output ---
+        const output_line_start_x = x_center + gw / 2;
+        
+        if (outputBubbled) {
+            const bubble_cx = output_line_start_x + bubbleRadius;
+            const line_start_x = bubble_cx + bubbleRadius;
+            
+            // Draw line first
+            ctx.beginPath();
+            ctx.moveTo(line_start_x, y_center);
+            ctx.lineTo(line_start_x + lineLen, y_center);
+            ctx.stroke();
+            
+            // Draw bubble on top
+            ctx.beginPath();
+            ctx.arc(bubble_cx, y_center, bubbleRadius, 0, 2 * Math.PI);
+            ctx.fill(); // fill with white
+            ctx.stroke();
+        } else {
+            const line_start_x = output_line_start_x;
+            
+            ctx.beginPath();
+            ctx.moveTo(line_start_x, y_center);
+            ctx.lineTo(line_start_x + lineLen, y_center);
+            ctx.stroke();
+        }
+    }
+
+    // --- Main Drawing Logic ---
+    const col1_x = 130;
+    const col2_x = 470;
+    const row_y = [80, 160, 240, 320];
+    const label_col1_x = 40;
+    const label_col2_x = 380;
+
+    // Draw gates
+    // Column 1
+    drawGate(col1_x, row_y[0], 'AND', false, false); // 1. AND
+    drawGate(col1_x, row_y[1], 'AND', false, true);  // 2. NAND
+    drawGate(col1_x, row_y[2], 'AND', true, false);  // 3. NOR (Bubbled AND)
+    drawGate(col1_x, row_y[3], 'AND', true, true);   // 4. OR (Bubbled NAND)
+
+    // Column 2
+    drawGate(col2_x, row_y[0], 'OR', false, true);   // 5. NOR
+    drawGate(col2_x, row_y[1], 'OR', false, false);  // 6. OR
+    drawGate(col2_x, row_y[2], 'OR', true, true);    // 7. AND (Bubbled NOR)
+    drawGate(col2_x, row_y[3], 'OR', true, false);   // 8. NAND (Bubbled OR)
+
+    // Draw labels
+    ctx.fillStyle = 'black'; // Set fill style back to black for text
+    ctx.fillText('1', label_col1_x, row_y[0]);
+    ctx.fillText('2', label_col1_x, row_y[1]);
+    ctx.fillText('3', label_col1_x, row_y[2]);
+    ctx.fillText('4', label_col1_x, row_y[3]);
+
+    ctx.fillText('5', label_col2_x, row_y[0]);
+    ctx.fillText('6', label_col2_x, row_y[1]);
+    ctx.fillText('7', label_col2_x, row_y[2]);
+    ctx.fillText('8', label_col2_x, row_y[3]);
+
+    // Figure Caption
+    ctx.fillText('Fig. 3.66', canvas.width / 2, 390);
+
+</script>
+</body>
+</html>

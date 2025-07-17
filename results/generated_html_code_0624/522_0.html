@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamic p-V Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="thermoCanvas" width="500" height="480"></canvas>
+    <script>
+        const canvas = document.getElementById('thermoCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const margin = { top: 40, right: 40, bottom: 60, left: 60 };
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const graphWidth = canvasWidth - margin.left - margin.right;
+        const graphHeight = canvasHeight - margin.top - margin.bottom;
+
+        // Graph coordinates to canvas coordinates transformation
+        const V_max = 3.8;
+        const p_max = 3.8;
+        
+        function tX(V) {
+            return margin.left + (V / V_max) * graphWidth;
+        }
+
+        function tY(p) {
+            return canvasHeight - margin.bottom - (p / p_max) * graphHeight;
+        }
+
+        // --- Drawing Functions ---
+
+        // Draw axes
+        function drawAxes() {
+            ctx.beginPath();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.5;
+
+            // p-axis (vertical)
+            ctx.moveTo(tX(0), tY(0));
+            ctx.lineTo(tX(0), margin.top - 15);
+            // Arrowhead for p-axis
+            ctx.moveTo(tX(0), margin.top - 15);
+            ctx.lineTo(tX(0) - 5, margin.top - 5);
+            ctx.moveTo(tX(0), margin.top - 15);
+            ctx.lineTo(tX(0) + 5, margin.top - 5);
+
+            // V-axis (horizontal)
+            ctx.moveTo(tX(0), tY(0));
+            ctx.lineTo(canvasWidth - margin.right + 15, tY(0));
+            // Arrowhead for V-axis
+            ctx.moveTo(canvasWidth - margin.right + 15, tY(0));
+            ctx.lineTo(canvasWidth - margin.right + 5, tY(0) - 5);
+            ctx.moveTo(canvasWidth - margin.right + 15, tY(0));
+            ctx.lineTo(canvasWidth - margin.right + 5, tY(0) + 5);
+
+            ctx.stroke();
+        }
+
+        // Draw labels and ticks
+        function drawLabelsAndTicks() {
+            ctx.fillStyle = '#000';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Origin Label
+            ctx.fillText('O', tX(0) - 15, tY(0) + 15);
+
+            // Ticks and labels for V-axis
+            for (let i = 1; i <= 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(tX(i), tY(0));
+                ctx.lineTo(tX(i), tY(0) + 5);
+                ctx.stroke();
+                ctx.fillText(i.toString(), tX(i), tY(0) + 20);
+            }
+
+            // Ticks and labels for p-axis
+            ctx.textAlign = 'right';
+            for (let i = 1; i <= 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(tX(0), tY(i));
+                ctx.lineTo(tX(0) - 5, tY(i));
+                ctx.stroke();
+                ctx.fillText(i.toString(), tX(0) - 15, tY(i));
+            }
+            
+            // Axis titles
+            ctx.textAlign = 'center';
+            ctx.font = 'italic 18px Arial';
+            ctx.fillText('p/(10⁵ N·m⁻²)', tX(0), margin.top - 30);
+            ctx.fillText('V/(10⁻³ m³)', tX(V_max / 2), tY(0) + 45);
+            
+            // Figure caption
+            ctx.font = '18px Arial';
+            ctx.fillText('热图 2.21.1', canvasWidth/2, canvasHeight - 20);
+        }
+        
+        // Draw the circular process
+        function drawCycle() {
+            const centerX_V = 2;
+            const centerY_p = 2;
+            const radius_V = 1;
+            const radius_p = 1;
+
+            const cx = tX(centerX_V);
+            const cy = tY(centerY_p);
+            const rx = (radius_V / V_max) * graphWidth;
+            const ry = (radius_p / p_max) * graphHeight;
+
+            // Dashed lines
+            ctx.beginPath();
+            ctx.setLineDash([4, 4]);
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 1;
+            // From points to axes
+            ctx.moveTo(tX(1), tY(0)); ctx.lineTo(tX(1), tY(2)); ctx.lineTo(tX(0), tY(2));
+            ctx.moveTo(tX(2), tY(0)); ctx.lineTo(tX(2), tY(3)); ctx.lineTo(tX(0), tY(3));
+            ctx.moveTo(tX(3), tY(0)); ctx.lineTo(tX(3), tY(2));
+            ctx.moveTo(tX(0), tY(1)); ctx.lineTo(tX(2), tY(1));
+            // Center cross
+            ctx.moveTo(tX(1), tY(2)); ctx.lineTo(tX(3), tY(2));
+            ctx.moveTo(tX(2), tY(1)); ctx.lineTo(tX(2), tY(3));
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // The circle
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#000';
+            ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Point labels
+            ctx.font = 'italic bold 20px Arial';
+            ctx.fillStyle = '#000';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('A', tX(1) - 15, tY(2));
+            ctx.fillText('B', tX(2), tY(3) - 15);
+            ctx.fillText('C', tX(3) + 15, tY(2));
+            ctx.fillText('D', tX(2), tY(1) + 15);
+
+            // Directional arrows on the cycle
+            drawArrowOnEllipse(cx, cy, rx, ry, 135 * Math.PI / 180, true); // A->B arc
+            drawArrowOnEllipse(cx, cy, rx, ry, -45 * Math.PI / 180, true); // C->D arc
+        }
+
+        // Helper to draw an arrow on the ellipse
+        function drawArrowOnEllipse(cx, cy, rx, ry, positionAngle, clockwise) {
+            // Position on ellipse
+            const x = cx + rx * Math.cos(positionAngle);
+            const y = cy - ry * Math.sin(positionAngle); // y is inverted in math coords vs canvas
+
+            // Tangent vector direction
+            // For an ellipse x=rx*cos(t), y=ry*sin(t), tangent is (-rx*sin(t), ry*cos(t)) [CCW]
+            // We want direction of motion in canvas space (y-down)
+            // Clockwise motion on p-V diagram
+            // From A(pi) to B(pi/2), from C(0) to D(3pi/2) - standard math angles
+            // My tX,tY mapping inverts Y, so ellipse is (cx+rx*cos, cy-ry*sin)
+            // Let's use a simpler geometric approach for tangent angle
+            let tangentAngle;
+            if (clockwise) {
+                // Tangent is perpendicular to radius vector, rotated -90 degrees
+                tangentAngle = positionAngle - Math.PI / 2;
+            } else {
+                tangentAngle = positionAngle + Math.PI / 2;
+            }
+            
+            // Adjust for ellipse aspect ratio
+            const dx = -rx * Math.sin(positionAngle);
+            const dy = -ry * Math.cos(positionAngle); // y-down canvas
+            const finalAngle = Math.atan2(dy, dx);
+
+
+            const arrowSize = 8;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(finalAngle);
+            ctx.beginPath();
+            ctx.moveTo(arrowSize, 0);
+            ctx.lineTo(0, -arrowSize/2);
+            ctx.lineTo(0, arrowSize/2);
+            ctx.closePath();
+            ctx.fillStyle = '#000';
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // --- Main Execution ---
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        drawAxes();
+        drawLabelsAndTicks();
+        drawCycle();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Coupled Oscillator System</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      background-color: #ffffff;
+      border: 1px solid #cccccc;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="physicsCanvas" width="650" height="350"></canvas>
+  <script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Drawing Parameters ---
+    const yCenter = 150;
+    const massRadius = 15;
+    const massX1 = 125;
+    const massX2 = 325;
+    const massX3 = 525;
+    const springCoils = 8;
+    const springAmplitude = 12;
+
+    /**
+     * Draws a spring using a series of quadratic curves.
+     * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+     * @param {number} startX - The starting x-coordinate.
+     * @param {number} startY - The starting y-coordinate.
+     * @param {number} endX - The ending x-coordinate.
+     * @param {number} endY - The ending y-coordinate.
+     * @param {number} numCoils - The number of coils in the spring.
+     * @param {number} amplitude - The height of the spring coils.
+     */
+    function drawSpring(ctx, startX, startY, endX, endY, numCoils, amplitude) {
+      const springLength = endX - startX;
+      const segments = numCoils * 2; // Each coil has a top and bottom part
+      const segmentWidth = springLength / segments;
+
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+
+      let currentX = startX;
+      for (let i = 0; i < segments; i++) {
+        const controlPointY = startY + (i % 2 === 0 ? -amplitude : amplitude);
+        const endSegmentX = currentX + segmentWidth;
+        const controlPointX = currentX + segmentWidth / 2;
+        
+        ctx.quadraticCurveTo(controlPointX, controlPointY, endSegmentX, startY);
+        currentX = endSegmentX;
+      }
+      ctx.stroke();
+    }
+
+    /**
+     * Draws a mass (circle) with its labels.
+     * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+     * @param {number} x - The center x-coordinate of the mass.
+     * @param {number} y - The center y-coordinate of the mass.
+     * @param {number} radius - The radius of the mass.
+     * @param {string} massLabel - The label for the mass (e.g., 'm', 'M').
+     * @param {string} posLabel - The label for the position (e.g., 'x1').
+     */
+    function drawMass(ctx, x, y, radius, massLabel, posLabel) {
+      // Draw the circle for the mass
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      // Draw the mass label (above the mass)
+      ctx.font = "italic 22px 'Times New Roman'";
+      ctx.fillStyle = 'black';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(massLabel, x, y - radius - 5);
+
+      // Draw the position label (below the mass) with subscript
+      const baseChar = posLabel.substring(0, 1);
+      const subChar = posLabel.substring(1);
+
+      // Measure text widths to center the combined label
+      ctx.font = "italic 20px 'Times New Roman'";
+      const baseWidth = ctx.measureText(baseChar).width;
+      
+      const subFont = "italic 14px 'Times New Roman'";
+      ctx.font = subFont;
+      const subWidth = ctx.measureText(subChar).width;
+
+      const totalWidth = baseWidth + subWidth * 0.8; // Adjust for subscript spacing
+      const startX = x - totalWidth / 2;
+
+      // Draw the base character
+      ctx.font = "italic 20px 'Times New Roman'";
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(baseChar, startX, y + radius + 5);
+
+      // Draw the subscript character
+      ctx.font = subFont;
+      ctx.fillText(subChar, startX + baseWidth, y + radius + 5 + 4);
+    }
+
+    // --- Main Drawing Logic ---
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+
+    // Draw the two springs
+    drawSpring(ctx, massX1 + massRadius, yCenter, massX2 - massRadius, yCenter, springCoils, springAmplitude);
+    drawSpring(ctx, massX2 + massRadius, yCenter, massX3 - massRadius, yCenter, springCoils, springAmplitude);
+
+    // Draw the three masses
+    drawMass(ctx, massX1, yCenter, massRadius, 'm', 'x1');
+    drawMass(ctx, massX2, yCenter, massRadius, 'M', 'x2');
+    drawMass(ctx, massX3, yCenter, massRadius, 'm', 'x3');
+    
+    // Draw the caption
+    ctx.font = "24px 'SimSun', 'STSong'"; // Use common Chinese fonts
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('力图 7.24.1', canvas.width / 2, canvas.height - 40);
+
+  </script>
+</body>
+</html>

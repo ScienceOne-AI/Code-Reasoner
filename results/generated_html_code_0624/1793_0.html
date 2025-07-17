@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Piston in Cylinder</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Clear canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // --- Helper function to draw the cylinder ---
+        function drawCylinder(x_inner, y_top) {
+            const inner_w = 150;
+            const inner_h = 250;
+            const wall_thick = 15;
+            const bottom_thick = 20;
+            const outer_w = inner_w + 2 * wall_thick;
+            const outer_h = inner_h + bottom_thick;
+            const x_outer = x_inner - wall_thick;
+            
+            // Draw grey background shape
+            ctx.fillStyle = '#D3D3D3'; // lightgray
+            ctx.fillRect(x_outer, y_top, outer_w, outer_h);
+
+            // Draw white inner space (void)
+            ctx.fillStyle = 'white';
+            ctx.fillRect(x_inner, y_top, inner_w, inner_h);
+            
+            // Draw black lines for the inner cylinder walls
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x_inner, y_top + inner_h); // bottom-left
+            ctx.lineTo(x_inner, y_top);          // up left side
+            // No top line
+            ctx.moveTo(x_inner + inner_w, y_top); // top-right
+            ctx.lineTo(x_inner + inner_w, y_top + inner_h); // down right side
+            ctx.stroke();
+        }
+
+        // --- Helper function to draw the piston ---
+        function drawPiston(x, y) {
+            const w = 150;
+            const h = 40;
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeRect(x, y, w, h);
+
+            // Draw piston rings
+            ctx.lineWidth = 1;
+            const num_rings = 3;
+            const ring_spacing = 6;
+            const top_margin = 12;
+            for (let i = 0; i < num_rings; i++) {
+                const ring_y = y + top_margin + i * ring_spacing;
+                ctx.beginPath();
+                ctx.moveTo(x + 2, ring_y);
+                ctx.lineTo(x + w - 2, ring_y);
+                ctx.stroke();
+            }
+        }
+
+        // --- Helper function to draw a label with a pointer line ---
+        function drawLabel(text, textX, textY, pointToX, pointToY, align) {
+            ctx.font = '18px Arial';
+            ctx.fillStyle = 'black';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1;
+            ctx.textAlign = align;
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, textX, textY);
+
+            ctx.beginPath();
+            ctx.moveTo(textX, textY);
+            ctx.lineTo(pointToX, pointToY);
+            ctx.stroke();
+        }
+
+        // --- Helper function for a vertical double-headed arrow ---
+        function drawDoubleArrow(x, y1, y2) {
+            const headlen = 8;
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            // Line
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, y2);
+            // Arrowhead at top (y1)
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x - headlen / 2, y1 + headlen);
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x + headlen / 2, y1 + headlen);
+            // Arrowhead at bottom (y2)
+            ctx.moveTo(x, y2);
+            ctx.lineTo(x - headlen / 2, y2 - headlen);
+            ctx.moveTo(x, y2);
+            ctx.lineTo(x + headlen / 2, y2 - headlen);
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+
+        // Define positions and dimensions
+        const y_top = 50;
+        const left_cylinder_x_inner = 100;
+        const right_cylinder_x_inner = 500;
+        const inner_w = 150;
+        const wall_thick = 15;
+        const piston_h = 40;
+
+        // Piston positions
+        const piston_max_y = y_top + 40;
+        const travel_dist_pixels = 160;
+        const piston_min_y = piston_max_y + travel_dist_pixels;
+
+        // Draw left diagram
+        drawCylinder(left_cylinder_x_inner, y_top);
+        drawPiston(left_cylinder_x_inner, piston_max_y);
+        ctx.fillStyle = 'black';
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('maximum height', left_cylinder_x_inner + inner_w / 2, 420);
+
+        // Draw right diagram
+        drawCylinder(right_cylinder_x_inner, y_top);
+        drawPiston(right_cylinder_x_inner, piston_min_y);
+        ctx.fillText('minimum height', right_cylinder_x_inner + inner_w / 2, 420);
+
+        // Draw labels
+        const left_label_x = 70;
+        drawLabel('cylinder', left_label_x, y_top + 40, left_cylinder_x_inner - wall_thick, y_top + 40, 'right');
+        drawLabel('piston', left_label_x, piston_max_y + piston_h / 2, left_cylinder_x_inner, piston_max_y + piston_h / 2, 'right');
+        
+        const right_label_x = right_cylinder_x_inner + inner_w + 30;
+        drawLabel('cylinder', right_label_x, y_top + 40, right_cylinder_x_inner + inner_w + wall_thick, y_top + 40, 'left');
+        drawLabel('piston', right_label_x, piston_min_y + piston_h / 2, right_cylinder_x_inner + inner_w, piston_min_y + piston_h / 2, 'left');
+
+        // Draw dimensioning between the diagrams
+        const dim_line_x = left_cylinder_x_inner + inner_w + (right_cylinder_x_inner - (left_cylinder_x_inner + inner_w)) / 2;
+        
+        // Dashed lines
+        ctx.save();
+        ctx.setLineDash([5, 3]);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(left_cylinder_x_inner + inner_w, piston_max_y);
+        ctx.lineTo(dim_line_x, piston_max_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(right_cylinder_x_inner, piston_min_y);
+        ctx.lineTo(dim_line_x, piston_min_y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Vertical double arrow
+        drawDoubleArrow(dim_line_x, piston_max_y, piston_min_y);
+        
+        // Dimension text
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('9.8 cm', dim_line_x + 15, (piston_max_y + piston_min_y) / 2);
+        
+        // Figure caption
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText('Fig. 3.1', canvas.width / 2, 470);
+
+    </script>
+</body>
+</html>

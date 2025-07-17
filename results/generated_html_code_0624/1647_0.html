@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style and parameters
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const cx1 = 180;
+        const cx2 = 420;
+        const cy = 190;
+        const R = 80;
+        const axleRadius = 4;
+        const axleBoxSize = 4; // half-size of the central square
+
+        // --- Helper Function to draw a wheel ---
+        function drawWheel(x, y, radius) {
+            // Rim
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Spokes (at 45, 135, 225, 315 degrees)
+            for (let i = 0; i < 4; i++) {
+                const angle = Math.PI / 4 + i * Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + radius * Math.cos(angle), y + radius * Math.sin(angle));
+                ctx.stroke();
+            }
+        }
+        
+        // --- Helper Function to draw the magnetic field symbol ---
+        function drawBField(x, y) {
+            const r = 10;
+            ctx.save();
+            ctx.font = 'bold 20px Arial';
+            // Circle
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, 2 * Math.PI);
+            ctx.stroke();
+            // Cross
+            ctx.beginPath();
+            ctx.moveTo(x - r / Math.sqrt(2), y - r / Math.sqrt(2));
+            ctx.lineTo(x + r / Math.sqrt(2), y + r / Math.sqrt(2));
+            ctx.moveTo(x + r / Math.sqrt(2), y - r / Math.sqrt(2));
+            ctx.lineTo(x - r / Math.sqrt(2), y + r / Math.sqrt(2));
+            ctx.stroke();
+            // Label 'B'
+            ctx.fillText('B', x + r + 12, y);
+            ctx.restore();
+        }
+
+        // 1. Draw the two wheels
+        drawWheel(cx1, cy, R);
+        drawWheel(cx2, cy, R);
+        ctx.font = '20px Arial';
+        ctx.fillText('1', cx1, cy + R + 20);
+        ctx.fillText('2', cx2, cy + R + 20);
+
+        // 2. Draw the connections
+        // Axle connection wire
+        ctx.beginPath();
+        ctx.moveTo(cx1, cy);
+        ctx.lineTo(cx2, cy);
+        ctx.stroke();
+        
+        // Axle details (squares and white circles)
+        // Shaded squares at axles
+        ctx.fillRect(cx1 - axleBoxSize, cy - axleBoxSize, 2 * axleBoxSize, 2 * axleBoxSize);
+        ctx.fillRect(cx2 - axleBoxSize, cy - axleBoxSize, 2 * axleBoxSize, 2 * axleBoxSize);
+        // Axle circles (with white fill to appear hollow)
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(cx1, cy, axleRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx2, cy, axleRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'black'; // Reset fill style
+
+        // Top wire with brushes
+        const y_rim_top = cy - R;
+        const y_wire_top = y_rim_top - 15;
+        const brush_width = 10;
+        // Brushes
+        ctx.beginPath();
+        ctx.moveTo(cx1 - brush_width, y_wire_top);
+        ctx.quadraticCurveTo(cx1, y_rim_top, cx1 + brush_width, y_wire_top);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(cx2 - brush_width, y_wire_top);
+        ctx.quadraticCurveTo(cx2, y_rim_top, cx2 + brush_width, y_wire_top);
+        ctx.stroke();
+        
+        // Connecting wire
+        ctx.beginPath();
+        ctx.moveTo(cx1 + brush_width, y_wire_top);
+        ctx.lineTo(cx2 - brush_width, y_wire_top);
+        ctx.stroke();
+
+        // 3. Draw symbols and labels
+        // Angular velocity ω₁
+        const omega_x = cx1 - R - 25;
+        const omega_y = cy;
+        const omega_r = 18;
+        ctx.beginPath();
+        ctx.arc(omega_x, omega_y, omega_r, -Math.PI / 2.2, Math.PI / 2.2);
+        ctx.stroke();
+        // Arrow head for ω₁
+        const arrow_angle = Math.PI / 2.2;
+        const arrow_end_x = omega_x + omega_r * Math.cos(arrow_angle);
+        const arrow_end_y = omega_y + omega_r * Math.sin(arrow_angle);
+        ctx.beginPath();
+        ctx.moveTo(arrow_end_x, arrow_end_y);
+        ctx.lineTo(arrow_end_x - 8, arrow_end_y - 2);
+        ctx.lineTo(arrow_end_x - 3, arrow_end_y - 8);
+        ctx.closePath();
+        ctx.fill();
+        // Text for ω₁
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText('ω', omega_x - 3, omega_y);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('1', omega_x + 7, omega_y + 5);
+        ctx.font = '20px Arial'; // Reset font
+
+        // Brake A
+        const brake_x = cx2 + R;
+        const brake_y = cy;
+        ctx.beginPath();
+        ctx.moveTo(brake_x, brake_y - 12);
+        ctx.lineTo(brake_x + 20, brake_y - 18);
+        ctx.lineTo(brake_x + 20, brake_y + 18);
+        ctx.lineTo(brake_x, brake_y + 12);
+        ctx.closePath();
+        ctx.fillStyle = '#cccccc';
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'black';
+        ctx.font = '20px Arial';
+        ctx.fillText('A', brake_x + 30, brake_y);
+        
+        // Magnetic Field B
+        const b_field_x = (cx1 + cx2) / 2;
+        drawBField(b_field_x, cy - 45);
+        drawBField(b_field_x, cy + 45);
+
+        // 4. Draw the caption
+        ctx.font = '22px KaiTi'; // Use a font that supports Chinese characters
+        ctx.fillText('电图 3.11.1', canvas.width / 2, canvas.height - 35);
+
+    </script>
+</body>
+</html>

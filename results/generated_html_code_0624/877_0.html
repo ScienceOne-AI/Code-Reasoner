@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Helper function to draw an arrow
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headlen = 8;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+
+        // Origin
+        const o = { x: 150, y: 250 };
+
+        // Draw Axes
+        drawArrow(o.x, o.y, 450, o.y); // x-axis
+        ctx.fillText('x', 460, o.y);
+
+        drawArrow(o.x, o.y, o.x, 80); // y-axis
+        ctx.fillText('y', o.x, 70);
+
+        drawArrow(o.x, o.y, 70, 310); // z-axis
+        ctx.fillText('z', 60, 315);
+
+        ctx.fillText('O', o.x - 15, o.y - 15);
+
+        // Cube coordinates
+        const d_x = 100;
+        const d_y = 100;
+        const d_z = { x: -40, y: 30 };
+
+        const p_bbl = { x: o.x + d_x, y: o.y }; // back-bottom-left (hidden)
+        const p_btl = { x: p_bbl.x, y: p_bbl.y - d_y };
+        const p_bbr = { x: p_bbl.x + d_x, y: p_bbl.y };
+        const p_btr = { x: p_bbr.x, y: p_bbr.y - d_y };
+        
+        const p_fbl = { x: p_bbl.x + d_z.x, y: p_bbl.y + d_z.y };
+        const p_ftl = { x: p_btl.x + d_z.x, y: p_btl.y + d_z.y };
+        const p_fbr = { x: p_bbr.x + d_z.x, y: p_bbr.y + d_z.y };
+        const p_ftr = { x: p_btr.x + d_z.x, y: p_btr.y + d_z.y };
+        
+        // Draw dashed (hidden) lines
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(p_bbl.x, p_bbl.y);
+        ctx.lineTo(p_btl.x, p_btl.y);
+        ctx.moveTo(p_bbl.x, p_bbl.y);
+        ctx.lineTo(p_bbr.x, p_bbr.y);
+        ctx.moveTo(p_bbl.x, p_bbl.y);
+        ctx.lineTo(p_fbl.x, p_fbl.y);
+        ctx.stroke();
+
+        // Draw solid (visible) lines
+        ctx.beginPath();
+        ctx.setLineDash([]);
+        // Front face
+        ctx.moveTo(p_fbl.x, p_fbl.y);
+        ctx.lineTo(p_fbr.x, p_fbr.y);
+        ctx.lineTo(p_ftr.x, p_ftr.y);
+        ctx.lineTo(p_ftl.x, p_ftl.y);
+        ctx.lineTo(p_fbl.x, p_fbl.y);
+        // Top face
+        ctx.moveTo(p_btl.x, p_btl.y);
+        ctx.lineTo(p_btr.x, p_btr.y);
+        ctx.lineTo(p_ftr.x, p_ftr.y);
+        ctx.lineTo(p_ftl.x, p_ftl.y);
+        ctx.lineTo(p_btl.x, p_btl.y);
+        // Right face
+        ctx.moveTo(p_bbr.x, p_bbr.y);
+        ctx.lineTo(p_btr.x, p_btr.y);
+        ctx.lineTo(p_ftr.x, p_ftr.y);
+        ctx.lineTo(p_fbr.x, p_fbr.y);
+        ctx.lineTo(p_bbr.x, p_bbr.y);
+        ctx.stroke();
+
+        // Dimension lines and labels
+        ctx.font = 'italic 18px Arial';
+
+        // Dimension 'd' from origin
+        const d_line_y = o.y - 30;
+        const d_line_x_start = o.x;
+        const d_line_x_end = p_btl.x;
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(d_line_x_end, o.y);
+        ctx.lineTo(d_line_x_end, d_line_y);
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+        drawArrow(d_line_x_start + 5, d_line_y, d_line_x_end, d_line_y);
+        drawArrow(d_line_x_end - 5, d_line_y, d_line_x_start, d_line_y);
+        ctx.fillText('d', d_line_x_start + (d_line_x_end - d_line_x_start) / 2, d_line_y - 10);
+        
+        // Dimension 'd' on bottom edges
+        ctx.fillText('d', (p_fbl.x + p_fbr.x) / 2, p_fbl.y + 15);
+        ctx.save();
+        ctx.translate((p_bbr.x + p_fbr.x) / 2, (p_bbr.y + p_fbr.y) / 2 + 5);
+        ctx.rotate(Math.atan2(d_z.y, d_z.x));
+        ctx.fillText('d', 0, 0);
+        ctx.restore();
+        
+        ctx.fillText('d', p_bbl.x + d_x / 2, p_bbl.y + 15);
+
+        // Caption
+        ctx.font = '18px "SimSun", "Songti SC", serif';
+        ctx.fillText('习题 7－16 图', 300, 380);
+
+    </script>
+</body>
+</html>

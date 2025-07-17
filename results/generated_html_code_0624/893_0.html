@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = 700;
+        canvas.height = 400;
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        
+        // Helper function to draw text with a subscript
+        function drawTextWithSub(baseText, subText, x, y, baseFont = 'italic 20px "Times New Roman"', subFont = '14px "Times New Roman"') {
+            ctx.font = baseFont;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(baseText, x, y);
+            const baseWidth = ctx.measureText(baseText).width;
+
+            ctx.font = subFont;
+            ctx.fillText(subText, x + baseWidth - 2, y + 6);
+        }
+
+        // Helper function to draw a resistor
+        function drawResistor(x, y, label) {
+            const w = 80;
+            const h = 25;
+            ctx.strokeRect(x - w / 2, y - h / 2, w, h);
+
+            const isAbove = (label === 'R₄');
+            const labelY = isAbove ? y - h / 2 - 12 : y + h / 2 + 12;
+            
+            ctx.textAlign = 'center';
+            ctx.textBaseline = isAbove ? 'bottom' : 'top';
+            drawTextWithSub(label.slice(0, 1), label.slice(1), x - 8, labelY);
+        }
+        
+        // Helper function to draw a battery
+        function drawBattery(x, y, isPosRight, label) {
+            const len = 40;
+            const shortH = 20;
+            const longH = 40;
+            const plateOffset = len / 2;
+
+            ctx.beginPath();
+            if (isPosRight) {
+                // Negative plate (left)
+                ctx.moveTo(x - plateOffset, y - shortH / 2);
+                ctx.lineTo(x - plateOffset, y + shortH / 2);
+                // Positive plate (right)
+                ctx.moveTo(x + plateOffset, y - longH / 2);
+                ctx.lineTo(x + plateOffset, y + longH / 2);
+            } else { // Positive on left
+                // Positive plate (left)
+                ctx.moveTo(x - plateOffset, y - longH / 2);
+                ctx.lineTo(x - plateOffset, y + longH / 2);
+                // Negative plate (right)
+                ctx.moveTo(x + plateOffset, y - shortH / 2);
+                ctx.lineTo(x + plateOffset, y + shortH / 2);
+            }
+            ctx.stroke();
+
+            // Label
+            const labelY = y + longH / 2 + 10;
+            const [part1, part2] = label.split(', ');
+            
+            drawTextWithSub('E', part1.slice(1), x - 40, labelY, 'italic 20px "Times New Roman"');
+            ctx.fillText(',', x - 20, labelY);
+            drawTextWithSub('R', part2.slice(1), x - 10, labelY);
+        }
+        
+        // Helper function to draw a labeled point
+        function drawPoint(x, y, label) {
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.font = '20px "Times New Roman"';
+            ctx.textAlign = 'center';
+            const isAbove = (label === 'A' || label === 'B');
+            ctx.textBaseline = isAbove ? 'bottom' : 'top';
+            const labelY = isAbove ? y - 5 : y + 5;
+            ctx.fillText(label, x, labelY);
+        }
+        
+        // Helper function to draw the ground symbol
+        function drawGround(x, y) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + 12);
+            ctx.moveTo(x - 20, y + 12);
+            ctx.lineTo(x + 20, y + 12);
+            ctx.moveTo(x - 13, y + 18);
+            ctx.lineTo(x + 13, y + 18);
+            ctx.moveTo(x - 6, y + 24);
+            ctx.lineTo(x + 6, y + 24);
+            ctx.stroke();
+        }
+
+        // Define coordinates
+        const y_top = 100;
+        const y_r1 = 200;
+        const y_mid_wire = 240;
+        const y_r2 = 280;
+
+        const x_left_vert = 100;
+        const x_r3_mid = 160;
+        const x_A = 220; // Point A position
+        const x_node_A = 240; // Junction start
+
+        const x_r1r2_mid = 360;
+        const x_node_B = 480; // Junction end
+        const x_B = 510; // Point B position
+        const x_ground = 560;
+        const x_right_vert = 600;
+
+        // ---- Draw the circuit ----
+        
+        // Bottom Branch
+        // Wire from left vertical to R3
+        ctx.beginPath();
+        ctx.moveTo(x_left_vert, y_mid_wire);
+        ctx.lineTo(x_r3_mid - 40, y_mid_wire);
+        ctx.stroke();
+        drawResistor(x_r3_mid, y_mid_wire, 'R₃');
+
+        // Wire from R3 to node A
+        ctx.beginPath();
+        ctx.moveTo(x_r3_mid + 40, y_mid_wire);
+        ctx.lineTo(x_node_A, y_mid_wire);
+        ctx.stroke();
+        drawPoint(x_A, y_mid_wire, 'A');
+
+        // Parallel R1 and R2
+        ctx.beginPath();
+        ctx.moveTo(x_node_A, y_mid_wire);
+        ctx.lineTo(x_node_A, y_r1);
+        ctx.moveTo(x_node_A, y_r1);
+        ctx.lineTo(x_r1r2_mid - 40, y_r1);
+        ctx.moveTo(x_r1r2_mid + 40, y_r1);
+        ctx.lineTo(x_node_B, y_r1);
+        ctx.moveTo(x_node_B, y_r1);
+        ctx.lineTo(x_node_B, y_mid_wire);
+        
+        ctx.moveTo(x_node_A, y_mid_wire);
+        ctx.lineTo(x_node_A, y_r2);
+        ctx.moveTo(x_node_A, y_r2);
+        ctx.lineTo(x_r1r2_mid - 40, y_r2);
+        ctx.moveTo(x_r1r2_mid + 40, y_r2);
+        ctx.lineTo(x_node_B, y_r2);
+        ctx.moveTo(x_node_B, y_r2);
+        ctx.lineTo(x_node_B, y_mid_wire);
+        ctx.stroke();
+
+        drawResistor(x_r1r2_mid, y_r1, 'R₁');
+        drawResistor(x_r1r2_mid, y_r2, 'R₂');
+
+        // Ground wire
+        ctx.beginPath();
+        ctx.moveTo(x_node_B, y_mid_wire);
+        ctx.lineTo(x_right_vert, y_mid_wire);
+        ctx.stroke();
+        drawPoint(x_B, y_mid_wire, 'B');
+        drawGround(x_ground, y_mid_wire);
+        
+        // Top Branch
+        // Left vertical wire
+        ctx.beginPath();
+        ctx.moveTo(x_left_vert, y_mid_wire);
+        ctx.lineTo(x_left_vert, y_top);
+        ctx.stroke();
+
+        // Battery E1
+        const x_batt1 = 150;
+        ctx.beginPath();
+        ctx.moveTo(x_left_vert, y_top);
+        ctx.lineTo(x_batt1 - 20, y_top);
+        ctx.stroke();
+        drawBattery(x_batt1, y_top, true, 'ε₁, Ri1');
+
+        // Point C
+        const x_C = 200;
+        ctx.beginPath();
+        ctx.moveTo(x_batt1 + 20, y_top);
+        ctx.lineTo(x_C, y_top);
+        ctx.stroke();
+        drawPoint(x_C, y_top, 'C');
+
+        // Resistor R4
+        const x_r4_mid = 300;
+        ctx.beginPath();
+        ctx.moveTo(x_C, y_top);
+        ctx.lineTo(x_r4_mid - 40, y_top);
+        ctx.stroke();
+        drawResistor(x_r4_mid, y_top, 'R₄');
+
+        // Point D
+        const x_D = 370;
+        ctx.beginPath();
+        ctx.moveTo(x_r4_mid + 40, y_top);
+        ctx.lineTo(x_D, y_top);
+        ctx.stroke();
+        drawPoint(x_D, y_top, 'D');
+
+        // Battery E2
+        const x_batt2 = 480;
+        ctx.beginPath();
+        ctx.moveTo(x_D, y_top);
+        ctx.lineTo(x_batt2 - 20, y_top);
+        ctx.moveTo(x_batt2 + 20, y_top);
+        ctx.lineTo(x_right_vert, y_top);
+        ctx.stroke();
+        drawBattery(x_batt2, y_top, false, 'ε₂, Ri2');
+        
+        // Right vertical wire
+        ctx.beginPath();
+        ctx.moveTo(x_right_vert, y_top);
+        ctx.lineTo(x_right_vert, y_mid_wire);
+        ctx.stroke();
+
+        // Bottom Title
+        ctx.font = '22px "SimSun", "Songti SC"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('习题 8-2 图', canvas.width / 2, 360);
+    </script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram Reproduction</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="450" height="500"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style settings
+ctx.lineWidth = 2;
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.font = 'italic 20px Times New Roman';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// --- Helper function for drawing an arrow ---
+function drawArrow(x1, y1, x2, y2, arrowSize = 8) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - arrowSize * Math.cos(angle - Math.PI / 6), y2 - arrowSize * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - arrowSize * Math.cos(angle + Math.PI / 6), y2 - arrowSize * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+    ctx.restore();
+}
+
+// --- Coordinates and Dimensions ---
+const centerX = 225;
+const pulleyY = 120;
+const pulleyRadius = 60;
+
+// --- Draw Ceiling ---
+ctx.beginPath();
+ctx.moveTo(50, 50);
+ctx.lineTo(400, 50);
+ctx.stroke();
+
+// Hatching for the ceiling
+ctx.save();
+ctx.lineWidth = 1.5;
+for (let i = 50; i <= 400; i += 20) {
+    ctx.beginPath();
+    ctx.moveTo(i, 50);
+    ctx.lineTo(i - 15, 35);
+    ctx.stroke();
+}
+ctx.restore();
+
+// --- Draw Pulley Support Bracket ---
+ctx.beginPath();
+ctx.moveTo(centerX - 12, 50);
+ctx.lineTo(centerX - 12, pulleyY - 20);
+ctx.moveTo(centerX + 12, 50);
+ctx.lineTo(centerX + 12, pulleyY - 20);
+ctx.stroke();
+ctx.strokeRect(centerX - 12, pulleyY - 20, 24, 40);
+
+// --- Draw Pulley ---
+// Axle
+ctx.beginPath();
+ctx.arc(centerX, pulleyY, 6, 0, 2 * Math.PI);
+ctx.stroke();
+// Pulley Wheel
+ctx.beginPath();
+ctx.arc(centerX, pulleyY, pulleyRadius, 0, 2 * Math.PI);
+ctx.stroke();
+
+// --- Draw Ropes ---
+const ropeLeftX = centerX - pulleyRadius;
+const ropeRightX = centerX + pulleyRadius;
+const m1TopY = 300;
+const m2CenterY = 310;
+
+// Rope over the pulley
+ctx.beginPath();
+ctx.arc(centerX, pulleyY, pulleyRadius, Math.PI, 0); // Semicircle on top
+ctx.stroke();
+// Left rope
+ctx.beginPath();
+ctx.moveTo(ropeLeftX, pulleyY);
+ctx.lineTo(ropeLeftX, m1TopY);
+ctx.stroke();
+// Right rope
+ctx.beginPath();
+ctx.moveTo(ropeRightX, pulleyY);
+ctx.lineTo(ropeRightX, 400); // Draw it long to pass through m2
+ctx.stroke();
+
+// --- Draw Mass m1 (Left Block) ---
+const m1Width = 70;
+const m1Height = 50;
+const m1X = ropeLeftX - m1Width / 2;
+const m1Y = m1TopY;
+
+// Fill with light gray
+ctx.fillStyle = '#f0f0f0';
+ctx.fillRect(m1X, m1Y, m1Width, m1Height);
+
+// Cross-hatch pattern for m1
+ctx.save();
+ctx.beginPath();
+ctx.rect(m1X, m1Y, m1Width, m1Height);
+ctx.clip(); // Restrict drawing to the rectangle
+
+ctx.strokeStyle = 'black';
+ctx.lineWidth = 1;
+
+const hatchSpacing = 7;
+// Draw diagonal lines (\)
+for (let i = -m1Height; i < m1Width; i += hatchSpacing) {
+    ctx.moveTo(m1X + i, m1Y);
+    ctx.lineTo(m1X + i + m1Height, m1Y + m1Height);
+}
+// Draw diagonal lines (/)
+for (let i = 0; i < m1Width + m1Height; i += hatchSpacing) {
+    ctx.moveTo(m1X + i, m1Y);
+    ctx.lineTo(m1X + i - m1Height, m1Y + m1Height);
+}
+ctx.stroke();
+ctx.restore();
+// Redraw the border to make it sharp
+ctx.strokeRect(m1X, m1Y, m1Width, m1Height);
+
+// --- Draw Mass m2 (Right Ring) ---
+const m2Width = 70;
+const m2Height = 25;
+const m2X = ropeRightX - m2Width / 2;
+const m2Y = m2CenterY - m2Height / 2;
+
+// Erase the rope behind the ring by drawing a white filled rectangle
+ctx.fillStyle = 'white';
+ctx.fillRect(m2X, m2Y, m2Width, m2Height);
+ctx.strokeRect(m2X, m2Y, m2Width, m2Height);
+
+// Dividers in the ring
+ctx.beginPath();
+ctx.moveTo(m2X + m2Width / 3, m2Y);
+ctx.lineTo(m2X + m2Width / 3, m2Y + m2Height);
+ctx.moveTo(m2X + 2 * m2Width / 3, m2Y);
+ctx.lineTo(m2X + 2 * m2Width / 3, m2Y + m2Height);
+ctx.stroke();
+// Redraw the central rope segment over the ring
+ctx.beginPath();
+ctx.moveTo(ropeRightX, m2Y);
+ctx.lineTo(ropeRightX, m2Y + m2Height);
+ctx.stroke();
+
+// --- Labels and Arrows ---
+ctx.fillStyle = 'black';
+ctx.font = 'italic 22px Times New Roman';
+
+// 'O' for pulley center
+ctx.fillText('O', centerX + 22, pulleyY + 10);
+
+// 'r' for radius
+const rAngle = 225 * Math.PI / 180; // 225 degrees (lower-left direction)
+const rStartX = centerX;
+const rStartY = pulleyY;
+const rEndX = centerX + pulleyRadius * Math.cos(rAngle);
+const rEndY = pulleyY + pulleyRadius * Math.sin(rAngle);
+drawArrow(rStartX, rStartY, rEndX, rEndY, 8);
+ctx.fillText('r', rStartX + (rEndX - rStartX) * 0.5 - 15, rStartY + (rEndY - rStartY) * 0.5);
+
+// 'm₁' label
+ctx.fillText('m\u2081', m1X + m1Width / 2, m1Y + m1Height + 20);
+
+// 'm₂' label
+ctx.fillText('m\u2082', m2X - 15, m2CenterY);
+
+// 'a₂' arrow and label
+const a2X = m2X + m2Width + 30;
+const a2Y_start = m2CenterY - 20;
+const a2Y_end = m2CenterY + 20;
+drawArrow(a2X, a2Y_start, a2X, a2Y_end, 10);
+ctx.fillText('a\u2082', a2X + 20, m2CenterY);
+
+// --- Caption ---
+ctx.font = '22px SimHei'; // Using a common Chinese font like 'Heiti'
+ctx.fillText('习题 1-28 图', centerX, canvas.height - 40);
+
+</script>
+</body>
+</html>

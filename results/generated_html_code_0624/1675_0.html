@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="physics_diagram" width="450" height="510" style="border: 1px solid #ccc;"></canvas>
+<script>
+    const canvas = document.getElementById('physics_diagram');
+    const ctx = canvas.getContext('2d');
+
+    // Define colors and styles
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // --- Draw Components ---
+
+    // 1. Ceiling and Ground (with hatching)
+    const ceilY = 40;
+    const ceilX1 = 120, ceilX2 = 330;
+    const groundY = 480;
+    const groundX1 = 20, groundX2 = 430;
+    const hatchHeight = 15;
+    const hatchStep = 10;
+
+    // Ceiling bar
+    ctx.beginPath();
+    ctx.moveTo(ceilX1, ceilY);
+    ctx.lineTo(ceilX2, ceilY);
+    ctx.stroke();
+
+    // Ceiling hatching (above the bar, diagonal up-left)
+    for (let x = ceilX1; x <= ceilX2 + hatchHeight; x += hatchStep) {
+        ctx.beginPath();
+        ctx.moveTo(x, ceilY);
+        ctx.lineTo(x - hatchHeight, ceilY - hatchHeight);
+        ctx.stroke();
+    }
+
+    // Ground bar
+    ctx.beginPath();
+    ctx.moveTo(groundX1, groundY);
+    ctx.lineTo(groundX2, groundY);
+    ctx.stroke();
+
+    // Ground hatching (below the bar, diagonal down-right)
+    for (let x = groundX1 - hatchHeight; x <= groundX2; x += hatchStep) {
+        ctx.beginPath();
+        ctx.moveTo(x, groundY);
+        ctx.lineTo(x + hatchHeight, groundY + hatchHeight);
+        ctx.stroke();
+    }
+
+    // 2. Container
+    const contX1 = 80, contX2 = 370;
+    const contYTop = 180, contYBottom = 460;
+    ctx.beginPath();
+    ctx.moveTo(contX1, contYTop);
+    ctx.lineTo(contX1, contYBottom);
+    ctx.lineTo(contX2, contYBottom);
+    ctx.lineTo(contX2, contYTop);
+    ctx.stroke();
+
+    // 3. Valve K
+    const valveY = 400;
+    const valveX = contX2;
+    ctx.beginPath();
+    ctx.moveTo(valveX, valveY);
+    ctx.lineTo(valveX + 20, valveY); // pipe
+    ctx.moveTo(valveX + 20, valveY - 10);
+    ctx.lineTo(valveX + 20, valveY + 10); // stem
+    ctx.moveTo(valveX + 20, valveY - 10);
+    ctx.lineTo(valveX + 30, valveY - 10); // handle
+    ctx.stroke();
+    ctx.font = "24px 'Times New Roman'";
+    ctx.fillText("K", valveX + 35, valveY + 8);
+
+    // 4. Block A and String setup
+    const blockCenterX = 225;
+    const stringTopY = ceilY;
+    const blockTopY = 190;
+    const blockSize = 100;
+    const blockX = blockCenterX - blockSize / 2;
+
+    // 5. Water
+    // From problem: 1/6 of volume is out, so water level is 1/6 down from the top of the block.
+    const waterLevelY = blockTopY + blockSize / 6;
+
+    // Dashed lines for water (drawn before the block)
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([8, 6]);
+    const dashStep = 18;
+
+    // Water level beside the block
+    for (let y = waterLevelY + dashStep; y < blockTopY + blockSize; y += dashStep) {
+        ctx.beginPath();
+        ctx.moveTo(contX1, y);
+        ctx.lineTo(blockX, y);
+        ctx.moveTo(blockX + blockSize, y);
+        ctx.lineTo(contX2, y);
+        ctx.stroke();
+    }
+
+    // Calculate the y-coordinate for the first dashed line below the block
+    let y_below_block = waterLevelY + Math.ceil((blockTopY + blockSize - waterLevelY) / dashStep) * dashStep;
+    
+    // Water level below the block
+    for (let y = y_below_block; y < contYBottom; y += dashStep) {
+        ctx.beginPath();
+        ctx.moveTo(contX1, y);
+        ctx.lineTo(contX2, y);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // Water surface line (drawn on top of dashed lines)
+    ctx.beginPath();
+    ctx.moveTo(contX1, waterLevelY);
+    ctx.lineTo(blockX, waterLevelY);
+    ctx.moveTo(blockX + blockSize, waterLevelY);
+    ctx.lineTo(contX2, waterLevelY);
+    ctx.stroke();
+
+    // 6. String (drawn on top of water surface, but below block)
+    ctx.beginPath();
+    ctx.moveTo(blockCenterX, stringTopY);
+    ctx.lineTo(blockCenterX, blockTopY);
+    ctx.stroke();
+    
+    // 7. Block A (drawn on top of everything else)
+    // Fill with white to hide water lines behind it
+    ctx.fillStyle = 'white';
+    ctx.fillRect(blockX, blockTopY, blockSize, blockSize);
+    // Draw the outline
+    ctx.strokeRect(blockX, blockTopY, blockSize, blockSize);
+    
+    // Label A (on top of the white fill)
+    ctx.fillStyle = 'black';
+    ctx.font = "italic 30px 'Times New Roman'";
+    ctx.textAlign = 'center';
+    ctx.fillText("A", blockCenterX, blockTopY + blockSize/2 + 10);
+
+</script>
+</body>
+</html>

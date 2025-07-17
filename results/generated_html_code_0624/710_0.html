@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Harmonic Motion</title>
+</head>
+<body>
+    <canvas id="oscillationCanvas" width="550" height="480"></canvas>
+    <script>
+        const canvas = document.getElementById('oscillationCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration & Parameters ---
+        // Canvas coordinate system origin
+        const ox = 80;
+        const oy = 240;
+
+        // Scaling factors (pixels per unit)
+        const scaleT = 220; // pixels per second
+        const scaleX = 1100; // pixels per meter
+
+        // Physics parameters from the graph
+        const A = 0.10; // Amplitude (m)
+
+        // Based on the graph, the motion equation is x(t) = A*cos(ωt + φ)
+        // From x(0) = 0.05 and v(0) > 0, we find the initial phase φ = -π/3.
+        // From x(1.0) = 0, we find the angular frequency ω = 5π/6 rad/s.
+        const omega = (5 * Math.PI) / 6;
+        const phi = -Math.PI / 3;
+
+        // The time to reach the peak (Point P) is when the phase (ωt + φ) is 0.
+        // t_P = -φ / ω = (π/3) / (5π/6) = 0.4 s.
+        const t_P = -phi / omega;
+
+        // Helper function to draw arrows on axes
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headlen = 10; // length of head in pixels
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+        }
+
+        // --- Drawing Functions ---
+
+        // 1. Draw Axes
+        function drawAxes() {
+            ctx.beginPath();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1.5;
+
+            // t-axis (horizontal)
+            const tAxisStart = ox - 20;
+            const tAxisEnd = ox + 450;
+            ctx.moveTo(tAxisStart, oy);
+            drawArrow(tAxisStart, oy, tAxisEnd, oy);
+
+            // x-axis (vertical)
+            const xAxisStart = oy + 150;
+            const xAxisEnd = oy - 150;
+            ctx.moveTo(ox, xAxisStart);
+            drawArrow(ox, xAxisStart, ox, xAxisEnd);
+
+            ctx.stroke();
+        }
+
+        // 2. Draw the Oscillation Curve
+        function drawCurve() {
+            ctx.beginPath();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+
+            const t_start = 0;
+            const t_end = 2.0; // Draw for 2 seconds
+            const dt = 0.01;
+
+            for (let t = t_start; t <= t_end; t += dt) {
+                const x = A * Math.cos(omega * t + phi);
+                const canvasX = ox + t * scaleT;
+                const canvasY = oy - x * scaleX;
+                if (t === t_start) {
+                    ctx.moveTo(canvasX, canvasY);
+                } else {
+                    ctx.lineTo(canvasX, canvasY);
+                }
+            }
+            ctx.stroke();
+        }
+
+        // 3. Draw Labels, Ticks, and Annotations
+        function drawLabelsAndAnnotations() {
+            ctx.fillStyle = 'black';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1;
+
+            // --- Text Labels ---
+            ctx.font = '18px Arial';
+            // Axis labels
+            ctx.fillText('x/m', ox - 55, oy - 130);
+            ctx.fillText('t/s', ox + 435, oy + 15);
+
+            // Numeric labels on axes
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('0.10', ox - 8, oy - A * scaleX);
+            ctx.fillText('0.05', ox - 8, oy - 0.05 * scaleX);
+            ctx.fillText('-0.10', ox - 8, oy + A * scaleX);
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('1.0', ox + 1.0 * scaleT, oy + 8);
+            
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'top';
+            ctx.fillText('0', ox - 5, oy + 5);
+
+            // --- Dashed Lines ---
+            ctx.beginPath();
+            ctx.setLineDash([5, 3]);
+            
+            // Line from y-axis to Peak P
+            ctx.moveTo(ox, oy - A * scaleX);
+            ctx.lineTo(ox + t_P * scaleT, oy - A * scaleX);
+            
+            // Line for the -0.10 label
+            ctx.moveTo(ox, oy + A * scaleX);
+            ctx.lineTo(ox - 50, oy + A * scaleX);
+
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset to solid lines
+
+            // --- Point P Label ---
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('P', ox + t_P * scaleT, oy - A * scaleX - 5);
+            
+            // --- Figure Caption ---
+            ctx.font = '20px "SimSun", "STSong"'; // Common Chinese fonts
+            ctx.textAlign = 'center';
+            ctx.fillText('习题 10-3 图', canvas.width / 2, canvas.height - 20);
+        }
+
+        // --- Execute Drawing ---
+        drawAxes();
+        drawCurve();
+        drawLabelsAndAnnotations();
+    </script>
+</body>
+</html>

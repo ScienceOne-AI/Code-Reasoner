@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram: Rotating Rod in Magnetic Field</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physics-canvas" width="500" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physics-canvas');
+    const ctx = canvas.getContext('2d');
+
+    /**
+     * Helper function to draw a cross symbol (×).
+     * @param {CanvasRenderingContext2D} context - The canvas rendering context.
+     * @param {number} x - The x-coordinate of the center.
+     * @param {number} y - The y-coordinate of the center.
+     * @param {number} size - The size of the cross.
+     */
+    function drawCross(context, x, y, size) {
+        context.beginPath();
+        context.moveTo(x - size / 2, y - size / 2);
+        context.lineTo(x + size / 2, y + size / 2);
+        context.moveTo(x + size / 2, y - size / 2);
+        context.lineTo(x - size / 2, y + size / 2);
+        context.stroke();
+    }
+
+    /**
+     * Helper function to draw a filled arrowhead.
+     * @param {CanvasRenderingContext2D} context - The canvas rendering context.
+     * @param {number} x - The x-coordinate of the arrow tip.
+     * @param {number} y - The y-coordinate of the arrow tip.
+     * @param {number} angle - The angle of the arrow's direction in radians.
+     * @param {number} size - The length of the arrowhead.
+     */
+    function drawArrowhead(context, x, y, angle, size) {
+        context.save();
+        context.translate(x, y);
+        context.rotate(angle);
+        context.beginPath();
+        context.moveTo(0, 0);
+        context.lineTo(-size, size / 2);
+        context.lineTo(-size, -size / 2.5); // Making it slightly asymmetric for a sharper look
+        context.closePath();
+        context.fillStyle = 'black';
+        context.fill();
+        context.restore();
+    }
+
+    // --- Main Drawing ---
+
+    // Clear canvas with a white background
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Set default drawing styles
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // 1. Draw the uniform magnetic field
+    ctx.font = 'italic 24px serif';
+    ctx.fillText('B', 30, 40);
+    ctx.lineWidth = 1.5;
+    drawCross(ctx, 65, 37, 12);
+    
+    // Scatter other crosses
+    const crossSize = 15;
+    drawCross(ctx, 150, 50, crossSize);
+    drawCross(ctx, 350, 50, crossSize);
+    drawCross(ctx, 80, 200, crossSize);
+    drawCross(ctx, 450, 200, crossSize);
+    drawCross(ctx, 250, 350, crossSize);
+    drawCross(ctx, 450, 350, crossSize);
+
+    // 2. Define parameters for the rotating system
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const angle = -28 * Math.PI / 180; // Angle of the rod in radians
+    const rodLength = 380;
+    const rodThickness = 3;
+
+    // 3. Draw the rotated elements (rod, pivot, ring)
+    ctx.lineWidth = 1.5;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+
+    // Draw the rod as two parallel lines
+    ctx.beginPath();
+    ctx.moveTo(-rodLength / 2, -rodThickness);
+    ctx.lineTo(rodLength / 2, -rodThickness);
+    ctx.moveTo(-rodLength / 2, rodThickness);
+    ctx.lineTo(rodLength / 2, rodThickness);
+    // Draw the end caps of the rod
+    ctx.moveTo(-rodLength / 2, -rodThickness);
+    ctx.lineTo(-rodLength / 2, rodThickness);
+    ctx.moveTo(rodLength / 2, -rodThickness);
+    ctx.lineTo(rodLength / 2, rodThickness);
+    ctx.stroke();
+
+    // Draw the fixed pivot
+    ctx.beginPath();
+    ctx.arc(0, 0, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = '#666'; // Gray color for the pivot
+    ctx.fill();
+
+    // Draw the ring on the rod
+    const ringPos = 80; // Distance from the pivot
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.beginPath();
+    ctx.ellipse(ringPos, 0, 12, 8, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // Restore the canvas to its original state (un-rotated)
+    ctx.restore();
+
+    // 4. Draw the non-rotated elements (labels and arrows)
+    ctx.fillStyle = 'black';
+
+    // Draw the "m, q" label for the ring
+    ctx.font = 'italic 22px serif';
+    const ringX = cx + ringPos * Math.cos(angle);
+    const ringY = cy + ringPos * Math.sin(angle);
+    ctx.fillText('m, q', ringX + 25, ringY + 5);
+
+    // Draw the "固定轴" (Fixed Axis) label
+    ctx.font = '22px "SimSun", "Microsoft YaHei"';
+    const labelAngle = angle + Math.PI / 2;
+    const labelDist = 40;
+    const labelX = cx + labelDist * Math.cos(labelAngle);
+    const labelY = cy + labelDist * Math.sin(labelAngle);
+    ctx.textAlign = 'center';
+    ctx.fillText('固定轴', labelX, labelY + 20);
+    ctx.textAlign = 'start'; // Reset alignment
+
+    // Draw the rotation arrows and "ω" symbols
+    ctx.font = 'italic 24px serif';
+    ctx.lineWidth = 1.5;
+
+    // Top-right rotation arrow
+    ctx.fillText('ω', 350, 90);
+    const arc1_cx = 360;
+    const arc1_cy = 130;
+    const arc1_r = 35;
+    const arc1_start = 0.9 * Math.PI;
+    const arc1_end = 1.4 * Math.PI;
+    ctx.beginPath();
+    ctx.arc(arc1_cx, arc1_cy, arc1_r, arc1_start, arc1_end, false);
+    ctx.stroke();
+    const arrow1_x = arc1_cx + arc1_r * Math.cos(arc1_end);
+    const arrow1_y = arc1_cy + arc1_r * Math.sin(arc1_end);
+    const arrow1_angle = arc1_end + Math.PI / 2;
+    drawArrowhead(ctx, arrow1_x, arrow1_y, arrow1_angle, 10);
+
+    // Bottom-left rotation arrow
+    ctx.fillText('ω', 140, 330);
+    const arc2_cx = 135;
+    const arc2_cy = 280;
+    const arc2_r = 35;
+    const arc2_start = -0.1 * Math.PI;
+    const arc2_end = 0.4 * Math.PI;
+    ctx.beginPath();
+    ctx.arc(arc2_cx, arc2_cy, arc2_r, arc2_start, arc2_end, false);
+    ctx.stroke();
+    const arrow2_x = arc2_cx + arc2_r * Math.cos(arc2_end);
+    const arrow2_y = arc2_cy + arc2_r * Math.sin(arc2_end);
+    const arrow2_angle = arc2_end + Math.PI / 2;
+    drawArrowhead(ctx, arrow2_x, arrow2_y, arrow2_angle, 10);
+</script>
+</body>
+</html>

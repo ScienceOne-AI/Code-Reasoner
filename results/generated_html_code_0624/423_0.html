@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="550" height="350"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px sans-serif';
+        ctx.fillStyle = 'black';
+
+        /**
+         * Draws a resistor (zigzag line) between two points.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x1 - The starting x-coordinate.
+         * @param {number} y1 - The starting y-coordinate.
+         * @param {number} x2 - The ending x-coordinate.
+         * @param {number} y2 - The ending y-coordinate.
+         */
+        function drawResistor(ctx, x1, y1, x2, y2) {
+            const isHorizontal = y1 === y2;
+            const len = isHorizontal ? x2 - x1 : y2 - y1;
+            const numZigs = 7;
+            const zigSize = 10;
+            const step = len / numZigs;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+
+            for (let i = 0; i < numZigs; i++) {
+                const p1_x = isHorizontal ? x1 + i * step : x1;
+                const p1_y = isHorizontal ? y1 : y1 + i * step;
+
+                const mid_x = isHorizontal ? p1_x + step / 2 : x1 + (i % 2 === 0 ? zigSize : -zigSize);
+                const mid_y = isHorizontal ? y1 + (i % 2 === 0 ? zigSize : -zigSize) : p1_y + step / 2;
+                
+                const p2_x = isHorizontal ? x1 + (i + 1) * step : x1;
+                const p2_y = isHorizontal ? y1 : y1 + (i + 1) * step;
+
+                ctx.lineTo(mid_x, mid_y);
+                ctx.lineTo(p2_x, p2_y);
+            }
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Logic ---
+
+        // Component Coordinates
+        const bat_x = 80;
+        const bat_y_pos = 120;
+        const bat_y_neg = 180;
+
+        const r1_x_start = 140;
+        const r1_x_end = 240;
+        const r1_y = 60;
+        
+        const r4_x_start = 240;
+        const r4_x_end = 140;
+        const r4_y = 240;
+
+        const junction_x = 280;
+        const j1_y = r1_y;
+        const j2_y = r4_y;
+        
+        const r2_x = junction_x;
+        const r2_y_start = 100;
+        const r2_y_end = 200;
+
+        const r3_x = 380;
+        const r3_y_start = j1_y;
+        const r3_y_end = j2_y;
+        
+
+        // 1. Draw Battery (ε) and main vertical wires
+        ctx.beginPath();
+        // Positive terminal (long plate)
+        ctx.moveTo(bat_x - 25, bat_y_pos);
+        ctx.lineTo(bat_x + 25, bat_y_pos);
+        // Negative terminal (short plate)
+        ctx.moveTo(bat_x - 15, bat_y_neg);
+        ctx.lineTo(bat_x + 15, bat_y_neg);
+        // Connecting wires from terminals to the corners
+        ctx.moveTo(bat_x, bat_y_pos);
+        ctx.lineTo(bat_x, r1_y);
+        ctx.moveTo(bat_x, bat_y_neg);
+        ctx.lineTo(bat_x, r4_y);
+        ctx.stroke();
+
+        // Label for battery
+        ctx.fillText('ε', bat_x - 50, (bat_y_pos + bat_y_neg) / 2 + 8);
+
+        // 2. Draw top part of the circuit (wire, R1, wire)
+        ctx.beginPath();
+        ctx.moveTo(bat_x, r1_y);
+        ctx.lineTo(r1_x_start, r1_y);
+        ctx.moveTo(r1_x_end, r1_y);
+        ctx.lineTo(junction_x, j1_y);
+        ctx.stroke();
+        drawResistor(ctx, r1_x_start, r1_y, r1_x_end, r1_y);
+        ctx.textAlign = 'center';
+        ctx.fillText('R₁ = 10 Ω', (r1_x_start + r1_x_end) / 2, r1_y - 20);
+
+        // 3. Draw bottom part of the circuit (wire, R4, wire)
+        ctx.beginPath();
+        ctx.moveTo(bat_x, r4_y);
+        ctx.lineTo(r4_x_end, r4_y);
+        ctx.moveTo(r4_x_start, r4_y);
+        ctx.lineTo(junction_x, j2_y);
+        ctx.stroke();
+        drawResistor(ctx, r4_x_end, r4_y, r4_x_start, r4_y);
+        ctx.fillText('R₄ = 30 Ω', (r4_x_start + r4_x_end) / 2, r4_y + 30);
+        
+        // 4. Draw the parallel branches
+        // Branch with R2
+        ctx.beginPath();
+        ctx.moveTo(junction_x, j1_y);
+        ctx.lineTo(r2_x, r2_y_start);
+        ctx.moveTo(r2_x, r2_y_end);
+        ctx.lineTo(junction_x, j2_y);
+        ctx.stroke();
+        drawResistor(ctx, r2_x, r2_y_start, r2_x, r2_y_end);
+        ctx.textAlign = 'right';
+        ctx.fillText('R₂ =', r2_x - 20, (r2_y_start + r2_y_end) / 2 - 5);
+        ctx.fillText('20 Ω', r2_x - 20, (r2_y_start + r2_y_end) / 2 + 20);
+
+        // Branch with R3
+        ctx.beginPath();
+        ctx.moveTo(junction_x, j1_y);
+        ctx.lineTo(r3_x, j1_y);
+        ctx.moveTo(r3_x, r3_y_end);
+        ctx.lineTo(junction_x, j2_y);
+        ctx.stroke();
+        drawResistor(ctx, r3_x, r3_y_start, r3_x, r3_y_end);
+        ctx.textAlign = 'left';
+        ctx.fillText('R₃ = 20 Ω', r3_x + 20, (r3_y_start + r3_y_end) / 2);
+
+    </script>
+</body>
+</html>

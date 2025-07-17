@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Michelson Interferometer</title>
+</head>
+<body>
+    <canvas id="michelsonCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('michelsonCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Clear canvas with a white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // --- Configuration Parameters ---
+        const cx = 280;
+        const cy = 250;
+        const L1_px = 160;
+        const L2_px = 240;
+        const beamSpacing = 25;
+        const mirrorWidth = 100;
+        const mirrorHeight = 12;
+        const bsHalfLength = 60;
+        const bsThickness = 4;
+        const blockD = 45;
+        const blockH = 90;
+        const blockX = cx + 90;
+        const arrowSize = 6;
+        const rayLineWidth = 1.2;
+        const componentLineWidth = 1.5;
+
+        // --- Helper Functions ---
+        function drawArrowHead(x, y, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowSize, -arrowSize / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowSize, arrowSize / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawSubscriptedText(text, sub, x, y, mainFontSize = 22, subFontSize = 15) {
+            const originalFont = ctx.font;
+            ctx.font = `${mainFontSize}px Arial`;
+            const metrics = ctx.measureText(text);
+            ctx.fillText(text, x, y);
+            ctx.font = `${subFontSize}px Arial`;
+            ctx.fillText(sub, x + metrics.width, y + 6);
+            ctx.font = originalFont; // Restore original font
+        }
+        
+        // --- Draw Ray Lines ---
+        ctx.lineWidth = rayLineWidth;
+        const y_offsets = [-beamSpacing, 0, beamSpacing];
+
+        y_offsets.forEach(offset => {
+            const y = cy + offset;
+            // Full horizontal path (incoming + arm 2)
+            ctx.beginPath();
+            ctx.moveTo(40, y);
+            ctx.lineTo(cx + L2_px, y);
+            ctx.stroke();
+            
+            // Full vertical path (arm 1 up and down)
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - L1_px);
+            ctx.lineTo(cx, y);
+            ctx.stroke();
+
+            // Outgoing path to detector
+            ctx.beginPath();
+            ctx.moveTo(cx, y);
+            ctx.lineTo(cx, cy + L1_px);
+            ctx.stroke();
+        });
+
+        // --- Draw Components ---
+        // Mirror M1
+        ctx.fillStyle = '#E0E0E0';
+        ctx.lineWidth = componentLineWidth;
+        ctx.fillRect(cx - mirrorWidth / 2, cy - L1_px - mirrorHeight, mirrorWidth, mirrorHeight);
+        ctx.strokeRect(cx - mirrorWidth / 2, cy - L1_px - mirrorHeight, mirrorWidth, mirrorHeight);
+        
+        // Mirror M2
+        ctx.fillRect(cx + L2_px, cy - mirrorWidth / 2, mirrorHeight, mirrorWidth);
+        ctx.strokeRect(cx + L2_px, cy - mirrorWidth / 2, mirrorHeight, mirrorWidth);
+        
+        // Optical Block in Arm 2
+        ctx.fillStyle = '#EAEAEA';
+        ctx.fillRect(blockX, cy - blockH / 2, blockD, blockH);
+        ctx.save();
+        ctx.lineWidth = componentLineWidth;
+        ctx.setLineDash([5, 3]);
+        ctx.strokeRect(blockX, cy - blockH / 2, blockD, blockH);
+        ctx.restore();
+        
+        // Detector Screen
+        ctx.lineWidth = componentLineWidth;
+        ctx.beginPath();
+        ctx.moveTo(cx - 80, cy + L1_px);
+        ctx.lineTo(cx + 80, cy + L1_px);
+        ctx.stroke();
+
+        // --- Draw Beam Splitter (on top of rays) ---
+        ctx.lineWidth = bsThickness;
+        ctx.beginPath();
+        ctx.moveTo(cx - bsHalfLength, cy + bsHalfLength);
+        ctx.lineTo(cx + bsHalfLength, cy - bsHalfLength);
+        ctx.stroke();
+        
+        // --- Draw Arrows on Rays ---
+        ctx.lineWidth = rayLineWidth;
+        y_offsets.forEach(offset => {
+            const y = cy + offset;
+
+            // Incoming arrows
+            drawArrowHead(cx - 100, y, 0);
+
+            // Path 1: Down from M1 (as in original image)
+            drawArrowHead(cx, cy - L1_px + 40, Math.PI / 2);
+            drawArrowHead(cx, cy - L1_px + 85, Math.PI / 2);
+            drawArrowHead(cx, cy - L1_px + 130, Math.PI / 2);
+
+            // Path 2: To M2 (right)
+            drawArrowHead(cx + 45, y, 0);
+            drawArrowHead(cx + 170, y, 0);
+            
+            // Path 2: From M2 (left)
+            drawArrowHead(cx + L2_px - 45, y, Math.PI);
+            drawArrowHead(cx + L2_px - 170, y, Math.PI);
+
+            // Outgoing path to detector
+            drawArrowHead(cx, cy + 40, Math.PI / 2);
+            drawArrowHead(cx, cy + 85, Math.PI / 2);
+            drawArrowHead(cx, cy + 130, Math.PI / 2);
+        });
+
+        // --- Draw Labels ---
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'left';
+        
+        drawSubscriptedText('M', '1', cx - 70, cy - L1_px - 10);
+        drawSubscriptedText('M', '2', cx + L2_px + 20, cy);
+        
+        ctx.font = '22px Arial';
+        ctx.fillText('BS', cx - bsHalfLength - 35, cy + bsHalfLength - 10);
+        
+        drawSubscriptedText('L', '1', cx - 60, cy - L1_px / 2);
+        drawSubscriptedText('L', '2', cx + 10, cy + beamSpacing + 30);
+        
+        ctx.font = 'italic 22px Arial';
+        ctx.fillText('n', blockX + blockD + 5, cy - blockH / 2);
+        
+        // Dimension lines and label for 'd'
+        const d_y_pos = cy + blockH / 2 + 20;
+        ctx.textAlign = 'center';
+        ctx.fillText('d', blockX + blockD / 2, d_y_pos + 15);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(blockX, cy + blockH / 2);
+        ctx.lineTo(blockX, d_y_pos);
+        ctx.moveTo(blockX + blockD, cy + blockH / 2);
+        ctx.lineTo(blockX + blockD, d_y_pos);
+        ctx.moveTo(blockX, d_y_pos);
+        ctx.lineTo(blockX + blockD, d_y_pos);
+        ctx.stroke();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flyball Governor Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Define key coordinates and parameters
+        const cx = 250; // Center x
+        const topY = 110; // y-coordinate of the top pivot
+        const l = 100; // Length of the arms
+        const theta = 35 * Math.PI / 180; // Angle theta in radians
+
+        // Coordinates of important points
+        const topPivot = { x: cx, y: topY };
+        const rightMass = { x: cx + l * Math.sin(theta), y: topY + l * Math.cos(theta) };
+        const leftMass = { x: cx - l * Math.sin(theta), y: topY + l * Math.cos(theta) };
+        const bottomPivotY = topY + 2 * l * Math.cos(theta);
+        const bottomPivot = { x: cx, y: bottomPivotY };
+        
+        // --- Start Drawing ---
+
+        // 1. Draw the central shaft (as a double line)
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, topY - 80);
+        ctx.lineTo(cx - 3, bottomPivotY + 110);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx + 3, topY - 80);
+        ctx.lineTo(cx + 3, bottomPivotY + 110);
+        ctx.stroke();
+        
+        // 2. Draw the arms
+        ctx.beginPath();
+        ctx.moveTo(topPivot.x, topPivot.y);
+        ctx.lineTo(leftMass.x, leftMass.y);
+        ctx.moveTo(topPivot.x, topPivot.y);
+        ctx.lineTo(rightMass.x, rightMass.y);
+        ctx.moveTo(bottomPivot.x, bottomPivot.y);
+        ctx.lineTo(leftMass.x, leftMass.y);
+        ctx.moveTo(bottomPivot.x, bottomPivot.y);
+        ctx.lineTo(rightMass.x, rightMass.y);
+        ctx.stroke();
+
+        // 3. Draw the sliding mass 'M' (collar)
+        const collarHeight = 35;
+        const collarWidth = 30;
+        const collarX = bottomPivot.x - collarWidth / 2;
+        const collarY = bottomPivot.y - collarHeight / 2;
+        // Clear the area behind the collar to make the shaft appear to pass through it
+        ctx.clearRect(collarX-1, collarY-1, collarWidth+2, collarHeight+2);
+        
+        // Redraw the shaft segments that are "behind" the collar's outline
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, topY);
+        ctx.lineTo(cx - 3, collarY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx + 3, topY);
+        ctx.lineTo(cx + 3, collarY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, collarY + collarHeight);
+        ctx.lineTo(cx - 3, bottomPivotY + 110);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx + 3, collarY + collarHeight);
+        ctx.lineTo(cx + 3, bottomPivotY + 110);
+        ctx.stroke();
+
+        // Draw the collar outline and dots
+        ctx.strokeRect(collarX, collarY, collarWidth, collarHeight);
+        const dotRadius = 1.5;
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 2; j++) {
+                ctx.beginPath();
+                ctx.arc(bottomPivot.x - 6 + j * 12, bottomPivot.y - 8 + i * 8, dotRadius, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
+        // 4. Draw the masses 'm'
+        const massRadius = 7;
+        ctx.beginPath();
+        ctx.arc(leftMass.x, leftMass.y, massRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(rightMass.x, rightMass.y, massRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // 5. Draw the coordinate system
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        // z-axis
+        drawArrow(ctx, cx, topPivot.y, cx, topY - 70);
+        ctx.fillText('z', cx - 18, topY - 70);
+        // y-axis
+        const yAxisEndX = cx + 70;
+        const yAxisEndY = topY - 35;
+        drawArrow(ctx, cx, topPivot.y, yAxisEndX, yAxisEndY);
+        ctx.fillText('y', yAxisEndX + 12, yAxisEndY - 8);
+        // x-axis
+        const xAxisEndX = cx + 80;
+        const xAxisEndY = topPivot.y + 20;
+        drawArrow(ctx, cx, topPivot.y, xAxisEndX, xAxisEndY);
+        ctx.fillText('x', xAxisEndX + 15, xAxisEndY);
+        
+        // 6. Draw angle markings 'θ'
+        const angleRadius = 25;
+        ctx.font = 'italic 22px Times New Roman';
+        // Top left
+        ctx.beginPath();
+        ctx.arc(topPivot.x, topPivot.y, angleRadius, Math.PI / 2, Math.PI / 2 + theta);
+        ctx.stroke();
+        ctx.fillText('θ', topPivot.x - 18, topPivot.y + 18);
+        // Top right
+        ctx.beginPath();
+        ctx.arc(topPivot.x, topPivot.y, angleRadius, Math.PI / 2 - theta, Math.PI / 2);
+        ctx.stroke();
+        ctx.fillText('θ', topPivot.x + 18, topPivot.y + 18);
+        // Bottom left
+        ctx.beginPath();
+        ctx.arc(bottomPivot.x, bottomPivot.y, angleRadius, 3 * Math.PI / 2 - theta, 3 * Math.PI / 2);
+        ctx.stroke();
+        ctx.fillText('θ', bottomPivot.x - 18, bottomPivot.y - 18);
+        // Bottom right
+        ctx.beginPath();
+        ctx.arc(bottomPivot.x, bottomPivot.y, angleRadius, 3 * Math.PI / 2, 3 * Math.PI / 2 + theta);
+        ctx.stroke();
+        ctx.fillText('θ', bottomPivot.x + 18, bottomPivot.y - 18);
+        
+        // 7. Draw the rotation indicator and ω₀
+        const rotationY = bottomPivotY + 80;
+        const rotationRadiusX = 30;
+        const rotationRadiusY = 10;
+        ctx.beginPath();
+        ctx.ellipse(cx, rotationY, rotationRadiusX, rotationRadiusY, 0, Math.PI, 2 * Math.PI);
+        ctx.stroke();
+        // Arrowhead for rotation
+        const arrowAngle = 1.25 * Math.PI;
+        const arrowX = cx + rotationRadiusX * Math.cos(arrowAngle);
+        const arrowY = rotationY + rotationRadiusY * Math.sin(arrowAngle);
+        drawArrow(ctx, arrowX + 6, arrowY + 6, arrowX, arrowY, 8);
+        // Double line through ellipse
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, rotationY - 15);
+        ctx.lineTo(cx - 3, rotationY + 15);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx + 3, rotationY - 15);
+        ctx.lineTo(cx + 3, rotationY + 15);
+        ctx.stroke();
+        ctx.fillText('ω\u2080', cx + rotationRadiusX + 25, rotationY);
+
+        // 8. Add other labels
+        // 'l' labels
+        ctx.fillText('l', cx + 0.5 * l * Math.sin(theta) + 15, topY + 0.5 * l * Math.cos(theta) - 10);
+        ctx.fillText('l', cx - 0.5 * l * Math.sin(theta) - 15, topY + 0.5 * l * Math.cos(theta) - 10);
+        ctx.fillText('l', cx + 0.5 * l * Math.sin(theta) + 15, bottomPivotY - 0.5 * l * Math.cos(theta) + 10);
+        ctx.fillText('l', cx - 0.5 * l * Math.sin(theta) - 15, bottomPivotY - 0.5 * l * Math.cos(theta) + 10);
+        // 'm' labels
+        ctx.fillText('m', leftMass.x - 25, leftMass.y);
+        ctx.fillText('m', rightMass.x + 25, rightMass.y);
+        // 'M' label
+        ctx.font = 'italic bold 22px Times New Roman';
+        ctx.fillText('M', bottomPivot.x + collarWidth/2 + 20, bottomPivot.y);
+        
+        // 9. Figure caption
+        ctx.font = 'bold 20px "Times New Roman"';
+        ctx.fillText('Fig. 2.68.', cx, bottomPivotY + 140);
+        
+    </script>
+</body>
+</html>

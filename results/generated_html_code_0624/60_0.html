@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Shear Force on a Block</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        
+        // Use a font that mimics handwriting for labels
+        const labelFont = '24px "Comic Sans MS", cursive, sans-serif';
+        const axisLabelFont = '24px "Comic Sans MS", cursive, sans-serif';
+        const captionFont = '22px serif';
+
+        // Coordinate transformation
+        const ox = 100; // origin x on canvas
+        const oy = 350; // origin y on canvas
+        const scale = 200;
+
+        function to_canvas(x_logic, y_logic) {
+            return { x: ox + x_logic * scale, y: oy - y_logic * scale };
+        }
+        
+        // Function to draw an arrowhead
+        function drawArrowhead(ctx, fromX, fromY, toX, toY, angle, length) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const headAngle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - length * Math.cos(headAngle - angle), toY - length * Math.sin(headAngle - angle));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - length * Math.cos(headAngle + angle), toY - length * Math.sin(headAngle + angle));
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+
+        // 1. Draw Axes
+        ctx.beginPath();
+        // y-axis (horizontal)
+        const yAxisStart = to_canvas(-0.5, 0);
+        const yAxisEnd = to_canvas(2.8, 0);
+        ctx.moveTo(yAxisStart.x, yAxisStart.y);
+        ctx.lineTo(yAxisEnd.x, yAxisEnd.y);
+        drawArrowhead(ctx, yAxisStart.x, yAxisStart.y, yAxisEnd.x, yAxisEnd.y, Math.PI / 6, 15);
+        drawArrowhead(ctx, yAxisEnd.x, yAxisEnd.y, yAxisStart.x, yAxisStart.y, Math.PI / 6, 15);
+        ctx.font = axisLabelFont;
+        ctx.fillText('y', yAxisEnd.x + 10, yAxisEnd.y + 10);
+
+        // x-axis (vertical)
+        const xAxisStart = to_canvas(0, -0.2);
+        const xAxisEnd = to_canvas(0, 1.3);
+        ctx.moveTo(xAxisStart.x, xAxisStart.y);
+        ctx.lineTo(xAxisEnd.x, xAxisEnd.y);
+        drawArrowhead(ctx, xAxisStart.x, xAxisStart.y, xAxisEnd.x, xAxisEnd.y, Math.PI / 6, 15);
+        ctx.fillText('x', xAxisEnd.x - 30, xAxisEnd.y - 10);
+        ctx.stroke();
+
+        // 2. Draw the fixed surface hatching
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        const hatchStart = to_canvas(-0.2, 0);
+        const hatchEnd = to_canvas(2.5, 0);
+        for (let i = hatchStart.x; i < hatchEnd.x; i += 15) {
+            ctx.beginPath();
+            ctx.moveTo(i, oy + 5);
+            ctx.lineTo(i - 10, oy + 15);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+
+        // 3. Define block parameters and draw it
+        const l = 1.0;  // height
+        const w = 1.8;  // width
+        const u = 0.4;  // horizontal displacement
+        const y_start = 0.3; // starting position on y-axis
+        
+        const p1 = to_canvas(y_start, 0);
+        const p2 = to_canvas(y_start + w, 0);
+        const p3 = to_canvas(y_start + w + u, l);
+        const p4 = to_canvas(y_start + u, l);
+
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.lineTo(p3.x, p3.y);
+        ctx.lineTo(p4.x, p4.y);
+        ctx.closePath();
+        ctx.stroke();
+
+        // 4. Add labels and annotations
+        ctx.font = labelFont;
+
+        // Label 'l' for height
+        const l_pos = to_canvas(0, l);
+        ctx.beginPath();
+        ctx.moveTo(l_pos.x - 5, l_pos.y);
+        ctx.lineTo(l_pos.x + 5, l_pos.y);
+        ctx.stroke();
+        ctx.fillText('l', l_pos.x - 25, l_pos.y + 8);
+        
+        // Force F
+        const forceStart = p3;
+        const forceEnd = {x: p3.x + 80, y: p3.y};
+        ctx.beginPath();
+        ctx.moveTo(forceStart.x, forceStart.y);
+        ctx.lineTo(forceEnd.x, forceEnd.y);
+        ctx.stroke();
+        drawArrowhead(ctx, forceStart.x, forceStart.y, forceEnd.x, forceEnd.y, Math.PI / 6, 15);
+        ctx.fillText('F', forceEnd.x + 10, forceEnd.y + 8);
+
+        // Displacement 'u'
+        const u_y = p3.y - 30;
+        const u_x1 = to_canvas(y_start + w, l).x;
+        const u_x2 = p3.x;
+        ctx.beginPath();
+        ctx.moveTo(u_x1, u_y - 8); ctx.lineTo(u_x1, u_y + 8); // left tick
+        ctx.moveTo(u_x2, u_y - 8); ctx.lineTo(u_x2, u_y + 8); // right tick
+        ctx.moveTo(u_x1, u_y); ctx.lineTo(u_x2, u_y); // horizontal line
+        ctx.stroke();
+        ctx.fillText('u', (u_x1 + u_x2) / 2 - 8, u_y - 10);
+        
+        // Shear angle 'φ' (phi)
+        const angleRadius = 28;
+        const angleLabelRadius = angleRadius + 15;
+        const slantAngle = Math.atan2(-l, u);
+        const verticalAngle = -Math.PI / 2;
+
+        // Left angle
+        ctx.beginPath();
+        ctx.arc(p1.x, p1.y, angleRadius, slantAngle, verticalAngle);
+        ctx.stroke();
+        const midAngleLeft = (slantAngle + verticalAngle) / 2;
+        ctx.fillText('φ', p1.x + angleLabelRadius * Math.cos(midAngleLeft) - 5, p1.y + angleLabelRadius * Math.sin(midAngleLeft) + 5);
+
+        // Right angle
+        // Dotted line for reference
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(p3.x, p3.y);
+        ctx.lineTo(p3.x, p2.y);
+        ctx.stroke();
+        ctx.restore();
+        // Angle arc
+        ctx.beginPath();
+        ctx.arc(p3.x, p3.y, angleRadius, verticalAngle, slantAngle);
+        ctx.stroke();
+        const midAngleRight = (slantAngle + verticalAngle) / 2;
+        ctx.fillText('φ', p3.x + angleLabelRadius * Math.cos(midAngleRight) - 5, p3.y + angleLabelRadius * Math.sin(midAngleRight) + 5);
+
+        // 5. Figure Caption
+        ctx.font = captionFont;
+        ctx.fillText('Fig. 2.77.', canvas.width / 2 - 50, canvas.height - 20);
+
+    </script>
+</body>
+</html>

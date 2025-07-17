@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scattering Diagram</title>
+</head>
+<body>
+<canvas id="scatteringCanvas" width="600" height="450" style="border:1px solid #ccc;"></canvas>
+
+<script>
+    const canvas = document.getElementById('scatteringCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow
+    function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 10) {
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+    }
+    
+    // Helper function to draw an arrow on an arc
+    function drawArcArrow(ctx, centerX, centerY, radius, angle, headLength = 8, clockwise = false) {
+        const tangentAngle = clockwise ? angle - Math.PI / 2 : angle + Math.PI / 2;
+        const arrowX = centerX + radius * Math.cos(angle);
+        const arrowY = centerY + radius * Math.sin(angle);
+        
+        ctx.beginPath();
+        const p1x = arrowX + headLength * Math.cos(tangentAngle - Math.PI / 6);
+        const p1y = arrowY + headLength * Math.sin(tangentAngle - Math.PI / 6);
+        const p2x = arrowX + headLength * Math.cos(tangentAngle + Math.PI / 6);
+        const p2y = arrowY + headLength * Math.sin(tangentAngle + Math.PI / 6);
+        ctx.moveTo(arrowX, arrowY);
+        ctx.lineTo(p1x, p1y);
+        ctx.moveTo(arrowX, arrowY);
+        ctx.lineTo(p2x, p2y);
+        ctx.stroke();
+    }
+
+
+    // --- Main Drawing ---
+
+    // Define main coordinates and parameters
+    const intersectX = 180;
+    const intersectY = 220;
+    const massMX = 320;
+    const massMY = 220;
+    const slope = 0.4;
+
+    // Set drawing styles
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = 'italic 20px "Times New Roman"';
+
+    // 1. Draw dashed lines (asymptotes and axis of symmetry)
+    ctx.save();
+    ctx.setLineDash([6, 6]);
+    ctx.lineWidth = 1;
+
+    // Axis of symmetry
+    ctx.beginPath();
+    ctx.moveTo(50, massMY);
+    ctx.lineTo(550, massMY);
+    ctx.stroke();
+
+    // Asymptotes
+    // Top
+    ctx.beginPath();
+    ctx.moveTo(intersectX - 200, intersectY + 200 * slope);
+    ctx.lineTo(intersectX + 300, intersectY - 300 * slope);
+    ctx.stroke();
+    // Bottom
+    ctx.beginPath();
+    ctx.moveTo(intersectX - 200, intersectY - 200 * slope);
+    ctx.lineTo(intersectX + 300, intersectY + 300 * slope);
+    ctx.stroke();
+
+    ctx.restore();
+
+    // 2. Draw the hyperbolic trajectory (solid curve)
+    ctx.beginPath();
+    const startX = 150, startY = intersectY + (intersectX-startX)*slope + 12;
+    const endX = 500, endY = intersectY + (endX-intersectX)*slope;
+    const controlX = 300, controlY = 190;
+    ctx.moveTo(startX, startY);
+    ctx.quadraticCurveTo(controlX, controlY, endX, endY);
+    ctx.stroke();
+
+    // Add arrow at the end of the trajectory
+    const lastSegStartX = controlX + 0.95 * (endX-controlX);
+    const lastSegStartY = controlY + 0.95 * (endY-controlY);
+    drawArrow(ctx, lastSegStartX, lastSegStartY, endX, endY, 10);
+
+    // 3. Draw central mass M
+    ctx.beginPath();
+    ctx.arc(massMX, massMY, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('M', massMX + 15, massMY + 7);
+
+    // 4. Draw particle m and velocity v0
+    const particleX = 250;
+    const particleY = 197;
+    ctx.beginPath();
+    ctx.arc(particleX, particleY, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('m', particleX, particleY - 15);
+    
+    // Velocity vector v0
+    const v0_len = 50;
+    const v0_angle = Math.atan(-0.5);
+    const v0_startX = particleX + v0_len * Math.cos(v0_angle + Math.PI);
+    const v0_startY = particleY + v0_len * Math.sin(v0_angle + Math.PI);
+    drawArrow(ctx, v0_startX, v0_startY, particleX, particleY, 10);
+    ctx.fillText('v', v0_startX-5, v0_startY - 10);
+    ctx.font = 'italic 14px "Times New Roman"';
+    ctx.fillText('0', v0_startX+3, v0_startY - 5);
+    ctx.font = 'italic 20px "Times New Roman"';
+
+
+    // 5. Draw impact parameter b
+    // Top asymptote equation: y - intersectY = -slope * (x - intersectX) => slope*x + y - (slope*intersectX + intersectY) = 0
+    const A = slope, B = 1, C = -slope*intersectX - intersectY;
+    // Perpendicular point from M(massMX, massMY)
+    const xp = (B*(B*massMX - A*massMY) - A*C) / (A*A + B*B);
+    const yp = (A*(-B*massMX + A*massMY) - B*C) / (A*A + B*B);
+    
+    ctx.beginPath();
+    ctx.moveTo(massMX, massMY);
+    ctx.lineTo(xp, yp);
+    ctx.stroke();
+    // Ticks for b
+    const tickLen = 6;
+    const perpAngle = Math.atan2(xp - massMX, massMY - yp);
+    ctx.beginPath();
+    ctx.moveTo(massMX, massMY);
+    ctx.lineTo(massMX + tickLen * Math.cos(perpAngle), massMY + tickLen * Math.sin(perpAngle));
+    ctx.moveTo(massMX, massMY);
+    ctx.lineTo(massMX - tickLen * Math.cos(perpAngle), massMY - tickLen * Math.sin(perpAngle));
+    ctx.moveTo(xp, yp);
+    ctx.lineTo(xp + tickLen * Math.cos(perpAngle), yp + tickLen * Math.sin(perpAngle));
+    ctx.moveTo(xp, yp);
+    ctx.lineTo(xp - tickLen * Math.cos(perpAngle), yp - tickLen * Math.sin(perpAngle));
+    ctx.stroke();
+    ctx.fillText('b', (massMX+xp)/2 + 10, (massMY+yp)/2 + 20);
+
+    // 6. Draw scattering angle theta
+    const angleRadius = 80;
+    const angleTop = Math.PI + Math.atan(-slope);
+    const angleBottom = Math.PI + Math.atan(slope);
+
+    ctx.beginPath();
+    ctx.arc(intersectX, intersectY, angleRadius, angleBottom, angleTop, true); // true for clockwise
+    ctx.stroke();
+    drawArcArrow(ctx, intersectX, intersectY, angleRadius, angleTop, 10, true);
+    ctx.fillText('θ', intersectX - angleRadius - 25, intersectY);
+
+    // 7. Draw Figure Label
+    ctx.fillStyle = 'black';
+    ctx.font = 'normal 20px "Song Ti"';
+    ctx.textAlign = 'center';
+    ctx.fillText('图 1', canvas.width / 2, canvas.height - 15);
+
+</script>
+</body>
+</html>

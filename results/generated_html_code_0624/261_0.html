@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Truss Structure Analysis</title>
+</head>
+<body>
+<canvas id="trussCanvas" width="600" height="400" style="border:1px solid #000;"></canvas>
+<script>
+    const canvas = document.getElementById('trussCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Drawing Parameters ---
+    const x0 = 80;
+    const y_base = 220; // Y-coordinate for the bottom chord
+    const L = 140;      // Length of a single member segment
+    const h = L * Math.sqrt(3) / 2; // Height of the equilateral triangles
+
+    const lineWidthTruss = 3;
+    const lineWidthForces = 1.5;
+    const lineWidthSupport = 2;
+    const fontSize = 18;
+    const labelOffset = 15;
+
+    // --- Joint Coordinates ---
+    const A = { x: x0, y: y_base };
+    const C = { x: x0 + L, y: y_base };
+    const E = { x: x0 + 2 * L, y: y_base };
+    const G = { x: x0 + 3 * L, y: y_base };
+
+    const B = { x: x0 + 0.5 * L, y: y_base - h };
+    const D = { x: x0 + 1.5 * L, y: y_base - h };
+    const F = { x: x0 + 2.5 * L, y: y_base - h };
+
+    // --- Helper function to draw an arrow ---
+    function drawArrow(fromx, fromy, tox, toy) {
+        const headlen = 10;
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // --- 1. Draw Supports ---
+    ctx.lineWidth = lineWidthSupport;
+    ctx.strokeStyle = 'black';
+    const ledge_height = 30;
+    const ground_offset = 10;
+    
+    // Support at A (Pin on a corner ledge)
+    const ledgeA_y = A.y + ground_offset;
+    const ledgeA_corner = {x: A.x + 10, y: ledgeA_y};
+    ctx.beginPath();
+    ctx.moveTo(A.x - 20, ledgeA_y);
+    ctx.lineTo(ledgeA_corner.x, ledgeA_corner.y);
+    ctx.lineTo(ledgeA_corner.x, ledgeA_corner.y + ledge_height);
+    ctx.stroke();
+    // Pin symbol
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y);
+    ctx.lineTo(A.x - 8, ledgeA_y);
+    ctx.lineTo(A.x + 8, ledgeA_y);
+    ctx.closePath();
+    ctx.stroke();
+    // Hatching for ground under A
+    ctx.lineWidth = 1;
+    for(let i=0; i<6; i++){
+        let y_start = ledgeA_y + 5 + i * 5;
+        let y_end = y_start - 15;
+        ctx.moveTo(A.x - 20, y_start);
+        ctx.lineTo(A.x + 10, y_end);
+    }
+    ctx.stroke();
+
+    // Support at G (Roller on a corner ledge)
+    const rollerW = 25;
+    const rollerH = 10;
+    const ledgeG_y = G.y + rollerH + ground_offset - 5;
+    const ledgeG_corner = {x: G.x - 10, y: ledgeG_y};
+    // Ledge G
+    ctx.lineWidth = lineWidthSupport;
+    ctx.beginPath();
+    ctx.moveTo(G.x + 20, ledgeG_y);
+    ctx.lineTo(ledgeG_corner.x, ledgeG_corner.y);
+    ctx.lineTo(ledgeG_corner.x, ledgeG_corner.y + ledge_height);
+    // Roller box
+    ctx.rect(G.x - rollerW/2, G.y + ground_offset - 5, rollerW, rollerH);
+    ctx.stroke();
+    // Roller hatching
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i < rollerW; i+=5) {
+        ctx.moveTo(G.x - rollerW/2 + i, G.y + ground_offset - 5);
+        ctx.lineTo(G.x - rollerW/2, G.y + ground_offset - 5 + rollerH - (i/rollerW)*rollerH);
+    }
+    ctx.stroke();
+    // Ledge Hatching G
+    ctx.lineWidth = 1;
+    for(let i=0; i<6; i++){
+        let y_start = ledgeG_y + 5 + i * 5;
+        let y_end = y_start - 15;
+        ctx.moveTo(G.x + 20, y_start);
+        ctx.lineTo(G.x - 10, y_end);
+    }
+    ctx.stroke();
+
+    // --- 2. Draw Truss Members ---
+    ctx.lineWidth = lineWidthTruss;
+    ctx.strokeStyle = 'black';
+    ctx.beginPath();
+    // Bottom chord
+    ctx.moveTo(A.x, A.y);
+    ctx.lineTo(C.x, C.y);
+    ctx.lineTo(E.x, E.y);
+    ctx.lineTo(G.x, G.y);
+    // Top chord
+    ctx.moveTo(B.x, B.y);
+    ctx.lineTo(D.x, D.y);
+    ctx.lineTo(F.x, F.y);
+    // Web members
+    ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y);
+    ctx.moveTo(B.x, B.y); ctx.lineTo(C.x, C.y);
+    ctx.moveTo(C.x, C.y); ctx.lineTo(D.x, D.y);
+    ctx.moveTo(D.x, D.y); ctx.lineTo(E.x, E.y);
+    ctx.moveTo(E.x, E.y); ctx.lineTo(F.x, F.y);
+    ctx.moveTo(F.x, F.y); ctx.lineTo(G.x, G.y);
+    ctx.stroke();
+
+    // --- 3. Draw Load W ---
+    const loadLength = 40;
+    const boxSize = 25;
+    ctx.lineWidth = lineWidthSupport;
+    ctx.beginPath();
+    ctx.moveTo(E.x, E.y);
+    ctx.lineTo(E.x, E.y + loadLength);
+    ctx.rect(E.x - boxSize/2, E.y + loadLength, boxSize, boxSize);
+    ctx.stroke();
+
+    // --- 4. Draw Reaction Forces ---
+    ctx.lineWidth = lineWidthForces;
+    const forceLength = 60;
+    drawArrow(A.x, A.y, A.x, A.y - forceLength); // N_AY
+    drawArrow(A.x, A.y, A.x + forceLength, A.y); // N_AX
+    drawArrow(G.x, G.y, G.x, G.y - forceLength); // N_GY
+
+    // --- 5. Add Labels ---
+    ctx.fillStyle = 'black';
+    ctx.textBaseline = 'middle';
+    ctx.font = `italic bold ${fontSize}px serif`;
+    
+    // Joint Labels
+    ctx.textAlign = 'right';
+    ctx.fillText('A', A.x - 5, A.y - 10);
+    ctx.textAlign = 'center';
+    ctx.fillText('C', C.x, C.y + labelOffset);
+    ctx.fillText('E', E.x, E.y + labelOffset);
+    ctx.textAlign = 'left';
+    ctx.fillText('G', G.x + 5, G.y - 10);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('B', B.x, B.y - 5);
+    ctx.fillText('D', D.x, D.y - 5);
+    ctx.fillText('F', F.x, F.y - 5);
+    
+    // Load Label
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    ctx.fillText('W', E.x + boxSize/2 + 5, E.y + loadLength + boxSize/2);
+
+    // Force Labels with Subscripts
+    ctx.font = `italic ${fontSize}px serif`;
+    const subFontSize = fontSize * 0.7;
+    // N_AY
+    ctx.textAlign = 'right';
+    ctx.fillText('N', A.x - 10, A.y - forceLength/2);
+    ctx.font = `italic ${subFontSize}px serif`;
+    ctx.fillText('AY', A.x, A.y - forceLength/2 + 7);
+    // N_AX
+    ctx.font = `italic ${fontSize}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('N', A.x + forceLength/2, A.y - 8);
+    ctx.font = `italic ${subFontSize}px serif`;
+    ctx.fillText('AX', A.x + forceLength/2 + 12, A.y - 5);
+    // N_GY
+    ctx.font = `italic ${fontSize}px serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('N', G.x + 10, G.y - forceLength/2);
+    ctx.font = `italic ${subFontSize}px serif`;
+    ctx.fillText('GY', G.x + 22, G.y - forceLength/2 + 7);
+
+    // --- 6. Figure Caption ---
+    ctx.font = `16px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Fig. 1.112.', canvas.width / 2, canvas.height - 10);
+
+</script>
+</body>
+</html>

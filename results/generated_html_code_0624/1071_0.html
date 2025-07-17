@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="500" height="420"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style and Settings
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // --- Helper functions ---
+        function drawResistor(x, y, w, h) {
+            ctx.save();
+            ctx.fillStyle = 'white';
+            ctx.fillRect(x, y - h / 2, w, h);
+            ctx.strokeRect(x, y - h / 2, w, h);
+            ctx.restore();
+        }
+
+        function drawVerticalResistor(x, y, w, h) {
+            ctx.save();
+            ctx.fillStyle = 'white';
+            ctx.fillRect(x - w / 2, y, w, h);
+            ctx.strokeRect(x - w / 2, y, w, h);
+            ctx.restore();
+        }
+        
+        function drawLabelWithSubscript(base, sub, x, y) {
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Base character
+            ctx.font = 'italic 20px Times New Roman';
+            const baseText = base;
+            const baseWidth = ctx.measureText(baseText).width;
+            ctx.fillText(baseText, x, y);
+            
+            // Subscript
+            ctx.font = 'italic 14px Times New Roman';
+            ctx.fillText(sub, x + baseWidth / 2 + 1, y + 5);
+            ctx.restore();
+        }
+
+        // --- Layout Coordinates ---
+        const yTop = 100;
+        const yBottom = 200;
+        const yMid = (yTop + yBottom) / 2;
+
+        const xNodeA = 100;
+        const xResL_start = 120;
+        const resW = 60;
+        const resH = 25;
+        const xResL_end = xResL_start + resW;
+        const xBridge = xResL_end + 30;
+        const xResR_start = xBridge + 30;
+        const xResR_end = xResR_start + resW;
+        const xNodeB = xResR_end + 20;
+        
+        const ammeterR = 20;
+        const battY = 320;
+        const xBattStart = 220;
+        const xBattEnd = xBattStart + 40;
+        const xAmmeterStart = xBattEnd + 40;
+        const ammeterX = xAmmeterStart + ammeterR;
+
+        // --- 1. Draw Components ---
+        
+        // Resistors
+        drawResistor(xResL_start, yTop, resW, resH); // r top-left
+        drawResistor(xResL_start, yBottom, resW, resH); // r bottom-left
+        drawResistor(xResR_start, yTop, resW, resH); // r1
+        drawResistor(xResR_start, yBottom, resW, resH); // r3
+        drawVerticalResistor(xBridge, yMid - resH, resH, resH*2); // r2
+
+        // Ammeter
+        ctx.beginPath();
+        ctx.arc(ammeterX, battY, ammeterR, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Battery
+        ctx.beginPath();
+        ctx.moveTo(xBattStart, battY - 15);
+        ctx.lineTo(xBattStart, battY + 15); // Positive terminal (long)
+        ctx.moveTo(xBattStart + 15, battY - 8);
+        ctx.lineTo(xBattStart + 15, battY + 8); // Negative terminal (short)
+        ctx.stroke();
+
+        // --- 2. Draw Wires ---
+        ctx.beginPath();
+        // Bridge Structure
+        // Top horizontal wire
+        ctx.moveTo(xNodeA, yTop); ctx.lineTo(xResL_start, yTop);
+        ctx.moveTo(xResL_end, yTop); ctx.lineTo(xResR_start, yTop);
+        ctx.moveTo(xResR_end, yTop); ctx.lineTo(xNodeB, yTop);
+        // Bottom horizontal wire
+        ctx.moveTo(xNodeA, yBottom); ctx.lineTo(xResL_start, yBottom);
+        ctx.moveTo(xResL_end, yBottom); ctx.lineTo(xResR_start, yBottom);
+        ctx.moveTo(xResR_end, yBottom); ctx.lineTo(xNodeB, yBottom);
+        // Vertical wires for nodes and bridge
+        ctx.moveTo(xNodeA, yTop); ctx.lineTo(xNodeA, yBottom); // Node A bar
+        ctx.moveTo(xBridge, yTop); ctx.lineTo(xBridge, yMid - resH); // Top half of bridge connection
+        ctx.moveTo(xBridge, yMid + resH); ctx.lineTo(xBridge, yBottom); // Bottom half
+        ctx.moveTo(xNodeB, yTop); ctx.lineTo(xNodeB, yBottom); // Node B bar
+        
+        // Main Loop
+        ctx.moveTo(xNodeA, yBottom);
+        ctx.lineTo(xNodeA, battY);
+        ctx.lineTo(xBattStart, battY); // To Battery+
+        
+        ctx.moveTo(xBattStart + 15, battY); // From Battery-
+        ctx.lineTo(xAmmeterStart, battY); // To Ammeter
+
+        ctx.moveTo(ammeterX + ammeterR, battY); // From Ammeter
+        ctx.lineTo(xNodeB, battY);
+        ctx.lineTo(xNodeB, yBottom);
+
+        ctx.stroke();
+        
+        // --- 3. Draw Labels ---
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Resistor Labels
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('r', xResL_start + resW / 2, yTop - 20);
+        ctx.fillText('r', xResL_start + resW / 2, yBottom + 20);
+        drawLabelWithSubscript('r', '1', xResR_start + resW / 2, yTop - 20);
+        drawLabelWithSubscript('r', '2', xBridge + 25, yMid);
+        drawLabelWithSubscript('r', '3', xResR_start + resW / 2, yBottom + 20);
+
+        // A, B, Ammeter Labels
+        ctx.font = '24px sans-serif';
+        ctx.fillText('A', xNodeA - 20, yMid);
+        ctx.fillText('B', xNodeB + 20, yMid);
+        ctx.fillText('A', ammeterX, battY);
+
+        // EMF Label
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText('ℰ', xBattStart - 10, battY + 30);
+        
+        // Caption
+        ctx.font = '22px KaiTi'; // A common Chinese font
+        if (ctx.font.indexOf('KaiTi') === -1) {
+            ctx.font = '22px sans-serif'; // Fallback
+        }
+        ctx.fillText('电图 4.24.1', 250, 400);
+
+    </script>
+</body>
+</html>

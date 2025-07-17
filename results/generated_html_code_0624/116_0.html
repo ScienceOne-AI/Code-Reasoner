@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a spring between two points.
+         * @param {CanvasRenderingContext2D} ctx The canvas rendering context.
+         * @param {number} x1 The x-coordinate of the start point.
+         * @param {number} y1 The y-coordinate of the start point.
+         * @param {number} x2 The x-coordinate of the end point.
+         * @param {number} y2 The y-coordinate of the end point.
+         * @param {number} coils The number of coils in the spring.
+         * @param {number} amplitude The amplitude of the spring coils.
+         */
+        function drawSpring(ctx, x1, y1, x2, y2, coils, amplitude) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+
+            const segmentLength = length / (coils * 2);
+            for (let i = 0; i < coils; i++) {
+                ctx.lineTo((i + 0.25) * segmentLength * 2, amplitude);
+                ctx.lineTo((i + 0.75) * segmentLength * 2, -amplitude);
+            }
+            ctx.lineTo(length, 0);
+            
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        /**
+         * Draws an arrow from one point to another.
+         * @param {CanvasRenderingContext2D} ctx The canvas rendering context.
+         * @param {number} fromX Start x-coordinate.
+         * @param {number} fromY Start y-coordinate.
+         * @param {number} toX End x-coordinate.
+         * @param {number} toY End y-coordinate.
+         * @param {number} headLength Length of the arrowhead sides.
+         * @param {number} lineWidth Width of the arrow line.
+         */
+        function drawArrow(ctx, fromX, fromY, toX, toY, headLength, lineWidth) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            
+            ctx.save();
+            ctx.lineWidth = lineWidth;
+            
+            // Draw line
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            // Draw arrowhead
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+
+        // Clear canvas
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Define geometry
+        const cx = canvas.width / 2;
+        const cy = 280; // Center y, shifted up to make space for caption
+        const l = 130; // Distance from center to mass
+        const center = { x: cx, y: cy };
+
+        // Angles for the three axes (120 degrees apart)
+        const angle1 = 210 * Math.PI / 180; // bottom-left
+        const angle2 = 330 * Math.PI / 180; // bottom-right
+        const angle3 = 90 * Math.PI / 180;  // top
+
+        // Vertex coordinates (mass positions)
+        const v1 = { x: cx + l * Math.cos(angle1), y: cy + l * Math.sin(angle1) };
+        const v2 = { x: cx + l * Math.cos(angle2), y: cy + l * Math.sin(angle2) };
+        const v3 = { x: cx + l * Math.cos(angle3), y: cy + l * Math.sin(angle3) };
+
+        // Set drawing style
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 20px serif';
+
+        // 1. Draw internal lines from center to vertices
+        ctx.beginPath();
+        ctx.moveTo(center.x, center.y);
+        ctx.lineTo(v1.x, v1.y);
+        ctx.moveTo(center.x, center.y);
+        ctx.lineTo(v2.x, v2.y);
+        ctx.moveTo(center.x, center.y);
+        ctx.lineTo(v3.x, v3.y);
+        ctx.stroke();
+
+        // 2. Draw the springs between vertices
+        drawSpring(ctx, v1.x, v1.y, v3.x, v3.y, 18, 5);
+        drawSpring(ctx, v1.x, v1.y, v2.x, v2.y, 18, 5);
+        drawSpring(ctx, v2.x, v2.y, v3.x, v3.y, 18, 5);
+
+        // 3. Draw the external axes with arrows
+        const arrowLength = 50;
+        const headLength = 10;
+        const arrowLineWidth = 3;
+
+        // Axis for x1 (inward arrow)
+        const end1 = { x: v1.x + arrowLength * Math.cos(angle1), y: v1.y + arrowLength * Math.sin(angle1) };
+        drawArrow(ctx, v1.x, v1.y, end1.x, end1.y, headLength, arrowLineWidth);
+        const start1 = { x: v1.x - (arrowLength - 10) * Math.cos(angle1), y: v1.y - (arrowLength - 10) * Math.sin(angle1) };
+        ctx.beginPath();
+        ctx.moveTo(v1.x, v1.y);
+        ctx.lineTo(start1.x, start1.y);
+        ctx.stroke();
+
+
+        // Axis for x2 (outward arrow)
+        const end2 = { x: v2.x + arrowLength * Math.cos(angle2), y: v2.y + arrowLength * Math.sin(angle2) };
+        drawArrow(ctx, v2.x, v2.y, end2.x, end2.y, headLength, arrowLineWidth);
+
+        // Axis for x3 (outward arrow)
+        const end3 = { x: v3.x + arrowLength * Math.cos(angle3), y: v3.y + arrowLength * Math.sin(angle3) };
+        drawArrow(ctx, v3.x, v3.y, end3.x, end3.y, headLength, arrowLineWidth);
+
+        // 4. Draw the masses (filled circles at vertices)
+        ctx.beginPath();
+        ctx.arc(v1.x, v1.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(v2.x, v2.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(v3.x, v3.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 5. Add labels
+        // x₁, x₂, x₃
+        ctx.fillText('x\u2081', v1.x - 40, v1.y + 10);
+        ctx.fillText('x\u2082', v2.x + 25, v2.y + 15);
+        ctx.fillText('x\u2083', v3.x + 15, v3.y - 15);
+        
+        // l
+        const l_pos = { x: (center.x + v1.x) / 2, y: (center.y + v1.y) / 2 };
+        ctx.fillText('l', l_pos.x - 20, l_pos.y);
+
+        // 6. Add caption
+        ctx.font = '18px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 1.94.', cx, canvas.height - 20);
+
+    </script>
+</body>
+</html>

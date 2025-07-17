@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+<canvas id="myCanvas" width="850" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = "italic bold 24px 'Times New Roman'";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Helper function to draw an arrow
+    function drawArrow(fromx, fromy, tox, toy) {
+        const headlen = 12; // length of head in pixels
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+        ctx.fill();
+    }
+    
+    // Helper function for ground hatching
+    function drawHatching(x_start, y_start, width, height) {
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        const step = 8;
+        for (let i = 0; i < width + height; i += step) {
+            ctx.beginPath();
+            ctx.moveTo(x_start + i, y_start);
+            ctx.lineTo(x_start + i - height, y_start + height);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    // Parameters
+    const a = 150;
+    const y_beam = 200;
+    const x_margin = 75;
+
+    const x_C = x_margin;
+    const x_A = x_C + a;
+    const x_M = x_A + a; // Point of Moment application
+    const x_B = x_M + a;
+    const x_D = x_B + a;
+
+    // Draw main beam
+    ctx.save();
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(x_C, y_beam);
+    ctx.lineTo(x_D, y_beam);
+    ctx.stroke();
+    ctx.restore();
+
+    // Draw point labels
+    ctx.font = "bold 28px 'Times New Roman'";
+    ctx.fillText('C', x_C, y_beam - 30);
+    ctx.fillText('A', x_A, y_beam - 30);
+    ctx.fillText('B', x_B, y_beam - 30);
+    ctx.fillText('D', x_D, y_beam - 30);
+    
+    // Set font for variables
+    ctx.font = "italic bold 24px 'Times New Roman'";
+
+    // Draw pin support at A
+    function drawPinSupport(x, y) {
+        const h = 40;
+        const w = 25;
+        // Hinge
+        ctx.beginPath();
+        ctx.arc(x, y, 7, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fill();
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = 'black';
+        // Triangle
+        ctx.beginPath();
+        ctx.moveTo(x - w, y + h);
+        ctx.lineTo(x, y + 7);
+        ctx.lineTo(x + w, y + h);
+        ctx.closePath();
+        ctx.fill();
+        // Ground
+        ctx.beginPath();
+        ctx.moveTo(x - w - 10, y + h);
+        ctx.lineTo(x + w + 10, y + h);
+        ctx.stroke();
+        drawHatching(x - w - 10, y + h, 2 * w + 20, 15);
+    }
+    drawPinSupport(x_A, y_beam);
+
+    // Draw roller support at B
+    function drawRollerSupport(x, y) {
+        const h = 30;
+        const w_top = 12;
+        const w_bot = 22;
+        // Hinge
+        ctx.beginPath();
+        ctx.arc(x, y, 7, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fill();
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = 'black';
+        // Support body
+        ctx.beginPath();
+        ctx.moveTo(x - w_bot, y + h);
+        ctx.lineTo(x - w_top, y + 7);
+        ctx.lineTo(x + w_top, y + 7);
+        ctx.lineTo(x + w_bot, y + h);
+        ctx.closePath();
+        ctx.fill();
+        // Rollers
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(x - 9, y + 20, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + 9, y + 20, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fill();
+        ctx.fillStyle = 'black';
+        // Ground
+        ctx.beginPath();
+        ctx.moveTo(x - w_bot - 10, y + h);
+        ctx.lineTo(x + w_bot + 10, y + h);
+        ctx.stroke();
+        drawHatching(x - w_bot - 10, y + h, 2 * w_bot + 20, 15);
+    }
+    drawRollerSupport(x_B, y_beam);
+
+    // Draw distributed load q
+    const q_height = 40;
+    ctx.beginPath();
+    ctx.rect(x_C, y_beam - q_height, a, q_height);
+    ctx.stroke();
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    const hatch_step = 10;
+    for (let i = x_C; i <= x_A; i += hatch_step) {
+        ctx.beginPath();
+        ctx.moveTo(i, y_beam - q_height);
+        ctx.lineTo(i, y_beam-2);
+        ctx.stroke();
+    }
+    ctx.restore();
+    ctx.fillText('q', (x_C + x_A) / 2, y_beam - q_height - 20);
+
+    // Draw Couple M
+    const d_height = 100;
+    const couple_bar_width = 40;
+    ctx.save();
+    ctx.lineWidth = 3;
+    // Vertical post
+    ctx.beginPath();
+    ctx.moveTo(x_M, y_beam - d_height / 2);
+    ctx.lineTo(x_M, y_beam + d_height / 2);
+    ctx.stroke();
+    // Top T-bar
+    ctx.beginPath();
+    ctx.moveTo(x_M - couple_bar_width / 2, y_beam - d_height / 2);
+    ctx.lineTo(x_M + couple_bar_width / 2, y_beam - d_height / 2);
+    ctx.stroke();
+    // Bottom T-bar
+    ctx.beginPath();
+    ctx.moveTo(x_M - couple_bar_width / 2, y_beam + d_height / 2);
+    ctx.lineTo(x_M + couple_bar_width / 2, y_beam + d_height / 2);
+    ctx.stroke();
+    ctx.restore();
+    
+    // Labels for couple
+    ctx.font = "bold 28px 'Times New Roman'";
+    ctx.fillText('P', x_M, y_beam - d_height / 2 - 20);
+    ctx.fillText('P', x_M, y_beam + d_height / 2 + 25);
+    ctx.font = "italic bold 24px 'Times New Roman'";
+
+    // Dimension 'd' for the couple
+    ctx.save();
+    ctx.lineWidth = 1;
+    const d_dim_offset = 50;
+    drawArrow(x_M + d_dim_offset, y_beam - d_height / 2 + 10, x_M + d_dim_offset, y_beam - d_height / 2);
+    drawArrow(x_M + d_dim_offset, y_beam + d_height / 2 - 10, x_M + d_dim_offset, y_beam + d_height / 2);
+    ctx.beginPath();
+    ctx.moveTo(x_M + d_dim_offset, y_beam - d_height / 2);
+    ctx.lineTo(x_M + d_dim_offset, y_beam + d_height / 2);
+    ctx.stroke();
+    ctx.fillText('d', x_M + d_dim_offset + 20, y_beam);
+    ctx.restore();
+    
+    // Draw concentrated load Q
+    const Q_arrow_len = 70;
+    ctx.save();
+    ctx.lineWidth = 3;
+    drawArrow(x_D, y_beam - Q_arrow_len, x_D, y_beam);
+    ctx.restore();
+    ctx.font = "bold 28px 'Times New Roman'";
+    ctx.fillText('Q', x_D + 35, y_beam - Q_arrow_len / 2);
+    ctx.font = "italic bold 24px 'Times New Roman'";
+    
+    // Draw dimensions below the beam
+    const y_dim = y_beam + 120;
+    ctx.save();
+    ctx.lineWidth = 1;
+    // Horizontal line
+    drawArrow(x_C + 20, y_dim, x_C, y_dim);
+    drawArrow(x_D - 20, y_dim, x_D, y_dim);
+    ctx.beginPath();
+    ctx.moveTo(x_C, y_dim);
+    ctx.lineTo(x_D, y_dim);
+    ctx.stroke();
+    
+    // Ticks and dashed lines
+    const points_x = [x_C, x_A, x_M, x_B, x_D];
+    ctx.setLineDash([5, 5]);
+    points_x.forEach(x => {
+        ctx.beginPath();
+        ctx.moveTo(x, y_beam + 2);
+        ctx.lineTo(x, y_dim);
+        ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    
+    points_x.forEach(x => {
+        ctx.beginPath();
+        ctx.moveTo(x, y_dim - 5);
+        ctx.lineTo(x, y_dim + 5);
+        ctx.stroke();
+    });
+
+    // Dimension labels 'a'
+    const y_label = y_dim - 20;
+    ctx.fillText('a', (x_C + x_A) / 2, y_label);
+    ctx.fillText('a', (x_A + x_M) / 2, y_label);
+    ctx.fillText('a', (x_M + x_B) / 2, y_label);
+    ctx.fillText('a', (x_B + x_D) / 2, y_label);
+    ctx.restore();
+
+</script>
+</body>
+</html>

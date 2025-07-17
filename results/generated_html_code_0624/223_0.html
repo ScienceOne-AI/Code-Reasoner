@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Recreation</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper function to draw a spring ---
+        function drawSpring(ctx, startX, startY, endX, endY, coils, amplitude) {
+            const dx = endX - startX;
+            const dy = endY - startY;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            const segmentLength = length / (coils * 2);
+
+            ctx.save();
+            ctx.translate(startX, startY);
+            ctx.rotate(angle);
+            
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            for (let i = 0; i < coils; i++) {
+                ctx.lineTo((i * 2 + 1) * segmentLength, amplitude);
+                ctx.lineTo((i * 2 + 2) * segmentLength, -amplitude);
+            }
+            ctx.lineTo(length, 0);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Helper function to draw an arrowhead ---
+        function drawArrowhead(ctx, toX, toY, angle, size) {
+            ctx.save();
+            ctx.translate(toX, toY);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Drawing parameters ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.lineWidth = 1.5;
+
+        // --- Geometric coordinates and parameters ---
+        const P = { x: 250, y: 120 };
+        const A = { x: 250, y: 220 };
+        const a = Math.sqrt(Math.pow(P.x - A.x, 2) + Math.pow(P.y - A.y, 2));
+        
+        const b = 150; // Length of the rod
+        const theta_deg = 80;
+        const theta_rad = theta_deg * Math.PI / 180;
+        
+        const angleAP = Math.atan2(P.y - A.y, P.x - A.x); // Should be -PI/2
+        const angleAB = angleAP + theta_rad;
+
+        const B = {
+            x: A.x + b * Math.cos(angleAB),
+            y: A.y + b * Math.sin(angleAB)
+        };
+        const c = Math.sqrt(Math.pow(P.x - B.x, 2) + Math.pow(P.y - B.y, 2));
+
+
+        // 1. Draw the vertical dashed line
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.moveTo(P.x, P.y - 40);
+        ctx.lineTo(A.x, A.y + 80);
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Draw the spring system
+        const springStart = { x: 170, y: P.y };
+        const wallPos = { x: 110, y: P.y };
+        
+        // Cord from pulley to spring
+        ctx.beginPath();
+        ctx.moveTo(P.x, P.y);
+        ctx.lineTo(springStart.x, springStart.y);
+        ctx.stroke();
+
+        // Spring
+        drawSpring(ctx, springStart.x, springStart.y, wallPos.x, wallPos.y, 6, 8);
+
+        // Fixed support (wall)
+        ctx.beginPath();
+        ctx.moveTo(wallPos.x, wallPos.y - 20);
+        ctx.lineTo(wallPos.x, wallPos.y + 20);
+        ctx.stroke();
+        for (let i = -15; i <= 15; i += 5) {
+            ctx.beginPath();
+            ctx.moveTo(wallPos.x, wallPos.y + i);
+            ctx.lineTo(wallPos.x - 10, wallPos.y + i + 10);
+            ctx.stroke();
+        }
+
+        // 3. Draw the pulley
+        ctx.save();
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(P.x, P.y, 7, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+        
+        // 4. Draw the rod (AB)
+        ctx.save();
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // 5. Draw the cord (PB)
+        ctx.beginPath();
+        ctx.moveTo(P.x, P.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+
+        // 6. Draw the gravity vector
+        const g_arrow_start = { x: 420, y: 140 };
+        const g_arrow_end = { x: 420, y: 200 };
+        ctx.beginPath();
+        ctx.moveTo(g_arrow_start.x, g_arrow_start.y);
+        ctx.lineTo(g_arrow_end.x, g_arrow_end.y);
+        ctx.stroke();
+        drawArrowhead(ctx, g_arrow_end.x, g_arrow_end.y, Math.PI / 2, 10);
+        ctx.fillText('g', g_arrow_end.x - 20, g_arrow_end.y - 20);
+
+        // 7. Draw angles
+        // Angle theta at A
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, 30, angleAP, angleAB);
+        ctx.stroke();
+        const theta_label_angle = angleAP + theta_rad / 2;
+        ctx.fillText('θ', A.x + 40 * Math.cos(theta_label_angle), A.y + 40 * Math.sin(theta_label_angle) + 5);
+        
+        // Angle theta_1 at B
+        const angleBA = Math.atan2(A.y - B.y, A.x - B.x);
+        const angleBP = Math.atan2(P.y - B.y, P.x - B.x);
+        ctx.beginPath();
+        ctx.arc(B.x, B.y, 25, angleBP, angleBA);
+        ctx.stroke();
+        const theta1_label_angle = (angleBA + angleBP) / 2;
+        ctx.fillText('θ', B.x + 35 * Math.cos(theta1_label_angle) - 5, B.y + 35 * Math.sin(theta1_label_angle) + 8);
+        ctx.font = 'italic 14px Times New Roman';
+        ctx.fillText('1', B.x + 35 * Math.cos(theta1_label_angle) + 2, B.y + 35 * Math.sin(theta1_label_angle) + 9);
+        ctx.font = 'italic 20px Times New Roman';
+
+
+        // 8. Add labels
+        ctx.fillText('P', P.x + 10, P.y);
+        ctx.fillText('A', A.x - 25, A.y + 5);
+        ctx.fillText('k', (springStart.x + wallPos.x) / 2 - 5, springStart.y - 15);
+        
+        // Length labels a, b, c
+        ctx.save();
+        ctx.translate(A.x - 15, A.y - a / 2);
+        ctx.fillText('a', 0, 0);
+        ctx.restore();
+
+        ctx.save();
+        const b_mid = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 };
+        const b_perp_angle = angleAB + Math.PI/2;
+        ctx.translate(b_mid.x + 10 * Math.cos(b_perp_angle), b_mid.y + 10 * Math.sin(b_perp_angle));
+        ctx.rotate(angleAB);
+        ctx.fillText('b', 0, 0);
+        ctx.restore();
+
+        ctx.save();
+        const c_angle = Math.atan2(B.y-P.y, B.x-P.x);
+        const c_mid = { x: (P.x + B.x) / 2, y: (P.y + B.y) / 2 };
+        const c_perp_angle = c_angle + Math.PI/2;
+        ctx.translate(c_mid.x + 15 * Math.cos(c_perp_angle), c_mid.y + 15 * Math.sin(c_perp_angle) + 5);
+        ctx.rotate(c_angle);
+        ctx.fillText('c', 0, 0);
+        ctx.restore();
+
+        // 9. Add figure caption
+        ctx.font = '18px Times New Roman';
+        ctx.fillText('Fig. 1.139.', canvas.width / 2 - 45, canvas.height - 20);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Inclined Plane with Forces</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="450" style="border:1px solid #d3d3d3;"></canvas>
+
+<script>
+    const canvas = document.getElementById("physicsCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Helper function to draw an arrowhead
+    function drawArrowHead(ctx, x, y, angle) {
+        const headlen = 12;
+        const angleOffset = Math.PI / 7; // Controls the "openness" of the V shape
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - headlen * Math.cos(angle - angleOffset), y - headlen * Math.sin(angle - angleOffset));
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - headlen * Math.cos(angle + angleOffset), y - headlen * Math.sin(angle + angleOffset));
+        ctx.stroke();
+    }
+
+    // --- Main Drawing ---
+
+    // Define geometry and scale
+    const scale = 40; // pixels per meter
+    const base_m = 8.0;
+    const height_m = 6.0;
+
+    const base_px = base_m * scale;
+    const height_px = height_m * scale;
+
+    // Define triangle vertices
+    const x_start = 60;
+    const y_start = 380;
+    const v1 = { x: x_start, y: y_start }; // bottom-left
+    const v2 = { x: x_start + base_px, y: y_start }; // bottom-right
+    const v3 = { x: x_start, y: y_start - height_px }; // top-left
+
+    // Set default styles
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "black";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // 1. Draw the Triangle (Inclined Plane)
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(v1.x, v1.y);
+    ctx.lineTo(v2.x, v2.y);
+    ctx.lineTo(v3.x, v3.y);
+    ctx.closePath();
+    ctx.stroke();
+
+    // 2. Draw Dimension Lines and Labels
+    ctx.lineWidth = 1;
+    ctx.font = "bold 24px serif";
+
+    // Base dimension (8.0 m)
+    const baseDimY = v1.y + 30;
+    ctx.beginPath();
+    ctx.moveTo(v1.x, baseDimY);
+    ctx.lineTo(v2.x, baseDimY);
+    ctx.stroke();
+    drawArrowHead(ctx, v1.x, baseDimY, Math.PI); // Left arrow
+    drawArrowHead(ctx, v2.x, baseDimY, 0);       // Right arrow
+    ctx.fillText("8.0 m", (v1.x + v2.x) / 2, baseDimY + 18);
+
+    // Height dimension (6.0 m)
+    const heightDimX = v1.x - 40;
+    ctx.beginPath();
+    ctx.moveTo(heightDimX, v1.y);
+    ctx.lineTo(heightDimX, v3.y);
+    ctx.stroke();
+    drawArrowHead(ctx, heightDimX, v1.y, Math.PI / 2);  // Bottom arrow
+    drawArrowHead(ctx, heightDimX, v3.y, -Math.PI / 2); // Top arrow
+    ctx.fillText("6.0 m", heightDimX - 10, (v1.y + v3.y) / 2);
+
+    // Hypotenuse dimension (10.0 m)
+    const inclineAngle = Math.atan2(v3.y - v2.y, v3.x - v2.x);
+    const perpAngle = inclineAngle + Math.PI / 2;
+    const hypOffset = 25;
+    const offsetX = hypOffset * Math.cos(perpAngle);
+    const offsetY = hypOffset * Math.sin(perpAngle);
+
+    const h_start = { x: v2.x + offsetX, y: v2.y + offsetY };
+    const h_end = { x: v3.x + offsetX, y: v3.y + offsetY };
+
+    ctx.beginPath();
+    ctx.moveTo(h_start.x, h_start.y);
+    ctx.lineTo(h_end.x, h_end.y);
+    ctx.stroke();
+    drawArrowHead(ctx, h_start.x, h_start.y, inclineAngle);
+    drawArrowHead(ctx, h_end.x, h_end.y, inclineAngle + Math.PI);
+
+    // Position and rotate the "10.0 m" text
+    ctx.save();
+    const textX = h_end.x + (h_start.x - h_end.x) * 0.6;
+    const textY = h_end.y + (h_start.y - h_end.y) * 0.6;
+    ctx.translate(textX, textY);
+    ctx.rotate(inclineAngle);
+    ctx.fillText("10.0 m", 0, -15);
+    ctx.restore();
+
+    // 3. Draw the Box with mass 'm'
+    const boxSize = 30;
+    // Position the box's center on the incline, near the bottom
+    const distFromCorner = 60; // distance up the incline from v2
+    const boxCenterX = v2.x + distFromCorner * Math.cos(inclineAngle);
+    const boxCenterY = v2.y + distFromCorner * Math.sin(inclineAngle);
+
+    ctx.lineWidth = 2.5;
+    const boxTopLeftX = boxCenterX - boxSize / 2;
+    const boxTopLeftY = boxCenterY - boxSize / 2;
+    ctx.strokeRect(boxTopLeftX, boxTopLeftY, boxSize, boxSize);
+
+    // Label 'm' inside the box
+    ctx.font = "bold italic 22px serif";
+    ctx.fillText("m", boxCenterX, boxCenterY + 2);
+
+    // 4. Draw the applied Force 'F'
+    ctx.lineWidth = 3;
+    const forceLength = 90;
+    const forceStartX = boxCenterX;
+    const forceStartY = boxCenterY;
+    const forceEndX = forceStartX - forceLength;
+    const forceEndY = forceStartY;
+
+    ctx.beginPath();
+    ctx.moveTo(forceStartX, forceStartY);
+    ctx.lineTo(forceEndX, forceEndY);
+    ctx.stroke();
+    drawArrowHead(ctx, forceEndX, forceEndY, Math.PI);
+
+    // Label 'F' for the force
+    ctx.font = "bold italic 30px serif";
+    ctx.fillText("F", (forceStartX + forceEndX) / 2, forceStartY - 22);
+
+</script>
+</body>
+</html>

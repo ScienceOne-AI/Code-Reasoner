@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="400"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Utility function to draw an arrowhead
+  function drawArrowhead(ctx, x, y, rotation) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-5, -10);
+    ctx.lineTo(5, -10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Utility function to draw hatching
+  function drawHatching(ctx, x1, y1, x2, y2, isWall) {
+    ctx.save();
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1;
+    const spacing = 15;
+    if (isWall) { // Hatching for the vertical wall
+      for (let y = y1; y < y2; y += spacing) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x1 - 20, y + 20);
+        ctx.stroke();
+      }
+    } else { // Hatching for the horizontal surface
+      for (let x = x1; x < x2; x += spacing) {
+        ctx.beginPath();
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x - 20, y1 + 20);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+  
+  // Utility function to draw the spring
+  function drawSpring(ctx, x1, y, x2, coils, amplitude) {
+    ctx.save();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    
+    const straightLen = 5;
+    const coilLen = x2 - x1 - 2 * straightLen;
+    const numSegments = coils * 2;
+    const dx = coilLen / numSegments;
+
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x1 + straightLen, y);
+
+    let curX = x1 + straightLen;
+    for (let i = 0; i < numSegments; i++) {
+        const cpY = (i % 2 === 0) ? y - amplitude : y + amplitude;
+        ctx.quadraticCurveTo(curX + dx / 2, cpY, curX + dx, y);
+        curX += dx;
+    }
+    ctx.lineTo(x2, y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+
+  // --- Main Drawing ---
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 2;
+
+  // Define key coordinates
+  const floorY = 300;
+  const wallX = 60;
+  const blockWidth = 80;
+  const blockHeight = 50;
+  const blockX = 280;
+  const blockY = floorY - blockHeight;
+  const springY = blockY + blockHeight / 2;
+  
+  // 1. Draw floor and wall
+  ctx.beginPath();
+  ctx.moveTo(wallX, 150);
+  ctx.lineTo(wallX, floorY);
+  ctx.lineTo(450, floorY);
+  ctx.stroke();
+
+  // 2. Draw hatching
+  drawHatching(ctx, wallX, 150, floorY, true); // Wall hatching
+  drawHatching(ctx, wallX, floorY, 450, floorY + 20, false); // Floor hatching
+
+  // 3. Draw block m'
+  ctx.fillStyle = 'white';
+  ctx.fillRect(blockX, blockY, blockWidth, blockHeight);
+  ctx.strokeRect(blockX, blockY, blockWidth, blockHeight);
+  
+  // 4. Draw spring
+  drawSpring(ctx, wallX, springY, blockX, 6, 20);
+
+  // 5. Draw object m
+  const particleX = blockX + blockWidth / 2;
+  const particleY = 150;
+  ctx.fillStyle = 'black';
+  ctx.beginPath();
+  ctx.arc(particleX, particleY, 5, 0, 2 * Math.PI);
+  ctx.fill();
+  
+  // 6. Draw labels m and m'
+  ctx.font = 'italic 22px Times New Roman';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText("m'", particleX, springY);
+  
+  ctx.textAlign = 'right';
+  ctx.fillText("m", particleX - 15, particleY);
+
+  // 7. Draw motion arrow for m
+  const arrowStartY = particleY + 10;
+  const arrowEndY = particleY + 40;
+  ctx.beginPath();
+  ctx.moveTo(particleX, arrowStartY);
+  ctx.lineTo(particleX, arrowEndY);
+  ctx.stroke();
+  drawArrowhead(ctx, particleX, arrowEndY, Math.PI);
+
+  // 8. Draw height indicator h
+  const h_lineX = blockX + blockWidth + 50;
+  const h_topY = particleY;
+  const h_bottomY = blockY;
+  
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  // Vertical line with arrows
+  ctx.moveTo(h_lineX, h_topY);
+  ctx.lineTo(h_lineX, h_bottomY);
+  ctx.stroke();
+  drawArrowhead(ctx, h_lineX, h_topY, 0); // Up arrow
+  drawArrowhead(ctx, h_lineX, h_bottomY, Math.PI); // Down arrow
+  
+  // Top and bottom ticks
+  ctx.beginPath();
+  ctx.moveTo(h_lineX - 10, h_topY);
+  ctx.lineTo(h_lineX + 10, h_topY);
+  ctx.moveTo(h_lineX - 10, h_bottomY);
+  ctx.lineTo(h_lineX + 10, h_bottomY);
+  ctx.stroke();
+  
+  // h label
+  ctx.font = 'italic 22px Times New Roman';
+  ctx.fillStyle = 'black';
+  ctx.textAlign = 'left';
+  ctx.fillText('h', h_lineX + 15, (h_topY + h_bottomY) / 2);
+
+  // 9. Draw bottom text
+  ctx.font = '20px "SimSun", "Songti SC", serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('习题 10-8 图', canvas.width / 2, 370);
+
+</script>
+</body>
+</html>

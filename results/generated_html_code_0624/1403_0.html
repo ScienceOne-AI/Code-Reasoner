@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Conical Pendulum Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style and general settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Helper function to draw an arrowhead
+    function drawArrowHead(ctx, x, y, angle, size = 10) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2.5);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2.5);
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // -- Parameters --
+    const cx = 250;
+    const vertexY = 380;
+    const pathY = 180;
+    const coneTopY = 90;
+    const phi = 28 * Math.PI / 180; // half-vertex angle in radians
+
+    // -- Derived Geometry --
+    const H0 = vertexY - pathY;
+    const pathRadiusX = H0 * Math.tan(phi);
+    const pathRadiusY = pathRadiusX * 0.35; // For perspective
+    const coneTopHalfWidth = (vertexY - coneTopY) * Math.tan(phi);
+
+    // 1. Draw Cone
+    ctx.beginPath();
+    ctx.moveTo(cx, vertexY);
+    ctx.lineTo(cx - coneTopHalfWidth, coneTopY);
+    ctx.moveTo(cx, vertexY);
+    ctx.lineTo(cx + coneTopHalfWidth, coneTopY);
+    ctx.stroke();
+    
+    // 2. Draw Vertex Label 'O'
+    ctx.font = "italic 24px 'Times New Roman'";
+    ctx.fillText("O", cx, vertexY + 20);
+
+    // 3. Draw Vertical Axis
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(cx, vertexY);
+    ctx.lineTo(cx, coneTopY - 20);
+    ctx.stroke();
+    ctx.restore();
+
+    // 4. Draw Horizontal Plane
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(cx - 200, vertexY);
+    ctx.lineTo(cx + 200, vertexY);
+    ctx.stroke();
+    ctx.restore();
+    ctx.font = "24px 'KaiTi'";
+    ctx.textAlign = 'left';
+    ctx.fillText("水平面", cx + 110, vertexY);
+    ctx.textAlign = 'center';
+
+    // 5. Draw Circular Path
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.ellipse(cx, pathY, pathRadiusX, pathRadiusY, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.restore();
+
+    // 6. Draw Height H0 indicator
+    const h0_line_x = cx + pathRadiusX + 50;
+    ctx.beginPath();
+    ctx.moveTo(h0_line_x, vertexY);
+    ctx.lineTo(h0_line_x, pathY);
+    // Draw arrows for the height indicator
+    drawArrowHead(ctx, h0_line_x, vertexY, Math.PI / 2, 8);
+    drawArrowHead(ctx, h0_line_x, pathY, -Math.PI / 2, 8);
+    ctx.stroke();
+    // H0 Label
+    ctx.font = "italic 28px 'Times New Roman'";
+    ctx.fillText("H", h0_line_x + 20, vertexY - H0 / 2);
+    ctx.font = "italic 18px 'Times New Roman'";
+    ctx.fillText("0", h0_line_x + 32, vertexY - H0 / 2 + 7);
+
+
+    // 7. Draw Angle phi
+    ctx.font = "italic 28px 'Times New Roman'";
+    ctx.beginPath();
+    const angleRadius = 45;
+    ctx.arc(cx, vertexY, angleRadius, -Math.PI / 2, -Math.PI / 2 + phi);
+    ctx.stroke();
+    const angleLabelX = cx + angleRadius * 0.7 * Math.sin(phi / 2);
+    const angleLabelY = vertexY - angleRadius * 0.7 * Math.cos(phi / 2);
+    ctx.fillText("φ", angleLabelX + 10, angleLabelY);
+
+
+    // 8. Draw Velocity Arrows and Labels (replicating the original image)
+    ctx.font = "italic 24px 'Times New Roman'";
+    
+    // Back arrow (top-right side, pointing left)
+    const p1 = {x: cx + 0.6 * pathRadiusX, y: pathY - 0.7 * pathRadiusY};
+    const p2 = {x: cx - 0.2 * pathRadiusX, y: pathY - 0.9 * pathRadiusY};
+    const cp1 = {x: cx + 0.3 * pathRadiusX, y: pathY - 1.3 * pathRadiusY};
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.quadraticCurveTo(cp1.x, cp1.y, p2.x, p2.y);
+    ctx.stroke();
+    const angle_back = Math.atan2(p2.y - cp1.y, p2.x - cp1.x);
+    drawArrowHead(ctx, p2.x, p2.y, angle_back);
+    // Label for back arrow
+    ctx.fillText("v", p2.x + 25, p2.y - 15);
+    ctx.font = "italic 16px 'Times New Roman'";
+    ctx.fillText("0", p2.x + 36, p2.y - 11);
+    ctx.font = "italic 24px 'Times New Roman'";
+
+    // Front arrow (front-left side, pointing left)
+    const p3 = {x: cx + 0.2 * pathRadiusX, y: pathY + 0.9 * pathRadiusY};
+    const p4 = {x: cx - 0.6 * pathRadiusX, y: pathY + 0.7 * pathRadiusY};
+    const cp2 = {x: cx - 0.3 * pathRadiusX, y: pathY + 1.3 * pathRadiusY};
+    ctx.beginPath();
+    ctx.moveTo(p3.x, p3.y);
+    ctx.quadraticCurveTo(cp2.x, cp2.y, p4.x, p4.y);
+    ctx.stroke();
+    const angle_front = Math.atan2(p4.y - cp2.y, p4.x - cp2.x);
+    drawArrowHead(ctx, p4.x, p4.y, angle_front);
+    // Label for front arrow
+    ctx.fillText("v", p3.x - 25, p3.y - 5);
+    ctx.font = "italic 16px 'Times New Roman'";
+    ctx.fillText("0", p3.x - 14, p3.y - 1);
+
+</script>
+</body>
+</html>

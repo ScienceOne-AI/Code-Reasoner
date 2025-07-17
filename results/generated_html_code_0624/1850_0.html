@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Power vs. Time Graph</title>
+</head>
+<body>
+    <canvas id="physicsGraph" width="800" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsGraph');
+        const ctx = canvas.getContext('2d');
+
+        // Fill background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // --- Configuration ---
+        const margin = { top: 40, right: 30, bottom: 80, left: 80 };
+        const graphWidth = canvas.width - margin.left - margin.right;
+        const graphHeight = canvas.height - margin.top - margin.bottom;
+
+        const xOrigin = margin.left;
+        const yOrigin = margin.top + graphHeight;
+
+        const tMax = 40; // µs
+        const pMax = 50; // mW
+
+        // --- Coordinate transformation functions ---
+        const toCanvasX = (t) => xOrigin + (t / tMax) * graphWidth;
+        const toCanvasY = (p) => yOrigin - (p / pMax) * graphHeight;
+
+        // --- Draw Grid ---
+        // Minor grid lines
+        ctx.strokeStyle = '#dcdcdc'; // gainsboro
+        ctx.lineWidth = 1;
+
+        // Vertical minor lines (every 1 µs)
+        for (let t = 1; t < tMax; t++) {
+            if (t % 10 !== 0) {
+                ctx.beginPath();
+                ctx.moveTo(toCanvasX(t), toCanvasY(0));
+                ctx.lineTo(toCanvasX(t), toCanvasY(pMax));
+                ctx.stroke();
+            }
+        }
+
+        // Horizontal minor lines (every 2.5 mW)
+        for (let p = 2.5; p < pMax; p += 2.5) {
+            if (p !== 25) {
+                ctx.beginPath();
+                ctx.moveTo(toCanvasX(0), toCanvasY(p));
+                ctx.lineTo(toCanvasX(tMax), toCanvasY(p));
+                ctx.stroke();
+            }
+        }
+
+        // Major grid lines and Axes
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Vertical major lines (every 10 µs) including Y-axis
+        for (let t = 0; t <= tMax; t += 10) {
+            ctx.beginPath();
+            ctx.moveTo(toCanvasX(t), toCanvasY(0));
+            ctx.lineTo(toCanvasX(t), toCanvasY(pMax));
+            ctx.stroke();
+        }
+        // Horizontal major lines (at 0, 25, 50) including X-axis
+        for (let p = 0; p <= pMax; p += 25) {
+            ctx.beginPath();
+            ctx.moveTo(toCanvasX(0), toCanvasY(p));
+            ctx.lineTo(toCanvasX(tMax), toCanvasY(p));
+            ctx.stroke();
+        }
+
+        // --- Draw Ticks and Labels ---
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+        ctx.lineWidth = 1.5;
+
+        // X-axis ticks and labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let t = 0; t <= tMax; t += 10) {
+            const x = toCanvasX(t);
+            const y = toCanvasY(0);
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + 5);
+            ctx.stroke();
+            ctx.fillText(t, x, y + 8);
+        }
+        
+        // Y-axis ticks and labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        const pTicks = [0, 25, 50];
+        pTicks.forEach(p => {
+            const x = toCanvasX(0);
+            const y = toCanvasY(p);
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - 5, y);
+            ctx.stroke();
+            if (p !== 0) {
+                 ctx.fillText(p, x - 8, y);
+            }
+        });
+
+        // --- Draw Axis Titles ---
+        ctx.font = 'italic 18px Arial';
+        
+        // X-axis title
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('t / \u00B5s', toCanvasX(tMax / 2), toCanvasY(0) + 40);
+
+        // Y-axis title
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('P / mW', margin.left - 50, toCanvasY(pMax / 2 + 5));
+
+        // --- Draw Caption ---
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Fig. 7.1', canvas.width / 2, canvas.height - 10);
+
+        // --- Draw the Power Curve ---
+        const P_peak_calc = 46.4; // Calculated maximum power in mW
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+
+        ctx.beginPath();
+        const timeStep = 0.1; // in µs
+        for (let t_us = 0; t_us <= tMax; t_us += timeStep) {
+            // P(t) = P_max * sin^2(0.1 * pi * t_us)
+            const power = P_peak_calc * Math.pow(Math.sin(0.1 * Math.PI * t_us), 2);
+            if (t_us === 0) {
+                ctx.moveTo(toCanvasX(t_us), toCanvasY(power));
+            } else {
+                ctx.lineTo(toCanvasX(t_us), toCanvasY(power));
+            }
+        }
+        ctx.stroke();
+    </script>
+</body>
+</html>

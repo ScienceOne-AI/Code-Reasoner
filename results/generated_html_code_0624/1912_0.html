@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamics Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="550" height="350"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style and position settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    const containerX = 75;
+    const containerY = 70;
+    const containerWidth = 400;
+    const containerHeight = 150;
+    const wallThickness = 10;
+
+    // --- Helper function for stippling (gas particles) ---
+    function drawStippling(x, y, w, h) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        const numDots = Math.floor((w * h) / 15); // Adjust density
+        for (let i = 0; i < numDots; i++) {
+            const dotX = x + Math.random() * w;
+            const dotY = y + Math.random() * h;
+            ctx.fillRect(dotX, dotY, 1, 1);
+        }
+        ctx.restore();
+    }
+
+    // --- Helper function for hatching (insulation) ---
+    function drawHatching(x, y, width, height, thickness) {
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        const step = 8;
+
+        // Top wall
+        for (let i = 0; i <= width + height; i += step) {
+            ctx.beginPath();
+            let startX = x + i;
+            let startY = y;
+            if (startX > x + width) {
+                startX = x + width;
+                startY = y + (i - width);
+            }
+            let endX = x + i - thickness;
+            let endY = y + thickness;
+            if (endX < x) {
+                endX = x;
+                endY = y + (i);
+            }
+            if (endY > y + height) {
+                 continue;
+            }
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+        }
+
+        // Bottom wall
+        for (let i = 0; i <= width + height; i += step) {
+             ctx.beginPath();
+             let startX = x + width - i;
+             let startY = y + height;
+             if (startX < x) {
+                 startX = x;
+                 startY = y + height - (i-width);
+             }
+             let endX = x + width - i + thickness;
+             let endY = y + height - thickness;
+             if (endX > x + width) {
+                 endX = x + width;
+                 endY = y + height - (i);
+             }
+             if (startY < y){
+                 continue;
+             }
+             ctx.moveTo(startX, startY);
+             ctx.lineTo(endX, endY);
+             ctx.stroke();
+        }
+
+        // Left wall
+        for (let i = 0; i <= width + height; i += step) {
+            ctx.beginPath();
+            let startX = x;
+            let startY = y + height - i;
+            if(startY < y){
+                startY = y;
+                startX = x + (i-height);
+            }
+            let endX = x + thickness;
+            let endY = y + height - i - thickness;
+            if(endY < y){
+                endY = y;
+                endX = x + (i-height+thickness)
+            }
+            if(startX > x + width) continue;
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+        }
+        
+         // Right wall
+        for (let i = 0; i <= width + height; i += step) {
+            ctx.beginPath();
+            let startX = x + width;
+            let startY = y + i;
+            if(startY > y + height){
+                startY = y + height;
+                startX = x + width - (i-height);
+            }
+            let endX = x + width - thickness;
+            let endY = y + i + thickness;
+            if(endY > y + height){
+                endY = y+height;
+                endX = x + width - (i-height+thickness);
+            }
+            if(startX < x) continue;
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+
+    // --- Draw Main Container ---
+    ctx.lineWidth = 2;
+    ctx.strokeRect(containerX, containerY, containerWidth, containerHeight);
+    ctx.strokeRect(containerX + wallThickness, containerY + wallThickness, containerWidth - 2 * wallThickness, containerHeight - 2 * wallThickness);
+    
+    // Create a clipping region for the hatching
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(containerX, containerY, containerWidth, containerHeight);
+    ctx.rect(containerX + wallThickness, containerY + wallThickness, containerWidth - 2 * wallThickness, containerHeight - 2 * wallThickness);
+    ctx.clip("evenodd");
+    drawHatching(containerX-5, containerY-5, containerWidth+10, containerHeight+10, wallThickness); // Draw hatching in the clipped area
+    ctx.restore();
+
+
+    // --- Piston and Compartments ---
+    const pistonX = containerX + containerWidth / 2;
+    const pistonWidth = 4;
+    const innerX = containerX + wallThickness;
+    const innerY = containerY + wallThickness;
+    const innerWidth = containerWidth - 2 * wallThickness;
+    const innerHeight = containerHeight - 2 * wallThickness;
+
+    // Compartment A
+    const a_x = innerX;
+    const a_w = pistonX - innerX - pistonWidth / 2;
+    drawStippling(a_x, innerY, a_w, innerHeight);
+    
+    // Compartment B
+    const b_x = pistonX + pistonWidth / 2;
+    const b_w = (innerX + innerWidth) - b_x;
+    drawStippling(b_x, innerY, b_w, innerHeight);
+    
+    // Draw Piston
+    ctx.fillStyle = 'white';
+    ctx.fillRect(pistonX - pistonWidth / 2, containerY, pistonWidth, containerHeight);
+    ctx.lineWidth = 2;
+    ctx.strokeRect(pistonX - pistonWidth / 2, containerY, pistonWidth, containerHeight);
+
+
+    // --- Draw Heater ---
+    const heaterX = containerX + wallThickness;
+    const heaterCenterY = containerY + containerHeight / 2;
+    const heaterHeight = 60;
+    const heaterWidth = 12;
+    
+    ctx.beginPath();
+    ctx.lineWidth = 1.5;
+    const y_start_h = heaterCenterY - heaterHeight / 2;
+    const y_end_h = heaterCenterY + heaterHeight / 2;
+    ctx.moveTo(heaterX, y_start_h);
+    ctx.quadraticCurveTo(heaterX + heaterWidth * 2, y_start_h + heaterHeight / 6, heaterX, y_start_h + heaterHeight / 3);
+    ctx.quadraticCurveTo(heaterX + heaterWidth * 2, y_start_h + heaterHeight / 2, heaterX, y_start_h + 2 * heaterHeight / 3);
+    ctx.quadraticCurveTo(heaterX + heaterWidth * 2, y_start_h + 5 * heaterHeight / 6, heaterX, y_end_h);
+    ctx.stroke();
+
+
+    // --- Draw Labels ---
+    ctx.lineWidth = 2;
+    ctx.fillStyle = 'black';
+    ctx.font = '24px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // A and B labels
+    ctx.fillText('A', a_x + a_w / 2, innerY + innerHeight / 2);
+    ctx.fillText('B', b_x + b_w / 2, innerY + innerHeight / 2);
+
+    // "加热器" (Heater) label
+    ctx.font = '20px sans-serif';
+    const labelX = 40;
+    ctx.fillText('加', labelX, heaterCenterY - 25);
+    ctx.fillText('热', labelX, heaterCenterY);
+    ctx.fillText('器', labelX, heaterCenterY + 25);
+
+    // Pointer lines for heater
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    const pointerX = labelX + 20;
+    ctx.moveTo(pointerX, y_start_h);
+    ctx.lineTo(heaterX, y_start_h);
+    ctx.moveTo(pointerX, y_end_h);
+    ctx.lineTo(heaterX, y_end_h);
+    ctx.moveTo(pointerX, y_start_h);
+    ctx.lineTo(pointerX, y_end_h);
+    ctx.stroke();
+
+    // Bottom caption
+    ctx.font = '22px sans-serif';
+    ctx.fillText('习题 6-12 图', canvas.width / 2, containerY + containerHeight + 60);
+
+</script>
+</body>
+</html>

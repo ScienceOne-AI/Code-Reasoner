@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Circuit Diagram Fig. 3.83</title>
+</head>
+<body>
+
+<canvas id="circuitCanvas" width="600" height="450" style="border:1px solid #d3d3d3;"></canvas>
+
+<script>
+const canvas = document.getElementById('circuitCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style setup ---
+ctx.strokeStyle = 'black';
+ctx.lineWidth = 2.5;
+ctx.font = '22px serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// --- Helper Functions ---
+
+/**
+ * Draws a resistor.
+ * @param {number} x_start - Starting x-coordinate.
+ * @param {number} y_start - Starting y-coordinate.
+ * @param {number} length - Total length of the resistor component.
+ * @param {string} orientation - 'horizontal' or 'vertical'.
+ * @param {string} label - The text label for the resistor.
+ */
+function drawResistor(x_start, y_start, length, orientation, label) {
+    ctx.beginPath();
+    ctx.moveTo(x_start, y_start);
+    const zigzags = 7;
+    const h = 10; // height/width of zigzag
+    const seg_len = length / zigzags;
+
+    if (orientation === 'horizontal') {
+        for (let i = 0; i < zigzags; i++) {
+            const x = x_start + i * seg_len;
+            const y_off = (i % 2 === 0) ? -h : h;
+            ctx.lineTo(x + seg_len/2, y_start + y_off);
+        }
+        ctx.lineTo(x_start + length, y_start);
+        ctx.stroke();
+        if (label) {
+            ctx.fillText(label, x_start + length / 2, y_start - 25);
+        }
+    } else { // vertical
+        for (let i = 0; i < zigzags; i++) {
+            const y = y_start + i * seg_len;
+            const x_off = (i % 2 === 0) ? -h : h;
+            ctx.lineTo(x_start + x_off, y + seg_len/2);
+        }
+        ctx.lineTo(x_start, y_start + length);
+        ctx.stroke();
+        if (label) {
+            ctx.save();
+            ctx.textAlign = 'left';
+            ctx.fillText(label, x_start + 20, y_start + length / 2);
+            ctx.restore();
+        }
+    }
+}
+
+/**
+ * Draws a circular arrow for mesh current.
+ * @param {number} x - Center x of the arc.
+ * @param {number} y - Center y of the arc.
+ * @param {number} radius - Radius of the arc.
+ * @param {string} label - The text label for the current.
+ */
+function drawMeshCurrent(x, y, radius, label) {
+    const startAngle = 0.5 * Math.PI;
+    const endAngle = 0.1 * Math.PI;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, startAngle, endAngle);
+    ctx.stroke();
+    
+    // Arrowhead
+    ctx.beginPath();
+    const arrowLength = 10;
+    const arrowWingAngle = Math.PI / 7;
+    const ax = x + radius * Math.cos(endAngle);
+    const ay = y + radius * Math.sin(endAngle);
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax - arrowLength * Math.cos(endAngle - arrowWingAngle), ay - arrowLength * Math.sin(endAngle - arrowWingAngle));
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax - arrowLength * Math.cos(endAngle + arrowWingAngle), ay - arrowLength * Math.sin(endAngle + arrowWingAngle));
+    ctx.stroke();
+
+    if (label) {
+        ctx.fillText(label, x, y);
+    }
+}
+
+
+// --- Main Drawing Logic ---
+
+// Coordinates
+const y_top = 100;
+const y_bot = 300;
+const x_left = 100;
+const x_mid_left = 280;
+const x_mid_right = 340;
+const x_right = 490;
+const y_center = (y_top + y_bot) / 2;
+
+// --- Left Half-Circuit (Loop 1) ---
+
+// Voltage Source
+const v_center_x = x_left;
+const v_center_y = y_center;
+const v_radius = 25;
+ctx.beginPath();
+ctx.arc(v_center_x, v_center_y, v_radius, 0, 2 * Math.PI);
+ctx.stroke();
+// Sine wave inside
+ctx.beginPath();
+ctx.moveTo(v_center_x - v_radius * 0.7, v_center_y);
+ctx.quadraticCurveTo(v_center_x - v_radius * 0.35, v_center_y - v_radius * 0.8, v_center_x, v_center_y);
+ctx.quadraticCurveTo(v_center_x + v_radius * 0.35, v_center_y + v_radius * 0.8, v_center_x + v_radius * 0.7, v_center_y);
+ctx.stroke();
+ctx.fillText("V", v_center_x - 45, v_center_y);
+
+// Connecting wires for left side
+ctx.beginPath();
+// Vertical wire
+ctx.moveTo(x_left, y_top);
+ctx.lineTo(x_left, v_center_y - v_radius);
+ctx.moveTo(x_left, v_center_y + v_radius);
+ctx.lineTo(x_left, y_bot);
+// Bottom wire
+ctx.lineTo(x_mid_left, y_bot);
+// Top wire (segments around resistor)
+ctx.moveTo(x_left, y_top);
+ctx.lineTo(140, y_top);
+ctx.moveTo(240, y_top);
+ctx.lineTo(x_mid_left, y_top);
+ctx.stroke();
+
+// Resistor R1
+drawResistor(140, y_top, 100, 'horizontal', 'R\u2081');
+
+
+// --- Right Half-Circuit (Loop 2) ---
+
+// Resistor R2
+const r2_y_start = y_center - 50;
+const r2_length = 100;
+drawResistor(x_right, r2_y_start, r2_length, 'vertical', 'R\u2082');
+
+// Connecting wires for right side
+ctx.beginPath();
+// Top wire
+ctx.moveTo(x_mid_right, y_top);
+ctx.lineTo(x_right, y_top);
+// Bottom wire
+ctx.moveTo(x_mid_right, y_bot);
+ctx.lineTo(x_right, y_bot);
+// Vertical wire (segments around resistor)
+ctx.moveTo(x_right, y_top);
+ctx.lineTo(x_right, r2_y_start);
+ctx.moveTo(x_right, r2_y_start + r2_length);
+ctx.lineTo(x_right, y_bot);
+ctx.stroke();
+
+
+// --- Capacitor C (connecting the two halves) ---
+ctx.beginPath();
+// Left plate (connected to left half)
+ctx.moveTo(x_mid_left, y_top);
+ctx.lineTo(x_mid_left, y_bot);
+// Right plate (connected to right half)
+ctx.moveTo(x_mid_right, y_top);
+ctx.lineTo(x_mid_right, y_bot);
+ctx.stroke();
+// Label C
+ctx.fillText("C", (x_mid_left + x_mid_right) / 2, y_top + 25);
+
+// --- Mesh Currents ---
+// I1
+const i1_x = (x_left + x_mid_left) / 2;
+drawMeshCurrent(i1_x, y_center, 45, 'I\u2081');
+// I2
+const i2_x = (x_mid_right + x_right) / 2;
+drawMeshCurrent(i2_x, y_center, 45, 'I\u2082');
+
+
+// --- Figure Caption ---
+ctx.font = 'bold 22px serif';
+ctx.fillText("Fig. 3.83", canvas.width / 2, y_bot + 80);
+
+</script>
+
+</body>
+</html>

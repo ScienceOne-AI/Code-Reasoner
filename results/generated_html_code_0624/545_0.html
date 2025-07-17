@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Graph Reproduction</title>
+</head>
+<body>
+<canvas id="physics-graph" width="660" height="520"></canvas>
+<script>
+    const canvas = document.getElementById('physics-graph');
+    const ctx = canvas.getContext('2d');
+
+    // Define graph parameters
+    const margin = { top: 40, right: 40, bottom: 80, left: 60 };
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const plotWidth = canvasWidth - margin.left - margin.right;
+    const plotHeight = canvasHeight - margin.top - margin.bottom;
+
+    // Data ranges
+    const tMax = 6;
+    const thetaMax = 100;
+
+    // Mapping functions from data coordinates to canvas coordinates
+    function mapX(t) {
+        return margin.left + (t / tMax) * plotWidth;
+    }
+
+    function mapY(theta) {
+        return margin.top + plotHeight - (theta / thetaMax) * plotHeight;
+    }
+
+    // Clear canvas
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    // --- Draw Grid ---
+    ctx.strokeStyle = '#cccccc'; // Light gray for grid lines
+    ctx.lineWidth = 1;
+
+    // Vertical grid lines (every 0.2 minutes)
+    const tMinorStep = 0.2;
+    for (let t = 0; t <= tMax; t += tMinorStep) {
+        // Use a small tolerance to avoid floating point issues at the edge
+        if (t > tMax - 0.001) continue;
+        const x = mapX(t);
+        ctx.beginPath();
+        ctx.moveTo(x, margin.top);
+        ctx.lineTo(x, margin.top + plotHeight);
+        ctx.stroke();
+    }
+
+    // Horizontal grid lines (every 2 °C)
+    const thetaMinorStep = 2;
+    for (let theta = 0; theta <= thetaMax; theta += thetaMinorStep) {
+        if (theta > thetaMax - 0.001) continue;
+        const y = mapY(theta);
+        ctx.beginPath();
+        ctx.moveTo(margin.left, y);
+        ctx.lineTo(margin.left + plotWidth, y);
+        ctx.stroke();
+    }
+    
+    // --- Draw Axes ---
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    // Y-axis
+    ctx.beginPath();
+    ctx.moveTo(mapX(0), margin.top);
+    ctx.lineTo(mapX(0), margin.top + plotHeight);
+    ctx.stroke();
+    
+    // X-axis
+    ctx.beginPath();
+    ctx.moveTo(margin.left, mapY(0));
+    ctx.lineTo(margin.left + plotWidth, mapY(0));
+    ctx.stroke();
+
+
+    // --- Draw Ticks and Labels ---
+    ctx.fillStyle = 'black';
+    ctx.font = '16px Times New Roman';
+
+    // X-axis ticks and labels (every 1 minute)
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const tMajorStep = 1;
+    for (let t = 1; t <= tMax; t += tMajorStep) { // Start from 1 to avoid double-drawing '0'
+        const x = mapX(t);
+        ctx.fillText(t, x, mapY(0) + 8);
+        ctx.beginPath();
+        ctx.moveTo(x, mapY(0));
+        ctx.lineTo(x, mapY(0) + 5);
+        ctx.stroke();
+    }
+
+    // Y-axis ticks and labels (every 20 °C)
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    const thetaMajorStep = 20;
+    for (let theta = 0; theta <= thetaMax; theta += thetaMajorStep) {
+        const y = mapY(theta);
+        // Special handling for 100 to prevent overlap with top edge
+        if (theta === 100) {
+            ctx.textBaseline = 'top';
+            ctx.fillText(theta, margin.left - 8, y);
+            ctx.textBaseline = 'middle'; // Reset for others
+        } else {
+            ctx.fillText(theta, margin.left - 8, y);
+        }
+        ctx.beginPath();
+        ctx.moveTo(margin.left, y);
+        ctx.lineTo(margin.left - 5, y);
+        ctx.stroke();
+    }
+
+    // --- Draw Axis Titles ---
+    ctx.font = 'italic 18px Times New Roman';
+
+    // X-axis title: "t / minutes"
+    const xTitleText = 't';
+    const xUnitText = ' / minutes';
+    ctx.font = '18px Times New Roman';
+    const xUnitWidth = ctx.measureText(xUnitText).width;
+    ctx.font = 'italic 18px Times New Roman';
+    const xTitleWidth = ctx.measureText(xTitleText).width;
+    const totalXTitleWidth = xTitleWidth + xUnitWidth;
+    const xTitleStartX = margin.left + plotWidth / 2 - totalXTitleWidth / 2;
+    const xTitleY = mapY(0) + 40;
+    
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(xTitleText, xTitleStartX, xTitleY);
+    ctx.font = '18px Times New Roman';
+    ctx.fillText(xUnitText, xTitleStartX + xTitleWidth, xTitleY);
+    
+    // Y-axis title: "θ / °C"
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'italic 18px Times New Roman';
+    ctx.fillText('θ', margin.left - 30, mapY(70));
+    ctx.font = '18px Times New Roman';
+    ctx.fillText(' / °C', margin.left - 10, mapY(70));
+
+    // --- Draw the Curve ---
+    const dataPoints = [
+        {t: 0, theta: 24}, {t: 0.2, theta: 26}, {t: 0.4, theta: 28}, {t: 0.6, theta: 30}, {t: 0.8, theta: 32},
+        {t: 1.0, theta: 34}, {t: 1.2, theta: 35.8}, {t: 1.4, theta: 37.5}, {t: 1.6, theta: 39}, {t: 1.8, theta: 40.5},
+        {t: 2.0, theta: 42}, {t: 2.2, theta: 43.5}, {t: 2.4, theta: 44.8}, {t: 2.6, theta: 46.2}, {t: 2.8, theta: 47.6},
+        {t: 3.0, theta: 49}, {t: 3.2, theta: 50.2}, {t: 3.4, theta: 51.4}, {t: 3.6, theta: 52.6}, {t: 3.8, theta: 53.8},
+        {t: 4.0, theta: 55}, {t: 4.2, theta: 56}, {t: 4.4, theta: 57}, {t: 4.6, theta: 58}, {t: 4.8, theta: 59},
+        {t: 5.0, theta: 60}, {t: 5.2, theta: 60.8}, {t: 5.4, theta: 61.6}, {t: 5.6, theta: 62.4}, {t: 5.8, theta: 63.2},
+        {t: 6.0, theta: 64}
+    ];
+
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(mapX(dataPoints[0].t), mapY(dataPoints[0].theta));
+    for (let i = 1; i < dataPoints.length; i++) {
+        ctx.lineTo(mapX(dataPoints[i].t), mapY(dataPoints[i].theta));
+    }
+    ctx.stroke();
+
+    // --- Draw Figure Caption ---
+    ctx.font = 'bold 16px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Fig. 1.1', canvasWidth / 2, canvasHeight - 10);
+
+</script>
+</body>
+</html>

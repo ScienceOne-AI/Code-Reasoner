@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="550" height="400" style="border:1px solid #d3d3d3;"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper functions ---
+        function drawResistor(x, y, w, h) {
+            ctx.strokeRect(x, y - h / 2, w, h);
+        }
+
+        function drawCapacitor(x, y, h) {
+            ctx.beginPath();
+            ctx.moveTo(x - 5, y - h / 2);
+            ctx.lineTo(x - 5, y + h / 2);
+            ctx.moveTo(x + 5, y - h / 2);
+            ctx.lineTo(x + 5, y + h / 2);
+            ctx.stroke();
+        }
+
+        function drawBattery(x, y, length) {
+            const shortPlateH = 15;
+            const longPlateH = 25;
+            // Negative terminal (left)
+            ctx.beginPath();
+            ctx.moveTo(x, y - shortPlateH);
+            ctx.lineTo(x, y + shortPlateH);
+            ctx.stroke();
+            // Positive terminal (right)
+            ctx.beginPath();
+            ctx.moveTo(x + length, y - longPlateH);
+            ctx.lineTo(x + length, y + longPlateH);
+            ctx.stroke();
+            // Dashed line for cell separator
+            ctx.beginPath();
+            ctx.setLineDash([4, 4]);
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + length, y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawContact(x, y, label) {
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fill();
+            if (label) {
+                ctx.fillText(label, x, y - 15);
+            }
+        }
+        
+        // --- Main Drawing ---
+        
+        // Coordinates
+        const y_top = 100;
+        const y_mid = 170;
+        const y_bottom = 280;
+
+        const x_junc_left = 100;
+        const x_resistor_start = 140;
+        const x_resistor_end = 240;
+        const x_battery_start = 140;
+        const x_battery_end = 200;
+        const x_switch_contact = 350;
+        const x_switch_common = 400;
+        const x_cap1 = 180;
+        const x_cap2 = 380;
+        const x_wire_right = 480;
+
+        // --- Draw components and wires ---
+
+        // Junction on the left
+        drawContact(x_junc_left, y_mid, null);
+
+        // Top branch (Battery)
+        ctx.beginPath();
+        ctx.moveTo(x_junc_left, y_mid);
+        ctx.lineTo(x_junc_left, y_top);
+        ctx.lineTo(x_battery_start, y_top);
+        ctx.stroke();
+        drawBattery(x_battery_start, y_top, x_battery_end - x_battery_start);
+        ctx.fillText("12 V", (x_battery_start + x_battery_end) / 2, y_top - 35);
+        ctx.beginPath();
+        ctx.moveTo(x_battery_end, y_top);
+        ctx.lineTo(x_switch_contact, y_top);
+        ctx.stroke();
+        
+        // Middle branch (Resistor)
+        ctx.beginPath();
+        ctx.moveTo(x_junc_left, y_mid);
+        ctx.lineTo(x_resistor_start, y_mid);
+        ctx.stroke();
+        drawResistor(x_resistor_start, y_mid, x_resistor_end - x_resistor_start, 20);
+        ctx.fillText("2.7 M\u03A9", (x_resistor_start + x_resistor_end) / 2, y_mid - 25);
+        ctx.beginPath();
+        ctx.moveTo(x_resistor_end, y_mid);
+        ctx.lineTo(x_switch_contact, y_mid);
+        ctx.stroke();
+
+        // Bottom branch (Capacitors)
+        ctx.beginPath();
+        ctx.moveTo(x_junc_left, y_mid);
+        ctx.lineTo(x_junc_left, y_bottom);
+        ctx.lineTo(x_cap1 - 5, y_bottom); // wire to C1
+        ctx.stroke();
+        drawCapacitor(x_cap1, y_bottom, 30);
+        ctx.fillText("22 \u03BCF", x_cap1, y_bottom + 30);
+        
+        ctx.beginPath();
+        ctx.moveTo(x_cap1 + 5, y_bottom);
+        ctx.lineTo(x_cap2 - 5, y_bottom); // wire between C1 and C2
+        ctx.stroke();
+        drawCapacitor(x_cap2, y_bottom, 30);
+        ctx.fillText("47 \u03BCF", x_cap2, y_bottom + 30);
+        
+        ctx.beginPath();
+        ctx.moveTo(x_cap2 + 5, y_bottom);
+        ctx.lineTo(x_wire_right, y_bottom);
+        ctx.stroke();
+        
+        // Switch and right-side wiring
+        const y_switch_common = (y_top + y_mid) / 2;
+        drawContact(x_switch_contact, y_top, 'X');
+        drawContact(x_switch_contact, y_mid, 'Y');
+        drawContact(x_switch_common, y_switch_common, null);
+
+        // Switch Arm
+        ctx.beginPath();
+        ctx.moveTo(x_switch_common, y_switch_common);
+        ctx.lineTo(x_switch_contact, y_top);
+        ctx.stroke();
+        ctx.fillText("S", x_switch_common - 25, y_switch_common + 10);
+        
+        // Right side connecting wire
+        ctx.beginPath();
+        ctx.moveTo(x_wire_right, y_bottom);
+        ctx.lineTo(x_wire_right, y_switch_common);
+        ctx.lineTo(x_switch_common, y_switch_common);
+        ctx.stroke();
+        
+        // Figure label
+        ctx.fillText("Fig. 5.2", canvas.width / 2, 370);
+
+    </script>
+</body>
+</html>

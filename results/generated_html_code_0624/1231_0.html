@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Differential Lever Diagram</title>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="750" height="450" style="border:1px solid #d3d3d3;"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style & Font Settings ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 4;
+    ctx.font = '30px "Times New Roman", serif';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // --- Coordinates ---
+    const y_main = 150;
+    const y_second = 250;
+
+    const x_A = 80;
+    const x_F = 280;
+    const x_C = 200;
+    const x_H = 650;
+    const x_B = 710;
+
+    const x_D = x_A;
+    const x_E = x_F;
+    const x_G = 210; // Position of weight Q, close to C
+
+    // --- Helper Drawing Functions ---
+
+    function drawFulcrum(x, y) {
+        // The stylized mark on the lever above the fulcrum
+        ctx.save();
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x - 15, y - 5);
+        ctx.quadraticCurveTo(x, y - 15, x + 15, y - 5);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x - 15, y - 5);
+        ctx.quadraticCurveTo(x, y + 5, x + 15, y - 5);
+        ctx.fill();
+        ctx.restore();
+
+        // The triangular base
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 20, y + 30);
+        ctx.lineTo(x + 20, y + 30);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    function drawP_Assembly(x_pos, y_lever) {
+        const weight_w = 60, weight_h = 40;
+        ctx.save();
+        ctx.lineWidth = 3;
+
+        // Shackle parts
+        const shackle_y_hook = y_lever + 30;
+        const weight_y_top = shackle_y_hook + 15;
+        // Loop
+        ctx.beginPath();
+        ctx.arc(x_pos, y_lever, 10, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Stem
+        ctx.beginPath();
+        ctx.moveTo(x_pos, y_lever + 10);
+        ctx.lineTo(x_pos, shackle_y_hook - 10);
+        ctx.stroke();
+        // Hook
+        ctx.beginPath();
+        ctx.arc(x_pos, shackle_y_hook, 10, Math.PI, 2 * Math.PI);
+        ctx.stroke();
+        // Connector to weight
+        ctx.beginPath();
+        ctx.moveTo(x_pos, shackle_y_hook + 10);
+        ctx.lineTo(x_pos, weight_y_top);
+        ctx.stroke();
+        // Weight box
+        ctx.lineWidth = 4;
+        ctx.strokeRect(x_pos - weight_w / 2, weight_y_top, weight_w, weight_h);
+        // Label
+        ctx.fillText('P', x_pos + weight_w / 2 + 5, weight_y_top + weight_h - 5);
+        ctx.restore();
+    }
+
+    function drawQ_Assembly(x_pos, y_lever) {
+        const weight_w = 60, weight_h = 40;
+        ctx.save();
+        ctx.lineWidth = 3;
+
+        // Solid Shackle for Q
+        const shackle_y_hook_bottom = y_lever + 25;
+        const weight_y_top = shackle_y_hook_bottom + 15;
+        ctx.beginPath();
+        ctx.arc(x_pos, y_lever + 4, 6, Math.PI, 2 * Math.PI); // Top part connected to lever
+        ctx.lineTo(x_pos + 6, shackle_y_hook_bottom - 8);
+        ctx.arc(x_pos, shackle_y_hook_bottom - 8, 6, 0, Math.PI, true);
+        ctx.closePath();
+        ctx.fill();
+
+        // Connector and Weight
+        ctx.beginPath();
+        ctx.moveTo(x_pos, shackle_y_hook_bottom);
+        ctx.lineTo(x_pos, weight_y_top);
+        ctx.stroke();
+        ctx.lineWidth = 4;
+        ctx.strokeRect(x_pos - weight_w / 2, weight_y_top, weight_w, weight_h);
+        ctx.fillText('Q', x_pos + weight_w / 2 - 5, weight_y_top + weight_h);
+        ctx.restore();
+    }
+
+
+    // --- Main Drawing Execution ---
+
+    // 1. Draw levers AB and DE
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(x_A, y_main);
+    ctx.lineTo(x_B, y_main);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x_D, y_second);
+    ctx.lineTo(x_E, y_second);
+    ctx.stroke();
+
+    // 2. Draw links AD and EF
+    ctx.beginPath();
+    ctx.moveTo(x_A, y_main);
+    ctx.lineTo(x_D, y_second);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(x_F, y_main);
+    ctx.lineTo(x_E, y_second);
+    ctx.stroke();
+
+    // 3. Draw connection joints
+    [ [x_A, y_main], [x_F, y_main], [x_D, y_second], [x_E, y_second] ].forEach(([x, y]) => {
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, 2 * Math.PI);
+        ctx.fill();
+    });
+
+    // 4. Draw Fulcrum at C
+    drawFulcrum(x_C, y_main);
+
+    // 5. Draw Weight Q assembly at G
+    drawQ_Assembly(x_G, y_second);
+    
+    // 6. Draw Weight P assembly at H
+    drawP_Assembly(x_H, y_main);
+
+    // 7. Add Labels for points
+    ctx.fillStyle = 'black';
+    ctx.fillText('A', x_A - 5, y_main - 20);
+    ctx.fillText('C', x_C - 8, y_main - 25);
+    ctx.fillText('F', x_F - 8, y_main - 20);
+    ctx.fillText('H', x_H - 8, y_main - 25);
+    ctx.fillText('B', x_B, y_main + 10);
+    ctx.fillText('D', x_D - 35, y_second + 10);
+    ctx.fillText('E', x_E + 15, y_second + 15);
+    ctx.fillText('G', x_G - 35, y_second - 5);
+
+</script>
+
+</body>
+</html>

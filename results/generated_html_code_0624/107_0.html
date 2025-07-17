@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Double-Slit Interference and Diffraction Pattern</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="400"></canvas>
+
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+const cw = canvas.width;
+const ch = canvas.height;
+
+// --- Configuration ---
+const config = {
+    // Physics coordinates
+    xMin: -8.0,
+    xMax: 8.0,
+    // Canvas layout
+    margin: { top: 50, right: 40, bottom: 80, left: 40 },
+    // Styling
+    axisColor: 'black',
+    axisLineWidth: 2,
+    curveColor: 'black',
+    curveLineWidth: 3,
+    majorTickHeight: 8,
+    minorTickHeight: 5,
+    fontLabel: 'bold 18px serif',
+    fontTicks: '16px serif',
+    fontIntensity: 'italic bold 20px serif',
+    fontUnit: '16px serif'
+};
+
+// --- Coordinate System Setup ---
+const plotWidth = cw - config.margin.left - config.margin.right;
+const plotHeight = ch - config.margin.top - config.margin.bottom;
+const xRange = config.xMax - config.xMin;
+
+const originX = config.margin.left + plotWidth * (0 - config.xMin) / xRange;
+const originY = ch - config.margin.bottom;
+
+const scaleX = plotWidth / xRange;
+const maxIntensityHeight = plotHeight * 0.8;
+
+// Transformation functions
+function toCanvasX(x_cm) {
+    return originX + x_cm * scaleX;
+}
+
+function toCanvasY(intensity) { // intensity is normalized (0 to 1)
+    return originY - intensity * maxIntensityHeight;
+}
+
+// --- Drawing Functions ---
+
+// Draw the main X-axis
+function drawAxes() {
+    ctx.beginPath();
+    ctx.moveTo(config.margin.left, originY);
+    ctx.lineTo(cw - config.margin.right, originY);
+    ctx.strokeStyle = config.axisColor;
+    ctx.lineWidth = config.axisLineWidth;
+    ctx.stroke();
+
+    // Draw ticks and labels
+    ctx.font = config.fontTicks;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = config.axisColor;
+
+    for (let i = -7; i <= 7; i++) {
+        const x_cm = i;
+        const x_canvas = toCanvasX(x_cm);
+
+        ctx.beginPath();
+        ctx.moveTo(x_canvas, originY);
+        
+        // Major ticks at odd numbers and zero, which are labeled in the original image
+        if (i % 2 !== 0 || i === 0) {
+            ctx.lineTo(x_canvas, originY + config.majorTickHeight);
+            ctx.lineWidth = config.axisLineWidth;
+            ctx.stroke();
+            ctx.fillText(i, x_canvas, originY + 12);
+        } else { // Minor ticks at even numbers (unlabeled in the original)
+            ctx.lineTo(x_canvas, originY + config.minorTickHeight);
+            ctx.lineWidth = config.axisLineWidth - 0.5;
+            ctx.stroke();
+        }
+    }
+    
+    // Draw unit label 'cm'
+    ctx.font = config.fontUnit;
+    ctx.textAlign = 'left';
+    ctx.fillText('cm', toCanvasX(7.5), originY - 8);
+}
+
+// The intensity function based on physics
+// I(x) = I_0 * (sinc(beta))^2 * (cos(alpha))^2
+// From the graph analysis:
+// The interference fringe spacing is 1 cm, which gives the relation for alpha.
+// The first diffraction minimum is at x=4 cm, which gives the relation for beta.
+// alpha = pi * x_cm
+// beta = (pi / 4) * x_cm
+function getIntensity(x_cm) {
+    if (x_cm === 0) {
+        return 1.0; // Avoid division by zero, since sinc(0) = 1 and cos(0) = 1
+    }
+    const alpha = Math.PI * x_cm;
+    const beta = (Math.PI / 4.0) * x_cm;
+
+    const interferenceTerm = Math.pow(Math.cos(alpha), 2);
+    const diffractionTerm = Math.pow(Math.sin(beta) / beta, 2);
+    
+    return interferenceTerm * diffractionTerm;
+}
+
+// Draw the intensity pattern curve
+function drawCurve() {
+    ctx.beginPath();
+    ctx.strokeStyle = config.curveColor;
+    ctx.lineWidth = config.curveLineWidth;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    // Iterate over canvas pixels for a smooth plot
+    for (let px = config.margin.left; px <= cw - config.margin.right; px += 0.5) {
+        // Convert canvas pixel to physics coordinate
+        const x_cm = (px - originX) / scaleX;
+        
+        const intensityValue = getIntensity(x_cm);
+        const y_canvas = toCanvasY(intensityValue);
+        
+        // Ensure the curve rests on the axis and doesn't go below
+        const final_y = Math.min(y_canvas, originY);
+
+        if (px === config.margin.left) {
+            ctx.moveTo(px, final_y);
+        } else {
+            ctx.lineTo(px, final_y);
+        }
+    }
+    ctx.stroke();
+}
+
+// Draw text labels
+function drawLabels() {
+    // Intensity label 'I'
+    ctx.font = config.fontIntensity;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillStyle = config.axisColor;
+    ctx.fillText('I', toCanvasX(0), toCanvasY(1.0) - 5);
+    
+    // Figure label
+    ctx.font = config.fontLabel;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Fig. 2.48', cw / 2, originY + 40);
+}
+
+// --- Main Drawing Execution ---
+ctx.clearRect(0, 0, cw, ch);
+drawAxes();
+drawCurve();
+drawLabels();
+
+</script>
+</body>
+</html>

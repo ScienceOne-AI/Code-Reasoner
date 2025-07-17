@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prism Monochromator Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="1000" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow head
+    function drawArrowHead(ctx, fromx, fromy, tox, toy, angle, length) {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const headlen = length || 10;
+        const ang = Math.atan2(dy, dx) + Math.PI;
+
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox + headlen * Math.cos(ang - angle), toy + headlen * Math.sin(ang - angle));
+        ctx.lineTo(tox + headlen * Math.cos(ang + angle), toy + headlen * Math.sin(ang + angle));
+        ctx.closePath();
+        ctx.fill();
+    }
+    
+    // Helper function to draw a line with a midpoint arrow
+    function drawRay(ctx, fromx, fromy, tox, toy) {
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        const midx = (fromx + tox) / 2;
+        const midy = (fromy + toy) / 2;
+        drawArrowHead(ctx, fromx, fromy, midx, midy, Math.PI / 6, 8);
+    }
+    
+    // Helper function to draw a lens
+    function drawLens(ctx, x, y_start, y_end) {
+        ctx.beginPath();
+        ctx.moveTo(x, y_start);
+        ctx.lineTo(x, y_end);
+        ctx.stroke();
+        // Arrows at ends
+        drawArrowHead(ctx, x, y_end, x, y_start, Math.PI / 6, 10);
+        drawArrowHead(ctx, x, y_start, x, y_end, Math.PI / 6, 10);
+    }
+
+    // --- Main Drawing ---
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = '20px Times New Roman';
+
+    // 1. Light Source S1
+    const s1 = { x: 50, y: 250 };
+    ctx.fillRect(s1.x - 4, s1.y - 4, 8, 8);
+    ctx.fillText('S', s1.x - 25, s1.y + 8);
+    ctx.font = '15px Times New Roman';
+    ctx.fillText('1', s1.x - 15, s1.y + 13);
+    ctx.font = '20px Times New Roman';
+
+    // 2. Lens L1
+    const l1_x = 150;
+    drawLens(ctx, l1_x, 180, 320);
+    ctx.fillText('L', l1_x - 8, 170);
+    ctx.font = '15px Times New Roman';
+    ctx.fillText('1', l1_x, 175);
+    ctx.font = '20px Times New Roman';
+
+    // 3. Rays S1 -> L1
+    const l1_p1 = { x: l1_x, y: 210 };
+    const l1_p2 = { x: l1_x, y: 250 };
+    const l1_p3 = { x: l1_x, y: 290 };
+    drawRay(ctx, s1.x, s1.y, l1_p1.x, l1_p1.y);
+    drawRay(ctx, s1.x, s1.y, l1_p2.x, l1_p2.y);
+    drawRay(ctx, s1.x, s1.y, l1_p3.x, l1_p3.y);
+
+    // 4. Prism P
+    const prism_p1 = { x: 300, y: 300 };
+    const prism_p2 = { x: 400, y: 300 };
+    const prism_p3 = { x: 350, y: 190 };
+    ctx.beginPath();
+    ctx.moveTo(prism_p1.x, prism_p1.y);
+    ctx.lineTo(prism_p2.x, prism_p2.y);
+    ctx.lineTo(prism_p3.x, prism_p3.y);
+    ctx.closePath();
+    ctx.fillStyle = '#CCCCCC';
+    ctx.fill();
+    ctx.strokeStyle = 'black';
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+    ctx.fillText('P', prism_p3.x - 8, prism_p3.y - 10);
+
+    // 5. Rays L1 -> Prism (parallel)
+    const prism_in_p1 = { x: 332, y: 210 };
+    const prism_in_p2 = { x: 321, y: 250 };
+    const prism_in_p3 = { x: 305, y: 290 };
+    drawRay(ctx, l1_p1.x, l1_p1.y, prism_in_p1.x, prism_in_p1.y);
+    drawRay(ctx, l1_p2.x, l1_p2.y, prism_in_p2.x, prism_in_p2.y);
+    drawRay(ctx, l1_p3.x, l1_p3.y, prism_in_p3.x, prism_in_p3.y);
+
+    // 6. Rays inside Prism
+    const prism_out_p1 = { x: 368, y: 222 };
+    const prism_out_p2 = { x: 379, y: 256 };
+    const prism_out_p3 = { x: 395, y: 293 };
+    ctx.beginPath();
+    ctx.moveTo(prism_in_p1.x, prism_in_p1.y);
+    ctx.lineTo(prism_out_p1.x, prism_out_p1.y);
+    ctx.moveTo(prism_in_p2.x, prism_in_p2.y);
+    ctx.lineTo(prism_out_p2.x, prism_out_p2.y);
+    ctx.moveTo(prism_in_p3.x, prism_in_p3.y);
+    ctx.lineTo(prism_out_p3.x, prism_out_p3.y);
+    ctx.stroke();
+    
+    // 7. Rays Prism -> L2
+    const l2_x = 550;
+    const slope_p_l2 = 0.28;
+    const l2_p1 = { x: l2_x, y: prism_out_p1.y + slope_p_l2 * (l2_x - prism_out_p1.x) };
+    const l2_p2 = { x: l2_x, y: prism_out_p2.y + slope_p_l2 * (l2_x - prism_out_p2.x) };
+    const l2_p3 = { x: l2_x, y: prism_out_p3.y + slope_p_l2 * (l2_x - prism_out_p3.x) };
+    drawRay(ctx, prism_out_p1.x, prism_out_p1.y, l2_p1.x, l2_p1.y);
+    drawRay(ctx, prism_out_p2.x, prism_out_p2.y, l2_p2.x, l2_p2.y);
+    drawRay(ctx, prism_out_p3.x, prism_out_p3.y, l2_p3.x, l2_p3.y);
+
+    // 8. Annotation Δα₁
+    const angle_label_x = 460;
+    const angle_y1 = prism_out_p1.y + slope_p_l2 * (angle_label_x - prism_out_p1.x);
+    const angle_y2 = prism_out_p2.y + slope_p_l2 * (angle_label_x - prism_out_p2.x) - 5;
+    ctx.beginPath();
+    ctx.moveTo(angle_label_x + 20, angle_y1);
+    ctx.lineTo(angle_label_x + 20, angle_y2);
+    ctx.stroke();
+    drawArrowHead(ctx, angle_label_x, angle_y2, angle_label_x + 20, angle_y1, Math.PI / 6, 8);
+    drawArrowHead(ctx, angle_label_x, angle_y1, angle_label_x + 20, angle_y2, Math.PI / 6, 8);
+    ctx.fillText('Δα', angle_label_x - 20, angle_y1);
+    ctx.font = '15px Times New Roman';
+    ctx.fillText('1', angle_label_x + 5, angle_y1 + 5);
+    ctx.font = '20px Times New Roman';
+
+    // 9. Lens L2
+    drawLens(ctx, l2_x, 220, 400);
+    ctx.fillText('L', l2_x + 10, 235);
+    ctx.font = '15px Times New Roman';
+    ctx.fillText('2', l2_x + 18, 240);
+    ctx.font = '20px Times New Roman';
+    
+    // 10. Focal point S2 and rays L2 -> S2
+    const s2 = { x: 750, y: 340 };
+    drawRay(ctx, l2_p1.x, l2_p1.y, s2.x, s2.y);
+    drawRay(ctx, l2_p2.x, l2_p2.y, s2.x, s2.y);
+    drawRay(ctx, l2_p3.x, l2_p3.y, s2.x, s2.y);
+
+    // 11. Slit S2 and label
+    const slit_width = 10;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(s2.x, s2.y - 60);
+    ctx.lineTo(s2.x, s2.y - slit_width/2);
+    ctx.moveTo(s2.x, s2.y + slit_width/2);
+    ctx.lineTo(s2.x, s2.y + 80);
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+    
+    const label_s2_x = s2.x + 15;
+    const label_s2_y = s2.y - 50;
+    ctx.font = '22px Times New Roman';
+    ctx.fillText('S', label_s2_x, label_s2_y);
+    ctx.font = '16px Times New Roman';
+    ctx.fillText('2', label_s2_x + 10, label_s2_y + 5);
+    ctx.font = '22px Times New Roman';
+    ctx.beginPath();
+    ctx.moveTo(label_s2_x + 20, label_s2_y - 10);
+    ctx.lineTo(label_s2_x + 40, label_s2_y + 15);
+    ctx.stroke();
+    ctx.fillText('Δx', label_s2_x + 45, label_s2_y + 20);
+
+    // 12. Focal length f2
+    const f2_y = 440;
+    ctx.beginPath();
+    ctx.moveTo(l2_x, f2_y - 5);
+    ctx.lineTo(l2_x, f2_y + 5);
+    ctx.moveTo(s2.x, f2_y - 5);
+    ctx.lineTo(s2.x, f2_y + 5);
+    ctx.moveTo(l2_x, f2_y);
+    ctx.lineTo(s2.x, f2_y);
+    ctx.stroke();
+    ctx.fillText('f', (l2_x + s2.x) / 2 - 5, f2_y - 5);
+    ctx.font = '15px Times New Roman';
+    ctx.fillText('2', (l2_x + s2.x) / 2 + 3, f2_y);
+    ctx.font = '20px Times New Roman';
+
+    // 13. Lens L3
+    const l3_x = 850;
+    drawLens(ctx, l3_x, 280, 400);
+    ctx.fillText('L', l3_x + 10, 295);
+    ctx.font = '15px Times New Roman';
+    ctx.fillText('3', l3_x + 18, 300);
+    ctx.font = '20px Times New Roman';
+
+    // 14. Rays S2 -> L3
+    const l3_p1 = { x: l3_x, y: 310 };
+    const l3_p2 = { x: l3_x, y: 340 };
+    const l3_p3 = { x: l3_x, y: 370 };
+    ctx.beginPath();
+    ctx.moveTo(s2.x, s2.y);
+    ctx.lineTo(l3_p1.x, l3_p1.y);
+    ctx.moveTo(s2.x, s2.y);
+    ctx.lineTo(l3_p2.x, l3_p2.y);
+    ctx.moveTo(s2.x, s2.y);
+    ctx.lineTo(l3_p3.x, l3_p3.y);
+    ctx.stroke();
+    drawArrowHead(ctx, s2.x, s2.y, (s2.x + l3_p1.x) / 2, (s2.y + l3_p1.y) / 2, Math.PI / 6, 8);
+    drawArrowHead(ctx, s2.x, s2.y, (s2.x + l3_p2.x) / 2, (s2.y + l3_p2.y) / 2, Math.PI / 6, 8);
+    drawArrowHead(ctx, s2.x, s2.y, (s2.x + l3_p3.x) / 2, (s2.y + l3_p3.y) / 2, Math.PI / 6, 8);
+    
+    // 15. Rays after L3 (parallel)
+    const end_x = 980;
+    drawRay(ctx, l3_p1.x, l3_p1.y, end_x, l3_p1.y);
+    drawRay(ctx, l3_p2.x, l3_p2.y, end_x, l3_p2.y);
+    drawRay(ctx, l3_p3.x, l3_p3.y, end_x, l3_p3.y);
+    
+</script>
+</body>
+</html>

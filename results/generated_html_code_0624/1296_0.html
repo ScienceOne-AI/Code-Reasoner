@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>DC Circuit Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="circuitCanvas" width="520" height="360"></canvas>
+
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Coordinate Setup ---
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 20px Times New Roman';
+
+    // Main coordinates for the circuit layout
+    const xL = 80, xR = 440;
+    const yT = 60, yB = 180;
+    const xM = (xL + xR) / 2; // Midpoint X
+    const yBat = 280;
+    const resW = 80, resH = 22;
+
+    // --- Helper function to draw resistors ---
+    function drawResistor(x, y, label, val, pos) {
+      // Draw the resistor box
+      ctx.strokeRect(x, y, resW, resH);
+      // Place the text label
+      ctx.textAlign = 'center';
+      const labelY = (pos === 'above') ? y - 15 : y + resH + 20;
+      ctx.fillText(label + " = " + val, x + resW / 2, labelY);
+    }
+
+    // --- Draw Wires and Components ---
+    ctx.beginPath();
+
+    // Top branch: Wire - R1 - Wire - R3 - Wire
+    const r1x = xL + (xM - xL - resW) / 2;
+    const r3x = xM + (xR - xM - resW) / 2;
+    ctx.moveTo(xL, yT);
+    ctx.lineTo(r1x, yT);
+    drawResistor(r1x, yT - resH / 2, 'R\u2081', '10Ω', 'above');
+    ctx.moveTo(r1x + resW, yT);
+    ctx.lineTo(xM, yT);
+    ctx.moveTo(xM, yT); // Re-start path at junction for clarity
+    ctx.lineTo(r3x, yT);
+    drawResistor(r3x, yT - resH / 2, 'R\u2083', '100Ω', 'above');
+    ctx.moveTo(r3x + resW, yT);
+    ctx.lineTo(xR, yT);
+
+    // Bottom branch: Wire - R2 - Wire - R4 - Wire
+    const r2x = xL + (xM - xL - resW) / 2;
+    const r4x = xM + (xR - xM - resW) / 2;
+    ctx.moveTo(xL, yB);
+    ctx.lineTo(r2x, yB);
+    drawResistor(r2x, yB - resH / 2, 'R\u2082', '20Ω', 'below');
+    ctx.moveTo(r2x + resW, yB);
+    ctx.lineTo(xM, yB);
+    ctx.moveTo(xM, yB);
+    ctx.lineTo(r4x, yB);
+    drawResistor(r4x, yB - resH / 2, 'R\u2084', '300Ω', 'below');
+    ctx.moveTo(r4x + resW, yB);
+    ctx.lineTo(xR, yB);
+
+    // Left and Right connecting wires of the bridge
+    ctx.moveTo(xL, yT); ctx.lineTo(xL, yB);
+    ctx.moveTo(xR, yT); ctx.lineTo(xR, yB);
+
+    // Wires connecting bridge to the battery line
+    ctx.moveTo(xL, yB); ctx.lineTo(xL, yBat);
+    ctx.moveTo(xR, yB); ctx.lineTo(xR, yBat);
+
+    // Battery supply line
+    ctx.moveTo(xL, yBat); ctx.lineTo(xM - 20, yBat);
+    ctx.moveTo(xM + 20, yBat); ctx.lineTo(xR, yBat);
+
+    // Galvanometer branch
+    const gY = (yT + yB) / 2;
+    const gR = 25;
+    ctx.moveTo(xM, yT); ctx.lineTo(xM, gY - gR);
+    ctx.moveTo(xM, gY + gR); ctx.lineTo(xM, yB);
+
+    // Arrow for I_G (upwards on the top part of the G-branch wire)
+    const arrowY = gY - gR - 12;
+    ctx.moveTo(xM - 4, arrowY + 6);
+    ctx.lineTo(xM, arrowY);
+    ctx.lineTo(xM + 4, arrowY + 6);
+
+    // Stroke all the paths drawn so far
+    ctx.stroke();
+
+    // --- Draw Galvanometer Circle and Labels ---
+    ctx.beginPath();
+    ctx.arc(xM, gY, gR, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('G', xM, gY);
+    ctx.font = 'italic 20px Times New Roman'; // Reset font
+
+    // R_G Label
+    ctx.textAlign = 'right';
+    ctx.fillText('R\u2098 = 100Ω', xM - gR - 10, gY);
+
+    // I_G Label
+    ctx.textAlign = 'left';
+    ctx.fillText('I\u2098', xM + 8, arrowY);
+
+    // --- Draw Battery Symbol and Label ---
+    ctx.beginPath();
+    // Negative terminal (left, short)
+    ctx.moveTo(xM - 10, yBat - 8); ctx.lineTo(xM - 10, yBat + 8);
+    // Positive terminal (right, long)
+    ctx.moveTo(xM + 10, yBat - 15); ctx.lineTo(xM + 10, yBat + 15);
+    ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.fillText('ε = 1.5V', xM, yBat + 30);
+</script>
+
+</body>
+</html>

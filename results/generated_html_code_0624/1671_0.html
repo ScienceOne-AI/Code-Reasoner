@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="forceDiagramCanvas" width="700" height="550" style="border:1px solid #000;"></canvas>
+<script>
+    const canvas = document.getElementById('forceDiagramCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper function to draw arrows ---
+    function drawArrow(ctx, x1, y1, x2, y2, headLength = 8) {
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    // --- Main Drawing ---
+    ctx.fillStyle = 'black';
+    ctx.strokeStyle = 'black';
+    ctx.font = "20px serif";
+
+    // 1. Define constants and calculate coordinates
+    const scale = 110; // pixels per meter
+    const origin = { x: 100, y: 480 };
+    const angleRad = Math.PI / 4;
+    const cosA = Math.cos(angleRad);
+    const sinA = Math.sin(angleRad);
+
+    const Ax = origin.x;
+    const Ay = origin.y;
+
+    const lenAC = 3 * scale;
+    const Cx = Ax + lenAC * cosA;
+    const Cy = Ay - lenAC * sinA;
+
+    const Bx = Ax + 2 * (Cx - Ax);
+    const By = Ay;
+
+    const lenAE = 1 * scale;
+    const Ex = Ax + lenAE * cosA;
+    const Ey = Ay - lenAE * sinA;
+    
+    const lenBF = 1 * scale;
+    const Fx = Bx - lenBF * cosA;
+    const Fy = By - lenBF * sinA;
+
+    const lenCD = 0.6 * scale;
+    const Dx = Cx + lenCD * cosA;
+    const Dy = Cy + lenCD * sinA;
+
+    const lenCF = 2 * scale; // BC - BF = 3 - 1 = 2
+    const Fx_from_C = Cx + lenCF * cosA;
+    const Fy_from_C = Cy + lenCF * sinA;
+
+
+    // 2. Draw Ground
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(Ax - 50, Ay);
+    ctx.lineTo(Bx + 50, By);
+    ctx.stroke();
+
+    // Hatching for the ground
+    ctx.lineWidth = 1;
+    for (let i = Ax - 40; i < Bx + 50; i += 15) {
+        ctx.beginPath();
+        ctx.moveTo(i, Ay + 15);
+        ctx.lineTo(i - 15, Ay);
+        ctx.stroke();
+    }
+
+    // 3. Draw Axes
+    ctx.lineWidth = 2;
+    ctx.font = "italic 24px serif";
+    // Y-axis
+    drawArrow(ctx, Ax, Ay + 20, Ax, Ay - 300);
+    ctx.fillText("y", Ax - 25, Ay - 290);
+    // X-axis
+    drawArrow(ctx, Ax - 20, Ay, Bx + 70, Ay);
+    ctx.fillText("x", Bx + 75, Ay + 8);
+
+
+    // 4. Draw Ladder Structure
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay);
+    ctx.lineTo(Cx, Cy);
+    ctx.lineTo(Bx, By);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(Ex, Ey);
+    ctx.lineTo(Fx, Fy);
+    ctx.stroke();
+
+    // 5. Draw Joints
+    // Hinge C (filled circle)
+    ctx.beginPath();
+    ctx.arc(Cx, Cy, 9, 0, 2 * Math.PI);
+    ctx.fillStyle = 'black';
+    ctx.fill();
+
+    // Joints E and F (open circles)
+    ctx.lineWidth = 2;
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(Ex, Ey, 6, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(Fx, Fy, 6, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+
+    // 6. Draw Angle Annotations
+    ctx.lineWidth = 1;
+    ctx.font = "20px serif";
+    // Angle at A
+    ctx.beginPath();
+    ctx.arc(Ax, Ay, 50, 0, -angleRad, true);
+    ctx.stroke();
+    ctx.fillText("45°", Ax + 55, Ay - 25);
+
+    // Angle at B
+    ctx.beginPath();
+    ctx.arc(Bx, By, 50, Math.PI, Math.PI - angleRad);
+    ctx.stroke();
+    ctx.fillText("45°", Bx - 75, By - 25);
+
+    // 7. Draw Dimension Lines on BC
+    const dimDist = 40;
+    const extDist = 30;
+    const perpAngle = angleRad; // Perpendicular to BC is 45 degrees
+    
+    // Calculate points on the parallel dimension line
+    const C_dim = { x: Cx + dimDist * cosA, y: Cy - dimDist * sinA };
+    const D_dim = { x: Dx + dimDist * cosA, y: Dy - dimDist * sinA };
+    const F_dim = { x: Fx_from_C + dimDist * cosA, y: Fy_from_C - dimDist * sinA };
+    const B_dim = { x: Bx + dimDist * cosA, y: By - dimDist * sinA };
+
+    // Calculate points for short extension lines
+    const C_ext = { x: Cx + extDist * cosA, y: Cy - extDist * sinA };
+    const D_ext = { x: Dx + extDist * cosA, y: Dy - extDist * sinA };
+    const F_ext = { x: Fx_from_C + extDist * cosA, y: Fy_from_C - extDist * sinA };
+    const B_ext = { x: Bx + extDist * cosA, y: By - extDist * sinA };
+
+    // Draw extension lines
+    ctx.beginPath();
+    ctx.moveTo(Cx, Cy); ctx.lineTo(C_ext.x, C_ext.y);
+    ctx.moveTo(Dx, Dy); ctx.lineTo(D_ext.x, D_ext.y);
+    ctx.moveTo(Fx, Fy); ctx.lineTo(F_ext.x, F_ext.y);
+    ctx.moveTo(Bx, By); ctx.lineTo(B_ext.x, B_ext.y);
+    ctx.stroke();
+    
+    // Draw dimension lines with arrows
+    drawArrow(ctx, D_dim.x, D_dim.y, C_dim.x, C_dim.y);
+    drawArrow(ctx, C_dim.x, C_dim.y, D_dim.x, D_dim.y);
+    
+    drawArrow(ctx, F_dim.x, F_dim.y, D_dim.x, D_dim.y);
+    drawArrow(ctx, D_dim.x, D_dim.y, F_dim.x, F_dim.y);
+    
+    drawArrow(ctx, B_dim.x, B_dim.y, F_dim.x, F_dim.y);
+    drawArrow(ctx, F_dim.x, F_dim.y, B_dim.x, B_dim.y);
+    
+    // Draw dimension text
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    
+    // Text for 0.6 m
+    ctx.translate((C_dim.x + D_dim.x) / 2, (C_dim.y + D_dim.y) / 2);
+    ctx.rotate(-angleRad);
+    ctx.fillText("0.6 m", 0, 0);
+    ctx.rotate(angleRad);
+    ctx.translate(-((C_dim.x + D_dim.x) / 2), -((C_dim.y + D_dim.y) / 2));
+
+    // Text for 1.4 m
+    ctx.translate((D_dim.x + F_dim.x) / 2, (D_dim.y + F_dim.y) / 2);
+    ctx.rotate(-angleRad);
+    ctx.fillText("1.4 m", 0, 0);
+    ctx.rotate(angleRad);
+    ctx.translate(-((D_dim.x + F_dim.x) / 2), -((D_dim.y + F_dim.y) / 2));
+
+    // Text for 1 m
+    ctx.translate((F_dim.x + B_dim.x) / 2, (F_dim.y + B_dim.y) / 2);
+    ctx.rotate(-angleRad);
+    ctx.fillText("1 m", 0, 0);
+    ctx.rotate(angleRad);
+    ctx.translate(-((F_dim.x + B_dim.x) / 2), -((F_dim.y + B_dim.y) / 2));
+
+    ctx.restore();
+
+    // 8. Draw Point Labels
+    ctx.font = "bold 24px serif";
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("A", Ax - 20, Ay - 15);
+    ctx.fillText("B", Bx + 20, By - 15);
+    ctx.fillText("C", Cx - 25, Cy - 5);
+    ctx.fillText("D", Dx + 15, Dy + 15);
+    ctx.fillText("E", Ex - 25, Ey);
+    ctx.fillText("F", Fx + 25, Fy);
+
+</script>
+</body>
+</html>

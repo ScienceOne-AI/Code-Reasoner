@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram 8-2</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="600" height="420"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Font ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // --- Helper Functions ---
+        function drawResistor(x, y, w, h, label, labelPos = 'above') {
+            ctx.strokeRect(x, y, w, h);
+            ctx.font = "italic 20px 'Times New Roman'";
+            ctx.textAlign = 'center';
+            const lx = x + w / 2;
+            const ly = (labelPos === 'above') ? y - 10 : y + h + 22;
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, lx, ly);
+        }
+
+        function drawBattery(x, y, w, h, label, polarity = 'pos_right') {
+            const shortLineHeight = h;
+            const longLineHeight = h * 1.5;
+
+            ctx.beginPath();
+            if (polarity === 'pos_right') {
+                // Negative terminal (left)
+                ctx.moveTo(x - w / 2, y - shortLineHeight / 2);
+                ctx.lineTo(x - w / 2, y + shortLineHeight / 2);
+                // Positive terminal (right)
+                ctx.moveTo(x + w / 2, y - longLineHeight / 2);
+                ctx.lineTo(x + w / 2, y + longLineHeight / 2);
+            } else { // pos_left
+                // Positive terminal (left)
+                ctx.moveTo(x - w / 2, y - longLineHeight / 2);
+                ctx.lineTo(x - w / 2, y + longLineHeight / 2);
+                // Negative terminal (right)
+                ctx.moveTo(x + w / 2, y - shortLineHeight / 2);
+                ctx.lineTo(x + w / 2, y + shortLineHeight / 2);
+            }
+            ctx.stroke();
+
+            ctx.font = "italic 20px 'Times New Roman'";
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText(label, x, y + longLineHeight / 2 + 5);
+        }
+
+        function drawPoint(x, y, label, labelPos = 'above') {
+            ctx.beginPath();
+            ctx.arc(x, y, 3.5, 0, 2 * Math.PI);
+            ctx.fill();
+
+            ctx.font = "20px 'Times New Roman'";
+            ctx.textAlign = 'center';
+            const ly = (labelPos === 'above') ? y - 12 : y + 18;
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, x, ly);
+        }
+
+        function drawGround(x, y) {
+            const w = 20;
+            const h = 5;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + 15);
+            ctx.moveTo(x - w, y + 15);
+            ctx.lineTo(x + w, y + 15);
+            ctx.moveTo(x - w * 0.6, y + 15 + h);
+            ctx.lineTo(x + w * 0.6, y + 15 + h);
+            ctx.moveTo(x - w * 0.3, y + 15 + 2 * h);
+            ctx.lineTo(x + w * 0.3, y + 15 + 2 * h);
+            ctx.stroke();
+        }
+        
+        // --- Coordinates and Dimensions ---
+        const yTop = 100;
+        const yBottom = 250;
+        const yR1 = yBottom - 50;
+        const yR2 = yBottom + 50;
+        const resW = 60, resH = 20;
+
+        // --- Component X-positions ---
+        const xE1_center = 120;
+        const xC = 190;
+        const xR4_start = 230;
+        const xD = 340;
+        const xE2_center = 410;
+        const xR3_start = 80;
+        const xA = 180;
+        const xPara_start = 220;
+        const xB = 450;
+        
+        // --- Draw Top Branch ---
+        drawBattery(xE1_center, yTop, 30, 15, 'ε₁, Rᵢ₁', 'pos_right');
+        drawPoint(xC, yTop, 'C', 'above');
+        drawResistor(xR4_start, yTop - resH / 2, 70, resH, 'R₄', 'above');
+        drawPoint(xD, yTop, 'D', 'above');
+        drawBattery(xE2_center, yTop, 30, 15, 'ε₂, Rᵢ₂', 'pos_left');
+        
+        // --- Draw Bottom Branch ---
+        drawResistor(xR3_start, yBottom - resH / 2, resW, resH, 'R₃', 'below');
+        drawPoint(xA, yBottom, 'A', 'below');
+        // R1
+        drawResistor(xPara_start, yR1 - resH / 2, resW, resH, 'R₁', 'above');
+        // R2
+        drawResistor(xPara_start, yR2 - resH / 2, resW, resH, 'R₂', 'below');
+        drawPoint(xB, yBottom, 'B', 'below');
+        
+        // --- Draw Connecting Wires ---
+        ctx.beginPath();
+        // Top wire segments
+        ctx.moveTo(xE1_center + 15, yTop);
+        ctx.lineTo(xR4_start, yTop);
+        ctx.moveTo(xR4_start + 70, yTop);
+        ctx.lineTo(xE2_center - 15, yTop);
+
+        // Vertical connections
+        ctx.moveTo(xE1_center - 15, yTop);
+        ctx.lineTo(xE1_center - 15, yBottom);
+        ctx.lineTo(xR3_start, yBottom);
+        ctx.moveTo(xE2_center + 15, yTop);
+        ctx.lineTo(xE2_center + 15, yBottom);
+        ctx.lineTo(xB, yBottom);
+
+        // Bottom wire segments
+        ctx.moveTo(xR3_start + resW, yBottom);
+        ctx.lineTo(xA, yBottom);
+
+        // Parallel block wires
+        ctx.moveTo(xA, yBottom);
+        ctx.lineTo(xA, yR1);
+        ctx.lineTo(xPara_start, yR1);
+        ctx.moveTo(xPara_start + resW, yR1);
+        ctx.lineTo(xB, yR1);
+        ctx.lineTo(xB, yBottom);
+        ctx.moveTo(xA, yBottom);
+        ctx.lineTo(xA, yR2);
+        ctx.lineTo(xPara_start, yR2);
+        ctx.moveTo(xPara_start + resW, yR2);
+        ctx.lineTo(xB, yR2);
+        
+        ctx.stroke();
+
+        // --- Draw Ground ---
+        drawGround(xB, yBottom);
+
+        // --- Draw Caption ---
+        ctx.font = "24px 'KaiTi', 'SimSun'";
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 8-2 图', 300, 390);
+
+    </script>
+</body>
+</html>

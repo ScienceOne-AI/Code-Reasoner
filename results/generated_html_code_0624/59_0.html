@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rectangular Waveguide Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Configuration ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- 3D Projection Configuration ---
+        const origin = { x: 200, y: 350 };
+        const scale = 100;
+        const L = 3.0; // Length of the waveguide segment to draw
+        const h = 1;   // Height in cm
+        const w = 2;   // Width in cm
+        const projAngle = -Math.PI / 6; // -30 degrees for y-axis projection
+
+        // --- Helper Functions ---
+        function proj(x, y, z) {
+            return {
+                x: origin.x + scale * x + scale * y * Math.cos(projAngle),
+                y: origin.y - scale * z - scale * y * Math.sin(projAngle)
+            };
+        }
+
+        function drawLine(p1, p2) {
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+        }
+
+        function drawArrow(p1, p2, size = 10) {
+            const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            ctx.beginPath();
+            ctx.moveTo(p2.x, p2.y);
+            ctx.lineTo(p2.x - size * Math.cos(angle - Math.PI / 6), p2.y - size * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(p2.x, p2.y);
+            ctx.lineTo(p2.x - size * Math.cos(angle + Math.PI / 6), p2.y - size * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        function drawText(text, p) {
+            ctx.fillText(text, p.x, p.y);
+        }
+
+        function drawBrokenLine(pStart, pEnd, breakRatio = 0.95, cycles = 2, amplitude = 4) {
+            const pBreak = {
+                x: pStart.x + (pEnd.x - pStart.x) * breakRatio,
+                y: pStart.y + (pEnd.y - pStart.y) * breakRatio
+            };
+            
+            // Draw solid part
+            ctx.beginPath();
+            ctx.moveTo(pStart.x, pStart.y);
+            ctx.lineTo(pBreak.x, pBreak.y);
+            ctx.stroke();
+            
+            // Draw squiggly part
+            const dx = pEnd.x - pBreak.x;
+            const dy = pEnd.y - pBreak.y;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const normal = { x: -dy / len, y: dx / len };
+
+            ctx.beginPath();
+            ctx.moveTo(pBreak.x, pBreak.y);
+            const segments = 20;
+            for (let i = 1; i <= segments; i++) {
+                const t = i / segments;
+                const pt = {
+                    x: pBreak.x + dx * t,
+                    y: pBreak.y + dy * t
+                };
+                const offset = amplitude * Math.sin(t * Math.PI * cycles);
+                ctx.lineTo(pt.x + normal.x * offset, pt.y + normal.y * offset);
+            }
+            ctx.stroke();
+        }
+
+
+        // --- Main Drawing Logic ---
+
+        // 1. Define Waveguide Corner Points
+        const P000 = proj(0, 0, 0);
+        const P001 = proj(0, 0, h);
+        const P0w0 = proj(0, w, 0);
+        const P0w1 = proj(0, w, h);
+        const PL00 = proj(L, 0, 0);
+        const PL01 = proj(L, 0, h);
+        const PLw0 = proj(L, w, 0);
+        const PLw1 = proj(L, w, h);
+
+        // 2. Draw Waveguide Edges
+        // Solid lines
+        ctx.setLineDash([]);
+        drawLine(P001, P0w1); // Top-left edge (y-direction)
+        drawLine(P0w0, P0w1); // Back-left edge (z-direction)
+        
+        // Lines along x-axis (with broken ends)
+        drawBrokenLine(P000, PL00); // Bottom-front edge
+        drawBrokenLine(P001, PL01); // Top-front edge
+        drawBrokenLine(P0w0, PLw0); // Bottom-back edge
+        drawBrokenLine(P0w1, PLw1); // Top-back edge
+
+        // Dashed lines
+        ctx.setLineDash([6, 4]);
+        drawLine(P000, P0w0); // Bottom-left hidden edge (y-direction)
+        
+        ctx.setLineDash([]); // Reset for axes and labels
+
+        // 3. Draw Coordinate Axes
+        // Z-axis
+        const zAxisStart = proj(0, 0, -0.2);
+        const zAxisEnd = proj(0, 0, h + 0.8);
+        drawLine(zAxisStart, zAxisEnd);
+        drawArrow(zAxisStart, zAxisEnd);
+        drawText('z', {x: zAxisEnd.x - 20, y: zAxisEnd.y});
+        
+        // X-axis
+        const xAxisStart = proj(-0.2, 0, 0);
+        const xAxisEnd = proj(L + 0.5, 0, 0);
+        drawLine(xAxisStart, xAxisEnd);
+        drawArrow(xAxisStart, xAxisEnd);
+        drawText('x', {x: xAxisEnd.x, y: xAxisEnd.y + 20});
+        
+        // Y-axis
+        const yAxisStart = proj(0, -0.2, 0);
+        const yAxisEnd = proj(0, w + 1, 0);
+        drawLine(yAxisStart, yAxisEnd);
+        drawArrow(yAxisStart, yAxisEnd);
+        drawText('y', {x: yAxisEnd.x, y: yAxisEnd.y - 15});
+        
+        // Origin label
+        drawText('0', {x: P000.x - 15, y: P000.y + 15});
+
+        // 4. Draw Dimensions and Labels
+        // 1 cm height
+        const dimZ_p1 = proj(-0.5, 0, 0);
+        const dimZ_p2 = proj(-0.5, 0, h);
+        drawLine(dimZ_p1, dimZ_p2);
+        drawArrow(dimZ_p2, dimZ_p1);
+        drawArrow(dimZ_p1, dimZ_p2);
+        ctx.save();
+        ctx.translate(dimZ_p1.x - 10, (dimZ_p1.y + dimZ_p2.y) / 2);
+        ctx.rotate(-Math.PI / 2);
+        drawText('1 cm', {x: 0, y: 0});
+        ctx.restore();
+        
+        // 2 cm width
+        const dimY_p1 = P001;
+        const dimY_p2 = P0w1;
+        const midY = {x: (dimY_p1.x + dimY_p2.x)/2, y: (dimY_p1.y + dimY_p2.y)/2};
+        const angleY = Math.atan2(dimY_p2.y - dimY_p1.y, dimY_p2.x - dimY_p1.x);
+        const textYPos = {x: midY.x - 30 * Math.sin(angleY), y: midY.y + 30 * Math.cos(angleY)};
+        
+        const tickSize = 8;
+        // Ticks for 2cm dimension
+        ctx.beginPath();
+        ctx.moveTo(dimY_p1.x - tickSize * Math.sin(angleY), dimY_p1.y + tickSize * Math.cos(angleY));
+        ctx.lineTo(dimY_p1.x + tickSize * Math.sin(angleY), dimY_p1.y - tickSize * Math.cos(angleY));
+        ctx.moveTo(dimY_p2.x - tickSize * Math.sin(angleY), dimY_p2.y + tickSize * Math.cos(angleY));
+        ctx.lineTo(dimY_p2.x + tickSize * Math.sin(angleY), dimY_p2.y - tickSize * Math.cos(angleY));
+        ctx.stroke();
+        
+        drawText('2 cm', textYPos);
+
+        // 5. Draw Figure Caption
+        ctx.font = 'bold 20px "Times New Roman"';
+        drawText('Fig. 4.13', {x: canvas.width / 2, y: 450});
+
+    </script>
+</body>
+</html>

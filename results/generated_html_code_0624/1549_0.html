@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = '#000';
+        ctx.fillStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 20px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Function to draw an arrow
+        function drawArrow(fromX, fromY, toX, toY, headLength = 8) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // 1. Draw the coordinate system
+        const axisOrigin = { x: 100, y: 210 };
+        // x-axis
+        drawArrow(axisOrigin.x, axisOrigin.y, axisOrigin.x, axisOrigin.y - 50);
+        ctx.fillText('x', axisOrigin.x - 15, axisOrigin.y - 55);
+        // y-axis
+        drawArrow(axisOrigin.x, axisOrigin.y, axisOrigin.x + 40, axisOrigin.y + 20);
+        ctx.fillText('y', axisOrigin.x + 50, axisOrigin.y + 30);
+        // z-axis
+        drawArrow(axisOrigin.x, axisOrigin.y, axisOrigin.x - 40, axisOrigin.y + 20);
+        ctx.fillText('z', axisOrigin.x - 50, axisOrigin.y + 30);
+
+        // 2. Draw the rectangular parallelepiped
+        const v = {
+            tfl: { x: 220, y: 150 }, // Top-Front-Left (junction)
+            bfl: { x: 220, y: 250 }, // Bottom-Front-Left
+            tbl: { x: 180, y: 140 }, // Top-Back-Left
+            tfr: { x: 370, y: 120 }, // Top-Front-Right
+            bbl: { x: 180, y: 240 }, // Bottom-Back-Left
+            bfr: { x: 370, y: 220 }, // Bottom-Front-Right
+            tbr: { x: 330, y: 110 }  // Top-Back-Right
+        };
+
+        ctx.beginPath();
+        // Left Face
+        ctx.moveTo(v.tfl.x, v.tfl.y);
+        ctx.lineTo(v.bfl.x, v.bfl.y);
+        ctx.lineTo(v.bbl.x, v.bbl.y);
+        ctx.lineTo(v.tbl.x, v.tbl.y);
+        ctx.closePath();
+        // Top Face
+        ctx.moveTo(v.tfl.x, v.tfl.y);
+        ctx.lineTo(v.tbl.x, v.tbl.y);
+        ctx.lineTo(v.tbr.x, v.tbr.y);
+        ctx.lineTo(v.tfr.x, v.tfr.y);
+        ctx.closePath();
+        // Right Face
+        ctx.moveTo(v.tfl.x, v.tfl.y);
+        ctx.lineTo(v.tfr.x, v.tfr.y);
+        ctx.lineTo(v.bfr.x, v.bfr.y);
+        ctx.lineTo(v.bfl.x, v.bfl.y);
+        ctx.closePath();
+        ctx.stroke();
+
+        // 3. Draw vectors H and v
+        // Vector H
+        drawArrow(280, 95, 280, 65);
+        ctx.fillText('H', 280, 50);
+        // Vector v
+        drawArrow(380, 170, 420, 170);
+        ctx.fillText('v', 430, 170);
+
+        // 4. Draw dimensions a, b, c
+        ctx.lineWidth = 1;
+        // Dimension a
+        ctx.beginPath();
+        ctx.moveTo(v.bfl.x, v.bfl.y + 5);
+        ctx.lineTo(v.bfl.x, v.bfl.y + 25);
+        ctx.moveTo(v.bfr.x, v.bfr.y + 5);
+        ctx.lineTo(v.bfr.x, v.bfr.y + 25);
+        ctx.stroke();
+        drawArrow(v.bfl.x, v.bfl.y + 15, v.bfr.x, v.bfr.y + 15);
+        ctx.fillText('a', (v.bfl.x + v.bfr.x) / 2, v.bfl.y + 35);
+
+        // Dimension b
+        ctx.beginPath();
+        ctx.moveTo(v.tfr.x + 5, v.tfr.y);
+        ctx.lineTo(v.tfr.x + 25, v.tfr.y);
+        ctx.moveTo(v.bfr.x + 5, v.bfr.y);
+        ctx.lineTo(v.bfr.x + 25, v.bfr.y);
+        ctx.stroke();
+        drawArrow(v.tfr.x + 15, v.tfr.y, v.tfr.x + 15, v.bfr.y);
+        ctx.fillText('b', v.tfr.x + 35, (v.tfr.y + v.bfr.y) / 2);
+
+        // Dimension c
+        const c_mid_y = (v.tfl.y + v.bfl.y) / 2;
+        const c_left_x = (v.tbl.x + v.bbl.x) / 2;
+        const c_right_x = (v.tfl.x + v.bfl.x) / 2;
+        ctx.beginPath();
+        drawArrow(c_left_x - 5, c_mid_y, c_left_x + 10, c_mid_y, 5);
+        drawArrow(c_right_x + 5, c_mid_y, c_right_x - 10, c_mid_y, 5);
+        ctx.stroke();
+        ctx.fillText('c', (c_left_x + c_right_x) / 2, c_mid_y - 15);
+
+        // 5. Draw labels on the block
+        // Label C
+        const c_label_x = (v.tbl.x + v.tfl.x)/2 + 2;
+        const c_label_y = (v.tbl.y + v.bbl.y)/2 + 10;
+        ctx.fillText('C', c_label_x, c_label_y);
+
+        // Diamond shape
+        const diamond_cx = c_label_x;
+        const diamond_cy = c_label_y + 20;
+        const d_size = 4;
+        ctx.beginPath();
+        ctx.moveTo(diamond_cx, diamond_cy - d_size);
+        ctx.lineTo(diamond_cx + d_size, diamond_cy);
+        ctx.lineTo(diamond_cx, diamond_cy + d_size);
+        ctx.lineTo(diamond_cx - d_size, diamond_cy);
+        ctx.closePath();
+        ctx.fill();
+
+        // 6. Draw Figure caption
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 22px serif';
+        ctx.fillText('Fig. 2.55', 270, 350);
+
+    </script>
+</body>
+</html>

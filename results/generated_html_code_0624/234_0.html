@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Redrawing</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, arrowHeadLength) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - arrowHeadLength * Math.cos(angle - Math.PI / 6), toy - arrowHeadLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - arrowHeadLength * Math.cos(angle + Math.PI / 6), toy - arrowHeadLength * Math.sin(angle + Math.PI / 6));
+        }
+
+        // Helper function to draw a dashed line
+        function drawDashedLine(ctx, x1, y1, x2, y2, dashLength = 5) {
+            ctx.beginPath();
+            ctx.setLineDash([dashLength, dashLength]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset to solid lines
+        }
+        
+        // --- Drawing parameters ---
+        const cx = 250;
+        const cy = 270;
+        const a = 100;
+        const wireLength = 450;
+        const wireTopY = cy - wireLength / 2;
+        const wireBottomY = cy + wireLength / 2;
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Draw Figure Caption ---
+        ctx.fillText('Fig. 2.31', cx, 550);
+
+        // --- Draw the two parallel wires ---
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        // Left wire
+        ctx.moveTo(cx - a, wireTopY);
+        ctx.lineTo(cx - a, wireBottomY);
+        // Right wire
+        ctx.moveTo(cx + a, wireTopY);
+        ctx.lineTo(cx + a, wireBottomY);
+        ctx.stroke();
+        
+        // --- Draw current arrows and labels 'I' ---
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        // Left arrow (downwards)
+        drawArrow(ctx, cx - a, cy + 50, cx - a, cy + 80, 10);
+        // Right arrow (upwards)
+        drawArrow(ctx, cx + a, cy - 50, cx + a, cy - 80, 10);
+        ctx.stroke();
+        ctx.fillText('I', cx - a - 30, cy + 65);
+        ctx.fillText('I', cx + a + 30, cy - 65);
+
+        // --- Draw the circular ring ---
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(cx, cy, a, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // --- Draw the center dot ---
+        ctx.beginPath();
+        ctx.arc(cx, cy, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // --- Draw the dimension line for '2a' ---
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx - a, wireTopY - 20);
+        ctx.lineTo(cx + a, wireTopY - 20);
+        ctx.moveTo(cx - a, wireTopY - 25);
+        ctx.lineTo(cx - a, wireTopY - 15);
+        ctx.moveTo(cx + a, wireTopY - 25);
+        ctx.lineTo(cx + a, wireTopY - 15);
+        ctx.stroke();
+        ctx.fillText('2a', cx, wireTopY - 40);
+
+        // --- Draw dashed lines through the center ---
+        ctx.lineWidth = 1;
+        drawDashedLine(ctx, cx, cy - a, cx, cy + a); // Vertical
+        // Horizontal dashed line needed for y-dimension
+        drawDashedLine(ctx, cx - a, cy, cx, cy);
+
+        // --- Draw the triangle and label 'a' ---
+        const angle = (5 * Math.PI) / 6; // 150 degrees
+        const px = cx + a * Math.cos(angle);
+        const py = cy - a * Math.sin(angle); // y is upwards from center
+        
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);      // Center
+        ctx.lineTo(px, py);      // To point on circle
+        ctx.lineTo(cx, py);      // To projection on vertical axis
+        ctx.closePath();
+        ctx.stroke();
+        
+        // Label 'a' on the hypotenuse
+        const label_a_x = (cx + px) / 2 + 10;
+        const label_a_y = (cy + py) / 2 - 10;
+        ctx.save();
+        ctx.translate(label_a_x, label_a_y);
+        ctx.rotate(angle - Math.PI / 2);
+        ctx.fillText('a', 0, 0);
+        ctx.restore();
+        
+        // --- Draw dimension for 'y' ---
+        ctx.lineWidth = 1;
+        // Dashed horizontal lines
+        drawDashedLine(ctx, px, py, cx - a, py);
+        
+        // Vertical dimension line for 'y'
+        const yDimX = cx - a - 40;
+        ctx.beginPath();
+        ctx.moveTo(yDimX, py);
+        ctx.lineTo(yDimX, cy);
+        // Ticks
+        ctx.moveTo(yDimX - 5, py);
+        ctx.lineTo(yDimX + 5, py);
+        ctx.moveTo(yDimX - 5, cy);
+        ctx.lineTo(yDimX + 5, cy);
+        ctx.stroke();
+        ctx.fillText('y', yDimX - 20, (py + cy) / 2);
+
+        // --- Draw dimension for 'r' ---
+        const r_end_x = cx - 50;
+        const r_y_pos = cy + a + 50;
+        const r_brace_y = r_y_pos - 10;
+
+        // Vertical dashed line from bottom of circle downwards
+        const circle_bottom_at_r_end_x = cy + Math.sqrt(a * a - (cx - r_end_x) * (cx - r_end_x));
+        drawDashedLine(ctx, r_end_x, circle_bottom_at_r_end_x, r_end_x, r_y_pos);
+
+        // Horizontal brace for 'r'
+        ctx.beginPath();
+        ctx.moveTo(cx - a, r_brace_y);
+        ctx.lineTo(r_end_x, r_brace_y);
+        // Ticks
+        ctx.moveTo(cx - a, r_brace_y - 5);
+        ctx.lineTo(cx - a, r_brace_y + 5);
+        ctx.moveTo(r_end_x, r_brace_y - 5);
+        ctx.lineTo(r_end_x, r_brace_y + 5);
+        ctx.stroke();
+        ctx.fillText('r', (cx - a + r_end_x) / 2, r_brace_y + 20);
+
+    </script>
+</body>
+</html>

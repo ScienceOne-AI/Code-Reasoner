@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Relativity Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="relativityCanvas" width="850" height="300"></canvas>
+    <script>
+        const canvas = document.getElementById('relativityCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 8) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Helper function to draw a fraction
+        function drawFraction(ctx, numerator, denominator, x, y) {
+            const originalAlign = ctx.textAlign;
+            ctx.textAlign = 'center';
+            const numWidth = ctx.measureText(numerator).width;
+            const denWidth = ctx.measureText(denominator).width;
+            const barWidth = Math.max(numWidth, denWidth) + 4;
+
+            ctx.fillText(numerator, x, y - 5);
+            ctx.beginPath();
+            ctx.moveTo(x - barWidth / 2, y);
+            ctx.lineTo(x + barWidth / 2, y);
+            ctx.stroke();
+            ctx.fillText(denominator, x, y + 15);
+            ctx.textAlign = originalAlign;
+        }
+        
+        // --- Main Drawing ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        
+        // --- Coordinates and Dimensions ---
+        const y_axis = 220;
+        const ship_width = 120;
+        const ship_height = 45;
+        const ship_wall_height = 35;
+        const gap_L = 90;
+
+        const ship1_rear_x = 100;
+        const ship1_front_x = ship1_rear_x + ship_width;
+        
+        const ship2_rear_x = ship1_front_x + gap_L;
+        const ship2_front_x = ship2_rear_x + ship_width;
+
+        const ship3_rear_x = ship2_front_x + gap_L;
+        const ship3_front_x = ship3_rear_x + ship_width;
+
+        // --- Draw Axis ---
+        drawArrow(ctx, 20, y_axis, 800, y_axis);
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('x', 810, y_axis + 6);
+        ctx.font = '20px "SimSun", "Times New Roman"';
+        ctx.fillText('S系', 30, y_axis + 30);
+        
+
+        // --- Draw Ships and Labels ---
+        function drawShip(id, rear_x, front_x, v_num, v_den) {
+            const y_base = y_axis;
+            const y_top = y_base - ship_height;
+            const y_wall = y_top - ship_wall_height;
+
+            // Ship Body
+            ctx.beginPath();
+            ctx.rect(rear_x, y_top, ship_width, ship_height);
+            ctx.moveTo(rear_x, y_top);
+            ctx.lineTo(rear_x, y_wall);
+            ctx.moveTo(front_x, y_top);
+            ctx.lineTo(front_x, y_wall);
+            ctx.stroke();
+
+            // ID Number
+            ctx.font = '24px Times New Roman';
+            ctx.textAlign = 'center';
+            ctx.fillText(id.toString(), rear_x + ship_width / 2, y_base - 15);
+            
+            // Proper Length Label (l₀)
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.fillText('(l₀)', rear_x + ship_width / 2, y_top - 10);
+
+            // Position Marker (P)
+            ctx.beginPath();
+            ctx.setLineDash([3, 3]);
+            ctx.moveTo(rear_x, y_base);
+            ctx.lineTo(rear_x, y_base + 15);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.textAlign = 'center';
+            ctx.fillText('P', rear_x, y_base + 35);
+            ctx.font = 'italic 14px Times New Roman';
+            ctx.fillText(id.toString(), rear_x + 8, y_base + 38);
+            
+            // Velocity Vector and Label
+            const v_arrow_y = y_wall - 25;
+            drawArrow(ctx, rear_x + 20, v_arrow_y, front_x - 20, v_arrow_y);
+            
+            const v_label_y = v_arrow_y - 25;
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.textAlign = 'right';
+            ctx.fillText('v', rear_x + 20, v_label_y + 8);
+            ctx.font = 'italic 14px Times New Roman';
+            ctx.fillText(id.toString(), rear_x + 27, v_label_y + 11);
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.textAlign = 'left';
+            ctx.fillText('=', rear_x + 32, v_label_y + 8);
+            
+            ctx.font = '20px Times New Roman';
+            drawFraction(ctx, v_num, v_den, rear_x + 60, v_label_y);
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.fillText('c', rear_x + 80, v_label_y + 8);
+        }
+
+        drawShip(1, ship1_rear_x, ship1_front_x, '2', '5');
+        drawShip(2, ship2_rear_x, ship2_front_x, '3', '5');
+        drawShip(3, ship3_rear_x, ship3_front_x, '4', '5');
+        
+        // --- Draw Distance L markers ---
+        function drawDistanceL(front_prev, rear_next) {
+            const y_L = y_axis - ship_height / 2;
+            const line_start = front_prev + 10;
+            const line_end = rear_next - 10;
+            
+            ctx.beginPath();
+            // line
+            ctx.moveTo(line_start, y_L);
+            ctx.lineTo(line_end, y_L);
+            // left arrow
+            ctx.moveTo(line_start + 8, y_L - 5);
+            ctx.lineTo(line_start, y_L);
+            ctx.lineTo(line_start + 8, y_L + 5);
+            // right arrow
+            ctx.moveTo(line_end - 8, y_L - 5);
+            ctx.lineTo(line_end, y_L);
+            ctx.lineTo(line_end - 8, y_L + 5);
+            ctx.stroke();
+
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#fff'; // Erase behind text
+            const text_x = (front_prev + rear_next) / 2;
+            const text_y = y_L - 12;
+            ctx.fillRect(text_x - 10, text_y - 15, 20, 20);
+            ctx.fillStyle = 'black';
+            ctx.fillText('L', text_x, text_y);
+        }
+        
+        drawDistanceL(ship1_front_x, ship2_rear_x);
+        drawDistanceL(ship2_front_x, ship3_rear_x);
+
+    </script>
+</body>
+</html>

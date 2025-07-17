@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thin Film Interference Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #999;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="550" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style setup ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    
+    // --- Helper function for arrows ---
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 10; // length of head in pixels
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // 1. Source (S) and its collimator
+    ctx.font = '24px serif';
+    ctx.fillText('S', 20, 205);
+    const lensCenterY = 200;
+    const lensCenterX = 65;
+    const lensHalfHeight = 30;
+    const lensHalfWidth = 15;
+    ctx.beginPath();
+    ctx.moveTo(lensCenterX - lensHalfWidth, lensCenterY - lensHalfHeight);
+    ctx.lineTo(lensCenterX, lensCenterY);
+    ctx.lineTo(lensCenterX - lensHalfWidth, lensCenterY + lensHalfHeight);
+    ctx.moveTo(lensCenterX + lensHalfWidth, lensCenterY - lensHalfHeight);
+    ctx.lineTo(lensCenterX, lensCenterY);
+    ctx.lineTo(lensCenterX + lensHalfWidth, lensCenterY + lensHalfHeight);
+    ctx.stroke();
+
+    // 2. Incoming parallel rays
+    const rayStartX = lensCenterX + lensHalfWidth;
+    const rayY = [170, 185, 200, 215];
+    const splitter = { x1: 180, y1: 250, x2: 500, y2: 130 };
+    const m = (splitter.y2 - splitter.y1) / (splitter.x2 - splitter.x1);
+    const c = splitter.y1 - m * splitter.x1;
+    // y = m*x + c  => x = (y - c) / m
+    rayY.forEach(y => {
+        const endX = (y - c) / m;
+        drawArrow(ctx, rayStartX, y, endX, y);
+    });
+
+    // 3. Beam splitter
+    ctx.beginPath();
+    ctx.moveTo(splitter.x1, splitter.y1);
+    ctx.lineTo(splitter.x2, splitter.y2);
+    ctx.stroke();
+
+    // 4. Glass plate and Oil Film
+    const glass = { x: 150, y: 400, w: 300, h: 40 };
+    ctx.beginPath();
+    ctx.rect(glass.x, glass.y, glass.w, glass.h);
+    ctx.stroke();
+    // Hatching for glass
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = glass.x + 20; i < glass.x + glass.w + glass.h; i += 20) {
+        ctx.moveTo(i, glass.y);
+        ctx.lineTo(i - glass.h, glass.y + glass.h);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // Oil film
+    const filmTopY = 350;
+    const filmCenterX = glass.x + glass.w / 2;
+    ctx.beginPath();
+    ctx.moveTo(glass.x, glass.y);
+    ctx.quadraticCurveTo(filmCenterX, filmTopY, glass.x + glass.w, glass.y);
+    ctx.stroke();
+
+    // "油膜" (Oil film) label
+    ctx.font = '24px "KaiTi", "SimSun", sans-serif';
+    ctx.fillText('油膜', 180, 360);
+    ctx.beginPath();
+    ctx.moveTo(225, 355);
+    ctx.lineTo(260, 375);
+    ctx.stroke();
+
+    // 5. Downward and Upward Rays
+    const downRayX = [230, 280, 330, 380];
+    const filmCurve = (x_coord) => {
+        const a = (glass.y - filmTopY) / Math.pow((glass.x - filmCenterX), 2);
+        return a * Math.pow(x_coord - filmCenterX, 2) + filmTopY;
+    };
+
+    downRayX.forEach(x => {
+        const startY = m * x + c;
+        const endY = filmCurve(x);
+
+        // Downward ray (hourglass shape)
+        const midY = startY + (endY - startY) / 2;
+        const halfWidth = 3;
+        
+        ctx.beginPath(); // Left boundary
+        ctx.moveTo(x - halfWidth, startY);
+        ctx.quadraticCurveTo(x - 0.5, midY, x - halfWidth, endY);
+        ctx.stroke();
+
+        ctx.beginPath(); // Right boundary
+        ctx.moveTo(x + halfWidth, startY);
+        ctx.quadraticCurveTo(x + 0.5, midY, x + halfWidth, endY);
+        ctx.stroke();
+
+        drawArrow(ctx, x, midY - 20, x, midY + 20); // Arrow in the middle
+
+        // Upward ray
+        const upEndY = 70;
+        drawArrow(ctx, x, startY, x, upEndY);
+    });
+
+    // 6. Annotation 'h'
+    ctx.font = '22px serif';
+    const h_line_x = 480;
+    
+    ctx.save(); // Dashed lines
+    ctx.setLineDash([5, 3]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(filmCenterX, filmTopY);
+    ctx.lineTo(h_line_x, filmTopY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(glass.x + glass.w, glass.y);
+    ctx.lineTo(h_line_x, glass.y);
+    ctx.stroke();
+    ctx.restore();
+    
+    // Vertical line with arrows for h
+    ctx.beginPath();
+    ctx.moveTo(h_line_x, filmTopY);
+    ctx.lineTo(h_line_x, glass.y);
+    ctx.stroke();
+    drawArrow(ctx, h_line_x, (filmTopY + glass.y)/2 - 5, h_line_x, filmTopY);
+    drawArrow(ctx, h_line_x, (filmTopY + glass.y)/2 + 5, h_line_x, glass.y);
+    ctx.fillText('h', h_line_x + 10, (filmTopY + glass.y) / 2 + 5);
+
+    // 7. Caption
+    ctx.font = '24px "KaiTi", "SimSun", sans-serif';
+    ctx.fillText('习题 12-24 图', 200, 480);
+</script>
+</body>
+</html>

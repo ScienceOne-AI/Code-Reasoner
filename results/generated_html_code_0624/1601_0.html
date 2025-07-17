@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis of Two Rods</title>
+</head>
+<body>
+    <canvas id="myCanvas" width="500" height="500" style="border:1px solid #d3d3d3;"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Define geometry based on problem statement
+        const D = { x: 60, y: 440 }; // Bottom-left corner 'D'
+        const a = 280; // Scaled length of rod AB
+        const b = 180; // Scaled length of rod AC
+
+        // Choose an angle for visualization that matches the diagram's appearance.
+        const theta1_deg = 50;
+        const theta1_rad = theta1_deg * Math.PI / 180;
+        // Since angle BAC is 90 degrees and rods lean on opposite sides
+        const theta2_rad = (90 - theta1_deg) * Math.PI / 180;
+
+        // Calculate coordinates of key points based on trigonometry
+        const xA_offset = a * Math.cos(theta1_rad);
+        const yB_offset = a * Math.sin(theta1_rad);
+        const xC_offset = b * Math.cos(theta2_rad);
+        const yC_offset = b * Math.sin(theta2_rad);
+
+        const A = { x: D.x + xA_offset, y: D.y };
+        const B = { x: D.x, y: D.y - yB_offset };
+        const W_x = A.x + xC_offset; // x-coordinate of the right wall
+        const C = { x: W_x, y: D.y - yC_offset };
+        const E = { x: W_x, y: D.y };
+
+        // Drawing parameters
+        const wallColor = 'black';
+        const rodColor = 'black';
+        const labelColor = 'black';
+        const wallThickness = 3;
+        const hatchThickness = 1.5;
+        const hatchLength = 15;
+        const hatchSpacing = 10;
+        const rodHalfWidth = 2.5; // for double line effect
+
+        // --- Drawing starts ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw walls and floor outlines
+        ctx.strokeStyle = wallColor;
+        ctx.lineWidth = wallThickness;
+
+        const leftWallTopY = B.y - 40;
+        const rightWallTopY = C.y - 40;
+        const floorRightX = E.x + 40;
+
+        ctx.beginPath();
+        ctx.moveTo(D.x, leftWallTopY);
+        ctx.lineTo(D.x, D.y);
+        ctx.lineTo(floorRightX, D.y);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(E.x, rightWallTopY);
+        ctx.lineTo(E.x, E.y);
+        ctx.stroke();
+
+        // Draw hatching (diagonal lines with negative slope)
+        ctx.lineWidth = hatchThickness;
+        ctx.strokeStyle = wallColor;
+
+        // Hatching for left wall
+        for (let y = leftWallTopY; y <= D.y; y += hatchSpacing) {
+            ctx.beginPath();
+            ctx.moveTo(D.x, y);
+            ctx.lineTo(D.x - hatchLength, y + hatchLength);
+            ctx.stroke();
+        }
+
+        // Hatching for floor
+        for (let x = D.x; x <= floorRightX; x += hatchSpacing) {
+            ctx.beginPath();
+            ctx.moveTo(x, D.y);
+            ctx.lineTo(x - hatchLength, D.y + hatchLength);
+            ctx.stroke();
+        }
+
+        // Hatching for right wall
+        for (let y = rightWallTopY; y <= E.y; y += hatchSpacing) {
+            ctx.beginPath();
+            ctx.moveTo(E.x, y);
+            ctx.lineTo(E.x + hatchLength, y - hatchLength);
+            ctx.stroke();
+        }
+
+        // Helper function to draw a rod with double lines
+        function drawDoubleLine(p1, p2, width) {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const ux = dx / len;
+            const uy = dy / len;
+            const px = -uy; // Perpendicular vector component x
+            const py = ux;  // Perpendicular vector component y
+
+            ctx.beginPath();
+            ctx.moveTo(p1.x + width * px, p1.y + width * py);
+            ctx.lineTo(p2.x + width * px, p2.y + width * py);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(p1.x - width * px, p1.y - width * py);
+            ctx.lineTo(p2.x - width * px, p2.y - width * py);
+            ctx.stroke();
+        }
+        
+        // Draw rods
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = rodColor;
+        drawDoubleLine(A, B, rodHalfWidth);
+        drawDoubleLine(A, C, rodHalfWidth);
+        
+        // Add labels
+        ctx.fillStyle = labelColor;
+        ctx.font = 'bold 24px serif';
+        ctx.fillText('A', A.x - 20, A.y - 10);
+        ctx.fillText('B', B.x + 10, B.y + 10);
+        ctx.fillText('C', C.x - 25, C.y + 10);
+        ctx.fillText('D', D.x + 10, D.y - 15);
+        ctx.fillText('E', E.x - 25, E.y - 15);
+    </script>
+</body>
+</html>

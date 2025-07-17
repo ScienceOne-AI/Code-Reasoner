@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="myCanvas" width="450" height="270" style="border:1px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.
+</canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style and settings
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.2;
+    ctx.font = '18px Times New Roman';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+
+    // --- Geometry ---
+    // Define the triangle's key points and properties based on the image
+    const xA = 80;
+    const yA = 220;
+    const L_AP_px = 300; // Pixel length for the hypotenuse AP
+    const angleA_deg = 30;
+    const angleA_rad = angleA_deg * Math.PI / 180;
+
+    // Calculate coordinates of the other vertices P and B
+    const xP = xA + L_AP_px * Math.cos(angleA_rad);
+    const yP = yA - L_AP_px * Math.sin(angleA_rad);
+    const xB = xP;
+    const yB = yA;
+
+    // --- Drawing ---
+
+    // 1. Draw the right-angled triangle ABP
+    ctx.beginPath();
+    ctx.moveTo(xA, yA);
+    ctx.lineTo(xB, yB);
+    ctx.lineTo(xP, yP);
+    ctx.closePath();
+    ctx.stroke();
+
+    // 2. Draw the vertex labels 'A', 'B', 'P'
+    ctx.font = '20px Times New Roman';
+    ctx.textBaseline = 'top';
+    ctx.fillText('A', xA - 20, yA);
+    ctx.fillText('B', xB, yA + 8);
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('P', xP + 15, yP + 10);
+    ctx.font = '18px Times New Roman'; // Reset font for other text
+
+    // 3. Draw the right-angle symbol at vertex B
+    const rightAngleSize = 14;
+    ctx.beginPath();
+    ctx.moveTo(xB - rightAngleSize, yB);
+    ctx.lineTo(xB - rightAngleSize, yB - rightAngleSize);
+    ctx.lineTo(xB, yB - rightAngleSize);
+    ctx.stroke();
+
+    // 4. Draw the angle arc and its label '30°' at vertex A
+    const arcRadius = 45;
+    ctx.beginPath();
+    ctx.arc(xA, yA, arcRadius, 0, -angleA_rad, true);
+    ctx.stroke();
+
+    // Position the angle text within the arc
+    const angleTextRadius = arcRadius * 0.65;
+    const angleTextAngle = -angleA_rad / 2;
+    const xTextAngle = xA + angleTextRadius * Math.cos(angleTextAngle);
+    const yTextAngle = yA + angleTextRadius * Math.sin(angleTextAngle);
+    ctx.textBaseline = 'middle';
+    ctx.fillText('30°', xTextAngle + 5, yTextAngle);
+
+    // 5. Draw the dimension line for the hypotenuse AP
+    // This part replicates the style shown in the image, with a long line, arrows, and ticks.
+    const vAP = { x: xP - xA, y: yP - yA };
+    const len_vAP = Math.sqrt(vAP.x**2 + vAP.y**2);
+    const u_AP = { x: vAP.x / len_vAP, y: vAP.y / len_vAP };
+    
+    // Normal vector pointing up and to the left of AP
+    const u_nAP = { x: vAP.y / len_vAP, y: -vAP.x / len_vAP };
+
+    const offset = 30; // Distance of the dimension line from AP
+    
+    // Points on the dimension line corresponding to A and P
+    const xA_dim = xA + offset * u_nAP.x;
+    const yA_dim = yA + offset * u_nAP.y;
+    const xP_dim = xP + offset * u_nAP.x;
+    const yP_dim = yP + offset * u_nAP.y;
+    
+    // The dimension line extends slightly beyond the measurement points
+    const extension = 20;
+    const lineStartX = xA_dim - extension * u_AP.x;
+    const lineStartY = yA_dim - extension * u_AP.y;
+    const lineEndX = xP_dim + extension * u_AP.x;
+    const lineEndY = yP_dim + extension * u_AP.y;
+
+    // Draw the main body of the dimension line
+    ctx.beginPath();
+    ctx.moveTo(lineStartX, lineStartY);
+    ctx.lineTo(lineEndX, lineEndY);
+    ctx.stroke();
+
+    // Draw the arrowheads at both ends of the dimension line
+    const headLength = 10;
+    // Arrow at the 'P' end
+    const angleEnd = Math.atan2(lineEndY - lineStartY, lineEndX - lineStartX);
+    ctx.beginPath();
+    ctx.moveTo(lineEndX, lineEndY);
+    ctx.lineTo(lineEndX - headLength * Math.cos(angleEnd - Math.PI / 6), lineEndY - headLength * Math.sin(angleEnd - Math.PI / 6));
+    ctx.moveTo(lineEndX, lineEndY);
+    ctx.lineTo(lineEndX - headLength * Math.cos(angleEnd + Math.PI / 6), lineEndY - headLength * Math.sin(angleEnd + Math.PI / 6));
+    ctx.stroke();
+
+    // Arrow at the 'A' end
+    const angleStart = Math.atan2(lineStartY - lineEndY, lineStartX - lineEndX);
+    ctx.beginPath();
+    ctx.moveTo(lineStartX, lineStartY);
+    ctx.lineTo(lineStartX - headLength * Math.cos(angleStart - Math.PI / 6), lineStartY - headLength * Math.sin(angleStart - Math.PI / 6));
+    ctx.moveTo(lineStartX, lineStartY);
+    ctx.lineTo(lineStartX - headLength * Math.cos(angleStart + Math.PI / 6), lineStartY - headLength * Math.sin(angleStart + Math.PI / 6));
+    ctx.stroke();
+
+    // Draw the perpendicular ticks on the dimension line
+    const tickLen = 10;
+    // Tick at the 'A' side
+    ctx.beginPath();
+    ctx.moveTo(xA_dim - tickLen * u_nAP.x, yA_dim - tickLen * u_nAP.y);
+    ctx.lineTo(xA_dim + tickLen * u_nAP.x, yA_dim + tickLen * u_nAP.y);
+    ctx.stroke();
+
+    // Tick at the 'P' side
+    ctx.beginPath();
+    ctx.moveTo(xP_dim - tickLen * u_nAP.x, yP_dim - tickLen * u_nAP.y);
+    ctx.lineTo(xP_dim + tickLen * u_nAP.x, yP_dim + tickLen * u_nAP.y);
+    ctx.stroke();
+    
+    // Draw the text label '3cm' for the dimension
+    const textMidX = (xA_dim + xP_dim) / 2;
+    const textMidY = (yA_dim + yP_dim) / 2;
+    const textOffset = 18;
+    const xText = textMidX + textOffset * u_nAP.x;
+    const yText = textMidY + textOffset * u_nAP.y;
+    
+    ctx.save();
+    ctx.translate(xText, yText);
+    ctx.rotate(Math.atan2(vAP.y, vAP.x));
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('3cm', 0, 0);
+    ctx.restore();
+
+</script>
+</body>
+</html>

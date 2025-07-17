@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="opticsCanvas" width="850" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('opticsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow on a line
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 8;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        }
+        
+        // --- Main Drawing ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Set up coordinate system
+        const ox = 350;
+        const oy = 250;
+        ctx.translate(ox, oy);
+
+        // --- Parameters for drawing ---
+        const f = 280; // Focal length
+        const lensHeight = 90;
+        const angle = 0.12; // Angle for incoming beams (for visual representation)
+        const slope = Math.tan(angle);
+        const y_S = 35; // y-coordinate of the focal point S1
+        const x_start = -280; // x-coordinate where rays start
+
+        // --- Draw Axes ---
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        // X-axis (Principal Axis)
+        ctx.moveTo(-ox + 20, 0);
+        ctx.lineTo(ox - 20, 0);
+        drawArrow(ctx, -ox + 20, 0, ox - 20, 0);
+        // Y-axis
+        ctx.moveTo(0, -oy + 20);
+        ctx.lineTo(0, oy - 20);
+        drawArrow(ctx, 0, -oy + 20, 0, oy - 20);
+        ctx.stroke();
+        ctx.fillText('x,y', 35, -oy + 30);
+
+
+        // --- Draw Lens L ---
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(0, -lensHeight);
+        ctx.lineTo(0, lensHeight);
+        drawArrow(ctx, 0, lensHeight, 0, lensHeight + 0.1); // Up arrow
+        drawArrow(ctx, 0, -lensHeight, 0, -lensHeight - 0.1); // Down arrow
+        ctx.stroke();
+        ctx.fillText('L', 0, -lensHeight - 20);
+
+
+        // --- Draw Rays ---
+        ctx.lineWidth = 1;
+        const rays_y_start_top = [60, 40];
+        const rays_y_start_bottom = [-60, -40];
+
+        // Top beam
+        rays_y_start_top.forEach(y_start => {
+            const y_hit = y_start + (0 - x_start) * (-slope);
+            // Incoming ray
+            ctx.beginPath();
+            ctx.moveTo(x_start, y_start);
+            ctx.lineTo(0, y_hit);
+            drawArrow(ctx, x_start + 100, y_start - 100*slope, x_start + 101, y_start - 101*slope);
+            ctx.stroke();
+            // Refracted ray
+            ctx.beginPath();
+            ctx.moveTo(0, y_hit);
+            ctx.lineTo(f, y_S);
+            drawArrow(ctx, f/2, (y_hit + y_S)/2, f/2+1, (y_hit-y_S)/f *1 + (y_hit + y_S)/2);
+            ctx.stroke();
+        });
+
+        // Bottom beam
+        rays_y_start_bottom.forEach(y_start => {
+            const y_hit = y_start + (0 - x_start) * slope;
+            // Incoming ray
+            ctx.beginPath();
+            ctx.moveTo(x_start, y_start);
+            ctx.lineTo(0, y_hit);
+            drawArrow(ctx, x_start + 100, y_start + 100*slope, x_start + 101, y_start + 101*slope);
+            ctx.stroke();
+            // Refracted ray
+            ctx.beginPath();
+            ctx.moveTo(0, y_hit);
+            ctx.lineTo(f, -y_S);
+            drawArrow(ctx, f/2, (y_hit - y_S)/2, f/2+1, (y_hit+y_S)/f *1 + (y_hit - y_S)/2);
+            ctx.stroke();
+        });
+
+
+        // --- Draw Focal Plane and Points ---
+        // Focal plane F
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(f, -lensHeight);
+        ctx.lineTo(f, lensHeight);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillText('F', f, -lensHeight - 15);
+
+        // Focal points S1, S2
+        ctx.beginPath();
+        ctx.arc(f, y_S, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('S₁', f + 20, y_S);
+
+        ctx.beginPath();
+        ctx.arc(f, -y_S, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('S₂', f + 20, -y_S);
+
+
+        // --- Draw Labels and Dimensions ---
+        // Angle θ_L
+        ctx.beginPath();
+        const arc_x = x_start + 50;
+        const arc_y = rays_y_start_top[0] + (arc_x - x_start) * (-slope);
+        ctx.arc(arc_x, arc_y, 25, 0, angle);
+        ctx.stroke();
+        ctx.fillText('θ', arc_x + 25, arc_y + 15);
+        ctx.font = 'italic 12px Times New Roman';
+        ctx.fillText('L', arc_x + 31, arc_y + 18);
+        ctx.font = 'italic 16px Times New Roman';
+
+
+        // Focal length f
+        const f_dim_y = oy - 50;
+        ctx.beginPath();
+        ctx.moveTo(0, f_dim_y);
+        ctx.lineTo(f, f_dim_y);
+        ctx.moveTo(0, f_dim_y - 5);
+        ctx.lineTo(0, f_dim_y + 5);
+        ctx.moveTo(f, f_dim_y - 5);
+        ctx.lineTo(f, f_dim_y + 5);
+        ctx.stroke();
+        ctx.fillText('f', f / 2, f_dim_y - 15);
+
+        // Separation d
+        const d_x_pos = f + 50;
+        // Top part (for S1)
+        ctx.beginPath();
+        ctx.moveTo(d_x_pos, 0);
+        ctx.lineTo(d_x_pos, y_S);
+        // Tick on axis
+        ctx.moveTo(d_x_pos - 4, 0);
+        ctx.lineTo(d_x_pos + 4, 0);
+        // Arrow pointing down from S1
+        ctx.moveTo(d_x_pos, y_S);
+        ctx.lineTo(d_x_pos - 4, y_S - 6);
+        ctx.moveTo(d_x_pos, y_S);
+        ctx.lineTo(d_x_pos + 4, y_S - 6);
+        ctx.stroke();
+        ctx.fillText('d', d_x_pos + 15, y_S / 2);
+
+        // Bottom part (for S2)
+        ctx.beginPath();
+        ctx.moveTo(d_x_pos, 0);
+        ctx.lineTo(d_x_pos, -y_S);
+        // Arrow pointing up from S2
+        ctx.moveTo(d_x_pos, -y_S);
+        ctx.lineTo(d_x_pos - 4, -y_S + 6);
+        ctx.moveTo(d_x_pos, -y_S);
+        ctx.lineTo(d_x_pos + 4, -y_S + 6);
+        ctx.stroke();
+
+        // --- Draw Interference Pattern Sub-diagram ---
+        ctx.save();
+        ctx.translate(-220, 150);
+        
+        // Axes
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-65, 0);
+        ctx.lineTo(65, 0);
+        drawArrow(ctx, -65, 0, 65, 0);
+        ctx.stroke();
+        ctx.fillText('x', 70, 8);
+        
+        ctx.beginPath();
+        ctx.moveTo(0, -65);
+        ctx.lineTo(0, 65);
+        drawArrow(ctx, 0, 65, 0, 65.1);
+        ctx.stroke();
+        ctx.fillText('y', -10, -70);
+        
+        // Circle and fringes
+        const radius = 50;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        ctx.save();
+        ctx.clip();
+        ctx.fillStyle = 'black';
+        const fringePeriod = 20;
+        const fringeHeight = 10;
+        for (let i = -2; i <= 2; i++) {
+            const y_center = i * fringePeriod;
+            ctx.fillRect(-radius, y_center - fringeHeight/2, 2*radius, fringeHeight);
+        }
+        ctx.restore();
+
+        // Lambda Λ dimension
+        const lambda_x = -radius - 10;
+        const y1_edge = -1 * fringePeriod - fringeHeight / 2;
+        const y2_edge = 0 * fringePeriod - fringeHeight / 2;
+        ctx.beginPath();
+        ctx.moveTo(lambda_x, y1_edge);
+        ctx.lineTo(lambda_x, y2_edge);
+        ctx.moveTo(lambda_x, y1_edge);
+        ctx.lineTo(lambda_x + 5, y1_edge);
+        ctx.moveTo(lambda_x, y2_edge);
+        ctx.lineTo(lambda_x + 5, y2_edge);
+        ctx.moveTo(lambda_x-10, (y1_edge + y2_edge)/2);
+        ctx.lineTo(lambda_x, (y1_edge + y2_edge)/2);
+        ctx.stroke();
+        ctx.fillText('Λ', lambda_x - 20, (y1_edge + y2_edge) / 2);
+        
+        ctx.restore();
+    </script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Transmission Line Cross-Section</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Main Drawing Function ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Define a central origin point for the coordinate system
+            const originX = 220;
+            const originY = 250;
+            const axisLength = 70;
+
+            // Draw the two conductors
+            // Positions are chosen to be above the coordinate system
+            drawLeftConductor(originX - 90, originY - 100);
+            drawRightConductor(originX + 80, originY - 105);
+
+            // Draw the coordinate system
+            drawAxes(originX, originY, axisLength);
+            
+            // Draw text labels for the medium properties and the figure caption
+            drawLabels(originX, originY);
+        }
+
+        // --- Helper Functions ---
+
+        function drawAxes(ox, oy, len) {
+            ctx.save();
+            ctx.lineWidth = 2;
+            ctx.fillStyle = 'black';
+            ctx.strokeStyle = 'black';
+            ctx.font = 'italic 20px "Times New Roman"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(ox, oy);
+            ctx.lineTo(ox, oy - len);
+            ctx.stroke();
+            // Y arrowhead
+            ctx.beginPath();
+            ctx.moveTo(ox, oy - len);
+            ctx.lineTo(ox - 5, oy - len + 10);
+            ctx.lineTo(ox + 5, oy - len + 10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillText('y', ox, oy - len - 15);
+
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(ox, oy);
+            ctx.lineTo(ox + len, oy);
+            ctx.stroke();
+            // X arrowhead
+            ctx.beginPath();
+            ctx.moveTo(ox + len, oy);
+            ctx.lineTo(ox + len - 10, oy - 5);
+            ctx.lineTo(ox + len - 10, oy + 5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillText('x', ox + len + 15, oy);
+
+            // Z-axis symbol (representing vector pointing out of the page)
+            const z_x = ox - 25;
+            const z_y = oy + 5;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(z_x, z_y, 8, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(z_x, z_y, 2, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillText('z', z_x - 20, z_y);
+            ctx.restore();
+        }
+
+        function drawHatching(pathBounds) {
+            ctx.save();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            const spacing = 10;
+            
+            // The diagonal hatching lines have a slope of -1 (form x + y = k)
+            const k_min = pathBounds.x + pathBounds.y;
+            const k_max = (pathBounds.x + pathBounds.width) + (pathBounds.y + pathBounds.height);
+
+            for (let k = k_min - spacing; k < k_max + spacing; k += spacing) {
+                ctx.beginPath();
+                // Draw a line long enough to span the entire canvas. The clipping path
+                // will ensure it only appears inside the conductor shape.
+                ctx.moveTo(k - 1000, 1000);
+                ctx.lineTo(1000, k - 1000);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawLeftConductor(x, y) {
+            ctx.save();
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            // Use quadratic curves to create a smooth, irregular shape
+            ctx.moveTo(x + 10, y + 45);
+            ctx.quadraticCurveTo(x, y + 20, x + 25, y + 10);
+            ctx.quadraticCurveTo(x + 55, y, x + 65, y + 25);
+            ctx.quadraticCurveTo(x + 70, y + 45, x + 40, y + 50);
+            ctx.quadraticCurveTo(x + 20, y + 55, x + 10, y + 45);
+            ctx.closePath();
+
+            // Stroke the thick outline
+            ctx.stroke();
+
+            // Apply hatching inside the shape using a clipping region
+            const bounds = { x: x, y: y, width: 70, height: 60 };
+            ctx.save();
+            ctx.clip(); // Restrict drawing to the path defined above
+            drawHatching(bounds);
+            ctx.restore(); // Remove the clipping region
+            
+            ctx.restore();
+        }
+
+        function drawRightConductor(x, y) {
+            ctx.save();
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            // Another distinct irregular shape
+            ctx.moveTo(x, y + 35);
+            ctx.quadraticCurveTo(x + 15, y, x + 40, y + 5);
+            ctx.quadraticCurveTo(x + 65, y + 10, x + 75, y + 25);
+            ctx.quadraticCurveTo(x + 85, y + 45, x + 50, y + 55);
+            ctx.quadraticCurveTo(x + 20, y + 50, x, y + 35);
+            ctx.closePath();
+
+            ctx.stroke();
+
+            const bounds = { x: x, y: y, width: 90, height: 60 };
+            ctx.save();
+            ctx.clip();
+            drawHatching(bounds);
+            ctx.restore();
+
+            ctx.restore();
+        }
+
+        function drawLabels(ox, oy) {
+            ctx.save();
+            // Label for permeability (μ) and permittivity (ε)
+            ctx.font = 'italic 22px "Times New Roman"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('μ, ε', ox + 60, oy - 60);
+
+            // Figure caption
+            ctx.font = 'bold 20px "Times New Roman"';
+            ctx.fillText('Fig. 4.18', canvas.width / 2, 350);
+            ctx.restore();
+        }
+
+        // Execute the drawing
+        draw();
+    </script>
+</body>
+</html>

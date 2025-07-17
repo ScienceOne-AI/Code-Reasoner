@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spinning Charged Sphere Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="550" style="border:1px solid #000;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Define drawing parameters
+    const origin = { x: 300, y: 280 };
+    const R_canvas = 130;
+    const axis_length = R_canvas * 1.6;
+
+    // Helper function to draw a line with an arrowhead
+    function drawArrow(fromX, fromY, toX, toY, size = 10) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - size * Math.cos(angle - Math.PI / 6), toY - size * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(toX - size * Math.cos(angle + Math.PI / 6), toY - size * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fillStyle = 'black';
+        ctx.fill();
+    }
+
+    // 1. Draw the sphere with shading
+    const gradient = ctx.createRadialGradient(
+        origin.x - R_canvas * 0.4, origin.y - R_canvas * 0.4, R_canvas * 0.1,
+        origin.x, origin.y, R_canvas
+    );
+    gradient.addColorStop(0, '#f0f0f0');
+    gradient.addColorStop(1, '#a0a0a0');
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(origin.x, origin.y, R_canvas, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    
+    // 2. Draw the dashed latitude line
+    const theta_lat_rad = 70 * Math.PI / 180;
+    const y_center_lat = origin.y - R_canvas * Math.cos(theta_lat_rad);
+    const rx_lat = R_canvas * Math.sin(theta_lat_rad);
+    const ry_lat = rx_lat * 0.25; // Perspective foreshortening
+
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(origin.x, y_center_lat, rx_lat, ry_lat, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.lineWidth = 2.5;
+
+    // 3. Draw the coordinate axes
+    const x_axis_angle = 225 * Math.PI / 180; // Down and left
+    const x_end_x = origin.x + axis_length * Math.cos(x_axis_angle);
+    const x_end_y = origin.y + axis_length * Math.sin(x_axis_angle);
+    const x_start_x = origin.x - axis_length * Math.cos(x_axis_angle);
+    const x_start_y = origin.y - axis_length * Math.sin(x_axis_angle);
+
+    drawArrow(x_start_x, x_start_y, x_end_x, x_end_y); // X-axis
+    drawArrow(origin.x, origin.y + axis_length, origin.x, origin.y - axis_length); // Z-axis
+    drawArrow(origin.x - axis_length, origin.y, origin.x + axis_length, origin.y); // Y-axis
+
+    // 4. Draw labels for axes and symbols
+    ctx.font = "italic 24px 'Times New Roman'";
+    ctx.fillStyle = 'black';
+    ctx.fillText('z', origin.x + 10, origin.y - axis_length - 5);
+    ctx.fillText('y', origin.x + axis_length + 10, origin.y + 8);
+    ctx.fillText('x', x_end_x - 30, x_end_y + 15);
+
+    // 5. Draw the radius vector R and its label
+    const theta_R_rad = 50 * Math.PI / 180;
+    const R_end_x = origin.x + R_canvas * Math.sin(theta_R_rad);
+    const R_end_y = origin.y - R_canvas * Math.cos(theta_R_rad);
+    drawArrow(origin.x, origin.y, R_end_x, R_end_y);
+    
+    ctx.font = "bold 24px 'Times New Roman'";
+    ctx.fillText('R', origin.x + R_canvas * 0.5 * Math.sin(theta_R_rad) + 10, origin.y - R_canvas * 0.5 * Math.cos(theta_R_rad));
+
+    // 6. Draw the angle theta and its label
+    ctx.beginPath();
+    ctx.lineWidth = 1.5;
+    ctx.arc(origin.x, origin.y, 40, -Math.PI / 2, -Math.PI / 2 + theta_R_rad);
+    ctx.stroke();
+    
+    ctx.font = "italic 24px 'Times New Roman'";
+    const theta_label_angle = -Math.PI / 2 + theta_R_rad / 2;
+    ctx.fillText('θ', origin.x + 55 * Math.cos(theta_label_angle), origin.y + 55 * Math.sin(theta_label_angle) + 8);
+
+    // 7. Draw the surface charge label sigma(theta)
+    ctx.font = "bold 24px 'Times New Roman'";
+    const sigma_pos_x = origin.x - R_canvas * Math.sin(theta_lat_rad) * 0.7;
+    const sigma_pos_y = y_center_lat + 10;
+    ctx.fillText('σ(θ)', sigma_pos_x, sigma_pos_y);
+
+    // 8. Draw the rotation symbol omega
+    ctx.lineWidth = 2;
+    ctx.font = "italic 24px 'Times New Roman'";
+    const omega_arrow_cx = x_end_x - 10;
+    const omega_arrow_cy = x_end_y - 10;
+    
+    ctx.fillText('ω', omega_arrow_cx + 25, omega_arrow_cy + 35);
+    
+    ctx.beginPath();
+    // Arc for rotation direction
+    ctx.arc(omega_arrow_cx, omega_arrow_cy, 22, Math.PI * 0.8, Math.PI * 0.1, true); // true for counter-clockwise
+    ctx.stroke();
+    
+    // Arrowhead for the rotation arc
+    const endAngle = Math.PI * 0.1;
+    const arrow_tip_x = omega_arrow_cx + 22 * Math.cos(endAngle);
+    const arrow_tip_y = omega_arrow_cy + 22 * Math.sin(endAngle);
+    // Tangent angle for a counter-clockwise arc at angle 'a' is a - PI/2
+    const tangent_angle = endAngle - Math.PI / 2;
+    
+    ctx.beginPath();
+    ctx.moveTo(arrow_tip_x, arrow_tip_y);
+    ctx.lineTo(arrow_tip_x - 10 * Math.cos(tangent_angle - Math.PI / 6), arrow_tip_y - 10 * Math.sin(tangent_angle - Math.PI / 6));
+    ctx.moveTo(arrow_tip_x, arrow_tip_y);
+    ctx.lineTo(arrow_tip_x - 10 * Math.cos(tangent_angle + Math.PI / 6), arrow_tip_y - 10 * Math.sin(tangent_angle + Math.PI / 6));
+    ctx.stroke();
+</script>
+</body>
+</html>

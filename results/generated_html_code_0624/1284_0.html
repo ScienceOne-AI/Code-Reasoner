@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Helper function to draw a cross
+        function drawCross(ctx, x, y, size) {
+            ctx.beginPath();
+            ctx.moveTo(x - size / 2, y - size / 2);
+            ctx.lineTo(x + size / 2, y + size / 2);
+            ctx.moveTo(x + size / 2, y - size / 2);
+            ctx.lineTo(x - size / 2, y + size / 2);
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        
+        // Base parameters and coordinates
+        const h = 90;
+        const tubeX = 150;
+        const tubeMidY = 200;
+        const tubeTopY = tubeMidY - h / 2;
+        const tubeBottomY = tubeMidY + h / 2;
+        const p2_x = tubeX + 2 * h;
+        const p2_y = tubeMidY; 
+
+        // 1. Draw magnetic field B
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        const crossSize = 8;
+        const gridStep = 80;
+        for (let x = 30; x < canvas.width; x += gridStep) {
+            for (let y = 40; y < canvas.height; y += gridStep) {
+                drawCross(ctx, x, y, crossSize);
+            }
+        }
+        ctx.font = 'italic bold 24px Times New Roman';
+        ctx.fillText('B', 50, 100);
+        ctx.restore();
+
+        // 2. Draw tube MN
+        ctx.beginPath();
+        ctx.moveTo(tubeX, tubeTopY);
+        ctx.lineTo(tubeX, tubeBottomY);
+        ctx.stroke();
+
+        // Labels for the tube
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('N', tubeX - 30, tubeTopY + 5);
+        ctx.fillText('M', tubeX - 30, tubeBottomY);
+
+        // 3. Draw particle P1
+        const p1_y = tubeBottomY - 15;
+        ctx.beginPath();
+        ctx.arc(tubeX, p1_y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('P', tubeX + 15, p1_y + 8);
+        ctx.font = '14px Times New Roman';
+        ctx.fillText('1', tubeX + 23, p1_y + 12);
+
+        // 4. Draw dimension 'h'
+        ctx.beginPath();
+        ctx.moveTo(tubeX - 20, tubeTopY);
+        ctx.lineTo(tubeX - 20, tubeBottomY);
+        ctx.moveTo(tubeX - 25, tubeTopY);
+        ctx.lineTo(tubeX - 15, tubeTopY);
+        ctx.moveTo(tubeX - 25, tubeBottomY);
+        ctx.lineTo(tubeX - 15, tubeBottomY);
+        ctx.stroke();
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('h', tubeX - 45, tubeMidY + 5);
+
+        // 5. Draw velocity u1
+        const u1_startX = tubeX + 15;
+        const u1_endX = u1_startX + 90;
+        drawArrow(ctx, u1_startX, tubeMidY, u1_endX, tubeMidY);
+        ctx.font = 'italic bold 20px Times New Roman';
+        ctx.fillText('u', u1_endX + 10, tubeMidY + 8);
+        ctx.font = 'italic bold 14px Times New Roman';
+        ctx.fillText('1', u1_endX + 19, tubeMidY + 12);
+
+        // 6. Draw particle P2
+        ctx.beginPath();
+        ctx.arc(p2_x, p2_y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('P', p2_x + 35, p2_y + 8);
+        ctx.font = '14px Times New Roman';
+        ctx.fillText('2', p2_x + 43, p2_y + 12);
+
+        // 7. Draw dimension '2h'
+        const dim2h_y = tubeTopY + 10;
+        drawArrow(ctx, p2_x - 5, dim2h_y, tubeX + 5, dim2h_y);
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('2h', (tubeX + p2_x) / 2 - 10, dim2h_y - 10);
+
+        // 8. Draw velocity u2 and angle markup
+        const u2_len = 80;
+        const u2_angle_rad = 135 * Math.PI / 180;
+        const u2_endX = p2_x + u2_len * Math.cos(u2_angle_rad);
+        const u2_endY = p2_y - u2_len * Math.sin(u2_angle_rad); // canvas y is inverted
+
+        drawArrow(ctx, p2_x, p2_y, u2_endX, u2_endY);
+        ctx.font = 'italic bold 20px Times New Roman';
+        ctx.fillText('u', u2_endX, u2_endY - 10);
+        ctx.font = 'italic bold 14px Times New Roman';
+        ctx.fillText('2', u2_endX + 9, u2_endY - 5);
+
+        // Draw angle reference line (as in the original image, pointing right)
+        drawArrow(ctx, p2_x, p2_y, p2_x + 50, p2_y);
+
+        // Draw angle arc. The image shows the 45° angle with the negative horizontal axis.
+        ctx.beginPath();
+        const arc_radius = 40;
+        ctx.arc(p2_x, p2_y, arc_radius, u2_angle_rad, Math.PI, false);
+        ctx.stroke();
+
+        // Draw angle label '45°'
+        ctx.font = '20px Times New Roman';
+        const angle_text_rad = (u2_angle_rad + Math.PI) / 2; // Midpoint of the arc
+        const text_r = 22;
+        ctx.fillText('45°', p2_x + text_r * Math.cos(angle_text_rad) - 15, p2_y - text_r * Math.sin(angle_text_rad));
+
+    </script>
+</body>
+</html>

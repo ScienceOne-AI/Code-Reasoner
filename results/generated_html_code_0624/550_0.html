@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="circuitCanvas" width="550" height="380"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = '18px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Helper function to draw a meter (Voltmeter or Ammeter)
+    function drawMeter(x, y, radius, mainText, subText) {
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
+        ctx.stroke();
+        const originalFont = ctx.font;
+        ctx.font = 'bold 20px Arial';
+        const mainTextWidth = ctx.measureText(mainText).width;
+        ctx.fillText(mainText, x - mainTextWidth / 4, y);
+        if (subText) {
+            ctx.font = '12px Arial';
+            ctx.fillText(subText, x + mainTextWidth / 2 + 2, y + 5);
+        }
+        ctx.font = originalFont;
+    }
+
+    // --- Main Drawing ---
+
+    // Coordinates
+    const x1 = 100; // Battery
+    const x2 = 160; // R1 start
+    const x3 = 240; // R1 end
+    const x4 = 320; // Parallel Branch 1 (split/join point)
+    const x5 = 420; // Parallel Branch 2
+
+    const y1 = 60;  // V1 level
+    const y2 = 100; // Top wire level
+    const y3 = 320; // Bottom wire level
+
+    // --- Components First ---
+
+    // Battery
+    ctx.fillText("108 V", x1 - 50, 210);
+    ctx.fillText("+", x1, 145);
+    ctx.beginPath();
+    // Multi-cell symbol
+    ctx.moveTo(x1 - 15, 180); ctx.lineTo(x1 + 15, 180);
+    ctx.moveTo(x1 - 8, 190); ctx.lineTo(x1 + 8, 190);
+    ctx.moveTo(x1 - 15, 200); ctx.lineTo(x1 + 15, 200);
+    ctx.moveTo(x1 - 8, 210); ctx.lineTo(x1 + 8, 210);
+    ctx.stroke();
+
+    // R1 (3 Ohm)
+    ctx.beginPath();
+    const r1_zig_h = 10;
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 + 10, y2);
+    ctx.lineTo(x2 + 20, y2 + r1_zig_h);
+    ctx.lineTo(x2 + 40, y2 - r1_zig_h);
+    ctx.lineTo(x2 + 60, y2 + r1_zig_h);
+    ctx.lineTo(x2 + 70, y2);
+    ctx.lineTo(x3, y2);
+    ctx.stroke();
+    ctx.fillText("3 Ω", (x2 + x3) / 2, y2 + 25);
+
+    // V1
+    drawMeter((x2 + x3) / 2, y1, 20, 'V', '1');
+
+    // A_T
+    const x_at = x1 + (x4 - x1) / 2;
+    drawMeter(x_at, y3, 20, 'A', 'T');
+
+    // R_18 and A2
+    const y_a2 = 160;
+    const y_r18_start = 210;
+    const r18_len = 60;
+    drawMeter(x4, y_a2, 20, 'A', '2');
+    ctx.beginPath();
+    const r_zig_w = 10;
+    ctx.moveTo(x4, y_r18_start);
+    ctx.lineTo(x4, y_r18_start + 5);
+    ctx.lineTo(x4 + r_zig_w, y_r18_start + 15);
+    ctx.lineTo(x4 - r_zig_w, y_r18_start + 25);
+    ctx.lineTo(x4 + r_zig_w, y_r18_start + 35);
+    ctx.lineTo(x4 - r_zig_w, y_r18_start + 45);
+    ctx.lineTo(x4, y_r18_start + 55);
+    ctx.lineTo(x4, y_r18_start + r18_len);
+    ctx.stroke();
+    ctx.fillText("18 Ω", x4 + 40, y_r18_start + r18_len / 2);
+
+    // R_9 and V3
+    const y_r9_start = 190;
+    const r9_len = 60;
+    const y_r9_end = y_r9_start + r9_len;
+    ctx.beginPath();
+    ctx.moveTo(x5, y_r9_start);
+    ctx.lineTo(x5, y_r9_start + 5);
+    ctx.lineTo(x5 + r_zig_w, y_r9_start + 15);
+    ctx.lineTo(x5 - r_zig_w, y_r9_start + 25);
+    ctx.lineTo(x5 + r_zig_w, y_r9_start + 35);
+    ctx.lineTo(x5 - r_zig_w, y_r9_start + 45);
+    ctx.lineTo(x5, y_r9_start + 55);
+    ctx.lineTo(x5, y_r9_end);
+    ctx.stroke();
+    ctx.fillText("9 Ω", x5 + 30, y_r9_start + r9_len / 2);
+
+    const x_v3 = x5 + 50;
+    const y_v3 = y_r9_start + r9_len / 2;
+    drawMeter(x_v3, y_v3, 20, 'V', '3');
+
+    // --- Wires connecting everything ---
+    ctx.beginPath();
+    // Battery connections
+    ctx.moveTo(x1, 180); ctx.lineTo(x1, y2);
+    ctx.moveTo(x1, 210); ctx.lineTo(x1, y3);
+    // Top wire
+    ctx.moveTo(x1, y2); ctx.lineTo(x2, y2);
+    ctx.moveTo(x3, y2); ctx.lineTo(x4, y2);
+    // V1 connections
+    ctx.moveTo(x2, y2); ctx.lineTo(x2, y1 + 20); ctx.lineTo((x2 + x3) / 2 - 20, y1 + 20);
+    ctx.moveTo(x3, y2); ctx.lineTo(x3, y1 + 20); ctx.lineTo((x2 + x3) / 2 + 20, y1 + 20);
+    // Bottom wire
+    ctx.moveTo(x1, y3); ctx.lineTo(x_at - 20, y3);
+    ctx.moveTo(x_at + 20, y3); ctx.lineTo(x4, y3);
+    // Branch 1 wires (A2, R18)
+    ctx.moveTo(x4, y2); ctx.lineTo(x4, y_a2 - 20);
+    ctx.moveTo(x4, y_a2 + 20); ctx.lineTo(x4, y_r18_start);
+    ctx.moveTo(x4, y_r18_start + r18_len); ctx.lineTo(x4, y3);
+    // Branch 2 wires (R9, V3)
+    ctx.moveTo(x4, y2); ctx.lineTo(x5, y2); ctx.lineTo(x5, y_r9_start);
+    ctx.moveTo(x5, y_r9_end); ctx.lineTo(x5, y3); ctx.lineTo(x4, y3);
+    // V3 connections
+    ctx.moveTo(x5, y_r9_start); ctx.lineTo(x_v3 - 20, y_r9_start); ctx.lineTo(x_v3 - 20, y_v3 - 5);
+    ctx.moveTo(x5, y_r9_end); ctx.lineTo(x_v3 - 20, y_r9_end); ctx.lineTo(x_v3 - 20, y_v3 + 5);
+    ctx.stroke();
+
+    // Junction Dots
+    ctx.beginPath();
+    ctx.arc(x4, y2, 3, 0, 2 * Math.PI);
+    ctx.arc(x4, y3, 3, 0, 2 * Math.PI);
+    const originalFill = ctx.fillStyle;
+    ctx.fillStyle = 'black';
+    ctx.fill();
+    ctx.fillStyle = originalFill;
+
+</script>
+</body>
+</html>

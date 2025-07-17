@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Circuit Diagram Fig. 3.30</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="550" height="420"></canvas>
+<script>
+const canvas = document.getElementById('circuitCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style and Helper Functions ---
+ctx.lineWidth = 2.5;
+ctx.lineCap = 'round';
+ctx.font = 'bold 18px "Comic Sans MS", cursive, sans-serif';
+
+// Helper function to draw a vertical resistor
+function drawVerticalResistor(ctx, x, y, length, numZigs = 7) {
+    const zigWidth = 8;
+    const zigLength = length / numZigs;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    for (let i = 0; i < numZigs; i++) {
+        ctx.lineTo(x + zigWidth * ((i % 2 === 0) ? 1 : -1), y + (i + 0.5) * zigLength);
+    }
+    ctx.lineTo(x, y + length);
+    ctx.stroke();
+}
+
+// Helper function to draw a vertical inductor (coil on one side, like the image)
+function drawVerticalInductor(ctx, x, y, length, numLoops = 4) {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    let currentY = y;
+    const arcHeight = length / numLoops;
+    for (let i = 0; i < numLoops; i++) {
+        ctx.arc(x, currentY + arcHeight / 2, arcHeight / 2, Math.PI * 1.5, Math.PI * 0.5, false);
+        currentY += arcHeight;
+    }
+    ctx.stroke();
+}
+
+
+// --- Main Drawing Logic ---
+
+// Base coordinates
+const leftX = 80;
+const topY = 80;
+const bottomY = 350;
+const switchPivotX = 170;
+
+const termAX = 210; const termAY = 100;
+const termBX = 240; const termBY = 60;
+const termCX = 320; const termCY = 80;
+
+const branch1_leftX = 230;
+const branch1_rightX = 280;
+
+const branch2_leftX = 370;
+const branch2_rightX = 420;
+
+
+// --- Left Branch (Source and R1) ---
+// Wires
+ctx.beginPath();
+ctx.moveTo(leftX, bottomY);
+ctx.lineTo(leftX, 260); // Up to R1
+ctx.moveTo(leftX, 200); // Above R1
+ctx.lineTo(leftX, 165); // Up to Battery
+ctx.moveTo(leftX, 135); // Above Battery
+ctx.lineTo(leftX, topY); // To top wire
+ctx.lineTo(switchPivotX, topY); // To switch pivot
+ctx.stroke();
+
+// Battery
+ctx.beginPath();
+ctx.moveTo(leftX - 20, 135); // Top plate (+)
+ctx.lineTo(leftX + 20, 135);
+ctx.moveTo(leftX - 10, 165); // Bottom plate (-)
+ctx.lineTo(leftX + 10, 165);
+ctx.stroke();
+ctx.textAlign = 'center';
+ctx.fillText('+', leftX, 120);
+ctx.fillText('-', leftX, 180);
+ctx.fillText('2V', leftX - 40, 150);
+
+// Resistor R1
+drawVerticalResistor(ctx, leftX, 200, 60);
+ctx.textAlign = 'right';
+ctx.fillText('R₁=3Ω', leftX - 15, 230);
+
+// --- Bottom Wire ---
+ctx.beginPath();
+ctx.moveTo(leftX, bottomY);
+ctx.lineTo(branch2_rightX + 20, bottomY);
+ctx.stroke();
+
+// --- Switch ---
+// Terminals (dots)
+ctx.beginPath();
+ctx.arc(termAX, termAY, 4, 0, 2 * Math.PI); // Terminal A
+ctx.fill();
+ctx.beginPath();
+ctx.arc(termBX, termBY, 4, 0, 2 * Math.PI); // Terminal B
+ctx.fill();
+ctx.beginPath();
+ctx.arc(termCX, termCY, 4, 0, 2 * Math.PI); // Terminal C
+ctx.fill();
+
+// Terminal Labels
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+ctx.fillText('A', termAX - 10, termAY);
+ctx.fillText('B', termBX, termBY - 5);
+ctx.fillText('C', termCX + 10, termCY);
+
+// Switch Arm
+ctx.beginPath();
+ctx.arc(switchPivotX, topY, 5, 0, 2 * Math.PI); // Pivot circle
+ctx.moveTo(switchPivotX, topY);
+ctx.lineTo(termAX, termAY);
+ctx.stroke();
+ctx.textBaseline = 'middle'; // Reset
+
+// --- Middle Parallel Group (connected to A) ---
+// Connecting wires
+ctx.beginPath();
+ctx.moveTo(termAX, termAY);
+ctx.lineTo(branch1_leftX, termAY);
+ctx.lineTo(branch1_leftX, 150); // Down to R2
+ctx.moveTo(branch1_leftX, termAY);
+ctx.lineTo(branch1_rightX, termAY);
+ctx.lineTo(branch1_rightX, 160); // Down to L1
+ctx.moveTo(branch1_leftX, bottomY);
+ctx.lineTo(branch1_leftX, 310); // Up from bottom to R2
+ctx.moveTo(branch1_rightX, bottomY);
+ctx.lineTo(branch1_rightX, 300); // Up from bottom to R3
+ctx.stroke();
+
+// Resistor R2
+drawVerticalResistor(ctx, branch1_leftX, 150, 160);
+ctx.textAlign = 'right';
+ctx.fillText('R₂=2Ω', branch1_leftX - 15, 230);
+
+// Inductor L1
+drawVerticalInductor(ctx, branch1_rightX, 160, 80);
+ctx.textAlign = 'left';
+ctx.fillText('L₁=5H', branch1_rightX + 10, 160);
+
+// Resistor R3
+drawVerticalResistor(ctx, branch1_rightX, 240, 60);
+ctx.fillText('R₃=½Ω', branch1_rightX + 10, 270);
+
+// --- Right Parallel Group (connected to C) ---
+// Connecting wires
+ctx.beginPath();
+ctx.moveTo(termCX, termCY); // from Terminal C
+ctx.lineTo(branch2_leftX, termCY);
+ctx.lineTo(branch2_leftX, 150); // Down to R4
+ctx.moveTo(branch2_leftX, termCY);
+ctx.lineTo(branch2_rightX, termCY);
+ctx.lineTo(branch2_rightX, 160); // Down to L2
+ctx.moveTo(branch2_leftX, bottomY);
+ctx.lineTo(branch2_leftX, 310); // Up from bottom to R4
+ctx.moveTo(branch2_rightX, bottomY);
+ctx.lineTo(branch2_rightX, 300); // Up from bottom to R5
+ctx.stroke();
+
+// Resistor R4
+drawVerticalResistor(ctx, branch2_leftX, 150, 160);
+ctx.textAlign = 'right';
+ctx.fillText('R₄=2Ω', branch2_leftX - 15, 230);
+
+// Inductor L2
+drawVerticalInductor(ctx, branch2_rightX, 160, 80);
+ctx.textAlign = 'left';
+ctx.fillText('L₂=5H', branch2_rightX + 10, 160);
+
+// Resistor R5
+drawVerticalResistor(ctx, branch2_rightX, 240, 60);
+ctx.fillText('R₅=½Ω', branch2_rightX + 10, 270);
+
+
+// --- Figure Label ---
+ctx.font = '20px "Times New Roman", serif';
+ctx.textAlign = 'center';
+ctx.fillText('Fig. 3.30', 275, 400);
+
+</script>
+</body>
+</html>

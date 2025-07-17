@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crane Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="craneCanvas" width="600" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('craneCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+        function drawArrow(ctx, fromx, fromy, tox, toy, arrowWidth) {
+            const headlen = 10;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        }
+
+        function drawHatching(ctx, x1, y1, x2, y2, spacing = 10) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.clip();
+
+            const w = x2 - x1;
+            const h = y2 - y1;
+            const len = Math.sqrt(w * w + h * h);
+            
+            ctx.beginPath();
+            for (let i = -len; i < len; i += spacing) {
+                ctx.moveTo(x1 + i, y1);
+                ctx.lineTo(x1, y1 + i);
+            }
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '16px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // --- Parameters and Coordinates ---
+        const s = 18; // scale factor pixels/meter
+        const Ax = 180, Ay = 450;
+        
+        // Base triangle ABD (equilateral, side = 8m)
+        const side_AD = 8 * s;
+        const Dx = Ax - side_AD;
+        const Dy = Ay;
+        
+        const B_height = side_AD * Math.sqrt(3) / 2;
+        const Bx = Ax - side_AD / 2;
+        const By = Ay - B_height;
+
+        // Crane arm
+        const crane_span_h = 15 * s;
+        const Ex = Ax + crane_span_h;
+        // Estimate arm angle from drawing
+        const arm_angle_rad = 28 * Math.PI / 180;
+        const crane_span_v = crane_span_h * Math.tan(arm_angle_rad);
+        const Ey = Ay - crane_span_v;
+
+        // Force P position (5m from A)
+        const C_dist_h = 5 * s;
+        const Cx_force = Ax + C_dist_h;
+        const C_dist_v = C_dist_h * Math.tan(arm_angle_rad);
+        const Cy_force = Ay - C_dist_v;
+
+
+        // 1. Draw Ground
+        ctx.beginPath();
+        ctx.moveTo(0, Ay);
+        ctx.lineTo(canvas.width, Ay);
+        ctx.stroke();
+        drawHatching(ctx, 0, Ay, canvas.width, Ay + 20, 10);
+
+        // 2. Draw Supports
+        // Pin at A
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(Ax - 15, Ay + 20);
+        ctx.lineTo(Ax + 15, Ay + 20);
+        ctx.closePath();
+        ctx.stroke();
+        drawHatching(ctx, Ax - 15, Ay, Ax + 15, Ay + 20, 5);
+
+        // Rocker at D
+        ctx.beginPath();
+        ctx.arc(Dx, Ay, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+
+        // 3. Draw Main Structure
+        ctx.beginPath();
+        // Base Triangle
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(Dx, Dy);
+        ctx.lineTo(Bx, By);
+        ctx.closePath();
+        
+        // Crane Arm Chords
+        ctx.moveTo(Ax, Ay); // Bottom chord
+        ctx.lineTo(Ex, Ey);
+        ctx.moveTo(Bx, By); // Top chord
+        ctx.lineTo(Ex, Ey);
+        ctx.stroke();
+
+        // 4. Draw Truss Internals
+        const n_sections = 7;
+        const dx_section = (Ex - Ax) / n_sections;
+        
+        const m_AE = (Ey - Ay) / (Ex - Ax);
+        const b_AE = Ay - m_AE * Ax;
+        
+        const m_BE = (Ey - By) / (Ex - Bx);
+        const b_BE = By - m_BE * Bx;
+        
+        let prev_top_x = Bx;
+        let prev_top_y = By;
+
+        for (let i = 1; i < n_sections; i++) {
+            ctx.beginPath();
+            const xi = Ax + i * dx_section;
+            const yi_bottom = m_AE * xi + b_AE;
+            const yi_top = m_BE * xi + b_BE;
+            
+            // Vertical member
+            ctx.moveTo(xi, yi_bottom);
+            ctx.lineTo(xi, yi_top);
+
+            // Diagonal member
+            ctx.moveTo(prev_top_x, prev_top_y);
+            ctx.lineTo(xi, yi_bottom);
+            
+            ctx.stroke();
+
+            prev_top_x = xi;
+            prev_top_y = yi_top;
+        }
+        // Last diagonal
+        ctx.beginPath();
+        ctx.moveTo(prev_top_x, prev_top_y);
+        ctx.lineTo(Ex, Ey);
+        ctx.stroke();
+
+
+        // 5. Draw Joints
+        const joints = [{x: Ax, y: Ay}, {x: Dx, y: Dy}, {x: Bx, y: By}, {x: Ex, y: Ey}];
+        joints.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 7, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+        // Force application joint C
+        ctx.beginPath();
+        ctx.arc(Cx_force, Cy_force, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 6. Draw Load and Forces
+        // Load
+        const load_y_start = Ey + 7;
+        const load_y_end = load_y_start + 80;
+        const load_w = 40;
+        const load_h = 30;
+        ctx.beginPath();
+        ctx.moveTo(Ex, load_y_start);
+        ctx.lineTo(Ex, load_y_end);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(Ex, load_y_end, 4, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.strokeRect(Ex - load_w/2, load_y_end + 4, load_w, load_h);
+        
+        // Force P
+        ctx.beginPath();
+        drawArrow(ctx, Cx_force, Cy_force, Cx_force, Cy_force + 60, 2);
+        ctx.stroke();
+        ctx.fillText("P", Cx_force + 15, Cy_force + 30);
+
+
+        // 7. Draw Labels, Dimensions, and Axes
+        ctx.font = 'italic 18px "Times New Roman"';
+        ctx.fillText("A", Ax + 15, Ay + 15);
+        ctx.fillText("B", Bx - 20, By - 5);
+        ctx.fillText("D", Dx - 15, Ay + 15);
+        ctx.fillText("C", Cx_force, Cy_force - 20);
+        
+        // Axes at A
+        ctx.beginPath();
+        drawArrow(ctx, Ax, Ay, Ax + 80, Ay, 2);
+        drawArrow(ctx, Ax, Ay, Ax, Ay - 80, 2);
+        ctx.stroke();
+        ctx.fillText("x", Ax + 95, Ay);
+        ctx.fillText("y", Ax, Ay - 95);
+
+        // Dimensions
+        ctx.font = '16px "Times New Roman"';
+        // 15 m dimension
+        const dim_y1 = Ay + 50;
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(Ax, dim_y1 + 5);
+        ctx.moveTo(Ex, Ey);
+        ctx.lineTo(Ex, dim_y1 + 5);
+        ctx.moveTo(Ax, dim_y1);
+        drawArrow(ctx, Ax, dim_y1, Ex, dim_y1, 2);
+        ctx.stroke();
+        ctx.fillText("15 m", (Ax + Ex) / 2, dim_y1 + 15);
+        
+        // 5 m dimension
+        const dim_y2 = Ay + 25;
+        ctx.beginPath();
+        ctx.moveTo(Cx_force, Cy_force);
+        ctx.lineTo(Cx_force, dim_y2 - 5);
+        ctx.moveTo(Ax, dim_y2 + 5);
+        ctx.lineTo(Ax, dim_y2-5);
+        ctx.moveTo(Ax, dim_y2);
+        drawArrow(ctx, Ax, dim_y2, Cx_force, dim_y2, 2);
+        ctx.stroke();
+        ctx.fillText("5 m", (Ax + Cx_force) / 2, dim_y2 + 15);
+
+        // 8 m label
+        ctx.fillText("8 m", Bx - 10, By - 35);
+        ctx.beginPath();
+        ctx.moveTo(Ax, By - 20);
+        ctx.quadraticCurveTo(Ax+20, By - 30, Bx-10, By-10);
+        const angleB = Math.atan2(By - (By-10), Bx - (Bx-10));
+        ctx.lineTo(Bx - 10 - 8*Math.cos(angleB - Math.PI/6), By - 10 - 8*Math.sin(angleB-Math.PI/6));
+        ctx.moveTo(Bx-10, By-10);
+        ctx.lineTo(Bx - 10 - 8*Math.cos(angleB + Math.PI/6), By - 10 - 8*Math.sin(angleB+Math.PI/6));
+        ctx.stroke();
+
+        // Angles
+        ctx.lineWidth = 1;
+        // Angle at D
+        ctx.beginPath();
+        ctx.arc(Dx, Dy, 25, -Math.PI / 3, 0);
+        ctx.stroke();
+        ctx.fillText("60°", Dx + 35, Dy - 15);
+        // Angle at A
+        ctx.beginPath();
+        ctx.arc(Ax, Ay, 25, -Math.PI, -2 * Math.PI / 3);
+        ctx.stroke();
+        ctx.fillText("60°", Ax - 35, Ay - 15);
+
+    </script>
+</body>
+</html>

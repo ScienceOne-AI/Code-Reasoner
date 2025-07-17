@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="700" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow head
+        function drawArrow(ctx, fromx, fromy, tox, toy, text) {
+            const headlen = 8; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+
+            // Draw the line
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+
+            // Draw the arrow heads
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(fromx - headlen * Math.cos(angle - Math.PI / 6 + Math.PI), fromy - headlen * Math.sin(angle - Math.PI / 6 + Math.PI));
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(fromx - headlen * Math.cos(angle + Math.PI / 6 + Math.PI), fromy - headlen * Math.sin(angle + Math.PI / 6 + Math.PI));
+
+            if (text) {
+                ctx.save();
+                ctx.translate((fromx + tox) / 2, toy - 10);
+                ctx.fillText(text, 0, 0);
+                ctx.restore();
+            }
+        }
+        
+        // Helper function to draw hatching
+        function drawHatch(ctx, x, y, width, height) {
+            ctx.save();
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let i = -height; i < width; i += 8) {
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x + i + height, y + height);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+
+        // --- Main Drawing ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '16px serif';
+
+        // Coordinates and Scale
+        const scale = 40; // pixels per meter
+        const y_beam = 250;
+        const x_A = 100;
+        const x_C = x_A + 4 * scale; // 100 + 160 = 260
+        const x_B = x_C + 8 * scale; // 260 + 320 = 580
+
+        // 1. Draw Fixed Support at A (Wall)
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(x_A - 50, y_beam - 100, 50, 200);
+        ctx.strokeRect(x_A - 50, y_beam - 100, 50, 200);
+        const wallClip = new Path2D();
+        wallClip.rect(x_A - 50, y_beam - 100, 50, 200);
+        ctx.save();
+        ctx.clip(wallClip);
+        drawHatch(ctx, x_A - 50, y_beam - 100, 50, 200);
+        ctx.restore();
+
+        // 2. Draw Beam ACB
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        // Top edge
+        ctx.moveTo(x_A, y_beam - 4);
+        ctx.lineTo(x_B, y_beam - 4);
+        // Bottom edge with hinge cutout
+        ctx.moveTo(x_A, y_beam + 4);
+        ctx.lineTo(x_C - 6, y_beam + 4);
+        ctx.arc(x_C, y_beam + 4, 6, Math.PI, 0, true);
+        ctx.moveTo(x_C + 6, y_beam + 4);
+        ctx.lineTo(x_B, y_beam + 4);
+        // End caps
+        ctx.moveTo(x_A, y_beam - 4);
+        ctx.lineTo(x_A, y_beam + 4);
+        ctx.moveTo(x_B, y_beam - 4);
+        ctx.lineTo(x_B, y_beam + 4);
+        ctx.stroke();
+        
+        // Hinge pin at C
+        ctx.beginPath();
+        ctx.arc(x_C, y_beam, 3, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+
+
+        // 3. Draw Roller Support at B
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        // Pin
+        ctx.arc(x_B, y_beam, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x_B, y_beam, 2, 0, 2 * Math.PI);
+        ctx.fill();
+        // Triangle
+        const tri_y_top = y_beam + 5;
+        const tri_y_bot = y_beam + 25;
+        ctx.beginPath();
+        ctx.moveTo(x_B, tri_y_top);
+        ctx.lineTo(x_B - 15, tri_y_bot);
+        ctx.lineTo(x_B + 15, tri_y_bot);
+        ctx.closePath();
+        ctx.stroke();
+        // Rollers
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        const roller_y = tri_y_bot + 4;
+        for (let i = -2; i <= 2; i++) {
+            ctx.arc(x_B + i*8, roller_y, 4, 0, 2 * Math.PI);
+        }
+        ctx.stroke();
+        // Ground
+        const ground_y = roller_y + 4;
+        ctx.beginPath();
+        ctx.moveTo(x_B - 40, ground_y);
+        ctx.lineTo(x_B + 40, ground_y);
+        ctx.stroke();
+        const groundClip = new Path2D();
+        groundClip.rect(x_B - 40, ground_y, 80, 20);
+        ctx.save();
+        ctx.clip(groundClip);
+        drawHatch(ctx, x_B-40, ground_y, 80, 20);
+        ctx.restore();
+
+
+        // 4. Draw Crane
+        ctx.lineWidth = 2;
+        // Crane coordinates
+        const x_D = x_C;
+        const y_D = y_beam - 70;
+        const x_L = x_C + 4 * scale;
+        const y_L = y_beam - 80;
+        const x_wheel_L = x_C - 1 * scale;
+        const x_wheel_R = x_C + 1 * scale;
+        const y_pivot = y_beam - 20;
+
+        // Crane truss structure
+        ctx.beginPath();
+        ctx.moveTo(x_wheel_L, y_pivot);
+        ctx.lineTo(x_D, y_D);
+        ctx.lineTo(x_wheel_R, y_pivot);
+        ctx.moveTo(x_D, y_D);
+        ctx.lineTo(x_L, y_L);
+        ctx.lineTo(x_wheel_L, y_pivot); // The diagram shows L connects to the left assembly
+        ctx.stroke();
+        
+        // Pins on crane
+        ctx.fillStyle = 'white';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        const pin_r = 4;
+        [ [x_D, y_D], [x_L, y_L], [x_wheel_L, y_pivot], [x_wheel_R, y_pivot] ].forEach(([x,y]) => {
+            ctx.beginPath();
+            ctx.arc(x, y, pin_r, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+        });
+
+        // Wheel assemblies
+        const wheel_r = 8;
+        const y_wheel_center = y_beam - wheel_r;
+        function drawWheelAssembly(x_pivot, y_pivot) {
+             // Structure from pivot to wheels
+             ctx.beginPath();
+             ctx.moveTo(x_pivot - 10, y_wheel_center);
+             ctx.lineTo(x_pivot, y_pivot);
+             ctx.lineTo(x_pivot + 10, y_wheel_center);
+             ctx.stroke();
+             // Wheels
+             [x_pivot - 10, x_pivot + 10].forEach(x_w => {
+                ctx.beginPath();
+                ctx.arc(x_w, y_wheel_center, wheel_r, 0, 2*Math.PI);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(x_w, y_wheel_center, 3, 0, 2*Math.PI);
+                ctx.stroke();
+             });
+        }
+        drawWheelAssembly(x_wheel_L, y_pivot);
+        drawWheelAssembly(x_wheel_R, y_pivot);
+
+
+        // 5. Draw Load P
+        ctx.beginPath();
+        ctx.moveTo(x_L, y_L + pin_r);
+        ctx.lineTo(x_L, y_L + 20);
+        ctx.stroke();
+        // Hook
+        ctx.beginPath();
+        ctx.arc(x_L, y_L + 25, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Load P
+        ctx.strokeRect(x_L - 30, y_L + 30, 60, 30);
+        ctx.fillText('P', x_L - 5, y_L + 53);
+
+
+        // 6. Draw Dimensions and Labels
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 20px serif';
+        
+        // Main Labels
+        ctx.fillText('A', x_A - 25, y_beam + 5);
+        ctx.fillText('B', x_B + 15, y_beam + 5);
+        ctx.fillText('C', x_C - 5, y_beam + 25);
+        ctx.fillText('D', x_D + 10, y_D + 5);
+        ctx.fillText('K', x_D - 25, y_D - 35);
+        ctx.fillText('L', x_L + 10, y_L - 5);
+
+        // Dimension lines
+        ctx.font = '16px serif';
+        
+        // Crane arm dimension: 4 m
+        const y_dim_top = y_D - 40;
+        ctx.beginPath();
+        ctx.setLineDash([5, 3]);
+        ctx.moveTo(x_D, y_D);
+        ctx.lineTo(x_D, y_dim_top);
+        ctx.moveTo(x_L, y_L);
+        ctx.lineTo(x_L, y_dim_top);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        drawArrow(ctx, x_D, y_dim_top, x_L, y_dim_top, '4 m');
+        ctx.stroke();
+
+        // Wheel base dimensions: 1 m, 1 m
+        const y_dim_mid = y_beam + 35;
+        ctx.beginPath();
+        ctx.setLineDash([5, 3]);
+        ctx.moveTo(x_wheel_L, y_pivot);
+        ctx.lineTo(x_wheel_L, y_dim_mid);
+        ctx.moveTo(x_C, y_beam);
+        ctx.lineTo(x_C, y_dim_mid);
+        ctx.moveTo(x_wheel_R, y_pivot);
+        ctx.lineTo(x_wheel_R, y_dim_mid);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        drawArrow(ctx, x_wheel_L, y_dim_mid, x_C, y_dim_mid, '1 m');
+        drawArrow(ctx, x_C, y_dim_mid, x_wheel_R, y_dim_mid, '1 m');
+        ctx.stroke();
+
+        // Beam dimensions: 4 m, 8 m
+        const y_dim_bot = y_beam + 70;
+        const y_dim_tick_bot = y_dim_bot - 5;
+        ctx.beginPath();
+        // Ticks
+        ctx.moveTo(x_A, y_beam + 10); ctx.lineTo(x_A, y_dim_tick_bot);
+        ctx.moveTo(x_C, y_dim_mid + 10); ctx.lineTo(x_C, y_dim_tick_bot);
+        ctx.moveTo(x_B, ground_y); ctx.lineTo(x_B, y_dim_tick_bot);
+        // Arrows and text
+        drawArrow(ctx, x_A, y_dim_bot, x_C, y_dim_bot, '4 m');
+        drawArrow(ctx, x_C, y_dim_bot, x_B, y_dim_bot, '8 m');
+        ctx.stroke();
+
+    </script>
+</body>
+</html>

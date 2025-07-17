@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fresnel Phase Zone Plate</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="fresnel-plate-canvas" width="650" height="450"></canvas>
+
+    <script>
+        const canvas = document.getElementById('fresnel-plate-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const config = {
+            centerX: 325,
+            centerY: 225,
+            plateLeftX: 100,
+            plateRightSurfaceX: 220,
+            grooveDepthH: 25,
+            zoneHeight: 35,
+            centralZoneHalfHeight: 40,
+            font: "18px 'Times New Roman'",
+            lineColor: '#000',
+            fillColor: '#E0E0E0',
+        };
+        
+        // --- Helper Functions ---
+
+        /**
+         * Draws text with a subscript.
+         * @param {string} text - The main text.
+         * @param {string} sub - The subscript text.
+         * @param {number} x - The x-coordinate.
+         * @param {number} y - The y-coordinate.
+         */
+        function drawSubscriptText(text, sub, x, y) {
+            const originalFont = ctx.font;
+            const originalBaseline = ctx.textBaseline;
+
+            ctx.font = config.font;
+            ctx.textBaseline = 'middle';
+            
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillText(text, x, y);
+            
+            ctx.font = `12px 'Times New Roman'`;
+            ctx.fillText(sub, x + textWidth, y + 6);
+            
+            ctx.font = originalFont;
+            ctx.textBaseline = originalBaseline;
+        }
+
+        /**
+         * Draws a double-headed arrow.
+         * @param {number} x1 - Start x-coordinate.
+         * @param {number} y1 - Start y-coordinate.
+         * @param {number} x2 - End x-coordinate.
+         * @param {number} y2 - End y-coordinate.
+         * @param {number} arrowSize - The size of the arrowheads.
+         */
+        function drawDoubleArrow(x1, y1, x2, y2, arrowSize = 5) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            
+            // Arrowhead at the start
+            const angle1 = Math.atan2(y2 - y1, x2 - x1);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + arrowSize * Math.cos(angle1 + Math.PI * 3/4), y1 + arrowSize * Math.sin(angle1 + Math.PI * 3/4));
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + arrowSize * Math.cos(angle1 - Math.PI * 3/4), y1 + arrowSize * Math.sin(angle1 - Math.PI * 3/4));
+            
+            // Arrowhead at the end
+            const angle2 = Math.atan2(y1 - y2, x1 - x2);
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 + arrowSize * Math.cos(angle2 + Math.PI * 3/4), y2 + arrowSize * Math.sin(angle2 + Math.PI * 3/4));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 + arrowSize * Math.cos(angle2 - Math.PI * 3/4), y2 + arrowSize * Math.sin(angle2 - Math.PI * 3/4));
+            
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Function ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = config.lineColor;
+            ctx.lineWidth = 1.5;
+            ctx.fillStyle = config.fillColor;
+            ctx.font = config.font;
+            
+            // 1. Draw Optical Axis
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([8, 4]);
+            ctx.moveTo(0, config.centerY);
+            ctx.lineTo(canvas.width, config.centerY);
+            ctx.stroke();
+            ctx.restore();
+
+            // 2. Define zone boundaries and plate geometry
+            const x_flat = config.plateRightSurfaceX;
+            const x_groove = x_flat - config.grooveDepthH;
+            const y_1_top = config.centerY - config.centralZoneHalfHeight;
+            const y_1_bot = config.centerY + config.centralZoneHalfHeight;
+            const y_3_top = y_1_top - config.zoneHeight;
+            const y_4_top = y_3_top - config.zoneHeight;
+            const y_2_bot = y_1_bot + config.zoneHeight;
+            
+            // Points for the jagged top/bottom edges
+            const jagged_top_y = y_4_top - 20;
+            const jagged_bot_y = y_2_bot + config.zoneHeight + 20;
+
+            // 3. Draw the Fresnel Plate
+            ctx.beginPath();
+            // Jagged top
+            ctx.moveTo(config.plateLeftX, jagged_top_y);
+            ctx.lineTo(config.plateLeftX + 10, jagged_top_y + 10);
+            ctx.lineTo(x_groove, y_4_top);
+            // Right grooved surface
+            ctx.lineTo(x_groove, y_3_top); // 4th zone (groove)
+            ctx.lineTo(x_flat, y_3_top);
+            ctx.lineTo(x_flat, y_1_top);   // 3rd zone (flat)
+            ctx.lineTo(x_flat, y_1_bot);   // 1st zone (flat)
+            ctx.lineTo(x_groove, y_1_bot);
+            ctx.lineTo(x_groove, y_2_bot); // 2nd zone (groove)
+            ctx.lineTo(x_flat, y_2_bot);
+            ctx.lineTo(x_flat, y_2_bot + config.zoneHeight); // Another flat section
+            // Jagged bottom
+            ctx.lineTo(config.plateLeftX + 10, jagged_bot_y - 10);
+            ctx.lineTo(config.plateLeftX, jagged_bot_y);
+            // Left surface
+            ctx.closePath();
+            
+            ctx.fill();
+            ctx.stroke();
+
+            // 4. Draw Annotations
+            // 'h' dimension
+            const h_y_pos = y_4_top - 30;
+            ctx.save();
+            ctx.setLineDash([4, 2]);
+            ctx.beginPath();
+            ctx.moveTo(x_groove, y_3_top);
+            ctx.lineTo(x_groove, h_y_pos);
+            ctx.moveTo(x_flat, y_3_top);
+            ctx.lineTo(x_flat, h_y_pos);
+            ctx.stroke();
+            ctx.restore();
+            drawDoubleArrow(x_groove, h_y_pos, x_flat, h_y_pos);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('h', (x_groove + x_flat) / 2, h_y_pos - 5);
+
+            // 'n' label
+            ctx.textAlign = 'start';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText('n', 130, 150);
+            ctx.beginPath();
+            ctx.moveTo(140, 152);
+            ctx.lineTo(170, 170);
+            ctx.stroke();
+
+            // 'n₀' label
+            drawSubscriptText('n', '0', 280, 190);
+
+            // 5. Draw Zone Labels and Connecting Lines
+            const label_x = 510;
+            const line_anchor_x = 480;
+
+            const labels = [
+                { text: "3rd Fresnel zone", y: 100, zone_top: y_3_top, zone_bot: y_1_top, zone_x: x_flat },
+                { text: "4th Fresnel zone", y: 155, zone_top: y_4_top, zone_bot: y_3_top, zone_x: x_groove },
+                { text: "1st Fresnel zone", y: 280, zone_top: y_1_top, zone_bot: y_1_bot, zone_x: x_flat },
+                { text: "2nd Fresnel zone", y: 335, zone_top: y_1_bot, zone_bot: y_2_bot, zone_x: x_groove },
+            ];
+
+            labels.forEach(label => {
+                // Label text
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label.text, label_x, label.y);
+
+                // Connecting lines
+                ctx.beginPath();
+                ctx.moveTo(line_anchor_x, label.y);
+                ctx.lineTo(label.zone_x, label.zone_top);
+                ctx.moveTo(line_anchor_x, label.y);
+                ctx.lineTo(label.zone_x, label.zone_bot);
+                ctx.stroke();
+            });
+        }
+        
+        // Initial draw
+        draw();
+    </script>
+</body>
+</html>

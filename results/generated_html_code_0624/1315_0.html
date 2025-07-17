@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical Path Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="opticalCanvas" width="850" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('opticalCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Parameters based on Gaussian lens equation for consistent drawing
+        const scale = 1.3;
+        const u_dist = 200 * scale;
+        const v_dist = 300 * scale;
+        const h_obj = 60 * scale;
+        const h_img = -60 * scale; // Negative for inverted image
+        const f_u_dist = 100 * scale;
+        const f_v_dist = 150 * scale;
+
+        // Coordinate system setup
+        const cx = 380; // x-coordinate of the lens
+        const cy = 250; // y-coordinate of the principal axis
+
+        // Key coordinates
+        const x_obj = cx - u_dist;
+        const y_obj_top = cy - h_obj;
+        const y_obj_base = cy;
+
+        const x_img = cx + v_dist;
+        const y_img_top = cy - h_img;
+        const y_img_base = cy;
+
+        const x_Fu = cx - f_u_dist;
+        const x_Fv = cx + f_v_dist;
+        const y_focal = cy;
+
+        // Helper function to draw an arrow head
+        function drawArrowhead(ctx, x, y, angle, size = 8) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2.5);
+            ctx.lineTo(-size, -size / 2.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // 1. Draw Principal Axis and Lens
+        ctx.beginPath();
+        ctx.moveTo(20, cy);
+        ctx.lineTo(canvas.width - 20, cy);
+        ctx.stroke();
+
+        ctx.save();
+        ctx.setLineDash([7, 5]);
+        ctx.beginPath();
+        ctx.moveTo(cx, 50);
+        ctx.lineTo(cx, canvas.height - 100);
+        ctx.stroke();
+        ctx.restore();
+        
+        // 2. Draw Object and Image Arrows
+        ctx.beginPath();
+        ctx.moveTo(x_obj, y_obj_base);
+        ctx.lineTo(x_obj, y_obj_top);
+        ctx.stroke();
+        drawArrowhead(ctx, x_obj, y_obj_top, -Math.PI / 2);
+
+        ctx.beginPath();
+        ctx.moveTo(x_img, y_img_base);
+        ctx.lineTo(x_img, y_img_top);
+        ctx.stroke();
+        drawArrowhead(ctx, x_img, y_img_top, Math.PI / 2);
+
+        // 3. Draw Focal Points
+        ctx.beginPath();
+        ctx.arc(x_Fu, y_focal, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x_Fv, y_focal, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 4. Draw Rays
+        const ray1_lens_y = y_obj_top;
+        const ray2_lens_y = y_img_top;
+        
+        // Ray 1: parallel, then through F_v
+        ctx.beginPath();
+        ctx.moveTo(x_obj, y_obj_top);
+        ctx.lineTo(cx, ray1_lens_y);
+        ctx.lineTo(x_img, y_img_top);
+        ctx.stroke();
+
+        // Ray 2: through F_u, then parallel
+        ctx.beginPath();
+        ctx.moveTo(x_obj, y_obj_top);
+        ctx.lineTo(cx, ray2_lens_y);
+        ctx.lineTo(x_img, y_img_top);
+        ctx.stroke();
+
+        // 5. Add Arrowheads to Rays
+        // Ray 1
+        drawArrowhead(ctx, x_obj + (cx - x_obj) * 0.5, ray1_lens_y, 0); 
+        let angle1 = Math.atan2(y_img_top - ray1_lens_y, x_img - cx);
+        drawArrowhead(ctx, cx + (x_img - cx) * 0.5, ray1_lens_y + (y_img_top - ray1_lens_y) * 0.5, angle1);
+        
+        // Ray 2
+        let angle2 = Math.atan2(ray2_lens_y - y_obj_top, cx - x_obj);
+        drawArrowhead(ctx, x_obj + (cx - x_obj) * 0.5, y_obj_top + (ray2_lens_y - y_obj_top) * 0.5, angle2);
+        drawArrowhead(ctx, cx + (x_img - cx) * 0.5, ray2_lens_y, 0);
+
+        // 6. Draw Dimension Lines
+        const dim_y = cy + 100;
+        const tick_h = 8;
+        
+        // For u
+        ctx.beginPath();
+        ctx.moveTo(x_obj, dim_y - tick_h);
+        ctx.lineTo(x_obj, dim_y + tick_h);
+        ctx.moveTo(x_obj, dim_y);
+        ctx.lineTo(cx, dim_y);
+        ctx.stroke();
+        drawArrowhead(ctx, x_obj + u_dist / 2, dim_y, Math.PI, 10);
+
+        // For v
+        ctx.beginPath();
+        ctx.moveTo(x_img, dim_y - tick_h);
+        ctx.lineTo(x_img, dim_y + tick_h);
+        ctx.moveTo(cx, dim_y);
+        ctx.lineTo(x_img, dim_y);
+        ctx.stroke();
+        drawArrowhead(ctx, cx + v_dist / 2, dim_y, 0, 10);
+        
+        // Separator at cx
+        const sep_w = 8, sep_h = 8;
+        ctx.beginPath();
+        ctx.moveTo(cx, dim_y); ctx.lineTo(cx - sep_w, dim_y - sep_h / 2); ctx.lineTo(cx - sep_w, dim_y + sep_h / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(cx, dim_y); ctx.lineTo(cx + sep_w, dim_y - sep_h / 2); ctx.lineTo(cx + sep_w, dim_y + sep_h / 2);
+        ctx.closePath();
+        ctx.fill();
+
+        // 7. Add Labels
+        ctx.fillStyle = 'black';
+        
+        // h and h'
+        ctx.font = "italic 22px 'Times New Roman'";
+        ctx.fillText('h', x_obj - 25, cy - h_obj / 2);
+        ctx.fillText("h'", x_img + 25, cy + Math.abs(h_img) / 2);
+
+        // u and v
+        ctx.fillText('u', x_obj + u_dist / 2, dim_y + 30);
+        ctx.fillText('v', cx + v_dist / 2, dim_y + 30);
+        
+        // F_u, F_v, f_u, f_v with simulated subscripts
+        function drawSubscriptedText(base, sub, x, y) {
+            ctx.save();
+            ctx.font = "italic 24px 'Times New Roman'";
+            ctx.fillText(base, x, y);
+            ctx.font = "italic 16px 'Times New Roman'";
+            ctx.fillText(sub, x + (base === 'F' ? 12 : 8), y + 5);
+            ctx.restore();
+        }
+        drawSubscriptedText('F', 'u', x_Fu, cy + 28);
+        drawSubscriptedText('F', 'v', x_Fv, cy + 28);
+        drawSubscriptedText('f', 'u', (x_Fu + cx) / 2, cy + 28);
+        drawSubscriptedText('f', 'v', (cx + x_Fv) / 2, cy + 28);
+
+        // n_u and n_v
+        const n_y_pos = y_obj_top - 25;
+        drawSubscriptedText('n', 'u', cx - u_dist * 0.5, n_y_pos);
+        
+        const ray1_refracted_midX = cx + (x_img - cx) / 2;
+        const ray1_refracted_midY = ray1_lens_y + (y_img_top - ray1_lens_y) / 2;
+        drawSubscriptedText('n', 'v', ray1_refracted_midX, ray1_refracted_midY - 30);
+        
+        // 光具 (Optical Instrument)
+        ctx.font = "30px 'KaiTi', 'SimSun'";
+        ctx.fillText('光具', cx, 35);
+    </script>
+</body>
+</html>

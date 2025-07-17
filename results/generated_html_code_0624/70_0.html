@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monostable Multivibrator Circuit</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f8f9fa;
+        }
+        canvas {
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="700" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Use a style that mimics the hand-drawn original
+        ctx.font = 'bold 24px "Comic Sans MS", cursive, sans-serif';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+
+        // Helper function to draw a resistor
+        function drawResistor(x, y, width, height, label, orientation = 'vertical') {
+            const zigzags = 5;
+            ctx.beginPath();
+            if (orientation === 'vertical') {
+                const zagHeight = height * 0.7 / zigzags;
+                ctx.moveTo(x, y);
+                ctx.lineTo(x, y + height * 0.15);
+                let currentY = y + height * 0.15;
+                for (let i = 0; i < zigzags; i++) {
+                    ctx.lineTo(x + width, currentY + zagHeight / 2);
+                    ctx.lineTo(x, currentY + zagHeight);
+                    currentY += zagHeight;
+                }
+                ctx.lineTo(x, y + height);
+            } else { // horizontal
+                const zagWidth = width * 0.7 / zigzags;
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + width * 0.15, y);
+                let currentX = x + width * 0.15;
+                for (let i = 0; i < zigzags; i++) {
+                    ctx.lineTo(currentX + zagWidth / 2, y + height);
+                    ctx.lineTo(currentX + zagWidth, y);
+                    currentX += zagWidth;
+                }
+                ctx.lineTo(x + width, y);
+            }
+            ctx.stroke();
+            
+            if (label) {
+                ctx.save();
+                ctx.fillStyle = 'black';
+                if (orientation === 'vertical') {
+                   ctx.fillText(label, x + 20, y + height / 2 + 8);
+                } else {
+                   ctx.fillText(label, x + width/2 - 30, y - 12);
+                }
+                ctx.restore();
+            }
+        }
+        
+        // Helper function to draw a capacitor
+        function drawCapacitor(x1, y1, x2, y2, label) {
+            const plateWidth = 25;
+            const gap = 8;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            ctx.lineTo(midX - gap / 2, midY);
+            ctx.moveTo(midX - gap / 2, midY - plateWidth / 2);
+            ctx.lineTo(midX - gap / 2, midY + plateWidth / 2);
+            ctx.moveTo(midX + gap / 2, midY - plateWidth / 2);
+            ctx.lineTo(midX + gap / 2, midY + plateWidth / 2);
+            ctx.moveTo(midX + gap / 2, midY);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            if (label) {
+                ctx.save();
+                ctx.fillText(label, midX - 8, midY - 15);
+                ctx.restore();
+            }
+        }
+
+        // Helper function to draw a simplified NPN transistor
+        function drawTransistor(x, y_base, label, label_pos) {
+            const y_collector = y_base - 80;
+            const y_emitter = y_base + 80;
+            const x_base_line_start = x - 30;
+
+            // Vertical collector-emitter line
+            ctx.beginPath();
+            ctx.moveTo(x, y_collector);
+            ctx.lineTo(x, y_emitter);
+            ctx.stroke();
+            // Base line
+            ctx.beginPath();
+            ctx.moveTo(x_base_line_start, y_base);
+            ctx.lineTo(x, y_base);
+            ctx.stroke();
+            // Arrow on emitter
+            const arrowSize = 14;
+            ctx.beginPath();
+            ctx.moveTo(x, y_emitter);
+            ctx.lineTo(x + arrowSize, y_emitter - arrowSize);
+            ctx.moveTo(x, y_emitter);
+            ctx.lineTo(x + arrowSize, y_emitter + arrowSize);
+            ctx.stroke();
+            
+            if (label) {
+                 ctx.save();
+                 ctx.fillText(label, label_pos.x, label_pos.y);
+                 ctx.restore();
+            }
+        }
+        
+        // Helper function to draw a ground symbol
+        function drawGround(x, y) {
+            const w = 30;
+            const h = 8;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + 15);
+            y = y + 15;
+            ctx.moveTo(x - w / 2, y);
+            ctx.lineTo(x + w / 2, y);
+            ctx.moveTo(x - w / 3, y + h);
+            ctx.lineTo(x + w / 3, y + h);
+            ctx.moveTo(x - w / 6, y + 2 * h);
+            ctx.lineTo(x + w / 6, y + 2 * h);
+            ctx.stroke();
+        }
+        
+        // Helper function to draw a connection dot
+        function drawDot(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        // --- Main Drawing Coordinates and Calls ---
+        
+        const x_q1 = 180, x_q2 = 520;
+        const y_top = 80;
+        const y_c_connect = 140; // Upper connection line
+        const y_b_connect = 200; // Lower connection line (capacitor)
+        const y_base = 280;
+        const y_emitter = y_base + 80;
+        const y_gnd = 460;
+        const y_pos = 500;
+        
+        // Top rail (-20V)
+        ctx.beginPath();
+        ctx.moveTo(x_q1-80, y_top);
+        ctx.lineTo(x_q2+80, y_top);
+        ctx.stroke();
+        drawDot(x_q2+80, y_top);
+        ctx.fillText("-20V", x_q2 + 95, y_top + 8);
+        
+        // Transistors
+        drawTransistor(x_q1, y_base, 'Q₁', {x: x_q1 - 70, y: y_base + 10});
+        drawTransistor(x_q2, y_base, 'Q₂', {x: x_q2 + 30, y: y_base + 10});
+        
+        // Collector connections and Resistors
+        ctx.beginPath();
+        ctx.moveTo(x_q1, y_base - 80); ctx.lineTo(x_q1, y_c_connect); ctx.stroke(); // Q1 collector to upper line
+        drawResistor(x_q1, y_top, 15, (y_base-80) - y_top, "5K");
+
+        ctx.beginPath();
+        ctx.moveTo(x_q2, y_base - 80); ctx.lineTo(x_q2, y_b_connect); ctx.stroke(); // Q2 collector to lower line
+        drawResistor(x_q2, y_top, 15, (y_base-80) - y_top, "5K");
+
+        // Emitter connections to Ground
+        ctx.beginPath();
+        ctx.moveTo(x_q1, y_emitter); ctx.lineTo(x_q1, y_gnd); ctx.stroke();
+        drawGround(x_q1, y_gnd);
+        ctx.beginPath();
+        ctx.moveTo(x_q2, y_emitter); ctx.lineTo(x_q2, y_gnd); ctx.stroke();
+        drawGround(x_q2, y_gnd);
+        
+        // Base connections
+        ctx.beginPath();
+        ctx.moveTo(x_q1 - 30, y_base); ctx.lineTo(x_q1, y_base); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x_q2 - 30, y_base); ctx.lineTo(x_q2, y_base); ctx.stroke();
+        
+        // --- Coupling Network ---
+        
+        // Upper path (C1 and 100K to B2)
+        ctx.beginPath();
+        ctx.moveTo(x_q1, y_c_connect);
+        ctx.lineTo(x_q2 - 30, y_c_connect);
+        ctx.lineTo(x_q2 - 30, y_base);
+        ctx.stroke();
+        
+        const r100k_x = 350;
+        drawResistor(r100k_x, y_top, 15, y_c_connect - y_top, "100K");
+        drawDot(r100k_x, y_c_connect);
+
+        // Lower path (C2 to B1)
+        const cap_x_start = x_q2;
+        const cap_x_end = x_q1 + 80;
+        drawCapacitor(cap_x_start, y_b_connect, cap_x_end, y_b_connect, 'C');
+        ctx.beginPath();
+        ctx.moveTo(cap_x_end, y_b_connect);
+        ctx.lineTo(x_q1 - 30, y_b_connect);
+        ctx.lineTo(x_q1 - 30, y_base);
+        ctx.stroke();
+        
+        // --- Q1 Biasing Network ---
+        const bias_junct = {x: 250, y: 320};
+        
+        ctx.beginPath();
+        ctx.moveTo(x_q1 - 30, y_base);
+        ctx.lineTo(bias_junct.x, bias_junct.y);
+        ctx.stroke();
+        drawDot(bias_junct.x, bias_junct.y);
+        
+        // 50K Resistor
+        drawResistor(bias_junct.x, bias_junct.y, 100, 15, "50 K", "horizontal");
+        ctx.beginPath();
+        ctx.moveTo(bias_junct.x + 100, bias_junct.y);
+        ctx.lineTo(420, bias_junct.y);
+        ctx.lineTo(420, y_c_connect);
+        ctx.stroke();
+        drawDot(420, y_c_connect);
+        
+        // 25K Resistor
+        drawResistor(bias_junct.x, bias_junct.y, 15, 100, "25 K");
+        
+        // +6V supply
+        ctx.beginPath();
+        ctx.moveTo(bias_junct.x, bias_junct.y + 100);
+        ctx.lineTo(bias_junct.x, y_pos);
+        ctx.stroke();
+        drawDot(bias_junct.x, y_pos);
+        ctx.fillText("+6V", bias_junct.x + 15, y_pos + 8);
+        
+        // Figure label
+        ctx.font = '22px "Times New Roman"';
+        ctx.fillStyle = 'black';
+        ctx.fillText('Fig. 3.67', 300, 530);
+    </script>
+</body>
+</html>

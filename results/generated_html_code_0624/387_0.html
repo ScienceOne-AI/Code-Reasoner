@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fraunhofer Diffraction (3 Slits)</title>
+</head>
+<body>
+    <canvas id="canvas" width="600" height="350"></canvas>
+    <script>
+        // Helper to draw an arrow from (fromx, fromy) to (tox, toy)
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 8;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        }
+
+        // Main drawing function
+        function draw() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = 'black';
+            ctx.fillStyle = 'black';
+            ctx.lineWidth = 2;
+
+            const cx = canvas.width / 2;
+            const cy = 250;
+            const y_scale = 180; // Amplitude of the central peak in pixels
+            const x_range = 280; // x-pixel range to plot, from -x_range to +x_range
+
+            // --- Physics Parameters ---
+            // x_diff_min is the pixel position of the first diffraction minimum.
+            // This defines the width 'x' in the diagram which is 2 * x_diff_min.
+            const x_diff_min = 220; 
+            // The ratio of slit separation to slit width (d/w).
+            // A value of 3 makes the 3rd principal maximum fall on the 1st diffraction minimum.
+            const d_over_w = 3.0; 
+            
+            const k_diff = Math.PI / x_diff_min;
+            const k_int = d_over_w * k_diff;
+
+            // --- Intensity Calculation Functions ---
+            const sinc = (val) => val === 0 ? 1 : Math.sin(val) / val;
+            const diffraction_envelope = (x_pos) => Math.pow(sinc(k_diff * x_pos), 2);
+            
+            function total_intensity(x_pos) {
+                const diffraction_term = diffraction_envelope(x_pos);
+                const interference_arg = k_int * x_pos;
+                
+                // For principal maxima, sin(interference_arg) is near zero.
+                // The limit of (sin(3u)/sin(u))^2 as u->m*pi is 3^2 = 9.
+                let interference_term;
+                if (Math.abs(Math.sin(interference_arg)) < 1e-6) {
+                    interference_term = 9;
+                } else {
+                    interference_term = Math.pow(Math.sin(3 * interference_arg) / Math.sin(interference_arg), 2);
+                }
+                
+                // Normalize so that peak intensity is 1.
+                return diffraction_term * interference_term / 9;
+            }
+
+            // --- Draw Axes ---
+            ctx.beginPath();
+            ctx.moveTo(cx - x_range - 20, cy);
+            ctx.lineTo(cx + x_range + 20, cy);
+            ctx.stroke();
+
+            ctx.beginPath();
+            drawArrow(ctx, cx, cy + 10, cx, cy - y_scale - 30);
+            ctx.stroke();
+
+            // --- Draw Diffraction Envelope (Dashed Line) ---
+            ctx.beginPath();
+            ctx.setLineDash([6, 4]);
+            ctx.moveTo(cx - x_range, cy - y_scale * diffraction_envelope(-x_range));
+            for (let x = -x_range; x <= x_range; x += 1) {
+                const y = y_scale * diffraction_envelope(x);
+                ctx.lineTo(cx + x, cy - y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // --- Draw Full Pattern (Solid Line) ---
+            ctx.beginPath();
+            ctx.moveTo(cx - x_range, cy);
+            for (let x = -x_range; x <= x_range; x += 0.5) {
+                const y = y_scale * total_intensity(x);
+                ctx.lineTo(cx + x, cy - y);
+            }
+            ctx.lineTo(cx + x_range, cy);
+            ctx.stroke();
+
+            // --- Draw Annotations ---
+            ctx.lineWidth = 1.5;
+            ctx.font = 'bold 20px Times New Roman';
+
+            // Label '0'
+            ctx.fillText('0', cx - 5, cy + 22);
+
+            // Label 'Fig. 2.49'
+            ctx.font = 'bold 20px sans-serif';
+            ctx.fillText('Fig. 2.49', cx - 40, cy + 80);
+
+            // Label 'x'
+            const x_label_pos = x_diff_min;
+            const x_label_y = cy + 30;
+            ctx.beginPath();
+            ctx.moveTo(cx - x_label_pos, x_label_y);
+            ctx.lineTo(cx + x_label_pos, x_label_y);
+            ctx.moveTo(cx - x_label_pos, cy);
+            ctx.lineTo(cx - x_label_pos, x_label_y);
+            ctx.moveTo(cx + x_label_pos, cy);
+            ctx.lineTo(cx + x_label_pos, x_label_y);
+            ctx.stroke();
+            ctx.font = 'italic bold 20px Times New Roman';
+            ctx.fillText('x', cx - 5, x_label_y + 20);
+
+            // Label 'I₀'
+            const I0_y_pos = cy - y_scale * total_intensity(0);
+            const I0_label_x = cx + 90;
+            ctx.beginPath();
+            ctx.moveTo(I0_label_x, cy);
+            drawArrow(ctx, I0_label_x, cy, I0_label_x, I0_y_pos);
+            ctx.moveTo(cx, I0_y_pos); 
+            ctx.lineTo(I0_label_x, I0_y_pos);
+            ctx.stroke();
+            ctx.font = 'italic bold 24px Times New Roman';
+            ctx.fillText('I', I0_label_x + 10, cy - y_scale/2 - 5);
+            ctx.font = 'italic bold 16px Times New Roman';
+            ctx.fillText('0', I0_label_x + 22, cy - y_scale/2);
+
+            // Label 'I₁'
+            // Position of first secondary max is at x where k_int * x = PI/2
+            const x1_pos = Math.PI / (2 * k_int);
+            const I1_height = y_scale * total_intensity(x1_pos);
+            const I1_y_pos = cy - I1_height;
+            const I1_label_x = cx + x1_pos + 25;
+            ctx.beginPath();
+            ctx.moveTo(I1_label_x, cy);
+            drawArrow(ctx, I1_label_x, cy, I1_label_x, I1_y_pos);
+            ctx.moveTo(cx + x1_pos, I1_y_pos);
+            ctx.lineTo(I1_label_x, I1_y_pos);
+            ctx.stroke();
+            ctx.font = 'italic bold 24px Times New Roman';
+            ctx.fillText('I', I1_label_x + 5, cy - I1_height/2 - 5);
+            ctx.font = 'italic bold 16px Times New Roman';
+            ctx.fillText('1', I1_label_x + 17, cy - I1_height/2);
+
+            // Label 'D'
+            const D_pos = 40; 
+            const D_y = cy - y_scale - 10;
+            ctx.beginPath();
+            ctx.moveTo(cx, D_y);
+            ctx.lineTo(cx + D_pos, D_y);
+            ctx.moveTo(cx, D_y - 5);
+            ctx.lineTo(cx, D_y + 5);
+            ctx.moveTo(cx + D_pos, D_y - 5);
+            ctx.lineTo(cx + D_pos, D_y + 5);
+            ctx.stroke();
+            ctx.font = 'italic bold 24px Times New Roman';
+            ctx.fillText('D', cx + D_pos/2 - 8, D_y - 10);
+        }
+
+        draw();
+    </script>
+</body>
+</html>

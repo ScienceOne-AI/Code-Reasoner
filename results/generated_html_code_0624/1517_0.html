@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Graph - Bouncing</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="550" height="300"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const config = {
+        margin: { top: 30, right: 30, bottom: 60, left: 70 },
+        font: '18px "Times New Roman"',
+        axisLabelFont: 'italic 20px "Times New Roman"',
+        arrowSize: 8,
+        tickLength: 5,
+        tMax: 0.9,      // Max time on the axis
+        hMax: 0.12,     // Max height on the axis (for scaling)
+        peakHeight: 0.09,
+        jumpDuration: 4 / 15,
+    };
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const plotWidth = width - config.margin.left - config.margin.right;
+    const plotHeight = height - config.margin.top - config.margin.bottom;
+
+    // --- Coordinate transformation functions ---
+    function t_to_x(t) {
+        return config.margin.left + (t / config.tMax) * plotWidth;
+    }
+
+    function h_to_y(h) {
+        return height - config.margin.bottom - (h / config.hMax) * plotHeight;
+    }
+
+    // --- Drawing functions ---
+
+    function drawAxes() {
+        ctx.beginPath();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Y-axis (h)
+        const yAxisStart = height - config.margin.bottom;
+        const yAxisEnd = config.margin.top;
+        ctx.moveTo(config.margin.left, yAxisStart);
+        ctx.lineTo(config.margin.left, yAxisEnd);
+        ctx.lineTo(config.margin.left - config.arrowSize / 2, yAxisEnd + config.arrowSize);
+        ctx.moveTo(config.margin.left, yAxisEnd);
+        ctx.lineTo(config.margin.left + config.arrowSize / 2, yAxisEnd + config.arrowSize);
+
+        // X-axis (t)
+        const xAxisStart = config.margin.left;
+        const xAxisEnd = width - config.margin.right;
+        ctx.moveTo(xAxisStart, yAxisStart);
+        ctx.lineTo(xAxisEnd, yAxisStart);
+        ctx.lineTo(xAxisEnd - config.arrowSize, yAxisStart - config.arrowSize / 2);
+        ctx.moveTo(xAxisEnd, yAxisStart);
+        ctx.lineTo(xAxisEnd - config.arrowSize, yAxisStart + config.arrowSize / 2);
+
+        ctx.stroke();
+
+        // Labels
+        ctx.fillStyle = 'black';
+        ctx.font = config.axisLabelFont;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('h', config.margin.left - 25, config.margin.top);
+        ctx.fillText('t', width - config.margin.right + 15, height - config.margin.bottom);
+        
+        ctx.font = config.font;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillText('O', config.margin.left - 5, height - config.margin.bottom + 5);
+    }
+
+    function drawFraction(numerator, denominator, x, y, unit) {
+        ctx.font = config.font;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        const numText = String(numerator);
+        const denText = String(denominator);
+        const textMetricsNum = ctx.measureText(numText);
+        const textMetricsDen = ctx.measureText(denText);
+        const fracWidth = Math.max(textMetricsNum.width, textMetricsDen.width) + 6;
+
+        // Numerator
+        ctx.fillText(numText, x, y - 8);
+        // Denominator
+        ctx.fillText(denText, x, y + 10);
+        // Fraction line
+        ctx.beginPath();
+        ctx.moveTo(x - fracWidth / 2, y);
+        ctx.lineTo(x + fracWidth / 2, y);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Unit
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(unit, x + fracWidth / 2 + 4, y);
+    }
+
+    function drawTicksAndLabels() {
+        const yBase = height - config.margin.bottom;
+        ctx.lineWidth = 1.5;
+
+        // --- Y-axis ticks and labels ---
+        const hPeak = config.peakHeight;
+        const yPeak = h_to_y(hPeak);
+        const xPeak1 = t_to_x(config.jumpDuration / 2);
+
+        // Dashed line
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.moveTo(xPeak1, yPeak);
+        ctx.lineTo(config.margin.left, yPeak);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Label
+        ctx.font = config.font;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('0.09m', config.margin.left - 8, yPeak);
+
+        // --- X-axis ticks and labels ---
+        const t_values = [
+            { num: 4, den: 15, val: 4/15 },
+            { num: 1, den: 3, val: 1/3 },
+            { num: 9, den: 15, val: 9/15 },
+            { num: 2, den: 3, val: 2/3 }
+        ];
+
+        t_values.forEach(t => {
+            const x = t_to_x(t.val);
+            // Tick mark (not present in original, but good for placing labels)
+            // ctx.beginPath();
+            // ctx.moveTo(x, yBase);
+            // ctx.lineTo(x, yBase + config.tickLength);
+            // ctx.stroke();
+            
+            // Label
+            drawFraction(t.num, t.den, x, yBase + 20, 's');
+        });
+    }
+
+    function drawParabolicArch(startTime, duration, maxHeight) {
+        const x_start = t_to_x(startTime);
+        const x_end = t_to_x(startTime + duration);
+        const x_peak = t_to_x(startTime + duration / 2);
+        
+        const y_base = h_to_y(0);
+        const y_peak = h_to_y(maxHeight);
+        
+        // Control point for a quadratic Bezier curve that forms a parabola
+        const y_control = y_peak - (y_base - y_peak);
+
+        ctx.beginPath();
+        ctx.moveTo(x_start, y_base);
+        ctx.quadraticCurveTo(x_peak, y_control, x_end, y_base);
+        ctx.stroke();
+    }
+
+    function drawPartialArch(startTime, duration, maxHeight, clipDuration) {
+        ctx.save();
+        
+        const x_start = t_to_x(startTime);
+        const clip_width = t_to_x(startTime + clipDuration) - x_start;
+        
+        ctx.beginPath();
+        ctx.rect(x_start - 2, 0, clip_width + 2, height); // -2/+2 to avoid clipping start line
+        ctx.clip();
+        
+        drawParabolicArch(startTime, duration, maxHeight);
+        
+        ctx.restore();
+    }
+
+    // --- Main Drawing Logic ---
+    ctx.clearRect(0, 0, width, height);
+    drawAxes();
+    drawTicksAndLabels();
+
+    // Draw the curves
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    const jumpDuration = config.jumpDuration;
+    const peakHeight = config.peakHeight;
+
+    // First jump
+    drawParabolicArch(0, jumpDuration, peakHeight);
+
+    // Second jump
+    const secondJumpStart = 1 / 3;
+    drawParabolicArch(secondJumpStart, jumpDuration, peakHeight);
+
+    // Third jump (partial)
+    const thirdJumpStart = 2 / 3;
+    const partialClipDuration = 0.11; // Visual estimation from image to stop before the peak
+    drawPartialArch(thirdJumpStart, jumpDuration, peakHeight, partialClipDuration);
+
+</script>
+</body>
+</html>

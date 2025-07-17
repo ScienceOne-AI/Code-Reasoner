@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Pendulum Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="pendulumCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('pendulumCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Drawing Parameters ---
+        const pivot = { x: 300, y: 50 };
+        const L = 180; // Length of the pendulum in pixels
+        const sphereRadius = 20;
+        const angleDeg = 30;
+        const angleRad = angleDeg * Math.PI / 180;
+
+        const eqPos = { x: pivot.x, y: pivot.y + L };
+        const dispPos = {
+            x: pivot.x + L * Math.sin(angleRad),
+            y: pivot.y + L * Math.cos(angleRad)
+        };
+
+        // --- Style Settings ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '18px Arial';
+
+        // --- Helper Function for Double-Headed Arrow ---
+        function drawDoubleArrow(x1, y1, x2, y2, size = 8) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            let angle = Math.atan2(y2 - y1, x2 - x1);
+            // Arrowhead at (x2, y2)
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 6), y2 - size * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 6), y2 - size * Math.sin(angle + Math.PI / 6));
+
+            angle = Math.atan2(y1 - y2, x1 - x2);
+            // Arrowhead at (x1, y1)
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 - size * Math.cos(angle - Math.PI / 6), y1 - size * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 - size * Math.cos(angle + Math.PI / 6), y1 - size * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Drawing Logic ---
+
+        // 1. Fixed Support
+        ctx.beginPath();
+        ctx.moveTo(100, pivot.y);
+        ctx.lineTo(500, pivot.y);
+        ctx.stroke();
+        // Hatching for the support
+        for (let i = 100; i <= 500; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(i, pivot.y);
+            ctx.lineTo(i - 15, pivot.y - 15);
+            ctx.stroke();
+        }
+
+        // 2. Displaced Pendulum (Dashed)
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        // Thread
+        ctx.moveTo(pivot.x, pivot.y);
+        ctx.lineTo(dispPos.x, dispPos.y);
+        ctx.stroke();
+        // Sphere
+        ctx.beginPath();
+        ctx.arc(dispPos.x, dispPos.y, sphereRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 3. Equilibrium Pendulum (Solid)
+        ctx.beginPath();
+        // Thread
+        ctx.moveTo(pivot.x, pivot.y);
+        ctx.lineTo(eqPos.x, eqPos.y);
+        ctx.stroke();
+        // Sphere
+        ctx.beginPath();
+        ctx.arc(eqPos.x, eqPos.y, sphereRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // Center cross on equilibrium sphere
+        ctx.beginPath();
+        ctx.setLineDash([2, 2]);
+        ctx.moveTo(eqPos.x, eqPos.y - 5);
+        ctx.lineTo(eqPos.x, eqPos.y + 5);
+        ctx.moveTo(eqPos.x - 5, eqPos.y);
+        ctx.lineTo(eqPos.x + 5, eqPos.y);
+        ctx.stroke();
+        
+        // Center cross on displaced sphere
+        ctx.beginPath();
+        ctx.moveTo(dispPos.x, dispPos.y - 5);
+        ctx.lineTo(dispPos.x, dispPos.y + 5);
+        ctx.moveTo(dispPos.x - 5, dispPos.y);
+        ctx.lineTo(dispPos.x + 5, dispPos.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+
+        // 4. Labels and Annotations
+
+        // Label L
+        const L_arrow_x = 200;
+        drawDoubleArrow(L_arrow_x, pivot.y, L_arrow_x, eqPos.y);
+        ctx.textAlign = 'center';
+        ctx.fillText('L', L_arrow_x + 20, pivot.y + L / 2);
+        // Dashed horizontal line for L
+        ctx.beginPath();
+        ctx.setLineDash([3, 3]);
+        ctx.moveTo(L_arrow_x, eqPos.y);
+        ctx.lineTo(eqPos.x, eqPos.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Label x
+        const x_arrow_y = eqPos.y + 40;
+        // Dashed vertical lines for x
+        ctx.beginPath();
+        ctx.setLineDash([3, 3]);
+        ctx.moveTo(eqPos.x, eqPos.y);
+        ctx.lineTo(eqPos.x, x_arrow_y);
+        ctx.moveTo(dispPos.x, dispPos.y);
+        ctx.lineTo(dispPos.x, x_arrow_y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Arrow for x
+        drawDoubleArrow(eqPos.x, x_arrow_y, dispPos.x, x_arrow_y);
+        ctx.fillText('x', (eqPos.x + dispPos.x) / 2, x_arrow_y + 15);
+
+        // Text Label 'metal sphere P'
+        ctx.textAlign = 'left';
+        ctx.fillText('metal sphere P', 50, eqPos.y);
+        // Pointer line
+        ctx.beginPath();
+        ctx.moveTo(195, eqPos.y);
+        ctx.lineTo(eqPos.x - sphereRadius, eqPos.y);
+        ctx.stroke();
+
+        // Text Label 'thread'
+        const threadMidPoint = { x: (pivot.x + dispPos.x) / 2, y: (pivot.y + dispPos.y) / 2 };
+        ctx.fillText('thread', 420, 100);
+        // Pointer line
+        ctx.beginPath();
+        ctx.moveTo(415, 105);
+        ctx.lineTo(threadMidPoint.x + 5, threadMidPoint.y);
+        ctx.stroke();
+
+        // 5. Figure Caption
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 3.1', canvas.width / 2, canvas.height - 20);
+
+    </script>
+</body>
+</html>

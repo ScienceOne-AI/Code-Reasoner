@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Projectile Motion Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="420"></canvas>
+    <script>
+        window.onload = function() {
+            const canvas = document.getElementById('physicsCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // --- Drawing Parameters ---
+            const lineWidth = 2;
+            const primaryColor = 'black';
+            ctx.lineWidth = lineWidth;
+            ctx.strokeStyle = primaryColor;
+            ctx.fillStyle = primaryColor;
+
+            // Pump parameters
+            const pumpCenterX = 100;
+            const pumpCenterY = 120;
+            const pumpRadius = 25;
+
+            // Ground and pits parameters
+            const groundY = 320;
+            const pitDepth = 50;
+            const pitBottomY = groundY + pitDepth;
+            
+            const pitA_startX = 280;
+            const pitA_width = 60;
+            const pitA_endX = pitA_startX + pitA_width;
+
+            const pitB_startX = 430;
+            const pitB_width = 80; // As per problem S_B = 2*S_A, but visually it's not that different, keeping it similar to image
+            const pitB_endX = pitB_startX + pitB_width;
+
+            // --- Function to create a hatch pattern ---
+            function createHatchPattern() {
+                const patternCanvas = document.createElement('canvas');
+                const patternCtx = patternCanvas.getContext('2d');
+                patternCanvas.width = 10;
+                patternCanvas.height = 10;
+                patternCtx.strokeStyle = primaryColor;
+                patternCtx.lineWidth = 1;
+                patternCtx.beginPath();
+                patternCtx.moveTo(0, 10);
+                patternCtx.lineTo(10, 0);
+                patternCtx.stroke();
+                return ctx.createPattern(patternCanvas, 'repeat');
+            }
+            const hatchPattern = createHatchPattern();
+
+            // --- Draw Ground ---
+            // 1. Fill with hatch pattern
+            ctx.fillStyle = hatchPattern;
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            ctx.lineTo(0, groundY);
+            ctx.lineTo(pitA_startX, groundY);
+            ctx.lineTo(pitA_startX, pitBottomY);
+            ctx.lineTo(pitA_endX, pitBottomY);
+            ctx.lineTo(pitA_endX, groundY);
+            ctx.lineTo(pitB_startX, groundY);
+            ctx.lineTo(pitB_startX, pitBottomY);
+            ctx.lineTo(pitB_endX, pitBottomY);
+            ctx.lineTo(pitB_endX, groundY);
+            ctx.lineTo(canvas.width, groundY);
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.closePath();
+            ctx.fill();
+
+            // 2. Stroke the outline
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(pitA_startX, groundY);
+            ctx.lineTo(pitA_startX, pitBottomY);
+            ctx.lineTo(pitA_endX, pitBottomY);
+            ctx.lineTo(pitA_endX, groundY);
+            ctx.lineTo(pitB_startX, groundY);
+            ctx.lineTo(pitB_startX, pitBottomY);
+            ctx.lineTo(pitB_endX, pitBottomY);
+            ctx.lineTo(pitB_endX, groundY);
+            ctx.lineTo(canvas.width, groundY);
+            ctx.stroke();
+
+            // --- Draw Pump ---
+            // Stand
+            ctx.beginPath();
+            ctx.moveTo(pumpCenterX, groundY);
+            ctx.lineTo(pumpCenterX, pumpCenterY);
+            ctx.stroke();
+
+            // Body (Circle)
+            ctx.beginPath();
+            ctx.arc(pumpCenterX, pumpCenterY, pumpRadius, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Nozzle
+            ctx.beginPath();
+            ctx.moveTo(pumpCenterX + pumpRadius, pumpCenterY - 5);
+            ctx.lineTo(pumpCenterX + pumpRadius + 10, pumpCenterY - 5);
+            ctx.lineTo(pumpCenterX + pumpRadius + 10, pumpCenterY + 5);
+            ctx.lineTo(pumpCenterX + pumpRadius, pumpCenterY + 5);
+            ctx.stroke();
+
+            // Mechanism on the left
+            const mechX_start = pumpCenterX - pumpRadius;
+            const mechX_mid = mechX_start - 20;
+            const mechX_end = mechX_mid - 20;
+            const mechY_top = pumpCenterY - 8;
+            const mechY_bot = pumpCenterY + 8;
+            
+            ctx.beginPath();
+            ctx.moveTo(mechX_start, mechY_top - 5);
+            ctx.lineTo(mechX_start, mechY_bot + 5);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(mechX_mid, mechY_top);
+            ctx.lineTo(mechX_start-10, mechY_top);
+            ctx.moveTo(mechX_mid, mechY_bot);
+            ctx.lineTo(mechX_start-10, mechY_bot);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(mechX_mid, mechY_top);
+            ctx.lineTo(mechX_mid, mechY_bot);
+            ctx.stroke();
+
+            // Dashed lines
+            ctx.save();
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.moveTo(mechX_mid, mechY_top);
+            ctx.lineTo(mechX_end, mechY_top);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(mechX_mid, mechY_bot);
+            ctx.lineTo(mechX_end, mechY_bot);
+            ctx.stroke();
+            ctx.restore();
+
+
+            // --- Draw Trajectories ---
+            const startX = pumpCenterX + pumpRadius + 10;
+            const startY = pumpCenterY;
+            
+            ctx.save();
+            ctx.setLineDash([8, 6]);
+
+            // Trajectory to A
+            const endA_X = pitA_startX + pitA_width / 2;
+            const endA_Y = pitBottomY;
+            const controlA_X = startX + (endA_X - startX) * 0.7;
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.quadraticCurveTo(controlA_X, startY, endA_X, endA_Y);
+            ctx.stroke();
+
+            // Trajectory to B
+            const endB_X = pitB_startX + pitB_width * 0.7; // Landing further in the pit
+            const endB_Y = pitBottomY;
+            const controlB_X = startX + (endB_X - startX) * 0.7;
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.quadraticCurveTo(controlB_X, startY, endB_X, endB_Y);
+            ctx.stroke();
+            
+            ctx.restore();
+
+            // --- Draw Labels ---
+            ctx.font = '20px serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('A', pitA_startX + pitA_width / 2, pitBottomY + 25);
+            ctx.fillText('B', pitB_startX + pitB_width / 2, pitBottomY + 25);
+
+        };
+    </script>
+</body>
+</html>

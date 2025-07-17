@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Cubic Resistor Network</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="500" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const s = 80; // Side length of a small cube
+    const offsetX = 180; // X offset for the drawing origin on canvas
+    const offsetY = 360; // Y offset for the drawing origin on canvas
+    const projFactor = 0.5; // Foreshortening factor for the z-axis
+
+    // --- 3D to 2D Projection Function ---
+    function project(x, y, z) {
+        const screenX = offsetX + x * s - z * s * projFactor;
+        const screenY = offsetY - y * s - z * s * projFactor;
+        return [screenX, screenY];
+    }
+
+    // --- Drawing Function ---
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Function to draw a line segment
+        function drawLine(x1, y1, z1, x2, y2, z2, isSolid) {
+            const p1 = project(x1, y1, z1);
+            const p2 = project(x2, y2, z2);
+            ctx.beginPath();
+            ctx.setLineDash(isSolid ? [] : [4, 4]);
+            ctx.moveTo(p1[0], p1[1]);
+            ctx.lineTo(p2[0], p2[1]);
+            ctx.stroke();
+        }
+
+        // Draw lines parallel to the X-axis
+        for (let y = 0; y <= 2; y++) {
+            for (let z = 0; z <= 2; z++) {
+                for (let x = 0; x < 2; x++) {
+                    const isSolid = (y === 2 || z === 2);
+                    drawLine(x, y, z, x + 1, y, z, isSolid);
+                }
+            }
+        }
+
+        // Draw lines parallel to the Y-axis
+        for (let x = 0; x <= 2; x++) {
+            for (let z = 0; z <= 2; z++) {
+                for (let y = 0; y < 2; y++) {
+                    const isSolid = (x === 2 || z === 2);
+                    drawLine(x, y, z, x, y + 1, z, isSolid);
+                }
+            }
+        }
+
+        // Draw lines parallel to the Z-axis
+        for (let x = 0; x <= 2; x++) {
+            for (let y = 0; y <= 2; y++) {
+                for (let z = 0; z < 2; z++) {
+                    const isSolid = (x === 2 || y === 2);
+                    drawLine(x, y, z, x, y, z + 1, isSolid);
+                }
+            }
+        }
+        
+        // Draw the special line for label Q
+        drawLine(1.5, 1, 2, 2, 0.5, 2, true);
+
+        // --- Draw Labels and Caption ---
+        ctx.fillStyle = 'black';
+        ctx.setLineDash([]); // Ensure text is not dashed
+        ctx.font = '22px Arial';
+        
+        // Label P at the center (1, 1, 1)
+        const pPos = project(1, 1, 1);
+        ctx.fillText('P', pPos[0] - 25, pPos[1] + 8);
+
+        // Label R at the top-front edge midpoint (1, 2, 2)
+        const rPos = project(1, 2, 2);
+        ctx.fillText('R', rPos[0] - 8, rPos[1] - 12);
+
+        // Label Q near the special line
+        const qLineMid = project(1.75, 0.75, 2);
+        ctx.fillText('Q', qLineMid[0] + 15, qLineMid[1] + 5);
+
+        // Caption
+        ctx.font = '24px "SimSun", "Songti SC", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('电图 4.22.1', canvas.width / 2, 480);
+    }
+
+    // Execute the drawing
+    draw();
+
+</script>
+</body>
+</html>

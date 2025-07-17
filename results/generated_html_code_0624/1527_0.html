@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pulley System Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="pulley-canvas" width="450" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('pulley-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Drawing Configuration ---
+        const CANVAS_W = canvas.width;
+        const CANVAS_H = canvas.height;
+        const Y_CEIL = 80;
+        const Y_GROUND = 560;
+        const X_PULLEY_BLOCK = 150;
+        const R_PULLEY = 20;
+        const V_SPACE_PULLEYS = 60; // Vertical space between pulleys in a block
+        const X_PERSON = 380;
+        const X_PULLEY_RIGHT = 320;
+
+        // --- Helper Function for Hatching ---
+        function drawHatch(x, y, width, isUp) {
+            ctx.beginPath();
+            ctx.lineWidth = 1;
+            const step = 15;
+            for (let i = 0; i < width; i += step) {
+                ctx.moveTo(x + i, y);
+                if (isUp) {
+                    ctx.lineTo(x + i - 7, y - 7);
+                } else {
+                    ctx.lineTo(x + i + 7, y + 7);
+                }
+            }
+            ctx.stroke();
+        }
+
+        // --- Draw Ground and Ceiling ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, Y_CEIL);
+        ctx.lineTo(CANVAS_W, Y_CEIL);
+        ctx.stroke();
+        drawHatch(0, Y_CEIL, CANVAS_W, true);
+
+        ctx.beginPath();
+        ctx.moveTo(0, Y_GROUND);
+        ctx.lineTo(CANVAS_W, Y_GROUND);
+        ctx.stroke();
+        drawHatch(0, Y_GROUND, CANVAS_W, false);
+
+        // --- Draw Person Silhouette ---
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        const personHandsY = Y_GROUND - 280;
+        ctx.moveTo(X_PERSON - 12, Y_GROUND); // Left foot
+        ctx.lineTo(X_PERSON + 12, Y_GROUND); // Right foot
+        ctx.lineTo(X_PERSON + 10, Y_GROUND - 150); // Right side body
+        ctx.bezierCurveTo(X_PERSON + 30, Y_GROUND - 180, X_PERSON + 10, Y_GROUND - 230, X_PERSON + 5, personHandsY); // Right arm
+        ctx.lineTo(X_PERSON - 5, personHandsY); // Hands
+        ctx.bezierCurveTo(X_PERSON - 30, Y_GROUND - 230, X_PERSON - 25, Y_GROUND - 180, X_PERSON - 10, Y_GROUND - 150); // Left arm
+        ctx.lineTo(X_PERSON - 12, Y_GROUND - 140); // Left side body
+        ctx.arc(X_PERSON, Y_GROUND - 160, 12, 0, Math.PI * 2); // Head
+        ctx.closePath();
+        ctx.fill();
+
+        // --- Draw Cargo Box ---
+        const box_w = 110;
+        const box_h = 100;
+        const box_x = 80;
+        const box_y = Y_GROUND - box_h;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.rect(box_x, box_y, box_w, box_h);
+        const d3 = 20; // perspective depth
+        ctx.moveTo(box_x, box_y);
+        ctx.lineTo(box_x - d3, box_y - d3);
+        ctx.lineTo(box_x - d3 + box_w, box_y - d3);
+        ctx.lineTo(box_x + box_w, box_y);
+        ctx.moveTo(box_x - d3 + box_w, box_y - d3);
+        ctx.lineTo(box_x - d3 + box_w, box_y - d3 + box_h);
+        ctx.stroke();
+
+        // Chinese Label for the box
+        ctx.font = '30px KaiTi';
+        ctx.fillStyle = 'black';
+        ctx.fillText('货', box_x - 60, box_y + 40);
+        ctx.fillText('箱', box_x - 60, box_y + 75);
+        ctx.beginPath();
+        ctx.moveTo(box_x - 30, box_y + 55);
+        ctx.lineTo(box_x, box_y + 15);
+        ctx.stroke();
+
+        // --- Draw Pulley System ---
+        const y_f_top = Y_CEIL + 50;
+        const y_f_bot = y_f_top + V_SPACE_PULLEYS;
+        const y_m_bot = box_y - 80;
+        const y_m_top = y_m_bot - V_SPACE_PULLEYS;
+        const y_f_right = Y_CEIL + 40;
+
+        // Helper to draw a single pulley
+        function drawPulley(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, R_PULLEY, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = 'black';
+            ctx.fill();
+        }
+
+        // Draw Fixed Pulley Block
+        ctx.fillStyle = '#D3D3D3';
+        ctx.fillRect(X_PULLEY_BLOCK - 30, Y_CEIL, 60, 20);
+        ctx.strokeRect(X_PULLEY_BLOCK - 30, Y_CEIL, 60, 20);
+        ctx.strokeRect(X_PULLEY_BLOCK - 7, Y_CEIL + 20, 14, (y_f_bot + R_PULLEY + 10) - (Y_CEIL + 20));
+        drawPulley(X_PULLEY_BLOCK, y_f_top);
+        drawPulley(X_PULLEY_BLOCK, y_f_bot);
+
+        // Draw Movable Pulley Block and Hook
+        const frame_top_m = y_m_top - R_PULLEY - 10;
+        const frame_bot_m = y_m_bot + R_PULLEY + 10;
+        ctx.strokeRect(X_PULLEY_BLOCK - 7, frame_top_m, 14, frame_bot_m - frame_top_m);
+        ctx.beginPath();
+        ctx.moveTo(X_PULLEY_BLOCK, frame_bot_m);
+        ctx.lineTo(X_PULLEY_BLOCK, frame_bot_m + 15);
+        ctx.arc(X_PULLEY_BLOCK, frame_bot_m + 25, 10, Math.PI, 0, true);
+        ctx.stroke();
+        // Line connecting hook to box
+        ctx.beginPath();
+        ctx.moveTo(X_PULLEY_BLOCK, frame_bot_m + 35);
+        ctx.lineTo(box_x + box_w / 2, box_y);
+        ctx.stroke();
+        drawPulley(X_PULLEY_BLOCK, y_m_top);
+        drawPulley(X_PULLEY_BLOCK, y_m_bot);
+        
+        // Draw Rightmost Fixed Pulley
+        ctx.fillStyle = '#D3D3D3';
+        ctx.fillRect(X_PULLEY_RIGHT - 25, Y_CEIL, 50, 20);
+        ctx.strokeRect(X_PULLEY_RIGHT - 25, Y_CEIL, 50, 20);
+        drawPulley(X_PULLEY_RIGHT, y_f_right);
+
+        // --- Draw the Rope ---
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        const x_slant = 8;
+
+        // Anchor point on the fixed frame
+        ctx.moveTo(X_PULLEY_BLOCK - 20, Y_CEIL + 20);
+
+        // Path 1: Down to bottom movable pulley
+        ctx.lineTo(X_PULLEY_BLOCK - x_slant, y_m_bot);
+        ctx.arc(X_PULLEY_BLOCK, y_m_bot, R_PULLEY, Math.PI - 0.2, 0.2, true);
+
+        // Path 2: Up to bottom fixed pulley
+        ctx.lineTo(X_PULLEY_BLOCK + x_slant, y_f_bot);
+        ctx.arc(X_PULLEY_BLOCK, y_f_bot, R_PULLEY, -0.2, Math.PI + 0.2, true);
+
+        // Path 3: Down to top movable pulley
+        ctx.lineTo(X_PULLEY_BLOCK - x_slant, y_m_top);
+        ctx.arc(X_PULLEY_BLOCK, y_m_top, R_PULLEY, Math.PI - 0.2, 0.2, true);
+
+        // Path 4: Up to top fixed pulley
+        ctx.lineTo(X_PULLEY_BLOCK + x_slant, y_f_top);
+        ctx.arc(X_PULLEY_BLOCK, y_f_top, R_PULLEY, -0.2, Math.PI*1.2);
+
+        // Path 5: Over to the rightmost pulley
+        ctx.lineTo(X_PULLEY_RIGHT, y_f_top - R_PULLEY - 10);
+        ctx.arc(X_PULLEY_RIGHT, y_f_right, R_PULLEY, -Math.PI / 2 - 0.2, 0.1, false);
+
+        // Path 6: Down to the person's hands
+        ctx.lineTo(X_PERSON, personHandsY);
+        ctx.stroke();
+
+    </script>
+</body>
+</html>

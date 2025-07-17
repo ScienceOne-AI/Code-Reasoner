@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Meter Stick Balance Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="850" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Constants and Scaling ---
+        const scale = 7; // pixels per cm
+        const xOffset = 75;
+        const barYTop = 150;
+        const barHeight = 30;
+        const barYBottom = barYTop + barHeight;
+        const groundY = 320;
+        const mainLineWidth = 2;
+
+        // Helper function to convert cm to x-coordinate
+        function getX(cm) {
+            return xOffset + cm * scale;
+        }
+
+        // Function to create a diagonal hatch pattern
+        function createHatchPattern() {
+            const patternCanvas = document.createElement('canvas');
+            const pctx = patternCanvas.getContext('2d');
+            const size = 8;
+            patternCanvas.width = size;
+            patternCanvas.height = size;
+
+            pctx.strokeStyle = 'black';
+            pctx.lineWidth = 0.5;
+            pctx.beginPath();
+            pctx.moveTo(0, size);
+            pctx.lineTo(size, 0);
+            pctx.moveTo(0, 0);
+            pctx.lineTo(size, size);
+            pctx.stroke();
+
+            return ctx.createPattern(patternCanvas, 'repeat');
+        }
+
+        // --- Drawing Functions ---
+
+        function drawGround() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = mainLineWidth;
+
+            // Main ground line
+            ctx.beginPath();
+            ctx.moveTo(20, groundY);
+            ctx.lineTo(canvas.width - 20, groundY);
+            ctx.stroke();
+
+            // Ground hatches
+            ctx.lineWidth = 1;
+            for (let x = 20; x < canvas.width - 20; x += 25) {
+                ctx.beginPath();
+                ctx.moveTo(x, groundY);
+                ctx.lineTo(x - 15, groundY + 15);
+                ctx.stroke();
+            }
+        }
+
+        function drawMeterStick() {
+            const x0 = getX(0);
+            const x100 = getX(100);
+
+            // Draw the filled rectangle with pattern
+            const hatchPattern = createHatchPattern();
+            ctx.fillStyle = hatchPattern;
+            ctx.fillRect(x0, barYTop, x100 - x0, barHeight);
+
+            // Draw the outline
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = mainLineWidth;
+            ctx.strokeRect(x0, barYTop, x100 - x0, barHeight);
+        }
+
+        function drawPivot() {
+            const pivotX = getX(42.5);
+            const pivotSupportTopY = barYBottom + 12;
+
+            // Draw the black vertical support post
+            ctx.fillStyle = 'black';
+            ctx.fillRect(pivotX - 10, pivotSupportTopY, 20, groundY - pivotSupportTopY);
+
+            // Draw the white triangle fulcrum
+            ctx.beginPath();
+            ctx.moveTo(pivotX, barYBottom); // Tip
+            ctx.lineTo(pivotX - 10, pivotSupportTopY); // Bottom-left
+            ctx.lineTo(pivotX + 10, pivotSupportTopY); // Bottom-right
+            ctx.closePath();
+
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = mainLineWidth;
+            ctx.stroke();
+        }
+
+        function drawHangingMass() {
+            const massX = getX(20);
+            const stringTopY = barYBottom;
+            const stringBottomY = 220;
+            const boxWidth = 80;
+            const boxHeight = 50;
+
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1.5;
+
+            // Draw the vertical line on the meter stick
+            ctx.beginPath();
+            ctx.moveTo(massX, barYTop);
+            ctx.lineTo(massX, barYBottom);
+            ctx.stroke();
+
+            // Draw the string
+            ctx.beginPath();
+            ctx.moveTo(massX, stringTopY);
+            ctx.lineTo(massX, stringBottomY);
+            ctx.stroke();
+
+            // Draw the box
+            const boxX = massX - boxWidth / 2;
+            const boxY = stringBottomY;
+            ctx.fillStyle = 'white';
+            ctx.lineWidth = mainLineWidth;
+            ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+            ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+            
+            // Draw the text inside the box
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('45 g', massX, boxY + boxHeight / 2);
+        }
+
+        function drawScale() {
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            const labelY = barYTop - 8;
+
+            const labels = [0, 20, 42.5, 60, 80, 100];
+            labels.forEach(val => {
+                ctx.fillText(val.toString(), getX(val), labelY);
+            });
+        }
+
+        // --- Main Drawing Execution ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawGround();
+            drawPivot();
+            drawMeterStick();
+            drawHangingMass();
+            drawScale();
+        }
+
+        draw();
+    </script>
+</body>
+</html>

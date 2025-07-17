@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Babinet Compensator</title>
+</head>
+<body>
+<canvas id="babinetCanvas" width="500" height="550"></canvas>
+<script>
+const canvas = document.getElementById('babinetCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style settings
+ctx.lineWidth = 1.5;
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.font = "16px serif";
+
+// --- Helper function to draw an arrow ---
+function drawArrow(x1, y1, x2, y2, headLength = 8) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+// --- Drawing parameters ---
+const origin = { x: 180, y: 250 };
+const L = 220;
+const d = 100;
+const x_pos = 50; // The vertical position of the light beam from the Y-axis
+const L_half = L / 2;
+
+// --- Map physics coordinates (y,x) to canvas coordinates (cx,cy) ---
+// In the diagram, Y is horizontal, X is vertical.
+// canvas x corresponds to diagram Y
+// canvas y corresponds to diagram X (with inversion due to canvas y-axis direction)
+function mapCoords(y, x) {
+    return { cx: origin.x + y, cy: origin.y - x };
+}
+
+// 1. Draw Coordinate Axes
+ctx.beginPath();
+// X-axis (vertical)
+drawArrow(origin.x, origin.y + L_half + 40, origin.x, origin.y - L_half - 40);
+ctx.fillText("X", origin.x - 20, origin.y - L_half - 40);
+
+// Y-axis (horizontal)
+drawArrow(origin.x - 40, origin.y, origin.x + d + 40, origin.y);
+ctx.fillText("Y", origin.x + d + 45, origin.y + 5);
+
+
+// 2. Draw the Compensator
+const topLeft = mapCoords(0, L_half);
+const topRight = mapCoords(d, L_half);
+const bottomLeft = mapCoords(0, -L_half);
+const bottomRight = mapCoords(d, -L_half);
+
+ctx.beginPath();
+ctx.moveTo(topLeft.cx, topLeft.cy);
+ctx.lineTo(topRight.cx, topRight.cy);
+ctx.lineTo(bottomRight.cx, bottomRight.cy);
+ctx.lineTo(bottomLeft.cx, bottomLeft.cy);
+ctx.closePath();
+ctx.stroke();
+
+// Draw the diagonal separator
+ctx.beginPath();
+ctx.moveTo(bottomLeft.cx, bottomLeft.cy);
+ctx.lineTo(topRight.cx, topRight.cy);
+ctx.stroke();
+
+// 3. Draw the Optic Axis (OA) indicators
+// Top wedge (OA parallel to X-axis)
+const oa_arrow_x = origin.x + d / 2 + 10;
+const oa_arrow_y_start = origin.y - L_half / 2 - 5;
+const oa_arrow_y_end = oa_arrow_y_start - 20;
+drawArrow(oa_arrow_x, oa_arrow_y_start, oa_arrow_x, oa_arrow_y_end, 7);
+ctx.font = "18px serif";
+ctx.fillText("OA", oa_arrow_x - 30, oa_arrow_y_start - 5);
+
+// Bottom wedge (OA perpendicular to paper, along Z)
+ctx.fillText("OA", origin.x + d / 3, origin.y + L_half / 2);
+
+
+// 4. Draw the light beam
+const beam_y = origin.y - x_pos;
+drawArrow(origin.x - 100, beam_y, origin.x - 10, beam_y);
+ctx.beginPath();
+ctx.moveTo(origin.x - 10, beam_y);
+ctx.lineTo(origin.x + d, beam_y);
+ctx.stroke();
+
+ctx.font = "16px serif";
+ctx.textAlign = "center";
+ctx.fillText("narrow beam", origin.x - 55, beam_y - 25);
+ctx.fillText("of laser light", origin.x - 55, beam_y - 8);
+ctx.textAlign = "start";
+
+
+// 5. Draw dimensions and labels
+
+// Dimension 'd'
+const d_y = topLeft.cy - 10;
+ctx.beginPath();
+ctx.moveTo(topLeft.cx, d_y);
+ctx.lineTo(topRight.cx, d_y);
+ctx.moveTo(topLeft.cx, d_y - 5);
+ctx.lineTo(topLeft.cx, d_y + 5);
+ctx.moveTo(topRight.cx, d_y - 5);
+ctx.lineTo(topRight.cx, d_y + 5);
+ctx.stroke();
+ctx.font = "italic 16px serif";
+ctx.fillText("d", origin.x + d/2 - 5, d_y - 8);
+
+
+// Dimension 'L/2'
+const l_x = topRight.cx + 10;
+// Top half
+ctx.beginPath();
+ctx.moveTo(l_x, topRight.cy);
+ctx.lineTo(l_x, origin.y);
+ctx.moveTo(l_x - 5, topRight.cy);
+ctx.lineTo(l_x + 5, topRight.cy);
+ctx.moveTo(l_x - 5, origin.y);
+ctx.lineTo(l_x + 5, origin.y);
+ctx.stroke();
+ctx.save();
+ctx.translate(l_x + 10, origin.y - L_half / 2);
+ctx.font = "italic 16px serif";
+ctx.fillText("L", 0, 0);
+ctx.font = "16px serif";
+ctx.fillText("—", -2, 4);
+ctx.fillText("2", 0, 16);
+ctx.restore();
+
+// Bottom half
+ctx.beginPath();
+ctx.moveTo(l_x, origin.y);
+ctx.lineTo(l_x, bottomRight.cy);
+ctx.moveTo(l_x - 5, origin.y);
+ctx.lineTo(l_x + 5, origin.y);
+ctx.moveTo(l_x - 5, bottomRight.cy);
+ctx.lineTo(l_x + 5, bottomRight.cy);
+ctx.stroke();
+ctx.save();
+ctx.translate(l_x + 10, origin.y + L_half / 2);
+ctx.font = "italic 16px serif";
+ctx.fillText("L", 0, 0);
+ctx.font = "16px serif";
+ctx.fillText("—", -2, 4);
+ctx.fillText("2", 0, 16);
+ctx.restore();
+
+
+// Dimension 'x'
+const x_dim_x = origin.x - 30;
+ctx.beginPath();
+ctx.moveTo(x_dim_x, origin.y);
+ctx.lineTo(x_dim_x, beam_y);
+ctx.moveTo(x_dim_x - 5, origin.y);
+ctx.lineTo(x_dim_x + 5, origin.y);
+ctx.moveTo(x_dim_x - 5, beam_y);
+ctx.lineTo(x_dim_x + 5, beam_y);
+ctx.stroke();
+ctx.font = "italic 16px serif";
+ctx.fillText("x", x_dim_x - 15, origin.y - x_pos/2 + 5);
+
+
+// Dimensions 'd1' and 'd2'
+// Calculate intersection point of beam with diagonal
+// Diagonal line equation: X = (L/d)*Y - L/2
+// Beam at X = x_pos. So, x_pos = (L/d)*Y_int - L/2
+// Y_int = (x_pos + L/2) * d / L
+const y_int = (x_pos + L_half) * d / L;
+const intersection_cx = origin.x + y_int;
+
+ctx.beginPath();
+ctx.moveTo(intersection_cx, beam_y - 5);
+ctx.lineTo(intersection_cx, beam_y + 5);
+ctx.stroke();
+ctx.font = "italic 16px serif";
+ctx.fillText("d", intersection_cx - 20, beam_y + 18);
+ctx.font = "12px serif";
+ctx.fillText("1", intersection_cx - 14, beam_y + 20);
+ctx.font = "italic 16px serif";
+ctx.fillText("d", intersection_cx + 10, beam_y + 18);
+ctx.font = "12px serif";
+ctx.fillText("2", intersection_cx + 16, beam_y + 20);
+ctx.font = "16px serif";
+
+
+// 6. Add explanatory text at the bottom
+ctx.textAlign = "start";
+let text_y = origin.y + L_half + 80;
+
+// First line: ↑ OA = ...
+drawArrow(50, text_y-5, 50, text_y - 15, 6);
+ctx.fillText("OA= Optic axis in the plane of the paper and parallel to X-axis", 65, text_y);
+text_y += 25;
+
+// Second line: ● OA = ...
+ctx.beginPath();
+ctx.arc(50, text_y - 4, 3, 0, 2 * Math.PI);
+ctx.fill();
+ctx.fillText("OA= Optic axis perpendicular to the plane of the paper and parallel", 65, text_y);
+text_y += 20;
+ctx.fillText("to Z-axis", 65, text_y);
+text_y += 30;
+
+
+// Condition d << L
+ctx.font = "italic 16px serif";
+ctx.fillText("d << L.", 50, text_y);
+text_y += 40;
+
+// Figure label
+ctx.font = "16px serif";
+ctx.textAlign = "center";
+ctx.fillText("Fig. 2.76", canvas.width / 2, text_y);
+
+</script>
+</body>
+</html>

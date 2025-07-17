@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Magnetic Field of a Coaxial Cable</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="950" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General drawing parameters
+        const plotWidth = 400;
+        const plotHeight = 160;
+        const xPadding = 60;
+        const yPadding = 20;
+        const xSpacing = 75;
+        const ySpacing = 60;
+
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#000';
+        ctx.fillStyle = '#000';
+        ctx.font = 'italic 20px Times New Roman';
+
+        // --- Helper function to draw a single plot ---
+        function drawPlot(x_offset, y_offset, label, drawCurveFunc) {
+            ctx.save();
+            ctx.translate(x_offset, y_offset);
+
+            const xAxisStart = { x: xPadding, y: plotHeight - yPadding };
+            const yAxisStart = { x: xPadding, y: yPadding };
+            const origin = { x: xPadding, y: plotHeight - yPadding };
+            
+            // Draw axes
+            ctx.beginPath();
+            // Y-axis (B)
+            ctx.moveTo(yAxisStart.x, yAxisStart.y - 10);
+            ctx.lineTo(yAxisStart.x, origin.y);
+            // X-axis (r)
+            ctx.lineTo(plotWidth - xPadding, origin.y);
+            ctx.stroke();
+
+            // Draw arrowheads
+            ctx.beginPath();
+            ctx.moveTo(yAxisStart.x, yAxisStart.y - 15);
+            ctx.lineTo(yAxisStart.x - 5, yAxisStart.y - 5);
+            ctx.lineTo(yAxisStart.x + 5, yAxisStart.y - 5);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(plotWidth - xPadding + 10, origin.y);
+            ctx.lineTo(plotWidth - xPadding, origin.y - 5);
+            ctx.lineTo(plotWidth - xPadding, origin.y + 5);
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw axis labels
+            ctx.fillText('B', yAxisStart.x - 25, yAxisStart.y - 5);
+            ctx.fillText('r', plotWidth - xPadding + 15, origin.y + 8);
+            
+            // Draw main label (A, B, C, D)
+            ctx.font = '24px Times New Roman';
+            ctx.fillText(label, plotWidth / 2 - 10, plotHeight + 25);
+            ctx.font = 'italic 20px Times New Roman';
+
+
+            // Call the specific curve drawing function
+            drawCurveFunc(origin, plotWidth - 2 * xPadding, plotHeight - 2 * yPadding);
+
+            ctx.restore();
+        }
+
+        // --- Curve drawing functions ---
+
+        function drawCurveA(origin, w, h) {
+            const r1x = origin.x + 0.2 * w;
+            const r2x = origin.x + 0.5 * w;
+
+            // Draw R1, R2 labels
+            ctx.fillText('R', r1x - 12, origin.y + 25);
+            ctx.fillText('1', r1x, origin.y + 30);
+            ctx.fillText('R', r2x - 12, origin.y + 25);
+            ctx.fillText('2', r2x, origin.y + 30);
+
+            // Draw dashed lines
+            ctx.save();
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1;
+            const y1 = origin.y - 0.8 * h;
+            const y2 = origin.y - 0.55 * h;
+            ctx.beginPath();
+            ctx.moveTo(r1x, origin.y);
+            ctx.lineTo(r1x, y1);
+            ctx.moveTo(r2x, origin.y);
+            ctx.lineTo(r2x, y2);
+            ctx.stroke();
+            ctx.restore();
+            
+            // Draw the curve B ~ 1/r
+            ctx.beginPath();
+            ctx.moveTo(r1x, y1);
+            ctx.bezierCurveTo(r1x + 0.3*w, y1, r2x, y2 + 0.15*h, origin.x + w, y2 + 0.05*h);
+            ctx.stroke();
+        }
+
+        function drawCurveB(origin, w, h) {
+            const r1x = origin.x + 0.4 * w;
+            
+            // Draw R1 label
+            ctx.fillText('R', r1x - 12, origin.y + 25);
+            ctx.fillText('1', r1x, origin.y + 30);
+
+            // Draw peak and dashed line
+            const peak = { x: r1x, y: origin.y - 0.9 * h };
+            ctx.save();
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(peak.x, origin.y);
+            ctx.lineTo(peak.x, peak.y);
+            ctx.stroke();
+            ctx.restore();
+
+            // Draw the curve
+            ctx.beginPath();
+            // Linear increase B ~ r
+            ctx.moveTo(origin.x, origin.y);
+            ctx.lineTo(peak.x, peak.y);
+            // Decrease B ~ 1/r
+            const endPoint = {x: origin.x + w, y: origin.y - 0.35 * h};
+            ctx.quadraticCurveTo(peak.x + 0.3*w, peak.y, endPoint.x, endPoint.y);
+            ctx.stroke();
+        }
+
+        function drawCurveC(origin, w, h) {
+            const r1x = origin.x + 0.2 * w;
+            const r2x = origin.x + 0.6 * w;
+
+            // Draw R1, R2 labels
+            ctx.fillText('R', r1x - 12, origin.y + 25);
+            ctx.fillText('1', r1x, origin.y + 30);
+            ctx.fillText('R', r2x - 12, origin.y + 25);
+            ctx.fillText('2', r2x, origin.y + 30);
+
+            // Draw dashed lines
+            const y1 = origin.y - 0.8 * h;
+            const y2 = origin.y - 0.45 * h;
+            ctx.save();
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(r1x, origin.y);
+            ctx.lineTo(r1x, y1);
+            ctx.moveTo(r2x, origin.y);
+            ctx.lineTo(r2x, y2);
+            ctx.stroke();
+            ctx.restore();
+            
+            // Draw the curve B ~ 1/r, stopping at R2
+            ctx.beginPath();
+            ctx.moveTo(r1x, y1);
+            ctx.quadraticCurveTo(r1x + 0.2*w, y2 + 0.1*h, r2x, y2);
+            ctx.stroke();
+        }
+
+        function drawCurveD(origin, w, h) {
+            const r1x = origin.x + 0.25 * w;
+            const r2x = origin.x + 0.6 * w;
+            
+            // Draw R1, R2 labels
+            ctx.fillText('R', r1x - 12, origin.y + 25);
+            ctx.fillText('1', r1x, origin.y + 30);
+            ctx.fillText('R', r2x - 12, origin.y + 25);
+            ctx.fillText('2', r2x, origin.y + 30);
+
+            // Draw dashed lines
+            const y_const = origin.y - 0.75 * h;
+            ctx.save();
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(r1x, origin.y);
+            ctx.lineTo(r1x, y_const);
+            ctx.moveTo(r2x, origin.y);
+            ctx.lineTo(r2x, y_const);
+            ctx.stroke();
+            ctx.restore();
+
+            // Draw the curve
+            ctx.beginPath();
+            // B = constant part
+            ctx.moveTo(r1x, y_const);
+            ctx.lineTo(r2x, y_const);
+            // B ~ 1/r part
+            const endPoint = {x: origin.x + w, y: origin.y - 0.45 * h};
+            ctx.quadraticCurveTo(r2x + 0.2*w, y_const, endPoint.x, endPoint.y);
+            ctx.stroke();
+        }
+
+        // --- Draw all four plots ---
+        drawPlot(0, 0, 'A', drawCurveA);
+        drawPlot(plotWidth + xSpacing, 0, 'B', drawCurveB);
+        drawPlot(0, plotHeight + ySpacing, 'C', drawCurveC);
+        drawPlot(plotWidth + xSpacing, plotHeight + ySpacing, 'D', drawCurveD);
+
+    </script>
+</body>
+</html>

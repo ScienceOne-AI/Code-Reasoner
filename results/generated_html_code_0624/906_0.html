@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="physics-canvas" width="500" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('physics-canvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Parameters and Coordinates ---
+  // The geometry is derived from the problem description:
+  // - Circle radius is 'a'.
+  // - Triangle OAD has sides OA=OD=radius=a, and chord AD=a.
+  //   Thus, OAD is an equilateral triangle.
+  // - Trapezoid ABCD is formed by extending OA and OD such that BC is parallel to AD
+  //   and has length 2a. This implies triangle OBC is also equilateral with side 2a.
+  const cx = 250;
+  const cy = 150;
+  const a = 110; // 'a' in pixels, representing the radius and chord length
+  const h = a * Math.sqrt(3) / 2; // Height of equilateral triangle OAD
+
+  // Vertices coordinates
+  const O = { x: cx, y: cy };
+  const A = { x: cx - a / 2, y: cy + h };
+  const D = { x: cx + a / 2, y: cy + h };
+  const B = { x: cx - a, y: cy + 2 * h };
+  const C = { x: cx + a, y: cy + 2 * h };
+
+  // --- Drawing Functions ---
+  function drawX(x, y, size) {
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x - size, y - size);
+    ctx.lineTo(x + size, y + size);
+    ctx.moveTo(x + size, y - size);
+    ctx.lineTo(x - size, y + size);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // --- Drawing ---
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  
+  // 1. Magnetic Field 'x's
+  // A symmetric pattern is used to represent the uniform magnetic field.
+  const xSize = 5;
+  drawX(cx, cy, xSize); // Center
+  const rings = [
+      { r: a * 0.4, n: 6, offset: Math.PI / 6 },
+      { r: a * 0.8, n: 6, offset: 0 }
+  ];
+  rings.forEach(ring => {
+      for (let i = 0; i < ring.n; i++) {
+          const angle = (2 * Math.PI / ring.n) * i + ring.offset;
+          const x = cx + ring.r * Math.cos(angle);
+          const y = cy + ring.r * Math.sin(angle);
+          // Only draw if inside the circle (though they all should be by definition)
+          if (Math.hypot(x - cx, y - cy) < a - xSize) {
+            drawX(x, y, xSize);
+          }
+      }
+  });
+
+  // Re-draw a few more points to better match the density in the original image.
+  drawX(cx, cy + a * 0.75, xSize);
+  drawX(cx - a*0.3, cy + a*0.3, xSize);
+  drawX(cx + a*0.3, cy + a*0.3, xSize);
+
+
+  // 2. Circle
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(O.x, O.y, a, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  // 3. Trapezoid ABCD (solid lines)
+  ctx.beginPath();
+  ctx.moveTo(A.x, A.y);
+  ctx.lineTo(B.x, B.y);
+  ctx.lineTo(C.x, C.y);
+  ctx.lineTo(D.x, D.y);
+  ctx.closePath(); // Connects D back to A
+  ctx.stroke();
+  
+  // 4. Dashed lines OA and OD
+  ctx.save();
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.moveTo(O.x, O.y);
+  ctx.lineTo(A.x, A.y);
+  ctx.moveTo(O.x, O.y);
+  ctx.lineTo(D.x, D.y);
+  ctx.stroke();
+  ctx.restore();
+
+  // 5. Small arc below AD
+  ctx.beginPath();
+  ctx.moveTo(A.x, A.y);
+  const controlY_arc = A.y + 12;
+  ctx.quadraticCurveTo(cx, controlY_arc, D.x, D.y);
+  ctx.stroke();
+
+  // 6. Labels
+  ctx.font = 'italic 22px "Times New Roman"';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  // Vertices
+  ctx.fillText('O', O.x - 18, O.y + 3);
+  ctx.fillText('A', A.x - 15, A.y + 5);
+  ctx.fillText('D', D.x + 15, D.y + 5);
+  ctx.fillText('B', B.x - 15, B.y + 8);
+  ctx.fillText('C', C.x + 15, C.y + 8);
+  
+  // Lengths
+  // Place 'a' between the straight line AD and the arc below it.
+  ctx.fillText('a', cx, A.y + 7);
+  ctx.fillText('2a', cx, C.y + 20);
+
+  // 7. Caption
+  ctx.font = '24px "SimSun", "KaiTi", serif'; // Common Chinese fonts
+  ctx.fillText('习题 9-16 图', cx, canvas.height - 30);
+
+</script>
+</body>
+</html>

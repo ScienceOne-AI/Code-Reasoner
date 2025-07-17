@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spring-Mass System Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px serif';
+        
+        // --- Helper Functions ---
+
+        /**
+         * Draws a vertical spring as a sine wave.
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} x - The center x-coordinate of the spring.
+         * @param {number} y_top - The top y-coordinate.
+         * @param {number} y_bottom - The bottom y-coordinate.
+         * @param {number} coils - The number of coils.
+         * @param {number} width - The width of the spring coils.
+         */
+        function drawSpring(ctx, x, y_top, y_bottom, coils, width) {
+            const amplitude = width / 2;
+            const straightLen = 10;
+            const springBodyHeight = y_bottom - y_top - 2 * straightLen;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y_top);
+            let currentY = y_top + straightLen;
+            ctx.lineTo(x, currentY);
+
+            const numPoints = coils * 12; // points for smoothness
+            for (let i = 0; i <= numPoints; i++) {
+                const y_progress = i / numPoints;
+                const y = currentY + y_progress * springBodyHeight;
+                const angle = y_progress * coils * 2 * Math.PI;
+                const newX = x + amplitude * Math.sin(angle);
+                ctx.lineTo(newX, y);
+            }
+            currentY += springBodyHeight;
+            ctx.lineTo(x, currentY);
+            ctx.lineTo(x, y_bottom);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws an arrow from one point to another.
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} fromx - The starting x-coordinate.
+         * @param {number} fromy - The starting y-coordinate.
+         * @param {number} tox - The ending x-coordinate.
+         * @param {number} toy - The ending y-coordinate.
+         */
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 10;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+
+        // --- Main Drawing ---
+
+        // Define coordinates and dimensions
+        const centerX = 250;
+        const boardY = 250; // Y of the bottom of the equilibrium board
+        const boardHeight = 12;
+        const boardLength = 300;
+        const groundY = 400;
+
+        // 1. Draw Ground
+        ctx.beginPath();
+        ctx.moveTo(50, groundY);
+        ctx.lineTo(450, groundY);
+        ctx.stroke();
+        // Hash marks for ground
+        for (let i = 60; i < 450; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(i, groundY);
+            ctx.lineTo(i - 10, groundY + 10);
+            ctx.stroke();
+        }
+        
+        // 2. Draw Springs
+        const springCoils = 7;
+        const springWidth = 25;
+        const boardTopY = boardY - boardHeight;
+        // Left spring (k1)
+        drawSpring(ctx, centerX - boardLength / 2, boardY, groundY, springCoils, springWidth);
+        ctx.fillText('k₁', centerX - boardLength / 2 - 35, (boardY + groundY) / 2);
+        // Right spring (k2)
+        drawSpring(ctx, centerX + boardLength / 2, boardY, groundY, springCoils, springWidth);
+        ctx.fillText('k₂', centerX + boardLength / 2 + 15, (boardY + groundY) / 2);
+
+        // 3. Draw Equilibrium Board
+        ctx.strokeRect(centerX - boardLength / 2, boardTopY, boardLength, boardHeight);
+        ctx.fillText('m, l', centerX + boardLength / 2 - 60, boardTopY - 15);
+
+        // 4. Draw Coordinate System
+        ctx.fillText('O', centerX - 20, boardY + 5);
+        drawArrow(ctx, centerX, boardY + 20, centerX, 80);
+        ctx.fillText('x', centerX - 20, 90);
+
+        // 5. Draw Displaced State (Dashed)
+        const dispX = 40;
+        const dispTheta = -0.12; // Negative for counter-clockwise rotation
+
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        ctx.lineWidth = 1.5;
+
+        // Draw displaced board
+        const newCenterY = boardY - dispX;
+        ctx.translate(centerX, newCenterY);
+        ctx.rotate(dispTheta);
+        ctx.strokeRect(-boardLength / 2, -boardHeight, boardLength, boardHeight);
+        
+        // Draw angle annotation (inside the transformed context)
+        const angleVtxX = -boardLength / 2;
+        const angleVtxY = -boardHeight;
+        // Horizontal helper line
+        ctx.beginPath();
+        ctx.moveTo(angleVtxX, angleVtxY);
+        ctx.lineTo(angleVtxX - 80, angleVtxY);
+        ctx.stroke();
+        // Angle arc
+        ctx.beginPath();
+        ctx.arc(angleVtxX, angleVtxY, 60, Math.PI, Math.PI - dispTheta, false);
+        ctx.stroke();
+        // Right-angle symbol inside arc
+        const rasDist = 15;
+        ctx.beginPath();
+        ctx.moveTo(angleVtxX + rasDist, angleVtxY);
+        ctx.lineTo(angleVtxX + rasDist, angleVtxY - rasDist);
+        ctx.lineTo(angleVtxX, angleVtxY - rasDist);
+        ctx.stroke();
+
+        ctx.restore();
+
+        // 6. Draw other labels and annotations
+        // Displacement 'x'
+        ctx.save();
+        ctx.setLineDash([5, 3]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(centerX, boardY);
+        ctx.lineTo(centerX, newCenterY);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillText('x', centerX + 10, boardY - dispX / 2);
+
+        // Angle 'θ' label
+        ctx.fillText('θ', centerX - boardLength / 2 - 40, newCenterY - 30);
+        
+        // 7. Draw Caption
+        ctx.textAlign = 'center';
+        ctx.fillText('力图 7.25.1', centerX, groundY + 30);
+
+    </script>
+</body>
+</html>

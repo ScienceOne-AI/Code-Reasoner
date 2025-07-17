@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>I-V Graph for a Filament Lamp</title>
+</head>
+<body>
+<canvas id="myCanvas" width="600" height="550"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Graph layout parameters to ensure square grid cells
+    const marginLeft = 80;
+    const marginRight = 50;
+    const marginTop = 60;
+    const marginBottom = 80;
+    const graphWidth = 450; // 45 small divisions
+    const graphHeight = 400; // 40 small divisions
+    canvas.width = graphWidth + marginLeft + marginRight;
+    canvas.height = graphHeight + marginTop + marginBottom;
+
+    const originX = marginLeft;
+    const originY = canvas.height - marginBottom;
+
+    // Data range
+    const vMax = 9.0;
+    const iMax = 0.80;
+
+    // Scaling functions to map data coordinates to canvas coordinates
+    function mapX(v) {
+        return originX + (v / vMax) * graphWidth;
+    }
+
+    function mapY(i) {
+        return originY - (i / iMax) * graphHeight;
+    }
+
+    // --- 1. Draw Grid ---
+    ctx.strokeStyle = '#d3d3d3'; // Light gray for grid lines
+    ctx.lineWidth = 1;
+
+    // Vertical grid lines (every 0.2 V)
+    const vStep = 0.2;
+    for (let v = vStep; v <= vMax; v += vStep) {
+        v = Math.round(v * 10) / 10; // Avoid floating point inaccuracies
+        ctx.beginPath();
+        ctx.moveTo(mapX(v), originY);
+        ctx.lineTo(mapX(v), mapY(iMax));
+        ctx.stroke();
+    }
+
+    // Horizontal grid lines (every 0.02 A)
+    const iStep = 0.02;
+    for (let i = iStep; i <= iMax + 0.001; i += iStep) { // Add small tolerance for loop end
+        i = Math.round(i * 100) / 100;
+        ctx.beginPath();
+        ctx.moveTo(mapX(0), mapY(i));
+        ctx.lineTo(mapX(vMax), mapY(i));
+        ctx.stroke();
+    }
+
+    // --- 2. Draw Axes ---
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    // X-axis
+    ctx.beginPath();
+    ctx.moveTo(originX, originY);
+    ctx.lineTo(mapX(vMax), originY);
+    ctx.stroke();
+
+    // Y-axis
+    ctx.beginPath();
+    ctx.moveTo(originX, originY);
+    ctx.lineTo(originX, mapY(iMax));
+    ctx.stroke();
+
+    // --- 3. Draw Labels and Ticks ---
+    ctx.fillStyle = 'black';
+    ctx.font = '16px sans-serif';
+
+    // X-axis labels and ticks
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let v = 0; v <= 8.0; v += 2.0) {
+        ctx.fillText(v.toFixed(v === 0 ? 0 : 1), mapX(v), originY + 8);
+        ctx.beginPath();
+        ctx.moveTo(mapX(v), originY);
+        ctx.lineTo(mapX(v), originY + 5);
+        ctx.stroke();
+    }
+    ctx.fillText('p.d. / V', mapX(vMax / 2), originY + 35);
+
+
+    // Y-axis labels and ticks
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let i = 0.20; i <= iMax; i += 0.20) {
+        ctx.fillText(i.toFixed(2), originX - 10, mapY(i));
+        ctx.beginPath();
+        ctx.moveTo(originX, mapY(i));
+        ctx.lineTo(originX - 5, mapY(i));
+        ctx.stroke();
+    }
+    // Origin label '0'
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText('0', originX - 5, originY + 5);
+
+    // Y-axis title
+    ctx.save();
+    ctx.translate(marginLeft - 55, mapY(iMax / 2));
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('current / A', 0, 0);
+    ctx.restore();
+
+    // --- 4. Draw the Curve ---
+    // Points sampled from the original graph
+    const points = [
+        { v: 0,    i: 0 },
+        { v: 0.5,  i: 0.17 },
+        { v: 1.0,  i: 0.28 },
+        { v: 1.5,  i: 0.37 },
+        { v: 2.0,  i: 0.44 },
+        { v: 2.5,  i: 0.50 },
+        { v: 3.0,  i: 0.54 },
+        { v: 3.5,  i: 0.58 },
+        { v: 4.0,  i: 0.62 },
+        { v: 4.5,  i: 0.65 },
+        { v: 5.0,  i: 0.68 },
+        { v: 5.5,  i: 0.70 },
+        { v: 6.0,  i: 0.72 },
+        { v: 6.5,  i: 0.73 },
+        { v: 7.0,  i: 0.74 },
+        { v: 7.5,  i: 0.75 },
+        { v: 8.0,  i: 0.76 },
+        { v: 8.5,  i: 0.775 },
+        { v: 9.0,  i: 0.79 }
+    ];
+
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(mapX(points[0].v), mapY(points[0].i));
+
+    for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(mapX(points[i].v), mapY(points[i].i));
+    }
+    ctx.stroke();
+
+    // --- 5. Draw Captions ---
+    ctx.font = '16px sans-serif';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Fig. 9.1 shows a graph of current against potential difference (p.d.) for a filament lamp.', marginLeft - 20, 15);
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Fig. 9.1', canvas.width / 2, canvas.height - 15);
+
+</script>
+</body>
+</html>

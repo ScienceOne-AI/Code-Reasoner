@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram Fig. 3.30</title>
+</head>
+<body>
+
+<canvas id="circuitCanvas" width="700" height="450" style="border:1px solid #000;"></canvas>
+
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style setup ---
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#000000';
+    ctx.fillStyle = '#000000';
+    // Use a font that mimics the handwritten style
+    ctx.font = 'bold 20px "Comic Sans MS", cursive, sans-serif';
+    ctx.textBaseline = 'middle';
+
+    // --- Helper drawing functions ---
+
+    /**
+     * Draws a text label.
+     * @param {string} text - The text to draw.
+     * @param {number} x - The x-coordinate.
+     * @param {number} y - The y-coordinate.
+     * @param {string} [align='center'] - The text alignment.
+     */
+    function drawText(text, x, y, align = 'center') {
+        ctx.textAlign = align;
+        ctx.fillText(text, x, y);
+    }
+
+    /**
+     * Draws a resistor symbol.
+     * @param {number} x - The center x-coordinate.
+     * @param {number} y - The center y-coordinate.
+     * @param {number} w - The width of the zig-zag.
+     * @param {number} h - The height of the zig-zag.
+     */
+    function drawResistor(x, y, w, h) {
+        const yTop = y - h / 2;
+        const yBot = y + h / 2;
+        ctx.moveTo(x, yTop);
+        ctx.lineTo(x - w / 2, yTop + h / 8);
+        ctx.lineTo(x + w / 2, yTop + 3 * h / 8);
+        ctx.lineTo(x - w / 2, yTop + 5 * h / 8);
+        ctx.lineTo(x + w / 2, yTop + 7 * h / 8);
+        ctx.lineTo(x, yBot);
+    }
+    
+    /**
+     * Draws an inductor symbol (as a coil).
+     * @param {number} x - The center x-coordinate of the coil's spine.
+     * @param {number} y - The center y-coordinate.
+     * @param {number} w - The width (amplitude) of the loops.
+     * @param {number} h - The total height of the coil.
+     */
+    function drawInductor(x, y, w, h) {
+        const numLoops = 4;
+        const yTop = y - h / 2;
+        const loopHeight = h / numLoops;
+        ctx.moveTo(x, yTop);
+        for (let i = 0; i < numLoops; i++) {
+            ctx.quadraticCurveTo(x + w, yTop + (i + 0.5) * loopHeight, x, yTop + (i + 1) * loopHeight);
+        }
+    }
+
+    /**
+     * Draws a DC voltage source symbol.
+     * @param {number} x - The x-coordinate.
+     * @param {number} y - The y-coordinate of the top terminal.
+     * @param {number} h - The total height of the symbol.
+     */
+    function drawVoltageSource(x, y, h) {
+        const yBot = y + h;
+        const gap = h * 0.2;
+        const plate_y1 = y + gap;
+        const plate_y2 = y + h - gap;
+        const plate_w = 20;
+
+        ctx.moveTo(x, y); ctx.lineTo(x, plate_y1); // Top wire
+        ctx.moveTo(x - plate_w, plate_y1); ctx.lineTo(x + plate_w, plate_y1); // Long plate (+)
+        ctx.moveTo(x - plate_w / 2, plate_y2); ctx.lineTo(x + plate_w / 2, plate_y2); // Short plate (-)
+        ctx.moveTo(x, plate_y2); ctx.lineTo(x, yBot); // Bottom wire
+
+        // Polarity signs
+        drawText('+', x + plate_w + 8, plate_y1);
+        drawText('-', x + plate_w + 8, plate_y2);
+    }
+
+    /**
+     * Draws a fraction.
+     * @param {string} num - The numerator.
+     * @param {string} den - The denominator.
+     * @param {number} x - The center x-coordinate.
+     * @param {number} y - The center y-coordinate (of the fraction bar).
+     */
+    function drawFraction(num, den, x, y) {
+        const originalAlign = ctx.textAlign;
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 18px "Comic Sans MS", cursive, sans-serif'; // smaller font for fraction
+        ctx.fillText(num, x, y - 8);
+        ctx.beginPath();
+        ctx.moveTo(x - 8, y);
+        ctx.lineTo(x + 8, y);
+        ctx.stroke();
+        ctx.fillText(den, x, y + 9);
+        ctx.font = 'bold 20px "Comic Sans MS", cursive, sans-serif'; // reset font
+        ctx.textAlign = originalAlign;
+    }
+
+
+    // --- Main Drawing ---
+
+    ctx.beginPath();
+
+    // --- Left side: Voltage Source and R1 ---
+    const x_left = 100;
+    const y_top_rail = 100;
+    const y_bottom_rail = 380;
+    
+    // Voltage Source
+    drawVoltageSource(x_left, 120, 80);
+    ctx.moveTo(x_left, y_top_rail);
+    ctx.lineTo(x_left, 120);
+
+    // Resistor R1
+    ctx.moveTo(x_left, 200); // Wire from source to R1
+    ctx.lineTo(x_left, 240);
+    drawResistor(x_left, 280, 30, 80); // R1 centered at (100, 280)
+    ctx.moveTo(x_left, 320);
+    ctx.lineTo(x_left, y_bottom_rail); // Wire from R1 to bottom rail
+
+    // --- Switch ---
+    const switch_pivot = { x: 200, y: 100 };
+    const contact_A = { x: 260, y: 130 };
+    const contact_B = { x: 290, y: 90 };
+    const contact_C = { x: 340, y: 130 };
+    
+    ctx.moveTo(x_left, y_top_rail);
+    ctx.lineTo(switch_pivot.x, switch_pivot.y); // Wire to switch
+    ctx.moveTo(switch_pivot.x, switch_pivot.y);
+    ctx.lineTo(contact_A.x, contact_A.y); // Switch arm to A
+    
+    // Switch contacts (small circles)
+    ctx.moveTo(contact_A.x + 3, contact_A.y); ctx.arc(contact_A.x, contact_A.y, 3, 0, 2 * Math.PI);
+    ctx.moveTo(contact_B.x + 3, contact_B.y); ctx.arc(contact_B.x, contact_B.y, 3, 0, 2 * Math.PI);
+    ctx.moveTo(contact_C.x + 3, contact_C.y); ctx.arc(contact_C.x, contact_C.y, 3, 0, 2 * Math.PI);
+    
+    // --- Branch A (connected) ---
+    const x_R2 = 290;
+    const x_L1R3 = 380;
+    ctx.moveTo(contact_A.x, contact_A.y);
+    ctx.lineTo(x_R2, contact_A.y); // Wire to R2
+    ctx.moveTo(x_R2, contact_A.y);
+    ctx.lineTo(x_L1R3, contact_A.y); // Wire to L1/R3
+    
+    // R2 branch
+    ctx.moveTo(x_R2, contact_A.y);
+    ctx.lineTo(x_R2, 180);
+    drawResistor(x_R2, 255, 30, 150);
+    ctx.moveTo(x_R2, 330);
+    ctx.lineTo(x_R2, y_bottom_rail);
+
+    // L1+R3 branch
+    ctx.moveTo(x_L1R3, contact_A.y);
+    ctx.lineTo(x_L1R3, 150);
+    drawInductor(x_L1R3, 190, 30, 80);
+    ctx.moveTo(x_L1R3, 230);
+    ctx.lineTo(x_L1R3, 260);
+    drawResistor(x_L1R3, 305, 30, 90);
+    ctx.moveTo(x_L1R3, 350);
+    ctx.lineTo(x_L1R3, y_bottom_rail);
+
+    // --- Branch C (unconnected) ---
+    const x_R4 = 470;
+    const x_L2R5 = 560;
+    ctx.moveTo(contact_C.x, contact_C.y);
+    ctx.lineTo(x_R4, contact_C.y); // Wire to R4
+    ctx.moveTo(x_R4, contact_C.y);
+    ctx.lineTo(x_L2R5, contact_C.y); // Wire to L2/R5
+    
+    // R4 branch
+    ctx.moveTo(x_R4, contact_C.y);
+    ctx.lineTo(x_R4, 180);
+    drawResistor(x_R4, 255, 30, 150);
+    ctx.moveTo(x_R4, 330);
+    ctx.lineTo(x_R4, y_bottom_rail);
+
+    // L2+R5 branch
+    ctx.moveTo(x_L2R5, contact_C.y);
+    ctx.lineTo(x_L2R5, 150);
+    drawInductor(x_L2R5, 190, 30, 80);
+    ctx.moveTo(x_L2R5, 230);
+    ctx.lineTo(x_L2R5, 260);
+    drawResistor(x_L2R5, 305, 30, 90);
+    ctx.moveTo(x_L2R5, 350);
+    ctx.lineTo(x_L2R5, y_bottom_rail);
+
+    // --- Bottom Rail ---
+    ctx.moveTo(x_left, y_bottom_rail);
+    ctx.lineTo(x_L2R5, y_bottom_rail);
+    
+    ctx.stroke();
+
+    // --- Text Labels ---
+    // Source
+    drawText('2V', x_left - 35, 170, 'center');
+    // R1
+    drawText('R1=3\u03A9', x_left - 35, 280, 'center');
+    // Switch labels
+    drawText('A', 240, 110);
+    drawText('B', 290, 70);
+    drawText('C', 340, 110);
+    // Branch A Labels
+    drawText('R2=2\u03A9', x_R2 - 45, 255, 'center');
+    drawText('L1=5H', x_L1R3 + 45, 170, 'center');
+    drawText('R3=', x_L1R3 + 40, 305, 'center');
+    drawFraction('1', '2', x_L1R3 + 70, 305);
+    drawText('\u03A9', x_L1R3 + 90, 305, 'center');
+    // Branch C Labels
+    drawText('R4=2\u03A9', x_R4 - 45, 255, 'center');
+    drawText('L2=5H', x_L2R5 + 45, 170, 'center');
+    drawText('R5=', x_L2R5 + 40, 305, 'center');
+    drawFraction('1', '2', x_L2R5 + 70, 305);
+    drawText('\u03A9', x_L2R5 + 90, 305, 'center');
+
+    // Figure Caption
+    drawText('Fig. 3.30', 350, 420);
+
+</script>
+
+</body>
+</html>

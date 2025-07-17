@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Helper function to draw a circle with optional text for instruments
+        function drawInstrument(x, y, radius, text) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            if (text) {
+                ctx.save();
+                ctx.font = 'bold 24px Arial';
+                ctx.fillText(text, x, y);
+                ctx.restore();
+            }
+        }
+
+        // Helper function for drawing lines
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+        
+        // Helper function for a filled circle (connection dot)
+        function drawDot(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+
+        // --- Define Coordinates ---
+        const yRail1 = 60, yRail2 = 70;
+        const xRailStart = 20, xRailEnd = 580;
+        
+        const yTopWire = 220;
+        const yBottomWire = 380;
+        const xLeftWire = 80;
+        const xRightWire = 520;
+
+        const mWidth = 80, mHeight = 30;
+        const pX = 280; // X-position of slider and object M
+        const mY = yRail2;
+        const mX = pX - mWidth / 2;
+        
+        const rheostatX1 = 120, rheostatX2 = 480;
+        const rheostatHeight = 20;
+        const rheostatY = yTopWire - rheostatHeight / 2;
+
+        const pJunctionY = 180; // Y-position of the junction point P
+        
+        const vX = 150, vY = 180, vRadius = 25;
+        
+        const batteryX = 150, batteryY = yBottomWire;
+        const switchX = 300, switchY = yBottomWire;
+        const ammeterX = 450, ammeterY = yBottomWire, ammeterRadius = 25;
+
+
+        // --- Draw Components ---
+
+        // 1. Rail and Object M
+        ctx.lineWidth = 1;
+        drawLine(xRailStart, yRail1, xRailEnd, yRail1);
+        drawLine(xRailStart, yRail2, xRailEnd, yRail2);
+        ctx.lineWidth = 2;
+        
+        ctx.save();
+        ctx.font = '22px KaiTi, "SimSun", "STSong", serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('导轨', xRailEnd - 40, yRail1 - 25);
+        ctx.restore();
+
+        ctx.strokeRect(mX, mY, mWidth, mHeight);
+        ctx.fillText('M', pX, mY + mHeight / 2);
+
+        // 2. Mechanical Link from M to P
+        drawLine(pX, mY + mHeight, pX, pJunctionY);
+
+        // 3. Main Circuit Wires
+        // Vertical wires
+        drawLine(xLeftWire, yTopWire, xLeftWire, yBottomWire);
+        drawLine(xRightWire, yTopWire, xRightWire, yBottomWire);
+        // Top wire segments
+        drawLine(xLeftWire, yTopWire, rheostatX1, yTopWire);
+        drawLine(rheostatX2, yTopWire, xRightWire, yTopWire);
+        
+        // 4. Rheostat R
+        ctx.strokeRect(rheostatX1, rheostatY, rheostatX2 - rheostatX1, rheostatHeight);
+        ctx.fillText('R', (rheostatX1 + rheostatX2) / 2, yTopWire + 35);
+        
+        // 5. Slider P
+        drawDot(pX, pJunctionY);
+        ctx.fillText('P', pX + 20, pJunctionY);
+        // Arrow for slider
+        drawLine(pX, pJunctionY, pX, yTopWire);
+        ctx.beginPath();
+        ctx.moveTo(pX, yTopWire);
+        ctx.lineTo(pX - 6, yTopWire - 12);
+        ctx.moveTo(pX, yTopWire);
+        ctx.lineTo(pX + 6, yTopWire - 12);
+        ctx.stroke();
+
+        // 6. Voltmeter V and connections
+        drawInstrument(vX, vY, vRadius, 'V');
+        // Left connection to V
+        drawDot(xLeftWire, yTopWire);
+        drawLine(xLeftWire, yTopWire, xLeftWire, vY);
+        drawLine(xLeftWire, vY, vX - vRadius, vY);
+        // Right connection to V from P
+        drawLine(pX, pJunctionY, vX + vRadius, pJunctionY);
+
+        // 7. Bottom Components
+        // Battery
+        drawLine(batteryX, batteryY - 15, batteryX, batteryY + 15); // Positive plate
+        ctx.save();
+        ctx.lineWidth = 4;
+        drawLine(batteryX + 15, batteryY - 8, batteryX + 15, batteryY + 8); // Negative plate
+        ctx.restore();
+        
+        // Switch S
+        drawDot(switchX - 10, switchY);
+        drawDot(switchX + 15, switchY);
+        drawLine(switchX - 10, switchY, switchX + 8, switchY - 12);
+        ctx.fillText('S', switchX, switchY + 28);
+        
+        // Ammeter A
+        drawInstrument(ammeterX, ammeterY, ammeterRadius, 'A');
+
+        // 8. Bottom Wires
+        drawLine(xLeftWire, yBottomWire, batteryX, yBottomWire);
+        drawLine(batteryX + 15, batteryY, switchX - 13, yBottomWire);
+        drawLine(switchX + 18, switchY, ammeterX - ammeterRadius, yBottomWire);
+        drawLine(ammeterX + ammeterRadius, ammeterY, xRightWire, yBottomWire);
+
+    </script>
+</body>
+</html>

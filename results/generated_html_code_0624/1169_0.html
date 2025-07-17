@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bandpass Filter Schematic</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="1000" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws an arrow on the canvas context.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} fromX - Starting x-coordinate.
+         * @param {number} fromY - Starting y-coordinate.
+         * @param {number} toX - Ending x-coordinate.
+         * @param {number} toY - Ending y-coordinate.
+         * @param {number} headLength - Length of the arrowhead lines.
+         */
+        function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a Gaussian (bell) curve.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} cx - Center x-coordinate of the peak.
+         * @param {number} y_base - The y-coordinate of the baseline.
+         * @param {number} amplitude - The height of the peak from the baseline.
+         * @param {number} std_dev - The standard deviation (controls the width).
+         * @param {boolean} isDashed - Whether the line should be dashed.
+         */
+        function drawGaussian(ctx, cx, y_base, amplitude, std_dev, isDashed) {
+            ctx.beginPath();
+            if (isDashed) {
+                ctx.setLineDash([6, 4]);
+            }
+
+            const range = 3 * std_dev;
+            const startX = cx - range;
+            const endX = cx + range;
+            const steps = 100;
+            
+            for (let i = 0; i <= steps; i++) {
+                const x = startX + i * (endX - startX) / steps;
+                const exponent = -0.5 * Math.pow((x - cx) / std_dev, 2);
+                const y = y_base - amplitude * Math.exp(exponent);
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset dash style
+        }
+
+        // --- Main Drawing Logic ---
+        
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '22px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // 1. Draw light beams
+        drawArrow(ctx, 20, 360, 980, 360);
+        drawArrow(ctx, 20, 390, 980, 390);
+
+        // 2. Draw Bandpass Filter (BPF)
+        ctx.fillStyle = '#cccccc';
+        ctx.fillRect(495, 340, 10, 70);
+        ctx.strokeStyle = '#333333';
+        ctx.strokeRect(495, 340, 10, 70);
+        ctx.fillStyle = 'black';
+        ctx.fillText('BPF', 500, 320);
+
+
+        // --- Plot 1 (Left side) ---
+        const p1_originX = 100, p1_originY = 280;
+        const p1_axisW = 350, p1_axisH = 160;
+
+        // Axes
+        drawArrow(ctx, p1_originX, p1_originY, p1_originX + p1_axisW, p1_originY); // X-axis
+        drawArrow(ctx, p1_originX, p1_originY, p1_originX, p1_originY - p1_axisH); // Y-axis
+
+        // Axis Labels
+        ctx.fillText('G(\u03BB)', p1_originX + 25, p1_originY - p1_axisH + 10);
+        ctx.fillText('\u03BB', p1_originX + p1_axisW, p1_originY + 20);
+
+        // Spectrum Curve 1
+        const p1_cx = p1_originX + 175;
+        drawGaussian(ctx, p1_cx, p1_originY, 120, 60, true);
+
+        // Wavelength markers
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(p1_cx, p1_originY - 120);
+        ctx.lineTo(p1_cx, p1_originY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        ctx.font = '20px Arial';
+        ctx.fillText('\u03BB', p1_cx-5, p1_originY + 20);
+        ctx.font = '14px Arial';
+        ctx.fillText('01', p1_cx + 8, p1_originY + 25);
+        ctx.font = '22px Arial';
+
+        // Bandwidth marker 1
+        drawArrow(ctx, p1_cx + 80, p1_originY - 70, p1_cx - 80, p1_originY - 70);
+        ctx.font = '22px Arial';
+        ctx.fillText('\u0394\u03BB', p1_cx + 110, p1_originY - 80);
+        ctx.font = '16px Arial';
+        ctx.fillText('1', p1_cx + 130, p1_originY - 75);
+        ctx.font = '22px Arial';
+
+
+        // --- Plot 2 (Right side) ---
+        const p2_originX = 550, p2_originY = 280;
+        const p2_axisW = 350, p2_axisH = 160;
+
+        // Axes
+        drawArrow(ctx, p2_originX, p2_originY, p2_originX + p2_axisW, p2_originY); // X-axis
+        drawArrow(ctx, p2_originX, p2_originY, p2_originX, p2_originY - p2_axisH); // Y-axis
+
+        // Axis Labels
+        ctx.fillText('G(\u03BB)', p2_originX + 25, p2_originY - p2_axisH + 10);
+        ctx.fillText('\u03BB', p2_originX + p2_axisW, p2_originY + 20);
+
+        // Spectrum Curves (original dashed, filtered solid)
+        const p2_cx1 = p2_originX + 125;
+        const p2_cx2 = p2_originX + 200;
+        drawGaussian(ctx, p2_cx1, p2_originY, 120, 60, true);
+        drawGaussian(ctx, p2_cx2, p2_originY, 80, 20, false);
+
+        // Wavelength markers
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(p2_cx1, p2_originY - 120);
+        ctx.lineTo(p2_cx1, p2_originY);
+        ctx.moveTo(p2_cx2, p2_originY - 80);
+        ctx.lineTo(p2_cx2, p2_originY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Lambda Labels
+        ctx.font = '20px Arial';
+        ctx.fillText('\u03BB', p2_cx1 - 5, p2_originY + 20);
+        ctx.font = '14px Arial';
+        ctx.fillText('01', p2_cx1 + 8, p2_originY + 25);
+        
+        ctx.font = '20px Arial';
+        ctx.fillText('\u03BB', p2_cx2 - 5, p2_originY + 20);
+        ctx.font = '14px Arial';
+        ctx.fillText('02', p2_cx2 + 8, p2_originY + 25);
+        ctx.font = '22px Arial';
+        
+        // Small horizontal arrow
+        drawArrow(ctx, p2_cx1 + 15, p2_originY - 45, p2_cx2 - 10, p2_originY - 45, 8);
+
+        // Bandwidth marker 2
+        drawArrow(ctx, p2_cx2 + 30, p2_originY - 100, p2_cx2 - 30, p2_originY - 100);
+        ctx.font = '22px Arial';
+        ctx.fillText('\u0394\u03BB', p2_cx2 + 60, p2_originY - 110);
+        ctx.font = '16px Arial';
+        ctx.fillText('2', p2_cx2 + 80, p2_originY - 105);
+        ctx.font = '22px Arial';
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Kerr Cell Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="kerrCellCanvas" width="850" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('kerrCellCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Style constants ---
+  const FONT_LARGE = 'italic 22px Times New Roman';
+  const FONT_SMALL = 'italic 16px Times New Roman';
+  const COLOR_LINE = 'black';
+  const COLOR_FILL_LIGHT = '#E0E0E0';
+  const COLOR_FILL_DARK = '#888888';
+  const LINE_WIDTH_THICK = 5;
+  const LINE_WIDTH_NORMAL = 2;
+  const LINE_WIDTH_THIN = 1;
+
+  // --- Helper Functions ---
+  function drawArrow(ctx, fromx, fromy, tox, toy) {
+      const headlen = 10;
+      const dx = tox - fromx;
+      const dy = toy - fromy;
+      const angle = Math.atan2(dy, dx);
+      ctx.moveTo(fromx, fromy);
+      ctx.lineTo(tox, toy);
+      ctx.moveTo(tox, toy);
+      ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+      ctx.moveTo(tox, toy);
+      ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+  }
+
+  function drawTextWithSubscript(ctx, text, sub, x, y) {
+      const originalFont = ctx.font;
+      ctx.font = FONT_LARGE;
+      const textMetrics = ctx.measureText(text);
+      ctx.fillText(text, x, y);
+      ctx.font = FONT_SMALL;
+      ctx.fillText(sub, x + textMetrics.width * 0.9, y + 5);
+      ctx.font = originalFont;
+  }
+
+  // --- Draw Left Diagram ---
+  function drawLeftDiagram() {
+      ctx.save();
+      const yMid = 225;
+      const x_start = 40;
+
+      // Component positions
+      const x_p1 = x_start + 80;
+      const x_cell_start = x_p1 + 25;
+      const cell_length = 150;
+      const x_cell_end = x_cell_start + cell_length;
+      const x_p2 = x_cell_end + 25;
+      const x_end = x_p2 + 100;
+
+      // Light path
+      ctx.lineWidth = LINE_WIDTH_NORMAL;
+      ctx.beginPath();
+      // I1 segment
+      drawArrow(ctx, x_start, yMid, x_p1 - 10, yMid);
+      // Middle segment (P1 exit to P2 entry)
+      ctx.moveTo(x_p1 + 10, yMid);
+      ctx.lineTo(x_p2 - 10, yMid);
+      // I2 segment
+      drawArrow(ctx, x_p2 + 10, yMid, x_end - 20, yMid);
+      ctx.stroke();
+
+      // Polarizer P1
+      ctx.fillStyle = COLOR_FILL_LIGHT;
+      ctx.fillRect(x_p1, yMid - 70, 10, 140);
+      ctx.strokeRect(x_p1, yMid - 70, 10, 140);
+      drawTextWithSubscript(ctx, 'P', '1', x_p1 - 5, yMid - 90);
+
+      // Polarizer P2
+      ctx.fillRect(x_p2, yMid - 70, 10, 140);
+      ctx.strokeRect(x_p2, yMid - 70, 10, 140);
+      drawTextWithSubscript(ctx, 'P', '2', x_p2 - 5, yMid - 90);
+
+      // Kerr Cell
+      ctx.fillStyle = COLOR_FILL_LIGHT;
+      ctx.fillRect(x_cell_start, yMid - 60, cell_length, 120);
+      ctx.strokeRect(x_cell_start, yMid - 60, cell_length, 120);
+
+      // Capacitor plates
+      const plate_l = 100;
+      const plate_d = 50;
+      const plate_x_start = x_cell_start + (cell_length - plate_l) / 2;
+      ctx.fillStyle = COLOR_LINE;
+      ctx.fillRect(plate_x_start, yMid - plate_d / 2 - LINE_WIDTH_THICK / 2, plate_l, LINE_WIDTH_THICK);
+      ctx.fillRect(plate_x_start, yMid + plate_d / 2 - LINE_WIDTH_THICK / 2, plate_l, LINE_WIDTH_THICK);
+
+      // Voltage connections
+      const conn_x = x_cell_start + cell_length / 2;
+      ctx.lineWidth = LINE_WIDTH_NORMAL;
+      ctx.beginPath();
+      ctx.moveTo(conn_x, yMid - plate_d / 2);
+      ctx.lineTo(conn_x, yMid - 60 - 40);
+      ctx.moveTo(conn_x, yMid + plate_d / 2);
+      ctx.lineTo(conn_x, yMid + 60 + 40);
+      ctx.stroke();
+
+      // Variable source symbol
+      const var_src_y = yMid + 60 + 50;
+      ctx.beginPath();
+      ctx.arc(conn_x, var_src_y, 8, 0, 2 * Math.PI);
+      ctx.moveTo(conn_x - 6, var_src_y - 6);
+      ctx.lineTo(conn_x + 6, var_src_y + 6);
+      ctx.stroke();
+      
+      // Terminals and Labels
+      ctx.fillStyle = COLOR_LINE;
+      ctx.font = FONT_LARGE;
+      ctx.fillText('U', conn_x - 8, yMid - 60 - 50);
+      ctx.fillText('+', conn_x + 10, yMid - 60 - 25);
+      ctx.fillText('-', conn_x + 10, yMid + 60 + 35);
+      drawTextWithSubscript(ctx, 'I', '1', x_start + 20, yMid - 15);
+      drawTextWithSubscript(ctx, 'I', '2', x_end - 55, yMid - 15);
+
+      // Dimension 'l'
+      const l_y = yMid + plate_d / 2 + 30;
+      ctx.lineWidth = LINE_WIDTH_THIN;
+      ctx.beginPath();
+      ctx.moveTo(plate_x_start, l_y - 5);
+      ctx.lineTo(plate_x_start, l_y + 5);
+      ctx.moveTo(plate_x_start + plate_l, l_y - 5);
+      ctx.lineTo(plate_x_start + plate_l, l_y + 5);
+      drawArrow(ctx, plate_x_start + plate_l / 2, l_y, plate_x_start, l_y);
+      drawArrow(ctx, plate_x_start + plate_l / 2, l_y, plate_x_start + plate_l, l_y);
+      ctx.stroke();
+      ctx.fillText('l', plate_x_start + plate_l / 2 - 5, l_y + 25);
+
+      ctx.restore();
+  }
+
+  // --- Draw Right Diagram ---
+  function drawRightDiagram() {
+      ctx.save();
+      const xCenter = 650;
+      const yCenter = 225;
+
+      // Geometry
+      const outerRadius = 90;
+      const innerBoxSize = 110;
+      const plateWidth = 90;
+      const plateDist = 50; // d
+
+      // Outer circle / background
+      ctx.fillStyle = COLOR_FILL_DARK;
+      ctx.beginPath();
+      ctx.arc(xCenter, yCenter, outerRadius, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Inner square medium
+      ctx.fillStyle = COLOR_FILL_LIGHT;
+      ctx.fillRect(xCenter - innerBoxSize / 2, yCenter - innerBoxSize / 2, innerBoxSize, innerBoxSize);
+      ctx.lineWidth = LINE_WIDTH_NORMAL;
+      ctx.strokeRect(xCenter - innerBoxSize / 2, yCenter - innerBoxSize / 2, innerBoxSize, innerBoxSize);
+      
+      // Capacitor plates
+      ctx.fillStyle = COLOR_LINE;
+      ctx.fillRect(xCenter - plateWidth / 2, yCenter - plateDist / 2 - LINE_WIDTH_THICK / 2, plateWidth, LINE_WIDTH_THICK);
+      ctx.fillRect(xCenter - plateWidth / 2, yCenter + plateDist / 2 - LINE_WIDTH_THICK / 2, plateWidth, LINE_WIDTH_THICK);
+
+      // Voltage connections
+      ctx.lineWidth = LINE_WIDTH_NORMAL;
+      ctx.beginPath();
+      ctx.moveTo(xCenter, yCenter - plateDist / 2);
+      ctx.lineTo(xCenter, yCenter - outerRadius - 30);
+      ctx.moveTo(xCenter, yCenter + plateDist / 2);
+      ctx.lineTo(xCenter, yCenter + outerRadius + 30);
+      ctx.stroke();
+      
+      // Variable source symbol
+      const var_src_y_right = yCenter + outerRadius + 40;
+      ctx.beginPath();
+      ctx.arc(xCenter, var_src_y_right, 8, 0, 2 * Math.PI);
+      ctx.moveTo(xCenter - 6, var_src_y_right - 6);
+      ctx.lineTo(xCenter + 6, var_src_y_right + 6);
+      ctx.stroke();
+
+      // Terminals and Labels
+      ctx.fillStyle = COLOR_LINE;
+      ctx.font = FONT_LARGE;
+      ctx.fillText('U', xCenter - 8, yCenter - outerRadius - 40);
+      ctx.fillText('+', xCenter + 10, yCenter - outerRadius - 5);
+      ctx.fillText('-', xCenter + 10, yCenter + outerRadius + 25);
+
+      // Polarizer axes
+      const axisLen = outerRadius + 15;
+      ctx.lineWidth = LINE_WIDTH_NORMAL;
+      ctx.beginPath();
+      // P1 (top-left to bottom-right)
+      ctx.moveTo(xCenter - axisLen, yCenter - axisLen);
+      ctx.lineTo(xCenter + axisLen, yCenter + axisLen);
+      // P2 (top-right to bottom-left)
+      ctx.moveTo(xCenter + axisLen, yCenter - axisLen);
+      ctx.lineTo(xCenter - axisLen, yCenter + axisLen);
+      ctx.stroke();
+      drawTextWithSubscript(ctx, 'P', '1', xCenter - axisLen, yCenter - axisLen - 5);
+      drawTextWithSubscript(ctx, 'P', '2', xCenter + axisLen - 20, yCenter - axisLen - 5);
+
+      // Dimension 'd'
+      const d_x = xCenter + plateWidth / 2 + 25;
+      ctx.lineWidth = LINE_WIDTH_THIN;
+      ctx.beginPath();
+      ctx.moveTo(d_x - 5, yCenter - plateDist / 2);
+      ctx.lineTo(d_x + 5, yCenter - plateDist / 2);
+      ctx.moveTo(d_x - 5, yCenter + plateDist / 2);
+      ctx.lineTo(d_x + 5, yCenter + plateDist / 2);
+      drawArrow(ctx, d_x, yCenter, d_x, yCenter - plateDist / 2);
+      drawArrow(ctx, d_x, yCenter, d_x, yCenter + plateDist / 2);
+      ctx.stroke();
+      ctx.fillText('d', d_x + 12, yCenter + 6);
+      
+      ctx.restore();
+  }
+
+  // --- Main execution ---
+  ctx.fillStyle = COLOR_LINE;
+  drawLeftDiagram();
+  drawRightDiagram();
+</script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram - Prism Light Path</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="400" height="400" style="border:1px solid #000000;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow
+    function drawArrow(ctx, fromx, fromy, tox, toy, text = '', textPos = 'end') {
+        const headlen = 10; // length of head in pixels
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        
+        // Draw line
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+
+        // Draw arrowhead
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+
+        // Draw label
+        if (text) {
+            ctx.font = "bold 16px Arial";
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            let x, y;
+            if (textPos === 'end') {
+                const offset = 20;
+                x = tox + offset * Math.cos(angle);
+                y = toy + offset * Math.sin(angle);
+            } else if (textPos === 'start') {
+                const offset = -20;
+                 x = fromx + offset * Math.cos(angle);
+                 y = fromy + offset * Math.sin(angle);
+            } else { // custom position
+                x = textPos.x;
+                y = textPos.y;
+            }
+            ctx.fillText(text, x, y);
+        }
+    }
+
+    // --- Main Drawing ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // 1. Draw the prism
+    const pTop = { x: 150, y: 80 };
+    const pBottom = { x: 150, y: 320 };
+    const pRight = { x: 270, y: 200 };
+
+    ctx.beginPath();
+    ctx.moveTo(pTop.x, pTop.y);
+    ctx.lineTo(pBottom.x, pBottom.y);
+    ctx.lineTo(pRight.x, pRight.y);
+    ctx.closePath();
+    ctx.stroke();
+
+    // 2. Draw angle markings
+    ctx.font = "16px Arial";
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    
+    // Top 45 degree angle
+    ctx.beginPath();
+    ctx.arc(pTop.x, pTop.y, 25, Math.PI / 2, Math.PI * 0.25, true); // Arc from vertical to 45 deg line
+    ctx.stroke();
+    ctx.fillText("45º", pTop.x + 15, pTop.y + 35);
+
+    // Bottom 45 degree angle
+    ctx.beginPath();
+    ctx.arc(pBottom.x, pBottom.y, 25, -Math.PI / 2, -Math.PI * 0.25, false); // Arc from vertical to -45 deg line
+    ctx.stroke();
+    ctx.fillText("45º", pBottom.x + 15, pBottom.y - 15);
+
+    // Right angle at pRight
+    ctx.beginPath();
+    ctx.moveTo(pRight.x - 15, pRight.y - 15);
+    ctx.lineTo(pRight.x - 15, pRight.y);
+    ctx.lineTo(pRight.x, pRight.y);
+    ctx.stroke();
+
+
+    // 3. Draw the rays
+    
+    // Entering ray
+    const enterY = 140;
+    const enterStart = { x: 50, y: enterY };
+    const enterEnd = { x: 150, y: enterY };
+    drawArrow(ctx, enterStart.x, enterStart.y, enterEnd.x, enterEnd.y);
+    ctx.font = "bold 16px Arial";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText("entering", (enterStart.x + enterEnd.x) / 2, enterStart.y - 10);
+
+    // Internal ray path to the first interaction point
+    // Top face line: y = x - 70
+    // Ray line: y = 140
+    // Intersection: 140 = x - 70 => x = 210
+    const interactionPoint = { x: 210, y: 140 };
+    ctx.beginPath();
+    ctx.moveTo(enterEnd.x, enterEnd.y);
+    ctx.lineTo(interactionPoint.x, interactionPoint.y);
+    ctx.stroke();
+
+    // Possible outgoing rays from interactionPoint
+    // Ray A (up)
+    drawArrow(ctx, interactionPoint.x, interactionPoint.y, interactionPoint.x, interactionPoint.y - 60, 'A', {x: interactionPoint.x, y: interactionPoint.y - 75});
+    
+    // Ray B (up-right)
+    drawArrow(ctx, interactionPoint.x, interactionPoint.y, interactionPoint.x + 50, interactionPoint.y - 50, 'B', {x: interactionPoint.x + 65, y: interactionPoint.y - 55});
+
+    // Ray C (down-right)
+    drawArrow(ctx, interactionPoint.x, interactionPoint.y, interactionPoint.x + 45, interactionPoint.y + 45, 'C', {x: interactionPoint.x + 60, y: interactionPoint.y + 50});
+
+    // Ray D (from bottom face, down)
+    // Bottom face line: y = -x + 470
+    // A point on the face, let's choose x = 210, so y = -210 + 470 = 260
+    const d_start = { x: 210, y: 260 };
+    drawArrow(ctx, d_start.x, d_start.y, d_start.x, d_start.y + 60, 'D', {x: d_start.x, y: d_start.y + 75});
+
+    // Ray E (from vertical face, left)
+    const e_start = { x: 150, y: 280 };
+    drawArrow(ctx, e_start.x, e_start.y, e_start.x - 60, e_start.y, 'E', {x: e_start.x - 75, y: e_start.y});
+
+</script>
+</body>
+</html>

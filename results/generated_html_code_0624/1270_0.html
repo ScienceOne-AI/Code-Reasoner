@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Capacitor Diagram</title>
+</head>
+<body>
+    <canvas id="capacitorCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('capacitorCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style and Font settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+
+        /**
+         * Draws an arrowhead at a given point, pointing in a given direction.
+         * @param {CanvasRenderingContext2D} ctx The canvas context.
+         * @param {number} x The x-coordinate of the arrowhead tip.
+         * @param {number} y The y-coordinate of the arrowhead tip.
+         * @param {number} angle The angle of the arrowhead in radians.
+         * @param {number} size The length of the arrowhead sides.
+         */
+        function drawArrowhead(ctx, x, y, angle, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        /**
+         * Draws text with a subscript.
+         * @param {CanvasRenderingContext2D} ctx The canvas context.
+         * @param {string} mainText The main text.
+         * @param {string} subText The subscript text.
+         * @param {number} x The x-coordinate for the main text.
+         * @param {number} y The y-coordinate for the main text.
+         * @param {string} mainFont The font for the main text.
+         * @param {string} subFont The font for the subscript.
+         */
+        function drawSubscriptedText(ctx, mainText, subText, x, y, mainFont, subFont) {
+            ctx.font = mainFont;
+            const mainWidth = ctx.measureText(mainText).width;
+            ctx.fillText(mainText, x, y);
+
+            ctx.font = subFont;
+            ctx.fillText(subText, x + mainWidth * 0.7, y + 5);
+        }
+        
+        /**
+         * Draws a fraction.
+         * @param {CanvasRenderingContext2D} ctx The canvas context.
+         * @param {string} numerator The numerator text.
+         * @param {string} denominator The denominator text.
+         * @param {number} x The center x-coordinate of the fraction.
+         * @param {number} y The center y-coordinate of the fraction bar.
+         * @param {number} barWidth The width of the fraction bar.
+         * @param {string} font The font to use for the numbers.
+         */
+        function drawFraction(ctx, numerator, denominator, x, y, barWidth, font) {
+             ctx.font = font;
+             ctx.textAlign = 'center';
+             ctx.textBaseline = 'middle';
+             
+             const numY = y - 12;
+             const denY = y + 12;
+             const barY = y;
+             
+             ctx.fillText(numerator, x, numY);
+             ctx.fillText(denominator, x, denY);
+             
+             ctx.beginPath();
+             ctx.moveTo(x - barWidth / 2, barY);
+             ctx.lineTo(x + barWidth / 2, barY);
+             ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+        
+        // Define dimensions and coordinates
+        const x0 = 120;
+        const y0 = 380;
+        const d_px = 150;
+        const s_half_px = 120;
+        
+        const s_px = 2 * s_half_px;
+        const u_px = 2 * d_px;
+        const plate_thickness = 8;
+
+        // 1. Draw Capacitor Plates
+        // The original image shows the plates as slightly thicker than other lines,
+        // and sometimes rendered as filled grey rectangles. This is a good representation.
+        ctx.fillStyle = '#E0E0E0'; // A light gray color for plates
+        ctx.fillRect(x0 - plate_thickness, y0 - s_px - 5, plate_thickness, s_px + 10);
+        ctx.fillRect(x0 + u_px, y0 - s_px - 5, plate_thickness, s_px + 10);
+        ctx.strokeRect(x0 - plate_thickness, y0 - s_px - 5, plate_thickness, s_px + 10);
+        ctx.strokeRect(x0 + u_px, y0 - s_px - 5, plate_thickness, s_px + 10);
+        ctx.fillStyle = 'black';
+
+        // 2. Draw Dielectric Boundaries
+        ctx.beginPath();
+        // Outer box
+        ctx.rect(x0, y0 - s_px, u_px, s_px);
+        // Inner vertical line
+        ctx.moveTo(x0 + d_px, y0 - s_px);
+        ctx.lineTo(x0 + d_px, y0);
+        // Inner horizontal line
+        ctx.moveTo(x0, y0 - s_half_px);
+        ctx.lineTo(x0 + d_px, y0 - s_half_px);
+        ctx.stroke();
+        
+        // 3. Draw Dimension Lines and Labels
+        const mainFont = 'italic 22px Times New Roman';
+        const labelFont = 'italic 22px Times New Roman';
+        ctx.font = mainFont;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Dimension 'd'
+        ctx.fillText('d', x0 + d_px / 2, y0 - s_px - 25);
+        ctx.fillText('d', x0 + d_px + d_px / 2, y0 - s_px - 25);
+
+        // Dimension 'U'
+        const u_y = y0 + 40;
+        ctx.fillText('U', x0 + u_px / 2, u_y);
+        ctx.beginPath();
+        ctx.moveTo(x0, u_y);
+        ctx.lineTo(x0 + u_px, u_y);
+        ctx.stroke();
+        // Ticks for U
+        ctx.beginPath();
+        ctx.moveTo(x0, u_y - 10);
+        ctx.lineTo(x0, u_y + 10);
+        ctx.moveTo(x0 + u_px, u_y - 10);
+        ctx.lineTo(x0 + u_px, u_y + 10);
+        ctx.stroke();
+        // Arrowheads for U
+        drawArrowhead(ctx, x0, u_y, Math.PI, 10); // left
+        drawArrowhead(ctx, x0 + u_px, u_y, 0, 10); // right
+
+        // Dimension 'S'
+        ctx.fillText('S', x0 + u_px + plate_thickness + 30, y0 - s_px / 2);
+        
+        // Dimension 'S/2'
+        const s_half_x = x0 - 40;
+        drawFraction(ctx, 'S', '2', s_half_x, y0 - s_px + s_half_px / 2, 20, mainFont);
+        drawFraction(ctx, 'S', '2', s_half_x, y0 - s_half_px / 2, 20, mainFont);
+
+        // 4. Draw Dielectric Labels
+        const subFont = 'italic 16px Times New Roman';
+        // ε_r1
+        drawSubscriptedText(ctx, 'ε', 'r1', x0 + d_px / 2 - 10, y0 - s_px + s_half_px / 2, mainFont, subFont);
+        // ε_r2
+        drawSubscriptedText(ctx, 'ε', 'r2', x0 + d_px / 2 - 10, y0 - s_half_px / 2, mainFont, subFont);
+        // ε_r3
+        drawSubscriptedText(ctx, 'ε', 'r3', x0 + d_px + d_px / 2 - 10, y0 - s_px / 2, mainFont, subFont);
+
+        // 5. Draw Dashed Loop ABCD
+        ctx.font = labelFont;
+        const loopMarginX = 40;
+        const loopMarginY = 30;
+        const ax = x0 + loopMarginX;
+        const ay = y0 - s_half_px - loopMarginY;
+        const bx = x0 + d_px - loopMarginX;
+        const by = ay;
+        const cx = bx;
+        const cy = y0 - s_half_px + loopMarginY;
+        const dx = ax;
+        const dy = cy;
+
+        // Set dashed line style and draw rectangle
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(bx, by);
+        ctx.lineTo(cx, cy);
+        ctx.lineTo(dx, dy);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Reset to solid line for arrows
+        ctx.setLineDash([]);
+
+        // Draw arrows on the loop mid-points
+        drawArrowhead(ctx, (ax + bx) / 2, by, 0, 10); // Right
+        drawArrowhead(ctx, cx, (by + cy) / 2, Math.PI / 2, 10); // Down
+        drawArrowhead(ctx, (cx + dx) / 2, dy, Math.PI, 10); // Left
+        drawArrowhead(ctx, ax, (dy + ay) / 2, -Math.PI / 2, 10); // Up
+        
+        // Draw labels A, B, C, D at the corners
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('A', ax - 5, ay - 5);
+
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('B', bx + 5, by - 5);
+        
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText('C', cx + 5, cy + 5);
+
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillText('D', dx - 5, dy + 5);
+    </script>
+</body>
+</html>

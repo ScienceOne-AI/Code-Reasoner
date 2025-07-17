@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="500" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings to mimic the hand-drawn look
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // Helper function for text with subscript
+    function drawTextWithSubscript(base, sub, x, y, baseFont, subFont, baseAlign = 'left') {
+        ctx.textAlign = baseAlign;
+        ctx.font = baseFont;
+        const baseMetrics = ctx.measureText(base);
+        ctx.fillText(base, x, y);
+        
+        let subX = x + baseMetrics.width;
+        if (baseAlign === 'center') {
+            subX = x + baseMetrics.width / 2;
+        } else if (baseAlign === 'right') {
+            subX = x;
+        }
+
+        ctx.font = subFont;
+        ctx.fillText(sub, subX, y + 6);
+    }
+
+    // --- Define Coordinates ---
+    const x1 = 80;   // Left wire of primary loop
+    const x2 = 270;  // Right wire of primary loop (L1)
+    const x3 = 310;  // Left wire of secondary loop (L2)
+    const x4 = 420;  // Right wire of secondary loop (C)
+
+    const y_top = 80;
+    const y_bot = 280;
+    const y_mid = (y_top + y_bot) / 2;
+
+    // --- Draw Primary Circuit (Left) ---
+
+    // 1. AC Voltage Source
+    const src_radius = 22;
+    ctx.beginPath();
+    ctx.arc(x1, y_mid, src_radius, 0, 2 * Math.PI);
+    ctx.stroke();
+    // Sine wave inside
+    ctx.beginPath();
+    ctx.moveTo(x1 - src_radius * 0.7, y_mid);
+    ctx.quadraticCurveTo(x1 - src_radius * 0.35, y_mid - src_radius * 0.8, x1, y_mid);
+    ctx.quadraticCurveTo(x1 + src_radius * 0.35, y_mid + src_radius * 0.8, x1 + src_radius * 0.7, y_mid);
+    ctx.stroke();
+
+    // 2. Connecting Wires for Primary Loop
+    ctx.beginPath();
+    ctx.moveTo(x1, y_mid - src_radius);
+    ctx.lineTo(x1, y_top); // Top wire from source
+    ctx.moveTo(x1, y_mid + src_radius);
+    ctx.lineTo(x1, y_bot); // Bottom wire from source
+    ctx.moveTo(x2, y_bot);
+    ctx.lineTo(x1, y_bot); // Bottom connecting wire
+    ctx.stroke();
+
+    // 3. Resistor
+    ctx.beginPath();
+    ctx.moveTo(x1, y_top);
+    ctx.lineTo(120, y_top);
+    ctx.lineTo(135, y_top + 10);
+    ctx.lineTo(165, y_top - 10);
+    ctx.lineTo(195, y_top + 10);
+    ctx.lineTo(225, y_top - 10);
+    ctx.lineTo(240, y_top);
+    ctx.lineTo(x2, y_top);
+    ctx.stroke();
+
+    // 4. Inductor L1
+    const coil_r = 12;
+    const num_coils = 6;
+    const coil_len = y_bot - y_top - 40;
+    const coil_start_y = y_top + 20;
+    const coil_h = coil_len / num_coils;
+    ctx.beginPath();
+    ctx.moveTo(x2, y_top);
+    ctx.lineTo(x2, coil_start_y);
+    for (let i = 0; i < num_coils; i++) {
+        ctx.arc(x2, coil_start_y + i * coil_h + coil_h / 2, coil_r, -Math.PI / 2, Math.PI / 2);
+    }
+    ctx.moveTo(x2, coil_start_y + coil_len);
+    ctx.lineTo(x2, y_bot);
+    ctx.stroke();
+
+    // --- Draw Secondary Circuit (Right) ---
+
+    // 1. Inductor L2
+    ctx.beginPath();
+    ctx.moveTo(x3, y_top);
+    ctx.lineTo(x3, coil_start_y);
+    for (let i = 0; i < num_coils; i++) {
+        // arc direction is reversed
+        ctx.arc(x3, coil_start_y + i * coil_h + coil_h / 2, coil_r, Math.PI / 2, -Math.PI / 2, true);
+    }
+    ctx.moveTo(x3, coil_start_y + coil_len);
+    ctx.lineTo(x3, y_bot);
+    ctx.stroke();
+
+    // 2. Capacitor
+    const cap_gap = 12;
+    const plate_len = 30;
+    ctx.beginPath();
+    ctx.moveTo(x4, y_top);
+    ctx.lineTo(x4, y_mid - cap_gap); // Top wire to cap
+    ctx.moveTo(x4 - plate_len / 2, y_mid - cap_gap / 2);
+    ctx.lineTo(x4 + plate_len / 2, y_mid - cap_gap / 2); // Top plate
+    ctx.moveTo(x4 - plate_len / 2, y_mid + cap_gap / 2);
+    ctx.lineTo(x4 + plate_len / 2, y_mid + cap_gap / 2); // Bottom plate
+    ctx.moveTo(x4, y_mid + cap_gap);
+    ctx.lineTo(x4, y_bot); // Bottom wire from cap
+    ctx.stroke();
+
+    // 3. Connecting Wires for Secondary Loop
+    ctx.beginPath();
+    ctx.moveTo(x3, y_top);
+    ctx.lineTo(x4, y_top);
+    ctx.moveTo(x3, y_bot);
+    ctx.lineTo(x4, y_bot);
+    ctx.stroke();
+    
+    // --- Dots on Inductors ---
+    ctx.beginPath();
+    ctx.arc(x2 - 10, y_top + 15, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x3 + 10, y_top + 15, 4, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // --- Labels and Text ---
+    const baseFont = 'bold 22px Arial';
+    const subFont = 'bold 16px Arial';
+
+    // R
+    ctx.font = baseFont;
+    ctx.textAlign = 'center';
+    ctx.fillText('R', (120 + 240) / 2, y_top - 20);
+
+    // L1
+    ctx.textAlign = 'right';
+    drawTextWithSubscript('L', '1', x2 - 25, y_mid + 8, baseFont, subFont, 'right');
+    
+    // L2
+    ctx.textAlign = 'left';
+    drawTextWithSubscript('L', '2', x3 + 25, y_mid + 8, baseFont, subFont, 'left');
+
+    // C
+    ctx.textAlign = 'left';
+    ctx.font = baseFont;
+    ctx.fillText('C', x4 + 20, y_mid + 8);
+    
+    // V = V0 cos wt
+    const vFont = 'italic bold 20px Arial';
+    const vSubFont = 'italic bold 14px Arial';
+    ctx.textAlign = 'left';
+    ctx.font = vFont;
+    let v_x = x1 + 35;
+    let v_y = y_mid + 8;
+    ctx.fillText("V = V", v_x, v_y);
+    drawTextWithSubscript("", "0", v_x + ctx.measureText("V = V").width - 5, v_y, vFont, vSubFont);
+    ctx.font = vFont;
+    ctx.fillText(" cos ωt", v_x + ctx.measureText("V=V").width, v_y);
+
+    // i1
+    const iFont = 'italic bold 22px Arial';
+    const iSubFont = 'italic bold 16px Arial';
+    ctx.textAlign = 'center';
+    drawTextWithSubscript('i', '1', x1 + 75, y_bot - 15, iFont, iSubFont, 'center');
+    // Arrow for i1
+    ctx.beginPath();
+    ctx.moveTo(x1 + 100, y_bot);
+    ctx.lineTo(x1 + 120, y_bot);
+    ctx.lineTo(x1 + 115, y_bot - 4);
+    ctx.moveTo(x1 + 120, y_bot);
+    ctx.lineTo(x1 + 115, y_bot + 4);
+    ctx.stroke();
+
+    // i2
+    drawTextWithSubscript('i', '2', x3 + 55, y_bot - 15, iFont, iSubFont, 'center');
+    // Arrow for i2
+    ctx.beginPath();
+    ctx.moveTo(x3 + 80, y_bot);
+    ctx.lineTo(x3 + 100, y_bot);
+    ctx.lineTo(x3 + 95, y_bot - 4);
+    ctx.moveTo(x3 + 100, y_bot);
+    ctx.lineTo(x3 + 95, y_bot + 4);
+    ctx.stroke();
+
+    // "Fig. 3.35"
+    ctx.font = 'bold 22px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 3.35', (x1 + x4) / 2, y_bot + 60);
+
+</script>
+</body>
+</html>

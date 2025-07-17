@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pendulum with Driven Support</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="450" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Physics to Canvas coordinate transformation
+        // origin of the physics system (O) on the canvas
+        const originX = 60;
+        const originY = 100;
+        
+        function toCanvas(y, z) {
+            return { x: originX + y, y: originY - z };
+        }
+
+        // Helper function to draw an arrow head at a point with a given direction angle
+        function drawArrowHead(x, y, angle) {
+            const headlen = 10;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - headlen * Math.cos(angle - Math.PI / 6), y - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - headlen * Math.cos(angle + Math.PI / 6), y - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Helper function to draw a line with an arrow at the end
+        function drawArrow(fromX, fromY, toX, toY) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            drawArrowHead(toX, toY, angle);
+        }
+
+        // --- Start Drawing ---
+
+        ctx.font = 'italic 18px Times New Roman';
+
+        // 1. Coordinate Axes
+        drawArrow(originX, originY, originX + 300, originY); // y-axis
+        ctx.fillText('y', originX + 315, originY);
+        drawArrow(originX, originY, originX, originY - 80);  // z-axis
+        ctx.fillText('z', originX, originY - 95);
+        ctx.font = '18px Times New Roman';
+        ctx.fillText('O', originX - 15, originY + 10);
+        ctx.font = 'italic 18px Times New Roman';
+
+
+        // 2. Support System
+        const ys = 150;
+        const supportWidth = 50;
+        const supportHeight = 20;
+
+        // Support block is centered at y=ys, and sits on the z=0 line.
+        const supportP_tl = toCanvas(ys - supportWidth / 2, supportHeight); // top-left
+        ctx.strokeRect(supportP_tl.x, supportP_tl.y, supportWidth, supportHeight);
+        
+        const supportCenterP = toCanvas(ys, supportHeight / 2);
+
+        // Arrows on the block indicating motion
+        const arrowLen = 15;
+        // Right arrow
+        drawArrow(supportCenterP.x + supportWidth/2, supportCenterP.y, supportCenterP.x + supportWidth/2 + arrowLen, supportCenterP.y);
+        // Left arrow
+        drawArrow(supportCenterP.x - supportWidth/2, supportCenterP.y, supportCenterP.x - supportWidth/2 - arrowLen, supportCenterP.y);
+
+
+        // Dimension for y_s
+        const dimZ = 40; // z-coordinate for the dimension line
+        const p_dim_start = toCanvas(0, dimZ);
+        const p_dim_end = toCanvas(ys, dimZ);
+        
+        // Vertical extension lines
+        ctx.beginPath();
+        ctx.moveTo(toCanvas(0,0).x, toCanvas(0,0).y);
+        ctx.lineTo(p_dim_start.x, p_dim_start.y);
+        ctx.moveTo(toCanvas(ys,0).x, toCanvas(ys,0).y);
+        ctx.lineTo(p_dim_end.x, p_dim_end.y);
+        ctx.stroke();
+        
+        // Horizontal dimension line with arrows pointing outwards
+        ctx.beginPath();
+        ctx.moveTo(p_dim_start.x, p_dim_start.y);
+        ctx.lineTo(p_dim_end.x, p_dim_end.y);
+        ctx.stroke();
+        drawArrowHead(p_dim_start.x, p_dim_start.y, Math.PI); // Arrow at start, pointing left
+        drawArrowHead(p_dim_end.x, p_dim_end.y, 0);       // Arrow at end, pointing right
+
+        // Label y_s
+        ctx.fillText('y', (p_dim_start.x + p_dim_end.x) / 2 - 5, p_dim_start.y - 12);
+        ctx.font = 'italic 14px Times New Roman';
+        ctx.fillText('s', (p_dim_start.x + p_dim_end.x) / 2 + 5, p_dim_start.y - 9);
+        ctx.font = 'italic 18px Times New Roman';
+
+
+        // 3. Pendulum
+        const pivotP = toCanvas(ys, 0);
+        const l = 150;
+        const theta = 20 * Math.PI / 180; // 20 degrees
+        const bobRadius = 7;
+        
+        const bobPhysicsY = ys + l * Math.sin(theta);
+        const bobPhysicsZ = -l * Math.cos(theta);
+        const bobP = toCanvas(bobPhysicsY, bobPhysicsZ);
+
+        // Dashed vertical line
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        const dashedEndP = toCanvas(ys, -l - 20);
+        ctx.moveTo(pivotP.x, pivotP.y);
+        ctx.lineTo(dashedEndP.x, dashedEndP.y);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset line dash
+
+        // Pendulum string
+        ctx.beginPath();
+        ctx.moveTo(pivotP.x, pivotP.y);
+        ctx.lineTo(bobP.x, bobP.y);
+        ctx.stroke();
+
+        // Pendulum bob
+        ctx.beginPath();
+        ctx.arc(bobP.x, bobP.y, bobRadius, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Labels
+        // 'm' for mass
+        ctx.fillText('m', bobP.x + 18, bobP.y + 5);
+        // 'l' for length
+        const label_l_P = toCanvas(ys + l/2*Math.sin(theta) + 15, -l/2*Math.cos(theta));
+        ctx.fillText('l', label_l_P.x, label_l_P.y);
+
+        // Angle theta
+        const angleRadius = 25; // in canvas pixels
+        ctx.beginPath();
+        // arc(x, y, radius, startAngle, endAngle)
+        // startAngle is vertical down (PI/2), endAngle is pi/2+theta
+        ctx.arc(pivotP.x, pivotP.y, angleRadius, Math.PI / 2, Math.PI / 2 + theta);
+        ctx.stroke();
+        
+        // label theta
+        const label_theta_angle = Math.PI/2 + theta/2;
+        const label_theta_dist = angleRadius + 10;
+        ctx.fillText('θ', pivotP.x + label_theta_dist * Math.cos(label_theta_angle), 
+                          pivotP.y + label_theta_dist * Math.sin(label_theta_angle));
+
+        // 4. Caption
+        ctx.font = '16px Times New Roman';
+        ctx.fillText('Fig. 2.25.', canvas.width / 2, canvas.height - 20);
+    </script>
+</body>
+</html>

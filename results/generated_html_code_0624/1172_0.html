@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Optical Interference Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="800" height="400" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- General Settings ---
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = '20px Arial';
+    ctx.lineWidth = 1.5;
+
+    // --- Helper function to add an arrowhead to a line ---
+    function addArrowhead(x, y, angle) {
+        const headlen = 10;
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - headlen * Math.cos(angle - Math.PI / 7), y - headlen * Math.sin(angle - Math.PI / 7));
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - headlen * Math.cos(angle + Math.PI / 7), y - headlen * Math.sin(angle + Math.PI / 7));
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Left Diagram ---
+    const grayColor = '#888888';
+
+    // Plate P
+    const p_x = 300;
+    const p_width = 20;
+    const p_y_start = 60;
+    const p_y_end = 360;
+    ctx.fillStyle = grayColor;
+    ctx.beginPath();
+    ctx.rect(p_x, p_y_start, p_width, p_y_end - p_y_start);
+    ctx.fill();
+    ctx.stroke();
+
+    // Label P (left)
+    ctx.fillStyle = 'black';
+    ctx.fillText('P', p_x + 5, p_y_start - 10);
+
+    // Wedge W
+    ctx.fillStyle = grayColor;
+    ctx.beginPath();
+    ctx.moveTo(p_x, 340); // bottom right
+    ctx.lineTo(240, 340); // bottom left
+    ctx.lineTo(270, 120); // top left (main body)
+    ctx.lineTo(280, 100); // top point
+    ctx.lineTo(p_x, 100); // top right
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Label W (left)
+    ctx.save();
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.fillText('W', 255, 95);
+    ctx.beginPath();
+    ctx.moveTo(270, 90);
+    ctx.lineTo(280, 105);
+    ctx.stroke();
+    ctx.restore();
+
+    // Light Rays
+    const rayYs = [135, 185, 235, 285];
+    const ray_start_x = 50;
+    const ray_end_x = 380;
+
+    ctx.lineWidth = 1.5;
+    rayYs.forEach(y => {
+        // Draw the full horizontal line
+        ctx.beginPath();
+        ctx.moveTo(ray_start_x, y);
+        ctx.lineTo(ray_end_x, y);
+        ctx.stroke();
+
+        // Add arrowhead on incoming part
+        addArrowhead(150, y, 0);
+
+        // Add arrowhead on outgoing part
+        addArrowhead(350, y, 0);
+    });
+
+    // --- Right Diagram ---
+    const right_x = 450;
+    const right_y = 50;
+    const right_w = 300;
+    const right_h = 320;
+
+    // Outer frame (P)
+    ctx.fillStyle = grayColor;
+    ctx.beginPath();
+    ctx.rect(right_x, right_y, right_w, right_h);
+    ctx.fill();
+    ctx.stroke();
+    
+
+    // Label P (right)
+    ctx.fillStyle = 'black';
+    ctx.fillText('P', right_x + right_w - 25, right_y - 10);
+
+    // Inner area (W)
+    const inner_margin = 15;
+    const inner_x = right_x + inner_margin;
+    const inner_y = right_y + inner_margin;
+    const inner_w = right_w - 2 * inner_margin;
+    const inner_h = right_h - 2 * inner_margin;
+
+    // --- Draw the Fringes ---
+    const period = 16; // pixels per fringe pair
+
+    for (let y = 0; y < inner_h; y++) {
+        const progress = y / inner_h; // normalized y from 0 to 1
+
+        // Visibility increases slowly at the top, then faster.
+        const visibility = Math.pow(progress, 2.5);
+
+        // Sharpness of fringes increases downwards.
+        const sharpness = Math.pow(progress, 1.5);
+        
+        // Average gray level.
+        const baseGray = 120;
+
+        // The wave function. We interpolate between a smooth cosine
+        // and a sharp tanh function based on 'sharpness'.
+        const cos_val = Math.cos(y * 2 * Math.PI / period);
+        const sharp_val = Math.tanh(5 * cos_val);
+        const wave_val = (1 - sharpness) * cos_val + sharpness * sharp_val;
+
+        // Amplitude of the fringes.
+        const amplitude = 125;
+        
+        let grayLevel = baseGray - wave_val * amplitude * visibility;
+        grayLevel = Math.max(0, Math.min(255, grayLevel)); // clamp to [0, 255]
+        
+        ctx.fillStyle = `rgb(${Math.round(grayLevel)}, ${Math.round(grayLevel)}, ${Math.round(grayLevel)})`;
+        ctx.fillRect(inner_x, inner_y + y, inner_w, 1);
+    }
+
+    // Border for inner area
+    ctx.strokeStyle = '#202020';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(inner_x, inner_y, inner_w, inner_h);
+    
+    // Label W (right)
+    ctx.save();
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.fillText('W', right_x + 25, right_y + 40);
+    ctx.beginPath();
+    ctx.moveTo(right_x + 48, right_y + 35);
+    ctx.lineTo(right_x + 65, right_y + 55);
+    ctx.stroke();
+    ctx.restore();
+
+</script>
+</body>
+</html>

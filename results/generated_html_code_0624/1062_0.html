@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Diagrama de Campo Electromagnético</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            background-color: #ffffff;
+            border: 1px solid #dddddd;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="380"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        /**
+         * Dibuja una flecha desde (fromx, fromy) hasta (tox, toy).
+         * @param {CanvasRenderingContext2D} context - El contexto del lienzo.
+         * @param {number} fromx - Coordenada X de inicio.
+         * @param {number} fromy - Coordenada Y de inicio.
+         * @param {number} tox - Coordenada X final.
+         * @param {number} toy - Coordenada Y final.
+         * @param {number} headlen - La longitud de los lados de la punta de la flecha.
+         */
+        function drawArrow(context, fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            context.beginPath();
+            context.moveTo(fromx, fromy);
+            context.lineTo(tox, toy);
+            context.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            context.moveTo(tox, toy);
+            context.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            context.stroke();
+        }
+
+        /**
+         * Dibuja texto con un subíndice.
+         * @param {CanvasRenderingContext2D} context - El contexto del lienzo.
+         * @param {string} mainText - El texto principal.
+         * @param {string} subText - El texto del subíndice.
+         * @param {number} x - Coordenada X.
+         * @param {number} y - Coordenada Y.
+         * @param {string} mainFont - La fuente para el texto principal.
+         * @param {string} subFont - La fuente para el subíndice.
+         */
+        function drawTextWithSubscript(context, mainText, subText, x, y, mainFont, subFont) {
+            const originalFont = context.font;
+            const originalBaseline = context.textBaseline;
+            
+            context.font = mainFont;
+            context.textBaseline = 'alphabetic';
+            context.fillText(mainText, x, y);
+            
+            const mainMetrics = context.measureText(mainText);
+            const mainTextWidth = mainMetrics.width;
+            
+            context.font = subFont;
+            context.textBaseline = 'alphabetic';
+            context.fillText(subText, x + mainTextWidth * 0.9, y + 6);
+
+            context.font = originalFont;
+            context.textBaseline = originalBaseline;
+        }
+
+        // --- Configuración de Estilos ---
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // --- Coordenadas y Dimensiones ---
+        const rect = { x: 150, y: 100, w: 200, h: 150 };
+        const arrowY1 = rect.y + rect.h / 3;
+        const arrowY2 = rect.y + 2 * rect.h / 3;
+
+        // --- Dibujar Componentes ---
+
+        // 1. Dibujar el rectángulo central
+        ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+
+        // 2. Dibujar campo externo E₀ a la izquierda
+        const leftArrowXStart = 40;
+        const leftArrowXEnd = rect.x - 20;
+        drawArrow(ctx, leftArrowXStart, arrowY1, leftArrowXEnd, arrowY1);
+        drawArrow(ctx, leftArrowXStart, arrowY2, leftArrowXEnd, arrowY2);
+        drawTextWithSubscript(ctx, 'E', '0', 65, 215, 'italic bold 24px Times New Roman', 'bold 16px Times New Roman');
+
+        // 3. Dibujar campo externo E₀ a la derecha
+        const rightArrowXStart = rect.x + rect.w + 20;
+        const rightArrowXEnd = rightArrowXStart + (leftArrowXEnd - leftArrowXStart);
+        drawArrow(ctx, rightArrowXStart, arrowY1, rightArrowXEnd, arrowY1);
+        drawArrow(ctx, rightArrowXStart, arrowY2, rightArrowXEnd, arrowY2);
+        drawTextWithSubscript(ctx, 'E', '0', 385, 215, 'italic bold 24px Times New Roman', 'bold 16px Times New Roman');
+
+        // 4. Dibujar flechas internas i y j
+        const innerArrowXStart = rect.x + 30;
+        const innerArrowXEnd = rect.x + 130;
+        drawArrow(ctx, innerArrowXStart, arrowY1, innerArrowXEnd, arrowY1);
+        drawArrow(ctx, innerArrowXStart, arrowY2, innerArrowXEnd, arrowY2);
+        
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('i', innerArrowXEnd + 10, arrowY1);
+        ctx.fillText('j', innerArrowXEnd + 10, arrowY2);
+        
+        // 5. Dibujar etiquetas de densidad de carga
+        const chargeFont = '22px Times New Roman';
+        const subChargeFont = '16px Times New Roman';
+        
+        // Etiqueta -σₑ
+        drawTextWithSubscript(ctx, '–σ', 'e', 120, rect.y - 10, chargeFont, subChargeFont);
+        
+        // Etiqueta σₑ
+        drawTextWithSubscript(ctx, 'σ', 'e', rect.x + rect.w, rect.y - 10, chargeFont, subChargeFont);
+
+        // 6. Dibujar la leyenda
+        ctx.font = '24px "SimSun", "Songti SC", serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('电图 4.1.1', canvas.width / 2, rect.y + rect.h + 60);
+
+    </script>
+</body>
+</html>

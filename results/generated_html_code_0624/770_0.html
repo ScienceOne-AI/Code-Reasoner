@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamics Diagram - Orographic Lift</title>
+</head>
+<body>
+<canvas id="thermoCanvas" width="600" height="420" style="border:1px solid #000;"></canvas>
+
+<script>
+    const canvas = document.getElementById('thermoCanvas');
+    const ctx = canvas.getContext('2d');
+
+    /**
+     * Draws an arrow from one point to another.
+     * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+     * @param {number} fromx - The starting x-coordinate.
+     * @param {number} fromy - The starting y-coordinate.
+     * @param {number} tox - The ending x-coordinate.
+     * @param {number} toy - The ending y-coordinate.
+     * @param {number} [headlen=10] - The length of the arrowhead.
+     */
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    /**
+     * Draws text with a subscript, handling different text alignments.
+     * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+     * @param {string} baseText - The main text.
+     * @param {string} subText - The subscript text.
+     * @param {number} x - The anchor x-coordinate.
+     * @param {number} y - The anchor y-coordinate.
+     */
+    function drawLabelWithSubscript(ctx, baseText, subText, x, y) {
+        const originalFont = ctx.font;
+        const originalAlign = ctx.textAlign;
+        const baseFontSize = parseInt(originalFont.match(/\d+/)[0], 10);
+        const subFontSize = baseFontSize * 0.7;
+        const fontName = originalFont.split('px ')[1];
+
+        // Temporarily set alignment to left for easier calculation
+        ctx.textAlign = 'left'; 
+
+        // Calculate total width to adjust starting position based on original alignment
+        ctx.font = originalFont;
+        const baseWidth = ctx.measureText(baseText).width;
+        ctx.font = `italic ${subFontSize}px ${fontName}`;
+        const subWidth = ctx.measureText(subText).width;
+        const totalWidth = baseWidth + subWidth;
+
+        let startX = x;
+        if (originalAlign === 'center') {
+            startX = x - totalWidth / 2;
+        } else if (originalAlign === 'right') {
+            startX = x - totalWidth;
+        }
+
+        // Draw the text
+        ctx.font = originalFont;
+        ctx.fillText(baseText, startX, y);
+        
+        ctx.font = `italic ${subFontSize}px ${fontName}`;
+        ctx.fillText(subText, startX + baseWidth, y + subFontSize * 0.4);
+        
+        // Restore original font and alignment
+        ctx.font = originalFont;
+        ctx.textAlign = originalAlign;
+    }
+    
+    // --- Main Drawing ---
+    
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    // Define key coordinates
+    const baseY = 340;
+    const m0_x = 80;
+    const mountainStartX = 100;
+    const m1_x = 180;
+    const m1_y = 260;
+    const m2_x = 320;
+    const m2_y = 120;
+    const mountainEndX = 520;
+    const m3_x = 540;
+
+    // 1. Draw Mountain Profile and Ground Line
+    // The mountain base acts as a solid line segment
+    ctx.beginPath();
+    ctx.moveTo(mountainStartX, baseY);
+    // Windward side (up to M2), passing through M1's horizontal position
+    ctx.bezierCurveTo(150, 340, 150, 270, m1_x, m1_y);
+    ctx.bezierCurveTo(220, 160, 280, 120, m2_x, m2_y);
+    // Leeward side (from M2)
+    ctx.quadraticCurveTo(420, 140, mountainEndX, baseY);
+    ctx.stroke();
+
+    // The rest of the ground line
+    ctx.beginPath();
+    ctx.moveTo(0, baseY);
+    ctx.lineTo(mountainStartX, baseY);
+    ctx.moveTo(mountainEndX, baseY);
+    ctx.lineTo(canvas.width, baseY);
+    ctx.stroke();
+
+    // 2. Draw Dashed Lines
+    ctx.save();
+    ctx.setLineDash([6, 4]);
+    // Base reference line
+    ctx.beginPath();
+    ctx.moveTo(m0_x, baseY);
+    ctx.lineTo(m3_x, baseY);
+    ctx.stroke();
+    
+    // M1 height line (extending left from the mountain)
+    ctx.beginPath();
+    ctx.moveTo(m1_x, m1_y);
+    ctx.lineTo(m1_x - 60, m1_y);
+    ctx.stroke();
+    ctx.restore();
+
+    // 3. Draw Arrows
+    // Air flow arrows
+    drawArrow(ctx, 140, 310, 210, 235); // Upward flow
+    drawArrow(ctx, 360, 150, 440, 230); // Downward flow
+
+    // h1 height indicator group
+    const h1_indicator_x = 210;
+    // Downward arrow for h1
+    drawArrow(ctx, h1_indicator_x, m1_y, h1_indicator_x, m1_y + 30);
+    // Upward arrow for h1
+    drawArrow(ctx, h1_indicator_x, baseY, h1_indicator_x, baseY - 30);
+
+    // 4. Draw Clouds
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    const drawCloudArc = (x, y, r) => {
+        ctx.beginPath();
+        ctx.arc(x, y, r, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.stroke();
+    };
+    drawCloudArc(140, 210, 12);
+    drawCloudArc(165, 195, 12);
+    drawCloudArc(190, 210, 12);
+    drawCloudArc(150, 175, 12);
+    drawCloudArc(175, 165, 12);
+    drawCloudArc(200, 180, 12);
+    drawCloudArc(130, 190, 12);
+    ctx.restore();
+
+    // 5. Draw Labels
+    ctx.font = 'italic 22px Times New Roman';
+    
+    ctx.textAlign = 'center';
+    drawLabelWithSubscript(ctx, 'M', '0', m0_x, baseY + 25);
+    drawLabelWithSubscript(ctx, 'M', '2', m2_x, m2_y - 15);
+    drawLabelWithSubscript(ctx, 'M', '3', m3_x, baseY + 25);
+    
+    ctx.textAlign = 'right';
+    drawLabelWithSubscript(ctx, 'M', '1', m1_x - 5, m1_y + 20);
+
+    ctx.textAlign = 'left';
+    drawLabelWithSubscript(ctx, 'h', '1', h1_indicator_x + 10, 308);
+
+    // 6. Draw Caption
+    ctx.font = '24px "KaiTi", "SimSun", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('热图 2.14.1', canvas.width / 2, 400);
+
+</script>
+</body>
+</html>

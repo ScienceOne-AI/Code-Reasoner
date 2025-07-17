@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Volume Diffraction Grating</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="500"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Helper Functions ---
+function drawArrow(ctx, fromx, fromy, tox, toy) {
+    const headlen = 8;
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+}
+
+function drawAngle(ctx, x, y, startAngle, endAngle, radius, label, labelOffset = 15) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, startAngle, endAngle);
+    ctx.stroke();
+
+    if (label) {
+        const labelAngle = (startAngle + endAngle) / 2;
+        const labelX = x + (radius + labelOffset) * Math.cos(labelAngle);
+        const labelY = y + (radius + labelOffset) * Math.sin(labelAngle);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText(label, labelX, labelY);
+    }
+}
+
+// --- Main Drawing ---
+// Style settings
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = 1.2;
+ctx.font = 'italic 18px Times New Roman';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// Parameters
+const centerX = 300;
+const blockWidth = 140; // h
+const blockHeight = 280;
+const blockLeft = centerX - blockWidth / 2;
+const blockRight = centerX + blockWidth / 2;
+const blockTop = 100;
+const blockBottom = blockTop + blockHeight;
+
+const numPlanes = 6;
+const lambda_px = blockHeight / (numPlanes - 1);
+
+const slope_inc = 0.6; // Corresponds to theta_0
+const slope_int = 0.3; // Corresponds to theta
+
+// Draw Grating Block
+ctx.fillStyle = '#e0e0e0';
+ctx.beginPath();
+ctx.moveTo(blockLeft, blockTop);
+ctx.quadraticCurveTo(centerX, blockTop - 10, blockRight, blockTop);
+ctx.lineTo(blockRight, blockBottom);
+ctx.quadraticCurveTo(centerX, blockBottom + 10, blockLeft, blockBottom);
+ctx.closePath();
+ctx.fill();
+ctx.stroke();
+
+// Draw Grating Planes
+ctx.save();
+ctx.lineWidth = 3.5;
+for (let i = 0; i < numPlanes; i++) {
+    const y = blockTop + i * lambda_px;
+    ctx.beginPath();
+    ctx.moveTo(blockLeft, y);
+    ctx.lineTo(blockRight, y);
+    ctx.stroke();
+}
+ctx.restore();
+
+// Draw Rays
+ctx.lineWidth = 1;
+const numRays = 7;
+const raySpacingY = 40;
+const exitRegionWidth = 200;
+
+for (let i = 0; i < numRays; i++) {
+    const entryY = blockTop + i * raySpacingY;
+    const entryX = blockLeft;
+
+    // 1. Incident Ray
+    const startX = entryX - 150;
+    const startY = entryY - 150 * slope_inc;
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(entryX, entryY);
+    drawArrow(ctx, startX, startY, entryX, entryY);
+    ctx.stroke();
+
+    // 2. Transmitted path inside the block
+    const trans_endX = blockRight;
+    const trans_endY = entryY + (trans_endX - entryX) * slope_int;
+    ctx.beginPath();
+    ctx.moveTo(entryX, entryY);
+    ctx.lineTo(trans_endX, trans_endY);
+    ctx.stroke();
+
+    // 2b. Exiting transmitted ray
+    ctx.beginPath();
+    ctx.moveTo(trans_endX, trans_endY);
+    const final_trans_X = trans_endX + exitRegionWidth;
+    const final_trans_Y = trans_endY + exitRegionWidth * slope_int;
+    ctx.lineTo(final_trans_X, final_trans_Y);
+    drawArrow(ctx, trans_endX, trans_endY, final_trans_X, final_trans_Y);
+    ctx.stroke();
+
+    // 3. Reflected rays generated at each plane
+    for (let j = 0; j < numPlanes; j++) {
+        const planeY = blockTop + j * lambda_px;
+        if (entryY < planeY && trans_endY > planeY) {
+            const reflectX = entryX + (planeY - entryY) / slope_int;
+            
+            // Reflected ray inside
+            ctx.beginPath();
+            ctx.moveTo(reflectX, planeY);
+            const reflect_endX = blockRight;
+            const reflect_endY = planeY - (reflect_endX - reflectX) * slope_int;
+            ctx.lineTo(reflect_endX, reflect_endY);
+            ctx.stroke();
+
+            // 3b. Exiting diffracted ray
+            ctx.beginPath();
+            ctx.moveTo(reflect_endX, reflect_endY);
+            const final_refl_X = reflect_endX + exitRegionWidth;
+            const final_refl_Y = reflect_endY - exitRegionWidth * slope_int;
+            ctx.lineTo(final_refl_X, final_refl_Y);
+            drawArrow(ctx, reflect_endX, reflect_endY, final_refl_X, final_refl_Y);
+            ctx.stroke();
+        }
+    }
+}
+
+
+// Dashed lines for angles
+ctx.save();
+ctx.setLineDash([4, 4]);
+ctx.lineWidth = 1;
+
+// Dashed line for theta_0
+const theta0_ray_index = 4;
+const theta0_y = blockTop + theta0_ray_index * raySpacingY;
+ctx.beginPath();
+ctx.moveTo(blockLeft - 60, theta0_y);
+ctx.lineTo(blockLeft, theta0_y);
+ctx.stroke();
+
+// Dashed line for theta
+const theta_ray_index = 2;
+const theta_plane_index = 3;
+const theta_entryY = blockTop + theta_ray_index * raySpacingY;
+const theta_planeY = blockTop + theta_plane_index * lambda_px;
+const theta_reflect_x = blockLeft + (theta_planeY - theta_entryY) / slope_int;
+ctx.beginPath();
+ctx.moveTo(theta_reflect_x - 40, theta_planeY);
+ctx.lineTo(theta_reflect_x + 40, theta_planeY);
+ctx.stroke();
+ctx.restore();
+
+
+// Labels and Annotations
+// h
+ctx.beginPath();
+ctx.moveTo(blockLeft, blockBottom + 20);
+ctx.lineTo(blockLeft, blockBottom + 30);
+ctx.moveTo(blockRight, blockBottom + 20);
+ctx.lineTo(blockRight, blockBottom + 30);
+ctx.moveTo(blockLeft, blockBottom + 25);
+ctx.lineTo(blockRight, blockBottom + 25);
+ctx.stroke();
+ctx.fillText('h', centerX, blockBottom + 40);
+
+// Lambda
+const lambdaY1 = blockTop + 3 * lambda_px;
+const lambdaY2 = blockTop + 4 * lambda_px;
+ctx.beginPath();
+ctx.moveTo(blockLeft - 25, lambdaY1);
+ctx.lineTo(blockLeft - 35, lambdaY1);
+ctx.moveTo(blockLeft - 25, lambdaY2);
+ctx.lineTo(blockLeft - 35, lambdaY2);
+ctx.moveTo(blockLeft - 30, lambdaY1);
+ctx.lineTo(blockLeft - 30, lambdaY2);
+drawArrow(ctx, blockLeft - 30, (lambdaY1+lambdaY2)/2, blockLeft - 30, lambdaY1);
+drawArrow(ctx, blockLeft - 30, (lambdaY1+lambdaY2)/2, blockLeft - 30, lambdaY2);
+ctx.stroke();
+ctx.fillText('Λ', blockLeft - 50, (lambdaY1 + lambdaY2) / 2);
+
+// x-axis
+ctx.beginPath();
+ctx.moveTo(centerX, blockTop - 40);
+ctx.lineTo(centerX, blockBottom + 15);
+drawArrow(ctx, centerX, blockBottom + 15, centerX, blockTop - 50);
+ctx.stroke();
+ctx.fillText('x', centerX + 15, blockTop - 50);
+
+// lambda_0
+ctx.fillText('λ₀', 100, 150);
+
+// Angles
+// theta_0
+const angle_theta0_start = -Math.atan(slope_inc);
+drawAngle(ctx, blockLeft, theta0_y, angle_theta0_start, 0, 30, 'θ₀', 8);
+
+// theta
+const angle_theta_start = -Math.atan(slope_int);
+drawAngle(ctx, theta_reflect_x, theta_planeY, angle_theta_start, 0, 25, 'θ', 8);
+
+// Unlabeled theta for downward ray with parenthesis arc
+const angle_theta_down_start = 0;
+const angle_theta_down_end = Math.atan(slope_int);
+drawAngle(ctx, theta_reflect_x, theta_planeY, angle_theta_down_start, angle_theta_down_end, 25, null);
+drawAngle(ctx, theta_reflect_x, theta_planeY, angle_theta_down_start + 0.05, angle_theta_down_end - 0.05, 35, null);
+
+</script>
+</body>
+</html>

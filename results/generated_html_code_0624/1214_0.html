@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-diagram" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-diagram');
+        const ctx = canvas.getContext('2d');
+
+        // --- Parameters and Coordinates ---
+        const A = { x: 250, y: 350 };
+        const L = 160; // Length of AB and AC
+        const phi = 40 * Math.PI / 180; // Angle phi in radians
+
+        const B = { x: A.x + L * Math.cos(phi), y: A.y - L * Math.sin(phi) };
+        const C = { x: A.x, y: A.y - L };
+        const D = { x: A.x + 140, y: A.y };
+        const H = { x: A.x - L, y: A.y };
+
+        // Helper function for drawing hatching
+        function drawHatching(x, y, width, height, spacing = 8) {
+            ctx.save();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            const clipPath = new Path2D();
+            clipPath.rect(x, y, width, height);
+            ctx.clip(clipPath);
+
+            const startX = x - Math.abs(height);
+            const endX = x + width + Math.abs(height);
+
+            for (let i = startX; i < endX; i += spacing) {
+                ctx.moveTo(i, y);
+                ctx.lineTo(i + height, y + height);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        // --- Drawing Layers ---
+
+        // 1. Auxiliary Lines (drawn first, in the background)
+        ctx.save();
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+
+        // Dashed arc for path of B
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, L, Math.PI, Math.PI - phi, true);
+        ctx.stroke();
+
+        // Dashed line for an alternative position of BC
+        const phi2 = 70 * Math.PI / 180;
+        const B2 = { x: A.x + L * Math.cos(phi2), y: A.y - L * Math.sin(phi2) };
+        ctx.beginPath();
+        ctx.moveTo(B2.x, B2.y);
+        ctx.lineTo(C.x, C.y);
+        ctx.stroke();
+        
+        // Dashed vertical line C-A
+        ctx.beginPath();
+        ctx.moveTo(C.x, C.y);
+        ctx.lineTo(A.x, A.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Dash-dot horizontal line
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([12, 4, 4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(H.x - 20, H.y);
+        ctx.lineTo(D.x + 40, D.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Main Mechanism
+        // Rope BC
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(C.x, C.y);
+        ctx.stroke();
+
+        // Thick, slightly curved rope/link CD
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(C.x, C.y);
+        ctx.quadraticCurveTo((C.x + D.x) / 2, (C.y + D.y) / 2 + 6, D.x, D.y);
+        ctx.stroke();
+        
+        // Rod AB
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+
+        // 3. Fixed Supports
+        ctx.lineWidth = 3;
+        
+        // Ground structure
+        const groundY = A.y;
+        const groundStartX = H.x - 50;
+        const groundWidth = (D.x + 50) - groundStartX;
+        ctx.beginPath();
+        ctx.moveTo(groundStartX, groundY);
+        ctx.lineTo(groundStartX + groundWidth, groundY);
+        ctx.stroke();
+        drawHatching(groundStartX, groundY, groundWidth, 20);
+
+        // Support for A
+        ctx.beginPath();
+        ctx.moveTo(A.x - 20, groundY);
+        ctx.lineTo(A.x, groundY - 20);
+        ctx.lineTo(A.x + 20, groundY);
+        ctx.stroke();
+
+        // Support for D
+        ctx.beginPath();
+        ctx.moveTo(D.x, groundY);
+        ctx.lineTo(D.x, groundY + 15);
+        ctx.stroke();
+
+        // Ceiling structure
+        const ceilingY = C.y - 25;
+        const ceilingStartX = C.x - 50;
+        const ceilingWidth = 100;
+        ctx.beginPath();
+        ctx.moveTo(C.x, C.y);
+        ctx.lineTo(C.x, ceilingY);
+        ctx.moveTo(ceilingStartX, ceilingY);
+        ctx.lineTo(ceilingStartX + ceilingWidth, ceilingY);
+        ctx.stroke();
+        drawHatching(ceilingStartX, ceilingY, ceilingWidth, -20);
+        
+        // 4. Pivots and Pulleys (drawn on top)
+        function drawPivot(x, y, radius) {
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+        }
+        
+        drawPivot(B.x, B.y, 5);
+        drawPivot(C.x, C.y, 10);
+        drawPivot(D.x, D.y, 8);
+
+        // Pivot A (concentric circles)
+        drawPivot(A.x, A.y, 12);
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 5. Angle Arc and Labels
+        // Angle phi arc
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        const angleRadius = 45;
+        ctx.arc(A.x, A.y, angleRadius, 0, -phi, true);
+        ctx.stroke();
+
+        // Arrowhead for angle arc
+        const arcEndX = A.x + angleRadius * Math.cos(-phi);
+        const arcEndY = A.y + angleRadius * Math.sin(-phi);
+        const tangentAngle = -phi + Math.PI / 2;
+        const arrowSize = 8;
+        ctx.beginPath();
+        ctx.moveTo(arcEndX, arcEndY);
+        ctx.lineTo(arcEndX - arrowSize * Math.cos(tangentAngle - Math.PI / 6), arcEndY - arrowSize * Math.sin(tangentAngle - Math.PI / 6));
+        ctx.moveTo(arcEndX, arcEndY);
+        ctx.lineTo(arcEndX - arrowSize * Math.cos(tangentAngle + Math.PI / 6), arcEndY - arrowSize * Math.sin(tangentAngle + Math.PI / 6));
+        ctx.stroke();
+
+        // Labels
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic bold 24px "Times New Roman"';
+        ctx.fillText('φ', A.x + angleRadius - 20, A.y - 25);
+        ctx.font = 'bold 24px "Times New Roman"';
+        ctx.fillText('A', A.x + 15, A.y + 25);
+        ctx.fillText('B', B.x - 20, B.y - 10);
+        ctx.fillText('C', C.x + 15, C.y + 5);
+        ctx.fillText('D', D.x + 15, D.y - 10);
+        ctx.fillText('H', H.x - 25, H.y - 5);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Standing Waves on a String</title>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="1000" height="450"></canvas>
+
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+/**
+ * Draws the standing wave envelope on the string.
+ * @param {number} startX - The starting x-coordinate of the wave.
+ * @param {number} y - The y-coordinate of the string's equilibrium position.
+ * @param {number} length - The total length of the vibrating string section.
+ * @param {number} numLoops - The number of antinodes (loops) to draw.
+ * @param {number} amplitude - The maximum displacement of the wave.
+ */
+function drawWave(startX, y, length, numLoops, amplitude) {
+    ctx.save();
+    ctx.lineWidth = 3;
+    const loopWidth = length / numLoops;
+    for (let i = 0; i < numLoops; i++) {
+        const node1X = startX + i * loopWidth;
+        const antinodeX = node1X + loopWidth / 2;
+        const node2X = node1X + loopWidth;
+
+        // Upper part of the envelope for the loop
+        ctx.beginPath();
+        ctx.moveTo(node1X, y);
+        ctx.quadraticCurveTo(antinodeX, y - amplitude, node2X, y);
+        ctx.stroke();
+
+        // Lower part of the envelope for the loop
+        ctx.beginPath();
+        ctx.moveTo(node1X, y);
+        ctx.quadraticCurveTo(antinodeX, y + amplitude, node2X, y);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+/**
+ * Draws one complete experimental setup.
+ * @param {number} offsetX - The horizontal offset for positioning the setup on the canvas.
+ * @param {number} numLoops - The number of loops in the standing wave.
+ * @param {boolean} isSubmerged - True if the mass is submerged in water.
+ */
+function drawSetup(offsetX, numLoops, isSubmerged) {
+    const baseY = 200;
+    const stringStartY = baseY;
+    
+    // Oscillator
+    const osc_x = offsetX + 50;
+    const osc_y = baseY - 30;
+    const osc_w = 80;
+    const osc_h = 60;
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.strokeRect(osc_x, osc_y, osc_w, osc_h);
+    ctx.fillStyle = 'black';
+    ctx.font = '18px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("oscillator", osc_x + osc_w / 2, osc_y + osc_h / 2);
+    
+    // Connection rod from oscillator to string
+    const stringStartX = osc_x + osc_w + 10;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(osc_x + osc_w, stringStartY);
+    ctx.lineTo(stringStartX, stringStartY);
+    ctx.stroke();
+
+    // Pulley and supports
+    const pulleyX = offsetX + 400;
+    const pulleyR = 15;
+    const pulleyCenterY = baseY + pulleyR;
+    const tableTopY = pulleyCenterY + pulleyR;
+
+    // Horizontal table/support
+    ctx.fillStyle = 'black';
+    ctx.fillRect(osc_x, tableTopY, (pulleyX - 10) - osc_x, 10);
+    // Vertical pulley support
+    ctx.fillRect(pulleyX - 5, tableTopY, 10, 80);
+
+    // Pulley wheel
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(pulleyX, pulleyCenterY, pulleyR, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // String with standing wave
+    const stringLength = pulleyX - stringStartX;
+    const amplitude = numLoops === 2 ? 30 : 25; // Slightly smaller amplitude for more loops
+    drawWave(stringStartX, stringStartY, stringLength, numLoops, amplitude);
+
+    // Hanging string from pulley
+    const massY = 300;
+    const hangingStringX = pulleyX + pulleyR;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(pulleyX, stringStartY);
+    ctx.arcTo(hangingStringX, stringStartY, hangingStringX, pulleyCenterY, pulleyR);
+    ctx.lineTo(hangingStringX, massY);
+    ctx.stroke();
+
+    // Mass M
+    const massSize = 40;
+    const massX = hangingStringX - massSize / 2;
+    
+    if (isSubmerged) {
+        // Draw water and beaker first, so mass is drawn on top
+        const beakerW = 60;
+        const beakerH = 90;
+        const beakerX = massX + massSize / 2 - beakerW / 2;
+        const beakerY = massY - 20;
+
+        // Water
+        ctx.fillStyle = '#00BFFF'; // DeepSkyBlue, a vibrant light blue
+        ctx.fillRect(beakerX + 2, beakerY + 2, beakerW - 4, beakerH - 2);
+
+        // Beaker outline
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(beakerX, beakerY + beakerH);
+        ctx.lineTo(beakerX, beakerY);
+        ctx.lineTo(beakerX + beakerW, beakerY);
+        ctx.lineTo(beakerX + beakerW, beakerY + beakerH);
+        ctx.stroke();
+    }
+    
+    // Mass box
+    ctx.strokeStyle = 'black';
+    ctx.strokeRect(massX, massY, massSize, massSize);
+    // Mass Label 'M'
+    ctx.fillStyle = 'black';
+    ctx.font = '28px serif';
+    ctx.fillText("M", massX + massSize / 2, massY + massSize / 2 + 2);
+}
+
+
+// --- Main Drawing ---
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+// Draw left setup (mass in air, 2 loops)
+drawSetup(0, 2, false);
+
+// Draw right setup (mass in water, 4 loops)
+drawSetup(500, 4, true);
+
+</script>
+
+</body>
+</html>

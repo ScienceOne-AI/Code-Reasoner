@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Reconstruction</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Parameters and Coordinates ---
+        const pivotX = 220;
+        const pivotY = 180;
+        const rodL = 350; // Total length of the rod
+        const rodl = 120;  // Length on the table
+        const thetaDeg = 20; // Angle in degrees for drawing
+        const thetaRad = thetaDeg * Math.PI / 180;
+
+        // Initial rod coordinates
+        const rodLeftX = pivotX - rodl;
+        const rodRightX = pivotX + rodL - rodl;
+
+        // --- Drawing Functions ---
+
+        function drawArrow(ctx, x1, y1, x2, y2) {
+            const headlen = 10; // length of head in pixels
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        }
+        
+        function drawDimensionLine(ctx, x1, x2, y, label) {
+             const arrowSize = 8;
+             ctx.beginPath();
+             // Horizontal line
+             ctx.moveTo(x1, y);
+             ctx.lineTo(x2, y);
+             // Left arrowhead
+             ctx.moveTo(x1 + arrowSize, y - arrowSize/2);
+             ctx.lineTo(x1, y);
+             ctx.lineTo(x1 + arrowSize, y + arrowSize/2);
+             // Right arrowhead
+             ctx.moveTo(x2 - arrowSize, y - arrowSize/2);
+             ctx.lineTo(x2, y);
+             ctx.lineTo(x2 - arrowSize, y + arrowSize/2);
+             ctx.stroke();
+
+             // Label
+             ctx.save();
+             ctx.textAlign = 'center';
+             ctx.textBaseline = 'bottom';
+             ctx.fillText(label, (x1 + x2) / 2, y - 4);
+             ctx.restore();
+        }
+
+        // --- Main Drawing Logic ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // General styles
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 20px "Times New Roman"';
+
+        // 1. Draw Ground
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        const groundY = 360;
+        ctx.moveTo(0, groundY);
+        ctx.lineTo(canvas.width, groundY);
+        ctx.stroke();
+        // Hatching for ground
+        for (let i = 0; i < canvas.width; i += 15) {
+            ctx.beginPath();
+            ctx.moveTo(i, groundY);
+            ctx.lineTo(i - 15, groundY + 15);
+            ctx.stroke();
+        }
+
+        // 2. Draw Table
+        const tableThickness = 40;
+        const tableLeftX = 60;
+        const tablePostWidth = 20;
+        const tablePostX = tableLeftX + (pivotX - tableLeftX) / 2;
+
+        // Table support post
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.rect(tablePostX - tablePostWidth / 2, pivotY + tableThickness, tablePostWidth, groundY - (pivotY + tableThickness));
+        ctx.stroke();
+        
+        // Tabletop
+        ctx.beginPath();
+        ctx.moveTo(pivotX, pivotY);
+        ctx.lineTo(pivotX, pivotY + tableThickness);
+        ctx.lineTo(tableLeftX, pivotY + tableThickness);
+        ctx.lineTo(tableLeftX, pivotY);
+        // The edge is part of the rod line, so we don't close the path to keep the corner sharp
+        ctx.stroke();
+        
+        // Decorative chevrons on table
+        ctx.lineWidth = 1;
+        const chevronY = pivotY + tableThickness / 2;
+        for (let i = 0; i < 4; i++) {
+             ctx.beginPath();
+             ctx.moveTo(tableLeftX + 20 + i*25, chevronY - 8);
+             ctx.lineTo(tableLeftX + 30 + i*25, chevronY);
+             ctx.lineTo(tableLeftX + 20 + i*25, chevronY + 8);
+             ctx.stroke();
+        }
+
+
+        // 3. Draw Rods
+        // Initial horizontal rod (solid)
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(rodLeftX, pivotY);
+        ctx.lineTo(rodRightX, pivotY);
+        ctx.stroke();
+
+        // Rotated rod (dashed)
+        // Using canvas coordinate system (y-down), clockwise rotation
+        const cosTh = Math.cos(thetaRad);
+        const sinTh = Math.sin(thetaRad);
+        const rotLeftX = pivotX - rodl * cosTh;
+        const rotLeftY = pivotY - rodl * sinTh; // Rotates up
+        const rotRightX = pivotX + (rodL - rodl) * cosTh;
+        const rotRightY = pivotY + (rodL - rodl) * sinTh; // Rotates down
+        
+        ctx.save();
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        ctx.moveTo(rotLeftX, rotLeftY);
+        ctx.lineTo(rotRightX, rotRightY);
+        ctx.stroke();
+        ctx.restore();
+
+        // 4. Draw Dimensions and Labels
+        ctx.lineWidth = 1;
+        
+        // Dimension for L
+        const dimLY = 100;
+        ctx.beginPath();
+        ctx.moveTo(rodLeftX, pivotY);
+        ctx.lineTo(rodLeftX, dimLY);
+        ctx.moveTo(rodRightX, pivotY);
+        ctx.lineTo(rodRightX, dimLY);
+        ctx.stroke();
+        drawDimensionLine(ctx, rodLeftX, rodRightX, dimLY, 'L');
+
+        // Dimension for l
+        const dimlY = 130;
+        ctx.beginPath();
+        ctx.moveTo(rodLeftX, pivotY);
+        ctx.lineTo(rodLeftX, dimlY);
+        ctx.moveTo(pivotX, pivotY);
+        ctx.lineTo(pivotX, dimlY);
+        ctx.stroke();
+        drawDimensionLine(ctx, rodLeftX, pivotX, dimlY, 'l');
+
+        // Label C for Center of Mass
+        const centerX = rodLeftX + rodL / 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('C', centerX, pivotY - 8);
+
+        // 5. Draw Angle Arc and Label
+        const arcRadius = 50;
+        ctx.beginPath();
+        // Angle is between horizontal (0 rad) and rotated rod (-thetaRad)
+        ctx.arc(pivotX, pivotY, arcRadius, 0, thetaRad);
+        ctx.stroke();
+        
+        // Angle label theta
+        const labelRadius = arcRadius + 20;
+        const labelAngle = thetaRad / 2;
+        ctx.save();
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('θ', pivotX + labelRadius * Math.cos(labelAngle), pivotY + labelRadius * Math.sin(labelAngle));
+        ctx.restore();
+
+        // 6. Draw Title
+        ctx.font = '22px "KaiTi", "SimSun", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 3-24 图', canvas.width / 2, 420);
+
+    </script>
+</body>
+</html>

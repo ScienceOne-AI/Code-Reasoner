@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagrams</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Common settings ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px "Times New Roman", serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper function to draw an arrowhead ---
+        function drawArrowhead(ctx, x, y, angle) {
+            const headlen = 8;
+            ctx.save();
+            ctx.beginPath();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headlen, headlen / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headlen, -headlen / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Draw Diagram 2.1.1 (Left) ---
+        function drawDiagram1() {
+            const cx = 200;
+            const cy = 200;
+            const R = 80;
+
+            // Circle
+            ctx.beginPath();
+            ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Center O
+            ctx.fillText('O', cx - 15, cy - 8);
+
+            // Radius R
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([5, 3]);
+            ctx.moveTo(cx, cy);
+            const r_angle = 225 * Math.PI / 180;
+            ctx.lineTo(cx + R * Math.cos(r_angle), cy + R * Math.sin(r_angle));
+            ctx.stroke();
+            ctx.restore();
+            ctx.fillText('R', cx - R * 0.4, cy + R * 0.4 + 5);
+
+            // Top current (2I)
+            const arrowLen = 40;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - R);
+            ctx.lineTo(cx, cy - R - arrowLen);
+            ctx.stroke();
+            drawArrowhead(ctx, cx, cy - R - arrowLen, -Math.PI / 2);
+            ctx.fillText('2I', cx + 25, cy - R - arrowLen / 2);
+
+            // Bottom current (2I)
+            ctx.beginPath();
+            ctx.moveTo(cx, cy + R + arrowLen);
+            ctx.lineTo(cx, cy + R);
+            ctx.stroke();
+            drawArrowhead(ctx, cx, cy + R, -Math.PI / 2);
+            ctx.fillText('2I', cx + 25, cy + R + arrowLen / 2);
+
+            // Caption
+            ctx.fillText('电图 2.1.1', cx, cy + R + 70);
+        }
+
+        // --- Draw Diagram 2.1.2 (Right) ---
+        function drawDiagram2() {
+            const cx = 580;
+            const cy = 200;
+            const R = 80;
+            const axisLen = R + 40;
+
+            // Axes
+            // z-axis
+            ctx.beginPath();
+            ctx.moveTo(cx, cy + axisLen);
+            ctx.lineTo(cx, cy - axisLen);
+            ctx.stroke();
+            drawArrowhead(ctx, cx, cy - axisLen, -Math.PI / 2);
+            ctx.fillText('z', cx + 15, cy - axisLen + 5);
+
+            // y-axis
+            ctx.beginPath();
+            ctx.moveTo(cx - axisLen + 20, cy);
+            ctx.lineTo(cx + axisLen, cy);
+            ctx.stroke();
+            drawArrowhead(ctx, cx + axisLen, cy, 0);
+            ctx.fillText('y', cx + axisLen - 10, cy + 20);
+
+            // x-axis
+            const xAngle = 225 * Math.PI / 180; // Angle for the axis line
+            const xLen = R + 20;
+            ctx.beginPath();
+            ctx.moveTo(cx - xLen * Math.cos(xAngle), cy - xLen * Math.sin(xAngle));
+            ctx.lineTo(cx + xLen * Math.cos(xAngle), cy + xLen * Math.sin(xAngle));
+            ctx.stroke();
+            drawArrowhead(ctx, cx + xLen * Math.cos(xAngle), cy + xLen * Math.sin(xAngle), xAngle);
+            ctx.fillText('x', cx + xLen * Math.cos(xAngle) - 15, cy + xLen * Math.sin(xAngle) + 5);
+
+
+            // Sphere outline
+            ctx.beginPath();
+            ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Center O
+            ctx.fillText('O', cx + 10, cy + 10);
+            
+            // Current paths on sphere
+            const controlOffsets = [50, 25, -50];
+            controlOffsets.forEach(offset => {
+                ctx.beginPath();
+                ctx.moveTo(cx, cy + R);
+                ctx.quadraticCurveTo(cx + offset, cy, cx, cy - R);
+                ctx.stroke();
+
+                // Arrow on the current path
+                const t = 0.3; // position on the curve (0=start, 1=end)
+                const p0 = {x: cx, y: cy + R};
+                const p1 = {x: cx + offset, y: cy};
+                const p2 = {x: cx, y: cy - R};
+                const arrowX = (1-t)*(1-t)*p0.x + 2*(1-t)*t*p1.x + t*t*p2.x;
+                const arrowY = (1-t)*(1-t)*p0.y + 2*(1-t)*t*p1.y + t*t*p2.y;
+                drawArrowhead(ctx, arrowX, arrowY, -Math.PI / 2);
+            });
+
+
+            // Radius R
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([5, 3]);
+            ctx.moveTo(cx, cy);
+            const r_angle_2 = -45 * Math.PI / 180;
+            ctx.lineTo(cx + R * Math.cos(r_angle_2), cy + R * Math.sin(r_angle_2));
+            ctx.stroke();
+            ctx.restore();
+            ctx.fillText('R', cx + R * 0.5, cy - R * 0.5 - 10);
+
+            // Top current (I)
+            const arrowLen = 30;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - R);
+            ctx.lineTo(cx, cy - R - arrowLen);
+            ctx.stroke();
+            drawArrowhead(ctx, cx, cy - R - arrowLen, -Math.PI / 2);
+            ctx.fillText('I', cx + 15, cy - R - arrowLen / 2);
+
+            // Bottom current (I)
+            ctx.beginPath();
+            ctx.moveTo(cx, cy + R + arrowLen);
+            ctx.lineTo(cx, cy + R);
+            ctx.stroke();
+            drawArrowhead(ctx, cx, cy + R, -Math.PI / 2);
+            ctx.fillText('I', cx - 15, cy + R + arrowLen / 2);
+
+            // Caption
+            ctx.fillText('电图 2.1.2', cx, cy + R + 70);
+        }
+
+
+        // --- Call drawing functions ---
+        drawDiagram1();
+        drawDiagram2();
+
+    </script>
+</body>
+</html>

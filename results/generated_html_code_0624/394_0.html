@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Optical Path Diagram</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    canvas {
+        border: 1px solid #ccc;
+        background-color: white;
+    }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="800" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    /**
+     * Draws a hat symbol (caret) over a character.
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {number} x - The center x-coordinate for the hat.
+     * @param {number} y - The bottom y-coordinate for the hat.
+     * @param {number} width - The width of the hat.
+     * @param {number} height - The height of the hat.
+     */
+    function drawHat(ctx, x, y, width, height) {
+        ctx.beginPath();
+        ctx.moveTo(x - width / 2, y);
+        ctx.lineTo(x, y - height);
+        ctx.lineTo(x + width / 2, y);
+        ctx.stroke();
+    }
+
+    /**
+     * Draws a 3D representation of a plate.
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {number} x_start - The starting x-coordinate of the plate's front face.
+     * @param {number} x_end - The ending x-coordinate of the plate's front face.
+     * @param {number} y_center - The y-coordinate of the propagation axis.
+     * @param {number} height - The total height of the plate.
+     */
+    function drawPlate(ctx, x_start, x_end, y_center, height) {
+        const perspective_depth = 20;
+        const h2 = height / 2;
+        ctx.beginPath();
+        // Front face
+        ctx.rect(x_start, y_center - h2, x_end - x_start, height);
+        // Top face
+        ctx.moveTo(x_start, y_center - h2);
+        ctx.lineTo(x_start + perspective_depth, y_center - h2 - perspective_depth);
+        ctx.lineTo(x_end + perspective_depth, y_center - h2 - perspective_depth);
+        ctx.lineTo(x_end, y_center - h2);
+        // Side face
+        ctx.moveTo(x_end, y_center - h2);
+        ctx.lineTo(x_end + perspective_depth, y_center - h2 - perspective_depth);
+        ctx.lineTo(x_end + perspective_depth, y_center + h2 - perspective_depth);
+        ctx.lineTo(x_end, y_center + h2);
+        ctx.stroke();
+    }
+
+    /**
+     * Draws a hatched wave packet.
+     * @param {object} params - The parameters for drawing the wave.
+     */
+    function drawHatchedWave(params) {
+        const { ctx, x_start, x_end, y_center, amplitude, num_cycles, phase, angle_rad, hatch_type } = params;
+        
+        const L = x_end - x_start;
+        const cos_a = Math.cos(angle_rad);
+        const sin_a = Math.sin(angle_rad);
+
+        // Generate points for the wave outline and the clipping path
+        const wave_points = [];
+        for (let x = x_start; x <= x_end; x++) {
+            const t = x - x_start;
+            const envelope = Math.sin(Math.PI * t / L);
+            const wave = Math.sin(2 * Math.PI * num_cycles * t / L + phase);
+            const displacement = amplitude * envelope * wave;
+            
+            const px = x + displacement * cos_a;
+            const py = y_center + displacement * sin_a;
+            wave_points.push({px, py});
+        }
+
+        // Create the path for the filled/hatched area
+        const clip_path = new Path2D();
+        clip_path.moveTo(x_start, y_center);
+        for (const p of wave_points) {
+            clip_path.lineTo(p.px, p.py);
+        }
+        clip_path.lineTo(x_end, y_center);
+        clip_path.closePath();
+
+        // Save context, clip, and draw hatching
+        ctx.save();
+        ctx.clip(clip_path);
+
+        ctx.lineWidth = 1;
+        if (hatch_type === 'vertical') {
+            for (let x = x_start; x < x_end; x += 4) {
+                ctx.beginPath();
+                ctx.moveTo(x, y_center - amplitude * 1.5);
+                ctx.lineTo(x, y_center + amplitude * 1.5);
+                ctx.stroke();
+            }
+        } else if (hatch_type === 'diagonal') { // 45-degree hatching
+            for (let c = y_center - x_end - 120; c < y_center - x_start + 120; c += 8) {
+                ctx.beginPath();
+                ctx.moveTo(x_start, x_start + c);
+                ctx.lineTo(x_end, x_end + c);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+
+        // Draw the outline of the wave on top of the hatching
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(wave_points[0].px, wave_points[0].py);
+        for (let i = 1; i < wave_points.length; i++) {
+            ctx.lineTo(wave_points[i].px, wave_points[i].py);
+        }
+        ctx.stroke();
+    }
+
+    /**
+     * Main drawing function.
+     */
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 20px serif';
+
+        const y_center = 250;
+        
+        // Draw main propagation axis
+        ctx.beginPath();
+        ctx.moveTo(10, y_center);
+        ctx.lineTo(790, y_center);
+        ctx.stroke();
+
+        // --- Incident Wave and Axes ---
+        const x_axis_in = 100;
+        ctx.beginPath();
+        ctx.moveTo(x_axis_in, y_center - 80); // Vertical axis
+        ctx.lineTo(x_axis_in, y_center + 80);
+        ctx.stroke();
+        
+        ctx.save();
+        ctx.translate(x_axis_in, y_center);
+        ctx.rotate(135 * Math.PI / 180); // Diagonal axis (135 degrees)
+        ctx.beginPath();
+        ctx.moveTo(-90, 0);
+        ctx.lineTo(90, 0);
+        ctx.stroke();
+        ctx.beginPath(); // Arrow on diagonal axis
+        ctx.moveTo(90, 0);
+        ctx.lineTo(80, -5);
+        ctx.lineTo(80, 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        
+        ctx.fillText('x', x_axis_in + 45, y_center - 55);
+        drawHat(ctx, x_axis_in + 50, y_center - 72, 8, 4);
+
+        // Incident Wave
+        drawHatchedWave({
+            ctx: ctx, x_start: 50, x_end: 280, y_center: y_center,
+            amplitude: 70, num_cycles: 2, phase: 0,
+            angle_rad: 135 * Math.PI / 180, hatch_type: 'diagonal'
+        });
+
+        // --- The Plate ---
+        drawPlate(ctx, 300, 340, y_center, 140);
+        
+        // --- Transmitted Wave and Axes ---
+        const x_axis_out = 450;
+        ctx.beginPath(); // Vertical axis
+        ctx.moveTo(x_axis_out, y_center - 80);
+        ctx.lineTo(x_axis_out, y_center + 80);
+        ctx.moveTo(x_axis_out, y_center - 80); // Arrow
+        ctx.lineTo(x_axis_out - 5, y_center - 70);
+        ctx.moveTo(x_axis_out, y_center - 80);
+        ctx.lineTo(x_axis_out + 5, y_center - 70);
+        ctx.stroke();
+        
+        ctx.fillText('y', x_axis_out - 20, y_center - 85);
+        drawHat(ctx, x_axis_out - 15, y_center - 102, 8, 4);
+        
+        ctx.beginPath(); // Diagonal guide line for perspective
+        ctx.moveTo(x_axis_out - 70, y_center + 50);
+        ctx.lineTo(x_axis_out + 70, y_center - 50);
+        ctx.stroke();
+
+        // Transmitted Wave (vertical component - cosine)
+        drawHatchedWave({
+            ctx: ctx, x_start: 360, x_end: 720, y_center: y_center,
+            amplitude: 60, num_cycles: 4, phase: Math.PI / 2, // cos(x) = sin(x + PI/2)
+            angle_rad: -Math.PI / 2, hatch_type: 'vertical'
+        });
+
+        // Transmitted Wave (horizontal component - negative sine, drawn vertically by convention)
+        drawHatchedWave({
+            ctx: ctx, x_start: 360, x_end: 720, y_center: y_center,
+            amplitude: 60, num_cycles: 4, phase: Math.PI, // -sin(x) = sin(x + PI)
+            angle_rad: -Math.PI / 2, hatch_type: 'vertical'
+        });
+
+        // --- Caption ---
+        ctx.font = 'bold 24px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.fillText("Fig. 2.71", canvas.width / 2, 470);
+    }
+
+    draw();
+</script>
+</body>
+</html>

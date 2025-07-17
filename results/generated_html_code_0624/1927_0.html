@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Physics Diagram of a CD</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    canvas {
+      border: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="physicsCanvas" width="450" height="350"></canvas>
+  <script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow
+    function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 8) {
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+      const angle = Math.atan2(dy, dx);
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(toX, toY);
+      ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+      ctx.stroke();
+    }
+
+    // --- Drawing parameters ---
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.fillStyle = 'black';
+
+    const centerX = 220;
+    const centerY = 130;
+    const outerRx = 180;
+    const outerRy = 55;
+    const innerRx = 70;
+    const innerRy = 21;
+
+    // 1. Draw the outer disc boundary
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, outerRx, outerRy, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 2. Draw the inner part with a cut-out for R1
+    const r1_gap_start = 1.45 * Math.PI;
+    const r1_gap_end = 1.1 * Math.PI;
+
+    // Draw the main part of the inner ellipse
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, innerRx, innerRy, 0, r1_gap_start, r1_gap_end);
+    ctx.stroke();
+
+    // Draw the wedge lines for the R1 representation
+    ctx.beginPath();
+    const p1x = centerX + innerRx * Math.cos(r1_gap_start);
+    const p1y = centerY + innerRy * Math.sin(r1_gap_start);
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(p1x, p1y);
+    const p2x = centerX + innerRx * Math.cos(r1_gap_end);
+    const p2y = centerY + innerRy * Math.sin(r1_gap_end);
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(p2x, p2y);
+    ctx.stroke();
+
+    // Add labels for O and R1
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.fillText('O', centerX - 20, centerY + 10);
+
+    ctx.save();
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.fillText('R', centerX - 55, centerY - 15);
+    ctx.font = "italic 14px 'Times New Roman'";
+    ctx.fillText('1', centerX - 45, centerY - 10);
+    ctx.restore();
+
+    // 3. Draw radius R2
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(centerX + outerRx, centerY);
+    ctx.stroke();
+
+    // Add label for R2
+    ctx.save();
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.fillText('R', centerX + 90, centerY - 10);
+    ctx.font = "italic 14px 'Times New Roman'";
+    ctx.fillText('2', centerX + 100, centerY - 5);
+    ctx.restore();
+
+    // 4. Draw the rotation arrow (clockwise)
+    const rotArrowRx = outerRx + 10;
+    const rotArrowRy = outerRy + 3;
+    const rotStartAngle = 0.25 * Math.PI;
+    const rotEndAngle = -0.05 * Math.PI;
+
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, rotArrowRx, rotArrowRy, 0, rotStartAngle, rotEndAngle, true);
+    ctx.stroke();
+    
+    // Draw arrowhead for the rotation
+    const arrowAngle = rotEndAngle;
+    const arrowX = centerX + rotArrowRx * Math.cos(arrowAngle);
+    const arrowY = centerY + rotArrowRy * Math.sin(arrowAngle);
+    // Tangent for clockwise ellipse path
+    const tangentAngle = Math.atan2(-rotArrowRy * Math.cos(arrowAngle), rotArrowRx * Math.sin(arrowAngle));
+    ctx.beginPath();
+    ctx.moveTo(arrowX, arrowY);
+    ctx.lineTo(arrowX - 10 * Math.cos(tangentAngle - Math.PI / 6), arrowY - 10 * Math.sin(tangentAngle - Math.PI / 6));
+    ctx.moveTo(arrowX, arrowY);
+    ctx.lineTo(arrowX - 10 * Math.cos(tangentAngle + Math.PI / 6), arrowY - 10 * Math.sin(tangentAngle + Math.PI / 6));
+    ctx.stroke();
+
+    // 5. Draw the laser assembly
+    const laserX = 270;
+    const laserY = 220;
+    const laserW = 30;
+    const laserH = 15;
+    const skew = 8;
+    const depth = 12;
+
+    // Draw 3D-like box for the laser head
+    ctx.beginPath();
+    ctx.rect(laserX, laserY, laserW, laserH); // Front face
+    ctx.moveTo(laserX, laserY);
+    ctx.lineTo(laserX + skew, laserY - depth);
+    ctx.lineTo(laserX + laserW + skew, laserY - depth);
+    ctx.lineTo(laserX + laserW, laserY); // Top face
+    ctx.moveTo(laserX + laserW, laserY);
+    ctx.lineTo(laserX + laserW + skew, laserY - depth);
+    ctx.lineTo(laserX + laserW + skew, laserY + laserH - depth);
+    ctx.lineTo(laserX + laserW, laserY + laserH); // Side face
+    ctx.stroke();
+
+    // Draw the laser beam (upward arrow)
+    const beamStartX = laserX + laserW / 2 + skew / 2;
+    const beamStartY = laserY - depth;
+    const beamEndY = centerY + outerRy + 2; // Pointing to the bottom edge of the disc
+    drawArrow(ctx, beamStartX, beamStartY, beamStartX, beamEndY, 10);
+
+    // Draw the velocity vector (rightward arrow)
+    const veloStartX = laserX + laserW + skew + 5;
+    const veloStartY = laserY + laserH / 2 - depth / 2;
+    const veloEndX = veloStartX + 40;
+    drawArrow(ctx, veloStartX, veloStartY, veloEndX, veloStartY, 10);
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.fillText('v', veloEndX + 8, veloStartY + 6);
+
+    // 6. Add Chinese text labels
+    ctx.font = "22px 'KaiTi', 'SimSun'";
+    ctx.fillText('激光束', laserX - 5, laserY + laserH + 28);
+    ctx.fillText('习题 1-21', centerX - 50, canvas.height - 25);
+  </script>
+</body>
+</html>

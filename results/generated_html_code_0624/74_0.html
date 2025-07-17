@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nuclear Shell Model Energy Levels</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; }
+        canvas { border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <canvas id="nuclearChart" width="750" height="650"></canvas>
+    <script>
+        const canvas = document.getElementById('nuclearChart');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const margin = { top: 40, right: 100, bottom: 60, left: 60 };
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const plotWidth = canvasWidth - margin.left - margin.right;
+        const plotHeight = canvasHeight - margin.top - margin.bottom;
+
+        const A_min = 0, A_max = 220;
+        const E_min = -42, E_max = 5;
+
+        // --- Data for each energy level curve ---
+        // Format: { label: "...", points: [[A, E], ...], labelSide: 'left'/'right', labelE: E_value }
+        const levelData = [
+            { label: "1s1/2", points: [[15, -31], [40, -38], [80, -40], [220, -41]], labelSide: 'left', labelE: -31 },
+            { label: "1p3/2", points: [[8, -18], [20, -22], [40, -27], [80, -31], [220, -35]], labelSide: 'left', labelE: -21 },
+            { label: "1p1/2", points: [[10, -17.5], [20, -20], [40, -24], [80, -29], [220, -34]], labelSide: 'left', labelE: -18 },
+            { label: "1d5/2", points: [[18, -10], [40, -16], [80, -22], [160, -28.5], [220, -31]], labelSide: 'left', labelE: -10 },
+            { label: "2s1/2", points: [[20, -8], [40, -12], [80, -19], [160, -26], [220, -28.5]], labelSide: 'left', labelE: -8 },
+            { label: "1d3/2", points: [[22, 0], [40, -8], [80, -16], [160, -24], [220, -29]], labelSide: 'left', labelE: 0 },
+            { label: "1f7/2", points: [[30, -3], [40, -4.5], [80, -12], [160, -20], [220, -26]], labelSide: 'right', labelE: -26 },
+            { label: "2p3/2", points: [[38, -1], [60, -5], [80, -8], [160, -17], [220, -22]], labelSide: 'right', labelE: -22 },
+            { label: "1f5/2", points: [[40, 0], [60, -3], [80, -7.5], [160, -16], [220, -22.5]], labelSide: 'right', labelE: -22.5 },
+            { label: "2p1/2", points: [[48, 0], [60, -2], [80, -6], [160, -15], [220, -21]], labelSide: 'right', labelE: -21 },
+            { label: "1g9/2", points: [[55, 0], [80, -5], [120, -10], [160, -14], [220, -19.5]], labelSide: 'right', labelE: -19.5 },
+            { label: "1g7/2", points: [[75, 0], [120, -6.5], [160, -11], [220, -16]], labelSide: 'right', labelE: -16 },
+            { label: "2d5/2", points: [[68, -0.5], [80, -2], [120, -7], [160, -11], [220, -15.5]], labelSide: 'right', labelE: -15.5 },
+            { label: "1h11/2", points: [[80, 0], [120, -4], [160, -8.5], [220, -13]], labelSide: 'right', labelE: -13 },
+            { label: "2d3/2", points: [[80, 0.5], [120, -5], [160, -9], [220, -14]], labelSide: 'right', labelE: -14 },
+            { label: "3s1/2", points: [[78, -1], [120, -6.5], [160, -10], [220, -13.5]], labelSide: 'right', labelE: -13.5 },
+            { label: "1h9/2", points: [[100, 0], [120, -1.5], [160, -5.5], [220, -9.5]], labelSide: 'right', labelE: -9.5 },
+            { label: "2f7/2", points: [[95, 0], [120, -2], [160, -6], [220, -9]], labelSide: 'right', labelE: -9 },
+            { label: "1i13/2", points: [[115, 1], [140, -2], [160, -4], [220, -7.0]], labelSide: 'right', labelE: -7.0 },
+            { label: "2f5/2", points: [[110, 0], [120, -0.5], [160, -4.5], [220, -7.8]], labelSide: 'right', labelE: -7.8 },
+            { label: "3p3/2", points: [[105, -0.5], [120, -2], [160, -5], [220, -7.5]], labelSide: 'right', labelE: -7.5 },
+            { label: "3p1/2", points: [[115, -0.5], [120, -1.5], [160, -4.5], [220, -7.2]], labelSide: 'right', labelE: -7.2 },
+            { label: "2g9/2", points: [[125, 1], [140, -0.5], [160, -2], [220, -6]], labelSide: 'right', labelE: -6 },
+            { label: "1i11/2", points: [[135, 2], [160, -1], [220, -5]], labelSide: 'right', labelE: -5 },
+            { label: "3d5/2", points: [[135, 0], [160, -2], [220, -4]], labelSide: 'right', labelE: -4 },
+            { label: "1j15/2", points: [[145, 2], [160, 0], [180,-2], [220,-3.5]], labelSide: 'right', labelE: -3.5 },
+            { label: "4s1/2", points: [[140, -0.5], [160,-2], [220, -3]], labelSide: 'right', labelE: -3 },
+            { label: "2g7/2", points: [[150, 1], [160, 0], [220,-2.5]], labelSide: 'right', labelE: -2.5 },
+            { label: "3d3/2", points: [[155, 1], [160, 0.5], [220,-2]], labelSide: 'right', labelE: -2.0 },
+            // Extra short lines top right
+            { points: [[135, 2.8], [150, 2.2]] },
+            { points: [[165, 1.5], [180, 1.2]] },
+            { points: [[180, 1], [200, 0.8]] },
+            { points: [[170, 0.5], [190, 0.3]] },
+        ];
+
+        // --- Helper Functions ---
+        function toX(A) {
+            return margin.left + (A - A_min) / (A_max - A_min) * plotWidth;
+        }
+
+        function toY(E) {
+            return margin.top + plotHeight - (E - E_min) / (E_max - E_min) * plotHeight;
+        }
+
+        // Helper to draw text with subscript like "1p3/2"
+        function drawSubscriptedText(fullText, x, y, align = 'left') {
+            const baseFont = "15px Arial";
+            const subFont = "11px Arial";
+            
+            ctx.font = baseFont;
+            const match = fullText.match(/(\d+)([spdfghij])(\d+)\/2/);
+            if (!match) {
+                 ctx.textAlign = align;
+                 ctx.fillText(fullText, x, y);
+                 return;
+            }
+
+            const mainPart = match[1] + match[2];
+            const numerator = match[3];
+            const denominator = "2";
+
+            const mainWidth = ctx.measureText(mainPart).width;
+            const totalWidth = mainWidth + ctx.measureText("/").width + 4;
+
+            let startX = x;
+            if(align === 'right') {
+                startX = x - totalWidth;
+            } else if (align === 'center') {
+                startX = x - totalWidth / 2;
+            }
+
+            // Draw main part
+            ctx.textAlign = 'left'; // always draw parts left to right
+            ctx.textBaseline = 'middle';
+            ctx.font = baseFont;
+            ctx.fillText(mainPart, startX, y);
+
+            // Draw fraction
+            ctx.font = subFont;
+            const subX = startX + mainWidth;
+            const slashWidth = ctx.measureText("/").width;
+            ctx.fillText(numerator, subX + slashWidth - 1, y - 5);
+            ctx.fillText("/", subX, y);
+            ctx.fillText(denominator, subX + slashWidth -1, y + 6);
+        }
+
+        // --- Drawing Functions ---
+        function drawAxes() {
+            ctx.beginPath();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+
+            // Y-axis
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, margin.top + plotHeight);
+            // X-axis
+            ctx.moveTo(margin.left, toY(0));
+            ctx.lineTo(margin.left + plotWidth, toY(0));
+            ctx.stroke();
+
+            // Ticks
+            ctx.font = "12px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            for (let A = 20; A <= A_max; A += 20) {
+                const x = toX(A);
+                ctx.moveTo(x, toY(0));
+                ctx.lineTo(x, toY(0) + 5);
+                ctx.fillText(A, x, toY(0) + 8);
+            }
+            ctx.fillText(0, toX(0), toY(0) + 8);
+            
+            ctx.textAlign = "right";
+            ctx.textBaseline = "middle";
+            for (let E = -40; E <= 0; E += 10) {
+                const y = toY(E);
+                ctx.moveTo(margin.left, y);
+                ctx.lineTo(margin.left - 5, y);
+                ctx.fillText(E, margin.left - 8, y);
+            }
+            ctx.stroke();
+            
+            // Axis Labels
+            ctx.font = "16px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("A", margin.left + plotWidth / 2, canvasHeight - 20);
+            
+            ctx.save();
+            ctx.translate(20, margin.top + plotHeight / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText("E MeV", 0, 0);
+            ctx.restore();
+        }
+
+        function drawCurves() {
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.5;
+
+            levelData.forEach(level => {
+                ctx.beginPath();
+                const [startX, startY] = level.points[0];
+                ctx.moveTo(toX(startX), toY(startY));
+                for (let i = 1; i < level.points.length; i++) {
+                    const [Ax, Ey] = level.points[i];
+                    ctx.lineTo(toX(Ax), toY(Ey));
+                }
+                ctx.stroke();
+            });
+        }
+        
+        function drawLabels() {
+            levelData.forEach(level => {
+                if (!level.label) return;
+                
+                if (level.labelSide === 'left') {
+                    const xPos = margin.left - 8;
+                    const yPos = toY(level.labelE);
+                    drawSubscriptedText(level.label, xPos, yPos, 'right');
+                } else if (level.labelSide === 'right') {
+                    const xPos = margin.left + plotWidth + 8;
+                    const yPos = toY(level.labelE);
+                    drawSubscriptedText(level.label, xPos, yPos, 'left');
+                }
+            });
+        }
+        
+        function drawCaption() {
+            ctx.fillStyle = '#000';
+            ctx.font = '16px "Times New Roman"';
+            ctx.textAlign = 'center';
+            ctx.fillText('Fig. 2.16', canvasWidth / 2, canvasHeight - 5);
+        }
+
+        // --- Main Execution ---
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        ctx.fillStyle = 'black';
+
+        drawAxes();
+        drawCurves();
+        drawLabels();
+        drawCaption();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Velocity vs. Time Graph</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style parameters
+        const margin = { top: 40, right: 20, bottom: 60, left: 60 };
+        const graphWidth = canvas.width - margin.left - margin.right;
+        const graphHeight = canvas.height - margin.top - margin.bottom;
+
+        // Data ranges
+        const timeMax = 10; // 0 to 10 s
+        const velocityMin = -10; // -10 to 10 m/s
+        const velocityMax = 10;
+        const velocityRange = velocityMax - velocityMin;
+
+        // Scale factors
+        const xScale = graphWidth / timeMax;
+        const yScale = graphHeight / velocityRange;
+
+        // Canvas coordinates of the origin (t=0, v=0)
+        const originX = margin.left;
+        const originY = margin.top + (velocityMax * yScale);
+
+        // --- Helper functions to convert data coordinates to canvas coordinates ---
+        function getCanvasX(time) {
+            return originX + time * xScale;
+        }
+
+        function getCanvasY(velocity) {
+            return originY - velocity * yScale; // Y-axis is inverted in canvas
+        }
+
+        // --- Drawing ---
+
+        // Clear canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // --- Draw Grid ---
+        ctx.beginPath();
+        ctx.strokeStyle = '#cccccc';
+        ctx.lineWidth = 1;
+
+        // Vertical grid lines (every 1 second)
+        for (let t = 1; t <= timeMax; t++) {
+            const x = getCanvasX(t);
+            ctx.moveTo(x, margin.top);
+            ctx.lineTo(x, margin.top + graphHeight);
+        }
+
+        // Horizontal grid lines (every 2.5 m/s)
+        for (let v = velocityMin + 2.5; v < velocityMax; v += 2.5) {
+             if (v !== 0) { // Axis line will be drawn separately
+                const y = getCanvasY(v);
+                ctx.moveTo(margin.left, y);
+                ctx.lineTo(margin.left + graphWidth, y);
+             }
+        }
+        ctx.stroke();
+
+
+        // --- Draw Axes ---
+        ctx.beginPath();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        // X-Axis (v=0)
+        ctx.moveTo(margin.left, originY);
+        ctx.lineTo(margin.left + graphWidth, originY);
+        // Y-Axis (t=0)
+        ctx.moveTo(originX, margin.top);
+        ctx.lineTo(originX, margin.top + graphHeight);
+        ctx.stroke();
+
+        // --- Draw Labels and Ticks ---
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+
+        // X-axis labels and ticks
+        for (let t = 0; t <= timeMax; t++) {
+            const x = getCanvasX(t);
+            ctx.fillText(t, x, originY + 8);
+        }
+
+        // Y-axis labels and ticks
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let v = velocityMin; v <= velocityMax; v += 5) {
+            const y = getCanvasY(v);
+            ctx.fillText(v, originX - 10, y);
+        }
+
+        // Axis Titles
+        // X-axis title
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('Time (s)', getCanvasX(timeMax / 2), margin.top + graphHeight + 30);
+
+        // Y-axis title
+        ctx.save();
+        ctx.translate(margin.left - 40, margin.top + graphHeight / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Velocity (m/s)', 0, 0);
+        ctx.restore();
+
+
+        // --- Draw the velocity graph ---
+        ctx.beginPath();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+
+        // Based on analysis, the key points are (0, 8), (3, 8), (6, -4), (10, -4)
+        const points = [
+            { t: 0, v: 8 },
+            { t: 3, v: 8 },
+            { t: 6, v: -4 },
+            { t: 10, v: -4 }
+        ];
+        
+        ctx.moveTo(getCanvasX(points[0].t), getCanvasY(points[0].v));
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(getCanvasX(points[i].t), getCanvasY(points[i].v));
+        }
+        ctx.stroke();
+
+    </script>
+</body>
+</html>

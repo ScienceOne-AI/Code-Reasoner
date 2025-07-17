@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Diagrama de Puente Voladizo</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bridgeCanvas" width="900" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('bridgeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuración y Constantes ---
+        const scale = 5;
+        const y_deck = 250;
+        const deck_height = 12;
+
+        const x_A = 50;
+        const x_B = x_A + 50 * scale; // 300
+        const x_C = x_B + 20 * scale; // 400
+        const x_D = x_C + 20 * scale; // 500
+        const x_E = x_D + 20 * scale; // 600
+        const x_F = x_E + 50 * scale; // 850
+        
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Funciones de Ayuda ---
+
+        // Función para crear un patrón de sombreado (hatching)
+        function createHatchPattern(angle_deg = 45, spacing = 8) {
+            const patternCanvas = document.createElement('canvas');
+            const patternCtx = patternCanvas.getContext('2d');
+            const size = spacing * 2;
+            patternCanvas.width = size;
+            patternCanvas.height = size;
+            
+            patternCtx.strokeStyle = 'black';
+            patternCtx.lineWidth = 1;
+            
+            const angle_rad = angle_deg * Math.PI / 180;
+            const sin = Math.sin(angle_rad);
+            const cos = Math.cos(angle_rad);
+
+            for (let i = -size; i < size * 2; i += spacing) {
+                patternCtx.beginPath();
+                patternCtx.moveTo(i * cos, i * sin - size);
+                patternCtx.lineTo(i * cos + size * 2 * sin, i * sin + size * 2 * cos);
+                patternCtx.stroke();
+            }
+            return ctx.createPattern(patternCanvas, 'repeat');
+        }
+
+        const hatchFill = createHatchPattern(45, 6);
+        const groundHatchFill = createHatchPattern(45, 8);
+
+
+        function drawPinSupport(x, y) {
+            ctx.beginPath();
+            ctx.moveTo(x - 15, y + 15);
+            ctx.lineTo(x, y);
+            ctx.lineTo(x + 15, y + 15);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x - 20, y + 15);
+            ctx.lineTo(x + 20, y + 15);
+            ctx.stroke();
+        }
+
+        function drawRollerSupport(x, y) {
+            ctx.beginPath();
+            ctx.moveTo(x - 15, y + 15);
+            ctx.lineTo(x, y);
+            ctx.lineTo(x + 15, y + 15);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(x, y + 20, 5, 0, 2 * Math.PI);
+            ctx.stroke();
+        }
+
+        function drawDimensionLine(x1, x2, y, label) {
+            // Línea horizontal
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+
+            // Flechas
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x1 + 8, y - 4);
+            ctx.lineTo(x1 + 8, y + 4);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(x2, y);
+            ctx.lineTo(x2 - 8, y - 4);
+            ctx.lineTo(x2 - 8, y + 4);
+            ctx.closePath();
+            ctx.fill();
+
+            // Líneas de cota verticales (discontinuas)
+            ctx.save();
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x1, y_deck);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x2, y);
+            ctx.lineTo(x2, y_deck);
+            ctx.stroke();
+            ctx.restore();
+
+            // Texto
+            ctx.fillStyle = 'black';
+            ctx.fillText(label, (x1 + x2) / 2, y - 15);
+        }
+
+        // --- Dibujo Principal ---
+        
+        // 1. Cimientos (Piers and Abutments)
+        ctx.fillStyle = hatchFill;
+        // Pilar izquierdo (Abutment A)
+        ctx.fillRect(x_A - 40, y_deck, 40, 200);
+        ctx.strokeRect(x_A - 40, y_deck, 40, 200);
+        // Pilar B
+        ctx.fillRect(x_B - 20, y_deck, 40, 180);
+        ctx.strokeRect(x_B - 20, y_deck, 40, 180);
+        // Pilar E
+        ctx.fillRect(x_E - 20, y_deck, 40, 180);
+        ctx.strokeRect(x_E - 20, y_deck, 40, 180);
+        // Pilar derecho (Abutment F)
+        ctx.fillRect(x_F, y_deck, 40, 200);
+        ctx.strokeRect(x_F, y_deck, 40, 200);
+
+        // 2. Agua y lecho del río
+        // Agua
+        ctx.save();
+        ctx.setLineDash([10, 5]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x_A, y_deck + 40);
+        ctx.lineTo(x_F, y_deck + 40);
+        ctx.stroke();
+        ctx.restore();
+        
+        // Lecho del río
+        ctx.beginPath();
+        ctx.moveTo(x_A-40, y_deck + 180);
+        ctx.bezierCurveTo(x_B-20, y_deck + 80, x_B-20, y_deck + 150, (x_C + x_D)/2, y_deck + 190);
+        ctx.bezierCurveTo(x_E+20, y_deck + 150, x_E+20, y_deck + 80, x_F+40, y_deck + 160);
+        ctx.lineTo(x_F + 40, y_deck + 250);
+        ctx.lineTo(x_A - 40, y_deck + 250);
+        ctx.closePath();
+        ctx.save();
+        ctx.fillStyle = groundHatchFill;
+        ctx.fill();
+        ctx.restore();
+        ctx.stroke();
+        
+        // 3. Estructura del puente
+        ctx.fillStyle = 'white';
+        ctx.fillRect(x_A, y_deck - deck_height, x_F - x_A, deck_height);
+        ctx.strokeRect(x_A, y_deck - deck_height, x_F - x_A, deck_height);
+        
+        // Soportes
+        drawPinSupport(x_A, y_deck);
+        drawRollerSupport(x_B, y_deck);
+        drawRollerSupport(x_E, y_deck);
+        drawPinSupport(x_F, y_deck);
+        
+        // Conexiones en C y D
+        ctx.fillStyle = 'white';
+        ctx.fillRect(x_C - 8, y_deck - deck_height - 18, 16, 18);
+        ctx.strokeRect(x_C - 8, y_deck - deck_height - 18, 16, 18);
+        ctx.fillRect(x_D - 8, y_deck - deck_height - 18, 16, 18);
+        ctx.strokeRect(x_D - 8, y_deck - deck_height - 18, 16, 18);
+        
+        // 4. Diagrama de "Carga" (Momento Flector)
+        const h_peak = 110;
+        const h_C = 55;
+        const h_dip = 40;
+        
+        ctx.beginPath();
+        ctx.moveTo(x_A, y_deck - deck_height);
+        ctx.bezierCurveTo(x_B - 90, y_deck - deck_height - h_peak, x_B + 80, y_deck - deck_height - h_peak, x_C, y_deck - deck_height - h_C);
+        ctx.quadraticCurveTo((x_C + x_D) / 2, y_deck - deck_height - h_dip, x_D, y_deck - deck_height - h_C);
+        ctx.bezierCurveTo(x_E - 80, y_deck - deck_height - h_peak, x_E + 90, y_deck - deck_height - h_peak, x_F, y_deck - deck_height);
+        ctx.closePath();
+        
+        ctx.save();
+        ctx.fillStyle = hatchFill;
+        ctx.fill();
+        ctx.restore();
+        ctx.stroke();
+
+        // 5. Dimensiones y Etiquetas
+        const y_dim = 60;
+        ctx.lineWidth = 1;
+        drawDimensionLine(x_A, x_B, y_dim, '50 m');
+        drawDimensionLine(x_B, x_C, y_dim, '20 m');
+        drawDimensionLine(x_C, x_D, y_dim, '20 m');
+        drawDimensionLine(x_D, x_E, y_dim, '20 m');
+        drawDimensionLine(x_E, x_F, y_dim, '50 m');
+        
+        // Etiquetas de puntos
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 20px Arial';
+        const y_labels = y_deck + 30;
+        ctx.fillText('A', x_A, y_labels);
+        ctx.fillText('B', x_B, y_labels);
+        ctx.fillText('C', x_C, y_labels);
+        ctx.fillText('D', x_D, y_labels);
+        ctx.fillText('E', x_E, y_labels);
+        ctx.fillText('F', x_F, y_labels);
+
+    </script>
+</body>
+</html>

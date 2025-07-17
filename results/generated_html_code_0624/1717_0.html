@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cylindrical Capacitor</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="capacitorCanvas" width="500" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('capacitorCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a dash-dot line.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x1 - Start x-coordinate.
+         * @param {number} y1 - Start y-coordinate.
+         * @param {number} x2 - End x-coordinate.
+         * @param {number} y2 - End y-coordinate.
+         */
+        function drawDashDotLine(ctx, x1, y1, x2, y2) {
+            ctx.save();
+            ctx.setLineDash([15, 5, 5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        /**
+         * Draws an arrow from one point to another.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} fromX - Start x-coordinate.
+         * @param {number} fromY - Start y-coordinate.
+         * @param {number} toX - End x-coordinate.
+         * @param {number} toY - End y-coordinate.
+         */
+        function drawArrow(ctx, fromX, fromY, toX, toY) {
+            const headlen = 8;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        /**
+         * Draws hatching lines within a clipped region.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x - Left coordinate of the bounding box.
+         * @param {number} y - Top coordinate of the bounding box.
+         * @param {number} w - Width of the bounding box.
+         * @param {number} h - Height of the bounding box.
+         */
+        function drawHatching(ctx, x, y, w, h) {
+            ctx.save();
+            ctx.strokeStyle = '#404040';
+            ctx.lineWidth = 1;
+            const spacing = 12;
+            // Draw diagonal lines
+            for (let i = -h; i < w; i += spacing) {
+                ctx.beginPath();
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x + i + h, y + h);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+
+        // --- Main Drawing Function ---
+        function draw() {
+            // --- Setup ---
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#404040';
+            ctx.fillStyle = '#404040';
+            ctx.lineWidth = 2;
+            
+            // --- Geometry Parameters ---
+            const centerX = 250;
+            const topY = 100;
+            const bottomY = 400;
+            const perspectiveRatio = 0.25; // How flat the ellipses are
+
+            const R = 30;
+            const R1 = 90; // Approx 3*R
+            const R2 = 150; // Approx 5*R (Visual representation, not exact to problem statement for better visualization)
+            
+            const ellipseHeightR = R * perspectiveRatio;
+            const ellipseHeightR1 = R1 * perspectiveRatio;
+            const ellipseHeightR2 = R2 * perspectiveRatio;
+
+            // --- 1. Central Axis ---
+            drawDashDotLine(ctx, centerX, 40, centerX, 450);
+
+            // --- 2. Inner Conductor (Radius R) ---
+            ctx.beginPath();
+            ctx.ellipse(centerX, topY, R, ellipseHeightR, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(centerX - R, topY);
+            ctx.lineTo(centerX - R, bottomY);
+            ctx.moveTo(centerX + R, topY);
+            ctx.lineTo(centerX + R, bottomY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.ellipse(centerX, bottomY, R, ellipseHeightR, 0, 0, Math.PI);
+            ctx.stroke();
+
+            // --- 3. Dielectric Cylinder (Region R to R1) ---
+            // Create a clipping path for the dielectric material
+            const dielectricPath = new Path2D();
+            dielectricPath.moveTo(centerX + R, topY);
+            dielectricPath.lineTo(centerX + R, bottomY);
+            dielectricPath.ellipse(centerX, bottomY, R, ellipseHeightR, 0, Math.PI, 0, true);
+            dielectricPath.lineTo(centerX - R, topY);
+            dielectricPath.ellipse(centerX, topY, R, ellipseHeightR, 0, Math.PI, 2 * Math.PI);
+            dielectricPath.closePath();
+            
+            const outerDielectricPath = new Path2D();
+            outerDielectricPath.moveTo(centerX + R1, topY);
+            outerDielectricPath.lineTo(centerX + R1, bottomY);
+            outerDielectricPath.ellipse(centerX, bottomY, R1, ellipseHeightR1, 0, Math.PI, 0, true);
+            outerDielectricPath.lineTo(centerX - R1, topY);
+            outerDielectricPath.ellipse(centerX, topY, R1, ellipseHeightR1, 0, Math.PI, 2 * Math.PI);
+            outerDielectricPath.closePath();
+            
+            // Clip and draw hatching
+            ctx.save();
+            ctx.clip(outerDielectricPath);
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fill(dielectricPath);
+            ctx.globalCompositeOperation = 'source-over';
+            drawHatching(ctx, centerX - R1, topY, 2 * R1, bottomY - topY);
+            ctx.restore();
+
+            // Draw the outline of the dielectric
+            ctx.beginPath();
+            ctx.ellipse(centerX, topY, R1, ellipseHeightR1, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(centerX - R1, topY);
+            ctx.lineTo(centerX - R1, bottomY);
+            ctx.moveTo(centerX + R1, topY);
+            ctx.lineTo(centerX + R1, bottomY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.ellipse(centerX, bottomY, R1, ellipseHeightR1, 0, 0, Math.PI);
+            ctx.stroke();
+
+            // --- 4. Outer Conductor (Radius R2) ---
+            ctx.beginPath();
+            ctx.ellipse(centerX, topY, R2, ellipseHeightR2, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(centerX - R2, topY);
+            ctx.lineTo(centerX - R2, bottomY);
+            ctx.moveTo(centerX + R2, topY);
+            ctx.lineTo(centerX + R2, bottomY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.ellipse(centerX, bottomY, R2, ellipseHeightR2, 0, 0, Math.PI);
+            ctx.stroke();
+
+            // --- 5. Labels and Annotations ---
+            ctx.lineWidth = 1;
+            ctx.font = 'italic 22px "Times New Roman"';
+
+            // R
+            drawArrow(ctx, centerX, topY, centerX - R - 5, topY);
+            ctx.fillText('R', centerX - R - 30, topY - 5);
+
+            // R1
+            drawArrow(ctx, centerX, topY, centerX + R1 + 5, topY);
+            ctx.fillText('R', centerX + R1 + 10, topY + 5);
+            ctx.font = 'italic 15px "Times New Roman"';
+            ctx.fillText('1', centerX + R1 + 25, topY + 8);
+            ctx.font = 'italic 22px "Times New Roman"';
+            
+            // R2
+            drawArrow(ctx, centerX, topY, centerX + R2 + 5, topY + 15);
+            ctx.fillText('R', centerX + R2 + 10, topY + 35);
+            ctx.font = 'italic 15px "Times New Roman"';
+            ctx.fillText('2', centerX + R2 + 25, topY + 38);
+            ctx.font = 'italic 22px "Times New Roman"';
+
+            // εr
+            ctx.fillText('ε', centerX + 50, topY + (bottomY - topY) / 2);
+            ctx.font = 'italic 15px "Times New Roman"';
+            ctx.fillText('r', centerX + 62, topY + (bottomY - topY) / 2 + 5);
+            ctx.font = 'italic 22px "Times New Roman"';
+
+            // ε0
+            ctx.fillText('ε', centerX - 120, topY + (bottomY - topY) / 2);
+            ctx.font = 'italic 15px "Times New Roman"';
+            ctx.fillText('0', centerX - 108, topY + (bottomY - topY) / 2 + 5);
+            ctx.font = 'italic 22px "Times New Roman"';
+            
+            // --- 6. Ground Symbol ---
+            ctx.lineWidth = 2;
+            const groundY = bottomY - 60;
+            ctx.beginPath();
+            ctx.moveTo(centerX + R2, groundY);
+            ctx.lineTo(centerX + R2 + 30, groundY);
+            ctx.moveTo(centerX + R2 + 30, groundY);
+            ctx.lineTo(centerX + R2 + 30, groundY + 15);
+            ctx.stroke();
+            // Ground lines
+            ctx.beginPath();
+            ctx.moveTo(centerX + R2 + 15, groundY + 15);
+            ctx.lineTo(centerX + R2 + 45, groundY + 15);
+            ctx.moveTo(centerX + R2 + 22, groundY + 22);
+            ctx.lineTo(centerX + R2 + 38, groundY + 22);
+            ctx.moveTo(centerX + R2 + 27, groundY + 29);
+            ctx.lineTo(centerX + R2 + 33, groundY + 29);
+            ctx.stroke();
+
+            // --- 7. Bottom Text ---
+            ctx.font = '24px "SimSun", "Songti SC"';
+            ctx.fillStyle = '#000000';
+            ctx.textAlign = 'center';
+            ctx.fillText('题 8 图', centerX, 500);
+        }
+
+        draw();
+    </script>
+</body>
+</html>

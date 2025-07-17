@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Pendulum Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="pendulumCanvas" width="500" height="450"></canvas>
+<script>
+const canvas = document.getElementById('pendulumCanvas');
+const ctx = canvas.getContext('2d');
+
+// Clear canvas with a white background
+ctx.fillStyle = 'white';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// --- Style and Parameter Setup ---
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = 2;
+ctx.font = '24px serif';
+ctx.textAlign = 'left';
+ctx.textBaseline = 'middle';
+
+// Parameters for the pendulum diagram
+const pivot = { x: 380, y: 80 };
+const length = 280;
+const bobRadius = 12;
+const angleDeg = 40; // A representative angle for 0 < theta < 90
+const angleRad = angleDeg * Math.PI / 180;
+
+// Calculate positions of key elements
+const initialBobPos = { x: pivot.x - length, y: pivot.y };
+const currentBobPos = {
+    x: pivot.x - length * Math.sin(angleRad),
+    y: pivot.y + length * Math.cos(angleRad)
+};
+
+// --- Drawing Elements ---
+
+// 1. Initial Bob (at the horizontal release position)
+ctx.beginPath();
+ctx.arc(initialBobPos.x, initialBobPos.y, bobRadius, 0, 2 * Math.PI);
+ctx.fill();
+
+// 2. Current Bob (at angle theta)
+ctx.beginPath();
+ctx.arc(currentBobPos.x, currentBobPos.y, bobRadius, 0, 2 * Math.PI);
+ctx.fill();
+
+// 3. Dashed horizontal line from the initial position to the pivot area
+ctx.beginPath();
+ctx.setLineDash([7, 7]);
+// Start from the edge of the initial bob and end just before the pivot point
+ctx.moveTo(initialBobPos.x + bobRadius, initialBobPos.y);
+ctx.lineTo(pivot.x - 8, pivot.y); // Stop before the pivot square
+ctx.stroke();
+ctx.setLineDash([]); // Reset to solid lines for subsequent drawings
+
+// 4. Pendulum string (solid line from pivot to current bob)
+ctx.beginPath();
+ctx.moveTo(pivot.x, pivot.y);
+ctx.lineTo(currentBobPos.x, currentBobPos.y);
+ctx.stroke();
+
+// 5. Pivot point 'P'
+const pivotSize = 10;
+ctx.fillRect(pivot.x - pivotSize / 2, pivot.y - pivotSize / 2, pivotSize, pivotSize);
+ctx.fillText('P', pivot.x + pivotSize + 2, pivot.y);
+
+// 6. Angle representation
+// 6a. Short vertical reference line from the pivot
+const vLineLength = 60;
+ctx.beginPath();
+ctx.moveTo(pivot.x, pivot.y);
+ctx.lineTo(pivot.x, pivot.y + vLineLength);
+ctx.stroke();
+
+// 6b. Angle arc
+const arcRadius = 50;
+// In canvas arc, angle 0 is at 3 o'clock, PI/2 is at 6 o'clock.
+// We draw from the string's angle to the vertical line's angle.
+const stringAngleInCanvas = Math.PI / 2 - angleRad;
+const verticalAngleInCanvas = Math.PI / 2;
+ctx.beginPath();
+ctx.arc(pivot.x, pivot.y, arcRadius, stringAngleInCanvas, verticalAngleInCanvas);
+ctx.stroke();
+
+// 6c. Add the small branching line seen in the original sketch at the junction of the arc and string.
+// This is a stylistic detail to match the source image.
+const junctionPointOnString = {
+    x: pivot.x - 70 * Math.sin(angleRad),
+    y: pivot.y + 70 * Math.cos(angleRad)
+};
+ctx.beginPath();
+ctx.moveTo(junctionPointOnString.x, junctionPointOnString.y);
+ctx.lineTo(pivot.x - 50 * Math.sin(angleRad - 0.3), pivot.y + 50 * Math.cos(angleRad - 0.3));
+ctx.stroke();
+
+
+// 7. Angle symbol 'θ'
+ctx.font = 'italic 28px serif';
+ctx.textAlign = 'center';
+// Position theta inside the arc by calculating a point on the angle bisector
+const thetaLabelRadius = 35; // Distance from pivot for the label
+const thetaPos = {
+    x: pivot.x - thetaLabelRadius * Math.sin(angleRad / 2),
+    y: pivot.y + thetaLabelRadius * Math.cos(angleRad / 2)
+};
+ctx.fillText('θ', thetaPos.x, thetaPos.y);
+
+</script>
+</body>
+</html>

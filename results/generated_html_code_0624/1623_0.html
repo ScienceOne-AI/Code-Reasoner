@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+    <canvas id="canvas" width="500" height="420"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        const mainFont = 'italic 22px "Times New Roman"';
+        const captionFont = '18px "Times New Roman"';
+
+        // Helper function to draw an arrow
+        function drawArrow(fromx, fromy, tox, toy) {
+            const headlen = 12;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        // Coordinates
+        const O = { x: 220, y: 250 };
+        const Z_end = { x: O.x, y: O.y - 180 };
+        const Y_end = { x: O.x + 220, y: O.y };
+        const X_end = { x: O.x - 130, y: O.y + 90 };
+
+        // Vector r and its projection
+        const P_proj = { x: O.x + 90, y: O.y + 40 };
+        const P = { x: P_proj.x, y: P_proj.y - 160 };
+
+        // Draw solid lines first
+        ctx.setLineDash([]);
+        
+        // Draw vector r
+        ctx.beginPath();
+        ctx.moveTo(O.x, O.y);
+        ctx.lineTo(P.x, P.y);
+        ctx.stroke();
+
+        // Draw axes
+        drawArrow(O.x, O.y, X_end.x, X_end.y); // x-axis
+        drawArrow(O.x, O.y, Y_end.x, Y_end.y); // y-axis
+        drawArrow(O.x, O.y, Z_end.x, Z_end.y); // z-axis
+
+        // Draw dashed lines
+        ctx.save();
+        ctx.setLineDash([6, 6]);
+        ctx.lineWidth = 2;
+
+        // Vertical line from P to P_proj
+        ctx.beginPath();
+        ctx.moveTo(P.x, P.y);
+        ctx.lineTo(P_proj.x, P_proj.y);
+        ctx.stroke();
+
+        // Line from Origin to P_proj
+        ctx.beginPath();
+        ctx.moveTo(O.x, O.y);
+        ctx.lineTo(P_proj.x, P_proj.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // --- Labels and Arcs ---
+        ctx.font = mainFont;
+
+        // Axis labels
+        ctx.fillText('z', Z_end.x + 10, Z_end.y + 5);
+        ctx.fillText('y', Y_end.x + 10, Y_end.y + 8);
+        ctx.fillText('x', X_end.x - 25, X_end.y + 8);
+
+        // Label 'r' and its tick mark
+        ctx.fillText('r', P.x + 5, P.y - 5);
+        const r_vec = { x: P.x - O.x, y: P.y - O.y };
+        const r_mag = Math.sqrt(r_vec.x**2 + r_vec.y**2);
+        const r_norm = { x: r_vec.x / r_mag, y: r_vec.y / r_mag };
+        const r_perp = { x: -r_norm.y, y: r_norm.x };
+        const tick_pos = { x: P.x - r_norm.x * 25, y: P.y - r_norm.y * 25 };
+        const tick_len = 8;
+        ctx.beginPath();
+        ctx.moveTo(tick_pos.x - r_perp.x * tick_len, tick_pos.y - r_perp.y * tick_len);
+        ctx.lineTo(tick_pos.x + r_perp.x * tick_len, tick_pos.y + r_perp.y * tick_len);
+        ctx.stroke();
+        
+        // Angle theta
+        const theta_radius = 45;
+        const z_angle = Math.atan2(Z_end.y - O.y, Z_end.x - O.x);
+        const r_angle = Math.atan2(P.y - O.y, P.x - O.x);
+        ctx.beginPath();
+        ctx.arc(O.x, O.y, theta_radius, z_angle, r_angle);
+        ctx.stroke();
+        const theta_label_angle = (z_angle + r_angle) / 2;
+        ctx.fillText('θ', O.x + (theta_radius + 5) * Math.cos(theta_label_angle) - 15, O.y + (theta_radius + 15) * Math.sin(theta_label_angle));
+
+        // Angle phi
+        const phi_radius = 70;
+        const x_vec = { x: X_end.x - O.x, y: X_end.y - O.y };
+        const x_vec_mag = Math.sqrt(x_vec.x**2 + x_vec.y**2);
+        const phi_start = { x: O.x + x_vec.x * phi_radius / x_vec_mag, y: O.y + x_vec.y * phi_radius / x_vec_mag };
+
+        const proj_vec = { x: P_proj.x - O.x, y: P_proj.y - O.y };
+        const proj_vec_mag = Math.sqrt(proj_vec.x**2 + proj_vec.y**2);
+        const phi_end = { x: O.x + proj_vec.x * phi_radius / proj_vec_mag, y: O.y + proj_vec.y * phi_radius / proj_vec_mag };
+        
+        const phi_mid = { x: (phi_start.x + phi_end.x) / 2, y: (phi_start.y + phi_end.y) / 2 };
+        const phi_ctrl_vec = { x: phi_mid.x - O.x, y: phi_mid.y - O.y };
+        const phi_ctrl = { x: phi_mid.x + phi_ctrl_vec.y * 0.4, y: phi_mid.y - phi_ctrl_vec.x * 0.4 };
+
+        ctx.beginPath();
+        ctx.moveTo(phi_start.x, phi_start.y);
+        ctx.quadraticCurveTo(phi_ctrl.x, phi_ctrl.y, phi_end.x, phi_end.y);
+        ctx.stroke();
+        ctx.fillText('φ', phi_ctrl.x - 30, phi_ctrl.y + 15);
+        
+        // "Na" arc and label
+        const na_arc_end_factor = 0.5;
+        const na_arc_end = { x: O.x + x_vec.x * na_arc_end_factor, y: O.y + x_vec.y * na_arc_end_factor };
+        const na_arc_mid = { x: (O.x + na_arc_end.x) / 2, y: (O.y + na_arc_end.y) / 2 };
+        const x_norm = { x: x_vec.x / x_vec_mag, y: x_vec.y / x_vec_mag };
+        const x_perp = { x: -x_norm.y, y: x_norm.x };
+        const na_ctrl = { x: na_arc_mid.x + x_perp.x * 25, y: na_arc_mid.y + x_perp.y * 25 };
+        
+        ctx.beginPath();
+        ctx.moveTo(O.x, O.y);
+        ctx.quadraticCurveTo(na_ctrl.x, na_ctrl.y, na_arc_end.x, na_arc_end.y);
+        ctx.stroke();
+        ctx.fillText('Na', na_ctrl.x - 55, na_ctrl.y - 5);
+        
+        // Figure caption
+        ctx.font = captionFont;
+        ctx.fillText('Fig. 4.37', 220, 400);
+
+    </script>
+</body>
+</html>

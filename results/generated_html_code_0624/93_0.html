@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Redrawing</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-family: sans-serif;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="350"></canvas>
+    <p>Fig. 4.8</p>
+
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.lineWidth = 1.5;
+        ctx.font = "16px Arial";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Helper function to draw an arrow
+        function drawArrow(fromx, fromy, tox, toy, text = '') {
+            const headlen = 10; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+            if(text) {
+                // Custom text placement for specific labels
+                let textX = (fromx + tox) / 2;
+                let textY = (fromy + toy) / 2;
+                if (text === 'p') {
+                    textX -= 10;
+                    textY += 15;
+                }
+                ctx.fillText(text, textX, textY);
+            }
+        }
+        
+        // --- Part (a) ---
+        function drawPartA() {
+            ctx.save();
+            ctx.translate(50, 0); // Offset to give some margin
+
+            // Draw Scintillator
+            ctx.strokeRect(140, 50, 40, 70);
+            ctx.fillText("scintillator", 160, 35);
+
+            // Draw Photomultiplier Tube
+            ctx.beginPath();
+            ctx.moveTo(130, 120); // Top-left of PMT base
+            ctx.lineTo(190, 120); // Top-right of PMT base
+            ctx.bezierCurveTo(210, 130, 210, 155, 180, 170); // Right side curve
+            ctx.lineTo(170, 190); // Right neck
+            ctx.lineTo(150, 190); // Bottom neck
+            ctx.lineTo(140, 170); // Left neck
+            ctx.bezierCurveTo(110, 155, 110, 130, 130, 120); // Left side curve
+            ctx.stroke();
+            
+            // Draw Particle Beam
+            drawArrow(50, 90, 250, 90);
+            ctx.fillText("particle", 80, 75);
+            ctx.fillText("beam", 80, 95);
+
+            // Label for photomultiplier tube
+            ctx.beginPath();
+            ctx.moveTo(225, 200);
+            ctx.quadraticCurveTo(195, 190, 175, 175);
+            ctx.stroke();
+            const arrowAngle = Math.atan2(175-190, 175-195);
+            const headlen = 8;
+            ctx.beginPath();
+            ctx.moveTo(175, 175);
+            ctx.lineTo(175 - headlen * Math.cos(arrowAngle - Math.PI / 6), 175 - headlen * Math.sin(arrowAngle - Math.PI / 6));
+            ctx.moveTo(175, 175);
+            ctx.lineTo(175 - headlen * Math.cos(arrowAngle + Math.PI / 6), 175 - headlen * Math.sin(arrowAngle + Math.PI / 6));
+            ctx.stroke();
+            ctx.textAlign = 'left';
+            ctx.fillText("photomultiplier tube", 230, 200);
+
+            // Label (a)
+            ctx.textAlign = 'center';
+            ctx.fillText("(a)", 160, 220);
+            ctx.restore();
+        }
+
+        // --- Part (b) ---
+        function drawPartB() {
+            ctx.save();
+            ctx.translate(350, 0); // Move to the right side of the canvas
+
+            const origin = { x: 150, y: 150 };
+            
+            // Draw coordinate axes
+            ctx.beginPath();
+            ctx.moveTo(origin.x, origin.y);
+            ctx.lineTo(origin.x, origin.y - 120); // Vertical axis
+            ctx.stroke();
+
+            // Draw vector n
+            const n_end = { x: origin.x + 120, y: origin.y };
+            drawArrow(origin.x, origin.y, n_end.x, n_end.y);
+            ctx.fillText("n", n_end.x + 10, n_end.y);
+
+            // Draw vector p'
+            const angle_deg = 80;
+            const angle_rad = angle_deg * Math.PI / 180;
+            const p_prime_len = 110;
+            const p_prime_end = {
+                x: origin.x + p_prime_len * Math.cos(angle_rad),
+                y: origin.y - p_prime_len * Math.sin(angle_rad)
+            };
+            drawArrow(origin.x, origin.y, p_prime_end.x, p_prime_end.y);
+            ctx.fillText("p'", p_prime_end.x - 5, p_prime_end.y - 15);
+
+            // Draw dashed line
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            const dashed_end = {
+                x: origin.x + (p_prime_len + 40) * Math.cos(angle_rad),
+                y: origin.y - (p_prime_len + 40) * Math.sin(angle_rad)
+            };
+            ctx.moveTo(p_prime_end.x, p_prime_end.y);
+            ctx.lineTo(dashed_end.x, dashed_end.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Draw angle theta
+            ctx.beginPath();
+            ctx.arc(origin.x, origin.y, 40, 0, -angle_rad, true);
+            ctx.stroke();
+            const theta_pos = {
+                x: origin.x + 55 * Math.cos(angle_rad / 2),
+                y: origin.y - 55 * Math.sin(angle_rad / 2)
+            };
+            ctx.fillText("\u03B8", theta_pos.x, theta_pos.y);
+
+            // Calculate and draw vector p
+            const vec_n = { x: n_end.x - origin.x, y: n_end.y - origin.y };
+            const vec_p_prime = { x: p_prime_end.x - origin.x, y: p_prime_end.y - origin.y };
+            const vec_p = { x: vec_n.x + vec_p_prime.x, y: vec_n.y + vec_p_prime.y };
+            const p_start = { x: origin.x - vec_p.x, y: origin.y - vec_p.y };
+
+            drawArrow(p_start.x, p_start.y, origin.x, origin.y);
+            ctx.fillText("n", p_start.x - 10, p_start.y);
+            ctx.fillText("p", p_start.x + (origin.x - p_start.x)/2 + 10, p_start.y + (origin.y - p_start.y)/2);
+            
+            // Label (b)
+            ctx.fillText("(b)", origin.x + 50, origin.y + 100);
+
+            ctx.restore();
+        }
+
+        drawPartA();
+        drawPartB();
+
+    </script>
+</body>
+</html>

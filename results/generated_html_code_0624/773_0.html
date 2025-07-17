@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body {
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="myCanvas" width="600" height="850"></canvas>
+<script>
+  const canvas = document.getElementById('myCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Helper Functions ---
+  function drawArrow(fromx, fromy, tox, toy) {
+    const headlen = 8; // length of head in pixels
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+  }
+
+  function drawDoubleArrow(x1, y1, x2, y2, text = '') {
+    ctx.beginPath();
+    drawArrow(x1, y1, x2, y2);
+    drawArrow(x2, y2, x1, y1);
+    ctx.stroke();
+    if (text) {
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2 - 10;
+        ctx.fillStyle = 'black';
+        ctx.fillText(text, midX, midY);
+    }
+  }
+
+  function drawDashedLine(x1, y1, x2, y2, dashLen = 4) {
+    ctx.setLineDash([dashLen, dashLen]);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line
+  }
+
+  // --- Draw Fig. 6.1 ---
+  function drawFig1() {
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.textAlign = 'center';
+
+    const sphereCenterX = 200;
+    const sphereCenterY = 130;
+    const sphereRadius = 45;
+    const pointP_X = 450;
+    const pointP_Y = 130;
+    
+    // Draw sphere
+    ctx.beginPath();
+    ctx.arc(sphereCenterX, sphereCenterY, sphereRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // Draw point P
+    ctx.beginPath();
+    ctx.arc(pointP_X, pointP_Y, 2.5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.font = '16px "Times New Roman"';
+    ctx.fillText('P', pointP_X, pointP_Y + 20);
+
+    // Draw labels for sphere
+    ctx.textAlign = 'left';
+    ctx.font = '16px "Times New Roman"';
+    ctx.fillText('sphere,', 80, 60);
+    const chargeTextX = 80;
+    const chargeTextY = 80;
+    ctx.fillText('charge ', chargeTextX, chargeTextY);
+    const chargeWidth = ctx.measureText('charge ').width;
+    ctx.font = 'italic 16px "Times New Roman"';
+    ctx.fillText('q', chargeTextX + chargeWidth, chargeTextY);
+    ctx.beginPath();
+    ctx.lineWidth = 1;
+    drawArrow(140, 85, sphereCenterX - sphereRadius * Math.cos(Math.PI/4) + 5, sphereCenterY - sphereRadius * Math.sin(Math.PI/4) + 5);
+    ctx.stroke();
+
+    // Draw dashed lines and 'x' dimension
+    ctx.lineWidth = 1;
+    drawDashedLine(sphereCenterX, sphereCenterY, pointP_X + 50, sphereCenterY); // Horizontal line through center
+    
+    const x_dim_y = 80;
+    const x_start_x = sphereCenterX;
+    const x_end_x = pointP_X;
+
+    // Draw vertical dashed lines for dimension
+    drawDashedLine(x_start_x, sphereCenterY, x_start_x, x_dim_y);
+    drawDashedLine(x_end_x, sphereCenterY, x_end_x, x_dim_y);
+
+    // Draw 'x' double arrow
+    ctx.lineWidth = 1;
+    ctx.font = 'italic 18px "Times New Roman"';
+    drawDoubleArrow(x_start_x, x_dim_y, x_end_x, x_dim_y, 'x');
+
+    // Figure label
+    ctx.font = 'bold 16px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 6.1', 300, 240);
+  }
+
+  // --- Draw Fig. 6.2 ---
+  function drawFig2() {
+    ctx.save();
+    ctx.translate(0, 270); // Shift origin for the second figure
+
+    // Graph parameters
+    const originX = 80;
+    const originY = 510;
+    const graphWidth = 480;
+    const graphHeight = 420;
+    const xMax = 12;
+    const yMax = 14;
+    const xScale = graphWidth / xMax; // 40 px/cm
+    const yScale = graphHeight / yMax; // 30 px/(10^3 V)
+
+    const mapX = (x) => originX + x * xScale;
+    const mapY = (y) => originY - y * yScale;
+
+    // Draw grid
+    ctx.lineWidth = 0.5;
+    ctx.strokeStyle = '#BDBDBD';
+
+    // Minor grid lines
+    for (let i = 1; i <= xMax / 0.4; i++) {
+        const x = mapX(i * 0.4);
+        ctx.beginPath();
+        ctx.moveTo(x, originY);
+        ctx.lineTo(x, originY - graphHeight);
+        ctx.stroke();
+    }
+    for (let i = 1; i <= yMax / 0.4; i++) {
+        const y = mapY(i * 0.4);
+        ctx.beginPath();
+        ctx.moveTo(originX, y);
+        ctx.lineTo(originX + graphWidth, y);
+        ctx.stroke();
+    }
+    
+    // Major grid lines
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#888888';
+    for (let i = 2; i <= xMax; i += 2) {
+      const x = mapX(i);
+      ctx.beginPath();
+      ctx.moveTo(x, originY);
+      ctx.lineTo(x, originY - graphHeight);
+      ctx.stroke();
+    }
+     for (let i = 2; i <= yMax; i += 2) {
+      const y = mapY(i);
+      ctx.beginPath();
+      ctx.moveTo(originX, y);
+      ctx.lineTo(originX + graphWidth, y);
+      ctx.stroke();
+    }
+
+    // Draw axes
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.beginPath();
+    ctx.moveTo(originX, originY);
+    ctx.lineTo(originX + graphWidth, originY); // X-axis
+    ctx.moveTo(originX, originY);
+    ctx.lineTo(originX, originY - graphHeight); // Y-axis
+    ctx.stroke();
+
+    // Draw axis labels
+    ctx.fillStyle = 'black';
+    ctx.font = '16px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+
+    // X-axis labels
+    for (let i = 2; i <= xMax; i += 2) {
+        const x = mapX(i);
+        ctx.fillText(i, x, originY + 8);
+    }
+    ctx.fillText('0', originX, originY + 8);
+
+    // Y-axis labels
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let i = 2; i <= yMax; i += 2) {
+        const y = mapY(i);
+        ctx.fillText(i, originX - 8, y);
+    }
+
+    // Axis titles
+    ctx.textBaseline = 'alphabetic'; // Reset baseline
+    // X-Axis Title
+    const xcm_y = originY + 40;
+    const xcm_center_x = originX + graphWidth / 2 + 100;
+    const restText_x = ' / cm';
+    ctx.font = '16px "Times New Roman"';
+    const restWidth_x = ctx.measureText(restText_x).width;
+    ctx.font = 'italic 16px "Times New Roman"';
+    const x_width = ctx.measureText('x').width;
+    const totalWidth_x = x_width + restWidth_x;
+    let currentX_x = xcm_center_x - totalWidth_x / 2;
+    ctx.textAlign = 'left';
+    ctx.fillText('x', currentX_x, xcm_y);
+    currentX_x += x_width;
+    ctx.font = '16px "Times New Roman"';
+    ctx.fillText(restText_x, currentX_x, xcm_y);
+    
+    // Y-Axis Title
+    ctx.save();
+    ctx.translate(originX - 60, originY - graphHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const restText_y = ' / 10³ V';
+    ctx.font = '16px "Times New Roman"';
+    const restWidth_y = ctx.measureText(restText_y).width;
+    ctx.font = 'italic 16px "Times New Roman"';
+    const V_width = ctx.measureText('V').width;
+    const totalWidth_y = V_width + restWidth_y;
+    let currentX_y = -totalWidth_y / 2;
+    ctx.textAlign = 'left';
+    ctx.fillText('V', currentX_y, 0);
+    currentX_y += V_width;
+    ctx.font = '16px "Times New Roman"';
+    ctx.fillText(restText_y, currentX_y, 0);
+    ctx.restore();
+
+    // Draw the curve
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.beginPath();
+    
+    const radiusCm = 2.5;
+    const potentialAtSurface = 13;
+    ctx.moveTo(mapX(0), mapY(potentialAtSurface));
+    ctx.lineTo(mapX(radiusCm), mapY(potentialAtSurface));
+    
+    const constantVx = potentialAtSurface * radiusCm; // 13 * 2.5 = 32.5
+    for (let x_cm = radiusCm; x_cm <= xMax; x_cm += 0.05) {
+        const y_V = constantVx / x_cm;
+        ctx.lineTo(mapX(x_cm), mapY(y_V));
+    }
+    ctx.stroke();
+
+    // Figure label
+    ctx.font = 'bold 16px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 6.2', 320, 580);
+    
+    ctx.restore();
+  }
+
+  // --- Main execution ---
+  drawFig1();
+  drawFig2();
+
+</script>
+</body>
+</html>

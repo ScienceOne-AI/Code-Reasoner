@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>F-h Graph</title>
+</head>
+<body>
+<canvas id="physicsGraph" width="500" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physicsGraph');
+    const ctx = canvas.getContext('2d');
+
+    // Define coordinate system parameters
+    const origin = { x: 70, y: 350 };
+    const scaleX = 38; // pixels per cm on h-axis
+    const scaleY = 24; // pixels per N on F-axis
+
+    // Function to map physics coordinates (h, F) to canvas coordinates (x, y)
+    function map(h, F) {
+        return {
+            x: origin.x + h * scaleX,
+            y: origin.y - F * scaleY
+        };
+    }
+
+    // --- Main Drawing Function ---
+    function draw() {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+
+        drawAxes();
+        drawLabels();
+        drawGraph();
+        drawDashedLines();
+    }
+
+    // --- Helper Functions ---
+    function drawAxes() {
+        ctx.beginPath();
+        // Y-axis (F)
+        const yAxisTop = map(0, 14);
+        ctx.moveTo(origin.x, origin.y);
+        ctx.lineTo(yAxisTop.x, yAxisTop.y);
+        // Arrowhead for Y-axis
+        ctx.moveTo(yAxisTop.x, yAxisTop.y);
+        ctx.lineTo(yAxisTop.x - 6, yAxisTop.y + 10);
+        ctx.moveTo(yAxisTop.x, yAxisTop.y);
+        ctx.lineTo(yAxisTop.x + 6, yAxisTop.y + 10);
+
+        // X-axis (h)
+        const xAxisEnd = map(10.5, 0);
+        ctx.moveTo(origin.x, origin.y);
+        ctx.lineTo(xAxisEnd.x, xAxisEnd.y);
+        // Arrowhead for X-axis
+        ctx.moveTo(xAxisEnd.x, xAxisEnd.y);
+        ctx.lineTo(xAxisEnd.x - 10, xAxisEnd.y - 6);
+        ctx.moveTo(xAxisEnd.x, xAxisEnd.y);
+        ctx.lineTo(xAxisEnd.x - 10, xAxisEnd.y + 6);
+        ctx.stroke();
+    }
+
+    function drawLabels() {
+        // Y-axis labels
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        const yTicks = [4, 8, 12];
+        yTicks.forEach(F => {
+            const pos = map(0, F);
+            ctx.fillText(F, pos.x - 10, pos.y);
+            ctx.beginPath();
+            ctx.moveTo(pos.x - 3, pos.y);
+            ctx.lineTo(pos.x + 3, pos.y);
+            ctx.stroke();
+        });
+
+        // Y-axis title: F/N
+        ctx.font = 'italic bold 22px Arial';
+        ctx.fillText('F', origin.x + 15, map(0, 14).y + 5);
+        ctx.font = 'bold 22px Arial';
+        ctx.fillText('/N', origin.x + 35, map(0, 14).y + 5);
+
+        // X-axis labels
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const xTicks = [0, 3, 6, 7, 9];
+        xTicks.forEach(h => {
+            const pos = map(h, 0);
+            if (h !== 0) { // Don't overwrite origin '0'
+                ctx.fillText(h, pos.x, pos.y + 8);
+            }
+        });
+        ctx.fillText('0', origin.x, origin.y + 8);
+
+        // Small tick mark at h=6
+        const tick6Pos = map(6, 0);
+        ctx.beginPath();
+        ctx.moveTo(tick6Pos.x, tick6Pos.y);
+        ctx.lineTo(tick6Pos.x, tick6Pos.y - 6);
+        ctx.stroke();
+
+        // X-axis title: h/cm
+        const hLabelPos = map(10.5, 0);
+        ctx.font = 'italic bold 22px Arial';
+        ctx.fillText('h', hLabelPos.x + 5, hLabelPos.y - 15);
+        ctx.font = 'bold 22px Arial';
+        ctx.fillText('/cm', hLabelPos.x + 28, hLabelPos.y - 15);
+    }
+    
+    function drawGraph() {
+        ctx.beginPath();
+        ctx.lineWidth = 2.5;
+        const p1 = map(0, 12);
+        const p2 = map(3, 12);
+        const p3 = map(7, 4);
+        const p4 = map(9, 4);
+        
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.lineTo(p3.x, p3.y);
+        ctx.lineTo(p4.x, p4.y);
+        ctx.stroke();
+    }
+
+    function drawDashedLines() {
+        ctx.save();
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 4]);
+
+        // Vertical line from h=3 to F=12
+        let start = map(3, 0);
+        let end = map(3, 12);
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+
+        // Horizontal line from h=0 to h=7 at F=4
+        start = map(0, 4);
+        end = map(7, 4);
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+
+        // Vertical line from h=7 to F=4
+        start = map(7, 0);
+        end = map(7, 4);
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+        
+        // Vertical line from h=9 to F=4
+        start = map(9, 0);
+        end = map(9, 4);
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    // Execute drawing
+    draw();
+
+</script>
+</body>
+</html>

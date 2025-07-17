@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="550" height="550"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Drawing function for a vertical spring ---
+    function drawSpring(ctx, x_center, y_start, y_end, coils, width) {
+        const total_h = y_end - y_start;
+        if (total_h <= 0) return;
+
+        // Add short straight segments at the ends
+        const endSegmentLength = 5;
+        const springBodyLength = total_h - 2 * endSegmentLength;
+        if (springBodyLength <= 0) { // If too short, just draw a line
+            ctx.beginPath();
+            ctx.moveTo(x_center, y_start);
+            ctx.lineTo(x_center, y_end);
+            ctx.stroke();
+            return;
+        }
+        
+        const segment_h = springBodyLength / coils;
+        const springStartY = y_start + endSegmentLength;
+        const springEndY = y_end - endSegmentLength;
+
+        ctx.beginPath();
+        // Top straight segment
+        ctx.moveTo(x_center, y_start);
+        ctx.lineTo(x_center, springStartY);
+
+        // Zigzag body
+        for (let i = 0; i < coils; i++) {
+            const current_y = springStartY + i * segment_h;
+            const next_y = springStartY + (i + 1) * segment_h;
+            const offset_x = (i % 2 === 0) ? width / 2 : -width / 2;
+            ctx.lineTo(x_center + offset_x, (current_y + next_y) / 2);
+        }
+        ctx.lineTo(x_center, springEndY);
+
+        // Bottom straight segment
+        ctx.lineTo(x_center, y_end);
+        ctx.stroke();
+    }
+
+    // --- Main drawing logic ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // --- Constants ---
+    const groundY = 480;
+    const inclineAngleRad = 37 * Math.PI / 180;
+    const baseLength = 350;
+    const rightCornerX = 480;
+    const inclinePeakX = rightCornerX - baseLength;
+    const inclineHeight = baseLength * Math.tan(inclineAngleRad);
+    const inclinePeakY = groundY - inclineHeight;
+
+    const pulleyR = 50;
+    const pulleyX = inclinePeakX;
+    const pulleyY = inclinePeakY;
+
+    // --- Styles ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = '#f9f9f9'; // Light gray for solid objects
+    ctx.lineWidth = 2;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Draw Ground ---
+    ctx.beginPath();
+    ctx.moveTo(20, groundY);
+    ctx.lineTo(canvas.width - 20, groundY);
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.lineWidth = 2;
+
+    // --- Draw Inclined Plane and Support ---
+    ctx.beginPath();
+    ctx.moveTo(inclinePeakX, inclinePeakY);
+    ctx.lineTo(inclinePeakX, groundY);
+    ctx.lineTo(rightCornerX, groundY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // --- Draw Pulley ---
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(pulleyX, pulleyY, pulleyR, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic bold 22px Times New Roman';
+    ctx.fillText('J', pulleyX, pulleyY);
+
+    // --- String and Block Calculations ---
+    const tangentAngleRad = -53 * Math.PI / 180; // Normal vector angle for a tangent parallel to the incline
+    const tangentX = pulleyX + pulleyR * Math.cos(tangentAngleRad);
+    const tangentY = pulleyY + pulleyR * Math.sin(tangentAngleRad);
+    
+    // --- Draw Spring and its Connections ---
+    const springConnX = pulleyX - pulleyR;
+    const springConnY = pulleyY;
+    const springTopY = springConnY + 20;
+    
+    // Draw string segment from pulley to spring
+    ctx.beginPath();
+    ctx.moveTo(springConnX, springConnY);
+    ctx.lineTo(springConnX, springTopY);
+    ctx.stroke();
+    
+    // Draw spring
+    drawSpring(ctx, springConnX, springTopY, groundY, 12, 18);
+    
+    // Label 'k'
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('k', springConnX - 25, (springTopY + groundY) / 2);
+
+    // --- Draw String on Pulley and to Block ---
+    // Wrapped part of the string
+    ctx.beginPath();
+    ctx.arc(pulleyX, pulleyY, pulleyR, Math.PI, tangentAngleRad, true);
+    ctx.stroke();
+    
+    // Straight part of the string
+    const stringEndLength = 280;
+    const stringEndX = tangentX + stringEndLength * Math.cos(inclineAngleRad);
+    const stringEndY = tangentY + stringEndLength * Math.sin(inclineAngleRad);
+    ctx.beginPath();
+    ctx.moveTo(tangentX, tangentY);
+    ctx.lineTo(stringEndX, stringEndY);
+    ctx.stroke();
+
+    // --- Draw Block 'm' ---
+    const blockSize = 50;
+    const blockDistFromTangent = 140;
+    const blockCenterX = tangentX + blockDistFromTangent * Math.cos(inclineAngleRad);
+    const blockCenterY = tangentY + blockDistFromTangent * Math.sin(inclineAngleRad);
+
+    ctx.save();
+    ctx.translate(blockCenterX, blockCenterY);
+    ctx.rotate(inclineAngleRad);
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.rect(-blockSize / 2, -blockSize / 2, blockSize, blockSize);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore(); // Restore before drawing text to avoid rotation
+    
+    ctx.save();
+    ctx.translate(blockCenterX, blockCenterY);
+    ctx.rotate(inclineAngleRad);
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic bold 22px Times New Roman';
+    ctx.fillText('m', 0, 0);
+    ctx.restore();
+    
+    // --- Annotations ---
+    // Radius 'r'
+    ctx.beginPath();
+    ctx.moveTo(pulleyX, pulleyY);
+    ctx.lineTo(tangentX, tangentY);
+    ctx.stroke();
+    
+    // Replicate the wedge from the image for 'r' label
+    const wedgeLineLength = pulleyR * 0.9;
+    const wedgeLineX = pulleyX + wedgeLineLength * Math.cos(inclineAngleRad);
+    const wedgeLineY = pulleyY + wedgeLineLength * Math.sin(inclineAngleRad);
+    ctx.beginPath();
+    ctx.moveTo(pulleyX, pulleyY);
+    ctx.lineTo(wedgeLineX, wedgeLineY);
+    // Note: this line overlaps with the incline edge, which is intended to match the diagram's style
+    ctx.stroke();
+
+    ctx.font = 'italic 18px Times New Roman';
+    const labelR_radius = pulleyR * 0.5;
+    const labelR_angle = (tangentAngleRad + inclineAngleRad) / 2;
+    const labelX = pulleyX + labelR_radius * Math.cos(labelR_angle);
+    const labelY = pulleyY + labelR_radius * Math.sin(labelR_angle);
+    ctx.fillText('r', labelX, labelY);
+
+    // Angle '37°'
+    const angleArcRadius = 40;
+    ctx.beginPath();
+    ctx.arc(rightCornerX, groundY, angleArcRadius, Math.PI, Math.PI - inclineAngleRad, true);
+    ctx.stroke();
+    ctx.font = '18px Arial';
+    ctx.fillText('37°', rightCornerX - angleArcRadius - 15, groundY - 18);
+
+    // Bottom Text
+    ctx.font = '24px KaiTi';
+    ctx.fillText('习题 3-13 图', canvas.width / 2, groundY + 50);
+
+</script>
+</body>
+</html>

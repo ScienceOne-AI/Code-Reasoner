@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resistor Network Fractal</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="700" height="650"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+        function midpoint(p1, p2) {
+            return { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+        }
+
+        function drawLine(p1, p2) {
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+        }
+
+        function drawLabel(p1, p2, text, level) {
+            const mid = midpoint(p1, p2);
+            const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            
+            ctx.save();
+            ctx.translate(mid.x, mid.y);
+            ctx.rotate(angle);
+
+            // Adjust font size and offset based on level for clarity
+            let fontSize = 16;
+            let offset = 15;
+            if (level >= 3) {
+                fontSize = 14;
+                offset = 12;
+            }
+             if (level >= 4) {
+                fontSize = 12;
+                offset = 10;
+            }
+            if (level >= 5) {
+                fontSize = 10;
+                offset = 8;
+            }
+            
+            ctx.font = `italic ${fontSize}px Times New Roman`;
+
+            // Position label above/below line based on orientation
+            if (Math.abs(angle) < Math.PI / 2) { // Right-pointing-ish
+                 if (p1.y > p2.y) { // Upwards slant
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(text, 0, -offset/2);
+                 } else { // Downwards slant or horizontal
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(text, 0, offset/2);
+                 }
+            } else { // Left-pointing-ish
+                 if (p1.y > p2.y) { // Upwards slant
+                    ctx.rotate(Math.PI);
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(text, 0, offset/2);
+                 } else { // Downwards slant
+                    ctx.rotate(Math.PI);
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(text, 0, -offset/2);
+                 }
+            }
+            ctx.restore();
+        }
+
+        function drawLabeledSegment(p1, p2, label, level) {
+            drawLine(p1, p2);
+            drawLabel(p1, p2, label, level);
+        }
+
+        // --- Main Drawing Logic ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.fillStyle = 'black';
+
+        // 1. Generate all necessary vertices
+        const V = []; // Vertices of U_k triangles
+        const M = []; // Midpoints of the bases of U_k
+
+        // U_1 vertices
+        const side = 600;
+        const height = side * Math.sqrt(3) / 2;
+        const pA = { x: 50, y: 50 + height };
+        const pB = { x: 50 + side, y: 50 + height };
+        const pTop = { x: 50 + side / 2, y: 50 };
+        V[1] = [pA, pB, pTop];
+
+        // Generate vertices for U_2 to U_5
+        for (let k = 1; k <= 4; k++) {
+            const [v_bl, v_br, v_t] = V[k];
+            const m_l = midpoint(v_t, v_bl);
+            const m_r = midpoint(v_br, v_t);
+            V[k + 1] = [m_l, m_r, v_t];
+        }
+
+        // Generate midpoints of bases for U_1 to U_5
+        for (let k = 1; k <= 5; k++) {
+            M[k] = midpoint(V[k][0], V[k][1]);
+        }
+        
+        // 2. Draw and Label all elementary segments
+        
+        // Base of U_1
+        drawLabeledSegment(V[1][0], M[1], 'R', 1);
+        drawLabeledSegment(M[1], V[1][1], 'R', 1);
+
+        // Sides of U_1 (bottom halves)
+        drawLabeledSegment(V[1][0], V[2][0], 'R', 1); // Bottom-left segment of U1's left side
+        drawLabeledSegment(V[1][1], V[2][1], 'R', 1); // Bottom-right segment of U1's right side
+        
+        // Inverted triangles I_k and top halves of U_k sides
+        for (let k = 1; k <= 4; k++) {
+            const label_R = 'R';
+            let label_top_side = 'R';
+            let label_top_halves = 'R';
+
+            if (k === 4) { // Special case for I_4 and U_5
+                label_top_side = '2R'; 
+                label_top_halves = '2R'; 
+            }
+
+            // Draw I_k
+            drawLabeledSegment(M[k], V[k+1][0], label_R, k+1);       // I_k left side
+            drawLabeledSegment(M[k], V[k+1][1], label_R, k+1);       // I_k right side
+            drawLabeledSegment(V[k+1][0], V[k+1][1], label_top_side, k+1); // I_k top side (also U_{k+1} base)
+
+            // Draw top halves of U_k's slanted sides
+            if (k > 1) { // U_1 top halves are handled by U_2 sides
+                drawLabeledSegment(V[k][0], V[k+1][0], label_R, k);
+                drawLabeledSegment(V[k][1], V[k+1][1], label_R, k);
+            }
+        }
+        
+        // Slanted sides of U_5
+        drawLabeledSegment(V[5][0], V[5][2], '2R', 5);
+        drawLabeledSegment(V[5][1], V[5][2], '2R', 5);
+
+        // Draw A and B vertex labels
+        ctx.font = '24px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.fillText('A', pA.x, pA.y + 30);
+        ctx.fillText('B', pB.x, pB.y + 30);
+
+    </script>
+</body>
+</html>

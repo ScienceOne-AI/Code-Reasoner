@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Neutron Interferometer</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="550"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// Helper function to draw an arrow on a line segment
+function drawArrow(ctx, fromx, fromy, tox, toy) {
+    const headlen = 10;
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+// Helper function to draw a mirror with hatching
+function drawMirror(ctx, x, y, size, angle) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(-size, size);
+    ctx.lineTo(size, -size);
+    ctx.stroke();
+
+    // Hatching lines
+    const oldWidth = ctx.lineWidth;
+    ctx.lineWidth = 1;
+    const hatch_len = 5;
+    for (let i = -size + 4; i <= size; i += 4) {
+        ctx.beginPath();
+        ctx.moveTo(i, -i);
+        ctx.lineTo(i - hatch_len, -i + hatch_len);
+        ctx.stroke();
+    }
+    ctx.lineWidth = oldWidth;
+    ctx.restore();
+}
+
+// Clear canvas
+ctx.fillStyle = "white";
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// --- Main Drawing ---
+
+// Style for main paths
+ctx.strokeStyle = "black";
+ctx.fillStyle = "black";
+ctx.lineWidth = 2;
+
+// Coordinates and dimensions
+const x_left = 150;
+const y_top = 150;
+const L = 400;
+const H = 200;
+const x_right = x_left + L;
+const y_bottom = y_top + H;
+
+const A = { x: x_left, y: y_top };
+const B = { x: x_left, y: y_bottom };
+const C = { x: x_right, y: y_bottom };
+const D = { x: x_right, y: y_top };
+
+// Draw interferometer paths
+drawArrow(ctx, 50, B.y, B.x, B.y);      // incident beam
+drawArrow(ctx, B.x, B.y, A.x, A.y);      // Path B->A
+drawArrow(ctx, A.x, A.y, D.x, D.y);      // Path A->D
+drawArrow(ctx, B.x, B.y, C.x, C.y);      // Path B->C
+drawArrow(ctx, C.x, C.y, D.x, D.y);      // Path C->D
+const E_start_x = D.x + 80;
+drawArrow(ctx, D.x, D.y, E_start_x, D.y); // Path D->E
+
+// Draw components
+// Mirrors
+drawMirror(ctx, A.x, A.y, 15, Math.PI / 4);
+drawMirror(ctx, C.x, C.y, 15, -Math.PI / 4);
+
+// Beam splitters (dashed lines)
+ctx.save();
+ctx.setLineDash([5, 3]);
+ctx.lineWidth = 1.5;
+ctx.beginPath();
+ctx.moveTo(B.x - 15, B.y + 15);
+ctx.lineTo(B.x + 15, B.y - 15);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(D.x - 15, D.y - 15);
+ctx.lineTo(D.x + 15, D.y + 15);
+ctx.stroke();
+ctx.restore();
+
+// Detector E
+ctx.lineWidth = 1.5;
+ctx.strokeRect(E_start_x, D.y - 20, 50, 40);
+ctx.font = "20px 'Times New Roman'";
+ctx.fillText("E", E_start_x + 18, D.y + 8);
+
+// Magnetic field region
+ctx.save();
+ctx.beginPath();
+ctx.setLineDash([5, 3]);
+ctx.lineWidth = 1.5;
+ctx.arc(x_left + L / 2, y_bottom, 40, 0, 2 * Math.PI);
+ctx.stroke();
+ctx.restore();
+
+// --- Labels and Annotations ---
+
+// Point labels
+ctx.font = "italic 20px 'Times New Roman'";
+ctx.fillText("A", A.x - 25, A.y + 8);
+ctx.fillText("B", B.x - 25, B.y + 8);
+ctx.fillText("C", C.x + 15, C.y + 8);
+ctx.fillText("D", D.x + 15, D.y + 8);
+
+// Text labels
+ctx.font = "20px 'Times New Roman'";
+ctx.fillText("incident", 40, y_bottom - 20);
+ctx.fillText("neutrons", 40, y_bottom + 5);
+ctx.textAlign = "center";
+ctx.fillText("Region of magnetic", x_left + L / 2, y_bottom + 65);
+ctx.fillText("field", x_left + L / 2, y_bottom + 85);
+ctx.fillText("Fig. 1.7", canvas.width / 2, canvas.height - 20);
+ctx.textAlign = "start"; // reset alignment
+
+// Dimension L
+const L_y = y_top - 40;
+ctx.save();
+ctx.lineWidth = 1;
+// Helper lines
+ctx.setLineDash([3, 3]);
+ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(A.x, L_y); ctx.stroke();
+ctx.beginPath(); ctx.moveTo(D.x, D.y); ctx.lineTo(D.x, L_y); ctx.stroke();
+ctx.setLineDash([]);
+// Main line
+ctx.beginPath(); ctx.moveTo(A.x, L_y); ctx.lineTo(D.x, L_y); ctx.stroke();
+// Arrowheads
+const L_arrow_size = 6;
+ctx.beginPath(); ctx.moveTo(A.x, L_y); ctx.lineTo(A.x + L_arrow_size, L_y - L_arrow_size); ctx.moveTo(A.x, L_y); ctx.lineTo(A.x + L_arrow_size, L_y + L_arrow_size); ctx.stroke();
+ctx.beginPath(); ctx.moveTo(D.x, L_y); ctx.lineTo(D.x - L_arrow_size, L_y - L_arrow_size); ctx.moveTo(D.x, L_y); ctx.lineTo(D.x - L_arrow_size, L_y + L_arrow_size); ctx.stroke();
+ctx.font = "italic 20px 'Times New Roman'";
+ctx.fillText("L", A.x + L / 2 - 5, L_y - 10);
+ctx.restore();
+
+// Dimension H
+const H_x = D.x + 50;
+ctx.save();
+ctx.lineWidth = 1;
+// Main line
+ctx.beginPath(); ctx.moveTo(H_x, D.y); ctx.lineTo(H_x, C.y); ctx.stroke();
+// Arrowhead up
+ctx.beginPath(); ctx.moveTo(H_x, D.y); ctx.lineTo(H_x - 5, D.y + 10); ctx.moveTo(H_x, D.y); ctx.lineTo(H_x + 5, D.y + 10); ctx.stroke();
+// Arrowhead down
+ctx.beginPath(); ctx.moveTo(H_x, C.y); ctx.lineTo(H_x - 5, C.y - 10); ctx.moveTo(H_x, C.y); ctx.lineTo(H_x + 5, C.y - 10); ctx.stroke();
+ctx.font = "italic 20px 'Times New Roman'";
+ctx.fillText("H", H_x + 10, D.y + H / 2 + 5);
+ctx.restore();
+
+// Spin vector 's' on path B->A
+const s1_pos = { x: A.x - 20, y: A.y + H / 2 };
+ctx.save();
+ctx.lineWidth = 1.5;
+drawArrow(ctx, s1_pos.x, s1_pos.y + 20, s1_pos.x, s1_pos.y - 20);
+ctx.font = "italic 20px 'Times New Roman'";
+ctx.fillText("s", s1_pos.x + 5, s1_pos.y + 5);
+ctx.restore();
+
+// Spin vector 's' and angle 'theta' on path C->D
+const s2_pos = { x: C.x - 40, y: C.y - H / 2 };
+const theta = Math.PI / 7; // Approx 25 degrees
+const arrow_len = 30;
+ctx.save();
+ctx.translate(s2_pos.x, s2_pos.y);
+// Draw tilted arrow
+ctx.save();
+ctx.lineWidth = 1.5;
+ctx.rotate(theta); // Angle is from vertical (which is y-axis)
+drawArrow(ctx, 0, arrow_len / 2, 0, -arrow_len / 2);
+ctx.font = "italic 20px 'Times New Roman'";
+ctx.fillText("s", 10, 0);
+ctx.restore();
+// Draw angle arc
+ctx.lineWidth = 1;
+ctx.beginPath();
+ctx.arc(0, 0, 40, -Math.PI / 2, -Math.PI / 2 + theta); // Arc from vertical-up, clockwise by theta
+ctx.stroke();
+// Draw angle label
+const angle_label_pos_angle = -Math.PI / 2 + theta / 2;
+ctx.font = "italic 20px 'Times New Roman'";
+ctx.fillText("θ", 25 * Math.cos(angle_label_pos_angle) + 5, 25 * Math.sin(angle_label_pos_angle) + 5);
+ctx.restore();
+
+// Outer frame
+ctx.lineWidth = 1;
+ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
+
+</script>
+</body>
+</html>

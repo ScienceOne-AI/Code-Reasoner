@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram Fig. 3.1</title>
+</head>
+<body>
+
+<canvas id="circuitCanvas" width="450" height="550"></canvas>
+
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style settings to mimic the original drawing ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 3;
+    // Using a font that resembles the hand-written style
+    ctx.font = 'bold 24px "Comic Sans MS", cursive, sans-serif';
+    ctx.textBaseline = 'middle';
+    
+    /**
+     * Draws a zigzag resistor.
+     * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+     * @param {number} x1 - Starting x-coordinate.
+     * @param {number} y1 - Starting y-coordinate.
+     * @param {number} x2 - Ending x-coordinate.
+     * @param {number} y2 - Ending y-coordinate.
+     * @param {string} label - The label for the resistor (e.g., 'R', '2R').
+     */
+    function drawResistor(ctx, x1, y1, x2, y2, label) {
+        const isHorizontal = y1 === y2;
+        const len = isHorizontal ? x2 - x1 : y2 - y1;
+        const numPeaks = 4; // Number of "peaks" in the zigzag
+        const amplitude = 8;
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+
+        if (isHorizontal) {
+            const segLen = len / (2 * numPeaks);
+            for (let i = 0; i < 2 * numPeaks; i++) {
+                const sign = (i % 2 === 0) ? -1 : 1;
+                ctx.lineTo(x1 + (i + 0.5) * segLen, y1 + sign * amplitude);
+            }
+            ctx.lineTo(x2, y2);
+            // Label position for horizontal resistor
+            const currentAlign = ctx.textAlign;
+            ctx.textAlign = 'center';
+            ctx.fillText(label, x1 + len / 2, y1 - amplitude - 12);
+            ctx.textAlign = currentAlign;
+
+        } else { // Vertical
+            const segLen = len / (2 * numPeaks);
+            for (let i = 0; i < 2 * numPeaks; i++) {
+                const sign = (i % 2 === 0) ? -1 : 1;
+                ctx.lineTo(x1 + sign * amplitude, y1 + (i + 0.5) * segLen);
+            }
+            ctx.lineTo(x2, y2);
+             // Label position for vertical resistor
+            const currentAlign = ctx.textAlign;
+            ctx.textAlign = 'left';
+            ctx.fillText(label, x1 + amplitude + 10, y1 + len / 2);
+            ctx.textAlign = currentAlign;
+        }
+        ctx.stroke();
+    }
+
+    /**
+     * Draws a ground symbol.
+     * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+     * @param {number} x - The x-coordinate of the connection point.
+     * @param {number} y - The y-coordinate of the connection point.
+     */
+    function drawGround(ctx, x, y) {
+        ctx.beginPath();
+        // The three horizontal lines of the ground symbol
+        ctx.moveTo(x - 20, y);
+        ctx.lineTo(x + 20, y);
+        ctx.moveTo(x - 13, y + 7);
+        ctx.lineTo(x + 13, y + 7);
+        ctx.moveTo(x - 7, y + 14);
+        ctx.lineTo(x + 7, y + 14);
+        ctx.stroke();
+    }
+    
+    /**
+     * Draws a line with an arrowhead at the end.
+     * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+     * @param {number} x1 - Starting x-coordinate.
+     * @param {number} y1 - Starting y-coordinate.
+     * @param {number} x2 - Ending x-coordinate.
+     * @param {number} y2 - Ending y-coordinate.
+     */
+    function drawArrow(ctx, x1, y1, x2, y2) {
+        const headlen = 12;
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        // Arrowhead
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+
+    // --- Define coordinates for the circuit elements ---
+    const centerX = 250;
+    const y_vout_node = 140;
+    const y_v2_node = 240;
+    const y_v3_node = 340;
+    
+    const inputXStart = 80;
+    const resStartX = 150;
+    
+    const topGroundWireY = 60;
+    const bottomGroundWireY = 420;
+
+    // --- Draw Wires ---
+    ctx.beginPath();
+    // Input wires before resistors
+    ctx.moveTo(inputXStart, y_vout_node);
+    ctx.lineTo(resStartX, y_vout_node);
+    ctx.moveTo(inputXStart, y_v2_node);
+    ctx.lineTo(resStartX, y_v2_node);
+    ctx.moveTo(inputXStart, y_v3_node);
+    ctx.lineTo(resStartX, y_v3_node);
+
+    // Vertical wires connecting to grounds
+    ctx.moveTo(centerX, topGroundWireY);
+    ctx.lineTo(centerX, y_vout_node - 80); // Connects to top resistor
+    ctx.moveTo(centerX, y_v3_node + 80); // Connects to bottom resistor
+    ctx.lineTo(centerX, bottomGroundWireY);
+    ctx.stroke();
+
+    // --- Draw Resistors ---
+    // Horizontal input resistors (all 2R)
+    drawResistor(ctx, resStartX, y_vout_node, centerX, y_vout_node, '2R');
+    drawResistor(ctx, resStartX, y_v2_node, centerX, y_v2_node, '2R');
+    drawResistor(ctx, resStartX, y_v3_node, centerX, y_v3_node, '2R');
+
+    // Vertical spine resistors
+    drawResistor(ctx, centerX, y_vout_node - 80, centerX, y_vout_node, '2R'); // Top resistor
+    drawResistor(ctx, centerX, y_vout_node, centerX, y_v2_node, 'R');
+    drawResistor(ctx, centerX, y_v2_node, centerX, y_v3_node, 'R');
+    drawResistor(ctx, centerX, y_v3_node, centerX, y_v3_node + 80, '2R'); // Bottom resistor
+
+    // --- Draw Terminations (Grounds and Output) ---
+    drawGround(ctx, centerX, topGroundWireY);
+    drawGround(ctx, centerX, bottomGroundWireY);
+
+    // Output line with arrow
+    const voutXEnd = 380;
+    drawArrow(ctx, centerX, y_vout_node, voutXEnd, y_vout_node);
+
+    // --- Draw Labels ---
+    // Input labels (V₁, V₂, V₃) using Unicode for subscripts
+    ctx.textAlign = 'right';
+    ctx.fillText('V\u2081', inputXStart - 5, y_vout_node);
+    ctx.fillText('V\u2082', inputXStart - 5, y_v2_node);
+    ctx.fillText('V\u2083', inputXStart - 5, y_v3_node);
+
+    // Output label
+    ctx.textAlign = 'left';
+    ctx.fillText('Vout', voutXEnd + 10, y_vout_node);
+
+    // Figure caption
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 3.1', canvas.width / 2, 500);
+
+</script>
+
+</body>
+</html>

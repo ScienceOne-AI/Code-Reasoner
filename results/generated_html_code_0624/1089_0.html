@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Font Configuration ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '18px Arial';
+        
+        // --- Helper Functions ---
+
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        function drawJunction(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        function drawResistor(x, y, width, height, label, align = 'right') {
+            const isVertical = height > width;
+            // Draw body
+            ctx.strokeRect(x, y, width, height);
+            
+            // Draw label
+            ctx.save();
+            ctx.font = '18px Arial';
+            if (isVertical) {
+                ctx.textAlign = align;
+                ctx.textBaseline = 'middle';
+                const labelX = align === 'right' ? x - 8 : x + width + 8;
+                ctx.fillText(label, labelX, y + height / 2);
+            } else {
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(label, x + width / 2, y - 5);
+            }
+            ctx.restore();
+        }
+        
+        function drawVarResistor(x, y, width, height, label) {
+            drawResistor(x, y, width, height, label, 'right');
+            // Draw arrow
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(x - 5, y + height + 5);
+            ctx.lineTo(x + width + 5, y - 5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x + width + 5, y - 5);
+            ctx.lineTo(x + width - 5, y - 5);
+            ctx.lineTo(x + width + 5, y + 5);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawCapacitor(x, y, plateDist, plateLen, label) {
+            // Plates
+            drawLine(x - plateDist / 2, y - plateLen / 2, x - plateDist / 2, y + plateLen / 2);
+            drawLine(x + plateDist / 2, y - plateLen / 2, x + plateDist / 2, y + plateLen / 2);
+            
+            // Label
+            ctx.save();
+            ctx.font = '18px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(label, x, y - plateLen / 2 - 5);
+            ctx.restore();
+        }
+
+        function drawOpAmp(x_in, y_mid, width, height) {
+            const x_out = x_in + width;
+            const y_top = y_mid - height / 2;
+            const y_bottom = y_mid + height / 2;
+            
+            // Triangle body
+            ctx.beginPath();
+            ctx.moveTo(x_in, y_top);
+            ctx.lineTo(x_out, y_mid);
+            ctx.lineTo(x_in, y_bottom);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Labels
+            ctx.font = 'bold 20px Arial';
+            ctx.fillText('A', x_in + 5, y_mid - 20);
+            ctx.fillText('B', x_in + 5, y_mid + 30);
+            ctx.fillText('P', x_out + 5, y_mid + 5);
+            ctx.font = '18px Arial';
+        }
+        
+        function drawBattery(x, y, height, label) {
+            const shortLineLen = 20;
+            const longLineLen = 40;
+            
+            // Positive terminal (long line)
+            drawLine(x - longLineLen / 2, y, x + longLineLen / 2, y);
+            // Negative terminal (short, thick line)
+            ctx.save();
+            ctx.lineWidth = 4;
+            drawLine(x - shortLineLen / 2, y + 10, x + shortLineLen / 2, y + 10);
+            ctx.restore();
+            
+            // Connecting lines
+            drawLine(x, y - height/2, x, y);
+            drawLine(x, y + 10, x, y + height/2);
+
+            // Label
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, x - 55, y + 5);
+        }
+
+        function drawSwitch(x, y, length, label) {
+            // Terminals
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + length, y, 3, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Arm (open)
+            ctx.save();
+            ctx.beginPath();
+            ctx.translate(x, y);
+            ctx.rotate(-Math.PI / 6);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(length, 0);
+            ctx.stroke();
+            ctx.restore();
+            
+            // Label
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(label, x + length/2, y - 10);
+        }
+
+        function drawGround(x, y) {
+            drawLine(x, y, x, y + 10);
+            drawLine(x - 20, y + 10, x + 20, y + 10);
+            drawLine(x - 13, y + 17, x + 13, y + 17);
+            drawLine(x - 6, y + 24, x + 6, y + 24);
+        }
+
+        // --- Main Drawing ---
+
+        // Coordinates
+        const groundY = 420;
+        const opAmpInX = 270;
+        const opAmpMidY = 200;
+        const opAmpWidth = 80;
+        const opAmpHeight = 120;
+        const opAmpOutX = opAmpInX + opAmpWidth;
+
+        // Ground line
+        drawLine(80, groundY, 500, groundY);
+        drawGround(325, groundY);
+        
+        // Op-Amp
+        drawOpAmp(opAmpInX, opAmpMidY, opAmpWidth, opAmpHeight);
+        
+        // Negative feedback loop (R1, R2, to B)
+        const r1TopY = opAmpMidY;
+        const r1BottomY = r1TopY + 60;
+        const r2TopY = r1BottomY + 20;
+        const r2BottomY = r2TopY + 60;
+        const feedbackX = 450;
+        
+        drawLine(opAmpOutX, opAmpMidY, feedbackX, r1TopY); // From P to R1
+        drawResistor(feedbackX - 10, r1TopY, 20, r1BottomY - r1TopY, 'R₁=5 kΩ', 'left');
+        drawVarResistor(feedbackX - 10, r2TopY, 20, r2BottomY - r2TopY, 'R₂');
+        drawLine(feedbackX, r2BottomY, feedbackX, groundY); // R2 to ground
+
+        const nodeB_Y = (r1BottomY + r2TopY) / 2;
+        drawJunction(feedbackX, nodeB_Y);
+        const inputB_Y = opAmpMidY + 30;
+        drawLine(feedbackX, nodeB_Y, 230, nodeB_Y);
+        drawLine(230, nodeB_Y, 230, inputB_Y);
+        drawLine(230, inputB_Y, opAmpInX, inputB_Y); // To input B
+
+        // Positive feedback loop (C, to A)
+        const C_Y = 100;
+        drawLine(opAmpOutX, opAmpMidY, 480, opAmpMidY);
+        drawLine(480, opAmpMidY, 480, C_Y);
+        drawLine(480, C_Y, 180, C_Y);
+        drawCapacitor(330, C_Y, 10, 20, 'C=10 μF');
+        
+        const nodeA_X = 180;
+        const nodeA_Y = opAmpMidY - 25;
+        drawLine(nodeA_X, C_Y, nodeA_X, nodeA_Y); // From C line to Node A
+        drawJunction(nodeA_X, nodeA_Y);
+        drawLine(nodeA_X, nodeA_Y, opAmpInX, nodeA_Y); // Node A to input A
+
+        // Input circuitry (Source, K, R3, R4)
+        const junctionX = nodeA_X;
+        const junctionY = nodeA_Y + 70;
+        
+        // R3
+        drawResistor(junctionX - 10, nodeA_Y, 20, junctionY - nodeA_Y, 'R₃=5 kΩ');
+        drawJunction(junctionX, junctionY);
+
+        // R4
+        const r4TopY = junctionY;
+        const r4BottomY = r4TopY + 80;
+        drawLine(junctionX, r4TopY, junctionX, groundY);
+        drawResistor(junctionX - 10, r4TopY + 30, 20, 60, 'R₄=5 kΩ');
+
+        // Source and Switch
+        const switchLineY = junctionY;
+        const switchX = 100;
+        drawLine(junctionX, switchLineY, switchX + 40, switchLineY);
+        drawSwitch(switchX, switchLineY, 40, 'K');
+        
+        const batteryX = 80;
+        drawLine(switchX, switchLineY, batteryX, switchLineY);
+        drawLine(batteryX, switchLineY, batteryX, switchLineY + 20);
+        drawBattery(batteryX, switchLineY + 50, 60, '1.5 V');
+        drawLine(batteryX, switchLineY + 80, batteryX, groundY);
+        
+        // Final Caption
+        ctx.font = '22px KaiTi'; // A common Chinese font
+        ctx.textAlign = 'center';
+        ctx.fillText('电图 5.15.1', canvas.width / 2, 470);
+        
+    </script>
+</body>
+</html>

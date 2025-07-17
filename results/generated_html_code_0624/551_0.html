@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="450" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Parameters
+        const cx = 225;
+        const cy = 225;
+        const R = 130;
+        const lineWidth = 2;
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+            const angle = Math.atan2(toy - fromy, tox - fromx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Helper function to draw a clockwise arrowhead on a circle
+        function drawClockwiseArrowheadOnCircle(ctx, cx, cy, radius, angle, size = 12) {
+            const x = cx + radius * Math.cos(angle);
+            const y = cy + radius * Math.sin(angle);
+            // Tangent angle for clockwise motion on a standard canvas
+            const tangentAngle = angle + Math.PI / 2;
+            
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(tangentAngle);
+            ctx.beginPath();
+            // Arrow points along the negative x-axis of the rotated context
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2.5);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2.5);
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        // Helper function to draw text with a subscript
+        function drawTextWithSubscript(ctx, text, sub, x, y, font, subFont) {
+            const originalFont = ctx.font;
+            const originalBaseline = ctx.textBaseline;
+            
+            ctx.font = font;
+            ctx.textBaseline = 'bottom';
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillText(text, x, y);
+
+            ctx.font = subFont;
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(sub, x + textWidth, y + 4);
+
+            ctx.font = originalFont; // Restore original font
+            ctx.textBaseline = originalBaseline;
+        }
+
+        // --- Main Drawing ---
+        
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = lineWidth;
+
+        // 1. Draw y-axis
+        drawArrow(ctx, cx, cy + R + 50, cx, cy - R - 30, 12);
+
+        // 2. Draw Circle
+        ctx.beginPath();
+        ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 3. Draw current arrows (I1) on the circle (clockwise)
+        // Left arrow (approx. 10 o'clock)
+        const angle1 = 165 * Math.PI / 180;
+        drawClockwiseArrowheadOnCircle(ctx, cx, cy, R, angle1, 12);
+        
+        // Right arrow (approx. 4 o'clock)
+        const angle2 = -20 * Math.PI / 180;
+        drawClockwiseArrowheadOnCircle(ctx, cx, cy, R, angle2, 12);
+
+        // 4. Draw Radius Line (R)
+        const rAngle = 225 * Math.PI / 180; // In the third quadrant
+        const rx = cx + R * Math.cos(rAngle);
+        const ry = cy + R * Math.sin(rAngle);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(rx, ry);
+        ctx.stroke();
+
+        // 5. Draw Straight Wire (I2)
+        const wireX = cx;
+        const wireY = cy + R;
+        // Outer circle
+        ctx.beginPath();
+        ctx.arc(wireX, wireY, 9, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Inner dot
+        ctx.beginPath();
+        ctx.arc(wireX, wireY, 3, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 6. Add Labels
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+
+        // Label 'y'
+        ctx.fillText('y', cx + 15, cy - R - 20);
+
+        // Label 'O'
+        ctx.fillText('O', cx + 8, cy);
+
+        // Label 'R'
+        const RlabelX = cx + (R / 2) * Math.cos(rAngle) - 25;
+        const RlabelY = cy + (R / 2) * Math.sin(rAngle) - 10;
+        ctx.fillText('R', RlabelX, RlabelY);
+
+        // Label 'I1' with subscript
+        const I1labelX = cx + (R + 30) * Math.cos(angle1);
+        const I1labelY = cy + (R + 30) * Math.sin(angle1);
+        drawTextWithSubscript(ctx, 'I', '1', I1labelX, I1labelY, 'italic 24px Times New Roman', 'italic 18px Times New Roman');
+        
+        // Label 'I2' with subscript
+        const I2labelX = wireX + 18;
+        const I2labelY = wireY + 12;
+        drawTextWithSubscript(ctx, 'I', '2', I2labelX, I2labelY, 'italic 24px Times New Roman', 'italic 18px Times New Roman');
+
+        // Bottom Text
+        ctx.font = '22px "KaiTi", "SimSun", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 8-48 图', cx, cy + R + 80);
+
+    </script>
+</body>
+</html>

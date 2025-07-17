@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Circuit Diagram</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="650" height="420"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper Functions ---
+
+    function drawGrid(step) {
+        ctx.strokeStyle = '#f0f0f0';
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= canvas.width; x += step) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+            ctx.stroke();
+        }
+        for (let y = 0; y <= canvas.height; y += step) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+        }
+    }
+
+    function drawResistor(x, y, len, orientation, label, value, labelPos = 'right') {
+        const h = 8; // half height of zig-zag
+        ctx.save();
+        ctx.beginPath();
+        if (orientation === 'horizontal') {
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + len * 0.1, y);
+            ctx.lineTo(x + len * 0.2, y - h);
+            ctx.lineTo(x + len * 0.4, y + h);
+            ctx.lineTo(x + len * 0.6, y - h);
+            ctx.lineTo(x + len * 0.8, y + h);
+            ctx.lineTo(x + len * 0.9, y);
+            ctx.lineTo(x + len, y);
+            ctx.stroke();
+            // Labels
+            ctx.font = '16px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText(label, x + len / 2, y - 15);
+            ctx.textBaseline = 'hanging';
+            ctx.fillText(value, x + len / 2, y + 15);
+        } else { // vertical
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + len * 0.1);
+            ctx.lineTo(x - h, y + len * 0.2);
+            ctx.lineTo(x + h, y + len * 0.4);
+            ctx.lineTo(x - h, y + len * 0.6);
+            ctx.lineTo(x + h, y + len * 0.8);
+            ctx.lineTo(x, y + len * 0.9);
+            ctx.lineTo(x, y + len);
+            ctx.stroke();
+            // Labels
+            ctx.font = '16px sans-serif';
+            const labelX = (labelPos === 'left') ? x - 15 : x + 15;
+            ctx.textAlign = (labelPos === 'left') ? 'right' : 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, labelX, y + len/2 - 8);
+            ctx.fillText(value, labelX, y + len/2 + 12);
+        }
+        ctx.restore();
+    }
+
+    function drawBattery(x, y, r, label, value) {
+        ctx.save();
+        ctx.lineWidth = 2;
+        // Circle
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Polarity
+        ctx.font = '24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('+', x, y - r / 2.5);
+        ctx.beginPath();
+        ctx.moveTo(x - r / 4, y + r / 3);
+        ctx.lineTo(x + r / 4, y + r / 3);
+        ctx.stroke();
+        // Labels
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(label, x + r + 10, y - 8);
+        ctx.fillText(value, x + r + 10, y + 12);
+        ctx.restore();
+    }
+
+    function drawNode(x, y) {
+        ctx.save();
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.restore();
+    }
+    
+    // --- Main Drawing ---
+    
+    // Draw background grid
+    drawGrid(20);
+    
+    // Set styles for circuit components
+    ctx.strokeStyle = '#333333';
+    ctx.lineWidth = 2;
+    ctx.fillStyle = '#333333';
+    
+    // Title
+    ctx.font = '28px serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Circuit 2', 60, 30);
+
+    // Define coordinates
+    const batX = 100, batY = 220;
+    const r1x = 180, r1y = 100, r1w = 100;
+    const topWireY = 100;
+    const bottomWireY = 340;
+    const nodeR2x = 320;
+    const nodeR3x = 420;
+    const nodeR4x = 550;
+    const middleWireY = 260;
+    const nodeR5x = 485;
+
+    // Draw Wires
+    ctx.beginPath();
+    // Battery connections and main lines
+    ctx.moveTo(batX, batY - 30); ctx.lineTo(batX, topWireY); 
+    ctx.moveTo(batX, batY + 30); ctx.lineTo(batX, bottomWireY); ctx.lineTo(nodeR4x, bottomWireY);
+    // Top wire
+    ctx.moveTo(batX, topWireY); ctx.lineTo(r1x, topWireY);
+    ctx.moveTo(r1x + r1w, topWireY); ctx.lineTo(nodeR4x, topWireY);
+    // R2 drop
+    ctx.moveTo(nodeR2x, topWireY); ctx.lineTo(nodeR2x, 150);
+    ctx.moveTo(nodeR2x, 290); ctx.lineTo(nodeR2x, bottomWireY);
+    // R3 drop
+    ctx.moveTo(nodeR3x, topWireY); ctx.lineTo(nodeR3x, 150);
+    ctx.moveTo(nodeR3x, 230); ctx.lineTo(nodeR3x, middleWireY);
+    // R4 drop
+    ctx.moveTo(nodeR4x, topWireY); ctx.lineTo(nodeR4x, 150);
+    ctx.moveTo(nodeR4x, 230); ctx.lineTo(nodeR4x, middleWireY);
+    // Middle wire
+    ctx.moveTo(nodeR3x, middleWireY); ctx.lineTo(nodeR4x, middleWireY);
+    // R5 drop
+    ctx.moveTo(nodeR5x, middleWireY); ctx.lineTo(nodeR5x, 280);
+    ctx.moveTo(nodeR5x, 320); ctx.lineTo(nodeR5x, bottomWireY);
+    ctx.stroke();
+
+    // Draw Components
+    drawBattery(batX, batY, 30, 'Battery', '3 V');
+    drawResistor(r1x, r1y, r1w, 'horizontal', 'R1', '50 Ω');
+    drawResistor(nodeR2x, 150, 140, 'vertical', 'R2', '50 Ω');
+    drawResistor(nodeR3x, 150, 80, 'vertical', 'R3', '60 Ω', 'left');
+    drawResistor(nodeR4x, 150, 80, 'vertical', 'R4', '30 Ω', 'right');
+    drawResistor(nodeR5x, 280, 40, 'vertical', 'R5', '30 Ω', 'right');
+
+    // Draw Nodes (junction points)
+    drawNode(r1x + r1w, topWireY); // node after R1
+    drawNode(nodeR3x, topWireY);
+    drawNode(nodeR4x, topWireY);
+    drawNode(nodeR3x, middleWireY); // bottom of R3 branch
+    drawNode(nodeR4x, middleWireY); // bottom of R4 branch
+    drawNode(nodeR5x, middleWireY); // top of R5
+</script>
+</body>
+</html>

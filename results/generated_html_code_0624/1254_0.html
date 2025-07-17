@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.font = '20px serif';
+
+        // Helper function to draw ground hatching
+        function drawGround(x, y, width = 60) {
+            const h = 15;
+            ctx.beginPath();
+            ctx.moveTo(x - width / 2, y);
+            ctx.lineTo(x + width / 2, y);
+            ctx.stroke();
+            for (let i = 0; i < 7; i++) {
+                ctx.moveTo(x - width / 2 + i * (width/6), y);
+                ctx.lineTo(x - width / 2 + i * (width/6) - h/2, y + h);
+            }
+            ctx.stroke();
+        }
+
+        // Helper function to draw an arrow
+        function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+
+        // Define key points
+        const B = { x: 270, y: 320 };
+        const A = { x: 175, y: 275 };
+        const C = { x: 400, y: 150 };
+        const E_pulley = { x: 125, y: 360 };
+        const F_pulley = { x: 440, y: 360 };
+        const groundY = 380;
+        
+        // --- Draw Structural Elements ---
+
+        // Draw ground at B, E, F
+        drawGround(B.x, groundY, 70);
+        drawGround(E_pulley.x, groundY, 50);
+        drawGround(F_pulley.x, groundY, 50);
+
+        // Draw supports for B, E, F
+        // Support for B (pivot)
+        ctx.beginPath();
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(B.x-15, groundY);
+        ctx.lineTo(B.x+15, groundY);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Support for Pulley E
+        ctx.beginPath();
+        ctx.moveTo(E_pulley.x, E_pulley.y);
+        ctx.lineTo(E_pulley.x, groundY);
+        ctx.stroke();
+        
+        // Support for Pulley F
+        ctx.beginPath();
+        ctx.moveTo(F_pulley.x, F_pulley.y);
+        ctx.lineTo(F_pulley.x, groundY);
+        ctx.stroke();
+        
+        // Draw Pulleys E and F
+        ctx.beginPath();
+        ctx.arc(E_pulley.x, E_pulley.y, 12, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(F_pulley.x, F_pulley.y, 12, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Draw Cranked Rod ABC
+        ctx.save();
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.lineTo(C.x, C.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw pins at A, B, C
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(B.x, B.y, 8, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.arc(C.x, C.y, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.fillStyle = 'black'; // Reset fill style
+
+
+        // --- Draw Ropes and Weights ---
+
+        // Rope for P1
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(E_pulley.x, E_pulley.y-12); // to top of pulley
+        ctx.moveTo(E_pulley.x, E_pulley.y);
+        ctx.lineTo(E_pulley.x, groundY + 40);
+        ctx.stroke();
+        
+        // Weight P1
+        ctx.beginPath();
+        ctx.rect(E_pulley.x - 20, groundY + 40, 40, 40);
+        ctx.stroke();
+        ctx.fillText('P₁', E_pulley.x + 25, groundY + 70);
+
+        // Rope for P2
+        ctx.beginPath();
+        ctx.moveTo(C.x, C.y);
+        ctx.lineTo(F_pulley.x, F_pulley.y-12);
+        ctx.moveTo(F_pulley.x, F_pulley.y);
+        ctx.lineTo(F_pulley.x, groundY + 40);
+        ctx.stroke();
+        
+        // Weight P2
+        ctx.beginPath();
+        ctx.rect(F_pulley.x - 20, groundY + 40, 40, 40);
+        ctx.stroke();
+        ctx.fillText('P₂', F_pulley.x + 25, groundY + 70);
+
+
+        // --- Draw Forces, Lines and Annotations ---
+
+        // Dashed line BD
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(B.x, B.y + 120);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillText('D', B.x-20, B.y + 120);
+
+        // 80 N force
+        // The force application point is complex to calculate, so we place it visually based on the diagram.
+        const G = {x: 310, y: 280}; // Point on the rod BC
+        ctx.beginPath();
+        ctx.moveTo(G.x, G.y);
+        ctx.lineTo(G.x, G.y - 15);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(G.x, G.y-15, 4, 0, 2*Math.PI);
+        ctx.stroke();
+        drawArrow(G.x, G.y, G.x, G.y + 70);
+        ctx.fillText('80 N', G.x + 10, G.y + 40);
+
+        // --- Angles and Labels ---
+
+        // Angle 135 at A
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, 25, 2.5, 4.8);
+        ctx.stroke();
+        // Arrows for angle 135
+        let arrowAngle1_start = 2.5;
+        let arrowAngle1_end = 4.8;
+        ctx.beginPath();
+        ctx.moveTo(A.x + 25 * Math.cos(arrowAngle1_start), A.y + 25 * Math.sin(arrowAngle1_start));
+        ctx.lineTo(A.x + 25 * Math.cos(arrowAngle1_start) + 8*Math.cos(arrowAngle1_start - Math.PI/2), A.y + 25 * Math.sin(arrowAngle1_start) + 8*Math.sin(arrowAngle1_start - Math.PI/2));
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(A.x + 25 * Math.cos(arrowAngle1_end), A.y + 25 * Math.sin(arrowAngle1_end));
+        ctx.lineTo(A.x + 25 * Math.cos(arrowAngle1_end) - 8*Math.cos(arrowAngle1_end - Math.PI/2), A.y + 25 * Math.sin(arrowAngle1_end) - 8*Math.sin(arrowAngle1_end - Math.PI/2));
+        ctx.stroke();
+        ctx.fillText('135°', A.x - 2, A.y + 12);
+        
+        // Angle phi at C
+        ctx.beginPath();
+        ctx.arc(C.x, C.y, 30, 2.7, 4.3);
+        ctx.stroke();
+        // Arrows for angle phi
+        let arrowAngle2_start = 2.7;
+        let arrowAngle2_end = 4.3;
+        ctx.beginPath();
+        ctx.moveTo(C.x + 30 * Math.cos(arrowAngle2_start), C.y + 30 * Math.sin(arrowAngle2_start));
+        ctx.lineTo(C.x + 30 * Math.cos(arrowAngle2_start) + 8*Math.cos(arrowAngle2_start - Math.PI/2), C.y + 30 * Math.sin(arrowAngle2_start) + 8*Math.sin(arrowAngle2_start - Math.PI/2));
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(C.x + 30 * Math.cos(arrowAngle2_end), C.y + 30 * Math.sin(arrowAngle2_end));
+        ctx.lineTo(C.x + 30 * Math.cos(arrowAngle2_end) - 8*Math.cos(arrowAngle2_end - Math.PI/2), C.y + 30 * Math.sin(arrowAngle2_end) - 8*Math.sin(arrowAngle2_end - Math.PI/2));
+        ctx.stroke();
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('φ', C.x - 5, C.y + 20);
+        ctx.font = '20px serif';
+
+
+        // Point Labels
+        ctx.font = 'bold 22px serif';
+        ctx.fillText('A', A.x - 25, A.y - 5);
+        ctx.fillText('B', B.x - 25, B.y + 10);
+        ctx.fillText('C', C.x + 10, C.y - 5);
+        ctx.fillText('E', E_pulley.x - 30, E_pulley.y - 5);
+        ctx.fillText('F', F_pulley.x + 20, F_pulley.y - 5);
+
+    </script>
+</body>
+</html>

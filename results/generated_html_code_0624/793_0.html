@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lloyd's Mirror Interference</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physics-diagram" width="600" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physics-diagram');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = 'italic 20px Times New Roman';
+
+    // Parameters
+    const h = 70; // Height of the telescope receiver
+    const tel_receiver_x = 520;
+    const tel_receiver_y = 180;
+    const water_y = tel_receiver_y + h; // y=250
+
+    const theta_deg = 12;
+    const theta_rad = theta_deg * Math.PI / 180;
+    const tan_theta = Math.tan(theta_rad);
+
+    // Helper function to draw a line with an arrow in the middle
+    function drawArrow(p1x, p1y, p2x, p2y) {
+        ctx.beginPath();
+        ctx.moveTo(p1x, p1y);
+        ctx.lineTo(p2x, p2y);
+        ctx.stroke();
+
+        const head_len = 10;
+        const angle = Math.atan2(p2y - p1y, p2x - p1x);
+
+        // Arrowhead placed in the middle
+        const mid_x = (p1x + p2x) / 2;
+        const mid_y = (p1y + p2y) / 2;
+
+        ctx.save();
+        ctx.translate(mid_x, mid_y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-head_len, -head_len / 2.5);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-head_len, head_len / 2.5);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // 1. Draw water and shore
+    function drawWaterAndShore() {
+        // Water surface
+        ctx.beginPath();
+        ctx.moveTo(0, water_y);
+        ctx.lineTo(450, water_y);
+        ctx.stroke();
+
+        // Dashed lines for water
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.setLineDash([8, 8]);
+        for (let i = 1; i < 5; i++) {
+            ctx.beginPath();
+            ctx.moveTo(0, water_y + i * 12);
+            ctx.lineTo(400 - i * 15, water_y + i * 12);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // Shoreline
+        ctx.beginPath();
+        ctx.moveTo(420, water_y);
+        ctx.quadraticCurveTo(480, water_y + 5, 580, water_y - 20);
+        ctx.stroke();
+
+        // Hatching for ground
+        ctx.save();
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 16; i++) {
+            ctx.beginPath();
+            ctx.moveTo(450 + i * 10, water_y);
+            ctx.lineTo(420 + i * 10, water_y + 30);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    // 2. Draw Radio Telescope
+    function drawTelescope(rx, ry) {
+        ctx.save();
+        ctx.lineWidth = 2;
+
+        // Dish (parabolic shape)
+        const dish_center_x = rx + 25;
+        const dish_center_y = ry;
+        const dish_radius = 30;
+        ctx.beginPath();
+        ctx.arc(dish_center_x, dish_center_y, dish_radius, Math.PI * 0.82, Math.PI * 1.78);
+        ctx.stroke();
+
+        // Receiver (at focus)
+        ctx.beginPath();
+        ctx.arc(rx, ry, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Support struts for receiver
+        const strut_top_y = dish_center_y - dish_radius * Math.sin(Math.PI * 0.82);
+        const strut_top_x = dish_center_x - dish_radius * Math.cos(Math.PI * 0.82);
+        const strut_bottom_y = dish_center_y - dish_radius * Math.sin(Math.PI * 1.78);
+        const strut_bottom_x = dish_center_x - dish_radius * Math.cos(Math.PI * 1.78);
+        ctx.beginPath();
+        ctx.moveTo(rx, ry);
+        ctx.lineTo(strut_top_x, strut_top_y);
+        ctx.moveTo(rx, ry);
+        ctx.lineTo(strut_bottom_x, strut_bottom_y);
+        ctx.stroke();
+        
+        // Mount
+        const mount_pivot_x = rx + 10;
+        const mount_pivot_y = ry + 20;
+        ctx.beginPath();
+        ctx.arc(mount_pivot_x, mount_pivot_y, 3, 0, 2 * Math.PI); // Joint
+        ctx.fill();
+
+        // Connection from dish to mount
+        ctx.moveTo(dish_center_x, dish_center_y);
+        ctx.lineTo(mount_pivot_x, mount_pivot_y);
+
+        // Stand
+        const stand_base_y = water_y - 15;
+        ctx.moveTo(mount_pivot_x, mount_pivot_y);
+        ctx.lineTo(mount_pivot_x, stand_base_y);
+        ctx.moveTo(mount_pivot_x - 15, stand_base_y);
+        ctx.lineTo(mount_pivot_x, mount_pivot_y + 5);
+        ctx.lineTo(mount_pivot_x + 15, stand_base_y);
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    // 3. Draw Rays
+    function drawRays() {
+        // Reflection point on water
+        const reflect_x = tel_receiver_x - h / tan_theta;
+        
+        // Ray start X-coordinate
+        const ray_start_x = 20;
+
+        // Reflected ray path
+        const incoming_reflect_y = water_y - (reflect_x - ray_start_x) * tan_theta;
+        drawArrow(ray_start_x, incoming_reflect_y, reflect_x, water_y); // Incoming part
+        drawArrow(reflect_x, water_y, tel_receiver_x, tel_receiver_y); // Reflected part
+
+        // Direct ray path
+        const direct_ray_start_y = tel_receiver_y - (tel_receiver_x - ray_start_x) * tan_theta;
+        drawArrow(ray_start_x, direct_ray_start_y, tel_receiver_x, tel_receiver_y);
+        
+        return reflect_x;
+    }
+
+    // 4. Draw Labels
+    function drawLabels(reflect_x) {
+        // 'h' label
+        const h_label_x = tel_receiver_x + 45;
+        ctx.beginPath();
+        ctx.moveTo(h_label_x, tel_receiver_y);
+        ctx.lineTo(h_label_x, water_y);
+        // Arrowheads for h
+        ctx.moveTo(h_label_x, tel_receiver_y);
+        ctx.lineTo(h_label_x - 4, tel_receiver_y + 6);
+        ctx.moveTo(h_label_x, tel_receiver_y);
+        ctx.lineTo(h_label_x + 4, tel_receiver_y + 6);
+        ctx.moveTo(h_label_x, water_y);
+        ctx.lineTo(h_label_x - 4, water_y - 6);
+        ctx.moveTo(h_label_x, water_y);
+        ctx.lineTo(h_label_x + 4, water_y - 6);
+        ctx.stroke();
+        ctx.fillText('h', h_label_x + 10, tel_receiver_y + h / 2 + 5);
+
+        // 'θ' label
+        const theta_arc_radius = 60;
+        ctx.beginPath();
+        ctx.arc(reflect_x, water_y, theta_arc_radius, Math.PI - theta_rad, Math.PI);
+        ctx.stroke();
+        const theta_label_x = reflect_x - (theta_arc_radius - 15) * Math.cos(theta_rad / 2);
+        const theta_label_y = water_y - (theta_arc_radius - 15) * Math.sin(theta_rad / 2) - 5;
+        ctx.fillText('θ', theta_label_x, theta_label_y);
+
+        // Main text label
+        ctx.save();
+        ctx.font = '24px "KaiTi", "SimSun", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 12-12 图', canvas.width / 2, 350);
+        ctx.restore();
+    }
+
+    // --- Execute drawing functions ---
+    drawWaterAndShore();
+    drawTelescope(tel_receiver_x, tel_receiver_y);
+    const reflect_x = drawRays();
+    drawLabels(reflect_x);
+
+</script>
+</body>
+</html>

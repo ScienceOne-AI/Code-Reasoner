@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram Fig 3.30</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="600" height="420"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings to mimic the hand-drawn look
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = 'bold 18px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Helper function to draw a zigzag resistor (vertical)
+    function drawResistor(x, y, width, height, zigs) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        const dy = height / zigs;
+        for (let i = 0; i < zigs; i++) {
+            const x_zig = x + (width / 2) * ((i % 2 === 0) ? 1 : -1);
+            const y_zig = y + (i + 0.5) * dy;
+            ctx.lineTo(x_zig, y_zig);
+        }
+        ctx.lineTo(x, y + height);
+        ctx.stroke();
+    }
+
+    // Helper function to draw a coiled inductor (vertical)
+    function drawInductor(x, y, radius, height, loops) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        const loopHeight = height / loops;
+        for (let i = 0; i < loops; i++) {
+            ctx.arc(x, y + i * loopHeight + loopHeight / 2, radius, Math.PI * 1.5, Math.PI * 0.5, false);
+        }
+        ctx.moveTo(x, y + height);
+        ctx.stroke();
+    }
+    
+    // --- Main Drawing ---
+
+    // 1. Source (Battery)
+    const batX = 80;
+    const batYTop = 100;
+    const batYBot = 140;
+    ctx.beginPath();
+    ctx.moveTo(batX - 20, batYTop);
+    ctx.lineTo(batX + 20, batYTop);
+    ctx.moveTo(batX - 10, batYBot);
+    ctx.lineTo(batX + 10, batYBot);
+    ctx.stroke();
+    ctx.fillText('+', batX, batYTop - 15);
+    ctx.fillText('-', batX, batYBot + 15);
+    ctx.fillText('2V', batX - 45, (batYTop + batYBot) / 2);
+    
+    // 2. Resistor R1
+    const r1YTop = 140;
+    const r1YBot = 240;
+    ctx.beginPath();
+    ctx.moveTo(batX, r1YBot);
+    ctx.lineTo(batX, 320); // connect to bottom wire
+    ctx.stroke();
+    drawResistor(batX, r1YTop, 20, r1YBot - r1YTop, 6);
+    ctx.fillText('R₁=3Ω', batX - 45, (r1YTop + r1YBot) / 2);
+
+    // 3. Wires and Switch
+    const switchPivotX = 160;
+    const switchPivotY = 80;
+    const contactAX = 200;
+    const contactAY = 100;
+    
+    // Top wire from battery
+    ctx.beginPath();
+    ctx.moveTo(batX, batYTop);
+    ctx.lineTo(switchPivotX, batYTop);
+    ctx.lineTo(switchPivotX, switchPivotY);
+    ctx.stroke();
+
+    // Switch arm (pointing to A)
+    ctx.beginPath();
+    ctx.moveTo(switchPivotX, switchPivotY);
+    ctx.lineTo(contactAX, contactAY);
+    ctx.stroke();
+    // contact point circle
+    ctx.beginPath();
+    ctx.arc(contactAX, contactAY, 4, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Switch labels and other contacts
+    ctx.fillText('A', contactAX-5, contactAY - 20);
+    ctx.fillText('B', switchPivotX + 30, switchPivotY - 30);
+    ctx.beginPath();
+    ctx.arc(switchPivotX + 30, switchPivotY - 15, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('C', switchPivotX + 90, switchPivotY);
+    ctx.beginPath();
+    ctx.arc(switchPivotX + 80, switchPivotY + 15, 3, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 4. First Parallel Group (connected to A)
+    const group1TopY = 120;
+    const group1BottomY = 320;
+    const r2X = 230;
+    const l1r3X = 300;
+
+    // Connection from contact A
+    ctx.beginPath();
+    ctx.moveTo(contactAX, contactAY);
+    ctx.lineTo(r2X, group1TopY);
+    ctx.lineTo(l1r3X, group1TopY);
+    ctx.stroke();
+
+    // Left branch: R2
+    ctx.beginPath();
+    ctx.moveTo(r2X, group1TopY);
+    ctx.lineTo(r2X, group1TopY + 20);
+    ctx.moveTo(r2X, group1BottomY - 20);
+    ctx.lineTo(r2X, group1BottomY);
+    ctx.stroke();
+    drawResistor(r2X, group1TopY + 20, 20, group1BottomY - group1TopY - 40, 6);
+    ctx.fillText('R₂=2Ω', r2X - 50, (group1TopY + group1BottomY) / 2);
+
+    // Right branch: L1 and R3
+    // L1
+    ctx.beginPath();
+    ctx.moveTo(l1r3X, group1TopY);
+    ctx.lineTo(l1r3X, group1TopY + 10);
+    ctx.stroke();
+    drawInductor(l1r3X, group1TopY + 10, 10, 80, 4);
+    ctx.fillText('L₁=5H', l1r3X + 50, group1TopY + 50);
+    // R3
+    const r3YTop = group1TopY + 100;
+    ctx.beginPath();
+    ctx.moveTo(l1r3X, r3YTop);
+    ctx.stroke();
+    drawResistor(l1r3X, r3YTop, 20, 80, 5);
+    ctx.fillText('R₃=¹/₂Ω', l1r3X + 55, r3YTop + 40);
+    ctx.beginPath();
+    ctx.moveTo(l1r3X, r3YTop + 80);
+    ctx.lineTo(l1r3X, group1BottomY);
+    ctx.stroke();
+    
+    // 5. Second Parallel Group (connected to C)
+    const group2TopY = 120;
+    const group2BottomY = 320;
+    const r4X = 400;
+    const l2r5X = 470;
+
+    // Connection from contact C
+    ctx.beginPath();
+    ctx.moveTo(switchPivotX + 80, switchPivotY + 15);
+    ctx.lineTo(r4X, group2TopY);
+    ctx.lineTo(l2r5X, group2TopY);
+    ctx.stroke();
+    
+    // Left branch: R4
+    ctx.beginPath();
+    ctx.moveTo(r4X, group2TopY);
+    ctx.lineTo(r4X, group2TopY + 20);
+    ctx.moveTo(r4X, group2BottomY - 20);
+    ctx.lineTo(r4X, group2BottomY);
+    ctx.stroke();
+    drawResistor(r4X, group2TopY + 20, 20, group2BottomY - group2TopY - 40, 6);
+    ctx.fillText('R₄=2Ω', r4X - 50, (group2TopY + group2BottomY) / 2);
+
+    // Right branch: L2 and R5
+    // L2
+    ctx.beginPath();
+    ctx.moveTo(l2r5X, group2TopY);
+    ctx.lineTo(l2r5X, group2TopY + 10);
+    ctx.stroke();
+    drawInductor(l2r5X, group2TopY + 10, 10, 80, 4);
+    ctx.fillText('L₂=5H', l2r5X + 50, group2TopY + 50);
+    // R5
+    const r5YTop = group2TopY + 100;
+    ctx.beginPath();
+    ctx.moveTo(l2r5X, r5YTop);
+    ctx.stroke();
+    drawResistor(l2r5X, r5YTop, 20, 80, 5);
+    ctx.fillText('R₅=¹/₂Ω', l2r5X + 55, r5YTop + 40);
+    ctx.beginPath();
+    ctx.moveTo(l2r5X, r5YTop + 80);
+    ctx.lineTo(l2r5X, group2BottomY);
+    ctx.stroke();
+
+    // 6. Bottom common wire
+    ctx.beginPath();
+    ctx.moveTo(batX, group1BottomY);
+    ctx.lineTo(l2r5X, group1BottomY);
+    ctx.stroke();
+
+    // 7. Figure Caption
+    ctx.fillText('Fig. 3.30', 300, 380);
+
+</script>
+</body>
+</html>

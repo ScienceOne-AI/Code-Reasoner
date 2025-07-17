@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Static Force Analysis</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px serif';
+
+        // --- Geometric Definitions ---
+        const angle30 = 30 * Math.PI / 180;
+        const slope = Math.tan(angle30);
+
+        // Define key points to match the drawing
+        const C = { x: 155, y: 125 }; // Pulley center
+        const B = { x: 245, y: C.y + (245 - C.x) * slope }; // Point B on the rod
+        const A = { x: 530, y: 310 }; // Point A on the floor
+
+        const pulleyRadius = 12;
+
+        // --- Drawing Functions ---
+
+        // Function to draw the ground and ramp structure
+        function drawGround() {
+            ctx.save();
+            ctx.lineWidth = 3;
+            
+            // Define the boundary path for hatching
+            const groundPath = new Path2D();
+            
+            // The corner where the incline starts on the vertical wall
+            const inclineStart = { x: C.x - pulleyRadius / Math.cos(angle30) , y: B.y - (B.x - (C.x - pulleyRadius / Math.cos(angle30))) * slope };
+            
+            // Point where incline meets the dip
+            const inclineEnd = { x: B.x + 100, y: B.y + 100 * slope };
+
+            // Point where dip meets the horizontal floor
+            const floorStart = { x: inclineEnd.x - 70, y: A.y };
+
+            groundPath.moveTo(inclineStart.x, 100);
+            groundPath.lineTo(inclineStart.x, inclineStart.y);
+            groundPath.lineTo(inclineEnd.x, inclineEnd.y);
+            groundPath.lineTo(floorStart.x, floorStart.y);
+            groundPath.lineTo(canvas.width, A.y);
+            groundPath.lineTo(canvas.width, canvas.height);
+            groundPath.lineTo(0, canvas.height);
+            groundPath.lineTo(0, 100);
+            groundPath.closePath();
+
+            // Draw hatching
+            ctx.save();
+            ctx.clip(groundPath);
+            ctx.lineWidth = 1.5;
+            for (let i = -canvas.height; i < canvas.width; i += 8) {
+                ctx.beginPath();
+                ctx.moveTo(i, canvas.height);
+                ctx.lineTo(i + canvas.height, 0);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Draw the outline of the ground
+            ctx.beginPath();
+            ctx.moveTo(inclineStart.x, 100); // Top of the vertical wall
+            ctx.lineTo(inclineStart.x, inclineStart.y);
+            ctx.lineTo(inclineEnd.x, inclineEnd.y);
+            ctx.lineTo(floorStart.x, floorStart.y);
+            ctx.lineTo(canvas.width, A.y);
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        // Function to draw the rod AB
+        function drawRod(A, B) {
+            ctx.save();
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'butt';
+            
+            ctx.beginPath();
+            ctx.moveTo(A.x, A.y);
+            ctx.lineTo(B.x, B.y);
+            ctx.stroke();
+
+            // Ends of the rod
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(A.x, A.y);
+            ctx.lineTo(A.x, A.y - 10);
+            ctx.stroke();
+
+            ctx.beginPath();
+            const angleRod = Math.atan2(A.y-B.y, A.x-B.x);
+            ctx.arc(B.x, B.y, 3, angleRod - Math.PI/2, angleRod + Math.PI/2);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Function to draw the pulley, rope, and weight P
+        function drawPulleySystem(C, B, P_pos) {
+            // Pulley
+            ctx.beginPath();
+            ctx.arc(C.x, C.y, pulleyRadius, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(C.x, C.y, 2, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Rope
+            ctx.lineWidth = 2;
+            // Rope segment B to C (tangent)
+            const tangentAngle = Math.atan(slope);
+            const tangentPoint = {
+                x: C.x + pulleyRadius * Math.sin(tangentAngle),
+                y: C.y - pulleyRadius * Math.cos(tangentAngle)
+            };
+            ctx.beginPath();
+            ctx.moveTo(B.x, B.y);
+            ctx.lineTo(tangentPoint.x, tangentPoint.y);
+            ctx.stroke();
+
+            // Rope over pulley
+            ctx.beginPath();
+            ctx.arc(C.x, C.y, pulleyRadius, -Math.PI / 2 + tangentAngle, Math.PI / 2, true);
+            ctx.stroke();
+            
+            // Rope hanging down
+            const hangStart = { x: C.x - pulleyRadius, y: C.y };
+            ctx.beginPath();
+            ctx.moveTo(hangStart.x, hangStart.y);
+            ctx.lineTo(hangStart.x, P_pos.y);
+            ctx.stroke();
+
+            // Weight P
+            const p_width = 40;
+            const p_height = 50;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(hangStart.x - p_width/2, P_pos.y, p_width, p_height);
+            // Attachment ring
+            ctx.beginPath();
+            ctx.arc(hangStart.x, P_pos.y, 4, Math.PI, 2 * Math.PI);
+            ctx.stroke();
+
+        }
+
+        // Function to draw labels and annotations
+        function drawLabels() {
+            // Labels A, B, C, P
+            ctx.fillText('A', A.x - 5, A.y - 15);
+            ctx.fillText('B', B.x + 10, B.y - 5);
+            ctx.fillText('C', C.x + pulleyRadius + 5, C.y - 5);
+            ctx.fillText('P', C.x - pulleyRadius - 45, B.y + 110);
+
+            // Angle 30°
+            const anglePointX = B.x - 50;
+            const anglePointY = B.y - 50 * slope;
+            ctx.save();
+            ctx.lineWidth = 1;
+            // Dashed horizontal line
+            ctx.beginPath();
+            ctx.setLineDash([4, 4]);
+            ctx.moveTo(anglePointX - 50, anglePointY);
+            ctx.lineTo(anglePointX, anglePointY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Angle Arc
+            ctx.beginPath();
+            ctx.arc(anglePointX, anglePointY, 25, 0, -angle30, true);
+            ctx.stroke();
+            
+            // Angle text
+            ctx.font = '18px serif';
+            ctx.fillText('30°', anglePointX - 45, anglePointY - 10);
+            
+            // Vertical arrow for angle definition
+            ctx.beginPath();
+            ctx.moveTo(anglePointX-50, anglePointY);
+            ctx.lineTo(anglePointX-50, anglePointY+20);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(anglePointX-53, anglePointY+17);
+            ctx.lineTo(anglePointX-50, anglePointY+20);
+            ctx.lineTo(anglePointX-47, anglePointY+17);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // --- Main Execution ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        drawGround();
+        drawRod(A, B);
+        drawPulleySystem(C, B, {x: 0, y: 220});
+        drawLabels();
+
+    </script>
+</body>
+</html>

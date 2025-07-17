@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Semiconductor Bands Diagram</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f8f9fa;
+    }
+    canvas {
+        border: 1px solid #ccc;
+        background-color: white;
+    }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="750" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Configuration ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2.5;
+    ctx.font = '24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Coordinate System ---
+    const margin = { top: 60, right: 200, bottom: 80, left: 80 };
+    const chartWidth = canvas.width - margin.left - margin.right;
+    const chartHeight = canvas.height - margin.top - margin.bottom;
+
+    const xOrigin = margin.left;
+    const yOrigin = canvas.height - margin.bottom;
+
+    const E_min = -7.5;
+    const E_max = 0.0;
+    const xScale = chartWidth / (E_max - E_min);
+    const getX = (E) => xOrigin + (E - E_min) * xScale;
+
+    const N_max = 1.5;
+    const yScale = chartHeight / N_max;
+    const getY = (N) => yOrigin - N * yScale;
+
+    const bandHeightN = 1.0;
+    const yTop = getY(bandHeightN);
+
+    // --- Drawing Functions ---
+    function drawArrow(ctx, x1, y1, x2, y2) {
+        const headlen = 12;
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    function drawBandShape(ctx, E_tl, E_tr, E_bl, E_br, yTop, yBottom) {
+        const xtl = getX(E_tl);
+        const xtr = getX(E_tr);
+        const xbl = getX(E_bl);
+        const xbr = getX(E_br);
+
+        const path = new Path2D();
+        path.moveTo(xtl, yTop);
+        path.lineTo(xtr, yTop);
+        path.quadraticCurveTo(xtr, yBottom, xbr, yBottom);
+        path.lineTo(xbl, yBottom);
+        path.quadraticCurveTo(xtl, yBottom, xtl, yTop);
+        path.closePath();
+        return path;
+    }
+    
+    // --- Draw Axes ---
+    drawArrow(ctx, xOrigin, yOrigin, canvas.width - margin.right / 2, yOrigin); // E-axis
+    drawArrow(ctx, xOrigin, yOrigin, xOrigin, margin.top - 30); // N(E)-axis
+
+    ctx.fillText('E', canvas.width - margin.right / 2 + 20, yOrigin);
+    ctx.fillText('N(E)', xOrigin, margin.top - 45);
+
+    // --- Draw Valence Band ---
+    const Ev_tl = -6.2, Ev_tr = -4.5, Ev_bl = -6.5, Ev_br = -4.8;
+    const vbPath = drawBandShape(ctx, Ev_tl, Ev_tr, Ev_bl, Ev_br, yTop, yOrigin);
+
+    // Hatching for Valence Band
+    ctx.save();
+    ctx.clip(vbPath);
+    const oldLineWidth = ctx.lineWidth;
+    ctx.lineWidth = 1.8;
+    for (let i = 0; i < (canvas.width + canvas.height)*1.5; i += 12) {
+        ctx.beginPath();
+        ctx.moveTo(i - canvas.height, 0);
+        ctx.lineTo(i, canvas.height);
+        ctx.stroke();
+    }
+    ctx.lineWidth = oldLineWidth;
+    ctx.restore();
+    
+    // Draw VB outline
+    ctx.stroke(vbPath);
+
+    // --- Draw Conduction Band ---
+    const Ec_tl = -3.0, Ec_tr = -1.2, Ec_bl = -3.2, Ec_br = -1.0;
+    const cbPath = drawBandShape(ctx, Ec_tl, Ec_tr, Ec_bl, Ec_br, yTop, yOrigin);
+    ctx.stroke(cbPath);
+
+    // --- Labels and Annotations ---
+    
+    // Band labels
+    const vb_center_x = getX((Ev_tl + Ev_tr) / 2);
+    ctx.fillText('Valence', vb_center_x, margin.top - 15);
+    ctx.fillText('band', vb_center_x, margin.top + 15);
+    drawArrow(ctx, vb_center_x, margin.top + 30, vb_center_x, yTop - 5);
+
+    const cb_center_x = getX((Ec_tl + Ec_tr) / 2);
+    ctx.fillText('Conduction', cb_center_x, margin.top - 15);
+    ctx.fillText('band', cb_center_x, margin.top + 15);
+    drawArrow(ctx, cb_center_x, margin.top + 30, cb_center_x, yTop - 5);
+    
+    // Energy values on axis
+    const tick_y = yOrigin + 8;
+    
+    const E_vb_tick = -6.5;
+    ctx.beginPath();
+    ctx.moveTo(getX(E_vb_tick), yOrigin);
+    ctx.lineTo(getX(E_vb_tick), tick_y);
+    ctx.stroke();
+    ctx.fillText('-6.5 eV', getX(E_vb_tick), yOrigin + 25);
+
+    const E_cb_tick = -3.0;
+    ctx.beginPath();
+    ctx.moveTo(getX(E_cb_tick), yOrigin);
+    ctx.lineTo(getX(E_cb_tick), tick_y);
+    ctx.stroke();
+    ctx.fillText('-3 eV', getX(E_cb_tick), yOrigin + 25);
+    
+    // Band gap label
+    const gap_y = yOrigin - chartHeight * 0.5;
+    const gap_x1_end = getX(Ev_tr);
+    const gap_x2_end = getX(Ec_tl);
+    const mid_x = (gap_x1_end + gap_x2_end) / 2;
+
+    const gapText = '1.5 eV';
+    const textWidth = ctx.measureText(gapText).width;
+    const gap_x1_start = mid_x - textWidth / 2 - 10;
+    const gap_x2_start = mid_x + textWidth / 2 + 10;
+    
+    ctx.fillText(gapText, mid_x, gap_y);
+    drawArrow(ctx, gap_x1_start, gap_y, gap_x1_end, gap_y);
+    drawArrow(ctx, gap_x2_start, gap_y, gap_x2_end, gap_y);
+
+    // n₀ label
+    const n0_y = yTop;
+    const n0_x_start = getX(Ec_tr);
+    const n0_x_end = n0_x_start + 50;
+    
+    ctx.setLineDash([8, 6]);
+    drawArrow(ctx, n0_x_start, n0_y, n0_x_end, n0_y);
+    ctx.setLineDash([]);
+    
+    ctx.textAlign = 'left';
+    ctx.fillText('n₀ = 2 × 10²¹(cm³ eV)⁻¹', n0_x_end + 10, n0_y);
+    
+    // --- Figure Caption ---
+    ctx.textAlign = 'center';
+    ctx.font = '22px sans-serif';
+    ctx.fillText('Fig. 1.23', canvas.width / 2, canvas.height - 25);
+
+</script>
+</body>
+</html>

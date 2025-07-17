@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Experiment Setup</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="750" height="500"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style settings
+ctx.lineWidth = 1.5;
+ctx.font = '18px Arial';
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.textAlign = 'center';
+
+// --- Helper function for drawing arrow heads ---
+function drawArrowHead(fromx, fromy, tox, toy, headLength = 8) {
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.save();
+    ctx.translate(tox, toy);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-headLength, headLength / 2);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-headLength, -headLength / 2);
+    ctx.stroke();
+    ctx.restore();
+}
+
+// --- Draw Balance Pan and Stem ---
+const panY = 380;
+const panX1 = 100;
+const panX2 = 300;
+const panCenterX = (panX1 + panX2) / 2;
+ctx.beginPath();
+ctx.rect(panX1, panY, panX2 - panX1, 8);
+ctx.fillStyle = '#d3d3d3';
+ctx.fill();
+ctx.stroke();
+ctx.fillStyle = 'black';
+
+ctx.beginPath();
+ctx.rect(panCenterX - 15, panY + 8, 30, 60);
+ctx.fillStyle = '#a9a9a9';
+ctx.fill();
+ctx.stroke();
+ctx.fillStyle = 'black';
+
+// Jagged line at the bottom of the stem
+const stemBottomY = panY + 8 + 60;
+ctx.beginPath();
+ctx.moveTo(panCenterX - 15, stemBottomY);
+ctx.lineTo(panCenterX - 5, stemBottomY + 10);
+ctx.lineTo(panCenterX + 5, stemBottomY);
+ctx.lineTo(panCenterX + 15, stemBottomY + 10);
+ctx.stroke();
+
+// --- Draw Beaker ---
+const beakerBottomY = panY;
+const beakerWidth = 120;
+const beakerHeight = 180;
+const beakerX = panCenterX - beakerWidth / 2;
+ctx.beginPath();
+ctx.moveTo(beakerX, beakerBottomY);
+ctx.lineTo(beakerX, beakerBottomY - beakerHeight);
+ctx.lineTo(beakerX + beakerWidth, beakerBottomY - beakerHeight);
+ctx.lineTo(beakerX + beakerWidth, beakerBottomY);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(beakerX, beakerBottomY);
+ctx.lineTo(beakerX + beakerWidth, beakerBottomY);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(beakerX - 2, beakerBottomY - beakerHeight);
+ctx.lineTo(beakerX + beakerWidth + 2, beakerBottomY - beakerHeight);
+ctx.stroke();
+
+// --- Draw Water ---
+const waterLevelY = beakerBottomY - 150;
+ctx.beginPath();
+ctx.moveTo(beakerX, waterLevelY);
+ctx.bezierCurveTo(beakerX + beakerWidth / 3, waterLevelY + 3, beakerX + 2 * beakerWidth / 3, waterLevelY + 3, beakerX + beakerWidth, waterLevelY);
+ctx.stroke();
+
+// Water fill pattern (dashes)
+ctx.save();
+ctx.strokeStyle = '#666';
+ctx.lineWidth = 1;
+for (let y = waterLevelY + 15; y < beakerBottomY - 5; y += 8) {
+    for (let x = beakerX + 5; x < beakerX + beakerWidth - 5; x += 15) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 7, y);
+        ctx.stroke();
+    }
+}
+ctx.restore();
+
+// --- Draw Heater ---
+const heaterWidth = 50;
+const heaterHeight = 100;
+const heaterX = panCenterX - heaterWidth / 2;
+const heaterBottomY = beakerBottomY - 10;
+const heaterTopY = heaterBottomY - heaterHeight;
+ctx.beginPath();
+ctx.rect(heaterX, heaterTopY, heaterWidth, heaterHeight);
+ctx.stroke();
+
+// Heater leads
+const lead1X = heaterX + heaterWidth / 3;
+const lead2X = heaterX + 2 * heaterWidth / 3;
+const leadTopY = waterLevelY - 40;
+ctx.beginPath();
+ctx.moveTo(lead1X, heaterTopY);
+ctx.lineTo(lead1X, leadTopY);
+ctx.moveTo(lead2X, heaterTopY);
+ctx.lineTo(lead2X, leadTopY);
+ctx.stroke();
+
+// --- Draw Circuit ---
+const heater_lead_top_conn = {x: lead1X, y: leadTopY};
+const heater_lead_bottom_conn = {x: lead2X, y: leadTopY};
+
+const top_junction_dot = {x: 420, y: 100};
+const bottom_junction_dot = {x: 420, y: 250};
+
+// Wires from heater to junctions
+ctx.beginPath();
+ctx.moveTo(heater_lead_top_conn.x, heater_lead_top_conn.y);
+ctx.lineTo(top_junction_dot.x, heater_lead_top_conn.y);
+ctx.lineTo(top_junction_dot.x, top_junction_dot.y);
+ctx.moveTo(heater_lead_bottom_conn.x, heater_lead_bottom_conn.y);
+ctx.lineTo(heater_lead_bottom_conn.x, bottom_junction_dot.y);
+ctx.lineTo(bottom_junction_dot.x, bottom_junction_dot.y);
+ctx.stroke();
+
+// Voltmeter
+const vm_final = {x: 350, y: 175, r: 22};
+ctx.beginPath();
+ctx.arc(vm_final.x, vm_final.y, vm_final.r, 0, 2 * Math.PI);
+ctx.stroke();
+ctx.fillText('V', vm_final.x, vm_final.y + 7);
+
+// Voltmeter connections
+ctx.beginPath();
+ctx.moveTo(vm_final.x, vm_final.y - vm_final.r);
+ctx.lineTo(vm_final.x, top_junction_dot.y);
+ctx.lineTo(top_junction_dot.x, top_junction_dot.y);
+ctx.moveTo(vm_final.x, vm_final.y + vm_final.r);
+ctx.lineTo(vm_final.x, bottom_junction_dot.y);
+ctx.lineTo(bottom_junction_dot.x, bottom_junction_dot.y);
+ctx.stroke();
+
+// Ammeter
+const am_final = {x: 520, y: 60, r: 22};
+ctx.beginPath();
+ctx.arc(am_final.x, am_final.y, am_final.r, 0, 2 * Math.PI);
+ctx.stroke();
+ctx.fillText('A', am_final.x, am_final.y + 7);
+
+// Ammeter connections
+ctx.beginPath();
+ctx.moveTo(top_junction_dot.x, top_junction_dot.y);
+ctx.lineTo(am_final.x, top_junction_dot.y);
+ctx.lineTo(am_final.x, am_final.y + am_final.r);
+ctx.stroke();
+
+// Switch
+const sw_final = {x: 640, y: 60};
+const swt1 = {x: sw_final.x - 15, y: sw_final.y};
+const swt2 = {x: sw_final.x + 15, y: sw_final.y};
+ctx.beginPath();
+ctx.arc(swt1.x, swt1.y, 3.5, 0, 2 * Math.PI); ctx.fill();
+ctx.beginPath();
+ctx.arc(swt2.x, swt2.y, 3.5, 0, 2 * Math.PI); ctx.fill();
+ctx.beginPath();
+ctx.moveTo(swt1.x, swt1.y);
+ctx.lineTo(swt1.x + 25, swt1.y - 15);
+ctx.stroke();
+
+// Ammeter to Switch
+ctx.beginPath();
+ctx.moveTo(am_final.x, am_final.y - am_final.r);
+ctx.lineTo(am_final.x, sw_final.y);
+ctx.lineTo(swt1.x, sw_final.y);
+ctx.stroke();
+
+// Rheostat (Variable Resistor)
+const rh_final = {x: 520, y: 250, w: 100, h: 20};
+ctx.beginPath();
+ctx.rect(rh_final.x - rh_final.w / 2, rh_final.y - rh_final.h / 2, rh_final.w, rh_final.h);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(rh_final.x - rh_final.w / 2 - 10, rh_final.y + rh_final.h / 2 + 10);
+ctx.lineTo(rh_final.x + rh_final.w / 2 + 10, rh_final.y - rh_final.h / 2 - 10);
+ctx.stroke();
+drawArrowHead(rh_final.x + rh_final.w / 2, rh_final.y - rh_final.h / 2 - 7, rh_final.x + rh_final.w / 2 + 10, rh_final.y - rh_final.h / 2 - 10, 10);
+
+// Rheostat connections
+ctx.beginPath();
+ctx.moveTo(bottom_junction_dot.x, bottom_junction_dot.y);
+ctx.lineTo(rh_final.x - rh_final.w / 2, bottom_junction_dot.y);
+ctx.stroke();
+
+// DC Supply
+const dc_supply_term_top = {x: 700, y: 120};
+const dc_supply_term_bottom = {x: 700, y: 180};
+ctx.beginPath();
+ctx.arc(dc_supply_term_top.x, dc_supply_term_top.y, 5, 0, 2 * Math.PI); ctx.stroke();
+ctx.beginPath();
+ctx.arc(dc_supply_term_bottom.x, dc_supply_term_bottom.y, 5, 0, 2 * Math.PI); ctx.stroke();
+
+// Final wiring
+ctx.beginPath();
+// Switch to Supply top
+ctx.moveTo(swt2.x, swt2.y);
+ctx.lineTo(dc_supply_term_top.x, swt2.y);
+ctx.lineTo(dc_supply_term_top.x, dc_supply_term_top.y);
+// Rheostat to Supply bottom
+ctx.moveTo(rh_final.x + rh_final.w / 2, rh_final.y);
+ctx.lineTo(dc_supply_term_bottom.x, rh_final.y);
+ctx.lineTo(dc_supply_term_bottom.x, dc_supply_term_bottom.y);
+ctx.stroke();
+
+// Junction dots
+ctx.beginPath();
+ctx.arc(top_junction_dot.x, top_junction_dot.y, 3.5, 0, 2 * Math.PI); ctx.fill();
+ctx.beginPath();
+ctx.arc(bottom_junction_dot.x, bottom_junction_dot.y, 3.5, 0, 2 * Math.PI); ctx.fill();
+
+// --- Labels ---
+ctx.font = '20px Arial';
+ctx.textAlign = 'start';
+// heater
+ctx.fillText('heater', 100, 200);
+ctx.beginPath();
+ctx.moveTo(160, 205);
+ctx.lineTo(heaterX - 2, heaterTopY + heaterHeight / 2);
+ctx.stroke();
+drawArrowHead(160, 205, heaterX - 2, heaterTopY + heaterHeight / 2);
+
+// balance pan
+ctx.fillText('balance pan', 20, 360);
+ctx.beginPath();
+ctx.moveTo(125, 360);
+ctx.lineTo(panX1 + 10, panY);
+ctx.stroke();
+drawArrowHead(125, 360, panX1 + 10, panY);
+
+// boiling water
+ctx.fillText('boiling', 310, 300);
+ctx.fillText('water', 320, 325);
+ctx.beginPath();
+ctx.moveTo(330, 295);
+ctx.lineTo(beakerX + beakerWidth + 2, waterLevelY + 20);
+ctx.stroke();
+drawArrowHead(330, 295, beakerX + beakerWidth + 2, waterLevelY + 20);
+
+// d.c. supply
+ctx.fillText('d.c. supply', 620, 220);
+ctx.beginPath();
+ctx.moveTo(700, 215);
+ctx.lineTo(dc_supply_term_bottom.x, dc_supply_term_bottom.y + 5);
+ctx.stroke();
+drawArrowHead(700, 215, dc_supply_term_bottom.x, dc_supply_term_bottom.y + 5);
+
+// Fig caption
+ctx.font = 'bold 20px Arial';
+ctx.textAlign = 'center';
+ctx.fillText('Fig. 2.1', canvas.width / 2, 480);
+</script>
+</body>
+</html>

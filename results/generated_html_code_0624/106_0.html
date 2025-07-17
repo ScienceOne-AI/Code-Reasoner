@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spinning Disk Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="400" height="300"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style and parameters
+        const cx = 200;
+        const cy = 140;
+        const radius = 50;
+        const surfaceY = cy + radius;
+        const mainLineWidth = 2;
+        
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // Helper function to draw an arrowhead at a given point with a specific direction (tangent angle)
+        function drawArrowhead(ctx, x, y, tangentAngle, size) {
+            const angle = Math.PI / 6; // Angle between the two wings of the arrowhead
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - size * Math.cos(tangentAngle - angle), y - size * Math.sin(tangentAngle - angle));
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - size * Math.cos(tangentAngle + angle), y - size * Math.sin(tangentAngle + angle));
+            ctx.stroke();
+        }
+
+        // 1. Draw the horizontal surface
+        ctx.lineWidth = mainLineWidth;
+        ctx.beginPath();
+        ctx.moveTo(80, surfaceY);
+        ctx.lineTo(320, surfaceY);
+        ctx.stroke();
+
+        // Draw the ground hatches
+        for (let x = 95; x < 320; x += 20) {
+            ctx.beginPath();
+            ctx.moveTo(x, surfaceY);
+            ctx.lineTo(x - 10, surfaceY + 10);
+            ctx.stroke();
+        }
+
+        // 2. Draw the hatched circle
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+        ctx.clip(); // Restrict drawing to the circle's area
+
+        // Draw the diagonal hatching lines
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let i = -radius * 1.5; i <= radius * 1.5; i += 10) {
+            // Lines with a slope of -1 (top-left to bottom-right)
+            ctx.moveTo(cx + i - radius, cy + radius);
+            ctx.lineTo(cx + i + radius, cy - radius);
+        }
+        ctx.stroke();
+        ctx.restore(); // Remove the clipping path
+
+        // 3. Draw the circle's outline and center dot
+        ctx.lineWidth = mainLineWidth;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, 2.5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 4. Draw the rotation arrows indicating clockwise motion
+        const arrowRadius = radius + 18;
+        const arrowHeadSize = 12;
+
+        // Left arrow (moving downwards)
+        const leftArcStart = 0.75 * Math.PI; // 135 degrees
+        const leftArcEnd = 1.25 * Math.PI;   // 225 degrees
+        ctx.beginPath();
+        ctx.arc(cx, cy, arrowRadius, leftArcStart, leftArcEnd);
+        ctx.stroke();
+        
+        // Calculate position and direction for the arrowhead
+        let headX = cx + arrowRadius * Math.cos(leftArcEnd);
+        let headY = cy + arrowRadius * Math.sin(leftArcEnd);
+        let tangentDirection = leftArcEnd - Math.PI / 2; // Tangent for clockwise rotation
+        drawArrowhead(ctx, headX, headY, tangentDirection, arrowHeadSize);
+
+        // Right arrow (moving upwards)
+        const rightArcStart = -0.25 * Math.PI; // 315 degrees
+        const rightArcEnd = 0.25 * Math.PI;    // 45 degrees
+        ctx.beginPath();
+        ctx.arc(cx, cy, arrowRadius, rightArcStart, rightArcEnd);
+        ctx.stroke();
+
+        // Calculate position and direction for the arrowhead
+        headX = cx + arrowRadius * Math.cos(rightArcEnd);
+        headY = cy + arrowRadius * Math.sin(rightArcEnd);
+        tangentDirection = rightArcEnd - Math.PI / 2; // Tangent for clockwise rotation
+        drawArrowhead(ctx, headX, headY, tangentDirection, arrowHeadSize);
+
+        // 5. Draw the angular velocity symbol (ω)
+        ctx.font = 'italic 28px serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('ω', cx + radius + 30, cy + 5);
+        
+        // 6. Draw the figure label
+        ctx.font = '20px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 1.148.', cx, surfaceY + 50);
+
+    </script>
+</body>
+</html>

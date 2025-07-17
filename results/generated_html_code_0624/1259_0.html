@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="400" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Configuration ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.font = 'bold 24px Arial';
+
+        // --- Geometric Parameters ---
+        const scale = 250 / 3; // pixels per meter (based on 3m height)
+        const originX = 80;
+        const originY = 420;
+
+        // Point coordinates
+        const Ax = originX;
+        const Ay = originY;
+        const Bx = Ax;
+        const By = Ay - 3 * scale; // B is 3m above A
+        const Cx = Ax + Math.sqrt(3) * scale; // Derived from tan(30) = AC/AB
+        const Cy = Ay;
+
+        // Beam top end (D) calculation
+        const beamTotalLength_m = 4;
+        const lengthBC_m = 2 * Math.sqrt(3);
+        const lengthBD_m = beamTotalLength_m - lengthBC_m;
+        
+        const vecCB = { x: Bx - Cx, y: By - Cy };
+        const lengthCB_px = Math.hypot(vecCB.x, vecCB.y);
+        const unitVecCB = { x: vecCB.x / lengthCB_px, y: vecCB.y / lengthCB_px };
+        
+        const lengthBD_px = lengthBD_m * scale;
+        const Dx = Bx + lengthBD_px * unitVecCB.x;
+        const Dy = By + lengthBD_px * unitVecCB.y;
+
+        // --- Drawing Functions ---
+
+        function drawHatching(x1, y1, x2, y2, isVertical) {
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            const step = 15;
+            if (isVertical) {
+                // Hatching for the vertical wall (to the left)
+                const hatchLength = 20;
+                for (let y = y2; y > y1; y -= step) {
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y);
+                    ctx.lineTo(x1 - hatchLength, y);
+                    ctx.stroke();
+                }
+            } else {
+                // Hatching for the horizontal floor (downwards)
+                const hatchLength = 20;
+                for (let x = x1; x < x2; x += step) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, y1);
+                    ctx.lineTo(x, y1 + hatchLength);
+                    ctx.stroke();
+                }
+            }
+             // Draw diagonal hatching like the original image
+            const diagLength = 20;
+            if (isVertical) {
+                for (let y = y1; y < y2; y += 12) {
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y);
+                    ctx.lineTo(x1 - diagLength, y + diagLength);
+                    ctx.stroke();
+                }
+            } else {
+                 for (let x = x1; x < x2; x += 12) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, y1);
+                    ctx.lineTo(x - diagLength, y1 + diagLength);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+
+        function drawFilledArcArrow(centerX, centerY, radius, startAngle, endAngle, clockwise) {
+            // Place arrow near the start of the arc (closer to the wall)
+            const arrowAngle = startAngle + (endAngle - startAngle) * 0.85;
+
+            let tangentAngle = arrowAngle - Math.PI / 2; // for clockwise arc
+            
+            const headlen = 10;
+            const tipX = centerX + radius * Math.cos(arrowAngle);
+            const tipY = centerY + radius * Math.sin(arrowAngle);
+            
+            ctx.beginPath();
+            ctx.moveTo(tipX, tipY);
+            ctx.lineTo(tipX - headlen * Math.cos(tangentAngle - Math.PI / 6), tipY - headlen * Math.sin(tangentAngle - Math.PI / 6));
+            ctx.lineTo(tipX - headlen * Math.cos(tangentAngle + Math.PI / 6), tipY - headlen * Math.sin(tangentAngle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // --- Main Drawing ---
+
+        // Draw Wall and Floor surfaces (with hatching)
+        drawHatching(Bx, By - 50, Ay, true); // Wall
+        drawHatching(Ax, Ay, Cx + 50, false); // Floor
+        
+        // Draw Wall and Floor outlines
+        ctx.beginPath();
+        ctx.moveTo(Bx, By - 50); // Wall
+        ctx.lineTo(Ax, Ay);
+        ctx.lineTo(Cx + 50, Cy); // Floor
+        ctx.stroke();
+
+        // Draw the beam
+        const beamThickness = 14;
+        const halfThick = beamThickness / 2;
+        const vecDC = { x: Cx - Dx, y: Cy - Dy };
+        const lengthDC_px = Math.hypot(vecDC.x, vecDC.y);
+        const perpVec = { x: -vecDC.y / lengthDC_px, y: vecDC.x / lengthDC_px };
+
+        const p1 = { x: Dx + perpVec.x * halfThick, y: Dy + perpVec.y * halfThick };
+        const p2 = { x: Cx + perpVec.x * halfThick, y: Cy + perpVec.y * halfThick };
+        const p3 = { x: Cx - perpVec.x * halfThick, y: Cy - perpVec.y * halfThick };
+        const p4 = { x: Dx - perpVec.x * halfThick, y: Dy - perpVec.y * halfThick };
+        
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.lineTo(p3.x, p3.y);
+        ctx.lineTo(p4.x, p4.y);
+        ctx.closePath();
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw the angle indicator
+        const angleRadius = 45;
+        const angleStart = Math.PI / 2; // Vertical downward direction
+        const angleEnd = Math.PI / 3;   // Beam direction
+        
+        ctx.beginPath();
+        ctx.arc(Bx, By, angleRadius, angleStart, angleEnd, true); // Clockwise arc
+        ctx.stroke();
+        
+        // The image shows two arrowheads pointing inward along the arc
+        const headlen = 10;
+        const angle1 = angleStart - 0.15; // slightly offset from the wall
+        let tangent1 = angle1 - Math.PI/2;
+        let tipX1 = Bx + angleRadius * Math.cos(angle1);
+        let tipY1 = By + angleRadius * Math.sin(angle1);
+        ctx.beginPath();
+        ctx.moveTo(tipX1 - headlen * Math.cos(tangent1 - Math.PI/6), tipY1 - headlen * Math.sin(tangent1 - Math.PI/6));
+        ctx.lineTo(tipX1, tipY1);
+        ctx.lineTo(tipX1 - headlen * Math.cos(tangent1 + Math.PI/6), tipY1 - headlen * Math.sin(tangent1 + Math.PI/6));
+        ctx.stroke();
+
+        const angle2 = angleEnd + 0.15; // slightly offset from the beam
+        let tangent2 = angle2 + Math.PI/2; // pointing other way
+        let tipX2 = Bx + angleRadius * Math.cos(angle2);
+        let tipY2 = By + angleRadius * Math.sin(angle2);
+        ctx.beginPath();
+        ctx.moveTo(tipX2 - headlen * Math.cos(tangent2 - Math.PI/6), tipY2 - headlen * Math.sin(tangent2 - Math.PI/6));
+        ctx.lineTo(tipX2, tipY2);
+        ctx.lineTo(tipX2 - headlen * Math.cos(tangent2 + Math.PI/6), tipY2 - headlen * Math.sin(tangent2 + Math.PI/6));
+        ctx.stroke();
+
+
+        // Draw angle text
+        ctx.save();
+        ctx.fillStyle = 'black';
+        ctx.translate(Bx, By);
+        const textAngle = (angleStart + angleEnd) / 2;
+        const textRadius = angleRadius + 15;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('30°', textRadius * Math.cos(textAngle), textRadius * Math.sin(textAngle));
+        ctx.restore();
+
+        // Draw pin at corner A
+        ctx.beginPath();
+        ctx.arc(Ax, Ay, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw Labels
+        ctx.fillStyle = 'black';
+        ctx.fillText('A', Ax + 10, Ay - 10);
+        ctx.fillText('B', Bx - 35, By + 10);
+        ctx.fillText('C', Cx - 15, Cy - 10);
+
+    </script>
+</body>
+</html>

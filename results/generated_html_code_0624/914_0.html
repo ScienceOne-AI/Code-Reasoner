@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrowhead
+    function drawArrowhead(ctx, fromX, fromY, toX, toY, angle, length) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const headAngle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - length * Math.cos(headAngle - angle), toY - length * Math.sin(headAngle - angle));
+        ctx.lineTo(toX - length * Math.cos(headAngle + angle), toY - length * Math.sin(headAngle + angle));
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    const defaultFont = '22px "Times New Roman"';
+    const captionFont = '20px "SimSun", "KaiTi"';
+
+    // Parameters
+    const qPos = { x: 120, y: 250 };
+    const chargeRadius = 12;
+    const rLength = 280;
+    const theta = Math.PI / 6.5; // Approx 27.7 degrees, to match image proportions
+    const vArrowLength = 80;
+
+    // Calculated positions
+    const pPos = {
+        x: qPos.x + rLength * Math.cos(theta),
+        y: qPos.y - rLength * Math.sin(theta)
+    };
+    const diskCenter = { x: pPos.x, y: qPos.y };
+    const diskRadiusR = rLength * Math.sin(theta);
+    const diskPerspectiveRadius = 35; // The horizontal radius of the ellipse for perspective
+
+    // 1. Draw x-axis
+    const xAxisEnd = diskCenter.x + 80;
+    ctx.beginPath();
+    ctx.moveTo(qPos.x - 50, qPos.y);
+    ctx.lineTo(xAxisEnd, qPos.y);
+    ctx.stroke();
+    drawArrowhead(ctx, xAxisEnd - 10, qPos.y, xAxisEnd, qPos.y, Math.PI / 6, 12);
+    ctx.font = `italic ${defaultFont}`;
+    ctx.fillText('x', xAxisEnd + 15, qPos.y + 8);
+
+    // 2. Draw charge q
+    ctx.beginPath();
+    ctx.arc(qPos.x, qPos.y, chargeRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+    // Draw '+' sign
+    ctx.beginPath();
+    ctx.moveTo(qPos.x - chargeRadius * 0.5, qPos.y);
+    ctx.lineTo(qPos.x + chargeRadius * 0.5, qPos.y);
+    ctx.moveTo(qPos.x, qPos.y - chargeRadius * 0.5);
+    ctx.lineTo(qPos.x, qPos.y + chargeRadius * 0.5);
+    ctx.stroke();
+    // Label 'q'
+    ctx.font = `italic ${defaultFont}`;
+    ctx.fillText('q', qPos.x - 38, qPos.y + 8);
+
+    // 3. Draw velocity vector v
+    const vEndPos = { x: qPos.x + vArrowLength, y: qPos.y };
+    ctx.beginPath();
+    ctx.moveTo(qPos.x, qPos.y);
+    ctx.lineTo(vEndPos.x, vEndPos.y);
+    ctx.stroke();
+    drawArrowhead(ctx, vEndPos.x - 10, vEndPos.y, vEndPos.x, vEndPos.y, Math.PI / 6, 12);
+    ctx.fillText('v', qPos.x + vArrowLength / 2 - 5, qPos.y + 28);
+
+    // 4. Draw the disk (elliptical cross-section)
+    // Draw back dashed part
+    ctx.save();
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.ellipse(diskCenter.x, diskCenter.y, diskPerspectiveRadius, diskRadiusR, 0, Math.PI / 2, 3 * Math.PI / 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // Draw hatching first, so the solid line is on top
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(diskCenter.x, diskCenter.y, diskPerspectiveRadius, diskRadiusR, 0, 0, 2 * Math.PI);
+    ctx.clip(); // Clip to the ellipse area
+    
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    const hatchSpacing = 12;
+    const startX = diskCenter.x - diskPerspectiveRadius;
+    const startY = diskCenter.y - diskRadiusR;
+    const width = 2 * diskPerspectiveRadius;
+    const height = 2 * diskRadiusR;
+    // Iterate over a range that covers the bounding box with diagonal lines
+    for (let i = 0; i < width + height + 50; i += hatchSpacing) {
+        ctx.moveTo(startX + i, startY);
+        ctx.lineTo(startX, startY + i);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // Draw front solid part
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(diskCenter.x, diskCenter.y, diskPerspectiveRadius, diskRadiusR, 0, -Math.PI / 2, Math.PI / 2);
+    ctx.stroke();
+
+    // 5. Draw connecting lines and labels
+    // Line 'r'
+    ctx.beginPath();
+    ctx.moveTo(qPos.x, qPos.y);
+    ctx.lineTo(pPos.x, pPos.y);
+    ctx.stroke();
+    // Label 'r'
+    const rLabelPos = {
+        x: (qPos.x + pPos.x) / 2,
+        y: (qPos.y + pPos.y) / 2
+    };
+    ctx.save();
+    ctx.translate(rLabelPos.x, rLabelPos.y);
+    ctx.rotate(-theta);
+    ctx.fillStyle = 'white'; // Create a small white background for the label
+    ctx.fillRect(-12, -22, 20, 20);
+    ctx.fillStyle = 'black';
+    ctx.fillText('r', -10, -5);
+    ctx.restore();
+
+    // Label 'P'
+    ctx.fillText('P', pPos.x, pPos.y - 10);
+
+    // Line and Label 'R' (Radius)
+    ctx.beginPath();
+    // This line is implicit in the original, but helpful for the label
+    // ctx.moveTo(diskCenter.x, diskCenter.y);
+    // ctx.lineTo(diskCenter.x, pPos.y);
+    // ctx.stroke();
+    ctx.fillText('R', diskCenter.x + 5, diskCenter.y - diskRadiusR / 2);
+
+    // Angle 'θ'
+    const arcRadius = 45;
+    ctx.beginPath();
+    ctx.arc(qPos.x, qPos.y, arcRadius, 0, -theta, true); // Draw clockwise
+    ctx.stroke();
+    // Label 'θ'
+    ctx.fillText('θ', qPos.x + arcRadius * 0.75, qPos.y - arcRadius * 0.3);
+    
+    // 6. Draw Caption
+    ctx.font = captionFont;
+    ctx.fillStyle = 'black';
+    ctx.fillText('习题 9-35 图', canvas.width / 2 - 60, canvas.height - 30);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Multi-slit Diffraction</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="diffractionCanvas" width="700" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('diffractionCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Coordinates and parameters
+        const yCenter = canvas.height / 2;
+        const xYAxis = 50;
+        const xWavefront = 90;
+        const xGrating = 160;
+        const xLens = 360;
+        const xScreen = 620;
+
+        const slitSeparation = 35; // 'd' in pixels
+        const slitWidth = 8;
+        const slitHeight = 22;
+        const numSlits = 5;
+        const theta = Math.PI / 16; // Diffraction angle for visualization
+
+        // --- Drawing functions ---
+
+        function drawAxes() {
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(xYAxis, 40);
+            ctx.lineTo(xYAxis, yCenter + 150);
+            ctx.stroke();
+            ctx.fillText('y', xYAxis - 15, 40);
+
+            // Optical axis (dashed)
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.moveTo(xYAxis - 10, yCenter);
+            ctx.lineTo(xScreen + 30, yCenter);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawIncidentWave() {
+            // Wavefront
+            ctx.beginPath();
+            ctx.moveTo(xWavefront, yCenter - 30);
+            ctx.lineTo(xWavefront, yCenter + 30);
+            ctx.stroke();
+
+            // Arrow for wavelength
+            const arrowStartX = xWavefront + 5;
+            const arrowEndX = xGrating - 25;
+            ctx.beginPath();
+            ctx.moveTo(arrowStartX, yCenter);
+            ctx.lineTo(arrowEndX, yCenter);
+            ctx.stroke();
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(arrowEndX, yCenter);
+            ctx.lineTo(arrowEndX - 10, yCenter - 5);
+            ctx.moveTo(arrowEndX, yCenter);
+            ctx.lineTo(arrowEndX - 10, yCenter + 5);
+            ctx.stroke();
+            // Label
+            ctx.fillText('λ', (arrowStartX + arrowEndX) / 2, yCenter - 15);
+        }
+
+        function drawGrating() {
+            // Draw the 5 slits
+            for (let i = 0; i < numSlits; i++) {
+                const slitY = yCenter + (i - (numSlits - 1) / 2) * slitSeparation;
+                ctx.strokeRect(xGrating - slitWidth / 2, slitY - slitHeight / 2, slitWidth, slitHeight);
+            }
+
+            // Dashed box around central slit
+            ctx.save();
+            ctx.setLineDash([3, 3]);
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(xGrating - slitWidth / 2 - 1, yCenter - slitHeight / 2 - 1, slitWidth + 2, slitHeight + 2);
+            ctx.restore();
+
+            // Label 'd'
+            const d_x = xGrating - 25;
+            const d_y1 = yCenter;
+            const d_y2 = yCenter + slitSeparation;
+            ctx.beginPath();
+            ctx.moveTo(d_x, d_y1);
+            ctx.lineTo(d_x, d_y2);
+            ctx.moveTo(d_x - 4, d_y1);
+            ctx.lineTo(d_x + 4, d_y1);
+            ctx.moveTo(d_x - 4, d_y2);
+            ctx.lineTo(d_x + 4, d_y2);
+            ctx.stroke();
+            ctx.fillText('d', d_x - 15, (d_y1 + d_y2) / 2);
+        }
+        
+        function drawLens() {
+            const lensHeight = 180;
+            const lensCurve = 40;
+            ctx.beginPath();
+            ctx.moveTo(xLens, yCenter - lensHeight / 2);
+            ctx.quadraticCurveTo(xLens + lensCurve, yCenter, xLens, yCenter + lensHeight / 2);
+            ctx.quadraticCurveTo(xLens - lensCurve, yCenter, xLens, yCenter - lensHeight / 2);
+            ctx.stroke();
+        }
+
+        function drawRays() {
+            const focalLengthPixels = xScreen - xLens;
+            const yFocal = yCenter - focalLengthPixels * Math.tan(theta);
+            
+            for (let i = 0; i < numSlits; i++) {
+                const slitY = yCenter + (i - (numSlits - 1) / 2) * slitSeparation;
+                const slitX = xGrating + slitWidth / 2;
+
+                // Point on lens principal plane
+                const yOnLens = slitY - (xLens - slitX) * Math.tan(theta);
+
+                // Ray from slit to lens
+                ctx.beginPath();
+                ctx.moveTo(slitX, slitY);
+                ctx.lineTo(xLens, yOnLens);
+                ctx.stroke();
+
+                // Ray from lens to screen
+                ctx.beginPath();
+                ctx.moveTo(xLens, yOnLens);
+                ctx.lineTo(xScreen, yFocal);
+                ctx.stroke();
+            }
+        }
+        
+        function drawScreenAndLabels() {
+            // Screen
+            ctx.beginPath();
+            ctx.moveTo(xScreen, 40);
+            ctx.lineTo(xScreen, canvas.height - 40);
+            ctx.stroke();
+
+            // Label 'f' (focal length)
+            const f_y = yCenter + 140;
+            ctx.beginPath();
+            ctx.moveTo(xLens, f_y);
+            ctx.lineTo(xScreen, f_y);
+            ctx.moveTo(xLens, f_y - 5);
+            ctx.lineTo(xLens, f_y + 5);
+            ctx.moveTo(xScreen, f_y - 5);
+            ctx.lineTo(xScreen, f_y + 5);
+            ctx.stroke();
+            ctx.fillText('f', (xLens + xScreen) / 2, f_y - 15);
+
+            // Label 'θ'
+            const arcRadius = 60;
+            const arcCenterX = xGrating + 30;
+            ctx.beginPath();
+            ctx.arc(arcCenterX, yCenter, arcRadius, 0, -theta, true);
+            ctx.stroke();
+
+            // Arrow on arc
+            const arrowAngle = -theta * 0.9;
+            const arrowTipX = arcCenterX + arcRadius * Math.cos(arrowAngle);
+            const arrowTipY = yCenter + arcRadius * Math.sin(arrowAngle);
+            const tangent = arrowAngle - Math.PI / 2;
+            ctx.beginPath();
+            ctx.moveTo(arrowTipX, arrowTipY);
+            ctx.lineTo(arrowTipX + 8 * Math.cos(tangent + 0.5), arrowTipY + 8 * Math.sin(tangent + 0.5));
+            ctx.moveTo(arrowTipX, arrowTipY);
+            ctx.lineTo(arrowTipX + 8 * Math.cos(tangent - 0.5), arrowTipY + 8 * Math.sin(tangent - 0.5));
+            ctx.stroke();
+            
+            ctx.fillText('θ', arcCenterX + arcRadius + 15, yCenter - 25);
+
+            // Caption
+            ctx.font = 'bold 20px serif';
+            ctx.fillText('Fig. 2.55', canvas.width / 2, canvas.height - 30);
+        }
+
+        // --- Main execution ---
+        drawAxes();
+        drawIncidentWave();
+        drawGrating();
+        drawLens();
+        drawRays();
+        drawScreenAndLabels();
+
+    </script>
+</body>
+</html>

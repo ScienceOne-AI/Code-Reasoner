@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Standing Wave on a String</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="850" height="400" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Helper function to draw the mass M ---
+function drawMass(x, y) {
+    const massSize = 40;
+    const massX = x - massSize / 2;
+    const massY = y;
+
+    ctx.save();
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'white';
+    ctx.lineWidth = 4;
+    
+    // Outer black square, filled with white
+    ctx.beginPath();
+    ctx.rect(massX, massY, massSize, massSize);
+    ctx.stroke();
+    ctx.fill();
+
+    // Inner white square with a thin black border for the letter
+    ctx.fillStyle = 'white';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(massX + 5, massY + 5, massSize - 10, massSize - 10);
+    
+    // Letter 'M'
+    ctx.fillStyle = 'black';
+    ctx.font = 'bold 24px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('M', x, y + massSize / 2 + 2); // Small vertical adjustment for better centering
+    ctx.restore();
+}
+
+// --- Helper function to draw a standing wave pattern ---
+function drawStandingWave(startX, endX, y, numLoops, amplitude, color) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    const L = endX - startX;
+    const loopLength = L / numLoops;
+
+    for (let i = 0; i < numLoops; i++) {
+        const node1X = startX + i * loopLength;
+        const antinodeX = node1X + loopLength / 2;
+        const node2X = node1X + loopLength;
+
+        // Upper envelope of the loop
+        ctx.beginPath();
+        ctx.moveTo(node1X, y);
+        ctx.quadraticCurveTo(antinodeX, y - amplitude, node2X, y);
+        ctx.stroke();
+
+        // Lower envelope of the loop
+        ctx.beginPath();
+        ctx.moveTo(node1X, y);
+        ctx.quadraticCurveTo(antinodeX, y + amplitude, node2X, y);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+// --- Helper function to draw the main apparatus (oscillator, table, pulley) ---
+function drawApparatus(offsetX) {
+    const oscX = offsetX;
+    const oscY = 170;
+    const oscW = 90;
+    const oscH = 60;
+    const tableY = oscY + oscH;
+    const tableEndX = offsetX + 300;
+    const pulleyX = tableEndX;
+    const pulleyY = 190;
+    const pulleyR = 20;
+    const stringY = 200;
+
+    // Table/Surface
+    ctx.fillStyle = 'black';
+    ctx.fillRect(oscX, tableY, tableEndX - oscX + pulleyR, 8);
+
+    // Oscillator box
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.fillRect(oscX, oscY, oscW, oscH);
+    ctx.strokeRect(oscX, oscY, oscW, oscH);
+    
+    // Oscillator text
+    ctx.fillStyle = 'black';
+    ctx.font = '18px "Courier New"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('oscillator', oscX + oscW / 2, oscY + oscH / 2);
+    
+    // Oscillator connection point
+    const connX = oscX + oscW;
+    ctx.fillStyle = 'black';
+    ctx.fillRect(connX, stringY - 5, 10, 10);
+
+    // Pulley
+    ctx.fillStyle = 'white';
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(pulleyX, pulleyY, pulleyR, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+
+    return {
+        stringStartX: connX + 10,
+        stringEndX: pulleyX,
+        stringY: stringY,
+        pulleyTopX: pulleyX,
+        pulleyTopY: pulleyY - pulleyR
+    };
+}
+
+
+// --- Draw Scenario 1: Mass in Air (Left side) ---
+const offsetX1 = 50;
+const coords1 = drawApparatus(offsetX1);
+
+// Draw the standing wave (2 loops)
+drawStandingWave(coords1.stringStartX, coords1.stringEndX, coords1.stringY, 2, 25, 'black');
+
+// Draw hanging string and mass
+const massHangX1 = coords1.pulleyTopX;
+const stringEnd_Y1 = 270;
+ctx.beginPath();
+ctx.moveTo(massHangX1, coords1.pulleyTopY);
+ctx.lineTo(massHangX1, stringEnd_Y1);
+ctx.strokeStyle = 'black';
+ctx.lineWidth = 2;
+ctx.stroke();
+drawMass(massHangX1, stringEnd_Y1);
+
+
+// --- Draw Scenario 2: Mass in Water (Right side) ---
+const offsetX2 = 470;
+const coords2 = drawApparatus(offsetX2);
+
+// Draw the standing wave (4 loops, brownish color)
+drawStandingWave(coords2.stringStartX, coords2.stringEndX, coords2.stringY, 4, 15, '#4a2c2a');
+
+// Draw beaker with water
+const beakerW = 80;
+const beakerH = 100;
+const beakerX = coords2.pulleyTopX - beakerW / 2;
+const beakerY = 250;
+ctx.fillStyle = 'rgba(0, 120, 200, 0.7)'; // A nice blue for water
+ctx.strokeStyle = 'black';
+ctx.lineWidth = 2;
+ctx.fillRect(beakerX, beakerY, beakerW, beakerH);
+ctx.strokeRect(beakerX, beakerY, beakerW, beakerH);
+
+
+// Draw hanging string and mass (submerged)
+const massHangX2 = coords2.pulleyTopX;
+const stringEnd_Y2 = 270;
+ctx.beginPath();
+ctx.moveTo(massHangX2, coords2.pulleyTopY);
+ctx.lineTo(massHangX2, stringEnd_Y2);
+ctx.strokeStyle = 'black';
+ctx.lineWidth = 2;
+ctx.stroke();
+drawMass(massHangX2, stringEnd_Y2);
+
+</script>
+</body>
+</html>

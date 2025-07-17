@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="450" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Clear canvas
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2.5;
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Geometry ---
+    const O = { x: 350, y: 350 };
+    const wallX = O.x;
+    const floorY = O.y;
+
+    // The ladder rests on a block. Define the block and contact point A.
+    const block = { x: 150, y: 330, w: 40, h: 20 };
+    const A_contact = { x: block.x, y: block.y };
+
+    // The ladder is at a 45-degree angle. Calculate the top contact point B.
+    // Line equation: y - y1 = m(x - x1), where m = -1 for 45 degrees in this orientation.
+    // y - A_contact.y = -1 * (x - A_contact.x) => y = -x + A_contact.x + A_contact.y
+    const B = { x: wallX, y: -wallX + A_contact.x + A_contact.y }; // B.y = -350 + 150 + 330 = 130
+
+    // --- Drawing Functions ---
+
+    // 1. Draw Wall and Floor base lines
+    ctx.beginPath();
+    ctx.moveTo(50, floorY);
+    ctx.lineTo(wallX, floorY); // Floor
+    ctx.lineTo(wallX, 50);   // Wall
+    ctx.stroke();
+
+    // 2. Draw Hatching for Wall and Floor
+    function drawHatching(isWall) {
+        const spacing = 12;
+        ctx.save();
+        ctx.lineWidth = 2;
+        if (isWall) {
+            for (let y = 60; y < floorY; y += spacing) {
+                ctx.beginPath();
+                ctx.moveTo(wallX, y);
+                ctx.lineTo(wallX + 10, y + 10);
+                ctx.stroke();
+            }
+        } else { // Floor
+            for (let x = 60; x < wallX; x += spacing) {
+                ctx.beginPath();
+                ctx.moveTo(x, floorY);
+                ctx.lineTo(x + 10, floorY + 10);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+    drawHatching(false); // Floor
+    drawHatching(true);  // Wall
+
+    // 3. Draw the block support at A
+    ctx.beginPath();
+    ctx.rect(block.x, block.y, block.w, block.h);
+    ctx.stroke();
+    // Hatching for the block (vertical lines)
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    for (let x = block.x + 5; x < block.x + block.w; x += 5) {
+        ctx.beginPath();
+        ctx.moveTo(x, block.y);
+        ctx.lineTo(x, block.y + block.h);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+
+    // 4. Draw the Ladder
+    function drawLadder() {
+        const ladderWidth = 12;
+        const w_half = ladderWidth / 2;
+        // The vector perpendicular to the ladder's direction
+        const p = { x: 1 / Math.sqrt(2), y: 1 / Math.sqrt(2) };
+
+        // Calculate the four corners of the ladder
+        const A1 = { x: A_contact.x + w_half * p.x, y: A_contact.y + w_half * p.y };
+        const B1 = { x: B.x + w_half * p.x, y: B.y + w_half * p.y };
+        const A2 = { x: A_contact.x - w_half * p.x, y: A_contact.y - w_half * p.y };
+        const B2 = { x: B.x - w_half * p.x, y: B.y - w_half * p.y };
+
+        // Draw the two main rails of the ladder
+        ctx.beginPath();
+        ctx.moveTo(A1.x, A1.y);
+        ctx.lineTo(B1.x, B1.y);
+        ctx.moveTo(A2.x, A2.y);
+        ctx.lineTo(B2.x, B2.y);
+        ctx.stroke();
+        
+        // Draw the inner rungs/shading
+        const numRungs = 12;
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        for (let i = 1; i <= numRungs; i++) {
+            const t = i / (numRungs + 1);
+            const P1 = { x: A1.x + t * (B1.x - A1.x), y: A1.y + t * (B1.y - A1.y) };
+            const P2 = { x: A2.x + t * (B2.x - A2.x), y: A2.y + t * (B2.y - A2.y) };
+            ctx.beginPath();
+            ctx.moveTo(P1.x, P1.y);
+            ctx.lineTo(P2.x, P2.y);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+    drawLadder();
+
+    // 5. Draw Labels
+    ctx.fillText('O', O.x - 18, O.y - 18);
+    ctx.fillText('A', block.x - 15, block.y + block.h / 2);
+    ctx.fillText('B', B.x - 20, B.y - 10);
+    
+    // Place D according to visual representation (~1/3 from A)
+    const D_ratio = 1/3;
+    const D = {
+        x: A_contact.x + D_ratio * (B.x - A_contact.x),
+        y: A_contact.y + D_ratio * (B.y - A_contact.y)
+    };
+    ctx.fillText('D', D.x - 15, D.y - 15);
+
+    // 6. Draw Angle indicator
+    function drawAngle() {
+        // Place the angle mark near D
+        const angleCenterRatio = 0.45;
+        const C = {
+            x: A_contact.x + angleCenterRatio * (B.x - A_contact.x),
+            y: A_contact.y + angleCenterRatio * (B.y - A_contact.y)
+        };
+        const radius = 25;
+
+        // Draw vertical helper line
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(C.x, C.y);
+        ctx.lineTo(C.x, C.y + 35);
+        ctx.stroke();
+        // Arrowhead for the helper line
+        ctx.beginPath();
+        ctx.moveTo(C.x, C.y + 35);
+        ctx.lineTo(C.x - 4, C.y + 30);
+        ctx.moveTo(C.x, C.y + 35);
+        ctx.lineTo(C.x + 4, C.y + 30);
+        ctx.stroke();
+        
+        // Draw the arc for the angle
+        // The ladder's angle is 135 deg (3*PI/4) and vertical down is 90 deg (PI/2)
+        ctx.beginPath();
+        ctx.arc(C.x, C.y, radius, Math.PI / 2, 3 * Math.PI / 4, false);
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw the angle text
+        ctx.fillText('45°', C.x + 28, C.y + 20);
+    }
+    drawAngle();
+
+    // 7. Draw Axes
+    // y-axis
+    ctx.beginPath();
+    ctx.moveTo(wallX, B.y);
+    ctx.lineTo(wallX, B.y - 25);
+    ctx.stroke();
+    ctx.fillText('y', wallX, B.y - 40);
+
+    // x-axis with its specific style
+    const x_start = 80;
+    ctx.beginPath();
+    ctx.arc(x_start, floorY, 1.5, 0, 2 * Math.PI); // Dot
+    ctx.fill();
+    ctx.save();
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(x_start + 10, floorY); // Dash
+    ctx.lineTo(x_start + 30, floorY);
+    ctx.stroke();
+    ctx.restore();
+    ctx.font = 'italic bold 20px sans-serif';
+    ctx.fillText('x', x_start + 45, floorY);
+
+</script>
+</body>
+</html>

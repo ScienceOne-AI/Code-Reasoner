@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spring-Mass System on an Inclined Plane</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="350"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw the spring
+        function drawSpring(ctx, x1, y1, x2, y2, coils, amplitude) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const nx = dx / dist; // Unit vector along spring
+            const ny = dy / dist;
+            const px = -ny; // Perpendicular vector
+            const py = nx;
+            const lead = 15; // Length of straight parts at the ends
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+
+            // Start lead
+            const sx = x1 + lead * nx;
+            const sy = y1 + lead * ny;
+            ctx.lineTo(sx, sy);
+
+            // Coils
+            const coilLength = dist - 2 * lead;
+            const resolution = coils * 10; // Number of line segments for coils
+            for (let i = 0; i <= resolution; i++) {
+                const u = i / resolution; // Position along the coil length (0 to 1)
+                const v = Math.sin(u * coils * 2 * Math.PI); // Sinusoidal offset
+                const x_on_line = sx + coilLength * u * nx;
+                const y_on_line = sy + coilLength * u * ny;
+                const x_offset = amplitude * v * px;
+                const y_offset = amplitude * v * py;
+                ctx.lineTo(x_on_line + x_offset, y_on_line + y_offset);
+            }
+
+            // End lead
+            const ex = x2 - lead * nx;
+            const ey = y2 - lead * ny;
+            ctx.lineTo(ex, ey);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // 1. Draw the inclined plane (wedge)
+        const pA = { x: 50, y: 280 };
+        const pB = { x: 500, y: 280 };
+        const pC = { x: 500, y: 80 };
+        
+        ctx.beginPath();
+        ctx.moveTo(pA.x, pA.y);
+        ctx.lineTo(pB.x, pB.y);
+        ctx.lineTo(pC.x, pC.y);
+        ctx.lineTo(pA.x, pA.y);
+        ctx.stroke();
+
+        // 2. Draw the angle theta
+        const angleRadius = 45;
+        const angle = Math.atan2(pB.y - pC.y, pB.x - pA.x); // Angle of incline
+        ctx.beginPath();
+        ctx.arc(pA.x, pA.y, angleRadius, -angle, 0);
+        ctx.stroke();
+        ctx.fillText('θ', pA.x + angleRadius * 0.7, pA.y - angleRadius * 0.4);
+
+        // Define incline properties
+        const inclineLength = Math.sqrt(Math.pow(pC.x - pA.x, 2) + Math.pow(pC.y - pA.y, 2));
+        const cosTheta = (pC.x - pA.x) / inclineLength;
+        const sinTheta = (pA.y - pC.y) / inclineLength;
+
+        // 3. Draw the coordinate axis x
+        const axisStart = { x: pA.x - 40 * cosTheta, y: pA.y + 40 * sinTheta };
+        const axisEnd = { x: axisStart.x + 150 * cosTheta, y: axisStart.y - 150 * sinTheta };
+        ctx.beginPath();
+        ctx.moveTo(axisStart.x, axisStart.y);
+        ctx.lineTo(axisEnd.x, axisEnd.y);
+        // Arrowhead
+        const arrowSize = 10;
+        ctx.lineTo(axisEnd.x - arrowSize * (cosTheta + sinTheta), axisEnd.y + arrowSize * (cosTheta - sinTheta));
+        ctx.moveTo(axisEnd.x, axisEnd.y);
+        ctx.lineTo(axisEnd.x - arrowSize * (cosTheta - sinTheta), axisEnd.y - arrowSize * (cosTheta + sinTheta));
+        ctx.stroke();
+        ctx.fillText('x', axisEnd.x + 20 * cosTheta, axisEnd.y - 20 * sinTheta);
+
+        // 4. Draw the cylinder
+        const cylinderRadius = 30;
+        const distOfromA = 220; // Distance of equilibrium point O from corner A along the incline
+        const pointO = {
+            x: pA.x + distOfromA * cosTheta,
+            y: pA.y - distOfromA * sinTheta
+        };
+        const cylinderCenter = {
+            x: pointO.x - cylinderRadius * sinTheta,
+            y: pointO.y - cylinderRadius * cosTheta
+        };
+        
+        ctx.beginPath();
+        ctx.arc(cylinderCenter.x, cylinderCenter.y, cylinderRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // Labels for cylinder and equilibrium point
+        ctx.fillText('m', cylinderCenter.x - cylinderRadius * 1.5, cylinderCenter.y);
+        ctx.fillText('O', pointO.x + 5, pointO.y + 15);
+        
+        // Draw line from center to spring
+        const springStartOnCylinder = {
+            x: cylinderCenter.x + (cylinderRadius-10) * cosTheta, // A bit inside the cylinder
+            y: cylinderCenter.y - (cylinderRadius-10) * sinTheta
+        };
+        ctx.beginPath();
+        ctx.moveTo(cylinderCenter.x, cylinderCenter.y);
+        ctx.lineTo(springStartOnCylinder.x, springStartOnCylinder.y);
+        ctx.stroke();
+
+
+        // 5. Draw the spring and its fixation
+        const springLength = 160;
+        const springStart = {
+            x: cylinderCenter.x,
+            y: cylinderCenter.y
+        };
+        const springEnd = {
+            x: springStart.x + springLength * cosTheta,
+            y: springStart.y - springLength * sinTheta
+        };
+        
+        drawSpring(ctx, springStart.x, springStart.y, springEnd.x, springEnd.y, 6, 8);
+        
+        // Spring fixation block
+        const fixPointOnRamp = {
+            x: springEnd.x + cylinderRadius * sinTheta,
+            y: springEnd.y + cylinderRadius * cosTheta
+        };
+        ctx.beginPath();
+        ctx.moveTo(springEnd.x, springEnd.y);
+        ctx.lineTo(fixPointOnRamp.x, fixPointOnRamp.y);
+        const blockHalfLength = 15;
+        ctx.moveTo(fixPointOnRamp.x - blockHalfLength * sinTheta, fixPointOnRamp.y - blockHalfLength * cosTheta);
+        ctx.lineTo(fixPointOnRamp.x + blockHalfLength * sinTheta, fixPointOnRamp.y + blockHalfLength * cosTheta);
+        ctx.stroke();
+
+        // Label for spring constant k
+        ctx.fillText('k', springStart.x + (springEnd.x - springStart.x) / 2, springStart.y + (springEnd.y - springStart.y) / 2 - 25);
+        
+        // 6. Label for -x0
+        const dist_x0_from_O = 60;
+        const point_x0 = {
+            x: pointO.x + dist_x0_from_O * cosTheta,
+            y: pointO.y - dist_x0_from_O * sinTheta
+        };
+        ctx.beginPath();
+        ctx.moveTo(point_x0.x - 5 * sinTheta, point_x0.y - 5 * cosTheta);
+        ctx.lineTo(point_x0.x + 5 * sinTheta, point_x0.y + 5 * cosTheta);
+        ctx.stroke();
+        ctx.fillText('−x₀', point_x0.x - 20 * sinTheta, point_x0.y - 20 * cosTheta);
+
+        // 7. Draw the caption
+        ctx.font = '24px KaiTi'; // Using a common Chinese font
+        ctx.fillText('力图 7.5.1', canvas.width / 2, canvas.height - 25);
+
+    </script>
+</body>
+</html>

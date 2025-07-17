@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Radioactive Decay Graph</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="800" height="700"></canvas>
+    <script>
+        window.onload = function() {
+            const canvas = document.getElementById('myCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // --- Configuration ---
+            const margin = { top: 50, right: 50, bottom: 80, left: 80 };
+            const graphWidth = canvas.width - margin.left - margin.right;
+            const graphHeight = canvas.height - margin.top - margin.bottom;
+
+            const t_max = 14; // hours
+            const N_max = 6.0; // N/10^10
+
+            // --- Coordinate mapping functions ---
+            function mapX(t) {
+                return margin.left + (t / t_max) * graphWidth;
+            }
+
+            function mapY(N_val) {
+                return margin.top + graphHeight - (N_val / N_max) * graphHeight;
+            }
+
+            // --- Drawing functions ---
+
+            function drawGrid() {
+                ctx.strokeStyle = '#e0e0e0'; // Lighter color for minor grid
+                ctx.lineWidth = 0.5;
+
+                // Minor vertical grid lines (every 0.2 hours)
+                for (let i = 0; i <= t_max * 5; i++) {
+                    const t = i * 0.2;
+                    ctx.beginPath();
+                    ctx.moveTo(mapX(t), margin.top);
+                    ctx.lineTo(mapX(t), margin.top + graphHeight);
+                    ctx.stroke();
+                }
+
+                // Minor horizontal grid lines (every 0.1 units)
+                for (let i = 0; i <= N_max * 10; i++) {
+                    const N_val = i * 0.1;
+                    ctx.beginPath();
+                    ctx.moveTo(margin.left, mapY(N_val));
+                    ctx.lineTo(margin.left + graphWidth, mapY(N_val));
+                    ctx.stroke();
+                }
+
+                ctx.strokeStyle = '#b0b0b0'; // Darker for major grid
+                ctx.lineWidth = 1;
+
+                // Major vertical grid lines (every 2 hours)
+                for (let i = 0; i <= t_max / 2; i++) {
+                    const t = i * 2;
+                    ctx.beginPath();
+                    ctx.moveTo(mapX(t), margin.top);
+                    ctx.lineTo(mapX(t), margin.top + graphHeight);
+                    ctx.stroke();
+                }
+
+                // Major horizontal grid lines (every 1.0 unit)
+                for (let i = 0; i <= N_max; i++) {
+                    const N_val = i * 1.0;
+                    ctx.beginPath();
+                    ctx.moveTo(margin.left, mapY(N_val));
+                    ctx.lineTo(margin.left + graphWidth, mapY(N_val));
+                    ctx.stroke();
+                }
+            }
+
+            function drawAxes() {
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1.5;
+
+                // X-axis
+                ctx.beginPath();
+                ctx.moveTo(margin.left, margin.top + graphHeight);
+                ctx.lineTo(margin.left + graphWidth, margin.top + graphHeight);
+                ctx.stroke();
+
+                // Y-axis
+                ctx.beginPath();
+                ctx.moveTo(margin.left, margin.top);
+                ctx.lineTo(margin.left, margin.top + graphHeight);
+                ctx.stroke();
+
+                // --- Labels and Ticks ---
+                ctx.fillStyle = '#000000';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+
+                // X-axis ticks and labels
+                for (let i = 0; i <= t_max / 2; i++) {
+                    const t = i * 2;
+                    ctx.fillText(t, mapX(t), margin.top + graphHeight + 10);
+                    // Ticks
+                    ctx.beginPath();
+                    ctx.moveTo(mapX(t), margin.top + graphHeight);
+                    ctx.lineTo(mapX(t), margin.top + graphHeight + 5);
+                    ctx.stroke();
+                }
+                ctx.fillText('t / hours', margin.left + graphWidth / 2, margin.top + graphHeight + 40);
+                ctx.fillText('Fig. 12.1', margin.left + graphWidth / 2, margin.top + graphHeight + 65);
+
+
+                // Y-axis ticks and labels
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                for (let i = 0; i <= N_max; i++) {
+                    const N_val = i * 1.0;
+                    ctx.fillText(N_val.toFixed(1), margin.left - 10, mapY(N_val));
+                     // Ticks
+                    ctx.beginPath();
+                    ctx.moveTo(margin.left, mapY(N_val));
+                    ctx.lineTo(margin.left - 5, mapY(N_val));
+                    ctx.stroke();
+                }
+                
+                // Y-axis label (N/10^10)
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.font = 'italic 20px Arial';
+                ctx.fillText('N', margin.left - 50, margin.top + graphHeight / 2 - 12);
+                ctx.font = '16px Arial';
+                ctx.fillText('10', margin.left - 50, margin.top + graphHeight / 2 + 15);
+                ctx.font = '10px Arial';
+                ctx.fillText('10', margin.left - 40, margin.top + graphHeight / 2 + 10); // superscript
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(margin.left - 65, margin.top + graphHeight / 2 + 2);
+                ctx.lineTo(margin.left - 35, margin.top + graphHeight / 2 + 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+            
+            function drawCurve() {
+                const N0 = 5.6;
+                const lambda = 0.156; // decay constant in h^-1
+
+                ctx.beginPath();
+                ctx.moveTo(mapX(0), mapY(N0));
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 2;
+
+                for (let t = 0.01; t <= t_max; t += 0.01) {
+                    const N_val = N0 * Math.exp(-lambda * t);
+                    ctx.lineTo(mapX(t), mapY(N_val));
+                }
+                ctx.stroke();
+            }
+
+            function drawSolution() {
+                // Point of tangency at t=4.0 hours
+                const t0 = 4.0;
+                const N0_val = 3.0;
+                
+                // Tangent line equation: y = m*x + c
+                // Gradient m = -0.45 (from rise/run on the original graph)
+                // y - 3.0 = -0.45 * (x - 4.0) => y = -0.45x + 1.8 + 3.0 => y = -0.45x + 4.8
+                const m = -0.45;
+                const c = 4.8;
+
+                // Draw tangent line
+                const t_start = 0;
+                const t_end = 9;
+                const N_start = m * t_start + c;
+                const N_end = m * t_end + c;
+                
+                ctx.beginPath();
+                ctx.moveTo(mapX(t_start), mapY(N_start));
+                ctx.lineTo(mapX(t_end), mapY(N_end));
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Draw triangle for gradient calculation
+                const t1 = 0, y1 = 4.8;
+                const t2 = 8.0, y2 = 1.2;
+                
+                ctx.strokeStyle = 'blue';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 3]); // Dashed line for triangle
+
+                // Horizontal line (run)
+                ctx.beginPath();
+                ctx.moveTo(mapX(t1), mapY(y1));
+                ctx.lineTo(mapX(t2), mapY(y1));
+                ctx.stroke();
+
+                // Vertical line (rise)
+                ctx.beginPath();
+                ctx.moveTo(mapX(t2), mapY(y1));
+                ctx.lineTo(mapX(t2), mapY(y2));
+                ctx.stroke();
+                
+                ctx.setLineDash([]); // Reset to solid line
+
+                // Add labels for the triangle
+                ctx.fillStyle = 'blue';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                
+                // Label for run
+                ctx.fillText('Δt = 8.0 hours', mapX((t1+t2)/2), mapY(y1) + 15);
+                
+                // Label for rise
+                ctx.save();
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                const run_val = y1-y2;
+                ctx.fillText(`Δ(N/10¹⁰) = ${run_val.toFixed(1)}`, mapX(t2) + 10, mapY((y1+y2)/2));
+                ctx.restore();
+            }
+
+
+            // --- Main drawing execution ---
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            drawAxes();
+            drawCurve();
+            drawSolution();
+        };
+    </script>
+</body>
+</html>

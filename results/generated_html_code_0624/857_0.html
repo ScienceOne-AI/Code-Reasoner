@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Biconvex Lens at Water Surface</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="300" height="450" style="border:1px solid #000;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper Functions ---
+    /**
+     * Draws a dash-dot line.
+     * @param {CanvasRenderingContext2D} context - The canvas rendering context.
+     * @param {number} x1 - The x-coordinate of the starting point.
+     * @param {number} y1 - The y-coordinate of the starting point.
+     * @param {number} x2 - The x-coordinate of the ending point.
+     * @param {number} y2 - The y-coordinate of the ending point.
+     */
+    function drawDashDotLine(context, x1, y1, x2, y2) {
+        context.save();
+        context.setLineDash([10, 5, 2, 5]); // [dash, gap, dot, gap]
+        context.beginPath();
+        context.moveTo(x1, y1);
+        context.lineTo(x2, y2);
+        context.stroke();
+        context.restore();
+    }
+
+    /**
+     * Draws a double-headed arrow.
+     * @param {CanvasRenderingContext2D} context - The canvas rendering context.
+     * @param {number} x1 - The x-coordinate of the starting point.
+     * @param {number} y1 - The y-coordinate of the starting point.
+     * @param {number} x2 - The x-coordinate of the ending point.
+     * @param {number} y2 - The y-coordinate of the ending point.
+     */
+    function drawDoubleArrow(context, x1, y1, x2, y2) {
+        context.beginPath();
+        context.moveTo(x1, y1);
+        context.lineTo(x2, y2);
+        
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        const headlen = 8;
+
+        // Arrowhead at the end
+        context.moveTo(x2, y2);
+        context.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        context.moveTo(x2, y2);
+        context.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+
+        // Arrowhead at the start
+        context.moveTo(x1, y1);
+        context.lineTo(x1 + headlen * Math.cos(angle - Math.PI / 6), y1 + headlen * Math.sin(angle - Math.PI / 6));
+        context.moveTo(x1, y1);
+        context.lineTo(x1 + headlen * Math.cos(angle + Math.PI / 6), y1 + headlen * Math.sin(angle + Math.PI / 6));
+
+        context.stroke();
+    }
+
+
+    // --- Drawing Parameters ---
+    const scale = 40; // pixels per cm
+    const cx = 150; // center x of the canvas
+
+    // The origin of our logical coordinate system (0,0) is at the bottom vertex of the lens.
+    // This point corresponds to canvas coordinates (cx, y_origin).
+    // Y increases downwards in canvas, but upwards in a typical coordinate system.
+    // Let's set the logical origin (0,0) at canvas (150, 160).
+    const y_origin = 160;
+
+    // --- Drawing ---
+    ctx.lineWidth = 1.5;
+    ctx.font = '16px Arial';
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // 1. Draw Principal Axis
+    drawDashDotLine(ctx, cx, 20, cx, 430);
+
+    // 2. Draw Water Surface and Water
+    const waterSurfaceY = y_origin; // at logical y=0
+    ctx.beginPath();
+    ctx.moveTo(0, waterSurfaceY);
+    ctx.lineTo(canvas.width, waterSurfaceY);
+    ctx.stroke();
+
+    // Dashed lines for water
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= 6; i++) {
+        const y = waterSurfaceY + i * 25;
+        ctx.beginPath();
+        ctx.moveTo(50, y);
+        ctx.lineTo(250, y);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 3. Draw the Lens
+    // Based on the problem: center thickness d=2cm, radius of curvature R=3cm.
+    // We will draw a schematic lens shape that matches the visual representation.
+    // The barrel-like shape is drawn using quadratic curves.
+    const lensHeight = 2 * scale;
+    const lensWidth = 2.4 * scale; // Estimated width for good proportion
+    
+    const lensTopY = y_origin - lensHeight; // y=2cm
+    const lensBottomY = y_origin; // y=0cm
+    const lensLeftX = cx - lensWidth / 2;
+    const lensRightX = cx + lensWidth / 2;
+    const lensCenterY = y_origin - lensHeight / 2;
+
+    const bulge = 10; // For side curvature
+
+    ctx.beginPath();
+    // Top surface
+    ctx.moveTo(lensLeftX, lensCenterY - lensHeight / 2 * 0.8);
+    ctx.quadraticCurveTo(cx, lensTopY - bulge*0.7, lensRightX, lensCenterY - lensHeight / 2 * 0.8);
+    // Right surface
+    ctx.quadraticCurveTo(lensRightX + bulge, lensCenterY, lensRightX, lensCenterY + lensHeight / 2 * 0.8);
+    // Bottom surface
+    ctx.quadraticCurveTo(cx, lensBottomY + bulge*0.7, lensLeftX, lensCenterY + lensHeight / 2 * 0.8);
+    // Left surface
+    ctx.quadraticCurveTo(lensLeftX - bulge, lensCenterY, lensLeftX, lensCenterY - lensHeight / 2 * 0.8);
+    ctx.stroke();
+
+    // 4. Draw the Dimension Label for Lens Thickness
+    const dimX = lensRightX + 25;
+    drawDoubleArrow(ctx, dimX, lensTopY, dimX, lensBottomY);
+    ctx.beginPath();
+    ctx.moveTo(dimX, lensTopY);
+    ctx.lineTo(dimX - 5, lensTopY);
+    ctx.moveTo(dimX, lensBottomY);
+    ctx.lineTo(dimX - 5, lensBottomY);
+    ctx.stroke();
+    ctx.fillText('2 cm', dimX + 10, lensCenterY + 5);
+
+    // 5. Draw the Object Q
+    const q_depth = 4 * scale;
+    const qY = y_origin + q_depth;
+    const qX = cx;
+
+    ctx.beginPath();
+    ctx.arc(qX, qY, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('Q', qX + 10, qY + 6);
+
+    // 6. Draw the Figure Label
+    ctx.font = '20px "KaiTi", "SimSun", serif'; // Use a font that supports Chinese characters
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 12-8 图', cx, canvas.height - 20);
+
+</script>
+</body>
+</html>

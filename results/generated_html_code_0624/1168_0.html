@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interference with a Lens</title>
+</head>
+<body>
+<canvas id="myCanvas" width="800" height="420" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = '20px "Times New Roman"';
+
+    // Parameters based on visual layout and problem statement
+    const y_axis = 160;
+    const x_source_plane = 150;
+    const x_screen_plane = 700;
+    
+    // Calculate lens position based on problem's ratio f/z = 0.5/2.5 = 1/5
+    const z_dist_px = x_screen_plane - x_source_plane;
+    const f_dist_px = z_dist_px / 5;
+    const x_lens = x_source_plane + f_dist_px;
+
+    // Helper function to draw a double-headed arrow
+    function drawDoubleArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 8;
+        ctx.beginPath();
+        // line
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        // head at 'to' end
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        // head at 'from' end
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(fromx + headlen * Math.cos(angle - Math.PI / 6), fromy + headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(fromx + headlen * Math.cos(angle + Math.PI / 6), fromy + headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // 1. Draw Optical Axis
+    ctx.beginPath();
+    ctx.moveTo(50, y_axis);
+    ctx.lineTo(750, y_axis);
+    ctx.stroke();
+
+    // 2. Draw Source Plane and Sources
+    const source_plane_top = y_axis - 80;
+    const source_plane_bottom = y_axis + 80;
+    ctx.beginPath();
+    ctx.moveTo(x_source_plane, source_plane_top);
+    ctx.lineTo(x_source_plane, source_plane_bottom);
+    ctx.stroke();
+    
+    const source_sep = 20;
+    const s1_y = y_axis - source_sep;
+    const s2_y = y_axis + source_sep;
+    
+    // S1
+    ctx.beginPath();
+    ctx.arc(x_source_plane, s1_y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.font = '20px "Times New Roman"';
+    ctx.fillText('S', x_source_plane - 15, s1_y);
+    ctx.font = '14px "Times New Roman"';
+    ctx.fillText('1', x_source_plane - 8, s1_y + 7);
+
+    // S2
+    ctx.beginPath();
+    ctx.arc(x_source_plane, s2_y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.font = '20px "Times New Roman"';
+    ctx.fillText('S', x_source_plane - 15, s2_y);
+    ctx.font = '14px "Times New Roman"';
+    ctx.fillText('2', x_source_plane - 8, s2_y + 7);
+    ctx.textAlign = 'center'; // Reset alignment
+
+    // 3. Draw Lens L
+    const lens_top = y_axis - 60;
+    const lens_bottom = y_axis + 60;
+    const lens_half_width = 12;
+    
+    ctx.save();
+    ctx.fillStyle = 'rgba(224, 224, 224, 1)'; // Light gray fill
+    ctx.setLineDash([4, 3]);
+    
+    // Path for the lens shape
+    ctx.beginPath();
+    ctx.moveTo(x_lens, lens_top);
+    ctx.quadraticCurveTo(x_lens + lens_half_width, y_axis, x_lens, lens_bottom);
+    ctx.quadraticCurveTo(x_lens - lens_half_width, y_axis, x_lens, lens_top);
+    ctx.closePath();
+    
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // Label L
+    ctx.font = '20px "Times New Roman"';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('L', x_lens, lens_top - 5);
+
+    // 4. Draw Screen P
+    const screen_top = y_axis - 80;
+    const screen_bottom = y_axis + 80;
+    ctx.beginPath();
+    ctx.moveTo(x_screen_plane, screen_top);
+    ctx.lineTo(x_screen_plane, screen_bottom);
+    ctx.stroke();
+    
+    // Label P
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('P', x_screen_plane, screen_top - 5);
+    ctx.textAlign = 'center'; // Reset alignment
+
+    // 5. Draw Distance Markers
+    const y_f_marker = 280;
+    const y_z_marker = 330;
+    
+    // Vertical ticks
+    ctx.beginPath();
+    ctx.moveTo(x_source_plane, y_axis);
+    ctx.lineTo(x_source_plane, y_z_marker);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(x_lens, y_axis);
+    ctx.lineTo(x_lens, y_f_marker);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(x_screen_plane, y_axis);
+    ctx.lineTo(x_screen_plane, y_z_marker);
+    ctx.stroke();
+    
+    // Arrow for f
+    drawDoubleArrow(ctx, x_source_plane, y_f_marker, x_lens, y_f_marker);
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('f', (x_source_plane + x_lens) / 2, y_f_marker - 5);
+    
+    // Arrow for z
+    drawDoubleArrow(ctx, x_source_plane, y_z_marker, x_screen_plane, y_z_marker);
+    ctx.fillText('z', (x_source_plane + x_screen_plane) / 2, y_z_marker - 5);
+
+</script>
+</body>
+</html>

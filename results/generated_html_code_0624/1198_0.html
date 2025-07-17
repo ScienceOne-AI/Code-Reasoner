@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rotating Disk Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // --- Helper Functions ---
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        ctx.save();
+        const headlen = 10;
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawSubscriptText(ctx, text, sub, x, y, size = 26) {
+        ctx.save();
+        ctx.font = `italic ${size}px 'Times New Roman'`;
+        const textMetrics = ctx.measureText(text);
+        ctx.fillText(text, x, y);
+        
+        ctx.font = `italic ${size * 0.7}px 'Times New Roman'`;
+        ctx.fillText(sub, x + textMetrics.width - 4, y + 6);
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+    const cx = 275;
+    const cy = 270;
+
+    // Axis End Points
+    const xAxisEnd = { x: 100, y: 360 };
+    const yAxisEnd = { x: cx + 220, y: cy };
+    const zAxisEnd = { x: cx, y: cy - 180 };
+    const negXEnd = { x: cx + (cx - xAxisEnd.x), y: cy + (cy - xAxisEnd.y) };
+    const negYEnd = { x: cx - 220, y: cy };
+    const negZEnd = { x: cx, y: cy + 180 };
+    
+    // 1. Draw negative axis parts (which will be behind the disk)
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(negZEnd.x, negZEnd.y); // Negative Z
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(negXEnd.x, negXEnd.y); // Negative X
+    ctx.stroke();
+
+    // 2. Draw Disk
+    const diskRx = 180;
+    const diskRy = 60;
+    ctx.fillStyle = '#E0E0E0';
+    ctx.strokeStyle = '#333333';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, diskRx, diskRy, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+
+    // 3. Draw positive axis parts (on top of the disk)
+    drawArrow(ctx, cx, cy, zAxisEnd.x, zAxisEnd.y);
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('Z', zAxisEnd.x - 20, zAxisEnd.y - 5);
+
+    drawArrow(ctx, cx, cy, yAxisEnd.x, yAxisEnd.y);
+    ctx.fillText('y', yAxisEnd.x + 10, yAxisEnd.y + 8);
+
+    drawArrow(ctx, cx, cy, xAxisEnd.x, xAxisEnd.y);
+    ctx.fillText('x', xAxisEnd.x - 25, xAxisEnd.y + 5);
+
+    // Radius line R
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+diskRx, cy);
+    ctx.stroke();
+
+    // 4. Draw Labels on Disk
+    ctx.fillStyle = 'black';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillText('R', cx + diskRx / 2 - 10, cy - 10);
+    ctx.font = 'bold 28px "Times New Roman"';
+    ctx.fillText('σ', cx - diskRx * 0.7, cy + 5);
+
+    // 5. Draw Rotations
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+
+    // ω_z rotation
+    const rotZ_y = cy - 120;
+    const rotZ_rx = 65;
+    const rotZ_ry = rotZ_rx * (diskRy / diskRx); // Keep perspective
+    ctx.beginPath();
+    ctx.ellipse(cx, rotZ_y, rotZ_rx, rotZ_ry, 0, Math.PI * 0.95, Math.PI * 1.95, false);
+    ctx.stroke();
+
+    // Arrow for ω_z (manually placed to match image visual)
+    const arrow_point_z = {x: cx + rotZ_rx * Math.cos(1.85 * Math.PI), y: rotZ_y + rotZ_ry * Math.sin(1.85 * Math.PI)};
+    ctx.beginPath();
+    ctx.moveTo(arrow_point_z.x, arrow_point_z.y);
+    ctx.lineTo(arrow_point_z.x + 9, arrow_point_z.y - 5);
+    ctx.lineTo(arrow_point_z.x + 9, arrow_point_z.y + 5);
+    ctx.closePath();
+    ctx.fill();
+    drawSubscriptText(ctx, 'ω', 'z', cx + rotZ_rx - 5, rotZ_y + 25);
+    
+    // ω_x rotation
+    const rotX_dist = 90;
+    const rotX_center = {
+        x: cx + (xAxisEnd.x - cx) * rotX_dist / Math.sqrt((xAxisEnd.x-cx)**2 + (xAxisEnd.y-cy)**2),
+        y: cy + (xAxisEnd.y - cy) * rotX_dist / Math.sqrt((xAxisEnd.x-cx)**2 + (xAxisEnd.y-cy)**2)
+    };
+    
+    // Draw arc with a bezier curve for simplicity and control
+    const curve_start = {x: rotX_center.x + 25, y: rotX_center.y + 20};
+    const curve_end = {x: rotX_center.x - 25, y: rotX_center.y + 20};
+    const curve_ctrl = {x: rotX_center.x, y: rotX_center.y - 20};
+    ctx.beginPath();
+    ctx.moveTo(curve_start.x, curve_start.y);
+    ctx.quadraticCurveTo(curve_ctrl.x, curve_ctrl.y, curve_end.x, curve_end.y);
+    ctx.stroke();
+
+    // Arrow at the end of the arc (left side)
+    const tangent_dx = curve_end.x - curve_ctrl.x;
+    const tangent_dy = curve_end.y - curve_ctrl.y;
+    const angle = Math.atan2(tangent_dy, tangent_dx);
+    const headlen = 10;
+    ctx.beginPath();
+    ctx.moveTo(curve_end.x, curve_end.y);
+    ctx.lineTo(curve_end.x - headlen * Math.cos(angle - Math.PI / 6), curve_end.y - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(curve_end.x - headlen * Math.cos(angle + Math.PI / 6), curve_end.y - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+
+    drawSubscriptText(ctx, 'ω', 'x', rotX_center.x + 5, rotX_center.y + 50);
+
+</script>
+</body>
+</html>

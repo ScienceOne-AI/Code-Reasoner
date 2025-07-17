@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Graph: T^2 vs R^3</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsGraph" width="700" height="680"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsGraph');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const margin = { top: 40, right: 40, bottom: 90, left: 80 };
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const graphWidth = canvasWidth - margin.left - margin.right;
+        const graphHeight = canvasHeight - margin.top - margin.bottom;
+
+        const xMin = 0;
+        const xMax = 1.2;
+        const yMin = 0;
+        const yMax = 2.6;
+
+        // --- Coordinate Transformation Functions ---
+        function scaleX(val) {
+            return margin.left + (val - xMin) / (xMax - xMin) * graphWidth;
+        }
+
+        function scaleY(val) {
+            // Invert y-axis for standard cartesian plot
+            return margin.top + graphHeight - (val - yMin) / (yMax - yMin) * graphHeight;
+        }
+
+        // --- Drawing Functions ---
+
+        function drawGrid() {
+            ctx.strokeStyle = '#cccccc';
+            ctx.lineWidth = 1;
+
+            // Vertical grid lines (every 0.02)
+            const xStep = 0.02;
+            for (let i = xMin; i <= xMax + 1e-9; i += xStep) {
+                const x = scaleX(i);
+                ctx.beginPath();
+                ctx.moveTo(x, scaleY(yMin));
+                ctx.lineTo(x, scaleY(yMax));
+                ctx.stroke();
+            }
+
+            // Horizontal grid lines (every 0.04)
+            const yStep = 0.04;
+            for (let i = yMin; i <= yMax + 1e-9; i += yStep) {
+                const y = scaleY(i);
+                ctx.beginPath();
+                ctx.moveTo(scaleX(xMin), y);
+                ctx.lineTo(scaleX(xMax), y);
+                ctx.stroke();
+            }
+        }
+
+        function drawAxes() {
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1.5;
+
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(scaleX(xMin), scaleY(yMin));
+            ctx.lineTo(scaleX(xMax), scaleY(yMin));
+            ctx.stroke();
+
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(scaleX(xMin), scaleY(yMin));
+            ctx.lineTo(scaleX(xMin), scaleY(yMax));
+            ctx.stroke();
+        }
+
+        function drawLabels() {
+            ctx.fillStyle = '#000000';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+
+            // X-axis labels (every 0.1)
+            const xMajorStep = 0.1;
+            for (let i = xMin + xMajorStep; i <= xMax + 1e-9; i += xMajorStep) {
+                ctx.fillText(i.toFixed(1), scaleX(i), scaleY(yMin) + 8);
+            }
+            // Origin Label
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'top';
+            ctx.fillText('0', scaleX(0) - 5, scaleY(0) + 5);
+
+
+            // Y-axis labels (every 0.2)
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            const yMajorStep = 0.2;
+            for (let i = yMin + yMajorStep; i <= yMax + 1e-9; i += yMajorStep) {
+                 // Format to 1 decimal place, but show integer if it is one (e.g., 1.0 -> 1)
+                const label = parseFloat(i.toFixed(1)).toString();
+                ctx.fillText(label, scaleX(yMin) - 8, scaleY(i));
+            }
+        }
+
+        function drawAxisTitles() {
+            ctx.fillStyle = '#000000';
+            
+            // Y-axis title: T² / year²
+            ctx.font = '18px Arial';
+            ctx.save();
+            const yTitleX = margin.left - 55;
+            const yTitleY = margin.top + graphHeight / 2;
+            ctx.translate(yTitleX, yTitleY);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('T\u00B2 / year\u00B2', 0, 0);
+            ctx.restore();
+
+            // X-axis title: R³ / 10³⁴ m³
+            const xTitleX = margin.left + graphWidth / 2;
+            const xTitleY = scaleY(yMin) + 40;
+            const baseFont = '18px Arial';
+            const supFont = '13px Arial';
+            const supYOffset = 8;
+
+            const parts = [
+                { text: 'R', type: 'base' },
+                { text: '\u00B3', type: 'sup' }, // ³
+                { text: ' / 10', type: 'base' },
+                { text: '34', type: 'sup' },
+                { text: ' m', type: 'base' },
+                { text: '\u00B3', type: 'sup' }  // ³
+            ];
+
+            let totalWidth = 0;
+            parts.forEach(p => {
+                ctx.font = p.type === 'base' ? baseFont : supFont;
+                totalWidth += ctx.measureText(p.text).width;
+            });
+
+            let currentX = xTitleX - totalWidth / 2;
+
+            parts.forEach(p => {
+                ctx.font = p.type === 'base' ? baseFont : supFont;
+                const yPos = p.type === 'base' ? xTitleY : xTitleY - supYOffset;
+                ctx.fillText(p.text, currentX, yPos);
+                currentX += ctx.measureText(p.text).width;
+            });
+        }
+
+        function drawDataLine() {
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+
+            const slope = 2.0;
+            const x_change = 0.25;
+            const y_change = slope * x_change;
+            
+            const x_end = 1.2;
+            const y_end = slope * x_end;
+            
+            // Dashed part of the line
+            ctx.beginPath();
+            ctx.setLineDash([6, 4]);
+            ctx.moveTo(scaleX(0), scaleY(0));
+            ctx.lineTo(scaleX(x_change), scaleY(y_change));
+            ctx.stroke();
+
+            // Solid part of the line
+            ctx.beginPath();
+            ctx.setLineDash([]); // Reset to solid
+            ctx.moveTo(scaleX(x_change), scaleY(y_change));
+            ctx.lineTo(scaleX(x_end), scaleY(y_end));
+            ctx.stroke();
+        }
+
+        function drawCaption() {
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('Fig. 1.1', margin.left + graphWidth / 2, scaleY(yMin) + 65);
+        }
+
+        // --- Main Drawing ---
+        function draw() {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            drawGrid();
+            drawAxes();
+            drawLabels();
+            drawAxisTitles();
+            drawDataLine();
+            drawCaption();
+        }
+
+        draw();
+    </script>
+</body>
+</html>

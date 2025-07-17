@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="physicsCanvas" width="500" height="550"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Estilo y Parámetros ---
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineCap = 'round';
+ctx.lineJoin = 'round';
+
+const cx = 250;
+const cy = 280; // Centro de la guía circular
+const R = 160;  // Radio de la guía circular
+const phi_deg = 50; // Ángulo phi en grados para la visualización
+const phi_rad = phi_deg * Math.PI / 180;
+
+// --- Coordenadas de los Puntos Clave ---
+const O = { x: cx, y: cy };
+const B = { x: cx, y: cy - R };
+const A = { x: cx - R * Math.sin(phi_rad), y: cy - R * Math.cos(phi_rad) };
+
+// --- Inicio del Dibujo ---
+
+// 1. Línea vertical de construcción (punto-raya)
+ctx.beginPath();
+ctx.lineWidth = 2;
+ctx.setLineDash([10, 4, 3, 4]);
+ctx.moveTo(B.x, B.y - 20);
+ctx.lineTo(O.x, O.y + 40);
+ctx.stroke();
+ctx.setLineDash([]);
+
+// 2. Guía circular (arco)
+ctx.beginPath();
+ctx.lineWidth = 4;
+const startAngleArc = -Math.PI / 2 + 0.35; // A la derecha de B
+const endAngleArc = -Math.PI / 2 - phi_rad - 0.25; // A la izquierda de A
+ctx.arc(O.x, O.y, R, startAngleArc, endAngleArc, true); // true para antihorario
+ctx.stroke();
+
+// 3. Cuerda A-B
+ctx.beginPath();
+ctx.lineWidth = 4;
+ctx.moveTo(A.x, A.y);
+ctx.lineTo(B.x, B.y);
+ctx.stroke();
+
+// 4. Polea en B
+ctx.lineWidth = 3;
+ctx.fillStyle = 'white';
+ctx.beginPath();
+ctx.arc(B.x, B.y, 10, 0, 2 * Math.PI); // Círculo exterior
+ctx.fill();
+ctx.stroke();
+ctx.beginPath();
+ctx.arc(B.x, B.y, 4, 0, 2 * Math.PI); // Eje
+ctx.fillStyle = 'black';
+ctx.fill();
+ctx.font = '26px serif';
+ctx.fillText('B', B.x + 18, B.y + 10);
+
+// 5. Anillo en A
+ctx.save();
+ctx.translate(A.x, A.y);
+const ringAngle = -phi_rad;
+ctx.rotate(ringAngle); // Rotar para alinear con la tangente
+ctx.lineWidth = 3;
+ctx.fillStyle = 'white';
+ctx.fillRect(-12, -8, 24, 16);
+ctx.strokeRect(-12, -8, 24, 16);
+ctx.restore();
+ctx.font = '26px serif';
+ctx.fillText('A', A.x - 35, A.y);
+
+// 6. Cuerdas para los pesos
+ctx.lineWidth = 3;
+// Cuerda para P
+const P_attachment_P = { x: A.x, y: A.y + 80 };
+ctx.beginPath();
+ctx.moveTo(A.x, A.y);
+ctx.lineTo(P_attachment_P.x, P_attachment_P.y);
+ctx.stroke();
+
+// Cuerda para Q
+const C = { x: B.x, y: B.y + 130 };
+ctx.beginPath();
+ctx.moveTo(B.x, B.y);
+ctx.lineTo(C.x, C.y);
+ctx.stroke();
+
+// 7. Pesos P y Q
+// Peso P
+const P_size = { w: 55, h: 55 };
+ctx.fillStyle = 'white';
+ctx.fillRect(P_attachment_P.x - P_size.w / 2, P_attachment_P.y, P_size.w, P_size.h);
+ctx.strokeRect(P_attachment_P.x - P_size.w / 2, P_attachment_P.y, P_size.w, P_size.h);
+ctx.beginPath();
+ctx.arc(P_attachment_P.x, P_attachment_P.y, 5, Math.PI, 2 * Math.PI); // Enganche
+ctx.stroke();
+ctx.font = '26px serif';
+ctx.fillText('P', P_attachment_P.x + P_size.w / 2 + 10, P_attachment_P.y + P_size.h / 2 + 10);
+
+// Peso Q
+const Q_size = { w: 65, h: 45 };
+ctx.fillStyle = 'white';
+ctx.fillRect(C.x - Q_size.w / 2, C.y, Q_size.w, Q_size.h);
+ctx.strokeRect(C.x - Q_size.w / 2, C.y, Q_size.w, Q_size.h);
+ctx.beginPath();
+ctx.arc(C.x, C.y, 5, Math.PI, 2 * Math.PI); // Enganche
+ctx.stroke();
+ctx.font = '26px serif';
+ctx.fillText('C', C.x + 10, C.y - 5);
+ctx.fillText('Q', C.x + Q_size.w / 2 + 10, C.y + Q_size.h / 2 + 10);
+
+// 8. Línea discontinua O-A
+ctx.beginPath();
+ctx.lineWidth = 2;
+ctx.setLineDash([6, 6]);
+ctx.moveTo(O.x, O.y);
+ctx.lineTo(A.x, A.y);
+ctx.stroke();
+ctx.setLineDash([]);
+
+// 9. Ángulo phi
+ctx.lineWidth = 1.5;
+ctx.beginPath();
+const angle_arc_radius = 50;
+const start_angle_phi = -Math.PI / 2; // Vertical hacia arriba
+const end_angle_phi = -Math.PI / 2 - phi_rad; // Hacia la línea OA
+ctx.arc(O.x, O.y, angle_arc_radius, start_angle_phi, end_angle_phi, true);
+ctx.stroke();
+
+// Flecha para el arco del ángulo
+const arrow_head_angle = end_angle_phi;
+const arrow_tip = {
+    x: O.x + angle_arc_radius * Math.cos(arrow_head_angle),
+    y: O.y + angle_arc_radius * Math.sin(arrow_head_angle)
+};
+ctx.save();
+ctx.translate(arrow_tip.x, arrow_tip.y);
+ctx.rotate(arrow_head_angle + Math.PI / 2); // Alinear con la tangente del arco
+ctx.beginPath();
+ctx.moveTo(-5, -8);
+ctx.lineTo(0, 0);
+ctx.lineTo(5, -8);
+ctx.stroke();
+ctx.restore();
+
+// Etiqueta para phi
+const phi_label_angle = -Math.PI / 2 - phi_rad * 0.5;
+const phi_label_radius = angle_arc_radius + 20;
+ctx.font = 'italic 26px serif';
+ctx.fillText('φ', O.x + phi_label_radius * Math.cos(phi_label_angle) - 15, O.y + phi_label_radius * Math.sin(phi_label_angle) + 10);
+
+// 10. Punto central O
+ctx.beginPath();
+ctx.arc(O.x, O.y, 5, 0, 2 * Math.PI);
+ctx.fillStyle = 'black';
+ctx.fill();
+ctx.font = '26px serif';
+ctx.fillText('O', O.x + 10, O.y + 25);
+
+</script>
+</body>
+</html>

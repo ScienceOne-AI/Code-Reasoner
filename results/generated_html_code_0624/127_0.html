@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Atwood Machine Diagram</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    canvas {
+        border: 1px solid #000;
+        background-color: #fff;
+    }
+</style>
+</head>
+<body>
+<canvas id="atwood-machine-canvas" width="500" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('atwood-machine-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Parameter Configuration ---
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = "italic 20px 'Times New Roman'";
+
+    // --- Helper Function to Draw Arrows ---
+    function drawArrow(x1, y1, x2, y2) {
+        const headlen = 10; // length of arrow head in pixels
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // --- Main Drawing Logic ---
+
+    // 1. Pulley and Geometry
+    const pulleyX = 250;
+    const pulleyY = 110;
+    const pulleyR = 60;
+
+    // Draw pulley circle
+    ctx.beginPath();
+    ctx.arc(pulleyX, pulleyY, pulleyR, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // Draw pulley center axle
+    ctx.beginPath();
+    ctx.arc(pulleyX, pulleyY, 3, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 2. Blocks and String Geometry
+    const blockW = 50;
+    const blockH = 25;
+    const block1Y = 250;
+    const block2Y = 250;
+    const block1X = pulleyX - pulleyR - blockW / 2;
+    const block2X = pulleyX + pulleyR - blockW / 2;
+    const rope1X = block1X + blockW / 2;
+    const rope2X = block2X + blockW / 2;
+
+    // 3. Draw the String first, so other elements can be layered on top.
+    ctx.beginPath();
+    ctx.moveTo(rope1X, block1Y); 
+    ctx.lineTo(rope1X, pulleyY); 
+    ctx.arc(pulleyX, pulleyY, pulleyR, Math.PI, 0); 
+    ctx.lineTo(rope2X, pulleyY); 
+    ctx.lineTo(rope2X, block2Y); 
+    ctx.stroke();
+
+    // 4. Forces (Arrows) and their Labels
+    const arrowLen = 60;
+    
+    // -- Mass 1 --
+    const m1_center_x = block1X + blockW / 2;
+    const m1_center_y = block1Y + blockH / 2;
+    
+    // Tension (F) on m1 - arrow starts from the top of the block
+    drawArrow(m1_center_x, block1Y, m1_center_x, block1Y - arrowLen);
+    ctx.textAlign = 'center';
+    ctx.fillText("F", m1_center_x - 15, block1Y - arrowLen / 2 + 5);
+
+    // Weight (m₁g) on m1 - arrow starts from the center of the block
+    drawArrow(m1_center_x, m1_center_y, m1_center_x, m1_center_y + arrowLen);
+    ctx.fillText("m\u2081g", m1_center_x, m1_center_y + arrowLen + 20);
+
+    // -- Mass 2 --
+    const m2_center_x = block2X + blockW / 2;
+    const m2_center_y = block2Y + blockH / 2;
+
+    // Tension (F) on m2
+    drawArrow(m2_center_x, block2Y, m2_center_x, block2Y - arrowLen);
+    ctx.textAlign = 'center';
+    // Label 'F' is on the right side of the arrow in the original image
+    ctx.fillText("F", m2_center_x + 15, block2Y - arrowLen / 2 + 5);
+    
+    // Weight (m₂g) on m2
+    drawArrow(m2_center_x, m2_center_y, m2_center_x, m2_center_y + arrowLen);
+    ctx.fillText("m\u2082g", m2_center_x, m2_center_y + arrowLen + 20);
+
+    // 5. Draw Blocks (on top of the weight arrow which starts inside)
+    ctx.beginPath();
+    const originalFill = ctx.fillStyle;
+    ctx.fillStyle = 'white'; // Fill to occlude part of the downward arrow
+    ctx.fillRect(block1X, block1Y, blockW, blockH);
+    ctx.rect(block1X, block1Y, blockW, blockH);
+    ctx.fillRect(block2X, block2Y, blockW, blockH);
+    ctx.rect(block2X, block2Y, blockW, blockH);
+    ctx.stroke();
+    ctx.fillStyle = originalFill;
+
+    // 6. Mass Labels (m₁ and m₂)
+    ctx.textAlign = 'left';
+    ctx.fillText("m\u2081", block1X + blockW + 5, block1Y + 20);
+    ctx.fillText("m\u2082", block2X + blockW + 5, block2Y + 20);
+
+    // 7. Coordinate Axis
+    const axisX = 80;
+    const axisY_start = 180;
+    const axisY_end = 280;
+    
+    // Origin dot and label 'O'
+    ctx.beginPath();
+    ctx.arc(axisX, axisY_start - 5, 2.5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.textAlign = 'left';
+    ctx.fillText("O", axisX - 20, axisY_start);
+    
+    // Axis line with arrow pointing down
+    drawArrow(axisX, axisY_start, axisX, axisY_end);
+    
+    // Label 'x' at the bottom of the axis
+    ctx.textAlign = 'center';
+    ctx.fillText("x", axisX, axisY_end + 15);
+
+    // 8. Figure Caption
+    ctx.font = "16px 'Times New Roman'";
+    ctx.fillText("Fig. 1.2.", pulleyX, 420);
+
+</script>
+</body>
+</html>

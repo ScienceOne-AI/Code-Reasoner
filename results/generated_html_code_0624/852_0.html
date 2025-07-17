@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical Path Diagram</title>
+</head>
+<body>
+    <canvas id="physics-canvas" width="450" height="650"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        // Use a common Chinese font; KaiTi is a good choice.
+        // The font size is adjusted for different labels.
+        ctx.font = '24px KaiTi'; 
+
+        // Helper function to draw an arrow
+        function drawArrow(fromx, fromy, tox, toy) {
+            const headlen = 10; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            
+            // Draw line
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            
+            // Draw arrowhead
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Helper function to draw a coated plate (dichroic mirror)
+        function drawPlate(x, y, width, height, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+
+            // Draw rectangle body
+            ctx.beginPath();
+            ctx.rect(-width / 2, -height / 2, width, height);
+            ctx.fillStyle = 'rgb(239, 239, 239)'; // Light gray fill
+            ctx.fill();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Draw coating ticks
+            ctx.beginPath();
+            const numTicks = 22;
+            const tickLength = 4;
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= numTicks; i++) {
+                const tickX = -width / 2 + (i * width / numTicks);
+                const tickY = -height / 2;
+                ctx.moveTo(tickX, tickY);
+                // Ticks are drawn perpendicular to the surface
+                ctx.lineTo(tickX, tickY - tickLength);
+            }
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+
+        const centerX = 200;
+        const y_plate1 = 200; // Y-coordinate for the first plate's center
+        const y_plate2 = 400; // Y-coordinate for the second plate's center
+
+        const plateWidth = 170;
+        const plateHeight = 22;
+        const angle = -Math.PI / 4; // -45 degrees
+
+        // Draw plates
+        drawPlate(centerX, y_plate1, plateWidth, plateHeight, angle);
+        drawPlate(centerX, y_plate2, plateWidth, plateHeight, angle);
+
+        // Draw light rays and labels
+        ctx.lineWidth = 1.5;
+
+        // 1. Incoming white light
+        drawArrow(centerX, 50, centerX, y_plate1);
+        ctx.fillText('白光', centerX + 20, 100);
+
+        // 2. Reflected red light
+        drawArrow(centerX, y_plate1, centerX + 180, y_plate1);
+        ctx.fillText('红光', centerX + 80, y_plate1 - 20);
+
+        // 3. Transmitted light between plates (no arrowhead)
+        ctx.beginPath();
+        ctx.moveTo(centerX, y_plate1);
+        ctx.lineTo(centerX, y_plate2);
+        ctx.stroke();
+
+        // 4. Reflected green light
+        drawArrow(centerX, y_plate2, centerX + 180, y_plate2);
+        ctx.fillText('绿光', centerX + 80, y_plate2 - 20);
+
+        // 5. Final transmitted light
+        drawArrow(centerX, y_plate2, centerX, 580);
+
+        // Draw bottom label
+        ctx.font = '22px KaiTi';
+        ctx.fillText('习题 12-18 图', 150, 620);
+
+    </script>
+</body>
+</html>

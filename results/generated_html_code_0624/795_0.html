@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Define the geometry of the block using a consistent vector approach
+        // Base point
+        const F = { x: 260, y: 420 };
+
+        // Directional vectors for the oblique projection
+        const v_up = { x: 0, y: -150 };
+        const v_right = { x: 220, y: -80 };
+        const v_left = { x: -150, y: -40 };
+
+        // Calculate the coordinates of all 8 vertices
+        const Q = { x: F.x + v_up.x, y: F.y + v_up.y };
+        const E = { x: F.x + v_left.x, y: F.y + v_left.y };
+        const G = { x: F.x + v_right.x, y: F.y + v_right.y };
+
+        const P = { x: E.x + v_up.x, y: E.y + v_up.y };
+        const R = { x: G.x + v_up.x, y: G.y + v_up.y };
+
+        const S = { x: P.x + v_right.x, y: P.y + v_right.y };
+        const H = { x: E.x + v_right.x, y: E.y + v_right.y };
+
+
+        // --- Drawing starts here ---
+
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '16px Arial';
+        ctx.fillStyle = 'black';
+
+        // Draw solid (visible) edges
+        ctx.beginPath();
+        // Front face PQFE
+        ctx.moveTo(P.x, P.y);
+        ctx.lineTo(Q.x, Q.y);
+        ctx.lineTo(F.x, F.y);
+        ctx.lineTo(E.x, E.y);
+        ctx.closePath();
+        // Top face PQRS
+        ctx.moveTo(P.x, P.y);
+        ctx.lineTo(S.x, S.y);
+        ctx.lineTo(R.x, R.y);
+        ctx.lineTo(Q.x, Q.y);
+        // Right face QFGR
+        ctx.moveTo(Q.x, Q.y);
+        ctx.lineTo(R.x, R.y);
+        ctx.lineTo(G.x, G.y);
+        ctx.lineTo(F.x, F.y);
+        ctx.stroke();
+
+        // Draw dashed (hidden) edges
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        // Edge SH
+        ctx.moveTo(S.x, S.y);
+        ctx.lineTo(H.x, H.y);
+        // Edge HG
+        ctx.moveTo(H.x, H.y);
+        ctx.lineTo(G.x, G.y);
+        // Edge HE
+        ctx.moveTo(H.x, H.y);
+        ctx.lineTo(E.x, E.y);
+        ctx.stroke();
+        
+        ctx.setLineDash([]); // Reset to solid lines
+
+        // Draw labels for vertices
+        ctx.fillText('P', P.x - 20, P.y);
+        ctx.fillText('Q', Q.x + 5, Q.y);
+        ctx.fillText('R', R.x + 10, R.y);
+        ctx.fillText('S', S.x + 5, S.y - 5);
+        ctx.fillText('E', E.x - 20, E.y + 10);
+        ctx.fillText('F', F.x - 5, F.y + 20);
+        ctx.fillText('G', G.x + 10, G.y + 10);
+        ctx.fillText('H', H.x - 15, H.y + 15);
+
+
+        // Draw incident electrons
+        const electron_start_x = 40;
+        const electron_end_x = E.x;
+        const electron_dy = E.y - P.y; // To get the slope of the side face
+        const electron_dx = E.x - F.x;
+        
+        drawArrow(ctx, electron_start_x, E.y - 0.15*electron_dy, electron_end_x-10, E.y - 0.15*electron_dy - 40 * (electron_dy/electron_dx) );
+        drawArrow(ctx, electron_start_x, E.y - 0.35*electron_dy, electron_end_x-10, E.y - 0.35*electron_dy - 40 * (electron_dy/electron_dx) );
+        drawArrow(ctx, electron_start_x, E.y - 0.55*electron_dy, electron_end_x-10, E.y - 0.55*electron_dy - 40 * (electron_dy/electron_dx) );
+
+        ctx.textAlign = 'left';
+        ctx.fillText('direction of', electron_start_x, 460);
+        ctx.fillText('incident electrons', electron_start_x, 480);
+        
+        // Draw magnetic field
+        const b_field_y_start = 50;
+        const b_field_y_end_offset = 10;
+        
+        drawArrow(ctx, S.x - 20, b_field_y_start, S.x - 20, S.y - b_field_y_end_offset);
+        drawArrow(ctx, S.x + 30, b_field_y_start, S.x + 30, S.y - b_field_y_end_offset + 15);
+        drawArrow(ctx, S.x + 80, b_field_y_start, S.x + 80, S.y - b_field_y_end_offset + 30);
+        
+        ctx.textAlign = 'center';
+        ctx.fillText('magnetic field', S.x + 30, 20);
+        ctx.fillText('flux density B', S.x + 30, 40);
+
+        // Draw figure caption
+        ctx.fillText('Fig. 8.1', canvas.width / 2, 530);
+
+    </script>
+</body>
+</html>

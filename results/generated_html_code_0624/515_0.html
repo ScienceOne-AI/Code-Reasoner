@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Brewster's Angle on a Plate</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="550" height="420"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper function to draw a line with an arrowhead in the middle ---
+    function drawRay(ctx, x1, y1, x2, y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Arrowhead properties
+        const headlen = 8;
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        const midX = (x1 + x2) * 0.5;
+        const midY = (y1 + y2) * 0.5;
+
+        // Draw the filled arrowhead
+        ctx.save();
+        ctx.translate(midX, midY);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headlen, -headlen / 2.5);
+        ctx.lineTo(-headlen, headlen / 2.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Drawing Parameters ---
+    const plateX = 250;
+    const plateWidth = 80;
+    const n1 = 1.0;
+    const n2 = 1.5;
+
+    // Calculate angles based on physics
+    const alphaB_rad = Math.atan(n2 / n1); // Brewster's angle in radians
+    const alphaT_rad = Math.asin(n1 * Math.sin(alphaB_rad) / n2); // Refraction angle in radians
+
+    // Slopes of the rays
+    const slopeB = Math.tan(alphaB_rad);
+    const slopeT = Math.tan(alphaT_rad);
+
+    // Incidence points on the first interface
+    const p1_top = { x: plateX, y: 150 };
+    const p1_bot = { x: plateX, y: 220 };
+    
+    // Points on the second interface (after refraction)
+    const p2_top = { x: plateX + plateWidth, y: p1_top.y + plateWidth * slopeT };
+    const p2_bot = { x: plateX + plateWidth, y: p1_bot.y + plateWidth * slopeT };
+
+    // Points for internal reflection
+    const p3_top = { x: plateX, y: p2_top.y - plateWidth * slopeT };
+    const p3_bot = { x: plateX, y: p2_bot.y - plateWidth * slopeT };
+
+    // Ray segment lengths
+    const len_incident = 200;
+    const len_reflected = 220;
+    const len_transmitted = 200;
+
+    // --- Start Drawing ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    // 1. Draw the glass plate
+    ctx.fillStyle = '#e0e0e0';
+    ctx.fillRect(plateX, 0, plateWidth, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.strokeRect(plateX, 0, plateWidth, canvas.height);
+    ctx.fillStyle = 'black';
+
+    // 2. Draw all rays
+    // --- Top Ray Path ---
+    drawRay(ctx, p1_top.x - len_incident, p1_top.y - len_incident * slopeB, p1_top.x, p1_top.y); // Incident
+    drawRay(ctx, p1_top.x, p1_top.y, p1_top.x + len_reflected, p1_top.y - len_reflected * slopeB); // Reflected
+    drawRay(ctx, p1_top.x, p1_top.y, p2_top.x, p2_top.y); // Refracted
+    drawRay(ctx, p2_top.x, p2_top.y, p3_top.x, p3_top.y); // Internally Reflected
+    drawRay(ctx, p2_top.x, p2_top.y, p2_top.x + len_transmitted, p2_top.y + len_transmitted * slopeB); // Transmitted
+
+    // --- Bottom Ray Path ---
+    drawRay(ctx, p1_bot.x - len_incident, p1_bot.y - len_incident * slopeB, p1_bot.x, p1_bot.y); // Incident
+    drawRay(ctx, p1_bot.x, p1_bot.y, p1_bot.x + len_reflected, p1_bot.y - len_reflected * slopeB); // Reflected
+    drawRay(ctx, p1_bot.x, p1_bot.y, p2_bot.x, p2_bot.y); // Refracted
+    drawRay(ctx, p2_bot.x, p2_bot.y, p3_bot.x, p3_bot.y); // Internally Reflected
+    drawRay(ctx, p2_bot.x, p2_bot.y, p2_bot.x + len_transmitted, p2_bot.y + len_transmitted * slopeB); // Transmitted
+
+    // 3. Draw Angle Measurement
+    // The angle is shown at the top ray's incidence point
+    const angle_center = p1_top;
+
+    // Draw dashed normal line
+    ctx.save();
+    ctx.setLineDash([5, 3]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(angle_center.x - 120, angle_center.y);
+    ctx.lineTo(angle_center.x, angle_center.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // Draw angle arc
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(angle_center.x, angle_center.y, 70, -alphaB_rad, 0);
+    ctx.stroke();
+
+    // 4. Draw Text Labels
+    // -- Angle Label (α_B) --
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('α', 180, 230);
+    ctx.font = 'italic 16px Times New Roman';
+    ctx.fillText('B', 195, 235);
+
+    // -- Refractive Index Labels (n₁, n₂, n₃) --
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.fillText('n', 205, 50);
+    ctx.font = 'italic 14px Times New Roman';
+    ctx.fillText('1', 218, 55);
+
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.fillText('n', 280, 50);
+    ctx.font = 'italic 14px Times New Roman';
+    ctx.fillText('2', 293, 55);
+
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.fillText('n', 360, 50);
+    ctx.font = 'italic 14px Times New Roman';
+    ctx.fillText('3', 373, 55);
+
+</script>
+</body>
+</html>

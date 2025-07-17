@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inverting Amplifier Circuit</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="650" height="420"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 16px Arial';
+
+        // --- Helper Functions ---
+
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        function drawResistor(x, y, width, height, label) {
+            // Box
+            ctx.strokeRect(x, y, width, height);
+            // Label
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(label, x + width / 2, y - 5);
+            ctx.restore();
+        }
+
+        function drawResistorVertical(x, y, width, height, label) {
+            // Box
+            ctx.strokeRect(x, y, width, height);
+            // Label
+            ctx.save();
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, x + width + 10, y + height / 2);
+            ctx.restore();
+        }
+        
+        function drawTerminal(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = 'black';
+        }
+
+        function drawNode(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        function drawGround(x, y) {
+            drawLine(x, y, x, y + 15);
+            drawLine(x - 20, y + 15, x + 20, y + 15);
+            drawLine(x - 12, y + 20, x + 12, y + 20);
+            drawLine(x - 6, y + 25, x + 6, y + 25);
+        }
+        
+        function drawArrow(x1, y1, x2, y2, headLength = 10) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx);
+            drawLine(x1, y1, x2, y2);
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function drawLed(x, y, size, label) {
+            const triangleHeight = size * 0.8;
+            const baseWidth = size * 0.8;
+            // Diode symbol
+            ctx.beginPath();
+            ctx.moveTo(x, y - size / 2);
+            ctx.lineTo(x - baseWidth / 2, y + triangleHeight - size/2);
+            ctx.lineTo(x + baseWidth / 2, y + triangleHeight - size/2);
+            ctx.closePath();
+            ctx.stroke();
+            drawLine(x - baseWidth/2, y + triangleHeight - size/2, x + baseWidth/2, y + triangleHeight - size/2);
+
+            // Light arrows
+            ctx.save();
+            ctx.translate(x + 10, y + 5);
+            ctx.rotate(Math.PI / 4);
+            drawArrow(0, 0, 15, 0, 7);
+            ctx.translate(5, 5);
+            drawArrow(0, 0, 15, 0, 7);
+            ctx.restore();
+
+            // Label
+            ctx.save();
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, x + baseWidth/2 + 10, y);
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+
+        // Coordinates
+        const gndY = 360;
+        const opAmpInX = 260;
+        const opAmpOutX = 360;
+        const opAmpInvY = 200;
+        const opAmpNInvY = 250;
+        const opAmpOutY = 225;
+        const feedbackY = 100;
+        const inputTermX = 40;
+        const outputLoadX = 480;
+        const outputTermX = 580;
+
+        // Ground Line
+        drawLine(40, gndY, outputLoadX + 40, gndY);
+        drawGround(300, gndY);
+
+        // Input section
+        drawTerminal(inputTermX, opAmpInvY);
+        drawLine(inputTermX, opAmpInvY, inputTermX + 40, opAmpInvY);
+        drawResistor(inputTermX + 40, opAmpInvY - 12, 80, 24, '0.80 kΩ');
+        drawLine(inputTermX + 120, opAmpInvY, opAmpInX, opAmpInvY);
+        
+        // V_IN label and arrow
+        drawArrow(inputTermX, gndY - 20, inputTermX, opAmpInvY + 20);
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('V_IN', inputTermX - 25, (opAmpInvY + gndY)/2);
+        ctx.restore();
+
+        // Node P
+        drawNode(opAmpInX - 20, opAmpInvY);
+        ctx.fillText('P', opAmpInX - 20, opAmpInvY + 20);
+
+        // Op-Amp
+        // Body
+        ctx.beginPath();
+        ctx.moveTo(opAmpInX, opAmpOutY - 60);
+        ctx.lineTo(opAmpOutX, opAmpOutY);
+        ctx.lineTo(opAmpInX, opAmpOutY + 60);
+        ctx.closePath();
+        ctx.stroke();
+        // Inputs
+        drawLine(opAmpInX, opAmpInvY, opAmpInX - 20, opAmpInvY);
+        drawLine(opAmpInX, opAmpNInvY, opAmpInX + 20, opAmpNInvY);
+        drawLine(opAmpInX + 20, opAmpNInvY, opAmpInX + 20, gndY);
+        drawNode(opAmpInX + 20, gndY);
+        // Input labels
+        ctx.font = 'bold 22px Arial';
+        ctx.fillText('−', opAmpInX + 15, opAmpInvY + 2);
+        ctx.fillText('+', opAmpInX + 15, opAmpNInvY - 2);
+        ctx.font = 'bold 16px Arial';
+        // Power supplies
+        const opAmpMidX = opAmpInX + (opAmpOutX - opAmpInX) / 2;
+        drawLine(opAmpMidX, opAmpOutY - 60, opAmpMidX, opAmpOutY - 80);
+        drawLine(opAmpMidX, opAmpOutY + 60, opAmpMidX, opAmpOutY + 80);
+        ctx.fillText('+5 V', opAmpMidX, opAmpOutY - 95);
+        ctx.fillText('−5 V', opAmpMidX, opAmpOutY + 95);
+
+        // Output section
+        drawLine(opAmpOutX, opAmpOutY, outputLoadX, opAmpOutY);
+        
+        // V_OUT
+        drawLine(outputLoadX, opAmpOutY, outputTermX, opAmpOutY);
+        drawTerminal(outputTermX, opAmpOutY);
+        drawArrow(outputTermX + 30, gndY - 20, outputTermX + 30, opAmpOutY + 20);
+        ctx.save();
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('V_OUT', outputTermX + 40, (opAmpOutY + gndY)/2);
+        ctx.restore();
+
+        // Feedback loop
+        const pNodeX = opAmpInX - 20;
+        drawNode(pNodeX, opAmpInvY);
+        drawNode(outputLoadX, opAmpOutY);
+        drawLine(pNodeX, opAmpInvY, pNodeX, feedbackY + 12);
+        drawLine(outputLoadX, opAmpOutY, outputLoadX, feedbackY + 12);
+        drawResistor(pNodeX, feedbackY, outputLoadX - pNodeX, 24, '5.2 kΩ');
+
+        // Load (Resistor R and LED D)
+        drawLine(outputLoadX, opAmpOutY, outputLoadX, opAmpOutY + 30);
+        drawResistorVertical(outputLoadX - 12, opAmpOutY + 30, 24, 40, 'R');
+        drawLine(outputLoadX, opAmpOutY + 70, outputLoadX, opAmpOutY + 90);
+        drawLed(outputLoadX, opAmpOutY + 110, 40, 'D');
+        drawLine(outputLoadX, opAmpOutY + 130, outputLoadX, gndY);
+        drawNode(outputLoadX, gndY);
+        
+        // Figure caption
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.font = '16px Arial';
+        ctx.fillText('Fig. 7.1', canvas.width / 2, gndY + 40);
+        ctx.restore();
+
+    </script>
+</body>
+</html>

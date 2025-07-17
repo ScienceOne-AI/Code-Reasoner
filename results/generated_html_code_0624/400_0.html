@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Solar Panel Diagram</title>
+</head>
+<body>
+    <canvas id="solarPanelCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('solarPanelCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Clear canvas with a white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // --- Style setup ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Main Drawing ---
+        ctx.save();
+
+        // Center and rotate the coordinate system for the tilted panel
+        const centerX = canvas.width / 2;
+        const centerY = 230;
+        const angle = -30 * Math.PI / 180; // -30 degrees rotation
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle);
+
+        // --- Panel Dimensions (in the new rotated coordinate space) ---
+        const inner_left_x = -110;
+        const inner_right_x = 110;
+        const inner_top_y = 10;
+        const inner_bottom_y = 60;
+        const thickness = 15;
+
+        const outer_left_x = inner_left_x - thickness;
+        const outer_right_x = inner_right_x + thickness;
+        const outer_bottom_y = inner_bottom_y + thickness;
+        const lip_top_y = inner_top_y - thickness;
+
+        // --- Create the path for the insulated container ---
+        const insulationPath = new Path2D();
+        insulationPath.moveTo(outer_left_x, lip_top_y);
+        insulationPath.lineTo(inner_left_x, inner_top_y);
+        insulationPath.lineTo(inner_left_x, inner_bottom_y);
+        insulationPath.lineTo(inner_right_x, inner_bottom_y);
+        insulationPath.lineTo(inner_right_x, inner_top_y);
+        insulationPath.lineTo(outer_right_x, lip_top_y);
+        insulationPath.lineTo(outer_right_x, outer_bottom_y);
+        insulationPath.lineTo(outer_left_x, outer_bottom_y);
+        insulationPath.closePath();
+
+        // --- Draw Hatched Insulation ---
+        ctx.save();
+        ctx.clip(insulationPath); // Use the path as a clipping region
+        ctx.beginPath();
+        ctx.lineWidth = 2; // Hatching lines are slightly thinner
+        // Draw diagonal hatching lines with a slope of -1
+        const hatchStep = 12;
+        for (let i = -200; i < 250; i += hatchStep) {
+             ctx.moveTo(i, -150);
+             ctx.lineTo(i - 300, 150);
+        }
+        ctx.stroke();
+        ctx.restore(); // Remove the clipping path
+
+        // --- Draw Panel Outline ---
+        ctx.lineWidth = 3;
+        ctx.stroke(insulationPath);
+        
+        // --- Draw the top glass surface ---
+        ctx.beginPath();
+        ctx.moveTo(inner_left_x, inner_top_y);
+        ctx.lineTo(inner_right_x, inner_top_y);
+        ctx.stroke();
+
+        // --- Draw Text in Panel ---
+        ctx.font = '24px sans-serif';
+        ctx.fillText('water', 0, (inner_top_y + inner_bottom_y) / 2 + 5);
+
+        // --- Draw Solar Rays ---
+        const arrow_start_y = -100;
+        const arrow_end_y = inner_top_y - 3;
+        const arrow_head_size = 10;
+        ctx.lineWidth = 2;
+
+        function drawArrow(x, y1, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, y2);
+            // Arrowhead
+            ctx.moveTo(x, y2);
+            ctx.lineTo(x - arrow_head_size / 2, y2 - arrow_head_size * 0.8);
+            ctx.moveTo(x, y2);
+            ctx.lineTo(x + arrow_head_size / 2, y2 - arrow_head_size * 0.8);
+            ctx.stroke();
+        }
+
+        const arrow_x_positions = [-90, -60, -30, 0];
+        arrow_x_positions.forEach(x => drawArrow(x, arrow_start_y, arrow_end_y));
+
+        // --- Draw Labels for Solar Rays ---
+        
+        // Label: α = 0.96 (parallel to panel surface)
+        ctx.font = '22px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('\u03B1 = 0.96', -15, -15);
+
+        // Helper function to draw text with a superscript
+        function drawSuperscriptText(ctx, baseText, supText, x, y, baseFont, supFont, supYOffset) {
+            const originalFont = ctx.font;
+            const originalBaseline = ctx.textBaseline;
+
+            ctx.font = baseFont;
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(baseText, x, y);
+            
+            const baseWidth = ctx.measureText(baseText).width;
+
+            ctx.font = supFont;
+            ctx.fillText(supText, x + baseWidth, y - supYOffset);
+
+            // Restore original settings
+            ctx.font = originalFont;
+            ctx.textBaseline = originalBaseline;
+        }
+
+        // Label: 800 W/m^2 (parallel to rays)
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.translate(-145, -45); // Position the text block
+        ctx.rotate(Math.PI / 2); // Rotate to be parallel to rays (vertical in this context)
+        
+        const baseFont = '22px sans-serif';
+        const supFont = '16px sans-serif';
+        const baseText = "800 W/m";
+        const supText = "2";
+        
+        // Measure text to center it properly after rotation
+        ctx.font = baseFont;
+        const baseWidth = ctx.measureText(baseText).width;
+        ctx.font = supFont;
+        const supWidth = ctx.measureText(supText).width;
+        const totalWidth = baseWidth + supWidth;
+        const startX = -totalWidth / 2;
+        
+        drawSuperscriptText(ctx, baseText, supText, startX, 0, baseFont, supFont, 5);
+        
+        ctx.restore();
+
+        // --- Restore main coordinate system ---
+        ctx.restore();
+
+        // --- Draw Figure Caption ---
+        ctx.font = 'bold 24px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 3.21', centerX, 450);
+
+    </script>
+</body>
+</html>

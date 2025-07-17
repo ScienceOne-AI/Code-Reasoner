@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Crane Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Function to draw hatching lines inside a rectangle
+  function drawHatching(x, y, width, height) {
+    ctx.save();
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.rect(x, y, width, height);
+    ctx.clip(); // Clip to the rectangle area
+    ctx.beginPath();
+    const step = 8;
+    for (let i = -height; i < width; i += step) {
+      ctx.moveTo(x + i, y);
+      ctx.lineTo(x + i + height, y + height);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Set default styles
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.font = '16px Arial';
+
+  // Define coordinates
+  const groundY = 430;
+  const jibTopY = 150;
+  const jibBottomY = 170;
+  const jibHeight = jibBottomY - jibTopY;
+  const pivotX = 250;
+  
+  const pointA_x = pivotX;
+  const distAB_pixels = 240;
+  const pointB_x = pointA_x + distAB_pixels;
+
+  const jibLeft = 40;
+  const jibRight = 580;
+  const jibWidth = jibRight - jibLeft;
+
+  const towerWidth = 40;
+  const towerX = pivotX - towerWidth / 2;
+  const towerTopY = jibBottomY;
+  const towerHeight = groundY - towerTopY;
+
+  // Draw Ground
+  ctx.beginPath();
+  ctx.moveTo(0, groundY);
+  ctx.lineTo(canvas.width, groundY);
+  ctx.stroke();
+
+  // Draw Tower
+  ctx.strokeRect(towerX, towerTopY, towerWidth, towerHeight);
+  drawHatching(towerX, towerTopY, towerWidth, towerHeight);
+
+  // Draw Jib
+  ctx.strokeRect(jibLeft, jibTopY, jibWidth, jibHeight);
+  drawHatching(jibLeft, jibTopY, jibWidth, jibHeight);
+
+  // Draw Counterweight
+  const cwWidth = 80;
+  const cwHeight = 50;
+  const cwX = 50;
+  const cwY = jibTopY - cwHeight;
+  ctx.fillStyle = 'white'; 
+  ctx.fillRect(cwX, cwY, cwWidth, cwHeight);
+  ctx.strokeRect(cwX, cwY, cwWidth, cwHeight);
+  
+  // Draw Operator's Cabin
+  const ocWidth = 40;
+  const ocHeight = 30;
+  const ocX = 180;
+  const ocY = jibTopY - ocHeight;
+  ctx.fillStyle = 'white';
+  ctx.fillRect(ocX, ocY, ocWidth, ocHeight);
+  ctx.strokeRect(ocX, ocY, ocWidth, ocHeight);
+
+  // Draw Block
+  const blockWidth = 100;
+  const blockHeight = 40;
+  const cableLength = 100;
+  const blockX = pointB_x - blockWidth / 2;
+  const blockTopY = jibBottomY + cableLength;
+  ctx.fillStyle = 'white';
+  ctx.fillRect(blockX, blockTopY, blockWidth, blockHeight);
+  ctx.strokeRect(blockX, blockTopY, blockWidth, blockHeight);
+  
+  // Draw Cable for the block
+  ctx.fillStyle = 'black';
+  ctx.beginPath();
+  ctx.moveTo(pointB_x, jibBottomY);
+  ctx.lineTo(pointB_x, blockTopY);
+  ctx.stroke();
+
+  // Mark points A and B
+  ctx.beginPath();
+  ctx.arc(pointA_x, jibBottomY, 3, 0, 2 * Math.PI);
+  ctx.fill();
+  
+  ctx.beginPath();
+  ctx.arc(pointB_x, jibBottomY, 3, 0, 2 * Math.PI);
+  ctx.fill();
+
+  // Draw Dimension Line
+  const dimY = 110;
+  ctx.beginPath();
+  ctx.setLineDash([5, 3]);
+  ctx.moveTo(pointA_x, jibTopY);
+  ctx.lineTo(pointA_x, dimY);
+  ctx.moveTo(pointB_x, jibTopY);
+  ctx.lineTo(pointB_x, dimY);
+  ctx.stroke();
+
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(pointA_x, dimY);
+  ctx.lineTo(pointB_x, dimY);
+  ctx.stroke();
+  
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('20 m', (pointA_x + pointB_x) / 2, dimY - 2);
+
+  // Add labels
+  ctx.lineWidth = 1;
+  
+  // A and B labels
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('A', pointA_x - 15, jibBottomY);
+  ctx.fillText('B', pointB_x + 5, jibBottomY);
+  
+  // Operator's Cabin Label
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText("operator's cabin", 160, 90);
+  ctx.beginPath();
+  ctx.moveTo(230, 92);
+  ctx.lineTo(ocX + ocWidth / 2, ocY);
+  ctx.stroke();
+
+  // Counterweight Label
+  ctx.textAlign = 'left';
+  ctx.fillText('counterweight', 30, 80);
+  ctx.beginPath();
+  ctx.moveTo(120, 82);
+  ctx.lineTo(cwX + cwWidth / 2, cwY);
+  ctx.stroke();
+
+  // Block Label
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('block', 550, 320);
+  ctx.beginPath();
+  ctx.moveTo(545, 320);
+  ctx.lineTo(blockX + blockWidth, blockTopY + blockHeight / 2);
+  ctx.stroke();
+
+  // Figure caption
+  ctx.font = 'bold 16px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('Fig. 2.1', canvas.width / 2, groundY + 10);
+
+</script>
+</body>
+</html>

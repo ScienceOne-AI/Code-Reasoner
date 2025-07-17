@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Helper function to draw the magnetic field symbol (⊗ B)
+        function drawBField(x, y) {
+            const radius = 11;
+            ctx.save();
+            ctx.lineWidth = 2;
+
+            // Draw circle
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Draw cross
+            ctx.beginPath();
+            ctx.moveTo(x - radius / Math.sqrt(2), y - radius / Math.sqrt(2));
+            ctx.lineTo(x + radius / Math.sqrt(2), y + radius / Math.sqrt(2));
+            ctx.moveTo(x + radius / Math.sqrt(2), y - radius / Math.sqrt(2));
+            ctx.lineTo(x - radius / Math.sqrt(2), y + radius / Math.sqrt(2));
+            ctx.stroke();
+
+            ctx.font = 'italic bold 22px Times New Roman';
+            ctx.fillText('B', x + radius + 7, y + 7);
+            ctx.restore();
+        }
+
+        // Draw the four B-field symbols
+        drawBField(80, 80);
+        drawBField(420, 80);
+        drawBField(80, 420);
+        drawBField(420, 420);
+
+        // --- Draw the Rod ---
+        const centerX = 250;
+        const centerY = 250;
+        const rodLength = 360;
+        const rodAngle = -28 * Math.PI / 180; // Angle in radians
+        const thickness = 5;
+
+        const cosA = Math.cos(rodAngle);
+        const sinA = Math.sin(rodAngle);
+        const halfLen = rodLength / 2;
+        const halfThick = thickness / 2;
+
+        const x1 = centerX - halfLen * cosA;
+        const y1 = centerY - halfLen * sinA;
+        const x2 = centerX + halfLen * cosA;
+        const y2 = centerY + halfLen * sinA;
+
+        const dx = halfThick * -sinA;
+        const dy = halfThick * cosA;
+
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        // Line 1 (top-left)
+        ctx.beginPath();
+        ctx.moveTo(x1 - dx, y1 - dy);
+        ctx.lineTo(x2 - dx, y2 - dy);
+        ctx.stroke();
+
+        // Line 2 (bottom-right)
+        ctx.beginPath();
+        ctx.moveTo(x1 + dx, y1 + dy);
+        ctx.lineTo(x2 + dx, y2 + dy);
+        ctx.stroke();
+        ctx.restore();
+
+        // --- Draw the Ring ---
+        const ringPosRatio = 0.58; // 0.5 is center
+        const ringCenterX = centerX + (ringPosRatio - 0.5) * rodLength * cosA;
+        const ringCenterY = centerY + (ringPosRatio - 0.5) * rodLength * sinA;
+
+        ctx.save();
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.translate(ringCenterX, ringCenterY);
+        ctx.rotate(rodAngle);
+        const ringRadius = 7;
+        const gapCenterAngle = -Math.PI / 2; // Opening at the "bottom" relative to the rod
+        const gapSize = Math.PI * 0.4;
+        const startAngle = gapCenterAngle + gapSize / 2;
+        const endAngle = gapCenterAngle - gapSize / 2 + 2 * Math.PI;
+        ctx.arc(0, 0, ringRadius, startAngle, endAngle);
+        ctx.stroke();
+        ctx.restore();
+        
+        // --- Draw Labels ---
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('m,q', ringCenterX - 25, ringCenterY - 35);
+        ctx.fillText('C', ringCenterX, ringCenterY + 20);
+
+        ctx.font = '22px KaiTi';
+        ctx.textAlign = 'center';
+        ctx.fillText('固定轴', centerX, centerY + 45);
+
+        // --- Draw Rotation Arrows (ω) ---
+        ctx.save();
+        ctx.lineWidth = 1.5;
+
+        // Upper-right arrow
+        const ur_cx = 380, ur_cy = 155, ur_r = 35;
+        const ur_start = 0.1 * Math.PI, ur_end = 0.9 * Math.PI;
+        ctx.beginPath();
+        ctx.arc(ur_cx, ur_cy, ur_r, ur_start, ur_end, false); // CCW arc
+        // Arrowhead
+        const ur_tipX = ur_cx + ur_r * Math.cos(ur_end);
+        const ur_tipY = ur_cy + ur_r * Math.sin(ur_end);
+        ctx.moveTo(ur_tipX + 8, ur_tipY + 8);
+        ctx.lineTo(ur_tipX, ur_tipY);
+        ctx.lineTo(ur_tipX - 10, ur_tipY + 4);
+        ctx.stroke();
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText('ω', ur_cx - 5, ur_cy - ur_r - 5);
+
+
+        // Lower-left arrow
+        const ll_cx = 120, ll_cy = 345, ll_r = 35;
+        const ll_start = 1.1 * Math.PI, ll_end = 1.9 * Math.PI;
+        ctx.beginPath();
+        ctx.arc(ll_cx, ll_cy, ll_r, ll_start, ll_end, false); // CCW arc
+        // Arrowhead
+        const ll_tipX = ll_cx + ll_r * Math.cos(ll_end);
+        const ll_tipY = ll_cy + ll_r * Math.sin(ll_end);
+        ctx.moveTo(ll_tipX - 8, ll_tipY - 8);
+        ctx.lineTo(ll_tipX, ll_tipY);
+        ctx.lineTo(ll_tipX + 10, ll_tipY - 4);
+        ctx.stroke();
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText('ω', ll_cx + 5, ll_cy + ll_r + 15);
+        ctx.restore();
+
+        // --- Draw Bottom Label ---
+        ctx.font = '22px KaiTi';
+        ctx.textAlign = 'center';
+        ctx.fillText('电图 2.8.1', canvas.width / 2, canvas.height - 25);
+
+    </script>
+</body>
+</html>

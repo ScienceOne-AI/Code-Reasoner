@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Speed-Time Graph</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="speedTimeGraph" width="540" height="480"></canvas>
+    <script>
+        const canvas = document.getElementById('speedTimeGraph');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const margin = { top: 40, right: 30, bottom: 70, left: 70 };
+        const plotWidth = canvas.width - margin.left - margin.right;
+        const plotHeight = canvas.height - margin.top - margin.bottom;
+
+        const xMax = 40;
+        const yMax = 20;
+
+        // --- Coordinate mapping functions ---
+        function mapX(val) {
+            return margin.left + (val / xMax) * plotWidth;
+        }
+
+        function mapY(val) {
+            return margin.top + plotHeight - (val / yMax) * plotHeight;
+        }
+
+        // --- Drawing functions ---
+
+        function drawGrid() {
+            ctx.strokeStyle = '#d3d3d3'; // Light gray for grid
+            ctx.lineWidth = 1;
+
+            // Vertical grid lines (every 1s)
+            for (let i = 1; i <= xMax; i++) {
+                ctx.beginPath();
+                ctx.moveTo(mapX(i), mapY(0));
+                ctx.lineTo(mapX(i), mapY(yMax));
+                ctx.stroke();
+            }
+
+            // Horizontal grid lines (every 0.5 m/s)
+            // Each major interval of 5 has 10 subdivisions. 5/10 = 0.5
+            for (let i = 0.5; i <= yMax; i += 0.5) {
+                ctx.beginPath();
+                ctx.moveTo(mapX(0), mapY(i));
+                ctx.lineTo(mapX(xMax), mapY(i));
+                ctx.stroke();
+            }
+        }
+        
+        function drawAxes() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1.5;
+
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(mapX(0), mapY(0));
+            ctx.lineTo(mapX(xMax), mapY(0));
+            ctx.stroke();
+
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(mapX(0), mapY(0));
+            ctx.lineTo(mapX(0), mapY(yMax));
+            ctx.stroke();
+        }
+
+        function drawLabelsAndTicks() {
+            ctx.fillStyle = 'black';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // X-axis ticks and labels
+            ctx.textBaseline = 'top';
+            for (let i = 0; i <= xMax; i += 10) {
+                ctx.fillText(i, mapX(i), mapY(0) + 8);
+            }
+
+            // Y-axis ticks and labels
+            ctx.textAlign = 'right';
+            for (let i = 5; i <= yMax; i += 5) {
+                 ctx.fillText(i, mapX(0) - 8, mapY(i));
+            }
+             // Origin '0'
+            ctx.fillText('0', mapX(0) - 8, mapY(0) + 8);
+
+
+            // X-axis label
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.font = '18px Arial';
+            ctx.fillText('time / s', margin.left + plotWidth / 2, canvas.height - 25);
+            
+            // Y-axis label
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.font = '18px Arial';
+            ctx.fillText('speed', margin.left - 45, margin.top - 15);
+            ctx.fillText('m/s', margin.left - 45, margin.top + 15);
+            
+            ctx.beginPath();
+            ctx.moveTo(margin.left - 65, margin.top);
+            ctx.lineTo(margin.left - 25, margin.top);
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.restore();
+
+            // Figure caption
+            ctx.font = '16px Arial';
+            ctx.fillText('Fig. 1.1', margin.left + plotWidth / 2, canvas.height - 5);
+        }
+
+        function drawGraph() {
+            ctx.beginPath();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2.5;
+
+            // Start at the origin
+            ctx.moveTo(mapX(0), mapY(0));
+
+            // Straight line segment to (20, 15)
+            ctx.lineTo(mapX(20), mapY(15));
+            
+            // Curved segment from (20, 15) to (40, 20)
+            // The control point is the intersection of the initial and final tangents.
+            // Initial tangent: y = 0.75x. Final tangent: y = 20.
+            // Intersection: 20 = 0.75x => x = 20 / 0.75 = 80/3 ≈ 26.67
+            const controlX = 80 / 3;
+            const controlY = 20;
+            ctx.quadraticCurveTo(mapX(controlX), mapY(controlY), mapX(40), mapY(20));
+
+            ctx.stroke();
+        }
+
+        // --- Main drawing sequence ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+        drawAxes();
+        drawLabelsAndTicks();
+        drawGraph();
+    </script>
+</body>
+</html>

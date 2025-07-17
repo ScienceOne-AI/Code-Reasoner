@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fig. 2.13 Energy Levels of Pb-208</title>
+</head>
+<body>
+<canvas id="canvas" width="600" height="550"></canvas>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration and Constants ---
+    const config = {
+        y_axis_x: 80,
+        y_axis_label_x: 40,
+        y_axis_y_start: 90,
+        y_axis_y_end: 450,
+        y_axis_e_min: 0,
+        y_axis_e_max: 12,
+
+        neutron_label_x: 95,
+        neutron_calc_x_start: 140,
+        neutron_calc_x_end: 190,
+        neutron_obs_x_start: 210,
+        neutron_obs_x_end: 260,
+
+        proton_calc_x_start: 330,
+        proton_calc_x_end: 380,
+        proton_obs_x_start: 400,
+        proton_obs_x_end: 450,
+        proton_label_x: 465,
+
+        mid_label_x: 285,
+        
+        mainFont: '16px serif',
+        labelFont: '14px serif',
+        subFont: '11px serif',
+        captionFont: '14px serif'
+    };
+
+    // --- Data for Energy Levels (Energies in MeV) ---
+    const neutronUnoccupied = [
+        { label: 'd3/2', calc: 1.7, obs: 2.0, label_y_offset: -10 },
+        { label: 'g7/2', calc: 1.8, obs: 2.1, label_y_offset: 0 },
+        { label: 's1/2', calc: 1.9, obs: 2.2, label_y_offset: 10 },
+        { label: 'j15/2', calc: 2.2, obs: 2.4 },
+        { label: 'd5/2', calc: 2.4, obs: 2.6 },
+        { label: 'i11/2', calc: 3.2, obs: 3.0 },
+        { label: 'g9/2', calc: 4.0, obs: 3.8 }
+    ];
+
+    const neutronOccupied = [
+        { label: 'p1/2', calc: 7.3, obs: 7.4 },
+        { label: 'f5/2', calc: 7.9, obs: 8.0 },
+        { label: 'p3/2', calc: 8.2, obs: 8.3 },
+        { label: 'i13/2', calc: 8.8, obs: 8.5 },
+        { label: 'f7/2', calc: 10.2, obs: 10.0 },
+        { label: 'h9/2', calc: 10.8, obs: 10.6 }
+    ];
+
+    const protonUnoccupied = [
+        { label: 'i13/2', calc: 1.9, obs: 2.0 },
+        { label: 'f7/2', calc: 2.7, obs: 2.8 },
+        { label: 'h9/2', calc: 3.8, obs: 3.5 }
+    ];
+
+    const protonOccupied = [
+        { label: 's1/2', calc: 7.4, obs: 7.5 },
+        { label: 'd3/2', calc: 7.9, obs: 7.8 },
+        { label: 'h11/2', calc: 8.5, obs: 8.8 },
+        { label: 'd5/2', calc: 9.2, obs: 9.5 },
+        { label: 'g7/2', calc: 11.5, obs: 11.2 }
+    ];
+
+    // --- Helper Functions ---
+
+    // Convert energy (MeV) to y-coordinate
+    function e_to_y(e) {
+        const y_range = config.y_axis_y_end - config.y_axis_y_start;
+        const e_range = config.y_axis_e_max - config.y_axis_e_min;
+        return config.y_axis_y_start + (e / e_range) * y_range;
+    }
+    
+    // Draw state label with subscript (e.g., d_3/2)
+    function drawStateLabel(ctx, text, x, y) {
+        const match = text.match(/([a-z])(\d+\/\d+)/);
+        if (!match) {
+            ctx.fillText(text, x, y);
+            return;
+        }
+        const mainChar = match[1];
+        const sub = match[2];
+        
+        ctx.font = config.labelFont;
+        ctx.textAlign = 'right';
+        ctx.fillText(mainChar, x, y);
+        
+        const mainWidth = ctx.measureText(mainChar).width;
+        ctx.font = config.subFont;
+        ctx.textAlign = 'left';
+        ctx.fillText(sub, x + 2, y + 4);
+    }
+
+    // Draw an energy level
+    function drawLevel(ctx, data, type) {
+        const y_calc = e_to_y(data.calc);
+        const y_obs = e_to_y(data.obs);
+        let label_y = y_calc;
+        if(data.label_y_offset) {
+            label_y += data.label_y_offset;
+        }
+        
+        ctx.beginPath();
+        if (type === 'neutron') {
+            ctx.moveTo(config.neutron_calc_x_start, y_calc);
+            ctx.lineTo(config.neutron_calc_x_end, y_calc);
+            ctx.moveTo(config.neutron_calc_x_end, y_calc);
+            ctx.lineTo(config.neutron_obs_x_start, y_obs);
+            ctx.moveTo(config.neutron_obs_x_start, y_obs);
+            ctx.lineTo(config.neutron_obs_x_end, y_obs);
+            drawStateLabel(ctx, data.label, config.neutron_label_x, label_y);
+        } else if (type === 'proton') {
+            ctx.moveTo(config.proton_calc_x_start, y_calc);
+            ctx.lineTo(config.proton_calc_x_end, y_calc);
+            ctx.moveTo(config.proton_calc_x_end, y_calc);
+            ctx.lineTo(config.proton_obs_x_start, y_obs);
+            ctx.moveTo(config.proton_obs_x_start, y_obs);
+            ctx.lineTo(config.proton_obs_x_end, y_obs);
+            ctx.textAlign = 'left';
+            drawStateLabel(ctx, data.label, config.proton_label_x, y_obs);
+        }
+        ctx.stroke();
+    }
+    
+    // --- Main Drawing Function ---
+    function draw() {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Draw Y-Axis
+        ctx.beginPath();
+        ctx.moveTo(config.y_axis_x, config.y_axis_y_start);
+        ctx.lineTo(config.y_axis_x, config.y_axis_y_end);
+        for (let e = 2; e <= 10; e += 2) {
+            const y = e_to_y(e);
+            ctx.moveTo(config.y_axis_x, y);
+            ctx.lineTo(config.y_axis_x - 5, y);
+        }
+        ctx.stroke();
+
+        // Draw Y-Axis labels
+        ctx.font = config.mainFont;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let e = 2; e <= 10; e += 2) {
+            const y = e_to_y(e);
+            ctx.fillText(e, config.y_axis_x - 10, y);
+        }
+
+        // Rotated Y-Axis Title
+        ctx.save();
+        ctx.translate(config.y_axis_label_x, canvas.height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.fillText('Binding Energy (MeV)', 0, 0);
+        ctx.restore();
+        
+        // Draw dashed line separator
+        const fermi_energy = 5.8;
+        const y_fermi = e_to_y(fermi_energy);
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(config.neutron_calc_x_start, y_fermi);
+        ctx.lineTo(config.proton_obs_x_end, y_fermi);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = config.mainFont;
+        ctx.textAlign = 'left';
+        ctx.fillText('208', config.proton_obs_x_end + 10, y_fermi - 5);
+        ctx.font = config.subFont;
+        ctx.fillText('Pb', config.proton_obs_x_end + 32, y_fermi - 5);
+
+
+        // Draw all levels
+        neutronUnoccupied.forEach(lvl => drawLevel(ctx, lvl, 'neutron'));
+        neutronOccupied.forEach(lvl => drawLevel(ctx, lvl, 'neutron'));
+        protonUnoccupied.forEach(lvl => drawLevel(ctx, lvl, 'proton'));
+        protonOccupied.forEach(lvl => drawLevel(ctx, lvl, 'proton'));
+
+        // Draw bottom and side labels
+        ctx.font = config.mainFont;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText('calc.', (config.neutron_calc_x_start + config.neutron_calc_x_end)/2, 480);
+        ctx.fillText('obs.', (config.neutron_obs_x_start + config.neutron_obs_x_end)/2, 480);
+        ctx.fillText('NEUTRON STATE', (config.neutron_calc_x_start + config.neutron_obs_x_end)/2, 500);
+
+        ctx.fillText('calc.', (config.proton_calc_x_start + config.proton_calc_x_end)/2, 480);
+        ctx.fillText('obs.', (config.proton_obs_x_start + config.proton_obs_x_end)/2, 480);
+        ctx.fillText('PROTON STATE', (config.proton_calc_x_start + config.proton_obs_x_end)/2, 500);
+
+        // Vertical labels
+        ctx.save();
+        ctx.translate(config.mid_label_x, canvas.height / 2);
+        ctx.textAlign = 'center';
+        ctx.fillText('Unoccupied', 0, -130);
+        ctx.fillText('Occupied', 0, 100);
+        ctx.restore();
+
+        // Figure Caption
+        ctx.font = config.captionFont;
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 2.13', canvas.width / 2, 535);
+    }
+
+    draw();
+
+</script>
+</body>
+</html>

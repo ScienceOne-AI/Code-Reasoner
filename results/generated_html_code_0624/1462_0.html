@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450" style="border:1px solid #ccc;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow on a line
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 8) {
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // Helper function to draw a hatched rectangle
+    function drawHatchedRect(ctx, x, y, w, h) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, w, h);
+        ctx.stroke(); // Draw the rectangle border
+        ctx.clip();   // Clip to the rectangle area for hatching
+        
+        ctx.beginPath();
+        const step = 6;
+        for (let i = -h; i < w; i += step) {
+            ctx.moveTo(x + i, y);
+            ctx.lineTo(x + i + h, y + h);
+        }
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.2;
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Define main coordinates and dimensions
+    const originX = 100;
+    const originY = 280;
+    const b_dist = 60;
+    const d_dist = 100;
+    const a_dist = 120;
+    const l_dist = 130;
+    const wireTopY = 80;
+    const wireSolidTopY = 100;
+    const wireSolidBottomY = 250;
+    const loopTopY = 100;
+
+    // 1. Coordinate System
+    ctx.beginPath();
+    ctx.moveTo(originX - 50, originY);
+    ctx.lineTo(originX + 450, originY);
+    ctx.stroke();
+    drawArrow(ctx, originX + 440, originY, originX + 450, originY); // x-axis arrow
+    ctx.fillText('x', originX + 460, originY);
+    ctx.fillText('O', originX - 15, originY + 15);
+    ctx.beginPath();
+    ctx.moveTo(originX, originY + 5);
+    ctx.lineTo(originX, originY - 5);
+    ctx.stroke();
+
+
+    // 2. Wires
+    // Wire 1 (at origin)
+    ctx.beginPath();
+    ctx.setLineDash([4, 4]);
+    ctx.moveTo(originX, wireTopY);
+    ctx.lineTo(originX, wireSolidTopY);
+    ctx.moveTo(originX, wireSolidBottomY);
+    ctx.lineTo(originX, originY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(originX, wireSolidTopY);
+    ctx.lineTo(originX, wireSolidBottomY);
+    ctx.stroke();
+    drawArrow(ctx, originX, (wireSolidTopY + wireSolidBottomY) / 2, originX, wireSolidBottomY); // Downward current
+    ctx.fillText('I', originX - 25, (wireSolidTopY + wireSolidBottomY) / 2);
+
+    // Wire 2 (at x = b_dist)
+    const wire2X = originX + b_dist;
+    ctx.beginPath();
+    ctx.setLineDash([4, 4]);
+    ctx.moveTo(wire2X, wireTopY);
+    ctx.lineTo(wire2X, wireSolidTopY);
+    ctx.moveTo(wire2X, wireSolidBottomY);
+    ctx.lineTo(wire2X, originY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(wire2X, wireSolidTopY);
+    ctx.lineTo(wire2X, wireSolidBottomY);
+    ctx.stroke();
+    drawArrow(ctx, wire2X, (wireSolidTopY + wireSolidBottomY) / 2, wire2X, wireSolidTopY); // Upward current
+    ctx.fillText('I', wire2X + 25, (wireSolidTopY + wireSolidBottomY) / 2);
+
+    // 3. Rectangular Loop and connecting line
+    const loopLeftX = wire2X + d_dist;
+    const loopRightX = loopLeftX + a_dist;
+    const loopBottomY = loopTopY + l_dist;
+
+    // Connecting line (from wire 2 to loop)
+    ctx.beginPath();
+    ctx.moveTo(wire2X, loopTopY);
+    ctx.lineTo(loopLeftX, loopTopY);
+    ctx.stroke();
+
+    // Loop rectangle
+    ctx.beginPath();
+    ctx.rect(loopLeftX, loopTopY, a_dist, l_dist);
+    ctx.stroke();
+    
+    // 4. Shaded Strip (dx)
+    const stripX = loopLeftX + a_dist * 0.4;
+    const stripWidth = 15;
+    drawHatchedRect(ctx, stripX, loopTopY, stripWidth, l_dist);
+
+    // 5. Labels and Dimensions
+    // b label
+    ctx.fillText('b', wire2X + d_dist / 3, loopTopY - 15);
+
+    // d dimension line
+    const d_y_pos = 265;
+    const d_mid_x = (wire2X + loopLeftX) / 2;
+    ctx.beginPath();
+    ctx.moveTo(d_mid_x, d_y_pos); ctx.lineTo(wire2X, d_y_pos);
+    ctx.moveTo(d_mid_x, d_y_pos); ctx.lineTo(loopLeftX, d_y_pos);
+    ctx.moveTo(wire2X, d_y_pos - 4); ctx.lineTo(wire2X, d_y_pos + 4);
+    ctx.moveTo(loopLeftX, d_y_pos - 4); ctx.lineTo(loopLeftX, d_y_pos + 4);
+    ctx.stroke();
+    drawArrow(ctx, d_mid_x, d_y_pos, wire2X, d_y_pos);
+    drawArrow(ctx, d_mid_x, d_y_pos, loopLeftX, d_y_pos);
+    ctx.fillText('d', d_mid_x, d_y_pos - 15);
+    
+    // a dimension line
+    const a_y_pos = 310;
+    const a_mid_x = (loopLeftX + loopRightX) / 2;
+    ctx.beginPath();
+    ctx.moveTo(a_mid_x, a_y_pos); ctx.lineTo(loopLeftX, a_y_pos);
+    ctx.moveTo(a_mid_x, a_y_pos); ctx.lineTo(loopRightX, a_y_pos);
+    ctx.moveTo(loopLeftX, a_y_pos - 4); ctx.lineTo(loopLeftX, a_y_pos + 4);
+    ctx.moveTo(loopRightX, a_y_pos - 4); ctx.lineTo(loopRightX, a_y_pos + 4);
+    ctx.stroke();
+    drawArrow(ctx, a_mid_x, a_y_pos, loopLeftX, a_y_pos);
+    drawArrow(ctx, a_mid_x, a_y_pos, loopRightX, a_y_pos);
+    ctx.fillText('a', a_mid_x, a_y_pos - 15);
+
+    // l dimension line
+    const l_x_pos = loopRightX + 20;
+    ctx.beginPath();
+    ctx.moveTo(l_x_pos, loopTopY);
+    ctx.lineTo(l_x_pos, loopBottomY);
+    ctx.moveTo(l_x_pos - 4, loopTopY);
+    ctx.lineTo(l_x_pos + 4, loopTopY);
+    ctx.moveTo(l_x_pos - 4, loopBottomY);
+    ctx.lineTo(l_x_pos + 4, loopBottomY);
+    ctx.stroke();
+    ctx.fillText('l', l_x_pos + 20, (loopTopY + loopBottomY) / 2);
+
+    // dx label
+    const dx_y_pos = loopTopY - 10;
+    ctx.beginPath();
+    ctx.moveTo(stripX, dx_y_pos);
+    ctx.lineTo(stripX + stripWidth, dx_y_pos);
+    ctx.moveTo(stripX, dx_y_pos - 3);
+    ctx.lineTo(stripX, dx_y_pos + 3);
+    ctx.moveTo(stripX + stripWidth, dx_y_pos - 3);
+    ctx.lineTo(stripX + stripWidth, dx_y_pos + 3);
+    ctx.stroke();
+    ctx.fillText('dx', stripX + stripWidth / 2, dx_y_pos - 12);
+
+    // x label
+    const x_pos_on_axis = stripX + stripWidth / 2;
+    ctx.beginPath();
+    ctx.moveTo(x_pos_on_axis, originY - 5);
+    ctx.lineTo(x_pos_on_axis, originY + 5);
+    ctx.stroke();
+    ctx.fillText('x', x_pos_on_axis, originY + 20);
+
+    // 6. Caption
+    ctx.font = '20px "SimSun"'; // Use a font that supports Chinese characters
+    ctx.fillText('题 7 图', 300, 380);
+
+</script>
+</body>
+</html>

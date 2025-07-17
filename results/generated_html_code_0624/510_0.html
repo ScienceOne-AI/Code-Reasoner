@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+</head>
+<body>
+<canvas id="physics_canvas" width="450" height="400" style="border:1px solid #ccc;"></canvas>
+
+<script>
+    const canvas = document.getElementById('physics_canvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Parameters ---
+    const ox = 150; // Origin x on canvas
+    const oy = 250; // Origin y on canvas
+    const l = 120;  // Cube side length in pixels
+    const z_scale = 0.5; // Z-axis projection scale factor
+
+    // --- Helper function to draw an arrow ---
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 10;
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    }
+
+    // --- Calculate Cube Vertices (projected 2D coordinates) ---
+    // z-vector for projection (points left and down)
+    const z_dx = -l * z_scale;
+    const z_dy = l * z_scale;
+
+    const v = {
+        '000': { x: ox, y: oy },
+        '100': { x: ox + l, y: oy },
+        '010': { x: ox, y: oy - l },
+        '001': { x: ox + z_dx, y: oy + z_dy },
+        '110': { x: ox + l, y: oy - l },
+        '101': { x: ox + l + z_dx, y: oy + z_dy },
+        '011': { x: ox + z_dx, y: oy - l + z_dy },
+        '111': { x: ox + l + z_dx, y: oy - l + z_dy }
+    };
+
+    // --- Draw Shaded Face (at x = l) ---
+    ctx.beginPath();
+    ctx.moveTo(v['100'].x, v['100'].y);
+    ctx.lineTo(v['110'].x, v['110'].y);
+    ctx.lineTo(v['111'].x, v['111'].y);
+    ctx.lineTo(v['101'].x, v['101'].y);
+    ctx.closePath();
+
+    // Create a texture pattern to mimic the original shading
+    const patternCanvas = document.createElement('canvas');
+    const patternCtx = patternCanvas.getContext('2d');
+    patternCanvas.width = 32;
+    patternCanvas.height = 32;
+    patternCtx.fillStyle = '#f0f0f0'; // Base color for the texture
+    patternCtx.fillRect(0,0,32,32);
+    patternCtx.fillStyle = '#cccccc'; // Dot color
+    for (let i = 0; i < 100; i++) {
+        patternCtx.beginPath();
+        patternCtx.arc(Math.random() * 32, Math.random() * 32, Math.random() * 1.5, 0, 2 * Math.PI);
+        patternCtx.fill();
+    }
+    const pattern = ctx.createPattern(patternCanvas, 'repeat');
+    ctx.fillStyle = pattern;
+    ctx.fill();
+
+
+    // --- Draw Cube Edges ---
+    ctx.beginPath();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    const edges = [
+        ['000', '100'], ['000', '010'], ['000', '001'],
+        ['100', '110'], ['100', '101'],
+        ['010', '110'], ['010', '011'],
+        ['001', '101'], ['001', '011'],
+        ['111', '110'], ['111', '101'], ['111', '011']
+    ];
+    edges.forEach(edge => {
+        const p1 = v[edge[0]];
+        const p2 = v[edge[1]];
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+    });
+    ctx.stroke();
+
+    // --- Draw Coordinate Axes ---
+    ctx.beginPath();
+    ctx.lineWidth = 1.5;
+    const axis_len_x = l * 1.4;
+    const axis_len_y = l * 1.3;
+    const axis_len_z = l * 1.0;
+    drawArrow(ctx, ox, oy, ox + axis_len_x, oy); // x-axis
+    drawArrow(ctx, ox, oy, ox, oy - axis_len_y); // y-axis
+    drawArrow(ctx, ox, oy, ox + axis_len_z * z_scale * Math.cos(135*Math.PI/180), oy - axis_len_z * z_scale * Math.sin(135*Math.PI/180)); // z-axis
+    ctx.stroke();
+
+
+    // --- Draw Magnetic Field B ---
+    ctx.beginPath();
+    ctx.lineWidth = 1.5;
+    const b_len = 80;
+    const b_angle = -30 * Math.PI / 180; // Angle from horizontal
+    const b_start_x = ox + l + 30;
+    const b_start_y = oy - l;
+    for (let i = 0; i < 3; i++) {
+        const sx = b_start_x + i * 12;
+        const sy = b_start_y + i * 8;
+        const ex = sx + b_len * Math.cos(b_angle);
+        const ey = sy + b_len * Math.sin(b_angle);
+        drawArrow(ctx, sx, sy, ex, ey);
+    }
+    ctx.stroke();
+
+    // --- Add Labels ---
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('O', ox - 20, oy + 8);
+    ctx.fillText('x', ox + axis_len_x + 5, oy + 8);
+    ctx.fillText('y', ox - 5, oy - axis_len_y - 8);
+    ctx.fillText('z', ox + axis_len_z * z_scale * Math.cos(135*Math.PI/180) - 20, oy - axis_len_z * z_scale * Math.sin(135*Math.PI/180) + 15);
+    
+    // Labels for side length 'l'
+    ctx.font = 'italic 18px Times New Roman';
+    ctx.fillText('l', ox + l/2 - 5, oy + 20);
+    ctx.fillText('l', v['100'].x + 8, v['100'].y - l/2 + 5);
+    ctx.fillText('l', v['100'].x + z_dx/2 - 5, v['100'].y + z_dy/2 + 15);
+
+    // Label 'B'
+    ctx.font = 'bold italic 22px Times New Roman';
+    ctx.fillText('B', b_start_x - 5, b_start_y - 25);
+
+    // Bottom text
+    ctx.font = '18px SimSun';
+    ctx.fillText('习题 8-7 图', canvas.width / 2 - 45, canvas.height - 15);
+
+</script>
+</body>
+</html>

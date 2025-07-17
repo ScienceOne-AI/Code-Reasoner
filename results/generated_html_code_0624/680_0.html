@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Op-Amp Circuit Diagram</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="700" height="500"></canvas>
+<script>
+const canvas = document.getElementById('circuitCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style Settings ---
+ctx.lineWidth = 2;
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.font = '20px sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// --- Helper Functions ---
+
+// Draws a resistor box
+function drawResistor(x, y, width, height, orientation) {
+    ctx.beginPath();
+    if (orientation === 'h') { // Horizontal
+        ctx.strokeRect(x - width / 2, y - height / 2, width, height);
+    } else { // Vertical
+        ctx.strokeRect(x - height / 2, y - width / 2, height, width);
+    }
+}
+
+// Draws an arrow
+function drawArrow(fromX, fromY, toX, toY) {
+    const headLength = 10;
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+// Draws text with specified alignment
+function drawText(text, x, y, align = 'center', baseline = 'middle') {
+    ctx.textAlign = align;
+    ctx.textBaseline = baseline;
+    ctx.fillText(text, x, y);
+}
+
+// --- Main Drawing ---
+
+// --- Define Coordinates ---
+const groundY = 420;
+const opampLeftX = 300;
+const opampTipX = 400;
+const opampCenterY = 250;
+const opampHeight = 100;
+const opampInvertingY = opampCenterY - 25;
+const opampNonInvertingY = opampCenterY + 25;
+
+const vinTerminalX = 100;
+const junctionX = 220; // The T-junction for the inverting input
+const res1Y = 340;
+const feedbackY = 150;
+const outputTakeoffX = 500;
+const voutTerminalX = 600;
+const groundSymbolX = 550;
+
+// 1. Ground Line
+ctx.beginPath();
+ctx.moveTo(50, groundY);
+ctx.lineTo(650, groundY);
+ctx.stroke();
+
+// 2. Ground Symbol
+ctx.beginPath();
+ctx.moveTo(groundSymbolX, groundY);
+ctx.lineTo(groundSymbolX, groundY + 25);
+ctx.moveTo(groundSymbolX - 25, groundY + 25);
+ctx.lineTo(groundSymbolX + 25, groundY + 25);
+ctx.moveTo(groundSymbolX - 15, groundY + 35);
+ctx.lineTo(groundSymbolX + 15, groundY + 35);
+ctx.moveTo(groundSymbolX - 8, groundY + 45);
+ctx.lineTo(groundSymbolX + 8, groundY + 45);
+ctx.stroke();
+
+// 3. Op-Amp Body
+ctx.beginPath();
+ctx.moveTo(opampLeftX, opampCenterY - opampHeight/2);
+ctx.lineTo(opampLeftX, opampCenterY + opampHeight/2);
+ctx.lineTo(opampTipX, opampCenterY);
+ctx.closePath();
+ctx.stroke();
+
+// 4. Op-Amp Labels (+/- and Power)
+drawText('-', opampLeftX + 20, opampInvertingY);
+drawText('+', opampLeftX + 20, opampNonInvertingY);
+// +V Supply
+ctx.beginPath();
+ctx.moveTo(opampLeftX + 50, opampCenterY - opampHeight/2);
+ctx.lineTo(opampLeftX + 50, opampCenterY - opampHeight/2 - 30);
+ctx.stroke();
+drawText('+9.0 V', opampLeftX + 50, opampCenterY - opampHeight/2 - 40, 'center', 'bottom');
+// -V Supply
+ctx.beginPath();
+ctx.moveTo(opampLeftX + 50, opampCenterY + opampHeight/2);
+ctx.lineTo(opampLeftX + 50, opampCenterY + opampHeight/2 + 30);
+ctx.stroke();
+drawText('-9.0 V', opampLeftX + 50, opampCenterY + opampHeight/2 + 40, 'center', 'top');
+
+// 5. Input Path (V_IN)
+ctx.beginPath();
+ctx.arc(vinTerminalX, opampNonInvertingY, 5, 0, 2 * Math.PI); // Input terminal circle
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(vinTerminalX, opampNonInvertingY);
+ctx.lineTo(opampLeftX, opampNonInvertingY); // Wire to non-inverting input
+ctx.stroke();
+drawArrow(vinTerminalX, groundY, vinTerminalX, opampNonInvertingY + 70);
+drawText('V', vinTerminalX - 28, (groundY + opampNonInvertingY + 70)/2, 'right');
+ctx.font = '15px sans-serif';
+drawText('IN', vinTerminalX - 18, (groundY + opampNonInvertingY + 70)/2 + 5, 'right');
+ctx.font = '20px sans-serif';
+
+// 6. Inverting Input Path and Resistors
+// Wire from junction to op-amp
+ctx.beginPath();
+ctx.moveTo(junctionX, opampInvertingY);
+ctx.lineTo(opampLeftX, opampInvertingY);
+ctx.stroke();
+// Resistor R1 (800 Ohm) from junction to ground
+ctx.beginPath();
+ctx.moveTo(junctionX, opampInvertingY);
+ctx.lineTo(junctionX, res1Y - 40);
+ctx.moveTo(junctionX, res1Y + 40);
+ctx.lineTo(junctionX, groundY);
+ctx.stroke();
+drawResistor(junctionX, res1Y, 80, 20, 'v');
+drawText('800 Ω', junctionX + 55, res1Y, 'left');
+
+// 7. Feedback Loop with Resistor R2 (6400 Ohm)
+ctx.beginPath();
+ctx.moveTo(junctionX, opampInvertingY);
+ctx.lineTo(junctionX, feedbackY);
+ctx.lineTo(outputTakeoffX, feedbackY);
+ctx.lineTo(outputTakeoffX, opampCenterY);
+ctx.stroke();
+drawResistor((junctionX + outputTakeoffX) / 2, feedbackY, 120, 20, 'h');
+drawText('6400 Ω', (junctionX + outputTakeoffX) / 2, feedbackY - 25, 'center', 'bottom');
+
+// 8. Output Path (V_OUT)
+ctx.beginPath();
+ctx.moveTo(opampTipX, opampCenterY);
+ctx.lineTo(voutTerminalX, opampCenterY);
+ctx.stroke();
+ctx.beginPath();
+ctx.arc(voutTerminalX, opampCenterY, 5, 0, 2 * Math.PI); // Output terminal circle
+ctx.stroke();
+drawArrow(voutTerminalX, groundY, voutTerminalX, opampCenterY + 70);
+drawText('V', voutTerminalX + 28, (groundY + opampCenterY + 70)/2, 'left');
+ctx.font = '15px sans-serif';
+drawText('OUT', voutTerminalX + 38, (groundY + opampCenterY + 70)/2 + 5, 'left');
+ctx.font = '20px sans-serif';
+
+// 9. Connection Dots (Junctions)
+ctx.fillStyle = 'black';
+ctx.beginPath();
+ctx.arc(junctionX, opampInvertingY, 4, 0, 2 * Math.PI); // Inverting input junction
+ctx.fill();
+ctx.beginPath();
+ctx.arc(junctionX, groundY, 4, 0, 2 * Math.PI); // R1 to ground
+ctx.fill();
+ctx.beginPath();
+ctx.arc(outputTakeoffX, opampCenterY, 4, 0, 2 * Math.PI); // Feedback takeoff
+ctx.fill();
+ctx.beginPath();
+ctx.arc(groundSymbolX, groundY, 4, 0, 2 * Math.PI); // Ground symbol connection
+ctx.fill();
+
+// 10. Figure Caption
+drawText('Fig. 7.1', canvas.width / 2, 480);
+
+</script>
+</body>
+</html>

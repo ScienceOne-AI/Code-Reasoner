@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lissajous Figure</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="lissajousCanvas" width="500" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('lissajousCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const centerX = 250;
+        const centerY = 220;
+        const width = 350;
+        const height = 350;
+        const scale = width / 20; // The screen is 20cm x 20cm, so amplitude is 10cm.
+
+        // --- Helper function to map physics coordinates to canvas coordinates ---
+        function mapCoords(x_phys, y_phys) {
+            // y-axis is inverted in canvas
+            const x_canvas = centerX + x_phys * scale;
+            const y_canvas = centerY - y_phys * scale;
+            return { x: x_canvas, y: y_canvas };
+        }
+
+        // --- Helper function to draw an arrow ---
+        function drawArrow(x, y, angle, size = 10) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2.5);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2.5);
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // 1. Draw the frame and axes
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+
+        const left = centerX - width / 2;
+        const top = centerY - height / 2;
+        const right = centerX + width / 2;
+        const bottom = centerY + height / 2;
+
+        // Outer square
+        ctx.strokeRect(left, top, width, height);
+
+        // Horizontal axis
+        ctx.beginPath();
+        ctx.moveTo(left, centerY);
+        ctx.lineTo(right, centerY);
+        ctx.stroke();
+
+        // Vertical axis
+        ctx.beginPath();
+        ctx.moveTo(centerX, top);
+        ctx.lineTo(centerX, bottom);
+        ctx.stroke();
+
+        // 2. Draw the Lissajous curve (parabola: x = 10 - 0.2*y^2)
+        ctx.beginPath();
+        let isFirstPoint = true;
+        for (let y_phys = -10; y_phys <= 10; y_phys += 0.1) {
+            const x_phys = 10 - 0.2 * y_phys * y_phys;
+            const pos = mapCoords(x_phys, y_phys);
+            if (isFirstPoint) {
+                ctx.moveTo(pos.x, pos.y);
+                isFirstPoint = false;
+            } else {
+                ctx.lineTo(pos.x, pos.y);
+            }
+        }
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 3. Draw the arrows indicating direction of motion
+        // The path is from bottom-left -> right-vertex -> top-left.
+        // So, v_y is always positive. v_x is positive for y<0 and negative for y>0.
+        
+        // Arrow positions based on the problem image (approximated)
+        const arrow_y_coords = [-7, -3, 3, 7];
+
+        arrow_y_coords.forEach(y_phys => {
+            const x_phys = 10 - 0.2 * y_phys * y_phys;
+            const pos = mapCoords(x_phys, y_phys);
+            
+            // Tangent vector direction: (dx/dy, 1) since we parameterize by y.
+            // dx/dy = -0.4 * y
+            // We need the direction of increasing time, not just the tangent.
+            // Path: up-right on bottom, up-left on top.
+            let dx_dt_dir = (y_phys < 0) ? 1 : -1;
+            let dy_dt_dir = 1;
+            
+            const angle = Math.atan2(dy_dt_dir, dx_dt_dir);
+
+            // Adjust angle for canvas coordinates (dy is negative up)
+            const canvas_angle = Math.atan2(-dy_dt_dir, dx_dt_dir);
+
+            drawArrow(pos.x, pos.y, canvas_angle);
+        });
+
+
+        // 4. Draw the label
+        ctx.fillStyle = '#000';
+        ctx.font = '24px "KaiTi", "SimSun", serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 10-29 图', centerX, bottom + 50);
+
+    </script>
+</body>
+</html>

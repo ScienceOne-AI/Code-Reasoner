@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f8f9fa;
+        }
+        canvas {
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Clear canvas with a white background
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Global drawing styles
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'butt'; 
+
+    // Helper function to draw a filled arrow
+    function drawArrow(fromX, fromY, toX, toY, headLength, headWidth) {
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        
+        // Draw the line
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+
+        // Draw the arrowhead
+        ctx.save();
+        ctx.translate(toX, toY);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headLength, -headWidth / 2);
+        ctx.lineTo(-headLength, headWidth / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Main Drawing Coordinates ---
+    const cx = 300;
+    const cy = 190;
+
+    // --- 1. Draw the machine body ---
+    // Define the path for the body's outline
+    ctx.beginPath();
+    // Start from the top right of the main block
+    ctx.moveTo(cx + 100, cy - 60);
+    // Top-left corner
+    ctx.lineTo(cx - 100, cy - 60);
+    // Top inlet
+    ctx.lineTo(cx - 100, cy - 35);
+    ctx.lineTo(cx - 120, cy - 35);
+    ctx.lineTo(cx - 120, cy - 15);
+    ctx.lineTo(cx - 100, cy - 15);
+    // Space between inlets
+    ctx.lineTo(cx - 100, cy + 15);
+    // Bottom inlet
+    ctx.lineTo(cx - 120, cy + 15);
+    ctx.lineTo(cx - 120, cy + 35);
+    ctx.lineTo(cx - 100, cy + 35);
+    // Bottom-left corner
+    ctx.lineTo(cx - 100, cy + 60);
+    // Bottom-right corner
+    ctx.lineTo(cx + 100, cy + 60);
+    // Bottom of outlet nozzle
+    ctx.lineTo(cx + 100, cy + 5);
+    ctx.lineTo(cx + 140, cy + 5);
+    // Tip of outlet nozzle
+    ctx.lineTo(cx + 140, cy - 5);
+    // Top of outlet nozzle
+    ctx.lineTo(cx + 100, cy - 5);
+    ctx.closePath();
+
+    // --- 2. Add hatching ---
+    ctx.save();
+    ctx.clip(); // Clip to the body path
+    ctx.lineWidth = 2;
+    const hatchSpacing = 12;
+    const hatchLength = 400;
+    for (let i = -hatchLength; i < canvas.width + hatchLength; i += hatchSpacing) {
+        ctx.beginPath();
+        ctx.moveTo(i, -hatchLength);
+        ctx.lineTo(i + hatchLength, hatchLength);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // --- 3. Stroke the outline on top of the hatching ---
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // --- 4. Draw Inlet Arrows and Labels ---
+    const arrowStartX = cx - 180;
+    const arrowEndX = cx - 120;
+    const topInletY = cy - 25;
+    const bottomInletY = cy + 25;
+
+    // T1 Arrow and Label
+    drawArrow(arrowStartX, topInletY, arrowEndX, topInletY, 16, 16);
+    ctx.font = '22px serif';
+    ctx.fillText('T', arrowStartX - 40, topInletY + 8);
+    ctx.font = '16px serif';
+    ctx.fillText('1', arrowStartX - 28, topInletY + 14);
+
+    // T2 Arrow and Label
+    drawArrow(arrowStartX, bottomInletY, arrowEndX, bottomInletY, 16, 16);
+    ctx.font = '22px serif';
+    ctx.fillText('T', arrowStartX - 40, bottomInletY + 8);
+    ctx.font = '16px serif';
+    ctx.fillText('2', arrowStartX - 28, bottomInletY + 14);
+
+    // --- 5. Draw Outlet Arrow, Jet, and Label ---
+    const outletStartX = cx + 100;
+    const outletJetX = cx + 140;
+    const outletY = cy;
+
+    // Arrow inside the body/nozzle
+    ctx.lineWidth = 2;
+    drawArrow(outletStartX - 10, outletY, outletStartX + 20, outletY, 10, 10);
+    ctx.lineWidth = 2.5;
+
+    // Outlet jet spray
+    const jetStartX = outletJetX;
+    const jetStartY = outletY;
+    
+    // Draw lines and filled shapes to emulate the spray
+    ctx.lineWidth = 1.5;
+    const sprayData = [
+        { angle: -0.25, len: 45, type: 'line' }, { angle: 0.25, len: 45, type: 'line' },
+        { angle: -0.15, len: 42, type: 'line' }, { angle: 0.15, len: 42, type: 'line' },
+        { angle: -0.05, len: 48, type: 'line' }, { angle: 0.05, len: 48, type: 'line' },
+        { angle: 0.0, len: 40, type: 'line' },
+        { from: {angle: -0.05, len: 0}, to1: {angle: -0.1, len: 20}, to2: {angle: 0.0, len: 20}, type: 'fill'},
+        { from: {angle: 0.05, len: 0}, to1: {angle: 0.1, len: 20}, to2: {angle: 0.0, len: 20}, type: 'fill'},
+        { from: {angle: 0.1, len: 25}, to1: {angle: 0.15, len: 40}, to2: {angle: 0.12, len: 40}, type: 'fill'},
+        { from: {angle: -0.1, len: 25}, to1: {angle: -0.15, len: 40}, to2: {angle: -0.12, len: 40}, type: 'fill'},
+    ];
+
+    sprayData.forEach(item => {
+        if (item.type === 'line') {
+            const endX = jetStartX + item.len * Math.cos(item.angle);
+            const endY = jetStartY + item.len * Math.sin(item.angle);
+            ctx.beginPath();
+            ctx.moveTo(jetStartX, jetStartY);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+        } else if (item.type === 'fill') {
+            ctx.beginPath();
+            ctx.moveTo(jetStartX + item.from.len * Math.cos(item.from.angle), jetStartY + item.from.len * Math.sin(item.from.angle));
+            ctx.lineTo(jetStartX + item.to1.len * Math.cos(item.to1.angle), jetStartY + item.to1.len * Math.sin(item.to1.angle));
+            ctx.lineTo(jetStartX + item.to2.len * Math.cos(item.to2.angle), jetStartY + item.to2.len * Math.sin(item.to2.angle));
+            ctx.closePath();
+            ctx.fill();
+        }
+    });
+
+    // Outlet Label 'T'
+    ctx.font = '22px serif';
+    ctx.fillText('T', jetStartX + 60, jetStartY + 8);
+
+    // --- 6. Draw Caption ---
+    ctx.font = '20px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 1.13.', cx, cy + 140);
+</script>
+</body>
+</html>

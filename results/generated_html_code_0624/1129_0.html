@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram 6.5.1</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="550" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow from a point to another
+    function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 8) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Helper function to draw a double-headed arrow line
+    function drawDoubleArrow(ctx, x1, y1, x2, y2, headLength = 8) {
+        ctx.save();
+        ctx.beginPath();
+        // Line
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+
+        // Head at p2 (end point)
+        let angle2 = Math.atan2(y2 - y1, x2 - x1);
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headLength * Math.cos(angle2 - Math.PI / 6), y2 - headLength * Math.sin(angle2 - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headLength * Math.cos(angle2 + Math.PI / 6), y2 - headLength * Math.sin(angle2 + Math.PI / 6));
+
+        // Head at p1 (start point)
+        let angle1 = Math.atan2(y1 - y2, x1 - x2);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 - headLength * Math.cos(angle1 - Math.PI / 6), y1 - headLength * Math.sin(angle1 - Math.PI / 6));
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 - headLength * Math.cos(angle1 + Math.PI / 6), y1 - headLength * Math.sin(angle1 + Math.PI / 6));
+        
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Parameters ---
+    const cx = 260;
+    const cy = 220;
+    const l = 340; // Pixel length for the rod
+    const phi_deg = 18;
+    const phi_rad = phi_deg * Math.PI / 180;
+    const rod_half_thickness = 2;
+
+    // --- Global Styles ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- 1. Draw Dashed Horizontal Rectangle (Initial Position) ---
+    ctx.save();
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(cx - l/2 - 20, cy - 10, l + 40, 20);
+    ctx.restore();
+
+    // --- 2. Draw Tilted Solid Rod ---
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(phi_rad);
+    ctx.beginPath();
+    ctx.moveTo(-l / 2, -rod_half_thickness);
+    ctx.lineTo(l / 2, -rod_half_thickness);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-l / 2, rod_half_thickness);
+    ctx.lineTo(l / 2, rod_half_thickness);
+    ctx.stroke();
+    ctx.restore();
+    
+    // Label 'm' on the rod
+    const m_rod_x = cx + (-l/2 - 25) * Math.cos(phi_rad);
+    const m_rod_y = cy + (-l/2 - 25) * Math.sin(phi_rad);
+    ctx.fillText('m', m_rod_x, m_rod_y);
+
+    // --- 3. Draw Pivot O ---
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('O', cx + 12, cy - 17);
+
+    // --- 4. Draw Falling Beetle and Path ---
+    const beetle_fall_x = cx + l / 4;
+    const beetle_start_y = cy - 120;
+    
+    // Dashed path
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(beetle_fall_x, beetle_start_y);
+    ctx.lineTo(beetle_fall_x, cy + 10);
+    ctx.stroke();
+    ctx.restore();
+    
+    // Beetle (mass m)
+    ctx.beginPath();
+    ctx.arc(beetle_fall_x, beetle_start_y, 4.5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('m', beetle_fall_x - 20, beetle_start_y);
+    
+    // Velocity vector v0
+    const arrow_start_y = beetle_start_y + 10;
+    const arrow_end_y = beetle_start_y + 70;
+    drawArrow(ctx, beetle_fall_x, arrow_start_y, beetle_fall_x, arrow_end_y, 10);
+    ctx.fillText('v', beetle_fall_x + 20, (arrow_start_y + arrow_end_y) / 2);
+    ctx.font = 'italic 15px Times New Roman';
+    ctx.fillText('0', beetle_fall_x + 28, (arrow_start_y + arrow_end_y) / 2 + 5);
+    ctx.font = 'italic 20px Times New Roman'; // Reset font
+
+    // --- 5. Draw Beetle on the Rod ---
+    const r_dist = l * 0.4;
+    const beetle_on_rod_x = cx + r_dist * Math.cos(phi_rad);
+    const beetle_on_rod_y = cy + r_dist * Math.sin(phi_rad);
+    ctx.beginPath();
+    ctx.arc(beetle_on_rod_x, beetle_on_rod_y, 4.5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // --- 6. Add Labels and Dimensions ---
+    
+    // Angle phi
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 60, 0, phi_rad);
+    ctx.stroke();
+    const phi_label_x = cx + 75 * Math.cos(phi_rad / 2);
+    const phi_label_y = cy + 75 * Math.sin(phi_rad / 2);
+    ctx.fillText('φ', phi_label_x, phi_label_y);
+    ctx.restore();
+
+    // Dimension r
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(phi_rad);
+    // Draw thick line for r on top of the rod
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(r_dist, 0);
+    ctx.stroke();
+    // Ticks
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, -8);
+    ctx.lineTo(0, 8);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(r_dist, -8);
+    ctx.lineTo(r_dist, 8);
+    ctx.stroke();
+    // Label r
+    ctx.textAlign = 'center';
+    ctx.fillText('r', r_dist / 2, 25);
+    ctx.restore();
+
+    // Dimension l/4
+    const dim_y_l4 = cy + 80;
+    const start_x_l4 = cx;
+    const end_x_l4 = cx + l / 4;
+    // Vertical lines from rod level
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(start_x_l4, cy);
+    ctx.lineTo(start_x_l4, dim_y_l4);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(end_x_l4, cy);
+    ctx.lineTo(end_x_l4, dim_y_l4);
+    ctx.stroke();
+    ctx.restore();
+    // Double arrow line
+    drawDoubleArrow(ctx, start_x_l4, dim_y_l4, end_x_l4, dim_y_l4, 8);
+    // Fractional Label l/4
+    const label_x_l4 = (start_x_l4 + end_x_l4) / 2;
+    const label_y_l4 = dim_y_l4;
+    ctx.clearRect(label_x_l4 - 15, label_y_l4 - 15, 30, 30); // Clear space for label
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('l', label_x_l4, label_y_l4 - 2);
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(label_x_l4 - 8, label_y_l4);
+    ctx.lineTo(label_x_l4 + 8, label_y_l4);
+    ctx.stroke();
+    ctx.restore();
+    ctx.textBaseline = 'top';
+    ctx.font = '20px Times New Roman';
+    ctx.fillText('4', label_x_l4, label_y_l4 + 2);
+    ctx.font = 'italic 20px Times New Roman'; // Reset font
+    ctx.textBaseline = 'middle';
+
+    // --- 7. Caption ---
+    ctx.font = '20px "SimSun", "STSong"';
+    ctx.fillText('力图 6.5.1', canvas.width / 2, canvas.height - 30);
+</script>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Redrawing</title>
+    <style>
+        canvas {
+            border: 1px solid #d3d3d3;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="600" height="480"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Utility function to draw an arrow
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // Set styles
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = 'bold 18px Times New Roman';
+
+    // Main drawing parameters
+    const angle = 30 * Math.PI / 180;
+    const cosA = Math.cos(angle);
+    const sinA = Math.sin(angle);
+
+    // 1. Draw the inclined plane (Hill H) and its support
+    const p1 = { x: 70, y: 380 };
+    const p2 = { x: 420, y: p1.y - (420 - p1.x) * Math.tan(angle) };
+    const p3 = { x: p2.x, y: p1.y };
+
+    // Draw the main triangle
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.lineTo(p3.x, p3.y);
+    ctx.stroke();
+
+    // Draw the horizontal dashed line for the angle
+    ctx.beginPath();
+    ctx.setLineDash([5, 3]);
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p1.x + 80, p1.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Draw the angle arc and label
+    ctx.beginPath();
+    ctx.arc(p1.x, p1.y, 40, -angle, 0);
+    ctx.stroke();
+    ctx.fillText('30°', p1.x + 45, p1.y - 10);
+
+    // Draw hatching for the incline
+    const inclineLength = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    const hatchLength = 10;
+    for (let i = 0; i < inclineLength; i += 15) {
+        const startX = p1.x + i * cosA;
+        const startY = p1.y - i * sinA;
+        const endX = startX - hatchLength * sinA;
+        const endY = startY - hatchLength * cosA;
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+    }
+    
+    // Draw the vertical support structure
+    ctx.beginPath();
+    ctx.moveTo(p2.x, p2.y);
+    ctx.lineTo(p2.x, p2.y + 200);
+    ctx.stroke();
+
+    // Hatching for the vertical support
+    for(let y = p2.y; y < p2.y + 200; y += 15) {
+        ctx.beginPath();
+        ctx.moveTo(p2.x, y);
+        ctx.lineTo(p2.x + 10, y + 10);
+        ctx.stroke();
+    }
+    
+    // Label for Hill H
+    ctx.fillText('H', 280, 290);
+
+
+    // 2. Draw the cylinder C
+    const cylRadius = 35;
+    const contactPointX = 180;
+    const contactPointY = p1.y - (contactPointX - p1.x) * Math.tan(angle);
+    const P = { x: contactPointX, y: contactPointY };
+    const C = { x: P.x - cylRadius * sinA, y: P.y - cylRadius * cosA };
+
+    ctx.beginPath();
+    ctx.arc(C.x, C.y, cylRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+    
+    // Center dot and label for C
+    ctx.beginPath();
+    ctx.arc(C.x, C.y, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('C', C.x - 20, C.y + 5);
+    
+    // Contact point label P
+    ctx.fillText('P', P.x, P.y + 20);
+
+    // 3. Draw the Pulley system
+    const pulleyRadius = 30;
+    const pulleyCenter = { x: p2.x, y: p2.y - 50 };
+    
+    // Pulley bracket
+    ctx.beginPath();
+    ctx.moveTo(p2.x - 15, p2.y - 5);
+    ctx.lineTo(pulleyCenter.x, pulleyCenter.y);
+    ctx.lineTo(p2.x, p2.y - 20);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.arc(pulleyCenter.x, pulleyCenter.y, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(p2.x - 15, p2.y - 5, 4, 0, 2*Math.PI);
+    ctx.stroke();
+     ctx.beginPath();
+    ctx.arc(p2.x, p2.y - 20, 4, 0, 2*Math.PI);
+    ctx.stroke();
+
+
+    // Pulley wheel
+    ctx.beginPath();
+    ctx.arc(pulleyCenter.x, pulleyCenter.y, pulleyRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+
+
+    // 4. Draw the hanging mass
+    const mass = { x: 480, y: 250, w: 50, h: 50 };
+    ctx.strokeRect(mass.x, mass.y, mass.w, mass.h);
+    
+    // Center dot for mass
+    ctx.beginPath();
+    ctx.arc(mass.x + mass.w / 2, mass.y + mass.h / 2, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Mass label
+    ctx.fillText('2.0 kg', mass.x + mass.w + 5, mass.y + mass.h / 2 + 5);
+
+    // 5. Draw the string
+    // Point on cylinder where string is attached (tangent)
+    const stringAttachCyl = { x: C.x + cylRadius * sinA, y: C.y - cylRadius * cosA };
+    // Point on pulley where string arrives (tangent)
+    const stringArrivePulley = { x: pulleyCenter.x - pulleyRadius * cosA, y: pulleyCenter.y - pulleyRadius * sinA };
+    
+    ctx.beginPath();
+    ctx.moveTo(stringAttachCyl.x, stringAttachCyl.y);
+    ctx.lineTo(stringArrivePulley.x, stringArrivePulley.y);
+    ctx.arc(pulleyCenter.x, pulleyCenter.y, pulleyRadius, Math.PI + angle, 1.5 * Math.PI);
+    const stringLeavePulley = { x: pulleyCenter.x, y: pulleyCenter.y + pulleyRadius};
+    ctx.lineTo(mass.x + mass.w / 2, mass.y);
+    ctx.stroke();
+
+    // 6. Draw Forces and Motion indicators
+    // Weight of cylinder
+    drawArrow(ctx, C.x, C.y, C.x, C.y + 60);
+    ctx.fillText('mg', C.x + 5, C.y + 55);
+    
+    // Tension F on cylinder
+    const F_cyl_start = {x: stringAttachCyl.x + 40*cosA, y: stringAttachCyl.y - 40*sinA};
+    drawArrow(ctx, F_cyl_start.x, F_cyl_start.y, stringAttachCyl.x, stringAttachCyl.y);
+    ctx.fillText('F', F_cyl_start.x, F_cyl_start.y - 5);
+    
+    // Friction f
+    const f_start = { x: P.x, y: P.y };
+    const f_end = { x: P.x + 40 * cosA, y: P.y - 40 * sinA };
+    drawArrow(ctx, f_start.x, f_start.y, f_end.x, f_end.y);
+    ctx.fillText('f', f_end.x + 5, f_end.y);
+
+    // Rotation arrow theta_dot
+    ctx.beginPath();
+    ctx.arc(C.x, C.y, cylRadius + 10, Math.PI / 2, 0, true);
+    ctx.stroke();
+    drawArrow(ctx, C.x + cylRadius + 10, C.y, C.x + cylRadius + 10, C.y + 1, 8); // Arrowhead
+    ctx.fillText('θ̇', C.x + cylRadius + 15, C.y - 15);
+    
+    // Forces on hanging mass
+    const massCenter = { x: mass.x + mass.w / 2, y: mass.y + mass.h / 2 };
+    // Weight mg
+    drawArrow(ctx, massCenter.x, massCenter.y, massCenter.x, massCenter.y + 60);
+    ctx.fillText('mg', massCenter.x + 5, massCenter.y + 60);
+    // Tension F
+    drawArrow(ctx, massCenter.x, massCenter.y, massCenter.x, massCenter.y - 60);
+    ctx.fillText('F', massCenter.x + 5, massCenter.y - 55);
+
+    // 7. Draw Coordinate System
+    const origin = {x: 100, y: 320};
+    // x-axis
+    drawArrow(ctx, origin.x, origin.y, origin.x + 60 * cosA, origin.y - 60 * sinA);
+    ctx.fillText('x', origin.x + 65 * cosA, origin.y - 65 * sinA);
+    // y-axis
+    drawArrow(ctx, origin.x, origin.y, origin.x - 60 * sinA, origin.y - 60 * cosA);
+    ctx.fillText('y', origin.x - 70 * sinA, origin.y - 70 * cosA);
+
+    // 8. Figure Caption
+    ctx.font = '16px Times New Roman';
+    ctx.fillText('Fig. 1.121.', 260, 450);
+
+</script>
+
+</body>
+</html>

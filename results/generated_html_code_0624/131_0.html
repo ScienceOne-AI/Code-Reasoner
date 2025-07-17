@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Three-Slit Interference</title>
+</head>
+<body>
+<canvas id="myCanvas" width="600" height="500" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Hatching Function ---
+    // Draws a rectangle filled with diagonal hatching (top-right to bottom-left)
+    function drawHatchedRect(x, y, w, h) {
+        // Draw the rectangle outline
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, w, h);
+        
+        ctx.save();
+        // Create a clipping region for the hatching
+        ctx.beginPath();
+        ctx.rect(x, y, w, h);
+        ctx.clip();
+        
+        ctx.lineWidth = 1.5;
+        const spacing = 8;
+        // The family of hatching lines is y = -x + c
+        // We loop through values of c that cross the rectangle
+        for (let c = x + y; c <= x + w + y + h; c += spacing) {
+            // Find the two intersection points of the line with the rectangle's boundary
+            let points = [];
+            // Top edge y = y
+            let x_on_top = c - y;
+            if (x_on_top >= x && x_on_top <= x + w) points.push({ x: x_on_top, y: y });
+            // Bottom edge y = y + h
+            let x_on_bottom = c - (y + h);
+            if (x_on_bottom >= x && x_on_bottom <= x + w) points.push({ x: x_on_bottom, y: y + h });
+            // Left edge x = x
+            let y_on_left = c - x;
+            if (y_on_left >= y && y_on_left <= y + h) points.push({ x: x, y: y_on_left });
+            // Right edge x = x + w
+            let y_on_right = c - (x + w);
+            if (y_on_right >= y && y_on_right <= y + h) points.push({ x: x + w, y: y_on_right });
+            
+            // Draw the line segment if we found two valid points
+            if (points.length >= 2) {
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                ctx.lineTo(points[1].x, points[1].y);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+    
+    // --- Main Drawing ---
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // Parameters
+    const x_barrier = 180;
+    const barrier_thickness = 20;
+    const slit_opening = 12;
+
+    // y-positions of the center of the slits
+    const y_top = 140;
+    const y_middle = 200;
+    const y_bottom = 290; // d = 60, (3/2)d = 90
+    
+    // Draw Slit Barrier parts
+    // Top part
+    drawHatchedRect(x_barrier, 80, barrier_thickness, y_top - slit_opening/2 - 80);
+    // Section between top and middle slits
+    drawHatchedRect(x_barrier, y_top + slit_opening/2, barrier_thickness, y_middle - slit_opening/2 - (y_top + slit_opening/2));
+    // Section between middle and bottom slits
+    drawHatchedRect(x_barrier, y_middle + slit_opening/2, barrier_thickness, y_bottom - slit_opening/2 - (y_middle + slit_opening/2));
+    // Bottom part
+    drawHatchedRect(x_barrier, y_bottom + slit_opening/2, barrier_thickness, 360 - (y_bottom + slit_opening/2));
+
+    // Draw Rays and Angle
+    const ray_start_x = x_barrier + barrier_thickness;
+    const ray_start_y = y_middle;
+    const ray_length = 280;
+    const theta = Math.PI / 15; // Angle in radians (~12 degrees)
+
+    // Horizontal ray (central axis)
+    ctx.beginPath();
+    ctx.moveTo(ray_start_x, ray_start_y);
+    ctx.lineTo(ray_start_x + ray_length, ray_start_y);
+    ctx.stroke();
+
+    // Angled ray
+    const end_x = ray_start_x + ray_length * Math.cos(theta);
+    const end_y = ray_start_y - ray_length * Math.sin(theta); // y is inverted in canvas, so subtract for upward angle
+    ctx.beginPath();
+    ctx.moveTo(ray_start_x, ray_start_y);
+    ctx.lineTo(end_x, end_y);
+    ctx.stroke();
+
+    // Angle arc
+    const arc_radius = 50;
+    ctx.beginPath();
+    ctx.arc(ray_start_x, ray_start_y, arc_radius, 0, -theta, true);
+    ctx.stroke();
+
+    // Draw Labels
+    
+    // Angle label 'θ'
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('θ', ray_start_x + arc_radius + 5, ray_start_y - 20);
+
+    // Dimension lines and labels 'd' and '(3/2)d'
+    const label_line_x = 120;
+    const tick_size = 5;
+
+    ctx.beginPath();
+    // Vertical line spanning both dimensions
+    ctx.moveTo(label_line_x, y_top);
+    ctx.lineTo(label_line_x, y_bottom);
+    // Top tick
+    ctx.moveTo(label_line_x - tick_size, y_top);
+    ctx.lineTo(label_line_x + tick_size, y_top);
+    // Middle tick (cross shape)
+    ctx.moveTo(label_line_x - tick_size, y_middle);
+    ctx.lineTo(label_line_x + tick_size, y_middle);
+    // Bottom tick
+    ctx.moveTo(label_line_x - tick_size, y_bottom);
+    ctx.lineTo(label_line_x + tick_size, y_bottom);
+    ctx.stroke();
+
+    // Text labels for dimensions
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.textAlign = 'right';
+    ctx.fillText('d', label_line_x - 15, (y_top + y_middle)/2 + 8);
+    ctx.fillText('(3/2)d', label_line_x - 15, (y_middle + y_bottom)/2 + 8);
+    ctx.textAlign = 'start'; // Reset alignment
+
+    // Figure Caption
+    ctx.font = 'bold 20px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 2.3', canvas.width / 2, 450);
+
+</script>
+</body>
+</html>

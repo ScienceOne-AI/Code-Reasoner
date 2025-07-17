@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gravitational Potential Graph</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsGraph" width="700" height="850"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsGraph');
+        const ctx = canvas.getContext('2d');
+
+        // --- 1. Define constants and coordinate system ---
+        const margin = { top: 60, right: 50, bottom: 80, left: 80 };
+        const graphWidth = canvas.width - margin.left - margin.right;
+        const graphHeight = canvas.height - margin.top - margin.bottom;
+
+        // Data ranges
+        const xMinData = 0;
+        const xMaxData = 3.0;
+        const yMinData = -4.0;
+        const yMaxData = 0;
+
+        // Canvas coordinate ranges for mapping (add padding)
+        const xMinCanvas = 0;
+        const xMaxCanvas = 3.2;
+        const yMinCanvas = -4.1;
+        const yMaxCanvas = 0.2;
+
+        // --- 2. Helper functions for coordinate mapping ---
+        function scaleX(x) {
+            return margin.left + ((x - xMinCanvas) / (xMaxCanvas - xMinCanvas)) * graphWidth;
+        }
+
+        function scaleY(y) {
+            // y-axis is inverted in canvas
+            return margin.top + ((yMaxCanvas - y) / (yMaxCanvas - yMinCanvas)) * graphHeight;
+        }
+
+        // --- 3. Drawing functions ---
+
+        function drawGrid() {
+            ctx.strokeStyle = '#e0e0e0'; // Light grey for minor grid
+            ctx.lineWidth = 1;
+
+            // Minor vertical lines (every 0.1)
+            for (let x = xMinData; x <= xMaxData + 0.01; x += 0.1) {
+                ctx.beginPath();
+                ctx.moveTo(scaleX(x), scaleY(yMinData));
+                ctx.lineTo(scaleX(x), scaleY(yMaxData));
+                ctx.stroke();
+            }
+
+            // Minor horizontal lines (every 0.05)
+            for (let y = yMinData; y <= yMaxData + 0.001; y += 0.05) {
+                ctx.beginPath();
+                ctx.moveTo(scaleX(xMinData), scaleY(y));
+                ctx.lineTo(scaleX(xMaxData), scaleY(y));
+                ctx.stroke();
+            }
+            
+            // Major grid lines (overlay on minor ones)
+            ctx.strokeStyle = '#b0b0b0'; // Darker grey for major grid
+            
+            // Major vertical lines
+            for (let x = xMinData; x <= xMaxData; x += 1.0) {
+                 ctx.beginPath();
+                ctx.moveTo(scaleX(x), scaleY(yMinData));
+                ctx.lineTo(scaleX(x), scaleY(yMaxData));
+                ctx.stroke();
+            }
+
+            // Major horizontal lines
+            for (let y = yMinData; y <= yMaxData; y += 0.5) {
+                ctx.beginPath();
+                ctx.moveTo(scaleX(xMinData), scaleY(y));
+                ctx.lineTo(scaleX(xMaxData), scaleY(y));
+                ctx.stroke();
+            }
+        }
+
+        function drawAxes() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1.5;
+
+            // Y-axis (x=0)
+            ctx.beginPath();
+            ctx.moveTo(scaleX(0), scaleY(yMinData));
+            ctx.lineTo(scaleX(0), scaleY(yMaxCanvas - 0.1));
+            ctx.stroke();
+
+            // X-axis (y=0)
+            ctx.beginPath();
+            ctx.moveTo(scaleX(xMinCanvas), scaleY(0));
+            ctx.lineTo(scaleX(xMaxCanvas - 0.1), scaleY(0));
+            ctx.stroke();
+        }
+
+        function drawLabels() {
+            ctx.fillStyle = 'black';
+            ctx.font = '16px sans-serif';
+
+            // Y-axis labels
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let y = yMinData; y <= yMaxData; y += 0.5) {
+                if (Math.abs(y) > 1e-9) { // Don't draw 0 here
+                    ctx.fillText(y.toFixed(1), scaleX(0) - 8, scaleY(y));
+                }
+            }
+
+            // X-axis labels and origin '0'
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('0', scaleX(0), scaleY(0) + 8);
+            for (let x = 1; x <= 3; x++) {
+                ctx.fillText(x.toString(), scaleX(x), scaleY(0) + 8);
+            }
+
+            // Axis titles
+            // X-axis title: x /10^7 m
+            const xTitleY = margin.top - 25;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.font = 'italic 18px Times New Roman';
+            ctx.fillText('x', scaleX(2.25), xTitleY);
+            ctx.font = '18px Times New Roman';
+            ctx.fillText(' /10\u2077 m', scaleX(2.6), xTitleY);
+
+            // Y-axis title: φ /10^7 J kg^-1
+            const yTitleY = scaleY(-3.25);
+            const yTitleX_end = scaleX(0) - 20;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.font = '18px Times New Roman';
+            const part2 = ' /10\u2077 J kg\u207B\u00B9';
+            ctx.fillText(part2, yTitleX_end, yTitleY);
+            const part2Width = ctx.measureText(part2).width;
+            ctx.font = 'italic 18px Times New Roman';
+            ctx.fillText('φ', yTitleX_end - part2Width, yTitleY);
+
+            // Figure caption
+            ctx.font = '16px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('Fig. 1.1', canvas.width / 2, canvas.height - 15);
+        }
+
+        function drawCurve() {
+            ctx.beginPath();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+
+            // The function is φ/10^7 = -1.7 / (x/10^7), let Y = φ/10^7 and X = x/10^7
+            // So, Y = -1.7 / X
+            const constant = -1.7;
+            const startX = 0.48; // Radius of planet in units of 10^7 m
+            const endX = 3.1;
+            const step = 0.005;
+
+            let firstPoint = true;
+            for (let x = startX; x <= endX; x += step) {
+                const y = constant / x;
+                if (y < yMinData) continue; 
+                
+                if (firstPoint) {
+                    ctx.moveTo(scaleX(x), scaleY(y));
+                    firstPoint = false;
+                } else {
+                    ctx.lineTo(scaleX(x), scaleY(y));
+                }
+            }
+            ctx.stroke();
+        }
+
+        // --- 4. Main drawing execution ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+        drawAxes();
+        drawLabels();
+        drawCurve();
+
+    </script>
+</body>
+</html>

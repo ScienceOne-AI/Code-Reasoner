@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram and Graph</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="850"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Helper function for superscript text ---
+function drawSuperscript(ctx, text, sup, x, y, baseFont, supFont) {
+    const originalFont = ctx.font;
+    const originalBaseline = ctx.textBaseline;
+    const originalAlign = ctx.textAlign;
+
+    ctx.font = baseFont;
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+
+    ctx.fillText(text, x, y);
+    const textWidth = ctx.measureText(text).width;
+
+    ctx.font = supFont;
+    ctx.fillText(sup, x + textWidth, y - (parseInt(baseFont, 10) * 0.3));
+
+    // Reset to original settings
+    ctx.font = originalFont;
+    ctx.textBaseline = originalBaseline;
+    ctx.textAlign = originalAlign;
+}
+
+
+// --- Draw Fig 2.1: Experimental Setup ---
+function drawSetup() {
+    ctx.save();
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = '18px Arial';
+
+    // Labels
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('clamp', 70, 80);
+    ctx.beginPath();
+    ctx.moveTo(120, 85);
+    ctx.lineTo(150, 110);
+    ctx.stroke();
+
+    ctx.fillText('metal strip', 250, 200);
+
+    ctx.fillText('load', 500, 170);
+    ctx.fillText('mass M', 500, 190);
+    ctx.beginPath();
+    ctx.moveTo(495, 180);
+    ctx.lineTo(470, 165);
+    ctx.stroke();
+
+    ctx.fillText('s', 480, 145);
+
+    // Fig Label
+    ctx.font = 'bold 18px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 2.1', 300, 270);
+
+    // Components
+    ctx.font = '18px Arial'; // Reset font
+    ctx.fillStyle = '#E0E0E0'; // lightgray
+    ctx.fillRect(150, 100, 50, 60);
+    ctx.strokeRect(150, 100, 50, 60);
+
+    // Metal strip - initial position (dashed)
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(200, 130);
+    ctx.lineTo(450, 130);
+    ctx.stroke();
+    ctx.restore();
+
+    // Metal strip - bent (draw as two parallel curves for thickness)
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(200, 132);
+    ctx.quadraticCurveTo(325, 175, 450, 160);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(200, 128);
+    ctx.quadraticCurveTo(325, 171, 450, 156);
+    ctx.stroke();
+
+    // Load mass M
+    ctx.fillStyle = '#E0E0E0';
+    ctx.fillRect(440, 150, 30, 30);
+    ctx.strokeRect(440, 150, 30, 30);
+
+    // Displacement 's' indicator
+    ctx.save();
+    ctx.setLineDash([3, 3]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(465, 130);
+    ctx.lineTo(465, 160);
+    ctx.stroke();
+    ctx.restore();
+
+    // T-ends for displacement line
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(460, 130);
+    ctx.lineTo(470, 130);
+    ctx.moveTo(460, 160);
+    ctx.lineTo(470, 160);
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+// --- Draw Fig 2.2: Graph ---
+function drawGraph() {
+    ctx.save();
+    ctx.font = '16px Arial';
+
+    // Graph parameters
+    const x_box = 80;
+    const y_box = 380;
+    const w_box = 440;
+    const h_box = 320;
+
+    const a_min = -1.0;
+    const a_max = 1.0;
+    const a_range = a_max - a_min;
+
+    const s_min = 0.0;
+    const s_max = 4.0;
+    const s_range = s_max - s_min;
+
+    const xScale = w_box / a_range;
+    const yScale = h_box / s_range;
+
+    // Coordinate conversion functions
+    const canvasX = (a) => x_box + (a - a_min) * xScale;
+    const canvasY = (s) => y_box + h_box - (s - s_min) * yScale;
+
+    // Draw Grid
+    ctx.strokeStyle = '#BDBDBD'; // gray for grid
+    ctx.lineWidth = 0.5;
+
+    // Minor horizontal grid lines (every 0.1 s)
+    for (let i = 0; i <= 40; i++) {
+        const s = s_min + i * 0.1;
+        ctx.beginPath();
+        ctx.moveTo(canvasX(a_min), canvasY(s));
+        ctx.lineTo(canvasX(a_max), canvasY(s));
+        ctx.stroke();
+    }
+
+    // Minor vertical grid lines (every 0.1 a)
+    for (let i = 0; i <= 20; i++) {
+        const a = a_min + i * 0.1;
+        ctx.beginPath();
+        ctx.moveTo(canvasX(a), canvasY(s_min));
+        ctx.lineTo(canvasX(a), canvasY(s_max));
+        ctx.stroke();
+    }
+
+    // Draw Major Grid Lines
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+
+    // Major horizontal grid lines (every 1.0 s)
+    for (let i = 0; i <= 4; i++) {
+        const s = s_min + i * 1.0;
+        ctx.beginPath();
+        ctx.moveTo(canvasX(a_min), canvasY(s));
+        ctx.lineTo(canvasX(a_max), canvasY(s));
+        ctx.stroke();
+    }
+
+    // Major vertical grid lines (every 0.2 a)
+    for (let i = 0; i <= 10; i++) {
+        const a = a_min + i * 0.2;
+        ctx.beginPath();
+        ctx.moveTo(canvasX(a), canvasY(s_min));
+        ctx.lineTo(canvasX(a), canvasY(s_max));
+        ctx.stroke();
+    }
+
+    // Draw Labels and Ticks
+    ctx.fillStyle = 'black';
+    ctx.font = '16px Arial';
+
+    // X-axis labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let i = 0; i <= 10; i++) {
+        const a = a_min + i * 0.2;
+        // Avoid drawing 0.0 on top of the y-axis label
+        if (Math.abs(a) > 0.01) {
+             ctx.fillText(a.toFixed(1), canvasX(a), canvasY(0) + 5);
+        }
+    }
+    // Origin Label
+    ctx.fillText('0', canvasX(0), canvasY(0) + 5);
+
+
+    // Y-axis labels
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let i = 1; i <= 4; i++) {
+        const s = s_min + i * 1.0;
+        ctx.fillText(s.toFixed(1), canvasX(0) - 8, canvasY(s));
+    }
+
+    // Axis Titles
+    ctx.textAlign = 'center';
+    ctx.fillText('s / cm', canvasX(0) + 30, canvasY(3.5));
+    
+    const ax = canvasX(0.5);
+    const ay = canvasY(0) + 40;
+    drawSuperscript(ctx, 'a / ms', '-2', ax - ctx.measureText('a / ms').width/2, ay, '16px Arial', '12px Arial');
+
+
+    // Draw the Plotted Line
+    // Equation of the line from image analysis: s = -2.0*a + 2.0
+    // The line extends from approx a = -0.9 to a = 0.9 in the figure.
+    const a1 = -0.9;
+    const s1 = -2.0 * a1 + 2.0;
+    const a2 = 0.9;
+    const s2 = -2.0 * a2 + 2.0;
+
+    ctx.lineWidth = 2.0;
+    ctx.strokeStyle = 'black';
+    ctx.beginPath();
+    ctx.moveTo(canvasX(a1), canvasY(s1));
+    ctx.lineTo(canvasX(a2), canvasY(s2));
+    ctx.stroke();
+
+    // Fig Label
+    ctx.font = 'bold 18px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('Fig. 2.2', 300, 810);
+
+    ctx.restore();
+}
+
+// Main Drawing Call
+drawSetup();
+drawGraph();
+</script>
+</body>
+</html>

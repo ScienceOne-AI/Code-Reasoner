@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="thermoCanvas" width="520" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('thermoCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Drawing Parameters ---
+        const groundY = 350;
+        const leftWallX = 50;
+        const rightWallX = 470;
+        const leftInnerWallX = 200;
+        const rightInnerWallX = 320;
+        const topY = 80;
+        const pistonY = 120;
+        const pistonH = 20;
+        const connY1 = 160;
+        const connY2 = 210;
+        const blockY1 = 250;
+        const blockX1 = 220;
+        const blockX2 = 300;
+
+        // --- Style Setup ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // --- Draw Ground ---
+        ctx.beginPath();
+        ctx.moveTo(0, groundY);
+        ctx.lineTo(canvas.width, groundY);
+        ctx.stroke();
+
+        // Draw Ground Hatching
+        ctx.save();
+        ctx.lineWidth = 1;
+        for (let x = 5; x < canvas.width + 15; x += 15) {
+            ctx.beginPath();
+            ctx.moveTo(x, groundY);
+            ctx.lineTo(x - 15, groundY + 15);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // --- Draw Container Structure ---
+        // Left Container Walls
+        ctx.beginPath();
+        ctx.moveTo(leftWallX, groundY);
+        ctx.lineTo(leftWallX, topY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(leftInnerWallX, groundY);
+        ctx.lineTo(leftInnerWallX, connY2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(leftInnerWallX, connY1);
+        ctx.lineTo(leftInnerWallX, topY);
+        ctx.stroke();
+
+        // Right Container Walls
+        ctx.beginPath();
+        ctx.moveTo(rightWallX, groundY);
+        ctx.lineTo(rightWallX, topY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(rightInnerWallX, groundY);
+        ctx.lineTo(rightInnerWallX, connY2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(rightInnerWallX, connY1);
+        ctx.lineTo(rightInnerWallX, topY);
+        ctx.stroke();
+
+        // Connecting Tube
+        ctx.beginPath();
+        ctx.moveTo(leftInnerWallX, connY1);
+        ctx.lineTo(rightInnerWallX, connY1);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(leftInnerWallX, connY2);
+        ctx.lineTo(rightInnerWallX, connY2);
+        ctx.stroke();
+
+        // Bottom Block
+        ctx.beginPath();
+        ctx.rect(blockX1, blockY1, blockX2 - blockX1, groundY - blockY1);
+        ctx.stroke();
+
+        // --- Draw Pistons ---
+        function drawPiston(x, y, w, h) {
+            ctx.fillStyle = 'white'; // Fill to cover lines behind it
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeRect(x, y, w, h);
+            // Hatching
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(x, y, w, h);
+            ctx.clip();
+            ctx.lineWidth = 1.5;
+            for (let i = -h; i < w + h; i += 10) {
+                ctx.beginPath();
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x + i - h, y + h);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+        drawPiston(leftWallX, pistonY, leftInnerWallX - leftWallX, pistonH);
+        drawPiston(rightInnerWallX, pistonY, rightWallX - rightInnerWallX, pistonH);
+
+        // --- Draw Valve 'K' ---
+        const valveX = (leftInnerWallX + rightInnerWallX) / 2;
+        const valveY = (connY1 + connY2) / 2;
+        const handleY = valveY - 25;
+
+        // Valve Gate (the plate that stops the flow)
+        ctx.beginPath();
+        ctx.moveTo(leftInnerWallX, valveY);
+        ctx.lineTo(rightInnerWallX, valveY);
+        ctx.stroke();
+
+        // Valve Stem
+        ctx.beginPath();
+        ctx.moveTo(valveX, handleY);
+        ctx.lineTo(valveX, 240); // Stem extends downwards
+        ctx.stroke();
+
+        // Valve Handle (T-bar)
+        ctx.beginPath();
+        ctx.moveTo(valveX - 15, handleY);
+        ctx.lineTo(valveX + 15, handleY);
+        ctx.stroke();
+
+        // --- Add Labels ---
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Helper function to draw text with a subscript
+        function drawSubscripted(ctx, text, sub, x, y, mainFont, subFont) {
+            ctx.font = mainFont;
+            const textMetrics = ctx.measureText(text);
+            const textWidth = textMetrics.width;
+            ctx.fillText(text, x, y);
+            ctx.font = subFont;
+            ctx.fillText(sub, x + textWidth * 0.55, y + 7);
+        }
+
+        const mainFont = 'italic 24px "Times New Roman"';
+        const subFont = 'italic 16px "Times New Roman"';
+        const labelY = 270;
+
+        // T1, V1
+        drawSubscripted(ctx, 'T', '1', 95, labelY, mainFont, subFont);
+        drawSubscripted(ctx, 'V', '1', 155, labelY, mainFont, subFont);
+
+        // T2, V2
+        drawSubscripted(ctx, 'T', '2', 365, labelY, mainFont, subFont);
+        drawSubscripted(ctx, 'V', '2', 425, labelY, mainFont, subFont);
+
+        // K label for the valve
+        ctx.font = 'bold 24px "Times New Roman"';
+        ctx.fillText('K', valveX, handleY - 20);
+
+        // "水平地面" (Horizontal Ground) label
+        ctx.font = '22px "SimSun", "Microsoft YaHei"';
+        ctx.fillText('水平地面', canvas.width / 2, groundY + 25);
+
+    </script>
+</body>
+</html>

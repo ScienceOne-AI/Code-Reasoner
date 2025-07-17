@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cylindrical Cavity Resonator</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="550" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Parameters
+        const x_c = 275;
+        const y_top = 100;
+        const w = 15; // wall thickness
+        const h = 220;
+        const a = 35;
+        const r1 = 50;
+        const r2 = 100;
+
+        // Y-coordinates
+        const y1 = y_top; // top of solid
+        const y2 = y_top + w; // bottom of top plate / top of cavity
+        const y3 = y_top + w + h; // bottom of inner rod
+        const y4 = y_top + w + h + a; // top of bottom plate
+        const y5 = y_top + w + h + a + w; // bottom of structure
+
+        // X-coordinates
+        const x_outer_left = x_c - r2 - w;
+        const x_inner_left_outer_cyl = x_c - r2;
+        const x_left_inner_rod = x_c - r1;
+        const x_right_inner_rod = x_c + r1;
+        const x_inner_right_outer_cyl = x_c + r2;
+        const x_outer_right = x_c + r2 + w;
+
+        // --- Drawing Functions ---
+
+        function drawStructure() {
+            // 1. Draw solid structure with hatching
+            ctx.save();
+            ctx.beginPath();
+            // Define the clipping region for the solid material
+            // Outer rectangle
+            ctx.rect(x_outer_left, y1, x_outer_right - x_outer_left, y5 - y1);
+            // Inner "U-fork" hole path (counter-clockwise for hole)
+            ctx.moveTo(x_inner_left_outer_cyl, y4);
+            ctx.lineTo(x_inner_right_outer_cyl, y4);
+            ctx.lineTo(x_inner_right_outer_cyl, y2);
+            ctx.lineTo(x_right_inner_rod, y2);
+            ctx.lineTo(x_right_inner_rod, y3);
+            ctx.lineTo(x_left_inner_rod, y3);
+            ctx.lineTo(x_left_inner_rod, y2);
+            ctx.lineTo(x_inner_left_outer_cyl, y2);
+            ctx.closePath();
+            ctx.clip('evenodd');
+
+            // Draw hatching lines (top-left to bottom-right)
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            const hatch_spacing = 10;
+            for (let c = x_outer_left + y1; c < x_outer_right + y5; c += hatch_spacing) {
+                ctx.moveTo(x_outer_left, c - x_outer_left);
+                ctx.lineTo(x_outer_right, c - x_outer_right);
+            }
+            ctx.stroke();
+            ctx.restore();
+
+            // 2. Draw the outline of the structure
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            // Outer boundary
+            ctx.moveTo(x_outer_left, y1);
+            ctx.lineTo(x_outer_left, y5);
+            ctx.lineTo(x_outer_right, y5);
+            ctx.lineTo(x_outer_right, y1);
+            ctx.lineTo(x_outer_left, y1);
+            // Inner "U-fork" boundary
+            ctx.moveTo(x_inner_left_outer_cyl, y4);
+            ctx.lineTo(x_inner_left_outer_cyl, y2);
+            ctx.lineTo(x_left_inner_rod, y2);
+            ctx.lineTo(x_left_inner_rod, y3);
+            ctx.lineTo(x_right_inner_rod, y3);
+            ctx.lineTo(x_right_inner_rod, y2);
+            ctx.lineTo(x_inner_right_outer_cyl, y2);
+            ctx.lineTo(x_inner_right_outer_cyl, y4);
+            ctx.stroke();
+        }
+
+        function drawAxisAndWire() {
+            ctx.lineWidth = 1.5;
+            // Top wire
+            ctx.beginPath();
+            ctx.moveTo(x_c, y1);
+            ctx.lineTo(x_c, y1 - 30);
+            ctx.stroke();
+            // Central axis
+            ctx.save();
+            ctx.setLineDash([10, 4, 3, 4]);
+            ctx.beginPath();
+            ctx.moveTo(x_c, y1);
+            ctx.lineTo(x_c, y3);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawDimensionsAndLabels() {
+            ctx.lineWidth = 1;
+            ctx.fillStyle = 'black';
+            ctx.strokeStyle = 'black';
+            ctx.font = 'italic 22px Times New Roman';
+
+            // Dimension h
+            const x_dim_v = x_outer_right + 30;
+            ctx.beginPath();
+            ctx.moveTo(x_dim_v, y2);
+            ctx.lineTo(x_dim_v, y3);
+            ctx.moveTo(x_dim_v - 5, y2);
+            ctx.lineTo(x_dim_v + 5, y2);
+            ctx.moveTo(x_dim_v - 5, y3);
+            ctx.lineTo(x_dim_v + 5, y3);
+            ctx.stroke();
+            ctx.fillText('h', x_dim_v + 10, y2 + h / 2 + 8);
+
+            // Dimension a
+            ctx.beginPath();
+            ctx.moveTo(x_dim_v, y3);
+            ctx.lineTo(x_dim_v, y4);
+            ctx.moveTo(x_dim_v - 5, y3);
+            ctx.lineTo(x_dim_v + 5, y3);
+            ctx.moveTo(x_dim_v - 5, y4);
+            ctx.lineTo(x_dim_v + 5, y4);
+            ctx.stroke();
+            ctx.fillText('a', x_dim_v + 10, y3 + a / 2 + 8);
+
+            // Dimensions r1 and r2
+            const y_dim_r_level = y5 + 35;
+            const y_dim_r_line = y_dim_r_level - 15;
+            
+            // Helper lines from bottom of structure
+            ctx.beginPath();
+            ctx.moveTo(x_c, y5); ctx.lineTo(x_c, y_dim_r_level);
+            ctx.moveTo(x_right_inner_rod, y5); ctx.lineTo(x_right_inner_rod, y_dim_r_level);
+            ctx.moveTo(x_inner_right_outer_cyl, y5); ctx.lineTo(x_inner_right_outer_cyl, y_dim_r_level);
+            ctx.stroke();
+            
+            // r1 dimension line (as in image)
+            ctx.beginPath();
+            ctx.moveTo(x_c, y_dim_r_line);
+            ctx.lineTo(x_right_inner_rod, y_dim_r_line);
+            // Arrow head pointing LEFT
+            ctx.moveTo(x_c + 8, y_dim_r_line - 4);
+            ctx.lineTo(x_c, y_dim_r_line);
+            ctx.lineTo(x_c + 8, y_dim_r_line + 4);
+            ctx.stroke();
+            ctx.fillText('r', x_c + r1 / 2 - 10, y_dim_r_line + 25);
+            ctx.font = 'italic 16px Times New Roman';
+            ctx.fillText('1', x_c + r1 / 2, y_dim_r_line + 30);
+            ctx.font = 'italic 22px Times New Roman';
+
+            // r2 label (as in image)
+            ctx.beginPath();
+            ctx.moveTo(x_inner_right_outer_cyl - 25, y_dim_r_line);
+            ctx.lineTo(x_inner_right_outer_cyl, y_dim_r_line);
+            ctx.stroke();
+            ctx.fillText('r', x_inner_right_outer_cyl + 5, y_dim_r_line + 25);
+            ctx.font = 'italic 16px Times New Roman';
+            ctx.fillText('2', x_inner_right_outer_cyl + 13, y_dim_r_line + 30);
+            ctx.font = 'italic 22px Times New Roman';
+
+            // Points A and B
+            ctx.font = 'bold 22px Times New Roman';
+            const x_points = x_c - (r1 + r2) / 2;
+            ctx.beginPath();
+            ctx.arc(x_points, y2 + h / 3, 3, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillText('A', x_points + 10, y2 + h / 3 + 8);
+            ctx.beginPath();
+            ctx.arc(x_points, y3 - 25, 3, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillText('B', x_points + 10, y3 - 25 + 8);
+
+            // Figure Caption
+            ctx.font = '20px Times New Roman';
+            ctx.fillText('Fig. 2.71', x_c - 40, y5 + 80);
+        }
+
+        // --- Main Execution ---
+        drawStructure();
+        drawAxisAndWire();
+        drawDimensionsAndLabels();
+    </script>
+</body>
+</html>

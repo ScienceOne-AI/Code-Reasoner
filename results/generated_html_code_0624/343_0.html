@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Piston and Gas Container</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="400"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Style settings to mimic the hand-drawn style of the original image
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 2.5;
+  ctx.font = '28px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Define container and piston dimensions
+  const containerX = 100;
+  const containerY = 150;
+  const containerWidth = 400;
+  const containerHeight = 80;
+
+  // Draw the main rectangular container
+  ctx.strokeRect(containerX, containerY, containerWidth, containerHeight);
+
+  // Define piston properties
+  const pistonWidth = 14;
+  const pistonX = containerX + containerWidth / 2; // Center position
+  const pistonLeftX = pistonX - pistonWidth / 2;
+  const pistonRightX = pistonX + pistonWidth / 2;
+  const pistonTopY = containerY;
+  const pistonBottomY = containerY + containerHeight;
+
+  // Draw the piston's vertical walls
+  ctx.beginPath();
+  ctx.moveTo(pistonLeftX, pistonTopY);
+  ctx.lineTo(pistonLeftX, pistonBottomY);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(pistonRightX, pistonTopY);
+  ctx.lineTo(pistonRightX, pistonBottomY);
+  ctx.stroke();
+
+  // Draw the hatching inside the piston using a clipping region for clean edges
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(pistonLeftX, pistonTopY, pistonWidth, containerHeight);
+  ctx.clip(); // Restrict drawing to the piston's rectangle
+
+  // Draw diagonal hatching lines (/////)
+  ctx.lineWidth = 2; // Hatching lines can be slightly thinner
+  const hatchAngleHeight = 14; // Controls the angle of the lines
+  const hatchSpacing = 9;
+  for (let yStart = pistonTopY - hatchAngleHeight; yStart < pistonBottomY + hatchAngleHeight; yStart += hatchSpacing) {
+    ctx.beginPath();
+    ctx.moveTo(pistonLeftX, yStart + hatchAngleHeight);
+    ctx.lineTo(pistonRightX, yStart);
+    ctx.stroke();
+  }
+  ctx.restore(); // Remove the clipping region
+
+  // Restore the original line width
+  ctx.lineWidth = 2.5;
+
+  // Add text labels for the gases
+  const textY = containerY + containerHeight / 2;
+  ctx.fillText('neon', containerX + containerWidth / 4, textY);
+  ctx.fillText('argon', containerX + 3 * containerWidth / 4, textY);
+
+  // Add the "piston" label above the container
+  const pistonLabelX = 360;
+  const pistonLabelY = 115;
+  ctx.fillText('piston', pistonLabelX, pistonLabelY);
+
+  // Draw the curved arrow pointing from the label to the piston
+  ctx.beginPath();
+  // Start the arrow from near the 'n' in "piston"
+  const arrowStartX = pistonLabelX + ctx.measureText('pisto').width / 2 + 10;
+  const arrowStartY = pistonLabelY + 10;
+  const arrowEndX = pistonRightX;
+  const arrowEndY = pistonTopY;
+  // Control point for the curve
+  const controlX = arrowStartX;
+  const controlY = arrowStartY + 20;
+
+  ctx.moveTo(arrowStartX, arrowStartY);
+  ctx.quadraticCurveTo(controlX, controlY, arrowEndX, arrowEndY);
+  ctx.stroke();
+
+  // Draw the filled arrowhead
+  const angle = Math.atan2(arrowEndY - controlY, arrowEndX - controlX);
+  const arrowLength = 10;
+  ctx.beginPath();
+  ctx.moveTo(arrowEndX, arrowEndY);
+  ctx.lineTo(arrowEndX - arrowLength * Math.cos(angle - Math.PI / 6), arrowEndY - arrowLength * Math.sin(angle - Math.PI / 6));
+  ctx.lineTo(arrowEndX - arrowLength * Math.cos(angle + Math.PI / 6), arrowEndY - arrowLength * Math.sin(angle + Math.PI / 6));
+  ctx.closePath();
+  ctx.fill();
+
+  // Add the figure caption below the container
+  ctx.font = '24px sans-serif';
+  ctx.fillText('Fig. 1.31.', containerX + containerWidth / 2, containerY + containerHeight + 50);
+
+</script>
+</body>
+</html>

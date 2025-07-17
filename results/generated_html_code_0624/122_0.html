@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram Fig. 3.25</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="550" height="400" style="border:1px solid #d3d3d3;"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.font = "18px 'Times New Roman'";
+
+        // Helper function to draw a resistor (vertical)
+        function drawResistor(x, y_start, y_end, width, peaks) {
+            const y_len = y_end - y_start;
+            const zig_len = y_len * 0.7; // length of the zigzag part
+            const y_zig_start = y_start + (y_len - zig_len) / 2;
+            const y_zig_end = y_end - (y_len - zig_len) / 2;
+            const dy = (y_zig_end - y_zig_start) / peaks;
+
+            ctx.beginPath();
+            // Top lead
+            ctx.moveTo(x, y_start);
+            ctx.lineTo(x, y_zig_start);
+            // Zigzag body
+            for (let i = 0; i < peaks; i++) {
+                ctx.lineTo(x + (i % 2 === 0 ? width / 2 : -width / 2), y_zig_start + (i + 0.5) * dy);
+            }
+            ctx.lineTo(x, y_zig_end);
+            // Bottom lead
+            ctx.lineTo(x, y_end);
+            ctx.stroke();
+        }
+
+        // Helper function to draw a resistor (horizontal)
+        function drawHResistor(x_start, x_end, y, height, peaks) {
+            const x_len = x_end - x_start;
+            const zig_len = x_len * 0.8; // length of the zigzag part
+            const x_zig_start = x_start + (x_len - zig_len) / 2;
+            const x_zig_end = x_end - (x_len - zig_len) / 2;
+            const dx = (x_zig_end - x_zig_start) / peaks;
+            
+            ctx.beginPath();
+            // Left lead
+            ctx.moveTo(x_start, y);
+            ctx.lineTo(x_zig_start, y);
+            // Zigzag body
+            for (let i = 0; i < peaks; i++) {
+                ctx.lineTo(x_zig_start + (i + 0.5) * dx, y + (i % 2 === 0 ? height / 2 : -height / 2));
+            }
+            ctx.lineTo(x_zig_end, y);
+            // Right lead
+            ctx.lineTo(x_end, y);
+            ctx.stroke();
+        }
+
+
+        // Helper function to draw an inductor (vertical)
+        function drawInductor(x, y_start, y_end, loops, radius) {
+            const y_len = y_end - y_start;
+            const coil_len = y_len * 0.7; // length of the coil part
+            const y_coil_start = y_start + (y_len - coil_len) / 2;
+            
+            ctx.beginPath();
+            // Top lead
+            ctx.moveTo(x, y_start);
+            ctx.lineTo(x, y_coil_start);
+            // Coils
+            const angle_step = Math.PI / 10;
+            const num_segments = (loops * 2 * Math.PI) / angle_step;
+            const dy = coil_len / num_segments;
+            for (let i = 0; i <= num_segments; i++) {
+                const angle = i * angle_step;
+                const y_pos = y_coil_start + i * dy;
+                ctx.lineTo(x + radius * Math.cos(angle), y_pos);
+            }
+            // Bottom lead
+            const y_coil_end = y_coil_start + coil_len;
+            ctx.lineTo(x, y_coil_end);
+            ctx.lineTo(x, y_end);
+            ctx.stroke();
+        }
+
+        // Helper function to draw text with sub/superscripts
+        function drawRichText(text, x, y) {
+            const parts = text.split(/(_|\^)/);
+            let currentX = x;
+            const baseFont = "italic 20px 'Times New Roman'";
+            const scriptFont = "italic 14px 'Times New Roman'";
+            ctx.font = baseFont;
+            const baseTextWidth = ctx.measureText(parts.filter((p, i) => i % 2 === 0).join("")).width;
+            currentX -= baseTextWidth / 2;
+
+            for (let i = 0; i < parts.length; i++) {
+                if (i % 2 === 0) {
+                    ctx.font = baseFont;
+                    ctx.fillText(parts[i], currentX, y);
+                    currentX += ctx.measureText(parts[i]).width;
+                } else {
+                    const script = parts[i+1];
+                    const scriptY = (parts[i] === '_') ? y + 5 : y - 8;
+                    ctx.font = scriptFont;
+                    ctx.fillText(script, currentX, scriptY);
+                    currentX += ctx.measureText(script).width;
+                    i++; // Skip the script part in the next iteration
+                }
+            }
+        }
+        
+        // --- Start Drawing ---
+
+        // Source ε1
+        const x1 = 120, y_mid1 = 180, r1 = 20;
+        ctx.beginPath();
+        ctx.arc(x1, y_mid1, r1, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fillText("+", x1, y_mid1 - 25);
+        ctx.fillText("−", x1, y_mid1 + 35);
+        drawRichText("ε_1=5 V", x1 - 40, y_mid1 + 5);
+
+        // Source ε2
+        const x2 = 210, y_mid2 = 180, r2 = 20;
+        ctx.beginPath();
+        ctx.arc(x2, y_mid2, r2, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fillText("+", x2, y_mid2 - 25);
+        ctx.fillText("−", x2, y_mid2 + 35);
+        drawRichText("ε_2=10 V", x2 + 65, y_mid2 + 5);
+
+        // Resistor R2
+        const xR2 = 380, yR2_top = 110, yR2_bot = 280;
+        drawResistor(xR2, yR2_top, yR2_bot, 20, 7);
+        ctx.textAlign = 'left';
+        drawRichText("R_2=10^4 Ω", xR2 - 80, yR2_top + 60);
+        
+        // Inductor L
+        const xL = 460, yL_top = 110, yL_bot = 280;
+        drawInductor(xL, yL_top, yL_bot, 4, 10);
+        ctx.textAlign = 'right';
+        drawRichText("L=10^-3 H", xL + 80, yL_top + 60);
+
+        // Resistor R1
+        const xR1_start = 250, xR1_end = 350, yR1 = 280;
+        drawHResistor(xR1_start, xR1_end, yR1, 20, 7);
+        ctx.textAlign = 'center';
+        drawRichText("R_1=10^4 Ω", (xR1_start+xR1_end)/2, yR1 + 30);
+        
+        // Wires
+        ctx.beginPath();
+        // Top wires
+        const y_top = 110;
+        const ptA = {x: x1, y: y_top};
+        const ptB = {x: x2, y: y_top};
+        const ptS = {x: 170, y: 80};
+        
+        // Switch S
+        ctx.moveTo(ptS.x, ptS.y);
+        ctx.lineTo(ptA.x, ptA.y);
+        ctx.fillText("S", ptS.x, ptS.y - 10);
+        ctx.fillText("A", ptA.x, ptA.y - 10);
+        ctx.fillText("B", ptB.x, ptB.y - 10);
+        // Draw little circles for switch contacts
+        ctx.moveTo(ptA.x, ptA.y);
+        ctx.arc(ptA.x, ptA.y, 3, 0, 2*Math.PI);
+        ctx.moveTo(ptB.x, ptB.y);
+        ctx.arc(ptB.x, ptB.y, 3, 0, 2*Math.PI);
+        ctx.fill();
+        
+        // Wires from sources
+        ctx.moveTo(x1, y_mid1-r1);
+        ctx.lineTo(x1, y_top);
+        ctx.moveTo(x2, y_mid2-r1);
+        ctx.lineTo(x2, y_top);
+        
+        const y_bot = 280;
+        ctx.moveTo(x1, y_mid1+r1);
+        ctx.lineTo(x1, y_bot);
+        ctx.moveTo(x2, y_mid2+r1);
+        ctx.lineTo(x2, y_bot);
+
+        // Main circuit wires
+        ctx.moveTo(ptS.x, ptS.y);
+        ctx.lineTo(xR2, yR2_top);
+        ctx.lineTo(xL, yL_top);
+
+        ctx.moveTo(x1, y_bot);
+        ctx.lineTo(xR1_start, y_bot);
+        ctx.moveTo(xR1_end, y_bot);
+        ctx.lineTo(xR2, yR2_bot);
+        ctx.lineTo(xL, yL_bot);
+        
+        ctx.stroke();
+
+        // Figure caption
+        ctx.textAlign = 'center';
+        ctx.font = "20px 'Times New Roman'";
+        ctx.fillText("Fig. 3.25", canvas.width / 2, canvas.height - 20);
+
+    </script>
+</body>
+</html>

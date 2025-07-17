@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coaxial Cable Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style settings ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '24px sans-serif';
+        const centerY = 300;
+
+        // --- Define component dimensions ---
+        const plastic_x_start = 500, plastic_x_end = 700, plastic_radius = 70;
+        const braid_x_start = 350, braid_x_end = 500, braid_radius = 50;
+        const insul_x_start = 250, insul_x_end = 350, insul_radius = 30;
+        const wire_x_start = 150, wire_x_end = 250, wire_radius = 5;
+
+        // --- Draw components from outer to inner (surfaces only) ---
+
+        // 1. Plastic covering
+        ctx.beginPath();
+        ctx.moveTo(plastic_x_start, centerY - plastic_radius);
+        ctx.lineTo(plastic_x_end, centerY - plastic_radius);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(plastic_x_start, centerY + plastic_radius);
+        ctx.lineTo(plastic_x_end, centerY + plastic_radius);
+        ctx.stroke();
+
+        // Jagged end
+        ctx.beginPath();
+        ctx.moveTo(plastic_x_end, centerY - plastic_radius);
+        ctx.lineTo(plastic_x_end + 20, centerY - 35);
+        ctx.lineTo(plastic_x_end, centerY);
+        ctx.lineTo(plastic_x_end + 20, centerY + 35);
+        ctx.lineTo(plastic_x_end, centerY + plastic_radius);
+        ctx.stroke();
+
+        // 2. Copper braid
+        ctx.beginPath();
+        ctx.moveTo(braid_x_start, centerY - braid_radius);
+        ctx.lineTo(braid_x_end, centerY - braid_radius);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(braid_x_start, centerY + braid_radius);
+        ctx.lineTo(braid_x_end, centerY + braid_radius);
+        ctx.stroke();
+
+        // Braid pattern
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(braid_x_start, centerY - braid_radius, braid_x_end - braid_x_start, 2 * braid_radius);
+        ctx.clip();
+        ctx.lineWidth = 1.5;
+        const num_strands = 10;
+        const strand_width = (braid_x_end - braid_x_start) / num_strands;
+        for (let i = -1; i <= num_strands; i++) {
+            // Right-leaning strands
+            ctx.beginPath();
+            ctx.moveTo(braid_x_start + i * strand_width, centerY - braid_radius);
+            ctx.quadraticCurveTo(
+                braid_x_start + (i + 0.5) * strand_width, centerY,
+                braid_x_start + (i + 1) * strand_width, centerY + braid_radius
+            );
+            ctx.stroke();
+            // Left-leaning strands
+            ctx.beginPath();
+            ctx.moveTo(braid_x_start + (i + 1) * strand_width, centerY - braid_radius);
+            ctx.quadraticCurveTo(
+                braid_x_start + (i + 0.5) * strand_width, centerY,
+                braid_x_start + i * strand_width, centerY + braid_radius
+            );
+            ctx.stroke();
+        }
+        ctx.restore();
+        ctx.lineWidth = 2; // reset line width
+
+        // 3. Insulation
+        ctx.beginPath();
+        ctx.moveTo(insul_x_start, centerY - insul_radius);
+        ctx.lineTo(insul_x_end, centerY - insul_radius);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(insul_x_start, centerY + insul_radius);
+        ctx.lineTo(insul_x_end, centerY + insul_radius);
+        ctx.stroke();
+        
+        // 4. Copper wire
+        ctx.beginPath();
+        ctx.moveTo(wire_x_start, centerY - wire_radius);
+        ctx.lineTo(wire_x_end, centerY - wire_radius);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(wire_x_start, centerY + wire_radius);
+        ctx.lineTo(wire_x_end, centerY + wire_radius);
+        ctx.stroke();
+        
+        // --- Draw end faces (on top) to create cutaway effect ---
+        ctx.fillStyle = 'white'; // To occlude lines behind
+
+        // Plastic covering end face
+        ctx.beginPath();
+        ctx.ellipse(plastic_x_start, centerY, 15, plastic_radius, Math.PI / 2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+
+        // Copper braid end face
+        ctx.beginPath();
+        ctx.ellipse(braid_x_start, centerY, 15, braid_radius, Math.PI / 2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+
+        // Insulation end face
+        ctx.beginPath();
+        ctx.ellipse(insul_x_start, centerY, 10, insul_radius, Math.PI / 2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        
+        // Redraw wire end cap to be on top of insulation fill
+        ctx.beginPath();
+        ctx.arc(wire_x_start, centerY, wire_radius, Math.PI / 2, -Math.PI / 2, true);
+        ctx.stroke();
+
+        // --- Labels and Pointers ---
+        ctx.fillStyle = 'black'; // text color
+        
+        // copper braid
+        ctx.textAlign = 'center';
+        ctx.fillText('copper braid', 425, 150);
+        ctx.beginPath();
+        ctx.moveTo(425, 165);
+        ctx.lineTo(425, 250);
+        ctx.stroke();
+
+        // insulation
+        ctx.textAlign = 'left';
+        ctx.fillText('insulation', 120, 200);
+        ctx.beginPath();
+        ctx.moveTo(180, 212);
+        ctx.lineTo(260, 270);
+        ctx.stroke();
+
+        // copper wire
+        ctx.textAlign = 'center';
+        ctx.fillText('copper', 120, 390);
+        ctx.fillText('wire', 120, 415);
+        ctx.beginPath();
+        ctx.moveTo(140, 380);
+        ctx.lineTo(190, 300);
+        ctx.stroke();
+
+        // plastic covering
+        ctx.fillText('plastic covering', 620, 450);
+        ctx.beginPath();
+        ctx.moveTo(640, 435);
+        ctx.lineTo(600, 370);
+        ctx.stroke();
+        
+        // Fig. 5.1
+        ctx.fillText('Fig. 5.1', 450, 550);
+    </script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Single-Particle Energies near 208Pb</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="650" height="700"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '16px sans-serif';
+
+        // Helper function to draw text with a subscript, e.g., "d" with "3/2"
+        function drawSubscript(ctx, text, sub, x, y, align = 'right') {
+            const baseFontSize = 14;
+            const subFontSize = 10;
+            const subOffsetY = 4; // Vertical offset for the subscript
+
+            ctx.font = `${baseFontSize}px sans-serif`;
+            const textMetrics = ctx.measureText(text);
+            const textWidth = textMetrics.width;
+
+            ctx.font = `${subFontSize}px sans-serif`;
+            const subMetrics = ctx.measureText(sub);
+            const subWidth = subMetrics.width;
+
+            let textX, subX;
+            if (align === 'right') {
+                subX = x;
+                textX = x - subWidth;
+                ctx.textAlign = 'right';
+                ctx.font = `${baseFontSize}px sans-serif`;
+                ctx.fillText(text, textX, y);
+                ctx.font = `${subFontSize}px sans-serif`;
+                ctx.fillText(sub, subX, y + subOffsetY);
+            } else { // 'left' align
+                textX = x;
+                subX = x + textWidth;
+                ctx.textAlign = 'left';
+                ctx.font = `${baseFontSize}px sans-serif`;
+                ctx.fillText(text, textX, y);
+                ctx.font = `${subFontSize}px sans-serif`;
+                ctx.fillText(sub, subX, y + subOffsetY);
+            }
+        }
+
+        // --- Define Coordinate System and Scales ---
+        const y_offset = 50;
+        const y_scale = 45.83; // pixels per MeV
+        const E_to_Y = (E) => y_offset + E * y_scale;
+
+        // --- Draw Y-Axis ---
+        const axisX = 80;
+        ctx.beginPath();
+        ctx.moveTo(axisX, 40);
+        ctx.lineTo(axisX, 580);
+        ctx.stroke();
+
+        // Y-Axis Ticks and Labels
+        ctx.textAlign = 'right';
+        ctx.font = '14px sans-serif';
+        for (let E = 2; E <= 10; E += 2) {
+            const y = E_to_Y(E);
+            ctx.beginPath();
+            ctx.moveTo(axisX - 5, y);
+            ctx.lineTo(axisX, y);
+            ctx.stroke();
+            ctx.fillText(E, axisX - 10, y + 5);
+        }
+
+        // Y-Axis Title
+        ctx.save();
+        ctx.translate(30, 310);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.font = '16px sans-serif';
+        ctx.fillText('Binding Energy (MeV)', 0, 0);
+        ctx.restore();
+
+        // --- Define Level Data (Energy in MeV) ---
+        const neutronLevels = [
+            { label: 'd', sub: '3/2', Ecalc: 1.9, Eobs: 2.0 }, { label: 'g', sub: '7/2', Ecalc: 2.0, Eobs: 2.15 },
+            { label: 's', sub: '1/2', Ecalc: 2.1, Eobs: 2.25 }, { label: 'j', sub: '15/2', Ecalc: 2.3, Eobs: 2.45 },
+            { label: 'd', sub: '5/2', Ecalc: 2.5, Eobs: 2.5 }, { label: 'i', sub: '11/2', Ecalc: 3.2, Eobs: 3.1 },
+            { label: 'g', sub: '9/2', Ecalc: 4.1, Eobs: 3.5 }, { label: 'p', sub: '1/2', Ecalc: 7.2, Eobs: 7.4 },
+            { label: 'f', sub: '5/2', Ecalc: 7.8, Eobs: 7.9 }, { label: 'p', sub: '3/2', Ecalc: 8.1, Eobs: 8.3 },
+            { label: 'i', sub: '13/2', Ecalc: 8.4, Eobs: 8.0 }, { label: 'f', sub: '7/2', Ecalc: 10.0, Eobs: 9.7 },
+            { label: 'h', sub: '9/2', Ecalc: 10.4, Eobs: 10.8 },
+        ];
+        const protonLevels = [
+            { label: 'i', sub: '13/2', Ecalc: 2.1, Eobs: 2.3 }, { label: 'f', sub: '7/2', Ecalc: 2.8, Eobs: 2.9 },
+            { label: 'h', sub: '9/2', Ecalc: 3.8, Eobs: 3.5 }, { label: 's', sub: '1/2', Ecalc: 7.5, Eobs: 8.0 },
+            { label: 'd', sub: '3/2', Ecalc: 7.8, Eobs: 8.4 }, { label: 'h', sub: '11/2', Ecalc: 9.0, Eobs: 9.3 },
+            { label: 'd', sub: '5/2', Ecalc: 9.2, Eobs: 9.7 }, { label: 'g', sub: '7/2', Ecalc: 11.2, Eobs: 11.5 },
+        ];
+
+        // --- Helper to draw a set of levels ---
+        function drawLevelSet(ctx, levels, x_label, x_calc_s, x_calc_e, x_obs_s, x_obs_e, label_align) {
+            levels.forEach(level => {
+                const y_calc = E_to_Y(level.Ecalc);
+                const y_obs = E_to_Y(level.Eobs);
+
+                drawSubscript(ctx, level.label, level.sub, x_label, y_calc + 5, label_align);
+                
+                ctx.beginPath();
+                ctx.moveTo(x_calc_s, y_calc);
+                ctx.lineTo(x_calc_e, y_calc);
+                ctx.lineTo(x_obs_s, y_obs);
+                ctx.lineTo(x_obs_e, y_obs);
+                ctx.stroke();
+            });
+        }
+
+        // --- Draw Neutron Levels ---
+        const x_n_label = 145, x_n_calc_s = 160, x_n_calc_e = 190, x_n_obs_s = 230, x_n_obs_e = 260;
+        drawLevelSet(ctx, neutronLevels, x_n_label, x_n_calc_s, x_n_calc_e, x_n_obs_s, x_n_obs_e, 'right');
+
+        // --- Draw Proton Levels ---
+        const x_p_label = 345, x_p_calc_s = 360, x_p_calc_e = 390, x_p_obs_s = 430, x_p_obs_e = 460;
+        drawLevelSet(ctx, protonLevels, x_p_label, x_p_calc_s, x_p_calc_e, x_p_obs_s, x_p_obs_e, 'right');
+
+        // --- Draw Fermi Level ---
+        const y_fermi = E_to_Y(5.9);
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(150, y_fermi);
+        ctx.lineTo(520, y_fermi);
+        ctx.stroke();
+        ctx.restore();
+
+        // --- Draw All Other Labels ---
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+
+        // 208Pb label (with "superscript")
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('Pb', 548, y_fermi + 5);
+        ctx.font = '12px sans-serif';
+        ctx.fillText('208', 525, y_fermi - 5);
+
+        // Vertical "Unoccupied" / "Occupied"
+        const x_vert_label = 295;
+        ctx.save();
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.translate(x_vert_label, y_fermi - 100);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('Unoccupied', 0, 0);
+        ctx.restore();
+
+        ctx.save();
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.translate(x_vert_label, y_fermi + 100);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('Occupied', 0, 0);
+        ctx.restore();
+
+        // Bottom labels
+        const y_bottom_labels = 620;
+        const y_bottom_main_labels = 645;
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('calc.', (x_n_calc_s + x_n_calc_e) / 2, y_bottom_labels);
+        ctx.fillText('obs.', (x_n_obs_s + x_n_obs_e) / 2, y_bottom_labels);
+        ctx.fillText('calc.', (x_p_calc_s + x_p_calc_e) / 2, y_bottom_labels);
+        ctx.fillText('obs.', (x_p_obs_s + x_p_obs_e) / 2, y_bottom_labels);
+
+        ctx.font = '16px sans-serif';
+        ctx.fillText('NEUTRON STATE', (x_n_calc_s + x_n_obs_e) / 2, y_bottom_main_labels);
+        ctx.fillText('PROTON STATE', (x_p_calc_s + x_p_obs_e) / 2, y_bottom_main_labels);
+
+        // Figure caption
+        ctx.fillText('Fig. 2.13', 325, 680);
+
+    </script>
+</body>
+</html>

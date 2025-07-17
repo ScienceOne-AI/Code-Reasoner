@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="500"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Configuration ---
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const R = 120; // Radius of the main circle
+  const axisLength = 180;
+  const arrowSize = 10;
+  const lineWidth = 2;
+
+  ctx.lineWidth = lineWidth;
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // --- Draw Axes ---
+  function drawArrow(x1, y1, x2, y2) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - arrowSize * Math.cos(angle - Math.PI / 6), y2 - arrowSize * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(x2 - arrowSize * Math.cos(angle + Math.PI / 6), y2 - arrowSize * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // X-axis
+  drawArrow(cx - axisLength, cy, cx + axisLength, cy);
+  ctx.font = 'italic 20px serif';
+  ctx.fillText('x', cx + axisLength + 15, cy);
+
+  // Y-axis
+  drawArrow(cx, cy + axisLength, cx, cy - axisLength);
+  ctx.fillText('y', cx, cy - axisLength - 15);
+
+  // --- Draw Circle ---
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  // --- Define Angles (in radians, CCW from +x axis) ---
+  const angle1 = Math.PI / 3;      // 60 degrees
+  const angle2 = Math.PI;          // 180 degrees
+  const angle3 = 5 * Math.PI / 3;  // 300 degrees
+
+  // --- Draw Vectors and Charges ---
+  function drawVector(angle, r_label, q_label, r_pos, q_pos) {
+    const x = cx + R * Math.cos(angle);
+    const y = cy - R * Math.sin(angle);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+
+    // Vector label (r1, r2, r3)
+    const rx = cx + r_pos.d * R * Math.cos(angle) + r_pos.dx;
+    const ry = cy - r_pos.d * R * Math.sin(angle) + r_pos.dy;
+    ctx.font = 'italic 22px serif';
+    ctx.fillText(r_label[0], rx, ry);
+    ctx.font = 'italic 15px serif';
+    ctx.fillText(r_label[1], rx + 6, ry + 6);
+
+    // Charge label (q, -q)
+    ctx.font = 'italic 22px serif';
+    ctx.fillText(q_label, x + q_pos.dx, y + q_pos.dy);
+  }
+
+  drawVector(angle1, ['r', '1'], 'q',  {d:0.6, dx:0, dy:-10}, {dx:15, dy:-8});
+  drawVector(angle2, ['r', '2'], '-q', {d:0.6, dx:0, dy:-12}, {dx:-20, dy:0});
+  drawVector(angle3, ['r', '3'], '-q', {d:0.6, dx:0, dy:12},  {dx:15, dy:12});
+
+
+  // --- Draw Angle Arcs ---
+  // Helper for arc ticks
+  function drawArcTick(angle, radius, size) {
+    const x = cx + radius * Math.cos(angle);
+    const y = cy - radius * Math.sin(angle);
+    const dx = (size / 2) * Math.sin(angle);
+    const dy = (size / 2) * Math.cos(angle);
+    ctx.beginPath();
+    ctx.moveTo(x - dx, y - dy);
+    ctx.lineTo(x + dx, y + dy);
+    ctx.stroke();
+  }
+  
+  // Angle ωt
+  const arcRadWt = 45;
+  ctx.beginPath();
+  // Canvas arc angles are clockwise. To draw CCW, use negative angles and set anticlockwise=true.
+  ctx.arc(cx, cy, arcRadWt, 0, -angle1, true); 
+  ctx.stroke();
+  // Arrowhead for ωt arc
+  const wt_arrow_angle = -angle1; // Canvas angle
+  const ax = cx + arcRadWt * Math.cos(wt_arrow_angle);
+  const ay = cy + arcRadWt * Math.sin(wt_arrow_angle);
+  const tangent = wt_arrow_angle + Math.PI / 2;
+  ctx.beginPath();
+  ctx.moveTo(ax, ay);
+  ctx.lineTo(ax - (arrowSize-2) * Math.cos(tangent - Math.PI / 5), ay - (arrowSize-2) * Math.sin(tangent - Math.PI / 5));
+  ctx.lineTo(ax - (arrowSize-2) * Math.cos(tangent + Math.PI / 5), ay - (arrowSize-2) * Math.sin(tangent + Math.PI / 5));
+  ctx.closePath();
+  ctx.fill();
+  
+  ctx.font = 'italic 22px serif';
+  ctx.fillText('ωt', cx + 60 * Math.cos(angle1 / 2.5), cy - 60 * Math.sin(angle1 / 2.5));
+
+
+  // Angle 120 (top)
+  const arcRad120 = 75;
+  ctx.beginPath();
+  ctx.arc(cx, cy, arcRad120, -angle1, -angle2, true);
+  ctx.stroke();
+  drawArcTick(angle1, arcRad120, 10);
+  drawArcTick(angle2, arcRad120, 10);
+  ctx.font = '22px serif';
+  const midAngleTop = (angle1 + angle2) / 2;
+  ctx.fillText('120', cx + (arcRad120 + 20) * Math.cos(midAngleTop), cy - (arcRad120 + 20) * Math.sin(midAngleTop));
+  
+  // Angle 120 (bottom)
+  ctx.beginPath();
+  ctx.arc(cx, cy, arcRad120, -angle2, -angle3, true);
+  ctx.stroke();
+  drawArcTick(angle2, arcRad120, 10);
+  drawArcTick(angle3, arcRad120, 10);
+  ctx.font = '22px serif';
+  const midAngleBot = (angle2 + angle3) / 2;
+  ctx.fillText('120', cx + (arcRad120 + 20) * Math.cos(midAngleBot), cy - (arcRad120 + 20) * Math.sin(midAngleBot));
+
+  // --- Figure Caption ---
+  ctx.font = 'bold 20px serif';
+  ctx.fillText('Fig. 4.32', cx, cy + R + 50);
+
+</script>
+</body>
+</html>

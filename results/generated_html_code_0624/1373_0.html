@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="550" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    // Center and Radius parameters
+    const centerX = 270;
+    const centerY = 200;
+    const R = 85;
+    const ringOuterR = R + 5;
+    const ringInnerR = R - 5;
+    const particleRadius = 4;
+    const dotRadius = 2;
+
+    // 1. Draw Magnetic Field (B)
+    const dotPositions = [
+        { x: 100, y: 50 }, { x: 200, y: 50 }, { x: 300, y: 50 }, { x: 400, y: 50 },
+        { x: 100, y: 125 }, { x: 480, y: 200 },
+        { x: 100, y: 275 },
+        { x: 100, y: 350 }, { x: 200, y: 350 }, { x: 300, y: 350 }, { x: 400, y: 350 }
+    ];
+    dotPositions.forEach(pos => {
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, dotRadius, 0, 2 * Math.PI);
+        ctx.fill();
+    });
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('B', 100, 100);
+
+    // 2. Draw Ring
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, ringOuterR, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, ringInnerR, 0, 2 * Math.PI);
+    ctx.stroke();
+    
+    // 3. Draw Center O, Diameter P1-P2
+    // Center O
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.fillText('O', centerX - 25, centerY + 5);
+
+    // Dashed Diameter
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.setLineDash([5, 3]);
+    ctx.moveTo(centerX, centerY - R);
+    ctx.lineTo(centerX, centerY + R);
+    ctx.stroke();
+
+    // Points P1 and P2 on the diameter
+    ctx.beginPath();
+    ctx.arc(centerX, centerY - R, particleRadius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(centerX, centerY + R, particleRadius, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Labels P1 and P2
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.fillText('P₁', centerX + 8, centerY - R - 10);
+    ctx.fillText('P₂', centerX, centerY + R + 25);
+
+    // 4. Draw Particle, Radius, and Angle
+    // The angle θ is measured clockwise from the downward vertical (OP₂)
+    const angleFromDown_deg = 45;
+    const angleFromDown_rad = angleFromDown_deg * Math.PI / 180;
+    const startAngle = Math.PI / 2; // Downward vertical
+    const endAngle = startAngle + angleFromDown_rad;
+    
+    const particleX = centerX + R * Math.cos(endAngle);
+    const particleY = centerY + R * Math.sin(endAngle);
+
+    // Particle
+    ctx.beginPath();
+    ctx.arc(particleX, particleY, particleRadius, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Dashed radius line to the particle
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(particleX, particleY);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset dash style
+
+    // Angle Arc and Arrow
+    const arcRadius = 28;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, arcRadius, startAngle, endAngle);
+    ctx.stroke();
+
+    // Arrowhead for the angle arc
+    const arrowHeadLength = 6;
+    const arrowHeadAngle = Math.PI / 6;
+    const arrowX = centerX + arcRadius * Math.cos(endAngle);
+    const arrowY = centerY + arcRadius * Math.sin(endAngle);
+    const tangentAngle = endAngle + Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(arrowX, arrowY);
+    ctx.lineTo(arrowX - arrowHeadLength * Math.cos(tangentAngle - arrowHeadAngle), arrowY - arrowHeadLength * Math.sin(tangentAngle - arrowHeadAngle));
+    ctx.moveTo(arrowX, arrowY);
+    ctx.lineTo(arrowX - arrowHeadLength * Math.cos(tangentAngle + arrowHeadAngle), arrowY - arrowHeadLength * Math.sin(tangentAngle + arrowHeadAngle));
+    ctx.stroke();
+
+    // Labels R and θ
+    ctx.font = 'italic 20px "Times New Roman"';
+    const R_labelAngle = endAngle - angleFromDown_rad / 2;
+    ctx.fillText('R', centerX + 0.6 * R * Math.cos(R_labelAngle), centerY + 0.6 * R * Math.sin(R_labelAngle) + 5);
+    
+    const theta_labelAngle = startAngle + angleFromDown_rad / 2;
+    ctx.fillText('θ', centerX + (arcRadius + 12) * Math.cos(theta_labelAngle), centerY + (arcRadius + 12) * Math.sin(theta_labelAngle));
+    
+    // Label m, q>0
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText('m, q > 0', particleX - 10, particleY + 25);
+    
+    // 5. Velocity vector u
+    ctx.lineWidth = 1.5;
+    const u_y_pos = centerY;
+    const u_start_x = centerX + ringOuterR + 40;
+    const u_end_x = u_start_x + 80;
+    ctx.beginPath();
+    ctx.moveTo(u_start_x, u_y_pos);
+    ctx.lineTo(u_end_x, u_y_pos);
+    ctx.stroke();
+    // Arrowhead for u
+    ctx.beginPath();
+    ctx.moveTo(u_end_x, u_y_pos);
+    ctx.lineTo(u_end_x - 10, u_y_pos - 5);
+    ctx.moveTo(u_end_x, u_y_pos);
+    ctx.lineTo(u_end_x - 10, u_y_pos + 5);
+    ctx.stroke();
+    // Label u
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('u', u_start_x + 30, u_y_pos - 10);
+    
+</script>
+</body>
+</html>

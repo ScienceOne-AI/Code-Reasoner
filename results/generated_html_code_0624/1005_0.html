@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Position vs. Time Graph</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="580" height="450"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Configuration ---
+const margin = { top: 40, right: 20, bottom: 60, left: 80 };
+const graphWidth = canvas.width - margin.left - margin.right;
+const graphHeight = canvas.height - margin.top - margin.bottom;
+
+const tMin = 0;
+const tMax = 10;
+const xMin = -10;
+const xMax = 10;
+
+// --- Coordinate mapping functions ---
+function mapX(t) {
+    return margin.left + (t - tMin) / (tMax - tMin) * graphWidth;
+}
+
+function mapY(x) {
+    // Canvas y-axis is inverted (0 is at top)
+    return margin.top + graphHeight - (x - xMin) / (xMax - xMin) * graphHeight;
+}
+
+// --- Drawing functions ---
+
+// 1. Draw Grid
+function drawGrid() {
+    ctx.beginPath();
+    ctx.strokeStyle = '#cccccc'; // Light gray for grid
+    ctx.lineWidth = 1;
+
+    // Vertical grid lines (for each second)
+    for (let t = tMin; t <= tMax; t++) {
+        const canvasX = mapX(t);
+        ctx.moveTo(canvasX, margin.top);
+        ctx.lineTo(canvasX, margin.top + graphHeight);
+    }
+
+    // Horizontal grid lines (for every 2 meters)
+    for (let x = xMin; x <= xMax; x += 2) {
+        const canvasY = mapY(x);
+        ctx.moveTo(margin.left, canvasY);
+        ctx.lineTo(margin.left + graphWidth, canvasY);
+    }
+    ctx.stroke();
+}
+
+// 2. Draw Axes
+function drawAxes() {
+    ctx.beginPath();
+    ctx.strokeStyle = '#000000'; // Black for axes
+    ctx.lineWidth = 2;
+
+    // X-axis (Time axis at Position = 0)
+    const yZero = mapY(0);
+    ctx.moveTo(margin.left, yZero);
+    ctx.lineTo(margin.left + graphWidth, yZero);
+
+    // Y-axis (Position axis at Time = 0)
+    const xZero = mapX(0);
+    ctx.moveTo(xZero, margin.top);
+    ctx.lineTo(xZero, margin.top + graphHeight);
+
+    ctx.stroke();
+}
+
+// 3. Draw Labels and Ticks
+function drawLabels() {
+    ctx.fillStyle = '#000000';
+    ctx.textAlign = 'center';
+    
+    // Axis Titles
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText('Time (s)', canvas.width / 2, canvas.height - 20);
+    ctx.fillText('Position (m)', margin.left - 50, canvas.height / 2);
+
+    // Number Labels
+    ctx.font = '16px Arial';
+
+    // X-axis number labels (0 to 10)
+    ctx.textBaseline = 'top';
+    for (let t = 0; t <= tMax; t++) {
+        if (t === 0) { // Special placement for '0' at the origin
+             ctx.textAlign = 'right';
+             ctx.fillText(t.toString(), mapX(t) - 5, mapY(0) + 5);
+             ctx.textAlign = 'center'; // Reset alignment
+        } else {
+            ctx.fillText(t.toString(), mapX(t), mapY(0) + 5);
+        }
+    }
+
+    // Y-axis number labels (10 and -10)
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('10', mapX(0) - 8, mapY(10));
+    ctx.fillText('-10', mapX(0) - 8, mapY(-10));
+}
+
+// 4. Draw the Curve
+function drawCurve() {
+    ctx.beginPath();
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2.5;
+
+    const amplitude = 8;
+    const period = 10;
+    const angularFrequency = (2 * Math.PI) / period;
+
+    const startTime = 0;
+    const endTime = 10;
+    const timeStep = 0.05; // Use small steps for a smooth curve
+
+    // Move to the starting point of the curve
+    const startPos = amplitude * Math.sin(angularFrequency * startTime);
+    ctx.moveTo(mapX(startTime), mapY(startPos));
+
+    // Draw the curve using lineTo for each subsequent point
+    for (let t = startTime + timeStep; t <= endTime; t += timeStep) {
+        const position = amplitude * Math.sin(angularFrequency * t);
+        ctx.lineTo(mapX(t), mapY(position));
+    }
+    ctx.stroke();
+}
+
+// --- Main drawing sequence ---
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+drawGrid();
+drawAxes();
+drawCurve(); // Draw curve before labels so labels are on top
+drawLabels();
+
+</script>
+</body>
+</html>

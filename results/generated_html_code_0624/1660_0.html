@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coupled Pendulums</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="350"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Global Settings ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws a spring as a zigzag line.
+     * @param {CanvasRenderingContext2D} ctx The canvas rendering context.
+     * @param {number} x1 The starting x-coordinate.
+     * @param {number} y The y-coordinate.
+     * @param {number} x2 The ending x-coordinate.
+     * @param {number} coils The number of coils in the spring.
+     * @param {number} amplitude The height of the zigzag.
+     */
+    function drawSpring(ctx, x1, y, x2, coils, amplitude) {
+        ctx.save();
+        ctx.beginPath();
+        const length = x2 - x1;
+        if (length <= 0 || coils <= 0) {
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+            ctx.restore();
+            return;
+        }
+        const segment = length / (coils * 2);
+        ctx.moveTo(x1, y);
+        for (let i = 0; i < coils; i++) {
+            ctx.lineTo(x1 + (2 * i + 1) * segment, y - amplitude);
+            ctx.lineTo(x1 + (2 * i + 2) * segment, y);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    /**
+     * Draws a pendulum with a rod and a mass.
+     * @param {CanvasRenderingContext2D} ctx The canvas rendering context.
+     * @param {number} x The x-coordinate of the pendulum's vertical axis.
+     * @param {number} yTop The y-coordinate of the pivot.
+     * @param {number} rodLength The length of the rod.
+     * @param {number} massRadius The radius of the mass.
+     */
+    function drawPendulum(ctx, x, yTop, rodLength, massRadius) {
+        const yMass = yTop + rodLength;
+        // Draw rod
+        ctx.beginPath();
+        ctx.moveTo(x, yTop);
+        ctx.lineTo(x, yMass);
+        ctx.stroke();
+
+        // Draw mass
+        ctx.beginPath();
+        ctx.arc(x, yMass, massRadius, 0, 2 * Math.PI);
+        // Fill with white to occlude the spring line passing through
+        ctx.save();
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.restore();
+        ctx.stroke(); // Draw the circle border
+    }
+
+    /**
+     * Draws a text label.
+     * @param {CanvasRenderingContext2D} ctx The canvas rendering context.
+     * @param {string} text The text to draw.
+     * @param {number} x The x-coordinate.
+     * @param {number} y The y-coordinate.
+     * @param {string} font The font string.
+     * @param {string} align The text alignment.
+     */
+    function drawLabel(ctx, text, x, y, font = 'italic 20px serif', align = 'center') {
+        ctx.save();
+        ctx.font = font;
+        ctx.textAlign = align;
+        ctx.fillText(text, x, y);
+        ctx.restore();
+    }
+
+    // --- Main Drawing Logic ---
+
+    // Common parameters
+    const yTop = 40;
+    const rodLength = 120;
+    const massRadius = 7;
+    const yMass = yTop + rodLength;
+    const springAmplitude = 9;
+
+    // --- Figure (a) ---
+    const x_a1 = 120;
+    const spacing_a = 150;
+    const x_a2 = x_a1 + spacing_a;
+    const springCoils_a = 12;
+
+    drawSpring(ctx, x_a1, yMass, x_a2, springCoils_a, springAmplitude);
+    drawPendulum(ctx, x_a1, yTop, rodLength, massRadius);
+    drawPendulum(ctx, x_a2, yTop, rodLength, massRadius);
+    
+    // Labels for (a)
+    drawLabel(ctx, 'l', x_a1 - 20, yTop + 30);
+    ctx.beginPath(); // Tick mark for 'l'
+    ctx.moveTo(x_a1 - 15, yTop + 15);
+    ctx.lineTo(x_a1 - 10, yTop + 10);
+    ctx.stroke();
+
+    drawLabel(ctx, 'l', x_a2 - 20, yTop + 30);
+    ctx.beginPath(); // Tick mark for 'l'
+    ctx.moveTo(x_a2 - 15, yTop + 15);
+    ctx.lineTo(x_a2 - 10, yTop + 10);
+    ctx.stroke();
+
+    drawLabel(ctx, 'm', x_a1, yMass + 28);
+    drawLabel(ctx, 'm', x_a2, yMass + 28);
+    drawLabel(ctx, '(a)', (x_a1 + x_a2) / 2, yMass + 60, '20px serif');
+
+    // --- Figure (b) ---
+    const x_b_start = 420;
+    const spacing_b = 90;
+    const numPendulums_b = 4;
+    const springCoils_b = 9;
+    const partialSpringLength = 45;
+    const partialSpringCoils = 5;
+    const x_last = x_b_start + (numPendulums_b - 1) * spacing_b;
+
+    // Draw springs first so pendulums are drawn on top
+    for (let i = 0; i < numPendulums_b - 1; i++) {
+        const x = x_b_start + i * spacing_b;
+        const next_x = x_b_start + (i + 1) * spacing_b;
+        drawSpring(ctx, x, yMass, next_x, springCoils_b, springAmplitude);
+    }
+    // Partial springs
+    drawSpring(ctx, x_b_start - partialSpringLength, yMass, x_b_start, partialSpringCoils, springAmplitude);
+    drawSpring(ctx, x_last, yMass, x_last + partialSpringLength, partialSpringCoils, springAmplitude);
+
+    // Draw pendulums and labels
+    for (let i = 0; i < numPendulums_b; i++) {
+        const x = x_b_start + i * spacing_b;
+        drawPendulum(ctx, x, yTop, rodLength, massRadius);
+        drawLabel(ctx, 'm', x, yMass + 28);
+    }
+    
+    // Labels for (b)
+    drawLabel(ctx, 'l', x_b_start - 20, yTop + 30);
+    ctx.beginPath(); // Tick mark for 'l'
+    ctx.moveTo(x_b_start - 15, yTop + 15);
+    ctx.lineTo(x_b_start - 10, yTop + 10);
+    ctx.stroke();
+    
+    const x_b_center = x_b_start + (numPendulums_b - 1) * spacing_b / 2;
+    drawLabel(ctx, '(b)', x_b_center, yMass + 60, '20px serif');
+
+    // --- Figure Caption ---
+    const x_caption = (x_a1 + x_last) / 2;
+    drawLabel(ctx, 'Fig. 2.56.', x_caption, yMass + 110, '20px serif');
+
+</script>
+</body>
+</html>

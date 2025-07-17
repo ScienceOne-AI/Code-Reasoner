@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="staticsCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('staticsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Define key coordinates and dimensions
+        const B = { x: 140, y: 100 };
+        const a_dim = 150;
+        const C = { x: B.x + 2 * a_dim, y: 100 };
+        const A = { x: B.x, y: B.y + a_dim };
+        const D = { x: C.x, y: C.y + a_dim };
+        const frameThickness = 8;
+
+        // General style setup
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // --- Draw the Main Frame ---
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.lineTo(C.x, C.y);
+        ctx.lineTo(D.x, D.y);
+        ctx.lineWidth = frameThickness;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'butt';
+        ctx.stroke();
+
+        // --- Draw Supports (A and D) ---
+        function drawPinnedSupport(p) {
+            const supportHeight = 30;
+            const supportHalfWidth = 20;
+            const pinRadius = 7;
+            const groundY = p.y + supportHeight;
+
+            // Triangle
+            ctx.beginPath();
+            ctx.moveTo(p.x - supportHalfWidth, groundY);
+            ctx.lineTo(p.x, p.y);
+            ctx.lineTo(p.x + supportHalfWidth, groundY);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Ground line
+            ctx.beginPath();
+            ctx.moveTo(p.x - supportHalfWidth - 10, groundY);
+            ctx.lineTo(p.x + supportHalfWidth + 10, groundY);
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Hatching
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < 7; i++) {
+                ctx.beginPath();
+                ctx.moveTo(p.x - supportHalfWidth - 5 + i * 10, groundY);
+                ctx.lineTo(p.x - supportHalfWidth - 5 + i * 10 - 10, groundY + 10);
+                ctx.stroke();
+            }
+
+            // Pin (circle) - drawn on top of the frame leg
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, pinRadius, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'black';
+            ctx.stroke();
+        }
+
+        drawPinnedSupport(A);
+        drawPinnedSupport(D);
+
+        // --- Draw Force P ---
+        const forceLength = 80;
+        const forceArrowSize = 16;
+        const p_startX = B.x - forceLength;
+        ctx.beginPath();
+        ctx.moveTo(p_startX, B.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        // Arrowhead at B, pointing left
+        ctx.beginPath();
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(B.x - forceArrowSize, B.y - 7);
+        ctx.lineTo(B.x - forceArrowSize, B.y + 7);
+        ctx.closePath();
+        ctx.fillStyle = 'black';
+        ctx.fill();
+
+        // --- Draw Dimensions ---
+        ctx.lineWidth = 1.5;
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 22px serif';
+
+        // Dimension '2a'
+        const dimY_2a = B.y + 70;
+        const arrowSizeH = 12;
+        ctx.beginPath();
+        // Main line
+        ctx.moveTo(B.x, dimY_2a);
+        ctx.lineTo(C.x, dimY_2a);
+        // Left arrowhead (inward)
+        ctx.moveTo(B.x + arrowSizeH, dimY_2a - 5);
+        ctx.lineTo(B.x, dimY_2a);
+        ctx.lineTo(B.x + arrowSizeH, dimY_2a + 5);
+        // Right arrowhead (inward)
+        ctx.moveTo(C.x - arrowSizeH, dimY_2a - 5);
+        ctx.lineTo(C.x, dimY_2a);
+        ctx.lineTo(C.x - arrowSizeH, dimY_2a + 5);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('2a', (B.x + C.x) / 2, dimY_2a - 5);
+
+        // Dimension 'a'
+        const dimX_a = C.x + 40;
+        const arrowSizeV = 12;
+        // Dashed extension lines
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.moveTo(C.x, C.y);
+        ctx.lineTo(dimX_a, C.y);
+        ctx.moveTo(D.x, D.y);
+        ctx.lineTo(dimX_a, D.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Main dimension line with arrows
+        ctx.beginPath();
+        ctx.moveTo(dimX_a, C.y);
+        ctx.lineTo(dimX_a, D.y);
+        // Top arrow
+        ctx.moveTo(dimX_a - 5, C.y + arrowSizeV);
+        ctx.lineTo(dimX_a, C.y);
+        ctx.lineTo(dimX_a + 5, C.y + arrowSizeV);
+        // Bottom arrow
+        ctx.moveTo(dimX_a - 5, D.y - arrowSizeV);
+        ctx.lineTo(dimX_a, D.y);
+        ctx.lineTo(dimX_a + 5, D.y - arrowSizeV);
+        ctx.stroke();
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('a', dimX_a + 10, (C.y + D.y) / 2);
+
+        // --- Draw Labels (P, A, B, C, D) ---
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 26px serif';
+
+        // P Label
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('P', p_startX, B.y - 10);
+
+        // B and C Labels
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('B', B.x + 5, B.y - 10);
+        ctx.fillText('C', C.x + 5, C.y - 10);
+
+        // A and D Labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillText('A', A.x - 15, A.y + 10);
+        ctx.fillText('D', D.x - 15, D.y + 10);
+
+    </script>
+</body>
+</html>

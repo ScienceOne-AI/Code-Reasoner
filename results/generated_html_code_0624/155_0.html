@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Coupled Spring-Pendulum System</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f8f9fa;
+  }
+  canvas {
+    border: 1px solid #dee2e6;
+    background-color: #ffffff;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="400"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Helper function to draw an arrow ---
+function drawArrow(ctx, fromx, fromy, tox, toy) {
+    const headlen = 10; // length of head in pixels
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+// --- Helper function to draw a spring (coil style) ---
+function drawSpring(ctx, x1, y1, length, coils, radius) {
+    const coilWidth = length / coils;
+    ctx.beginPath();
+    
+    // Draw the coils (series of semi-circles)
+    let x = x1;
+    ctx.moveTo(x, y1);
+    for (let i = 0; i < coils; i++) {
+        ctx.arc(x + coilWidth / 2, y1, radius, Math.PI, 0, false);
+        x += coilWidth;
+    }
+    
+    // Draw the bottom line of the spring
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 + length, y1);
+    
+    ctx.stroke();
+}
+
+// --- Main Drawing ---
+
+// Clear canvas
+ctx.fillStyle = '#FFFFFF';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+ctx.fillStyle = '#000000';
+ctx.strokeStyle = '#000000';
+ctx.lineWidth = 2;
+
+
+// Define coordinates and parameters
+const y_surface = 150;
+const wall_x = 50;
+const block_M_center_x = 280;
+const block_M_width = 70;
+const block_M_height = 50;
+
+const spring_y = y_surface - block_M_height / 2;
+const spring_start_x = wall_x;
+const spring_end_x = block_M_center_x - block_M_width / 2;
+const spring_length = spring_end_x - spring_start_x;
+
+const pendulum_l = 90;
+const pendulum_theta = 25 * Math.PI / 180; // 25 degrees
+const bob_radius = 7;
+const pendulum_pivot_x = block_M_center_x;
+const pendulum_pivot_y = y_surface;
+
+// Calculate bob position based on angle from vertical
+const bob_x = pendulum_pivot_x + pendulum_l * Math.sin(pendulum_theta);
+const bob_y = pendulum_pivot_y + pendulum_l * Math.cos(pendulum_theta);
+
+const coord_origin_x = 160;
+const coord_origin_y = 280;
+const axis_length = 70;
+
+// Set font for labels to match hand-drawn style
+ctx.font = '22px "Comic Sans MS", cursive, sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// 1. Draw Wall and Surface
+ctx.beginPath();
+ctx.moveTo(wall_x, y_surface - 80);
+ctx.lineTo(wall_x, y_surface + 15); // Extend wall slightly for hatching
+ctx.stroke();
+
+ctx.beginPath();
+ctx.moveTo(wall_x, y_surface);
+ctx.lineTo(canvas.width - 50, y_surface);
+ctx.stroke();
+
+// Hatching for the fixed wall and surface
+ctx.save();
+ctx.lineWidth = 1.5;
+for (let i = y_surface - 70; i < y_surface + 10; i += 15) {
+    ctx.beginPath();
+    ctx.moveTo(wall_x, i);
+    ctx.lineTo(wall_x - 10, i + 10);
+    ctx.stroke();
+}
+for (let i = wall_x; i < canvas.width - 50; i += 15) {
+    ctx.beginPath();
+    ctx.moveTo(i, y_surface);
+    ctx.lineTo(i - 10, y_surface + 10);
+    ctx.stroke();
+}
+ctx.restore();
+
+// 2. Draw Spring
+drawSpring(ctx, spring_start_x, spring_y, spring_length, 8, 10);
+
+// 3. Draw Block M
+ctx.beginPath();
+ctx.rect(spring_end_x, y_surface - block_M_height, block_M_width, block_M_height);
+ctx.stroke();
+ctx.fillText('M', block_M_center_x, y_surface - block_M_height / 2);
+
+// 4. Draw Pendulum
+// String
+ctx.beginPath();
+ctx.moveTo(pendulum_pivot_x, pendulum_pivot_y);
+ctx.lineTo(bob_x, bob_y);
+ctx.stroke();
+
+// Bob 'm'
+ctx.beginPath();
+ctx.arc(bob_x, bob_y, bob_radius, 0, 2 * Math.PI);
+ctx.fill();
+ctx.fillText('m', bob_x + 20, bob_y + 5);
+
+// Label 'l' for length
+const angle_string = Math.atan2(bob_y - pendulum_pivot_y, bob_x - pendulum_pivot_y);
+const mid_x = (pendulum_pivot_x + bob_x) / 2;
+const mid_y = (pendulum_pivot_y + bob_y) / 2;
+const offset = 15;
+const l_label_x = mid_x + offset * Math.sin(angle_string);
+const l_label_y = mid_y - offset * Math.cos(angle_string);
+ctx.fillText('l', l_label_x, l_label_y);
+
+
+// 5. Draw Angle theta
+// Dashed vertical line for reference
+ctx.save();
+ctx.setLineDash([4, 4]);
+ctx.beginPath();
+ctx.moveTo(pendulum_pivot_x, pendulum_pivot_y);
+ctx.lineTo(pendulum_pivot_x, pendulum_pivot_y + pendulum_l * 0.7);
+ctx.stroke();
+ctx.restore();
+
+// Angle arc
+const arc_radius = 30;
+const angle_vertical = Math.PI / 2;
+ctx.beginPath();
+ctx.arc(pendulum_pivot_x, pendulum_pivot_y, arc_radius, angle_string, angle_vertical);
+ctx.stroke();
+
+// Label 'θ'
+const theta_label_angle = (angle_string + angle_vertical) / 2;
+const theta_label_radius = arc_radius * 0.75;
+const theta_label_x = pendulum_pivot_x + theta_label_radius * Math.cos(theta_label_angle);
+const theta_label_y = pendulum_pivot_y + theta_label_radius * Math.sin(theta_label_angle);
+ctx.fillText('θ', theta_label_x, theta_label_y);
+
+// 6. Draw Coordinate System
+drawArrow(ctx, coord_origin_x, coord_origin_y, coord_origin_x + axis_length, coord_origin_y); // x-axis
+drawArrow(ctx, coord_origin_x, coord_origin_y, coord_origin_x, coord_origin_y - axis_length); // y-axis
+ctx.fillText('x', coord_origin_x + axis_length + 15, coord_origin_y);
+ctx.fillText('y', coord_origin_x - 5, coord_origin_y - axis_length - 15);
+
+// 7. Draw Figure Caption
+ctx.font = '20px "Times New Roman", serif';
+ctx.fillText('Fig. 2.51.', canvas.width / 2, canvas.height - 30);
+
+</script>
+</body>
+</html>

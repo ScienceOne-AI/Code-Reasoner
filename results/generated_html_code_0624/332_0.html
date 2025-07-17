@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Reproduction</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="550" style="border:1px solid #000;"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style settings ---
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    // Using a font that resembles handwriting
+    ctx.font = '20px "Comic Sans MS", cursive, sans-serif';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // --- Helper functions ---
+
+    function drawDashedLine(x1, y1, x2, y2, dashLen = 5, gapLen = 4) {
+        ctx.save();
+        ctx.setLineDash([dashLen, gapLen]);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawDashedEllipse(x, y, rx, ry, rotation, startAngle, endAngle, dashLen = 5, gapLen = 4) {
+        ctx.save();
+        ctx.setLineDash([dashLen, gapLen]);
+        ctx.beginPath();
+        ctx.ellipse(x, y, rx, ry, rotation, startAngle, endAngle);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawArrow(ctx, x1, y1, x2, y2) {
+        const headlen = 8;
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    function drawDoubleArrow(ctx, x1, y1, x2, y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        drawArrow(ctx, x1, y1, x2, y2);
+        drawArrow(ctx, x2, y2, x1, y1);
+    }
+
+
+    // --- Figure (a) Drawing ---
+    function drawFigureA() {
+        ctx.save();
+        const x_front = 160, x_back = 460, y_c = 150;
+        const rx_o = 25, ry_o = 60; // Outer cylinder radii
+        const rx_i = 5, ry_i = 12; // Inner cylinder radii
+
+        // Central axis
+        drawDashedLine(20, y_c, 480, y_c);
+
+        // Horn Body
+        // Front face
+        ctx.beginPath();
+        ctx.ellipse(x_front, y_c, rx_o, ry_o, 0, -Math.PI / 2, Math.PI / 2);
+        ctx.stroke();
+        drawDashedEllipse(x_front, y_c, rx_o, ry_o, 0, Math.PI / 2, 3 * Math.PI / 2);
+        ctx.beginPath();
+        ctx.ellipse(x_front, y_c, rx_i, ry_i, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Back face (all dashed)
+        drawDashedEllipse(x_back, y_c, rx_o, ry_o, 0, 0, 2 * Math.PI);
+        drawDashedEllipse(x_back, y_c, rx_i, ry_i, 0, 0, 2 * Math.PI);
+
+        // Connecting lines
+        ctx.beginPath();
+        ctx.moveTo(x_front, y_c - ry_o);
+        ctx.lineTo(x_back, y_c - ry_o);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x_front, y_c + ry_o);
+        ctx.lineTo(x_back, y_c + ry_o);
+        ctx.stroke();
+        
+        drawDashedLine(x_front, y_c - ry_i, x_back, y_c - ry_i);
+        drawDashedLine(x_front, y_c + ry_i, x_back, y_c + ry_i);
+
+        // Pion Source
+        const p_x = 40, p_y = 150;
+        ctx.textAlign = 'center';
+        ctx.fillText('P', p_x - 10, p_y);
+        ctx.beginPath();
+        ctx.moveTo(p_x, p_y);
+        ctx.lineTo(100, p_y - 25);
+        ctx.moveTo(p_x, p_y);
+        ctx.lineTo(100, p_y + 25);
+        ctx.stroke();
+        ctx.fillText('π', 70, 115);
+        
+        // Dimensions
+        const dim_x = 80;
+        ctx.beginPath();
+        ctx.moveTo(x_front, y_c - ry_i);
+        ctx.lineTo(dim_x, y_c - ry_i);
+        ctx.moveTo(x_front, y_c);
+        ctx.lineTo(dim_x, y_c);
+        ctx.moveTo(x_front, y_c + ry_o);
+        ctx.lineTo(dim_x, y_c + ry_o);
+        ctx.stroke();
+        
+        drawDoubleArrow(ctx, dim_x, y_c, dim_x, y_c-ry_i);
+        drawDoubleArrow(ctx, dim_x, y_c, dim_x, y_c+ry_o);
+
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('5 cm', dim_x - 10, y_c - ry_i / 2 - 5);
+        ctx.fillText('40 cm', dim_x - 10, y_c + ry_o / 2);
+        
+        // Label
+        ctx.textAlign = 'center';
+        ctx.fillText('(a)', 250, 260);
+        ctx.restore();
+    }
+
+    // --- Figure (b) Drawing ---
+    function drawFigureB() {
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        const x_v = 150, x_c = 250;
+        const y_top = 350, y_bot = 450;
+        const y_center = (y_top + y_bot) / 2;
+
+        // V0-C loop
+        // Wires
+        ctx.beginPath();
+        ctx.moveTo(x_v, y_center - 20); // V0 top
+        ctx.lineTo(x_v, y_top + 10);
+        ctx.lineTo(x_v + 10, y_top);
+        ctx.lineTo(x_c, y_top);
+        ctx.lineTo(x_c, y_center - 10); // C top
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x_v, y_center + 20); // V0 bottom
+        ctx.lineTo(x_v, y_bot);
+        ctx.lineTo(x_c, y_bot);
+        ctx.lineTo(x_c, y_center + 10); // C bottom
+        ctx.stroke();
+        
+        // V0 component
+        ctx.beginPath();
+        ctx.moveTo(x_v - 8, y_center - 20);
+        ctx.lineTo(x_v + 8, y_center - 20); // positive plate
+        ctx.moveTo(x_v - 4, y_center + 20);
+        ctx.lineTo(x_v + 4, y_center + 20); // negative plate
+        ctx.stroke();
+        ctx.textAlign = 'right';
+        ctx.fillText('V₀', x_v - 15, y_center);
+
+        // C component
+        ctx.beginPath();
+        ctx.moveTo(x_c - 10, y_center - 10);
+        ctx.lineTo(x_c + 10, y_center - 10);
+        ctx.moveTo(x_c - 10, y_center + 10);
+        ctx.lineTo(x_c + 10, y_center + 10);
+        ctx.stroke();
+        ctx.textAlign = 'left';
+        ctx.fillText('C', x_c + 15, y_center);
+
+        // R-L branch
+        const x_r_start = 300, x_r_end = 360;
+        const x_l = 400;
+
+        // Top wire with switch gap
+        ctx.beginPath();
+        ctx.moveTo(x_c, y_top);
+        ctx.lineTo(x_r_start - 10, y_top);
+        ctx.moveTo(x_r_start + 10, y_top);
+        ctx.lineTo(x_r_end - 30, y_top);
+        ctx.stroke();
+
+        // R component
+        ctx.beginPath();
+        ctx.moveTo(x_r_end - 30, y_top);
+        let currentX = x_r_end - 30;
+        const zigzagH = 8, zigzagW = 10;
+        ctx.lineTo(currentX + zigzagW, y_top + zigzagH);
+        ctx.lineTo(currentX + 2*zigzagW, y_top - zigzagH);
+        ctx.lineTo(currentX + 3*zigzagW, y_top + zigzagH);
+        ctx.lineTo(currentX + 4*zigzagW, y_top - zigzagH);
+        ctx.lineTo(currentX + 5*zigzagW, y_top);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.fillText('R', x_r_end, y_top - 20);
+
+        // L component
+        ctx.beginPath();
+        ctx.moveTo(x_r_end + 20, y_top);
+        ctx.lineTo(x_l, y_top);
+        ctx.lineTo(x_l, y_center - 25);
+        ctx.stroke();
+
+        ctx.beginPath(); // Inductor coil
+        const coilR = 8, numCoils = 3;
+        const coilStartY = y_center - 25;
+        for (let i = 0; i < numCoils; i++) {
+            ctx.arc(x_l, coilStartY + (2 * i + 1) * coilR, coilR, -Math.PI / 2, Math.PI / 2);
+        }
+        ctx.stroke();
+        const coilEndY = coilStartY + 2 * numCoils * coilR;
+        ctx.beginPath();
+        ctx.moveTo(x_l, coilEndY);
+        ctx.lineTo(x_l, y_bot);
+        ctx.lineTo(x_c, y_bot);
+        ctx.stroke();
+        ctx.textAlign = 'left';
+        ctx.fillText('L', x_l + 15, y_center);
+
+        // Label
+        ctx.textAlign = 'center';
+        ctx.fillText('(b)', 250, 490);
+        ctx.restore();
+    }
+
+    // --- Main drawing execution ---
+    drawFigureA();
+    drawFigureB();
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 3.78', 250, 530);
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamic Cycle p-V Diagram</title>
+</head>
+<body>
+<canvas id="pvDiagram" width="550" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('pvDiagram');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Configuration ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    const axisFont = "italic 22px 'Times New Roman'";
+    const labelFont = "22px 'Times New Roman'";
+    const subscriptFont = "14px 'Times New Roman'";
+    const chineseFont = "20px 'SimSun', 'Songti SC', 'STSong'";
+
+    // --- Coordinate System ---
+    const ox = 60;
+    const oy = 400;
+    const xAxisLength = 470;
+    const yAxisLength = 380;
+
+    // --- Helper Function for Arrowheads ---
+    function drawFilledArrowhead(ctx, x, y, angle, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.lineTo(-size, size / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Draw Axes ---
+    // Y-axis (p)
+    ctx.beginPath();
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(ox, oy - yAxisLength);
+    ctx.stroke();
+    drawFilledArrowhead(ctx, ox, oy - yAxisLength, -Math.PI / 2, 12);
+    ctx.font = axisFont;
+    ctx.fillText('p', ox - 30, oy - yAxisLength + 15);
+
+    // X-axis (V)
+    ctx.beginPath();
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(ox + xAxisLength, oy);
+    ctx.stroke();
+    drawFilledArrowhead(ctx, ox + xAxisLength, oy, 0, 12);
+    ctx.fillText('V', ox + xAxisLength + 5, oy + 10);
+    
+    // Origin Label
+    ctx.font = labelFont;
+    ctx.fillText('O', ox - 25, oy + 20);
+
+    // --- Define Cycle Points (chosen for visual resemblance to the original image) ---
+    const pA = { x: 150, y: 250 };
+    const pB = { x: 150, y: 90 };
+    const pC = { x: 450, y: 130 };
+    const pD = { x: 450, y: 310 };
+
+    // --- Draw Dashed Lines and V-axis Labels ---
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(pA.x, pA.y);
+    ctx.lineTo(pA.x, oy);
+    ctx.moveTo(pD.x, pD.y);
+    ctx.lineTo(pD.x, oy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.lineWidth = 2;
+    
+    // V-axis labels with subscript
+    ctx.font = labelFont;
+    ctx.fillText('V', pA.x - 7, oy + 25);
+    ctx.font = subscriptFont;
+    ctx.fillText('0', pA.x + 7, oy + 28);
+
+    ctx.font = labelFont;
+    ctx.fillText('3V', pD.x - 13, oy + 25);
+    ctx.font = subscriptFont;
+    ctx.fillText('0', pD.x + 18, oy + 28);
+
+    // --- Draw the Cycle Path ---
+    // A -> B (Isochoric)
+    ctx.beginPath();
+    ctx.moveTo(pA.x, pA.y);
+    ctx.lineTo(pB.x, pB.y);
+    ctx.stroke();
+
+    // C -> D (Isochoric)
+    ctx.beginPath();
+    ctx.moveTo(pC.x, pC.y);
+    ctx.lineTo(pD.x, pD.y);
+    ctx.stroke();
+
+    // B -> C (Isothermal)
+    const cp_BC_x = (pB.x + pC.x) / 2;
+    const cp_BC_y = pB.y - 15; // Control point to make the curve bow upwards
+    ctx.beginPath();
+    ctx.moveTo(pB.x, pB.y);
+    ctx.quadraticCurveTo(cp_BC_x, cp_BC_y, pC.x, pC.y);
+    ctx.stroke();
+
+    // D -> A (Isothermal)
+    const cp_DA_x = (pD.x + pA.x) / 2;
+    const cp_DA_y = pA.y - 20; // Control point to make the curve bow upwards
+    ctx.beginPath();
+    ctx.moveTo(pD.x, pD.y);
+    ctx.quadraticCurveTo(cp_DA_x, cp_DA_y, pA.x, pA.y);
+    ctx.stroke();
+    
+    // --- Draw Point Labels ---
+    ctx.font = labelFont;
+    ctx.fillText('A', pA.x - 25, pA.y + 5);
+    ctx.fillText('B', pB.x - 25, pB.y);
+    ctx.fillText('C', pC.x + 10, pC.y);
+    ctx.fillText('D', pD.x + 10, pD.y);
+
+    // --- Draw Arrows on the Path ---
+    const arrowSize = 10;
+    // A -> B (up)
+    drawFilledArrowhead(ctx, pA.x, (pA.y + pB.y) / 2, -Math.PI / 2, arrowSize);
+    
+    // C -> D (down)
+    drawFilledArrowhead(ctx, pC.x, (pC.y + pD.y) / 2, Math.PI / 2, arrowSize);
+    
+    // B -> C (right)
+    // Position on curve at t=0.55
+    const t_BC = 0.55;
+    const mid_BC_x = Math.pow(1 - t_BC, 2) * pB.x + 2 * (1 - t_BC) * t_BC * cp_BC_x + Math.pow(t_BC, 2) * pC.x;
+    const mid_BC_y = Math.pow(1 - t_BC, 2) * pB.y + 2 * (1 - t_BC) * t_BC * cp_BC_y + Math.pow(t_BC, 2) * pC.y;
+    // Tangent vector
+    const dBCx = 2 * (1 - t_BC) * (cp_BC_x - pB.x) + 2 * t_BC * (pC.x - cp_BC_x);
+    const dBCy = 2 * (1 - t_BC) * (cp_BC_y - pB.y) + 2 * t_BC * (pC.y - cp_BC_y);
+    const angle_BC = Math.atan2(dBCy, dBCx);
+    drawFilledArrowhead(ctx, mid_BC_x, mid_BC_y, angle_BC, arrowSize);
+
+    // D -> A (left)
+    // Position on curve at t=0.7 to match image
+    const t_DA = 0.7;
+    const mid_DA_x = Math.pow(1 - t_DA, 2) * pD.x + 2 * (1 - t_DA) * t_DA * cp_DA_x + Math.pow(t_DA, 2) * pA.x;
+    const mid_DA_y = Math.pow(1 - t_DA, 2) * pD.y + 2 * (1 - t_DA) * t_DA * cp_DA_y + Math.pow(t_DA, 2) * pA.y;
+    // Tangent vector
+    const dDAx = 2 * (1 - t_DA) * (cp_DA_x - pD.x) + 2 * t_DA * (pA.x - cp_DA_x);
+    const dDAy = 2 * (1 - t_DA) * (cp_DA_y - pD.y) + 2 * t_DA * (pA.y - cp_DA_y);
+    const angle_DA = Math.atan2(dDAy, dDAx);
+    drawFilledArrowhead(ctx, mid_DA_x, mid_DA_y, angle_DA, arrowSize);
+    
+    // --- Draw Isotherm Labels ---
+    // "3T₀等温线" (3T₀ Isotherm)
+    ctx.font = labelFont;
+    ctx.fillText('3T', 270, pB.y - 15);
+    ctx.font = subscriptFont;
+    ctx.fillText('0', 270 + 28, pB.y - 12);
+    ctx.font = chineseFont;
+    ctx.fillText('等温线', 270 + 40, pB.y - 15);
+
+    // "T₀等温线" (T₀ Isotherm)
+    ctx.font = labelFont;
+    ctx.fillText('T', 280, pD.y - 45);
+    ctx.font = subscriptFont;
+    ctx.fillText('0', 280 + 13, pD.y - 42);
+    ctx.font = chineseFont;
+    ctx.fillText('等温线', 280 + 27, pD.y - 45);
+
+</script>
+</body>
+</html>

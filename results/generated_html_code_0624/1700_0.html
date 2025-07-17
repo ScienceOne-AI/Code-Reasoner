@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic bold 22px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Coordinates based on angles α=45°, β=60°
+    const wallX = 50;
+    const ceilingY = 72;
+    const B = { x: 200, y: 250 };
+    const A = { x: 50, y: 100 };
+    const C = { x: 451, y: 105 }; // Pulley center
+    
+    const pulleyRadius = 25;
+    const ropeD_start_x = C.x + pulleyRadius;
+    const ropeD_end = { x: ropeD_start_x, y: 220 };
+    
+    const ropeP_end = { x: B.x, y: 300 };
+    const boxSize = 50;
+    const P_center = { x: ropeP_end.x, y: ropeP_end.y + boxSize / 2 };
+    const Q_center = { x: ropeD_end.x, y: ropeD_end.y + boxSize / 2 };
+    
+    const E_pos = { x: B.x, y: 180 };
+
+    // Function to draw hatching lines
+    function drawHatching(x1, y1, x2, y2, isVertical) {
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        const step = 10;
+        const len = 10;
+        if (isVertical) { // For vertical wall
+            for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y += step) {
+                ctx.beginPath();
+                ctx.moveTo(x1, y);
+                ctx.lineTo(x1 - len, y + len);
+                ctx.stroke();
+            }
+        } else { // For horizontal ceiling
+            for (let x = Math.min(x1, x2); x <= Math.max(x1, x2); x += step) {
+                ctx.beginPath();
+                ctx.moveTo(x, y1);
+                ctx.lineTo(x + len, y1 - len);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+    
+    function drawArcArrow(ctx, center_x, center_y, radius, end_angle, is_counter_clockwise) {
+        const arrowLength = 10;
+        const arrowWidth = 5;
+        
+        const x = center_x + radius * Math.cos(end_angle);
+        const y = center_y + radius * Math.sin(end_angle);
+        
+        const tangent_angle = end_angle + (is_counter_clockwise ? -Math.PI / 2 : Math.PI / 2);
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(tangent_angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-arrowLength, arrowWidth / 2);
+        ctx.lineTo(-arrowLength, -arrowWidth / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+
+    // 1. Draw Wall and Ceiling
+    ctx.beginPath();
+    ctx.moveTo(wallX, 0);
+    ctx.lineTo(wallX, canvas.height);
+    ctx.stroke();
+    drawHatching(wallX, 0, wallX, canvas.height, true);
+
+    ctx.beginPath();
+    ctx.moveTo(C.x - 70, ceilingY);
+    ctx.lineTo(C.x + 70, ceilingY);
+    ctx.stroke();
+    drawHatching(C.x - 70, ceilingY, C.x + 70, ceilingY, false);
+
+
+    // 2. Draw Pulley
+    // Attachment
+    const bracket = { w: 30, h: 8 };
+    ctx.beginPath();
+    ctx.rect(C.x - bracket.w / 2, ceilingY, bracket.w, C.y - pulleyRadius - ceilingY);
+    ctx.stroke();
+    // Pulley Wheel
+    ctx.beginPath();
+    ctx.arc(C.x, C.y, pulleyRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+    // Axle
+    ctx.beginPath();
+    ctx.arc(C.x, C.y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+
+
+    // 3. Draw Ropes
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y);
+    ctx.lineTo(B.x, B.y); // Rope AB
+    ctx.lineTo(C.x, C.y); // Rope BC
+    ctx.stroke();
+
+    ctx.beginPath(); // Rope for P
+    ctx.moveTo(B.x, B.y);
+    ctx.lineTo(ropeP_end.x, ropeP_end.y);
+    ctx.stroke();
+
+    ctx.beginPath(); // Rope CD
+    ctx.moveTo(ropeD_start_x, C.y);
+    ctx.lineTo(ropeD_end.x, ropeD_end.y);
+    ctx.stroke();
+
+
+    // 4. Draw Weights
+    ctx.beginPath();
+    ctx.rect(P_center.x - boxSize / 2, P_center.y - boxSize / 2, boxSize, boxSize);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.rect(Q_center.x - boxSize / 2, Q_center.y - boxSize / 2, boxSize, boxSize);
+    ctx.stroke();
+
+
+    // 5. Draw Dashed Line and Angles
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(B.x, B.y);
+    ctx.lineTo(E_pos.x, E_pos.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // Angle Arcs
+    const arcRadius = 45;
+    const angle_vertical = 1.5 * Math.PI; // -90 degrees
+    const angle_AB = 1.25 * Math.PI; // -135 degrees (45 from vertical)
+    const angle_BC = (11/6) * Math.PI; // -30 degrees or 330 (60 from vertical)
+
+    // Arc for alpha (α)
+    ctx.beginPath();
+    ctx.arc(B.x, B.y, arcRadius, angle_vertical, angle_AB, true); // counter-clockwise
+    ctx.stroke();
+    drawArcArrow(ctx, B.x, B.y, arcRadius, angle_AB, true);
+    
+    // Arc for beta (β)
+    ctx.beginPath();
+    ctx.arc(B.x, B.y, arcRadius, angle_vertical, angle_BC, false); // clockwise
+    ctx.stroke();
+    drawArcArrow(ctx, B.x, B.y, arcRadius, angle_BC, false);
+    
+    // 6. Draw Labels
+    ctx.fillText('A', A.x + 20, A.y - 10);
+    ctx.fillText('B', B.x + 10, B.y + 20);
+    ctx.fillText('C', C.x + pulleyRadius + 15, C.y);
+    ctx.fillText('D', ropeD_end.x + 20, ropeD_end.y);
+    ctx.fillText('E', E_pos.x, E_pos.y - 15);
+
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('P', P_center.x, P_center.y);
+    ctx.fillText('Q', Q_center.x, Q_center.y);
+
+    // Angle labels
+    ctx.font = 'italic 22px Times New Roman';
+    const labelRadius = arcRadius - 18;
+    const alpha_label_angle = (angle_vertical + angle_AB) / 2;
+    ctx.fillText('α', B.x + labelRadius * Math.cos(alpha_label_angle), B.y + labelRadius * Math.sin(alpha_label_angle) + 5);
+
+    // Manual adjustment for beta label for better positioning
+    const beta_label_angle = 1.68 * Math.PI;
+    ctx.fillText('β', B.x + labelRadius * Math.cos(beta_label_angle) + 5, B.y + labelRadius * Math.sin(beta_label_angle) + 5);
+
+</script>
+</body>
+</html>

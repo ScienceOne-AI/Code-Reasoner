@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spiral Orbit with Drag</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f8f9fa;
+  }
+  canvas {
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="450" height="500"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Center the coordinate system, leaving space for the caption
+  const centerX = canvas.width / 2;
+  const centerY = 220;
+  ctx.translate(centerX, centerY);
+
+  // --- Parameters for drawing ---
+  const outerRadius = 180;
+  const spiralDecay = 0.12; // Controls how tightly the spirals are wound
+  const numGridSpirals = 8;
+  const numTurns = 3.5;
+  const maxTheta = numTurns * 2 * Math.PI;
+  const mainSpiralStartAngle = Math.PI * 0.85; // Start in the top-left quadrant
+
+  // --- Helper function to draw arrows ---
+  function drawArrow(x, y, angle, size) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    // The point (x, y) is the tip of the arrow
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, -size / 2.5);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, size / 2.5);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 1. Draw the outer circular boundary
+  ctx.beginPath();
+  ctx.arc(0, 0, outerRadius, 0, 2 * Math.PI);
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // 2. Draw the 'b' label and its associated arc on the boundary
+  ctx.lineWidth = 1;
+  const b_arc_start = Math.PI * 1.25;
+  const b_arc_end = Math.PI * 1.45;
+  
+  // Draw the arc for the label
+  ctx.beginPath();
+  ctx.arc(0, 0, outerRadius, b_arc_start, b_arc_end);
+  ctx.stroke();
+
+  // Function to draw the ticks perpendicular to the arc
+  function drawTick(angle, radius, length) {
+    const x = radius * Math.cos(angle);
+    const y = radius * Math.sin(angle);
+    // The tangent direction has an angle of `angle + PI/2`
+    const tangentAngle = angle + Math.PI / 2;
+    const dx = length * Math.cos(tangentAngle);
+    const dy = length * Math.sin(tangentAngle);
+    
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + dx, y + dy);
+    ctx.stroke();
+  }
+
+  drawTick(b_arc_start, outerRadius, 15);
+  drawTick(b_arc_end, outerRadius, 15);
+
+  // Place the 'b' character
+  const b_label_angle = (b_arc_start + b_arc_end) / 2;
+  const b_label_radius = outerRadius + 30;
+  const b_x = b_label_radius * Math.cos(b_label_angle);
+  const b_y = b_label_radius * Math.sin(b_label_angle) + 5; // Adjust for font baseline
+  ctx.font = 'italic 20px serif';
+  ctx.fillStyle = 'black';
+  ctx.textAlign = 'center';
+  ctx.fillText('b', b_x, b_y);
+
+
+  // 3. Clip the drawing area to the inside of the circle for the spirals
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(0, 0, outerRadius, 0, 2 * Math.PI);
+  ctx.clip();
+
+  // 4. Draw the grid of secondary spirals (counter-clockwise)
+  ctx.lineWidth = 1;
+  for (let i = 0; i < numGridSpirals; i++) {
+    const angleOffset = (i / numGridSpirals) * 2 * Math.PI;
+    ctx.beginPath();
+    let isFirstPoint = true;
+    for (let theta = 0; theta <= maxTheta; theta += 0.05) {
+      const r = outerRadius * Math.exp(-spiralDecay * theta);
+      // Negative theta for counter-clockwise rotation
+      const x = r * Math.cos(-theta + angleOffset);
+      const y = r * Math.sin(-theta + angleOffset);
+      if (isFirstPoint) {
+        ctx.moveTo(x, y);
+        isFirstPoint = false;
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.stroke();
+  }
+
+  // 5. Draw the main trajectory spiral (clockwise)
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  // We need to scale the radius so it starts at outerRadius at its start angle
+  const r_initial = outerRadius * Math.exp(spiralDecay * mainSpiralStartAngle);
+  let isFirstPoint = true;
+  for (let theta = mainSpiralStartAngle; theta <= maxTheta + mainSpiralStartAngle; theta += 0.01) {
+    const r = r_initial * Math.exp(-spiralDecay * theta);
+    const x = r * Math.cos(theta);
+    const y = r * Math.sin(theta);
+    if (isFirstPoint) {
+      ctx.moveTo(x, y);
+      isFirstPoint = false;
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+  ctx.stroke();
+
+  // 6. Draw arrows on the main trajectory
+  // For a log spiral r=A*exp(-b*theta), the angle between the radius vector
+  // and the tangent is psi, where cot(psi) = -b.
+  const psi = Math.atan2(1, -spiralDecay);
+  const arrowPositions = [1.5, 2.5, 3.5, 4.5, 5.5, 6.5];
+
+  for (const pos of arrowPositions) {
+    const theta = pos * Math.PI + mainSpiralStartAngle;
+    const r = r_initial * Math.exp(-spiralDecay * theta);
+    if (r < 15) continue; // Avoid drawing arrows too close to the center
+    const x = r * Math.cos(theta);
+    const y = r * Math.sin(theta);
+    const tangentAngle = theta + psi;
+    drawArrow(x, y, tangentAngle, 10);
+  }
+  
+  // Restore from clipping
+  ctx.restore();
+
+  // 7. Draw the radial line from the center to the start of the main spiral
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  const startX = outerRadius * Math.cos(mainSpiralStartAngle);
+  const startY = outerRadius * Math.sin(mainSpiralStartAngle);
+  ctx.lineTo(startX, startY);
+  ctx.stroke();
+  
+  // 8. Draw the central star
+  ctx.beginPath();
+  ctx.arc(0, 0, 6, 0, 2 * Math.PI);
+  ctx.fillStyle = 'black';
+  ctx.fill();
+
+  // 9. Draw the figure caption
+  ctx.font = 'bold 22px serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'black';
+  ctx.fillText('Fig. 1.47.', 0, 255);
+
+</script>
+</body>
+</html>

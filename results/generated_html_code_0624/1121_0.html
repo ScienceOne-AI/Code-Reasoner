@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram 5.8.1</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="600"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper function to draw a vertical dimension line with outward arrows ---
+    function drawVerticalDimensionLine(ctx, x, y1, y2) { // y1 is top y-coordinate, y2 is bottom
+        const headlen = 8;
+        ctx.beginPath();
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, y2);
+        ctx.stroke();
+        // Arrow at y1 (points up)
+        let angle_up = -Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x - headlen * Math.cos(angle_up - Math.PI / 6), y1 - headlen * Math.sin(angle_up - Math.PI / 6));
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x - headlen * Math.cos(angle_up + Math.PI / 6), y1 - headlen * Math.sin(angle_up + Math.PI / 6));
+        ctx.stroke();
+        // Arrow at y2 (points down)
+        let angle_down = Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(x, y2);
+        ctx.lineTo(x - headlen * Math.cos(angle_down - Math.PI / 6), y2 - headlen * Math.sin(angle_down - Math.PI / 6));
+        ctx.moveTo(x, y2);
+        ctx.lineTo(x - headlen * Math.cos(angle_down + Math.PI / 6), y2 - headlen * Math.sin(angle_down + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    // --- Helper function to draw a single-headed arrow ---
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 8;
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // --- Style and settings ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = 'italic 22px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Parameters ---
+    const cx = 250;
+    const rod_w = 12;
+
+    const float_half_h = 40;
+    const float_w = 90; // half-width
+    // Calculate radius of curvature from h and w
+    const R_curve = (float_w * float_w + float_half_h * float_half_h) / (2 * float_half_h);
+
+    const float_center_y = 400;
+    const float_y_top = float_center_y - float_half_h;
+    const float_y_bottom = float_center_y + float_half_h;
+
+    const l_length = 300;
+    const rod_y_bottom = float_y_bottom;
+    const rod_y_top = rod_y_bottom - l_length;
+    
+    const liquid_y = 430;
+
+    // --- Drawing ---
+
+    // 1. Draw Liquid Surface
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(30, liquid_y);
+    ctx.lineTo(470, liquid_y);
+    ctx.stroke();
+    // Ripples
+    for (let i = 0; i < 5; i++) {
+        const y_ripple = liquid_y + 15 + i * 12;
+        for (let j = 0; j < 12; j++) {
+            const x_start = 30 + j * 36 + (i % 2) * 18;
+            ctx.beginPath();
+            ctx.moveTo(x_start, y_ripple);
+            ctx.lineTo(x_start + 20, y_ripple);
+            ctx.stroke();
+        }
+    }
+    ctx.lineWidth = 1.5;
+    ctx.font = '22px "SimSun"';
+    ctx.textAlign = 'left';
+    ctx.fillText('液面', 350, liquid_y - 20);
+    ctx.font = 'italic 22px "Times New Roman"';
+
+    // 2. Draw Rod (m2)
+    ctx.beginPath();
+    ctx.rect(cx - rod_w / 2, rod_y_top, rod_w, l_length);
+    ctx.stroke();
+    // Rod label m2
+    ctx.textAlign = 'left';
+    ctx.fillText('m', 280, 200);
+    ctx.font = 'italic 16px "Times New Roman"';
+    ctx.fillText('2', 292, 206);
+    ctx.font = 'italic 22px "Times New Roman"';
+
+    // 3. Draw Float (m1)
+    const angle = Math.asin(float_w / R_curve);
+    // Bottom arc
+    ctx.beginPath();
+    ctx.arc(cx, float_y_bottom - R_curve, R_curve, Math.PI / 2 - angle, Math.PI / 2 + angle);
+    ctx.stroke();
+    // Top arc
+    ctx.beginPath();
+    ctx.arc(cx, float_y_top + R_curve, R_curve, -Math.PI / 2 - angle, -Math.PI / 2 + angle);
+    ctx.stroke();
+    // Float label m1
+    ctx.textAlign = 'left';
+    ctx.fillText('m', 350, 400);
+    ctx.font = 'italic 16px "Times New Roman"';
+    ctx.fillText('1', 362, 406);
+    ctx.font = 'italic 22px "Times New Roman"';
+
+    // 4. Draw Dimensions and Other Labels
+
+    // Dimension l
+    const l_dim_x = 100;
+    drawVerticalDimensionLine(ctx, l_dim_x, rod_y_top, rod_y_bottom);
+    ctx.beginPath();
+    ctx.moveTo(l_dim_x, rod_y_top);
+    ctx.lineTo(cx-rod_w/2, rod_y_top);
+    ctx.moveTo(l_dim_x, rod_y_bottom);
+    ctx.lineTo(cx - float_w, rod_y_bottom);
+    ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.fillText('l', l_dim_x - 20, float_center_y);
+
+    // Point O
+    const o_y = float_y_top - 40;
+    ctx.beginPath();
+    ctx.arc(cx, o_y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.textAlign = 'left';
+    ctx.fillText('O', cx + 15, o_y);
+    // Dimension line for O
+    const O_dim_x = cx - 80;
+    ctx.beginPath();
+    ctx.moveTo(O_dim_x - 5, o_y);
+    ctx.lineTo(O_dim_x + 5, o_y);
+    ctx.moveTo(O_dim_x, o_y);
+    ctx.lineTo(O_dim_x, float_center_y);
+    ctx.moveTo(O_dim_x - 5, float_center_y);
+    ctx.lineTo(O_dim_x + 5, float_center_y);
+    ctx.stroke();
+
+    // Dimension R
+    const R_dim_x = cx - 110;
+    drawArrow(ctx, R_dim_x, float_center_y, R_dim_x, float_y_bottom);
+    ctx.beginPath();
+    ctx.moveTo(R_dim_x - 5, float_center_y);
+    ctx.lineTo(R_dim_x + 5, float_center_y);
+    ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.fillText('R', R_dim_x - 20, (float_center_y + float_y_bottom) / 2);
+    
+    // Dimension h (with curly brace)
+    const h_dim_x = cx + float_w + 20;
+    const h_brace_w = 15;
+    ctx.beginPath();
+    ctx.moveTo(h_dim_x, float_y_top);
+    ctx.bezierCurveTo(h_dim_x + h_brace_w, float_y_top + 10, h_dim_x + h_brace_w, float_center_y - 10, h_dim_x, float_center_y);
+    ctx.bezierCurveTo(h_dim_x + h_brace_w, float_center_y + 10, h_dim_x + h_brace_w, float_y_bottom - 10, h_dim_x, float_y_bottom);
+    ctx.stroke();
+    ctx.textAlign = 'left';
+    ctx.fillText('h', h_dim_x + h_brace_w + 5, float_center_y);
+
+    // 5. Add Caption
+    ctx.textAlign = 'center';
+    ctx.font = '20px "SimSun"';
+    ctx.fillText('力图 5.8.1', cx, canvas.height - 30);
+</script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Projectile Motion Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Based on the problem statement and physics principles:
+        // Let the origin be on the ground directly below the launch point.
+        // Launch point: (0, h)
+        // Passes through: (a, h)
+        // Lands at: (a+b, 0)
+        //
+        // Trajectory equation: y(x) = h + x*tan(θ₀) - (g*x²)/(2*v₀²*cos²(θ₀))
+        //
+        // 1. Passes through (a, h):
+        //    h = h + a*tan(θ₀) - (g*a²)/(2*v₀²*cos²(θ₀))
+        //    => a*tan(θ₀) = (g*a²)/(2*v₀²*cos²(θ₀))
+        //    => (g)/(2*v₀²*cos²(θ₀)) = tan(θ₀)/a
+        //
+        // 2. Lands at (a+b, 0):
+        //    0 = h + (a+b)*tan(θ₀) - (g*(a+b)²)/(2*v₀²*cos²(θ₀))
+        //
+        // Substitute (1) into (2):
+        //    0 = h + (a+b)*tan(θ₀) - (tan(θ₀)/a)*(a+b)²
+        //   -h = tan(θ₀) * [ (a+b) - (a+b)²/a ]
+        //   -h = tan(θ₀) * [ (a(a+b) - (a²+2ab+b²))/a ]
+        //   -h = tan(θ₀) * [ (a²+ab - a²-2ab-b²)/a ]
+        //   -h = tan(θ₀) * [ (-ab-b²)/a ] = -tan(θ₀) * b(a+b)/a
+        //   => tan(θ₀) = a*h / (b*(a+b))
+        //
+        // Given values: h=1.0, a=2.0, b=0.5
+        // tan(θ₀) = (2.0 * 1.0) / (0.5 * (2.0 + 0.5)) = 2.0 / (0.5 * 2.5) = 2.0 / 1.25 = 1.6
+        // θ₀ = arctan(1.6) ≈ 57.99 degrees
+
+        const h_phys = 1.0;
+        const a_phys = 2.0;
+        const b_phys = 0.5;
+        const tan_theta0 = (a_phys * h_phys) / (b_phys * (a_phys + b_phys));
+        const theta0 = Math.atan(tan_theta0); // in radians
+
+        // Determine trajectory peak to set canvas scale
+        // y(x) = h + x*tan(θ₀) - (tan(θ₀)/a)*x²
+        // dy/dx = tan(θ₀) - (2x*tan(θ₀)/a) = 0  => x_peak = a/2 = 1.0
+        // y_peak = h + (a/2)*tan(θ₀) - (tan(θ₀)/a)*(a/2)² = h + a*tan(θ₀)/4
+        // y_peak = 1.0 + 2.0 * 1.6 / 4 = 1.0 + 0.8 = 1.8 m
+        const y_peak_phys = h_phys + (a_phys * tan_theta0) / 4;
+
+        // --- Drawing parameters ---
+        const margin = 60;
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        const scaleX = (canvasWidth - 2 * margin) / (a_phys + b_phys);
+        const scaleY = (canvasHeight - 2 * margin - 50) / y_peak_phys; // Extra 50px for text at bottom
+        const scale = Math.min(scaleX, scaleY);
+
+        const originX = margin;
+        const originY = canvasHeight - margin - 50;
+
+        // Helper function to convert physics coordinates to canvas coordinates
+        function toCanvas(px, py) {
+            return {
+                x: originX + px * scale,
+                y: originY - py * scale
+            };
+        }
+        
+        // Helper function to draw an arrow
+        function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Start Drawing ---
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px "Times New Roman"';
+
+        // 1. Draw ground line
+        const ground = toCanvas(0, 0);
+        ctx.beginPath();
+        ctx.moveTo(0, ground.y);
+        ctx.lineTo(canvasWidth, ground.y);
+        ctx.stroke();
+
+        // 2. Draw table
+        const tableTopLeft = toCanvas(0, h_phys);
+        const tableTopRight = toCanvas(a_phys, h_phys);
+        ctx.beginPath();
+        ctx.moveTo(tableTopLeft.x, tableTopLeft.y);
+        ctx.lineTo(tableTopRight.x, tableTopRight.y);
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Draw table legs
+        ctx.lineWidth = 2;
+        const legTopOffset = a_phys * 0.1 * scale;
+        const legBottomSpread = a_phys * 0.15 * scale;
+        
+        // Left leg pair
+        ctx.beginPath();
+        ctx.moveTo(tableTopLeft.x + legTopOffset, tableTopLeft.y);
+        ctx.lineTo(tableTopLeft.x - legBottomSpread, ground.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tableTopLeft.x + legTopOffset + 8, tableTopLeft.y);
+        ctx.lineTo(tableTopLeft.x - legBottomSpread + 8, ground.y);
+        ctx.stroke();
+        
+        // Right leg pair
+        ctx.beginPath();
+        ctx.moveTo(tableTopRight.x - legTopOffset, tableTopRight.y);
+        ctx.lineTo(tableTopRight.x + legBottomSpread, ground.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tableTopRight.x - legTopOffset - 8, tableTopRight.y);
+        ctx.lineTo(tableTopRight.x + legBottomSpread - 8, ground.y);
+        ctx.stroke();
+
+        // 3. Draw projectile trajectory
+        ctx.beginPath();
+        ctx.setLineDash([6, 4]);
+        ctx.lineWidth = 1.5;
+        const startPoint = toCanvas(0, h_phys);
+        ctx.moveTo(startPoint.x, startPoint.y);
+
+        for (let px = 0; px <= a_phys + b_phys; px += 0.01) {
+            const py = h_phys + px * tan_theta0 - (tan_theta0 / a_phys) * px * px;
+            if (py < 0) break;
+            const p = toCanvas(px, py);
+            ctx.lineTo(p.x, p.y);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset line dash
+
+        // 4. Draw the ball
+        ctx.lineWidth = 2;
+        ctx.fillStyle = '#808080';
+        ctx.beginPath();
+        ctx.arc(startPoint.x, startPoint.y, 8, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'black';
+
+
+        // 5. Draw initial velocity vector and angle
+        const vectorLength = 70;
+        const vx = vectorLength * Math.cos(theta0);
+        const vy = vectorLength * Math.sin(theta0);
+        drawArrow(startPoint.x, startPoint.y, startPoint.x + vx, startPoint.y - vy);
+
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.fillText('v', startPoint.x + vx - 15, startPoint.y - vy - 10);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText('0', startPoint.x + vx - 5, startPoint.y - vy - 5);
+
+        // Angle arc
+        ctx.beginPath();
+        ctx.lineWidth = 1;
+        const arcRadius = 35;
+        ctx.arc(startPoint.x, startPoint.y, arcRadius, 0, -theta0, true);
+        ctx.stroke();
+        ctx.font = 'italic 20px "Times New Roman"';
+        ctx.fillText('θ', startPoint.x + arcRadius * Math.cos(-theta0 / 2) + 5, startPoint.y - arcRadius * Math.sin(-theta0 / 2));
+        ctx.font = 'italic 14px "Times New Roman"';
+        ctx.fillText('0', startPoint.x + arcRadius * Math.cos(-theta0 / 2) + 16, startPoint.y - arcRadius * Math.sin(-theta0 / 2) + 5);
+
+
+        // 6. Draw dimension lines and labels
+        ctx.lineWidth = 1;
+        ctx.font = 'italic 20px "Times New Roman"';
+        
+        const dimY1 = ground.y + 20;
+        const dimY2 = ground.y + 35;
+
+        // Dimension 'a'
+        const a_start = toCanvas(0, 0);
+        const a_end = toCanvas(a_phys, 0);
+        ctx.beginPath();
+        ctx.moveTo(a_start.x, tableTopLeft.y);
+        ctx.lineTo(a_start.x, dimY1);
+        ctx.moveTo(a_end.x, tableTopRight.y);
+        ctx.lineTo(a_end.x, dimY1);
+        ctx.stroke();
+        drawArrow(a_start.x, (dimY1 + tableTopLeft.y)/2, a_end.x, (dimY1 + tableTopLeft.y)/2);
+        drawArrow(a_start.x, dimY1, a_end.x, dimY1);
+        ctx.fillText('a', (a_start.x + a_end.x) / 2 - 5, dimY2 + 15);
+
+        // Dimension 'b'
+        const b_end = toCanvas(a_phys + b_phys, 0);
+        ctx.beginPath();
+        ctx.moveTo(b_end.x, ground.y);
+        ctx.lineTo(b_end.x, dimY1);
+        ctx.stroke();
+        drawArrow(a_end.x, dimY1, b_end.x, dimY1);
+        ctx.fillText('b', (a_end.x + b_end.x) / 2 - 5, dimY2 + 15);
+
+        // Dimension 'h'
+        const h_pos_x = tableTopRight.x + 20;
+        drawArrow(h_pos_x, ground.y, h_pos_x, tableTopRight.y);
+        ctx.fillText('h', h_pos_x + 10, (ground.y + tableTopRight.y) / 2);
+        
+        // 7. Add Caption
+        ctx.font = '24px "SimSun", "STSong"';
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 1-15 图', canvasWidth / 2, canvasHeight - 15);
+
+    </script>
+</body>
+</html>

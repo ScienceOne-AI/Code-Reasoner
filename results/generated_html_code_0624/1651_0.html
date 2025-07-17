@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Diagrama de Tubo Capilar</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="thermoCanvas" width="400" height="650"></canvas>
+    <script>
+        const canvas = document.getElementById('thermoCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Estilos y coordenadas base
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+
+        const centerX = 180;
+        const tubeWidth = 90;
+        const tubeLeftX = centerX - tubeWidth / 2;
+        const tubeRightX = centerX + tubeWidth / 2;
+        const tubeTopY = 20;
+        const tubeBottomY = 580;
+
+        // 1. Dibujar el Tubo
+        ctx.beginPath();
+        ctx.moveTo(tubeLeftX, tubeTopY);
+        ctx.lineTo(tubeLeftX, tubeBottomY);
+        ctx.moveTo(tubeRightX, tubeTopY);
+        ctx.lineTo(tubeRightX, tubeBottomY);
+        ctx.stroke();
+
+        // 2. Dibujar la Columna de Líquido
+        const liquidTopContactY = 80;
+        const meniscusDepth = 20;
+        const liquidBottomY = 450;
+
+        // Menisco Superior (cóncavo)
+        ctx.beginPath();
+        ctx.moveTo(tubeLeftX, liquidTopContactY);
+        ctx.quadraticCurveTo(centerX, liquidTopContactY + meniscusDepth, tubeRightX, liquidTopContactY);
+        ctx.stroke();
+
+        // Superficie Inferior (plana)
+        ctx.beginPath();
+        ctx.moveTo(tubeLeftX, liquidBottomY);
+        ctx.lineTo(tubeRightX, liquidBottomY);
+        ctx.stroke();
+
+        // Relleno con líneas discontinuas
+        const dashYStart = liquidTopContactY + meniscusDepth + 25;
+        const dashYEnd = 370; // Espacio antes del nivel B
+        const dashSpacing = 22;
+        ctx.beginPath();
+        ctx.lineWidth = 1.5;
+        for (let y = dashYStart; y <= dashYEnd; y += dashSpacing) {
+            ctx.moveTo(tubeLeftX + 8, y);
+            ctx.lineTo(tubeLeftX + 35, y);
+            ctx.moveTo(centerX - 15, y);
+            ctx.lineTo(centerX + 15, y);
+            ctx.moveTo(tubeRightX - 35, y);
+            ctx.lineTo(tubeRightX - 8, y);
+        }
+        ctx.stroke();
+        ctx.lineWidth = 2; // Restaurar grosor de línea
+
+        // 3. Dibujar niveles y etiquetas A y B
+        const levelA_Y = 160;
+        const levelB_Y = 400;
+        const textGap = 18;
+
+        ctx.font = "italic 32px 'Times New Roman'";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Línea y etiqueta A
+        ctx.beginPath();
+        ctx.moveTo(tubeLeftX, levelA_Y);
+        ctx.lineTo(centerX - textGap, levelA_Y);
+        ctx.moveTo(centerX + textGap, levelA_Y);
+        ctx.lineTo(tubeRightX, levelA_Y);
+        ctx.stroke();
+        ctx.fillText('A', centerX, levelA_Y);
+        
+        // Línea y etiqueta B
+        ctx.beginPath();
+        ctx.moveTo(tubeLeftX, levelB_Y);
+        ctx.lineTo(centerX - textGap, levelB_Y);
+        ctx.moveTo(centerX + textGap, levelB_Y);
+        ctx.lineTo(tubeRightX, levelB_Y);
+        ctx.stroke();
+        ctx.fillText('B', centerX, levelB_Y);
+
+        // 4. Dibujar etiquetas de presión (p₀)
+        function drawP0(x, y, baseline) {
+            ctx.font = "italic 30px 'Times New Roman'";
+            ctx.textAlign = 'center';
+            ctx.textBaseline = baseline;
+            ctx.fillText('p', x - 7, y);
+            ctx.font = "italic 20px 'Times New Roman'";
+            ctx.fillText('0', x + 8, y);
+        }
+        drawP0(centerX, liquidTopContactY - 15, 'bottom');
+        drawP0(centerX, liquidBottomY + 15, 'top');
+
+        // 5. Dibujar los puntos de análisis
+        const dotRadius = 3;
+        const dot_A_Y = liquidTopContactY + meniscusDepth + 5;
+        const dot_B_Y = liquidBottomY - 10;
+
+        ctx.beginPath();
+        ctx.arc(centerX, dot_A_Y, dotRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(centerX, dot_B_Y, dotRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // 6. Dibujar la cota de altura 'h'
+        const h_lineX = tubeRightX + 50;
+        const h_topY = levelA_Y;
+        const h_bottomY = levelB_Y;
+        const arrowSize = 10;
+        const tickSize = 10;
+
+        ctx.beginPath();
+        // Línea vertical
+        ctx.moveTo(h_lineX, h_topY);
+        ctx.lineTo(h_lineX, h_bottomY);
+        // Ticks en los extremos
+        ctx.moveTo(h_lineX - tickSize/2, h_topY);
+        ctx.lineTo(h_lineX + tickSize/2, h_topY);
+        ctx.moveTo(h_lineX - tickSize/2, h_bottomY);
+        ctx.lineTo(h_lineX + tickSize/2, h_bottomY);
+        ctx.stroke();
+        
+        // Flechas (rellenas)
+        // Flecha superior (apunta hacia arriba)
+        ctx.beginPath();
+        ctx.moveTo(h_lineX, h_topY);
+        ctx.lineTo(h_lineX - 5, h_topY + arrowSize);
+        ctx.lineTo(h_lineX + 5, h_topY + arrowSize);
+        ctx.closePath();
+        ctx.fill();
+
+        // Flecha inferior (apunta hacia abajo)
+        ctx.beginPath();
+        ctx.moveTo(h_lineX, h_bottomY);
+        ctx.lineTo(h_lineX - 5, h_bottomY - arrowSize);
+        ctx.lineTo(h_lineX + 5, h_bottomY - arrowSize);
+        ctx.closePath();
+        ctx.fill();
+
+        // Etiqueta 'h'
+        ctx.font = "italic 30px 'Times New Roman'";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('h', h_lineX + 15, (h_topY + h_bottomY) / 2);
+
+        // 7. Dibujar el Título de la Figura
+        ctx.font = "30px 'KaiTi', 'SimSun', serif";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('热图 4.5.1', centerX + 10, tubeBottomY + 70);
+
+    </script>
+</body>
+</html>

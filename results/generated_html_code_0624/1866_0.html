@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Spiral Coil</title>
+  <style>
+    body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+    canvas { background-color: white; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="450"></canvas>
+
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Parameters ---
+  const centerX = canvas.width / 2;
+  const centerY = 210; // Slightly higher to make room for text
+  const R1 = 30;       // Inner radius
+  const R2 = 150;      // Outer radius
+  const N = 10;        // Number of turns
+  const lineColor = '#000000';
+  const headlen = 7;     // Arrow head length
+
+  // --- Helper Functions ---
+
+  /**
+   * Draws a line with an arrowhead.
+   * @param {CanvasRenderingContext2D} ctx - The canvas context.
+   * @param {number} fromX - Start X coordinate.
+   * @param {number} fromY - Start Y coordinate.
+   * @param {number} toX - End X coordinate.
+   * @param {number} toY - End Y coordinate.
+   */
+  function drawArrow(ctx, fromX, fromY, toX, toY) {
+    const angle = Math.atan2(toY - fromY, toX - fromX);
+    ctx.save();
+    ctx.strokeStyle = lineColor;
+    ctx.fillStyle = lineColor;
+    ctx.lineWidth = 1;
+    // Line
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+    // Arrowhead
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /**
+   * Draws just an arrowhead.
+   * @param {CanvasRenderingContext2D} ctx - The canvas context.
+   * @param {number} pointX - X coordinate of the arrow tip.
+   * @param {number} pointY - Y coordinate of the arrow tip.
+   * @param {number} angle - The direction angle of the arrow in radians.
+   */
+  function drawArrowHead(ctx, pointX, pointY, angle) {
+    ctx.save();
+    ctx.fillStyle = lineColor;
+    ctx.beginPath();
+    ctx.moveTo(pointX, pointY);
+    ctx.lineTo(pointX - headlen * Math.cos(angle - Math.PI / 6), pointY - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(pointX - headlen * Math.cos(angle + Math.PI / 6), pointY - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+
+  // --- Main Drawing ---
+  
+  // 1. Draw the spiral coil
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 1.5;
+  
+  const totalAngle = 2 * Math.PI * N;
+  const b = (R2 - R1) / totalAngle; // Rate of radius change per radian
+  const startAngleRad = Math.PI + 0.4; // Start from slightly upper left to match image
+  
+  ctx.beginPath();
+  const dTheta = 0.02; // Step for drawing smoothness
+  for (let theta = 0; theta <= totalAngle; theta += dTheta) {
+    const r = R2 - b * theta;
+    const currentAngle = startAngleRad - theta; // Clockwise winding
+    const x = centerX + r * Math.cos(currentAngle);
+    const y = centerY + r * Math.sin(currentAngle);
+    if (theta === 0) {
+        ctx.moveTo(x, y);
+    } else {
+        ctx.lineTo(x, y);
+    }
+  }
+  ctx.stroke();
+
+  // 2. Draw current direction arrows
+  const numArrowsOnSpiral = 9;
+  for (let i = 0; i < numArrowsOnSpiral; i++) {
+    const theta = i * 0.35; // Space them out on the first part of the spiral
+    
+    // Point P1 on the spiral
+    const r1 = R2 - b * theta;
+    const angle1 = startAngleRad - theta;
+    const x1 = centerX + r1 * Math.cos(angle1);
+    const y1 = centerY + r1 * Math.sin(angle1);
+    
+    // To get the tangent, find a point P2 slightly ahead
+    const theta2 = theta + 0.1;
+    const r2 = R2 - b * theta2;
+    const angle2 = startAngleRad - theta2;
+    const x2 = centerX + r2 * Math.cos(angle2);
+    const y2 = centerY + r2 * Math.sin(angle2);
+    
+    // The direction is from P1 to P2, representing the inward current flow
+    const directionAngle = Math.atan2(y2 - y1, x2 - x1);
+    drawArrowHead(ctx, x1, y1, directionAngle);
+  }
+
+  // 3. Draw labels and radius lines
+  ctx.fillStyle = lineColor;
+  
+  // Label 'O' at the center
+  ctx.font = '20px Times New Roman';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('O', centerX, centerY);
+  ctx.textAlign = 'start'; // Reset alignment
+  ctx.textBaseline = 'alphabetic'; // Reset baseline
+
+  // R1 Radius Arrow
+  const angle1_deg = 225;
+  const angle1_rad = angle1_deg * Math.PI / 180;
+  const r1_endX = centerX + R1 * Math.cos(angle1_rad);
+  const r1_endY = centerY + R1 * Math.sin(angle1_rad);
+  drawArrow(ctx, centerX, centerY, r1_endX, r1_endY);
+  ctx.font = 'italic 20px Times New Roman';
+  ctx.fillText('R', r1_endX - 25, r1_endY + 20);
+  ctx.font = 'italic 14px Times New Roman';
+  ctx.fillText('1', r1_endX - 15, r1_endY + 24);
+
+  // R2 Radius Arrow
+  const angle2_deg = -30;
+  const angle2_rad = angle2_deg * Math.PI / 180;
+  const r2_endX = centerX + R2 * Math.cos(angle2_rad);
+  const r2_endY = centerY + R2 * Math.sin(angle2_rad);
+  drawArrow(ctx, centerX, centerY, r2_endX, r2_endY);
+  ctx.font = 'italic 20px Times New Roman';
+  ctx.fillText('R', r2_endX + 10, r2_endY + 7);
+  ctx.font = 'italic 14px Times New Roman';
+  ctx.fillText('2', r2_endX + 20, r2_endY + 11);
+
+  // 4. Draw caption text
+  ctx.fillStyle = lineColor;
+  ctx.font = '20px "SimSun", "STSong"'; // Use Chinese-compatible fonts
+  ctx.textAlign = 'center';
+  ctx.fillText('习题 8-18 图', centerX, canvas.height - 20);
+
+</script>
+</body>
+</html>

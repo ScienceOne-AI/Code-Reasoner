@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spring-Mass System</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'start';
+        ctx.textBaseline = 'middle';
+
+        // --- 1. Draw the fixed support ---
+        const supportY = 60;
+        const supportStartX = 150;
+        const supportEndX = 390;
+        ctx.beginPath();
+        ctx.moveTo(supportStartX, supportY);
+        ctx.lineTo(supportEndX, supportY);
+        ctx.stroke();
+
+        // Draw hatching for the support
+        ctx.lineWidth = 1.5;
+        const hatchLength = 20;
+        const hatchAngle = Math.PI / 4;
+        for (let x = supportStartX; x < supportEndX; x += 20) {
+            ctx.beginPath();
+            ctx.moveTo(x, supportY);
+            ctx.lineTo(x - hatchLength * Math.cos(hatchAngle), supportY - hatchLength * Math.sin(hatchAngle));
+            ctx.stroke();
+        }
+        ctx.lineWidth = 2;
+
+
+        // --- 2. Define coordinates and dimensions ---
+        const centerX = 270;
+        const springTopY = supportY;
+        const sphereCenterY = 320;
+        const sphereRadius = 30;
+        
+        // --- 3. Draw the spring ---
+        function drawSpring(ctx, startX, startY, endY, radius, coils) {
+            ctx.beginPath();
+            // Top straight part
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(startX, startY + 10);
+            
+            const coilLength = endY - (startY + 20); // Length of the coiled section
+            const numPoints = coils * 32; // Number of points to plot for a smooth curve
+            
+            for (let i = 0; i <= numPoints; i++) {
+                const angle = (i / numPoints) * coils * 2 * Math.PI;
+                const x = startX + radius * Math.cos(angle);
+                const y = (startY + 10) + (coilLength * (i / numPoints));
+                ctx.lineTo(x, y);
+            }
+            // Bottom straight part
+            ctx.lineTo(startX, endY);
+            ctx.stroke();
+        }
+
+        const springEndY = sphereCenterY - sphereRadius;
+        drawSpring(ctx, centerX, springTopY, springEndY, 18, 9);
+        
+
+        // --- 4. Draw the steel sphere ---
+        ctx.beginPath();
+        ctx.arc(centerX, sphereCenterY, sphereRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+
+        // --- 5. Draw the dimension line ---
+        const dimLineX = 100;
+        const dimTextX = 40;
+        const arrowSize = 8;
+        
+        // Dashed lines
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        // Top dashed line
+        ctx.beginPath();
+        ctx.moveTo(dimLineX, springTopY);
+        ctx.lineTo(centerX, springTopY);
+        ctx.stroke();
+        // Bottom dashed line
+        ctx.beginPath();
+        ctx.moveTo(dimLineX, sphereCenterY);
+        ctx.lineTo(centerX, sphereCenterY);
+        ctx.stroke();
+        ctx.restore();
+
+        // Vertical line
+        ctx.beginPath();
+        ctx.moveTo(dimLineX, springTopY);
+        ctx.lineTo(dimLineX, sphereCenterY);
+        ctx.stroke();
+        
+        // Arrowheads
+        function drawArrowhead(ctx, x, y, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowSize, -arrowSize / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowSize, arrowSize / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+        drawArrowhead(ctx, dimLineX, springTopY, -Math.PI / 2);
+        drawArrowhead(ctx, dimLineX, sphereCenterY, Math.PI / 2);
+        
+        // Dimension text
+        ctx.textAlign = 'center';
+        ctx.fillText('8.5 cm', dimTextX, (springTopY + sphereCenterY) / 2);
+        ctx.textAlign = 'start';
+
+
+        // --- 6. Draw labels and leader lines ---
+        ctx.lineWidth = 1;
+        
+        // "spring" label
+        const springLabelPos = { x: 380, y: 140 };
+        const springPoint = { x: 300, y: 160 };
+        ctx.fillText('spring', springLabelPos.x, springLabelPos.y);
+        ctx.beginPath();
+        ctx.moveTo(springLabelPos.x - 5, springLabelPos.y);
+        ctx.lineTo(springPoint.x, springPoint.y);
+        ctx.stroke();
+
+        // "steel sphere" label
+        const sphereLabelPos = { x: 380, y: 320 };
+        const spherePoint = { x: 300, y: 320 };
+        ctx.fillText('steel sphere,', sphereLabelPos.x, sphereLabelPos.y);
+        ctx.fillText('mass 0.29 kg', sphereLabelPos.x, sphereLabelPos.y + 25);
+        ctx.beginPath();
+        ctx.moveTo(sphereLabelPos.x - 5, sphereLabelPos.y + 5);
+        ctx.lineTo(spherePoint.x, spherePoint.y);
+        ctx.stroke();
+        
+        ctx.lineWidth = 2;
+
+
+        // --- 7. Draw figure caption ---
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 20px Arial';
+        ctx.fillText('Fig. 2.1', canvas.width / 2, 450);
+
+    </script>
+</body>
+</html>

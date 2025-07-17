@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Capacitor with Dielectric Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="750" height="450" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Configuration ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const mainFont = "italic 22px Times New Roman";
+    const subFont = "italic 16px Times New Roman";
+
+    // --- Helper Functions ---
+    /**
+     * Draws an arrow from one point to another.
+     */
+    function drawArrow(ctx, fromX, fromY, toX, toY) {
+        const headLength = 10;
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    /**
+     * Draws a vertical double-headed arrow.
+     */
+    function drawDoubleArrow(ctx, x, y1, y2) {
+        const headSize = 6;
+        ctx.beginPath();
+        // Main line
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, y2);
+        // Top arrow head
+        ctx.moveTo(x - headSize, y1 + headSize);
+        ctx.lineTo(x, y1);
+        ctx.lineTo(x + headSize, y1 + headSize);
+        // Bottom arrow head
+        ctx.moveTo(x - headSize, y2 - headSize);
+        ctx.lineTo(x, y2);
+        ctx.lineTo(x + headSize, y2 - headSize);
+        ctx.stroke();
+    }
+    
+    /**
+     * Draws text with a subscript.
+     */
+    function drawTextWithSubscript(ctx, text, sub, x, y, mainF, subF) {
+        ctx.font = mainF;
+        const textWidth = ctx.measureText(text).width;
+        ctx.fillText(text, x, y);
+        ctx.font = subF;
+        ctx.fillText(sub, x + textWidth / 2 + 3, y + 8);
+    }
+
+    // --- Main Drawing ---
+
+    // 1. Draw Capacitor and Dielectric
+    const plateLength = 250;
+    const plateDist = 60;
+    const plateThickness = 4;
+    const capX = 220;
+    const capY = 200; // Center Y
+
+    // Capacitor plates
+    ctx.fillRect(capX, capY - plateDist / 2 - plateThickness, plateLength, plateThickness);
+    ctx.fillRect(capX, capY + plateDist / 2, plateLength, plateThickness);
+    
+    // Dielectric slab (partially inserted)
+    const slabLength = 250;
+    const slabX = capX - slabLength / 2;
+    ctx.strokeRect(slabX, capY - plateDist / 2, slabLength, plateDist);
+
+    // 2. Draw Labels and Dimensions for Capacitor/Slab
+    ctx.font = mainFont;
+    // Force F
+    drawArrow(ctx, 30, capY, slabX - 10, capY);
+    ctx.fillText("F", 20, capY);
+
+    // Dielectric labels
+    ctx.fillText("S, l", slabX + slabLength/2 - 50, capY - plateDist/2 - 20);
+    ctx.fillText("S, l", slabX + slabLength/2 - 50, capY + plateDist/2 + 20);
+    drawDoubleArrow(ctx, capX - 5, capY - plateDist/2, capY + plateDist/2);
+    ctx.fillText("d", capX - 20, capY);
+    drawTextWithSubscript(ctx, "ε", "r", capX - 90, capY, mainFont, subFont);
+
+    // Capacitor labels
+    ctx.fillText("S", capX + plateLength - 50, capY - plateDist/2 - 20);
+    ctx.fillText("l", capX + plateLength/2 + 50, 100);
+    drawDoubleArrow(ctx, capX + plateLength + 5, capY - plateDist/2, capY + plateDist/2);
+    ctx.fillText("d", capX + plateLength + 20, capY);
+
+
+    // 3. Draw the Circuit
+    const circuitX = capX + plateLength + 120; // X-coordinate for the right side of the circuit
+    const switchY = 80;
+    
+    // Wires
+    ctx.beginPath();
+    const topWireConnectX = capX + plateLength / 2 + 20;
+    const bottomWireConnectX = capX + plateLength / 2 + 20;
+    
+    // Top part
+    ctx.moveTo(topWireConnectX, capY - plateDist/2 - plateThickness);
+    ctx.lineTo(topWireConnectX, switchY);
+    ctx.lineTo(circuitX - 80, switchY); // To the switch
+    
+    // Bottom part
+    ctx.moveTo(bottomWireConnectX, capY + plateDist/2 + plateThickness);
+    ctx.lineTo(bottomWireConnectX, capY + 150);
+    ctx.lineTo(circuitX, capY + 150);
+    
+    // Right vertical part
+    ctx.moveTo(circuitX, switchY + 20); // From switch
+    ctx.lineTo(circuitX, capY + 150);
+    ctx.stroke();
+
+    // Circuit Components
+    // Switch K
+    const switchX = circuitX - 60;
+    ctx.beginPath();
+    ctx.arc(switchX, switchY, 4, 0, 2 * Math.PI);
+    ctx.moveTo(switchX + 40, switchY);
+    ctx.arc(switchX + 40, switchY, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(switchX - 10, switchY - 10);
+    ctx.lineTo(switchX + 50, switchY - 10);
+    ctx.stroke();
+    ctx.font = mainFont;
+    ctx.fillText("K", switchX + 20, switchY - 30);
+    
+    ctx.beginPath();
+    ctx.moveTo(switchX+40, switchY);
+    ctx.lineTo(circuitX, switchY);
+    ctx.stroke();
+
+
+    // Resistor R
+    const resY = capY - 40;
+    ctx.strokeRect(circuitX - 10, resY, 20, 50);
+    ctx.font = mainFont;
+    ctx.fillText("R", circuitX + 25, resY + 25);
+    
+    // Voltage Source U0
+    const- battY = capY + 60;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(circuitX - 20, battY);
+    ctx.lineTo(circuitX + 20, battY); // Positive plate
+    ctx.stroke();
+    
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(circuitX - 10, battY + 10);
+    ctx.lineTo(circuitX + 10, battY + 10); // Negative plate
+    ctx.stroke();
+    ctx.lineWidth = 2;
+    drawTextWithSubscript(ctx, "U", "0", circuitX + 30, battY + 5, mainFont, subFont);
+
+</script>
+</body>
+</html>

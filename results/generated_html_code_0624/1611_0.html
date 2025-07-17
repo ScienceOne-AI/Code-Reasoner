@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Global Style Setup ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = '20px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+
+    // --- Draw Left Figure: Semi-cylindrical sheet ---
+    const cx = 160;
+    const topY = 120;
+    const radiusX = 60;
+    const height = 200;
+    const leftX = cx - radiusX;
+    const rightX = cx + radiusX;
+    const bottomY = topY + height;
+
+    // Define the outline path for clipping and stroking
+    const outlinePath = new Path2D();
+    outlinePath.moveTo(leftX, bottomY); // Start at bottom-left
+    outlinePath.lineTo(leftX, topY); // Left vertical line
+    outlinePath.arc(cx, topY, radiusX, Math.PI, 2 * Math.PI); // Top semi-circular arc
+    outlinePath.lineTo(rightX, bottomY + 5); // Right vertical line, slight offset for wavy bottom start
+    
+    // Wavy bottom edge from right to left, mimicking a torn sheet
+    outlinePath.quadraticCurveTo(cx + 40, bottomY - 5, cx + 20, bottomY + 15);
+    outlinePath.quadraticCurveTo(cx - 20, bottomY + 25, cx - 40, bottomY + 5);
+    outlinePath.quadraticCurveTo(cx - 50, bottomY - 5, leftX, bottomY);
+    outlinePath.closePath();
+
+    // Save context, clip to the outline, draw inner lines, then restore
+    ctx.save();
+    ctx.clip(outlinePath);
+
+    ctx.beginPath();
+    const lineTop = topY - radiusX; // Ensure lines start above the shape
+    const lineBottom = bottomY + 30; // Ensure lines end below the shape
+
+    // Draw vertical lines inside the clipped area to represent current flow
+    const mainLineOffset = 25;
+    // Main inner lines
+    ctx.moveTo(cx - mainLineOffset, lineTop);
+    ctx.lineTo(cx - mainLineOffset, lineBottom);
+    ctx.moveTo(cx + mainLineOffset, lineTop);
+    ctx.lineTo(cx + mainLineOffset, lineBottom);
+
+    // Side lines for shading/density effect
+    for (let i = 1; i <= 4; i++) {
+        const spacing = 6;
+        // Left side
+        let x = leftX + i * spacing;
+        ctx.moveTo(x, lineTop);
+        ctx.lineTo(x, lineBottom);
+        // Right side
+        x = rightX - i * spacing;
+        ctx.moveTo(x, lineTop);
+        ctx.lineTo(x, lineBottom);
+    }
+
+    ctx.stroke();
+    ctx.restore();
+
+    // Now, stroke the outline path itself
+    ctx.stroke(outlinePath);
+
+
+    // --- Draw Right Figure: Cross-section ---
+    const pX = 420;
+    const pY = 200;
+    const r = 80;
+
+    // Draw the semi-circle arc
+    ctx.beginPath();
+    ctx.arc(pX, pY, r, Math.PI, 2 * Math.PI);
+    ctx.stroke();
+
+    // Draw the dashed diameter
+    ctx.beginPath();
+    ctx.setLineDash([5, 4]);
+    ctx.moveTo(pX - r, pY);
+    ctx.lineTo(pX + r, pY);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line for subsequent drawings
+
+    // Draw point P at the center
+    ctx.beginPath();
+    ctx.arc(pX, pY, 4, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Add the label 'P'
+    ctx.fillText('P', pX, pY + 12);
+
+
+    // --- Draw Caption ---
+    ctx.font = '22px "SimSun", "STSong"'; // Use a font that supports Chinese characters
+    ctx.fillText('习题 8-16 图', 300, 360);
+
+</script>
+</body>
+</html>

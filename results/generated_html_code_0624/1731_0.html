@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circular Motion Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="400" height="350"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Parameters
+    const cx = 200;
+    const cy = 150;
+    const R = 80;
+    const ringThickness = 14;
+
+    // --- Helper function for arrowhead ---
+    // ctx: context
+    // x, y: tip of the arrow
+    // angle: direction of the arrow in radians
+    // size: length of the arrowhead sides
+    function drawArrowhead(ctx, x, y, angle, size = 10) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2.5);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2.5);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // 1. Draw the Ring
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+    ctx.lineWidth = ringThickness;
+    ctx.stroke();
+
+    // 2. Draw Points P, X and associated dots
+    ctx.font = '20px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Label P (at approx 8 o'clock)
+    const angleP = -150 * Math.PI / 180;
+    const Px_label = cx + (R + 25) * Math.cos(angleP);
+    const Py_label = cy + (R + 25) * Math.sin(angleP);
+    ctx.fillText('P', Px_label, Py_label);
+
+    // Dot near P (at approx 7:30)
+    const angleDotP = -165 * Math.PI / 180;
+    const dotPx = cx + R * Math.cos(angleDotP);
+    const dotPy = cy + R * Math.sin(angleDotP);
+    ctx.beginPath();
+    ctx.arc(dotPx, dotPy, 2.5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Label X (at approx 2 o'clock)
+    const angleX = 30 * Math.PI / 180;
+    const Xx_label = cx + (R + 20) * Math.cos(angleX);
+    const Xy_label = cy + (R + 20) * Math.sin(angleX);
+    ctx.fillText('X', Xx_label, Xy_label);
+
+    // Dot near X (at approx 1:30)
+    const angleDotX = 15 * Math.PI / 180;
+    const dotXx = cx + R * Math.cos(angleDotX);
+    const dotXy = cy + R * Math.sin(angleDotX);
+    ctx.beginPath();
+    ctx.arc(dotXx, dotXy, 2.5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 3. Draw the Bug (at approx 4:30)
+    const angleBug = -45 * Math.PI / 180;
+    ctx.save();
+    ctx.translate(cx + R * Math.cos(angleBug), cy + R * Math.sin(angleBug));
+    ctx.rotate(angleBug + Math.PI / 1.8); // Rotate to match image tilt
+    ctx.beginPath();
+    ctx.moveTo(-6, -5);
+    ctx.lineTo(6, -5);
+    ctx.lineTo(4, 5);
+    ctx.lineTo(-4, 5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // 4. Draw velocity 'v' and its arrow
+    // Label 'v'
+    ctx.font = 'italic 20px serif';
+    const angleVLabel = -20 * Math.PI / 180;
+    const vx_label = cx + (R - 25) * Math.cos(angleVLabel);
+    const vy_label = cy + (R - 25) * Math.sin(angleVLabel);
+    ctx.fillText('v', vx_label, vy_label);
+
+    // Arrow for 'v' (Clockwise)
+    ctx.lineWidth = 1.5;
+    const v_start_angle = -55 * Math.PI / 180;
+    const v_end_angle = -95 * Math.PI / 180;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, v_start_angle, v_end_angle, true); // true for CW
+    ctx.stroke();
+
+    // Arrowhead for 'v'. Tangent for CW motion at angle theta has direction theta + PI/2.
+    const v_arrow_x = cx + R * Math.cos(v_end_angle);
+    const v_arrow_y = cy + R * Math.sin(v_end_angle);
+    const tangentAngleV = v_end_angle + Math.PI / 2;
+    drawArrowhead(ctx, v_arrow_x, v_arrow_y, tangentAngleV, 8);
+    
+    // The two chevrons from the original image
+    const chevron1_angle = -68 * Math.PI / 180;
+    const chevron2_angle = -78 * Math.PI / 180;
+    function drawChevron(angle) {
+        ctx.save();
+        const basex = cx + R * Math.cos(angle);
+        const basey = cy + R * Math.sin(angle);
+        ctx.translate(basex, basey);
+        ctx.rotate(angle + Math.PI/2); // Tangent direction for CW
+        ctx.beginPath();
+        ctx.moveTo(-4, -4);
+        ctx.lineTo(0, 0);
+        ctx.lineTo(-4, 4);
+        ctx.stroke();
+        ctx.restore();
+    }
+    drawChevron(chevron1_angle);
+    drawChevron(chevron2_angle);
+
+
+    // 5. Draw angular velocity 'ω' and its arrow
+    ctx.lineWidth = 1.5;
+    const omega_radius = R + 30;
+    const omega_start_angle = 330 * Math.PI / 180; // from approx 5 o'clock
+    const omega_end_angle = 210 * Math.PI / 180; // to 8 o'clock
+    ctx.beginPath();
+    ctx.arc(cx, cy, omega_radius, omega_start_angle, omega_end_angle, true); // true for CCW
+    ctx.stroke();
+
+    // Arrowhead for 'ω'. Tangent for CCW motion at angle theta has direction theta - PI/2.
+    const omega_arrow_x = cx + omega_radius * Math.cos(omega_end_angle);
+    const omega_arrow_y = cy + omega_radius * Math.sin(omega_end_angle);
+    const tangentAngleOmega = omega_end_angle - Math.PI / 2;
+    drawArrowhead(ctx, omega_arrow_x, omega_arrow_y, tangentAngleOmega, 10);
+    
+    // Label 'ω'
+    ctx.font = '20px serif';
+    const omega_label_angle = 240 * Math.PI/180; // Below the arc
+    const omegax_label = cx + (omega_radius + 5) * Math.cos(omega_label_angle);
+    const omegay_label = cy + (omega_radius + 5) * Math.sin(omega_label_angle);
+    ctx.fillText('ω', omegax_label, omegay_label + 10);
+
+    // 6. Draw Figure Caption
+    ctx.font = 'bold 18px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 1.140.', cx, cy + R + 65);
+</script>
+
+</body>
+</html>

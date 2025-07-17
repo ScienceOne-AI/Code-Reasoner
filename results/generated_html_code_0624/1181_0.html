@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fresnel Diffraction Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="600" height="300" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById("myCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // --- Style and Configuration ---
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "black";
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.textAlign = "center";
+    ctx.lineCap = 'butt';
+
+    // --- Constants ---
+    const y_c = 150; // Vertical center (optical axis)
+    const x_s = 50;  // x-position of source S
+    const x_a = 250; // x-position of aperture
+    const h_a = 70;  // half-height of aperture
+    const x_p = 400; // x-position of point P
+
+    // --- Drawing Functions ---
+
+    /**
+     * Draws a line with an arrowhead.
+     * @param {number} x1 - Start x
+     * @param {number} y1 - Start y
+     * @param {number} x2 - End x
+     * @param {number} y2 - End y
+     * @param {number} pos - Position of the arrow on the line (0 to 1)
+     */
+    function drawArrowOnLine(x1, y1, x2, y2, pos) {
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        const x = x1 + pos * (x2 - x1);
+        const y = y1 + pos * (y2 - y1);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-8, -4);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-8, 4);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    /**
+     * Draws the main horizontal optical axis.
+     */
+    function drawAxis() {
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(10, y_c);
+        ctx.lineTo(590, y_c);
+        // Arrowhead
+        ctx.moveTo(590, y_c);
+        ctx.lineTo(580, y_c - 5);
+        ctx.moveTo(590, y_c);
+        ctx.lineTo(580, y_c + 5);
+        ctx.stroke();
+        ctx.fillText("z", 585, y_c + 25);
+    }
+
+    /**
+     * Draws the point source 'S'.
+     */
+    function drawSource() {
+        ctx.beginPath();
+        ctx.arc(x_s, y_c, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText("S", x_s, y_c - 15);
+    }
+
+    /**
+     * Draws the aperture element (wavefront + screen).
+     */
+    function drawAperture() {
+        const w_a = 15; // curvature control for the arc
+        // Curved wavefront
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x_a, y_c - h_a);
+        ctx.quadraticCurveTo(x_a - w_a, y_c, x_a, y_c + h_a);
+        ctx.stroke();
+
+        // Opaque screen parts (thick lines)
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(x_a, y_c - h_a);
+        ctx.lineTo(x_a, y_c - h_a - 20);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x_a, y_c + h_a);
+        ctx.lineTo(x_a, y_c + h_a + 20);
+        ctx.stroke();
+    }
+
+    /**
+     * Draws the light rays from S to the aperture.
+     */
+    function drawRays() {
+        ctx.lineWidth = 1;
+
+        // Top ray
+        ctx.beginPath();
+        ctx.moveTo(x_s, y_c);
+        ctx.lineTo(x_a, y_c - h_a);
+        ctx.stroke();
+        drawArrowOnLine(x_s, y_c, x_a, y_c - h_a, 0.5);
+
+        // Bottom ray
+        ctx.beginPath();
+        ctx.moveTo(x_s, y_c);
+        ctx.lineTo(x_a, y_c + h_a);
+        ctx.stroke();
+        drawArrowOnLine(x_s, y_c, x_a, y_c + h_a, 0.5);
+    }
+
+    /**
+     * Draws the observation point 'P'.
+     */
+    function drawPointP() {
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x_p, y_c - 5);
+        ctx.lineTo(x_p, y_c + 5);
+        ctx.stroke();
+        ctx.fillText("P", x_p, y_c + 25);
+    }
+
+    /**
+     * Draws the intensity plot I(z).
+     */
+    function drawIntensityPlot() {
+        const x_start = 310;
+        const x_end = 570;
+        const wavelength = 30;
+        const k = 2 * Math.PI / wavelength;
+
+        // Envelope function for the amplitude of oscillations
+        function envelope(x) {
+            const C = 0.00004; // Scaling constant
+            const alpha = 3;
+            const beta = 0.02;
+            let xx = x - x_start;
+            if (xx < 0) return 0;
+            return C * Math.pow(xx, alpha) * Math.exp(-beta * xx);
+        }
+
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x_start, y_c);
+
+        for (let x = x_start; x <= x_end; x++) {
+            let amp = envelope(x);
+            // Oscillation term: (1 - cos) ensures it's non-negative and has a minimum at x_p
+            let osc = (1 - Math.cos(k * (x - x_p)));
+            // The final intensity is the envelope multiplied by the oscillation
+            let y = y_c - amp * osc;
+            ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Label I(z)
+        const label_x = 470;
+        const label_y = 65;
+        ctx.fillText("I(z)", label_x, label_y);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(label_x - 5, label_y + 8);
+        ctx.lineTo(490, 97); // Pointer to the curve's peak
+        ctx.stroke();
+    }
+
+    // --- Main Drawing Sequence ---
+    drawAxis();
+    drawSource();
+    drawAperture();
+    drawRays();
+    drawPointP();
+    drawIntensityPlot();
+
+</script>
+</body>
+</html>

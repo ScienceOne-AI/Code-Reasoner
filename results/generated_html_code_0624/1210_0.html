@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #d3d3d3;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="650" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen) {
+            const angle = Math.atan2(toy - fromy, tox - fromx);
+            // Main line
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            // Arrowhead
+            ctx.save();
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Helper function to draw hatched ground
+        function drawHatchedGround(ctx, x, y, width, height) {
+            ctx.save();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x,y);
+            ctx.lineTo(x+width, y);
+            ctx.stroke();
+            // Draw hatching lines
+            for (let i = 0; i < width; i += 8) {
+                ctx.beginPath();
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x + i - height, y + height);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // Helper function for pin support
+        function drawPinSupport(ctx, x, y, size) {
+            const groundY = y + size * Math.sqrt(3) / 2;
+            // Triangle
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - size / 2, groundY);
+            ctx.lineTo(x + size / 2, groundY);
+            ctx.closePath();
+            ctx.stroke();
+            // Ground
+            drawHatchedGround(ctx, x - size*0.8, groundY, size * 1.6, 10);
+        }
+
+        // Helper function for roller support
+        function drawRollerSupport(ctx, x, y, size) {
+            const triangleHeight = size * Math.sqrt(3) / 2;
+            const rollerY = y + triangleHeight;
+            const groundY = rollerY + size / 4;
+            // Triangle
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - size / 2, rollerY);
+            ctx.lineTo(x + size / 2, rollerY);
+            ctx.closePath();
+            ctx.stroke();
+            // Base for rollers
+            ctx.beginPath();
+            ctx.moveTo(x - size, groundY);
+            ctx.lineTo(x + size, groundY);
+            ctx.stroke();
+            // Ground
+            drawHatchedGround(ctx, x - size*0.8, groundY, size * 1.6, 10);
+        }
+        
+        // Helper function for dimension lines with extenders
+        function drawDimensionLine(ctx, x1, y1, x2, y2, y_dim, text) {
+            const arrowSize = 8;
+
+            // Extender lines
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1, y_dim);
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2, y_dim);
+            ctx.stroke();
+            ctx.restore();
+
+            // Horizontal line
+            ctx.beginPath();
+            ctx.moveTo(x1, y_dim);
+            ctx.lineTo(x2, y_dim);
+            ctx.stroke();
+            
+            // Arrows (pointing inwards)
+            ctx.save();
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.moveTo(x1, y_dim);
+            ctx.lineTo(x1 + arrowSize, y_dim - arrowSize / 2.5);
+            ctx.lineTo(x1 + arrowSize, y_dim + arrowSize / 2.5);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(x2, y_dim);
+            ctx.lineTo(x2 - arrowSize, y_dim - arrowSize / 2.5);
+            ctx.lineTo(x2 - arrowSize, y_dim + arrowSize / 2.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            // Text
+            ctx.fillStyle = '#000';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.fillText(text, (x1 + x2) / 2, y_dim - 2);
+        }
+
+        // Main drawing
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#000';
+        ctx.fillStyle = '#000';
+        ctx.lineWidth = 2;
+
+        // Parameters
+        const a = 100;
+        const supportSize = 30;
+        const beamThickness = 8;
+
+        // Coordinates
+        const Ax = 120, Ay = 350;
+        const theta = 30 * Math.PI / 180;
+        const L_AB_half = a / Math.cos(theta);
+        const L_AB = 2 * L_AB_half;
+
+        const Bx = Ax + L_AB * Math.cos(theta);
+        const By = Ay - L_AB * Math.sin(theta);
+
+        const B1x = Ax + L_AB_half * Math.cos(theta);
+        const B1y = Ay - L_AB_half * Math.sin(theta);
+
+        const Cx = B1x;
+        const Cy_top = B1y;
+        const Dx = Cx + 3 * a;
+        const Dy_top = Cy_top;
+        
+        const support_C_Y = Cy_top + beamThickness;
+        const support_D_Y = Dy_top + beamThickness;
+
+        // Draw Supports
+        drawPinSupport(ctx, Ax, Ay, supportSize);
+        drawRollerSupport(ctx, Cx, support_C_Y, supportSize);
+        drawRollerSupport(ctx, Dx, support_D_Y, supportSize);
+
+        // Draw Beams
+        // Beam AB
+        ctx.save();
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(Bx, By);
+        ctx.stroke();
+        ctx.restore();
+        // Pin circle at A
+        ctx.beginPath();
+        ctx.arc(Ax, Ay, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = "white";
+        ctx.fill();
+        ctx.stroke();
+
+        // Beam CD
+        ctx.fillStyle = "white";
+        ctx.fillRect(Cx - 1, Cy_top, Dx - Cx + 2, beamThickness);
+        ctx.strokeRect(Cx - 1, Cy_top, Dx - Cx + 2, beamThickness);
+        // Pin at D on beam
+        ctx.beginPath();
+        ctx.arc(Dx, Dy_top + beamThickness / 2, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = "white";
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw Force P
+        ctx.lineWidth = 3;
+        const p_len = 70;
+        const angle_AB = Math.atan2(By - Ay, Bx - Ax);
+        const p_angle = angle_AB - Math.PI / 2;
+        const Px_end = Bx + p_len * Math.cos(p_angle);
+        const Py_end = By + p_len * Math.sin(p_angle);
+        drawArrow(ctx, Bx, By, Px_end, Py_end, 10);
+        ctx.lineWidth = 2;
+
+        // Draw Annotations
+        // 30 degree angle
+        ctx.save();
+        ctx.lineWidth = 1;
+        const angle_radius = 50;
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(Ax + angle_radius * 1.2, Ay);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(Ax, Ay, angle_radius, 0, -theta, true);
+        ctx.stroke();
+        ctx.restore();
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('30°', Ax + angle_radius * 0.7, Ay - 15);
+
+        // 90 degree angle for P
+        const L_mark = 25;
+        const angle_BA = angle_AB + Math.PI;
+        
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(Bx, By, L_mark, p_angle, angle_BA);
+        ctx.stroke();
+        ctx.restore();
+        
+        const mid_angle = (p_angle + angle_BA) / 2;
+        ctx.fillText('90°', Bx + (L_mark + 10) * Math.cos(mid_angle) - 20, By + (L_mark + 10) * Math.sin(mid_angle));
+
+
+        // Dimension lines
+        const dim_y = Ay + supportSize + 30;
+        drawDimensionLine(ctx, Ax, Ay, Cx, support_C_Y, dim_y, 'a');
+        drawDimensionLine(ctx, Cx, support_C_Y, Dx, support_D_Y, dim_y, '3a');
+
+
+        // Labels
+        ctx.font = 'italic bold 24px Times New Roman';
+        ctx.fillText('A', Ax - 30, Ay + 5);
+        ctx.fillText('B', Bx + 10, By - 10);
+        ctx.fillText('C', Cx, Cy_top - 10);
+        ctx.fillText('D', Dx + 10, Dy_top + 15);
+        ctx.fillText('P', Px_end - 35, Py_end + 5);
+        
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText('B', B1x - 30, B1y + 10);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('1', B1x - 18, B1y + 15);
+    </script>
+</body>
+</html>

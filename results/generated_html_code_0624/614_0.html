@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Doppler Effect Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="350"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.fillStyle = 'black';
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Coordinates and Parameters ---
+    const s_x = 120;
+    const s_y = 200;
+    const pd_x = 700;
+    const pd_y = 200; // Same y as source for horizontal line
+    const sourceRadius = 8;
+    const angle_deg = 45;
+    const angle_rad = angle_deg * Math.PI / 180;
+    const v_length = 150;
+
+    // --- Helper function for drawing vectors with arrowheads ---
+    function drawVector(ctx, fromX, fromY, toX, toY, headLength = 15) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        
+        // Draw the arrowhead
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        
+        ctx.stroke();
+    }
+
+    // --- Draw Source (S) ---
+    ctx.font = 'bold 24px Times New Roman';
+    ctx.fillText('S', s_x - 25, s_y);
+    
+    ctx.beginPath();
+    ctx.arc(s_x, s_y, sourceRadius, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // --- Draw Photodetector (PD) ---
+    ctx.font = 'bold 24px Times New Roman';
+    ctx.fillText('PD', pd_x + 20, s_y - 30);
+    ctx.fillRect(pd_x, s_y - 15, 40, 30);
+    
+    // --- Draw Line of Sight (from S to PD) ---
+    ctx.beginPath();
+    ctx.moveTo(s_x, s_y);
+    ctx.lineTo(pd_x, s_y);
+    ctx.stroke();
+
+    // Draw small arrows on the line
+    function drawLineArrowhead(ctx, x, y) {
+        const size = 8;
+        ctx.beginPath();
+        ctx.moveTo(x - size, y - size * 0.7);
+        ctx.lineTo(x, y);
+        ctx.lineTo(x - size, y + size * 0.7);
+        ctx.stroke();
+    }
+    
+    const arrowSpacing = (pd_x - s_x) / 5;
+    drawLineArrowhead(ctx, s_x + 1.5 * arrowSpacing, s_y);
+    drawLineArrowhead(ctx, s_x + 2.5 * arrowSpacing, s_y);
+    drawLineArrowhead(ctx, s_x + 3.5 * arrowSpacing, s_y);
+
+    // --- Draw Velocity Vector (v) ---
+    // In canvas, y-axis is inverted. So, a positive angle goes down. We need to go up, so we use -angle_rad.
+    const v_end_x = s_x + v_length * Math.cos(-angle_rad);
+    const v_end_y = s_y + v_length * Math.sin(-angle_rad);
+    drawVector(ctx, s_x, s_y, v_end_x, v_end_y);
+
+    // --- Draw Velocity Label (v with arrow) ---
+    const v_label_x = s_x + 0.6 * v_length * Math.cos(-angle_rad);
+    const v_label_y = s_y + 0.6 * v_length * Math.sin(-angle_rad) - 5;
+    
+    ctx.font = 'italic bold 24px Times New Roman';
+    ctx.fillText('v', v_label_x, v_label_y + 8);
+    
+    // Draw arrow over 'v'
+    ctx.beginPath();
+    ctx.moveTo(v_label_x - 8, v_label_y - 8);
+    ctx.lineTo(v_label_x + 8, v_label_y - 8);
+    ctx.moveTo(v_label_x + 8, v_label_y - 8);
+    ctx.lineTo(v_label_x + 4, v_label_y - 11);
+    ctx.moveTo(v_label_x + 8, v_label_y - 8);
+    ctx.lineTo(v_label_x + 4, v_label_y - 5);
+    ctx.stroke();
+
+    // --- Draw Angle (θ) ---
+    const angle_arc_radius = 50;
+    ctx.beginPath();
+    // In canvas, 0 angle is to the right. To draw the arc upwards (counter-clockwise from the positive x-axis),
+    // we go from angle 0 to -angle_rad. The 'true' argument indicates counter-clockwise direction.
+    ctx.arc(s_x, s_y, angle_arc_radius, 0, -angle_rad, true); 
+    ctx.stroke();
+
+    // Draw angle label θ
+    ctx.font = '24px Times New Roman';
+    const theta_label_angle = -angle_rad / 2; // Midpoint of the angle arc
+    const theta_label_radius = angle_arc_radius - 15;
+    ctx.fillText('θ', s_x + theta_label_radius * Math.cos(theta_label_angle), 
+                      s_y + theta_label_radius * Math.sin(theta_label_angle));
+
+</script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="450" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Function for Spring (draws a zigzag line) ---
+        function drawSpring(ctx, x1, y1, x2, y2, zigs, height) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+            
+            const zigLength = length / zigs;
+            
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            for (let i = 0; i < zigs; i++) {
+                ctx.lineTo(zigLength * (i + 0.5), (i % 2 === 0 ? 1 : -1) * height);
+            }
+            ctx.lineTo(length, 0);
+            
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Drawing Parameters ---
+        // Coordinates
+        const P = { x: 220, y: 80 };
+        const a_len = 120;
+        const A = { x: P.x, y: P.y + a_len };
+        const b_len = 100;
+        const theta_deg = 40;
+        const theta_rad = theta_deg * Math.PI / 180;
+        
+        // Rod endpoint B
+        const B = {
+            x: A.x + b_len * Math.sin(theta_rad),
+            y: A.y + b_len * Math.cos(theta_rad)
+        };
+
+        // Spring and wall anchor
+        const wall_anchor_x = 80;
+        const wall_anchor_y = 160;
+        const spring_start = { x: wall_anchor_x, y: wall_anchor_y };
+        const spring_end = { x: 160, y: 110 };
+
+        // Gravity arrow position
+        const g_pos = { x: 380, y: 110 };
+
+        // --- Drawing ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // 1. Draw Fixed Support (wall)
+        ctx.beginPath();
+        ctx.moveTo(wall_anchor_x, wall_anchor_y - 30);
+        ctx.lineTo(wall_anchor_x, wall_anchor_y + 30);
+        ctx.stroke();
+        for (let i = -25; i <= 25; i += 10) {
+            ctx.beginPath();
+            ctx.moveTo(wall_anchor_x, wall_anchor_y + i);
+            ctx.lineTo(wall_anchor_x - 10, wall_anchor_y + i + 10);
+            ctx.stroke();
+        }
+
+        // 2. Draw Spring and Cord to Pulley
+        drawSpring(ctx, spring_start.x, spring_start.y, spring_end.x, spring_end.y, 8, 8);
+        ctx.beginPath();
+        ctx.moveTo(spring_end.x, spring_end.y);
+        ctx.lineTo(P.x, P.y);
+        ctx.stroke();
+
+        // 3. Draw Pulley at P
+        ctx.beginPath();
+        ctx.arc(P.x, P.y, 7, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'black';
+
+        // 4. Draw Vertical Dashed Line
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(P.x, P.y - 40);
+        ctx.lineTo(A.x, A.y + 120);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 5. Draw Rod AB
+        ctx.beginPath();
+        ctx.lineWidth = 4;
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+        ctx.lineWidth = 1.5;
+
+        // 6. Draw Cord from P to B
+        ctx.beginPath();
+        ctx.moveTo(P.x, P.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+        
+        // 7. Draw Gravity Arrow
+        ctx.beginPath();
+        ctx.moveTo(g_pos.x, g_pos.y);
+        ctx.lineTo(g_pos.x, g_pos.y + 40);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(g_pos.x, g_pos.y + 40);
+        ctx.lineTo(g_pos.x - 5, g_pos.y + 30);
+        ctx.moveTo(g_pos.x, g_pos.y + 40);
+        ctx.lineTo(g_pos.x + 5, g_pos.y + 30);
+        ctx.stroke();
+
+        // 8. Add Labels and Angles
+        ctx.font = 'italic 18px serif';
+        ctx.fillText('k', (spring_start.x + spring_end.x) / 2 - 10, (spring_start.y + spring_end.y) / 2 - 15);
+        ctx.fillText('P', P.x + 12, P.y + 5);
+        ctx.fillText('A', A.x - 25, A.y + 5);
+        ctx.fillText('a', A.x - 18, A.y - a_len / 2 + 5);
+        ctx.fillText('b', (A.x + B.x) / 2 + 10, (A.y + B.y) / 2 + 15);
+        ctx.fillText('c', (P.x + B.x) / 2 + 5, (P.y + B.y) / 2 - 5);
+        ctx.fillText('g', g_pos.x - 20, g_pos.y + 25);
+        
+        // Angle theta
+        const arc_radius_theta = 25;
+        const start_angle_theta = Math.PI / 2; // Vertical downward
+        const end_angle_theta = Math.atan2(B.y - A.y, B.x - A.x);
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, arc_radius_theta, start_angle_theta, end_angle_theta);
+        ctx.stroke();
+        ctx.fillText('θ', A.x + 18, A.y + 28);
+        
+        // Angle theta_1
+        const arc_radius_theta1 = 25;
+        const angle_BA = Math.atan2(A.y - B.y, A.x - B.x);
+        const angle_BP = Math.atan2(P.y - B.y, P.x - B.x);
+        ctx.beginPath();
+        ctx.arc(B.x, B.y, arc_radius_theta1, angle_BA, angle_BP);
+        ctx.stroke();
+        ctx.fillText('θ', B.x - 25, B.y - 12);
+        ctx.font = 'italic 14px serif';
+        ctx.fillText('1', B.x - 17, B.y - 9);
+
+        // 9. Figure Caption
+        ctx.font = '16px sans-serif';
+        ctx.fillText('Fig. 1.139.', 180, 380);
+
+    </script>
+</body>
+</html>

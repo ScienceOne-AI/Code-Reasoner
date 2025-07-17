@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Nuclear Level Diagram</title>
+</head>
+<body>
+<canvas id="nuclear-diagram" width="850" height="600" style="border:1px solid #ccc;"></canvas>
+<script>
+const canvas = document.getElementById('nuclear-diagram');
+const ctx = canvas.getContext('2d');
+
+// Clear canvas
+ctx.fillStyle = 'white';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// --- Style and Settings ---
+ctx.fillStyle = 'black';
+ctx.strokeStyle = 'black';
+ctx.lineWidth = 1.5;
+const mainFontSize = 20;
+const scriptFontSize = 14;
+ctx.font = `${mainFontSize}px 'Courier New', Courier, monospace`;
+
+// --- Coordinate System and Scaling ---
+const yMarginTop = 60;
+const yMarginBottom = 100;
+const yPlotHeight = canvas.height - yMarginTop - yMarginBottom;
+const maxEnergy = 2200; // keV, gives some padding above 1970 keV
+
+function energyToY(energy) {
+    return canvas.height - yMarginBottom - (energy / maxEnergy) * yPlotHeight;
+}
+
+// --- Drawing Functions ---
+
+function drawLevel(x, energy, label, spinParity, options = {}) {
+    const y = energyToY(energy);
+    const levelWidth = 100;
+    
+    // Draw level line
+    ctx.beginPath();
+    ctx.moveTo(x - levelWidth / 2, y);
+    ctx.lineTo(x + levelWidth / 2, y);
+    ctx.stroke();
+
+    // Draw energy label
+    if (label) {
+        ctx.textAlign = 'center';
+        ctx.font = `${mainFontSize}px 'Courier New', Courier, monospace`;
+        const labelY = y - 10;
+        ctx.fillText(label, x, labelY);
+
+        if (options.underline) {
+            const labelWidth = ctx.measureText(label).width;
+            ctx.beginPath();
+            ctx.moveTo(x - labelWidth / 2, labelY + 4);
+            ctx.lineTo(x + labelWidth / 2, labelY + 4);
+            ctx.stroke();
+        }
+    }
+    
+    // Draw spin-parity label
+    if (spinParity) {
+        drawSpinParity(spinParity, x + levelWidth / 2 + 20, y);
+    }
+}
+
+function drawSpinParity(text, x, y) {
+    ctx.textAlign = 'left';
+    ctx.font = `${mainFontSize}px 'Courier New', Courier, monospace`;
+    const baseLineY = y + 7; // Align with vertical center of font
+
+    if (text === '(3/2)+ (ground state)') {
+        ctx.fillText('(', x, baseLineY);
+        let currentX = x + ctx.measureText('(').width;
+        
+        ctx.font = `${scriptFontSize}px 'Courier New', Courier, monospace`;
+        const fracWidth = Math.max(ctx.measureText('3').width, ctx.measureText('2').width);
+        ctx.textAlign = 'center';
+        ctx.fillText('3', currentX + fracWidth/2, baseLineY - 6);
+        ctx.beginPath();
+        ctx.moveTo(currentX, baseLineY - 2);
+        ctx.lineTo(currentX + fracWidth, baseLineY - 2);
+        ctx.stroke();
+        ctx.fillText('2', currentX + fracWidth/2, baseLineY + 9);
+        
+        currentX += fracWidth;
+        ctx.textAlign = 'left';
+        ctx.font = `${mainFontSize}px 'Courier New', Courier, monospace`;
+        ctx.fillText(')', currentX, baseLineY);
+        currentX += ctx.measureText(')').width;
+        
+        ctx.font = `${scriptFontSize}px 'Courier New', Courier, monospace`;
+        ctx.fillText('+', currentX, baseLineY - 8);
+        currentX += ctx.measureText('+').width;
+        
+        ctx.font = `${mainFontSize}px 'Courier New', Courier, monospace`;
+        ctx.fillText(' (ground state)', currentX + 5, baseLineY);
+
+    } else if (text === '(5/2)+') {
+        ctx.fillText('(', x, baseLineY);
+        let currentX = x + ctx.measureText('(').width;
+        
+        ctx.font = `${scriptFontSize}px 'Courier New', Courier, monospace`;
+        const fracWidth = Math.max(ctx.measureText('5').width, ctx.measureText('2').width);
+        ctx.textAlign = 'center';
+        ctx.fillText('5', currentX + fracWidth/2, baseLineY - 6);
+        ctx.beginPath();
+        ctx.moveTo(currentX, baseLineY - 2);
+        ctx.lineTo(currentX + fracWidth, baseLineY - 2);
+        ctx.stroke();
+        ctx.fillText('2', currentX + fracWidth/2, baseLineY + 9);
+        
+        currentX += fracWidth;
+        ctx.textAlign = 'left';
+        ctx.font = `${mainFontSize}px 'Courier New', Courier, monospace`;
+        ctx.fillText(')', currentX, baseLineY);
+        currentX += ctx.measureText(')').width;
+        
+        ctx.font = `${scriptFontSize}px 'Courier New', Courier, monospace`;
+        ctx.fillText('+', currentX, baseLineY - 8);
+
+    } else if (text === '2+ (ground state)') {
+        ctx.fillText('2', x, baseLineY);
+        const w = ctx.measureText('2').width;
+        ctx.font = `${scriptFontSize}px 'Courier New', Courier, monospace`;
+        ctx.fillText('+', x + w, baseLineY - 8);
+        const w_sup = ctx.measureText('+').width;
+        ctx.font = `${mainFontSize}px 'Courier New', Courier, monospace`;
+        ctx.fillText(' (ground state)', x + w + w_sup, baseLineY);
+
+    } else if (text === '1-') {
+        ctx.fillText('1', x, baseLineY);
+        const w = ctx.measureText('1').width;
+        ctx.font = `${scriptFontSize}px 'Courier New', Courier, monospace`;
+        ctx.fillText('−', x + w, baseLineY - 8);
+
+    } else if (text === '2-(1)') {
+        ctx.fillText('2', x, baseLineY);
+        const w = ctx.measureText('2').width;
+        ctx.font = `${scriptFontSize}px 'Courier New', Courier, monospace`;
+        ctx.fillText('−', x + w, baseLineY - 8);
+        ctx.fillText('(1)', x + w + 2, baseLineY + 8);
+
+    } else if (text === '2-(2)') {
+        ctx.fillText('2', x, baseLineY);
+        const w = ctx.measureText('2').width;
+        ctx.font = `${scriptFontSize}px 'Courier New', Courier, monospace`;
+        ctx.fillText('−', x + w, baseLineY - 8);
+        ctx.fillText('(2)', x + w + 2, baseLineY + 8);
+
+    } else if (text === '3-') {
+        ctx.fillText('3', x, baseLineY);
+        const w = ctx.measureText('3').width;
+        ctx.font = `${scriptFontSize}px 'Courier New', Courier, monospace`;
+        ctx.fillText('−', x + w, baseLineY - 8);
+    }
+}
+
+function drawIsotope(symbol, mass, x_center, y_base) {
+    // Draw Symbol
+    ctx.font = `${mainFontSize}px 'Courier New', Courier, monospace`;
+    ctx.textAlign = 'left';
+    ctx.fillText(symbol, x_center, y_base);
+    
+    // Draw Mass Number
+    ctx.font = `${scriptFontSize}px 'Courier New', Courier, monospace`;
+    ctx.textAlign = 'right';
+    ctx.fillText(mass, x_center, y_base - 8);
+}
+
+
+// --- Draw 21Ne Levels ---
+const x_Ne = 200;
+// Ground state
+drawLevel(x_Ne, 0, null, '(3/2)+ (ground state)');
+drawIsotope('Ne', '21', x_Ne, energyToY(0) + 40);
+// Excited state
+drawLevel(x_Ne, 350, '350 keV', '(5/2)+', { underline: true });
+
+
+// --- Draw 20F Levels ---
+const x_F = 550;
+// Ground state
+drawLevel(x_F, 0, null, '2+ (ground state)');
+drawIsotope('F', '20', x_F, energyToY(0) + 40);
+// Excited states
+drawLevel(x_F, 980, '980', '1-', { underline: true });
+drawLevel(x_F, 1310, '1310', '2-(1)', { underline: true });
+drawLevel(x_F, 1840, '1840', '2-(2)', { underline: true });
+drawLevel(x_F, 1970, '1970 keV', '3-', { underline: true });
+
+</script>
+</body>
+</html>

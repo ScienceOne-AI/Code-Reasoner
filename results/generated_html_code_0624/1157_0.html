@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Senarmont Prism Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        /**
+         * Draws an arrow from (x1, y1) to (x2, y2) with a filled head.
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} x1 - The starting x-coordinate.
+         * @param {number} y1 - The starting y-coordinate.
+         * @param {number} x2 - The ending x-coordinate.
+         * @param {number} y2 - The ending y-coordinate.
+         */
+        function drawArrow(ctx, x1, y1, x2, y2) {
+            const headlen = 10;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            
+            // Line
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            
+            // Head
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fillStyle = 'black';
+            ctx.fill();
+        }
+
+        /**
+         * Draws a filled circle (dot).
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} x - The center x-coordinate.
+         * @param {number} y - The center y-coordinate.
+         * @param {number} r - The radius.
+         */
+        function drawDot(ctx, x, y, r) {
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, 2 * Math.PI);
+            ctx.fillStyle = 'black';
+            ctx.fill();
+        }
+        
+        /**
+         * Draws a V-shaped arrowhead with stroked lines.
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} x - The tip x-coordinate.
+         * @param {number} y - The tip y-coordinate.
+         * @param {number} angle_rad - The direction angle of the arrow.
+         */
+        function drawStrokedArrowHead(ctx, x, y, angle_rad) {
+            const headlen = 8;
+            const wingAngle = Math.PI / 6;
+            ctx.beginPath();
+            ctx.moveTo(x - headlen * Math.cos(angle_rad - wingAngle), y - headlen * Math.sin(angle_rad - wingAngle));
+            ctx.lineTo(x, y);
+            ctx.lineTo(x - headlen * Math.cos(angle_rad + wingAngle), y - headlen * Math.sin(angle_rad + wingAngle));
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a double-headed arrow symbol for polarization.
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} x_c - The center x-coordinate.
+         * @param {number} y_c - The center y-coordinate.
+         * @param {number} size - The total length of the arrow.
+         * @param {number} angle_rad - The orientation angle of the arrow.
+         */
+        function drawDoubleArrow(ctx, x_c, y_c, size, angle_rad) {
+            const s2 = size / 2;
+            const dx = s2 * Math.cos(angle_rad);
+            const dy = s2 * Math.sin(angle_rad);
+            const x1 = x_c - dx, y1 = y_c - dy;
+            const x2 = x_c + dx, y2 = y_c + dy;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            
+            drawStrokedArrowHead(ctx, x1, y1, angle_rad + Math.PI);
+            drawStrokedArrowHead(ctx, x2, y2, angle_rad);
+        }
+
+
+        // Main drawing function
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1.5;
+
+            // Define prism and ray geometry
+            const prismX = 180, prismY = 125, prismW = 180, prismH = 200;
+            const rayY = 225;
+
+            // Prism Body
+            ctx.fillStyle = '#EBEBEB';
+            ctx.fillRect(prismX, prismY, prismW, prismH);
+            ctx.strokeRect(prismX, prismY, prismW, prismH);
+
+            // Diagonal Interface
+            // We draw the diagonal to look like the diagram, not to the literal 20-degree angle.
+            const diag_x1 = prismX;
+            const diag_y1 = prismY + 20;
+            const diag_x2 = prismX + prismW;
+            const diag_y2 = prismY + prismH - 20;
+            
+            ctx.beginPath();
+            ctx.moveTo(diag_x1, diag_y1);
+            ctx.lineTo(diag_x2, diag_y2);
+            ctx.stroke();
+
+            // Calculate intersection point of the ray with the diagonal
+            const diagSlope = (diag_y2 - diag_y1) / (diag_x2 - diag_x1);
+            const intersectX = diag_x1 + (rayY - diag_y1) / diagSlope;
+            const intersectY = rayY;
+
+            // Dashed lines for Optic Axes
+            ctx.save();
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 1;
+            
+            // Left part (horizontal dashed lines)
+            for (let y = prismY + 40; y < prismY + prismH; y += 25) {
+                if (y === rayY) continue;
+                const endX = diag_x1 + (y - diag_y1) / diagSlope;
+                ctx.beginPath();
+                ctx.moveTo(prismX, y);
+                ctx.lineTo(endX, y);
+                ctx.stroke();
+            }
+
+            // Right part (vertical dashed lines)
+            for (let x = intersectX + 30; x < prismX + prismW; x += 25) {
+                const startY = diag_y1 + (x - diag_x1) * diagSlope;
+                ctx.beginPath();
+                ctx.moveTo(x, startY);
+                ctx.lineTo(x, prismY + prismH);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Incident Ray
+            drawArrow(ctx, 40, rayY, intersectX, rayY);
+
+            // Reflected dashed ray (illustrative)
+            ctx.save();
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 1;
+            const reflectAngle = -135 * Math.PI / 180;
+            const reflectLen = 70;
+            ctx.beginPath();
+            ctx.moveTo(intersectX, intersectY);
+            ctx.lineTo(intersectX + reflectLen * Math.cos(reflectAngle), intersectY + reflectLen * Math.sin(reflectAngle));
+            ctx.stroke();
+            ctx.restore();
+
+            // Emergent O-ray (undeviated)
+            const oRayEndX = 550;
+            drawArrow(ctx, intersectX, intersectY, oRayEndX, rayY);
+
+            // Polarization dots for O-ray
+            drawDot(ctx, 430, rayY, 2.5);
+            drawDot(ctx, 455, rayY, 2.5);
+            drawDot(ctx, 480, rayY, 2.5);
+
+            // Emergent E-ray (deviated)
+            const beta_draw_deg = 22; // Exaggerated angle for visibility
+            const beta_draw_rad = beta_draw_deg * Math.PI / 180;
+            const eRayLen = 220;
+            const eRayEndX = intersectX + eRayLen * Math.cos(beta_draw_rad);
+            const eRayEndY = intersectY + eRayLen * Math.sin(beta_draw_rad);
+            drawArrow(ctx, intersectX, intersectY, eRayEndX, eRayEndY);
+            
+            // Polarization arrows for E-ray
+            const eRayAngle = Math.atan2(eRayEndY - intersectY, eRayEndX - intersectX);
+            const polAngle = eRayAngle + Math.PI / 2;
+            const pos1 = 0.45;
+            const pos2 = 0.7;
+            drawDoubleArrow(ctx, intersectX + pos1 * (eRayEndX - intersectX), intersectY + pos1 * (eRayEndY - intersectY), 30, polAngle);
+            drawDoubleArrow(ctx, intersectX + pos2 * (eRayEndX - intersectX), intersectY + pos2 * (eRayEndY - intersectY), 30, polAngle);
+
+            // Angle Labels
+            ctx.font = "italic 24px serif";
+
+            // Angle α
+            const alpha_angle_rad = Math.atan((diag_x2-diag_x1)/(diag_y2-diag_y1));
+            ctx.fillText("α", prismX + 30, prismY + 45);
+            ctx.beginPath();
+            ctx.arc(diag_x1, diag_y1, 28, Math.PI / 2, Math.PI / 2 + alpha_angle_rad);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(diag_x1, diag_y1, 32, Math.PI / 2, Math.PI / 2 + alpha_angle_rad);
+            ctx.stroke();
+
+            // Angle β
+            ctx.fillText("β", intersectX + 80, intersectY + 30);
+            ctx.beginPath();
+            ctx.arc(intersectX, intersectY, 70, 0, beta_draw_rad);
+            ctx.stroke();
+        }
+
+        draw();
+    </script>
+</body>
+</html>

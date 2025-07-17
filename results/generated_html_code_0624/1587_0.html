@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<canvas id="myCanvas" width="450" height="400" style="border:1px solid #d3d3d3;"></canvas>
+
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Define geometric parameters
+    const cx = 180;
+    const cy = 200;
+    const r_a = 60;
+    const r_b = 100;
+    const r_outer = 110;
+    const persp_x_end = 400;
+    const persp_y_factor = 0.8;
+
+    // Set drawing style
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+
+    // Helper function to draw an arrow
+    function drawArrow(fromx, fromy, tox, toy, headlen = 10) {
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // Helper function to draw a line with arrows at both ends
+    function drawDoubleArrow(fromx, fromy, tox, toy, headlen = 6) {
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        // Arrow at 'to' end
+        const angle_to = Math.atan2(toy - fromy, tox - fromx);
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle_to - Math.PI / 6), toy - headlen * Math.sin(angle_to - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle_to + Math.PI / 6), toy - headlen * Math.sin(angle_to + Math.PI / 6));
+        // Arrow at 'from' end
+        const angle_from = Math.atan2(fromy - toy, fromx - tox);
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(fromx - headlen * Math.cos(angle_from - Math.PI / 6), fromy - headlen * Math.sin(angle_from - Math.PI / 6));
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(fromx - headlen * Math.cos(angle_from + Math.PI / 6), fromy - headlen * Math.sin(angle_from + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // 1. Draw the concentric circles
+    ctx.beginPath();
+    ctx.arc(cx, cy, r_outer, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r_b, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r_a, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 2. Fill the inner cylinder with hatching
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r_a, 0, 2 * Math.PI);
+    ctx.clip();
+    ctx.lineWidth = 1.5;
+    for (let i = -2 * r_a; i < 2 * r_a; i += 10) {
+        ctx.beginPath();
+        ctx.moveTo(cx + i - r_a, cy - r_a);
+        ctx.lineTo(cx + i + r_a, cy + r_a);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 3. Draw perspective lines
+    ctx.lineWidth = 2;
+    // Outer shell perspective lines
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r_outer);
+    ctx.lineTo(persp_x_end, cy - r_outer * persp_y_factor);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + r_outer);
+    ctx.lineTo(persp_x_end, cy + r_outer * persp_y_factor);
+    ctx.stroke();
+
+    // Dashed lines for inner structure
+    ctx.beginPath();
+    ctx.setLineDash([6, 4]);
+    ctx.moveTo(cx - r_b, cy);
+    ctx.lineTo(cx + r_b, cy);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    const persp_b_x_end = persp_x_end - (r_outer - r_b)*2.5;
+    ctx.moveTo(cx + r_b, cy);
+    ctx.lineTo(persp_b_x_end , cy);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+
+
+    // 4. Draw labels for radii a, b, and r
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Label 'a'
+    const angle_a = 0.3; // radians
+    drawDoubleArrow(cx, cy, cx + r_a * Math.cos(angle_a), cy + r_a * Math.sin(angle_a));
+    ctx.fillText('a', cx + r_a * 0.5 * Math.cos(angle_a) + 10, cy + r_a * 0.5 * Math.sin(angle_a) - 10);
+
+    // Label 'b'
+    const angle_b = 2.1; // radians
+    drawDoubleArrow(cx, cy, cx + r_b * Math.cos(angle_b), cy + r_b * Math.sin(angle_b));
+    ctx.fillText('b', cx + r_b * 0.5 * Math.cos(angle_b) + 10, cy + r_b * 0.5 * Math.sin(angle_b) - 5);
+
+    // Label 'r'
+    const angle_r = 4.2; // radians
+    const r_len = r_a * 0.9;
+    drawDoubleArrow(cx, cy, cx + r_len * Math.cos(angle_r), cy + r_len * Math.sin(angle_r));
+    ctx.fillText('r', cx + r_len * 0.5 * Math.cos(angle_r) - 10, cy + r_len * 0.5 * Math.sin(angle_r) + 10);
+
+
+    // 5. Draw flow lines and arrow on the right
+    const line_start_x = 380;
+    const line_end_x = 300;
+    ctx.lineWidth = 1.5;
+    
+    // Top line
+    ctx.beginPath();
+    ctx.moveTo(line_start_x, cy - 60);
+    ctx.lineTo(line_end_x, cy - 45);
+    ctx.stroke();
+    
+    // Middle line with arrow
+    drawArrow(line_start_x, cy - 30, line_end_x, cy - 15, 10);
+    
+    // Bottom line
+    ctx.beginPath();
+    ctx.moveTo(line_start_x, cy);
+    ctx.lineTo(line_end_x, cy + 15);
+    ctx.stroke();
+    
+    // 6. Draw the figure caption
+    ctx.font = '20px Times New Roman';
+    ctx.fillText('Fig. 1.13', cx, cy + r_outer + 40);
+
+</script>
+
+</body>
+</html>

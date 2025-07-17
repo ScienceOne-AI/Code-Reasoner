@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis of a Two-Bar Truss</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="600" height="750"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.font = 'italic 30px "Times New Roman"';
+        
+        // --- Coordinates and Angles ---
+        // Using angles to determine coordinates for accuracy
+        const A = { x: 200, y: 150 };
+        const L_AB = 250;
+        const B = { x: A.x, y: A.y + L_AB };
+        
+        const alpha = 30 * Math.PI / 180;
+        const beta = 60 * Math.PI / 180;
+        
+        // From geometric derivation: L_AC = L_AB / (cos(α) - sin(α) * cot(β))
+        const L_AC = L_AB / (Math.cos(alpha) - Math.sin(alpha) * (1 / Math.tan(beta)));
+        
+        const C = {
+            x: A.x + L_AC * Math.sin(alpha),
+            y: A.y + L_AC * Math.cos(alpha)
+        };
+        
+        // Angles for drawing (from positive x-axis, canvas standard)
+        const rodAngleA_canvas = Math.atan2(C.y - A.y, C.x - A.x);
+        const rodAngleB_canvas = Math.atan2(C.y - B.y, C.x - B.x);
+        const verticalAngle_canvas = Math.PI / 2;
+
+        // --- Helper Functions ---
+        function drawArrow(ctx, fromX, fromY, toX, toY, headLength, lineWidth) {
+            ctx.save();
+            ctx.lineWidth = lineWidth;
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            
+            // Draw line
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            // Draw arrowhead
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // --- Drawing Functions ---
+
+        function drawWall(ctx) {
+            const wallX = 170;
+            const wallY1 = 50;
+            const wallY2 = 490;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(wallX, wallY1);
+            ctx.lineTo(wallX, wallY2);
+            ctx.stroke();
+
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            for (let y = wallY1; y <= wallY2; y += 20) {
+                ctx.beginPath();
+                ctx.moveTo(wallX, y);
+                ctx.lineTo(wallX - 25, y + 25);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawHingesAB(ctx) {
+            ctx.lineWidth = 3;
+            // Hinge A
+            ctx.beginPath();
+            ctx.moveTo(170, A.y - 20);
+            ctx.lineTo(A.x, A.y);
+            ctx.lineTo(170, A.y + 20);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(A.x, A.y, 12, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(A.x, A.y, 6, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.fillText('A', A.x + 25, A.y + 10);
+
+            // Hinge B
+            ctx.beginPath();
+            ctx.moveTo(170, B.y - 20);
+            ctx.lineTo(B.x, B.y);
+            ctx.lineTo(170, B.y + 20);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(B.x, B.y, 12, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.rect(B.x - 4.5, B.y - 4.5, 9, 9);
+            ctx.stroke();
+            ctx.fillText('B', B.x - 45, B.y + 20);
+        }
+
+        function drawRods(ctx) {
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(A.x, A.y);
+            ctx.lineTo(C.x, C.y);
+            ctx.moveTo(B.x, B.y);
+            ctx.lineTo(C.x, C.y);
+            ctx.stroke();
+        }
+
+        function drawHingeC(ctx) {
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(C.x, C.y, 13, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(C.x, C.y, 6, 0, 2 * Math.PI);
+            ctx.fill();
+
+            ctx.save();
+            ctx.translate(C.x, C.y);
+            ctx.rotate(Math.PI / 4); 
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(12, 0);
+                ctx.lineTo(25, 0);
+                ctx.stroke();
+                ctx.rotate(2 * Math.PI / 3);
+            }
+            ctx.restore();
+            ctx.fillText('C', C.x + 28, C.y + 5);
+        }
+
+        function drawForceP(ctx) {
+            const pStart = { x: C.x, y: C.y };
+            const pEnd = { x: C.x, y: C.y + 130 };
+            drawArrow(ctx, pStart.x, pStart.y, pEnd.x, pEnd.y, 25, 4);
+            ctx.fillText('P', pEnd.x + 15, pEnd.y);
+        }
+
+        function drawAngles(ctx) {
+            // Vertical reference line
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([10, 4, 3, 4]);
+            ctx.beginPath();
+            ctx.moveTo(A.x, A.y - 20);
+            ctx.lineTo(A.x, B.y + 50);
+            ctx.stroke();
+            ctx.restore();
+            
+            ctx.lineWidth = 1.5;
+
+            // Angle α
+            const r_a = 85;
+            ctx.beginPath();
+            // From vertical (90 deg) to rod (~60 deg), counter-clockwise.
+            ctx.arc(A.x, A.y, r_a, verticalAngle_canvas, rodAngleA_canvas, true); 
+            ctx.stroke();
+            
+            // Arrow for α arc
+            const arrowAngle_a = rodAngleA_canvas;
+            const arrowPoint_a_x = A.x + r_a * Math.cos(arrowAngle_a);
+            const arrowPoint_a_y = A.y + r_a * Math.sin(arrowAngle_a);
+            const tangent_a = arrowAngle_a + Math.PI / 2; // Tangent for CCW arc path
+            ctx.beginPath();
+            ctx.moveTo(arrowPoint_a_x, arrowPoint_a_y);
+            ctx.lineTo(arrowPoint_a_x - 12 * Math.cos(tangent_a - Math.PI / 7), arrowPoint_a_y - 12 * Math.sin(tangent_a - Math.PI / 7));
+            ctx.moveTo(arrowPoint_a_x, arrowPoint_a_y);
+            ctx.lineTo(arrowPoint_a_x - 12 * Math.cos(tangent_a + Math.PI / 7), arrowPoint_a_y - 12 * Math.sin(tangent_a + Math.PI / 7));
+            ctx.stroke();
+            ctx.fillText('α', A.x + 20, A.y + 85);
+
+            // Angle β
+            const r_b = 60;
+            ctx.beginPath();
+            // From rod (~30 deg) to vertical (90 deg), clockwise.
+            ctx.arc(B.x, B.y, r_b, rodAngleB_canvas, verticalAngle_canvas, false);
+            ctx.stroke();
+            
+            // Markers for β
+            // Marker 1 (on vertical line)
+            const marker1_b_x = B.x + r_b * Math.cos(verticalAngle_canvas);
+            const marker1_b_y = B.y + r_b * Math.sin(verticalAngle_canvas);
+            ctx.beginPath();
+            ctx.moveTo(marker1_b_x, marker1_b_y);
+            ctx.lineTo(marker1_b_x - 8, marker1_b_y - 8);
+            ctx.moveTo(marker1_b_x, marker1_b_y);
+            ctx.lineTo(marker1_b_x + 8, marker1_b_y - 8);
+            ctx.stroke();
+
+            // Marker 2 (on rod line)
+            const marker2_b_x = B.x + r_b * Math.cos(rodAngleB_canvas);
+            const marker2_b_y = B.y + r_b * Math.sin(rodAngleB_canvas);
+            const normal_b = rodAngleB_canvas + Math.PI / 2;
+            ctx.beginPath();
+            ctx.moveTo(marker2_b_x, marker2_b_y);
+            ctx.lineTo(marker2_b_x + 10 * Math.cos(normal_b - Math.PI / 5), marker2_b_y + 10 * Math.sin(normal_b - Math.PI / 5));
+            ctx.moveTo(marker2_b_x, marker2_b_y);
+            ctx.lineTo(marker2_b_x + 10 * Math.cos(normal_b + Math.PI / 5), marker2_b_y + 10 * Math.sin(normal_b + Math.PI / 5));
+            ctx.stroke();
+            ctx.fillText('β', B.x + 35, B.y - 15);
+        }
+
+        // --- Main Drawing Execution ---
+        drawWall(ctx);
+        drawHingesAB(ctx);
+        drawRods(ctx);
+        drawHingeC(ctx);
+        drawForceP(ctx);
+        drawAngles(ctx);
+    </script>
+</body>
+</html>

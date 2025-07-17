@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="600" height="420" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Parameter Definitions ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 3;
+    ctx.font = 'italic bold 24px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Geometric Parameters
+    const a = 150;
+    const d = 170;
+    const force_P_length = 60;
+    const cornerRadius = 20;
+    const supportHeight = 30;
+    const supportBaseWidth = 40;
+    const pinRadius = 6;
+    const hingeRadius = 6;
+    const arrowHeadSize = 12;
+
+    // Coordinate Definitions
+    const xA = 150;
+    const xB = xA + 2 * a;
+    const xHinge = xA + a;
+    const yTop = 100;
+    const yPin = yTop + d;
+    const yGround = yPin + supportHeight;
+    const yDimA = yPin - 50;
+    const xDimD = xB + 50;
+
+    // --- Helper Drawing Functions ---
+
+    /**
+     * Draws a pin support with a label and hatched ground.
+     * @param {number} x - The x-coordinate of the pin.
+     * @param {number} y - The y-coordinate of the pin.
+     * @param {string} label - The label for the support (e.g., 'A').
+     */
+    function drawPinSupport(x, y, label) {
+        // Support Triangle
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - supportBaseWidth / 2, yGround);
+        ctx.lineTo(x + supportBaseWidth / 2, yGround);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Hatched Ground
+        const ground_x_start = x - supportBaseWidth / 2 - 10;
+        const ground_x_end = x + supportBaseWidth / 2 + 10;
+        ctx.beginPath();
+        ctx.moveTo(ground_x_start, yGround);
+        ctx.lineTo(ground_x_end, yGround);
+        ctx.stroke();
+        for (let i = ground_x_start; i <= ground_x_end; i += 8) {
+            ctx.beginPath();
+            ctx.moveTo(i, yGround);
+            ctx.lineTo(i - 8, yGround + 10);
+            ctx.stroke();
+        }
+        
+        // Pin Joint Circle
+        ctx.beginPath();
+        ctx.arc(x, y, pinRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // Label
+        ctx.fillText(label, x - 30, y - 5);
+    }
+
+    /**
+     * Draws the horizontal force vector P.
+     * @param {number} x_end - The x-coordinate of the arrowhead.
+     * @param {number} y_pos - The y-coordinate of the arrow.
+     * @param {number} len - The length of the arrow shaft.
+     * @param {string} label - The force label ('P').
+     */
+    function drawForceP(x_end, y_pos, len, label) {
+        const x_start = x_end - len;
+        // Arrow Line
+        ctx.beginPath();
+        ctx.moveTo(x_start, y_pos);
+        ctx.lineTo(x_end, y_pos);
+        ctx.stroke();
+        // Filled Arrowhead
+        ctx.beginPath();
+        ctx.moveTo(x_end, y_pos);
+        ctx.lineTo(x_end - arrowHeadSize, y_pos - arrowHeadSize / 2);
+        ctx.lineTo(x_end - arrowHeadSize, y_pos + arrowHeadSize / 2);
+        ctx.closePath();
+        ctx.fill();
+        // Label
+        ctx.save();
+        ctx.font = 'italic bold 28px Times New Roman';
+        ctx.fillText(label, x_start - 20, y_pos);
+        ctx.restore();
+    }
+
+    /**
+     * Draws a horizontal dimension line for 'a'.
+     * @param {number} y - The y-coordinate of the dimension line.
+     * @param {number} x1 - The starting x-coordinate.
+     * @param {number} x2 - The ending x-coordinate.
+     * @param {string} label - The dimension label ('a').
+     */
+    function drawHDimension(y, x1, x2, label) {
+         ctx.save();
+         ctx.lineWidth = 2;
+         // Line
+         ctx.beginPath();
+         ctx.moveTo(x1, y);
+         ctx.lineTo(x2, y);
+         ctx.stroke();
+         // Arrowhead at start
+         ctx.beginPath();
+         ctx.moveTo(x1, y);
+         ctx.lineTo(x1 + arrowHeadSize, y - 6);
+         ctx.lineTo(x1 + arrowHeadSize, y + 6);
+         ctx.closePath();
+         ctx.fill();
+         // Arrowhead at end
+         ctx.beginPath();
+         ctx.moveTo(x2, y);
+         ctx.lineTo(x2 - arrowHeadSize, y - 6);
+         ctx.lineTo(x2 - arrowHeadSize, y + 6);
+         ctx.closePath();
+         ctx.fill();
+         // Label
+         ctx.fillText(label, (x1 + x2) / 2, y - 20);
+         ctx.restore();
+    }
+
+    /**
+     * Draws the vertical dimension line for 'd'.
+     * @param {number} x - The x-coordinate of the dimension line.
+     * @param {number} y1 - The starting y-coordinate (top).
+     * @param {number} y2 - The ending y-coordinate (bottom).
+     * @param {string} label - The dimension label ('d').
+     */
+    function drawVDimension(x, y1, y2, label) {
+        ctx.save();
+        ctx.lineWidth = 2;
+        // Vertical line
+        ctx.beginPath();
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, y2);
+        ctx.stroke();
+        // Top T-bar
+        ctx.beginPath();
+        ctx.moveTo(x - 10, y1);
+        ctx.lineTo(x + 10, y1);
+        ctx.stroke();
+        // Bottom T-bar
+        ctx.beginPath();
+        ctx.moveTo(x - 10, y2);
+        ctx.lineTo(x + 10, y2);
+        ctx.stroke();
+        // Top arrow
+        ctx.beginPath();
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x - 6, y1 + 12);
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x + 6, y1 + 12);
+        ctx.stroke();
+        // Bottom arrow
+        ctx.beginPath();
+        ctx.moveTo(x, y2);
+        ctx.lineTo(x - 6, y2 - 12);
+        ctx.moveTo(x, y2);
+        ctx.lineTo(x + 6, y2 - 12);
+        ctx.stroke();
+        // Label
+        ctx.textAlign = 'right';
+        ctx.fillText(label, x - 15, (y1 + y2) / 2);
+        ctx.restore();
+    }
+
+    // --- Main Drawing Execution ---
+
+    // 1. Draw the main frame structure
+    ctx.beginPath();
+    ctx.moveTo(xA, yPin);
+    ctx.lineTo(xA, yTop + cornerRadius);
+    ctx.arcTo(xA, yTop, xA + cornerRadius, yTop, cornerRadius);
+    ctx.lineTo(xHinge, yTop);
+    ctx.moveTo(xHinge, yTop); // Create gap for hinge
+    ctx.lineTo(xB - cornerRadius, yTop);
+    ctx.arcTo(xB, yTop, xB, yTop + cornerRadius, cornerRadius);
+    ctx.lineTo(xB, yPin);
+    ctx.stroke();
+    
+    // 2. Draw the central hinge
+    ctx.beginPath();
+    ctx.arc(xHinge, yTop, hingeRadius, 0, 2 * Math.PI);
+    ctx.save();
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.restore();
+    ctx.stroke();
+    
+    // 3. Draw supports A and B
+    drawPinSupport(xA, yPin, 'A');
+    drawPinSupport(xB, yPin, 'B');
+
+    // 4. Draw the applied force P
+    drawForceP(xA, yTop, force_P_length, 'P');
+    
+    // 5. Draw the dimension lines
+    // Dashed centerline for 'a' dimensions
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(xHinge, yTop + hingeRadius);
+    ctx.lineTo(xHinge, yDimA);
+    ctx.stroke();
+    ctx.restore();
+
+    // Horizontal dimensions 'a'
+    drawHDimension(yDimA, xA, xHinge, 'a');
+    drawHDimension(yDimA, xHinge, xB, 'a');
+    
+    // Vertical dimension 'd'
+    drawVDimension(xDimD, yTop, yPin, 'd');
+
+</script>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Projectile Motion Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-diagram" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-diagram');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Helper Functions ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        function drawDashedLine(x1, y1, x2, y2, dashLen = 5) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([dashLen, dashLen]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawArrow(x1, y1, x2, y2, angle = Math.PI / 6, length = 10) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const lineAngle = Math.atan2(dy, dx);
+            
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - length * Math.cos(lineAngle - angle), y2 - length * Math.sin(lineAngle - angle));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - length * Math.cos(lineAngle + angle), y2 - length * Math.sin(lineAngle + angle));
+            ctx.stroke();
+        }
+
+        // --- Coordinates and Parameters ---
+        const O = { x: 130, y: 240 };
+        const groundY = 380;
+        const wedgeLeftX = 60;
+        const theta_deg = 15;
+        const theta_rad = theta_deg * Math.PI / 180;
+        
+        // Define parabola end point P on the incline
+        const S_dist = 260;
+        // Note: In canvas coordinates, y increases downwards.
+        // A positive theta means the incline goes down and to the right.
+        const P = {
+            x: O.x + S_dist * Math.cos(theta_rad),
+            y: O.y + S_dist * Math.sin(theta_rad)
+        };
+
+        // Define a visually pleasing trajectory using a Bezier control point
+        const controlPoint = { x: O.x + 90, y: O.y - 110 };
+        
+        // Find the highest point (peak) of the Bezier curve for the h_max annotation
+        const t_peak_y = (O.y - controlPoint.y) / (O.y - 2 * controlPoint.y + P.y);
+        const peak = {
+            x: Math.pow(1 - t_peak_y, 2) * O.x + 2 * t_peak_y * (1 - t_peak_y) * controlPoint.x + Math.pow(t_peak_y, 2) * P.x,
+            y: Math.pow(1 - t_peak_y, 2) * O.y + 2 * t_peak_y * (1 - t_peak_y) * controlPoint.y + Math.pow(t_peak_y, 2) * P.y
+        };
+
+        // --- Drawing Main Scene ---
+
+        // 1. Draw Ground and Inclined Plane
+        ctx.beginPath();
+        ctx.moveTo(0, groundY);
+        ctx.lineTo(canvas.width, groundY);
+        const wedgeTopY = O.y - (O.x - wedgeLeftX) * Math.tan(theta_rad);
+        ctx.moveTo(wedgeLeftX, groundY);
+        ctx.lineTo(wedgeLeftX, wedgeTopY);
+        ctx.lineTo(O.x, O.y);
+        ctx.stroke();
+
+        // 2. Draw Projectile Trajectory
+        ctx.beginPath();
+        ctx.moveTo(O.x, O.y);
+        ctx.quadraticCurveTo(controlPoint.x, controlPoint.y, P.x, P.y);
+        ctx.stroke();
+        
+        // --- Drawing Annotations ---
+        ctx.font = 'italic 20px Times New Roman';
+
+        // h (initial drop height)
+        const h_top_y = O.y - 140;
+        drawDashedLine(O.x, O.y, O.x, h_top_y);
+        ctx.beginPath();
+        ctx.arc(O.x, h_top_y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('h', O.x + 20, O.y - 70);
+
+        // Initial Velocity Vector
+        const velVecEndPoint = {
+            x: O.x + (controlPoint.x - O.x) * 0.45,
+            y: O.y + (controlPoint.y - O.y) * 0.45
+        };
+        drawArrow(O.x, O.y, velVecEndPoint.x, velVecEndPoint.y);
+
+        // h_max
+        drawDashedLine(O.x, O.y, peak.x + 60, O.y);
+        drawDashedLine(peak.x, peak.y, peak.x + 60, peak.y);
+        const h_max_line_x = peak.x + 45;
+        ctx.beginPath();
+        ctx.moveTo(h_max_line_x, O.y);
+        ctx.lineTo(h_max_line_x, peak.y);
+        // Ticks
+        ctx.moveTo(h_max_line_x - 5, O.y); ctx.lineTo(h_max_line_x + 5, O.y);
+        ctx.moveTo(h_max_line_x - 5, peak.y); ctx.lineTo(h_max_line_x + 5, peak.y);
+        ctx.stroke();
+        ctx.textAlign = 'left';
+        ctx.fillText('h', h_max_line_x + 10, peak.y + (O.y - peak.y) / 2 - 5);
+        ctx.font = 'italic 14px Times New Roman';
+        ctx.fillText('max', h_max_line_x + 18, peak.y + (O.y - peak.y) / 2 + 5);
+        
+        // S (distance along incline)
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.beginPath();
+        ctx.moveTo(O.x, O.y);
+        ctx.lineTo(P.x, P.y);
+        const angleS = Math.atan2(P.y - O.y, P.x - O.x);
+        const tickLen = 5;
+        ctx.moveTo(O.x + tickLen * Math.sin(angleS), O.y - tickLen * Math.cos(angleS));
+        ctx.lineTo(O.x - tickLen * Math.sin(angleS), O.y + tickLen * Math.cos(angleS));
+        ctx.moveTo(P.x + tickLen * Math.sin(angleS), P.y - tickLen * Math.cos(angleS));
+        ctx.lineTo(P.x - tickLen * Math.sin(angleS), P.y + tickLen * Math.cos(angleS));
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        const midS = { x: (O.x + P.x) / 2, y: (O.y + P.y) / 2 };
+        ctx.save();
+        ctx.translate(midS.x, midS.y);
+        ctx.rotate(angleS);
+        ctx.fillText('S', 0, 25);
+        ctx.restore();
+        
+        // θ (angle of incline at P)
+        const arcRadius = 30;
+        // Draw horizontal line through P with a perpendicular tick
+        ctx.beginPath();
+        ctx.moveTo(P.x - arcRadius - 15, P.y);
+        ctx.lineTo(P.x + arcRadius, P.y);
+        ctx.moveTo(P.x, P.y - 10);
+        ctx.lineTo(P.x, P.y + 10);
+        ctx.stroke();
+        // The angle between the incline (line PO) and the horizontal line to the left
+        const inclineAngleAtP = Math.atan2(O.y - P.y, O.x - P.x); // Angle of line P->O
+        const horizontalAngle = Math.PI; // Angle of horizontal line to the left
+        ctx.beginPath();
+        ctx.arc(P.x, P.y, arcRadius, inclineAngleAtP, horizontalAngle);
+        ctx.stroke();
+        // Draw arrowhead on the arc
+        const arcArrowAngle = horizontalAngle - 0.25;
+        const arcArrowX = P.x + arcRadius * Math.cos(arcArrowAngle);
+        const arcArrowY = P.y + arcRadius * Math.sin(arcArrowAngle);
+        const tangentAngle = arcArrowAngle - Math.PI / 2;
+        const arrowStartX = arcArrowX + 6 * Math.cos(tangentAngle);
+        const arrowStartY = arcArrowY + 6 * Math.sin(tangentAngle);
+        drawArrow(arrowStartX, arrowStartY, arcArrowX, arcArrowY, Math.PI / 6, 8);
+        
+        const thetaLabelAngle = (inclineAngleAtP + horizontalAngle) / 2;
+        ctx.fillText('θ', P.x + (arcRadius - 12) * Math.cos(thetaLabelAngle), P.y + (arcRadius - 12) * Math.sin(thetaLabelAngle) + 5);
+
+        // Labels for points O and P
+        ctx.fillText('O', O.x - 20, O.y + 5);
+        ctx.fillText('P', P.x + 15, P.y + 15);
+
+        // --- Caption ---
+        ctx.font = '18px "SimSun", "Songti SC", serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('力图 3.26.1', canvas.width / 2, 430);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Helix Motion</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="300" height="650"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Clear canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = 'italic 24px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Parameters for the helix
+        const centerX = canvas.width / 2;
+        const radius = 60; // Represents R
+        const pitch = 100; // Represents H
+        const startY = 80;
+        const numTurns = 5;
+
+        // 1. Draw the central vertical axis
+        ctx.beginPath();
+        ctx.moveTo(centerX, 20);
+        ctx.lineTo(centerX, canvas.height - 20);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 2. Draw the helix
+        ctx.lineWidth = 2;
+        let firstPoint = true;
+        let prevX, prevY;
+        for (let angle = -0.5; angle <= numTurns * 2 * Math.PI; angle += 0.05) {
+            const x = centerX + radius * Math.cos(angle);
+            const y = startY + (pitch / (2 * Math.PI)) * angle;
+
+            if (firstPoint) {
+                ctx.moveTo(x, y);
+                firstPoint = false;
+            } else {
+                ctx.beginPath();
+                // Use sine of angle to determine if the segment is in front (solid) or back (dashed)
+                if (Math.sin(angle) < 0) {
+                    ctx.setLineDash([4, 4]); // Dashed line for the back
+                } else {
+                    ctx.setLineDash([]); // Solid line for the front
+                }
+                ctx.moveTo(prevX, prevY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            }
+            prevX = x;
+            prevY = y;
+        }
+        ctx.setLineDash([]); // Reset to solid lines for subsequent drawings
+
+        // 3. Draw the ball P
+        const ballAngle = -0.4;
+        const ballX = centerX + radius * Math.cos(ballAngle);
+        const ballY = startY + (pitch / (2 * Math.PI)) * ballAngle;
+        ctx.beginPath();
+        ctx.arc(ballX, ballY, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = '#404040'; // A dark gray color for the ball
+        ctx.fill();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+
+        // 4. Draw labels
+        ctx.fillStyle = 'black';
+        
+        // Label P
+        ctx.fillText('P', ballX - 25, ballY);
+        
+        // Label R (top)
+        ctx.fillText('R', centerX - radius - 25, ballY - 10);
+
+        // Label H (pitch)
+        const h_y_center = startY + 2 * pitch;
+        const h_y_top = h_y_center - pitch / 2;
+        const h_y_bottom = h_y_center + pitch / 2;
+        const h_x_pos = centerX + radius + 10;
+        
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        // Horizontal lines for H
+        ctx.moveTo(h_x_pos, h_y_top);
+        ctx.lineTo(h_x_pos + 20, h_y_top);
+        ctx.moveTo(h_x_pos, h_y_bottom);
+        ctx.lineTo(h_x_pos + 20, h_y_bottom);
+        // Vertical line for H
+        ctx.moveTo(h_x_pos + 10, h_y_top);
+        ctx.lineTo(h_x_pos + 10, h_y_bottom);
+        ctx.stroke();
+        
+        // Arrowheads for H
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.moveTo(h_x_pos + 10, h_y_top);
+        ctx.lineTo(h_x_pos + 5, h_y_top + 8);
+        ctx.lineTo(h_x_pos + 15, h_y_top + 8);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.moveTo(h_x_pos + 10, h_y_bottom);
+        ctx.lineTo(h_x_pos + 5, h_y_bottom - 8);
+        ctx.lineTo(h_x_pos + 15, h_y_bottom - 8);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.fillText('H', h_x_pos + 40, h_y_center);
+
+        // 5. Bottom rotation arrow and label R
+        ctx.lineWidth = 2;
+        // Find a starting point on the helix near the bottom, on the right side.
+        const arrowBaseAngle = 4.75 * 2 * Math.PI;
+        const arrowStartX = centerX + radius * Math.cos(arrowBaseAngle);
+        const arrowStartY = startY + (pitch / (2 * Math.PI)) * arrowBaseAngle;
+
+        // Draw the curved arrow
+        ctx.beginPath();
+        ctx.moveTo(arrowStartX, arrowStartY);
+        const controlX = arrowStartX - 20;
+        const controlY = arrowStartY + 10;
+        const arrowEndX = arrowStartX - 40;
+        const arrowEndY = arrowStartY - 10;
+        ctx.quadraticCurveTo(controlX, controlY, arrowEndX, arrowEndY);
+        ctx.stroke();
+
+        // Draw the arrowhead
+        const tangentAtEnd = Math.atan2(arrowEndY - controlY, arrowEndX - controlX);
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.moveTo(arrowEndX, arrowEndY);
+        ctx.lineTo(arrowEndX + 12 * Math.cos(tangentAtEnd + 0.5), arrowEndY + 12 * Math.sin(tangentAtEnd + 0.5));
+        ctx.lineTo(arrowEndX + 12 * Math.cos(tangentAtEnd - 0.5), arrowEndY + 12 * Math.sin(tangentAtEnd - 0.5));
+        ctx.closePath();
+        ctx.fill();
+
+        // Label R (bottom)
+        ctx.fillText('R', arrowStartX, arrowStartY + 25);
+    </script>
+</body>
+</html>

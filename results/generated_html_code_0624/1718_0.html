@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Communicating Vessels</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '24px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+
+        // Container coordinates
+        const jiaX = 50;
+        const jiaW = 80;
+        const yiX = 330;
+        const yiW = 120;
+        const pipeTopY = 220;
+        const pipeBottomY = 260;
+        const containerTopY = 70;
+        const containerBottomY = 320;
+        const sealTopY = 70;
+        const sealHeight = 20;
+
+        // --- Draw Container Structure ---
+        ctx.beginPath();
+        // Left container (Jia)
+        ctx.moveTo(jiaX, sealTopY + sealHeight);
+        ctx.lineTo(jiaX, containerBottomY); // Left wall
+        ctx.moveTo(jiaX + jiaW, sealTopY + sealHeight);
+        ctx.lineTo(jiaX + jiaW, pipeTopY); // Inner wall
+
+        // Right container (Yi)
+        ctx.moveTo(yiX, containerTopY);
+        ctx.lineTo(yiX, pipeTopY); // Inner wall
+        ctx.moveTo(yiX + yiW, containerTopY);
+        ctx.lineTo(yiX + yiW, containerBottomY); // Right wall
+
+        // Top openings
+        ctx.moveTo(yiX, containerTopY);
+        ctx.lineTo(yiX + yiW, containerTopY);
+
+        // Bottom and Pipe
+        ctx.moveTo(jiaX, containerBottomY);
+        ctx.lineTo(yiX + yiW, containerBottomY); // Full bottom line
+        ctx.moveTo(jiaX + jiaW, pipeTopY);
+        ctx.lineTo(yiX, pipeTopY); // Pipe top
+        ctx.moveTo(jiaX + jiaW, pipeBottomY);
+        ctx.lineTo(yiX, pipeBottomY); // Pipe bottom
+        ctx.stroke();
+
+        // Draw the seal on container Jia
+        ctx.beginPath();
+        ctx.rect(jiaX, sealTopY, jiaW, sealHeight);
+        ctx.fill();
+
+        // --- Draw Water ---
+        const jiaWaterLevelY = 100;
+        const yiWaterLevelY = 180;
+
+        // Function to draw dashed water lines
+        function drawWater(x1, y1, x2, y2) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.lineWidth = 1.5;
+            const yStep = 10;
+            const xStep = 12;
+            const dashLength = 6;
+            for (let y = y1 + yStep / 2; y < y2; y += yStep) {
+                for (let x = x1 + xStep / 2; x < x2; x += xStep) {
+                    if (x + dashLength <= x2) {
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x + dashLength, y);
+                    }
+                }
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Decompose the water body into rectangular regions and draw each
+        // Region 1: Jia, above pipe
+        drawWater(jiaX, jiaWaterLevelY, jiaX + jiaW, pipeTopY);
+        // Region 2: Jia, below pipe
+        drawWater(jiaX, pipeBottomY, jiaX + jiaW, containerBottomY);
+        // Region 3: Yi, above pipe
+        drawWater(yiX, yiWaterLevelY, yiX + yiW, pipeTopY);
+        // Region 4: Yi, below pipe
+        drawWater(yiX, pipeBottomY, yiX + yiW, containerBottomY);
+        // Region 5: Pipe
+        drawWater(jiaX + jiaW, pipeTopY, yiX, pipeBottomY);
+
+        // --- Draw Valve K ---
+        const valveX = (jiaX + jiaW + yiX) / 2;
+        const handleY = pipeTopY - 15;
+        ctx.beginPath();
+        // Vertical stem of the valve
+        ctx.moveTo(valveX, handleY);
+        ctx.lineTo(valveX, pipeBottomY);
+        // Horizontal handle
+        ctx.moveTo(valveX - 20, handleY);
+        ctx.lineTo(valveX + 20, handleY);
+        ctx.stroke();
+        ctx.fillText('K', valveX, handleY - 25);
+
+        // --- Draw Labels ---
+        ctx.font = '30px "KaiTi", "STKaiti", serif';
+        ctx.fillText('甲', jiaX + jiaW / 2, containerBottomY + 15);
+        ctx.fillText('乙', yiX + yiW / 2, containerBottomY + 15);
+
+    </script>
+</body>
+</html>

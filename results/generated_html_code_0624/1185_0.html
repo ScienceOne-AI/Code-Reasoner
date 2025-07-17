@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bragg's Law Diffraction</title>
+</head>
+<body>
+<canvas id="braggDiffractionCanvas" width="900" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('braggDiffractionCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Clear canvas
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // Parameters
+    const atomRadius = 6;
+    const numPlanes = 4;
+    const numAtomsPerPlane = 10;
+    const planeSpacing = 70; // Represents Λ
+    const atomSpacingX = 80;
+    const startY = 120;
+    const startX = 50;
+    const theta = 25 * Math.PI / 180; // Angle in radians
+
+    // Helper function to draw a dashed line
+    function drawDashedLine(x1, y1, x2, y2, dashLen = 5) {
+        ctx.beginPath();
+        ctx.setLineDash([dashLen, dashLen]);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid lines
+    }
+
+    // Helper function to draw an arrow
+    function drawArrow(fromx, fromy, tox, toy) {
+        const headlen = 10;
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    // 1. Draw Crystal Lattice (Planes and Atoms)
+    for (let i = 0; i < numPlanes; i++) {
+        const y = startY + i * planeSpacing;
+        drawDashedLine(startX - 20, y, startX + (numAtomsPerPlane - 1) * atomSpacingX + 20, y);
+
+        for (let j = 0; j < numAtomsPerPlane; j++) {
+            const x = startX + j * atomSpacingX;
+            ctx.beginPath();
+            ctx.arc(x, y, atomRadius, 0, 2 * Math.PI);
+            ctx.fillStyle = 'gray';
+            ctx.fill();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+        }
+    }
+
+    // 2. Draw Rays
+    ctx.lineWidth = 2;
+    ctx.fillStyle = 'black';
+
+    // Top Ray
+    const Ax = startX + 3 * atomSpacingX;
+    const Ay = startY + 1 * planeSpacing;
+    const rayLength = 250;
+    const incidentStartX_A = Ax - rayLength * Math.cos(theta);
+    const incidentStartY_A = Ay - rayLength * Math.sin(theta);
+    const reflectedEndX_A = Ax + rayLength * Math.cos(theta);
+    const reflectedEndY_A = Ay - rayLength * Math.sin(theta);
+
+    drawArrow(incidentStartX_A, incidentStartY_A, Ax, Ay);
+    drawArrow(Ax, Ay, reflectedEndX_A, reflectedEndY_A);
+
+    // Bottom Ray
+    const Bx = startX + 4 * atomSpacingX;
+    const By = startY + 2 * planeSpacing;
+    const incidentStartX_B = Bx - rayLength * Math.cos(theta);
+    const incidentStartY_B = By - rayLength * Math.sin(theta);
+    const reflectedEndX_B = Bx + rayLength * Math.cos(theta);
+    const reflectedEndY_B = By - rayLength * Math.sin(theta);
+
+    drawArrow(incidentStartX_B, incidentStartY_B, Bx, By);
+    drawArrow(Bx, By, reflectedEndX_B, reflectedEndY_B);
+
+    // 3. Draw Construction Lines for Path Difference
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#444';
+    // This construction is a visual representation inspired by the diagram
+    // Vertices: B, and two points P1, P2 on the line forming the base of the triangle
+    const p_mid_x = Bx;
+    const p_mid_y = Ay; // on the plane of the top ray's reflection
+    const half_base = (By - Ay) / Math.tan(theta);
+    
+    const p1x = p_mid_x - half_base;
+    const p1y = p_mid_y;
+    const p2x = p_mid_x + half_base;
+    const p2y = p_mid_y;
+    
+    ctx.beginPath();
+    ctx.moveTo(Bx, By);
+    ctx.lineTo(p1x, p1y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(Bx, By);
+    ctx.lineTo(p2x, p2y);
+    ctx.stroke();
+    
+    // Draw the small vertical helper line from the diagram
+    ctx.beginPath();
+    ctx.moveTo(p_mid_x, By);
+    ctx.lineTo(p_mid_x, p_mid_y);
+    ctx.stroke();
+
+
+    // 4. Draw Labels
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 24px serif';
+
+    // Angle labels (θ)
+    const angleRadius = 80;
+    // Angle for bottom incident ray
+    ctx.beginPath();
+    ctx.arc(Bx, By, angleRadius, -theta, 0);
+    ctx.stroke();
+    ctx.fillText('θ', Bx - angleRadius - 30, By - 15);
+    // Angle for bottom reflected ray
+    ctx.beginPath();
+    ctx.arc(Bx, By, angleRadius, Math.PI, Math.PI + theta);
+    ctx.stroke();
+    ctx.fillText('θ', Bx + angleRadius + 10, By - 15);
+
+    // Spacing label (Λ)
+    const lambdaX = startX - 50;
+    const lambdaY1 = startY + 1 * planeSpacing;
+    const lambdaY2 = startY + 2 * planeSpacing;
+    ctx.beginPath();
+    ctx.moveTo(lambdaX, lambdaY1);
+    ctx.lineTo(lambdaX, lambdaY2);
+    ctx.stroke();
+    // Arrows for lambda
+    ctx.beginPath();
+    ctx.moveTo(lambdaX, lambdaY1);
+    ctx.lineTo(lambdaX - 5, lambdaY1 + 5);
+    ctx.lineTo(lambdaX + 5, lambdaY1 + 5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(lambdaX, lambdaY2);
+    ctx.lineTo(lambdaX - 5, lambdaY2 - 5);
+    ctx.lineTo(lambdaX + 5, lambdaY2 - 5);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillText('Λ', lambdaX - 25, lambdaY1 + planeSpacing/2 + 8);
+
+</script>
+</body>
+</html>

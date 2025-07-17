@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="physics-canvas" width="400" height="550" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('physics-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Define key coordinates based on the geometry
+    const Ax = 150, Ay = 280;
+    const h = 150; // This represents the length of AD and BD in pixels, since angle is 45 degrees
+    const Bx = Ax + h;       // B's x-coordinate
+    const By = Ay + h;       // B's y-coordinate
+    const Cx = Ax;           // C's x-coordinate (on the wall)
+    const Cy = Ay - h;       // C's y-coordinate (based on equilibrium analysis, AC=AD)
+    const Dx = Ax;           // D's x-coordinate (on the wall)
+    const Dy = By;           // D's y-coordinate (horizontal from B)
+
+    const wallTopY = Cy - 40;
+    const wallBottomY = Dy + 40;
+
+    // --- Helper Functions ---
+
+    // Function to draw the hatched wall
+    function drawWall(x, y1, y2) {
+        ctx.save();
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = 'black';
+        ctx.beginPath();
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, y2);
+        ctx.stroke();
+
+        ctx.lineWidth = 1.5;
+        for (let y = y1 + 5; y < y2; y += 15) {
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - 12, y + 12);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Function to draw a point marker (small circle)
+    function drawPoint(x, y) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, 5.5, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // Function to draw a filled arrowhead on an arc, pointing tangentially
+    function drawArcArrow(cx, cy, radius, angle) {
+        const tangentAngle = angle + Math.PI / 2; // For counter-clockwise direction
+        const x = cx + radius * Math.cos(angle);
+        const y = cy + radius * Math.sin(angle);
+        
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(tangentAngle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(6, -9);
+        ctx.lineTo(-6, -9);
+        ctx.closePath();
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Main Drawing Logic ---
+
+    // 1. Draw the vertical wall
+    drawWall(Ax, wallTopY, wallBottomY);
+
+    // 2. Draw rod AB (thicker line)
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay);
+    ctx.lineTo(Bx, By);
+    ctx.stroke();
+
+    // 3. Draw rope BC
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(Bx, By);
+    ctx.lineTo(Cx, Cy);
+    ctx.stroke();
+
+    // 4. Draw dashed line BD
+    ctx.save();
+    ctx.setLineDash([7, 5]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(Bx, By);
+    ctx.lineTo(Dx, Dy);
+    ctx.stroke();
+    ctx.restore();
+
+    // 5. Draw the angle indicator
+    const angleRadius = 45;
+    const angleStart = Math.atan2(By - Ay, Bx - Ax); // Angle for vector AB
+    const angleEnd = Math.atan2(Dy - Ay, Dx - Ax);   // Angle for vector AD (vertical down)
+    
+    // Draw the arc line
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(Ax, Ay, angleRadius, angleStart, angleEnd);
+    ctx.stroke();
+    
+    // Draw the two arrows on the arc
+    drawArcArrow(ctx, Ax, Ay, angleRadius, angleStart + 0.15);
+    drawArcArrow(ctx, Ax, Ay, angleRadius, angleEnd - 0.15);
+
+    // 6. Draw the points A, B, and C
+    drawPoint(Ax, Ay);
+    drawPoint(Bx, By);
+    drawPoint(Cx, Cy);
+    
+    // 7. Add all the labels
+    ctx.font = '24px serif';
+    ctx.fillStyle = 'black';
+    
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('C', Cx + 15, Cy);
+    ctx.fillText('B', Bx + 15, By);
+    
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('D', Dx + 15, Dy + 10);
+    
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('A', Ax + 25, Ay + 10);
+    
+    ctx.font = '22px serif';
+    ctx.fillText('45°', Ax + 38, Ay + 48);
+
+</script>
+</body>
+</html>

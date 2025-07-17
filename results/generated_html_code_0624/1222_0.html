@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="600" height="300" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Parameters ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 3;
+    ctx.font = 'bold 24px serif';
+
+    const x0 = 60;
+    const y0 = 150;
+    const scale = 100; // 100 pixels per meter
+    const len_AB = 3.5 * scale;
+    const len_BC = 0.5 * scale;
+    const beamLength = len_AB + len_BC;
+    const beamThickness = 8;
+    
+    // --- Points ---
+    const xA = x0;
+    const xB = x0 + len_AB;
+    const xC = x0 + beamLength;
+    const xM = x0 + 150; // Arbitrary position for Moment M between A and B
+
+    // --- Draw the Beam ---
+    // The original drawing shows a solid, filled beam.
+    ctx.fillRect(x0, y0 - beamThickness / 2, beamLength, beamThickness);
+
+    // --- Draw Pin Support at A ---
+    const supportHeightA = 40;
+    const supportWidthA = 25;
+    const groundYA = y0 + supportHeightA;
+    
+    ctx.beginPath();
+    // Pin circle on the beam
+    ctx.arc(xA, y0, 4, 0, 2 * Math.PI);
+    ctx.stroke();
+    // Triangle structure
+    ctx.beginPath();
+    ctx.moveTo(xA, y0);
+    ctx.lineTo(xA - supportWidthA, groundYA);
+    ctx.lineTo(xA + supportWidthA, groundYA);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Ground line and hatching for support A
+    ctx.beginPath();
+    ctx.moveTo(xA - supportWidthA - 10, groundYA);
+    ctx.lineTo(xA + supportWidthA + 10, groundYA);
+    ctx.stroke();
+    
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+        ctx.moveTo(xA - supportWidthA - 5 + i * 9, groundYA);
+        ctx.lineTo(xA - supportWidthA - 5 + i * 9 - 10, groundYA + 10);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // --- Draw Roller Support at B ---
+    const supportHeightB = 30;
+    const supportWidthB = 20;
+    const rollerRadius = 4;
+    const rollerY = y0 + supportHeightB + rollerRadius;
+    const groundYB = rollerY + rollerRadius;
+    
+    ctx.beginPath();
+    // Pin circle on the beam
+    ctx.arc(xB, y0, 4, 0, 2 * Math.PI);
+    ctx.stroke();
+    // Triangle structure
+    ctx.beginPath();
+    ctx.moveTo(xB, y0);
+    ctx.lineTo(xB - supportWidthB, y0 + supportHeightB);
+    ctx.lineTo(xB + supportWidthB, y0 + supportHeightB);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Rollers
+    ctx.beginPath();
+    ctx.arc(xB - supportWidthB / 2, rollerY, rollerRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(xB + supportWidthB / 2, rollerY, rollerRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // Ground line and hatching for support B
+    ctx.beginPath();
+    ctx.moveTo(xB - supportWidthB - 10, groundYB);
+    ctx.lineTo(xB + supportWidthB + 10, groundYB);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+        ctx.moveTo(xB - supportWidthB - 5 + i * 10, groundYB);
+        ctx.lineTo(xB - supportWidthB - 5 + i * 10 - 10, groundYB + 10);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // --- Helper function to draw an arrow ---
+    function drawArrow(fromx, fromy, tox, toy, headlen) {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // --- Draw Moment M ---
+    const momentArm = 40;
+    const momentArrowLen = 30;
+    ctx.beginPath();
+    ctx.moveTo(xM, y0 - momentArm);
+    ctx.lineTo(xM, y0 + momentArm);
+    ctx.stroke();
+    // Top arrow (points right for clockwise moment)
+    drawArrow(xM, y0 - momentArm, xM + momentArrowLen, y0 - momentArm, 10);
+    // Bottom arrow (points left for clockwise moment)
+    drawArrow(xM, y0 + momentArm, xM - momentArrowLen, y0 + momentArm, 10);
+    
+    // --- Draw Force P ---
+    const forceLength = 60;
+    drawArrow(xC, y0 - forceLength, xC, y0, 15);
+
+    // --- Draw Labels ---
+    ctx.fillStyle = 'black'; // Set fill color for text
+    ctx.fillText('A', xA, y0 - 20);
+    ctx.fillText('B', xB, y0 - 20);
+    ctx.fillText('C', xC + 10, y0 + 10);
+    ctx.fillText('M', xM + 10, y0 - 50);
+    ctx.fillText('P', xC + 15, y0 - forceLength);
+
+</script>
+</body>
+</html>

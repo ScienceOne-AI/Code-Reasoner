@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circular Motion Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f9f9f9;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        /**
+         * Draws an arrowhead at a given point, pointing in a given direction.
+         * @param {number} x - The x-coordinate of the arrowhead's tip.
+         * @param {number} y - The y-coordinate of the arrowhead's tip.
+         * @param {number} angle - The angle of the arrow's direction in radians.
+         * @param {number} size - The length of the arrowhead's sides.
+         */
+        function drawArrowhead(x, y, angle, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2.5);
+            ctx.lineTo(-size, -size / 2.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        // --- Style and Parameter Setup ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '22px serif';
+
+        // Center and radii for the disc, chosen for good proportions
+        const cx = 275;
+        const cy = 180;
+        const rx2 = 220;
+        const ry2 = 88; // Aspect ratio rx/ry = 2.5 for perspective
+        const rx1 = 88;
+        const ry1 = 35.2;
+
+        // --- Drawing ---
+
+        // 1. Draw the disc (outer and inner ellipses)
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx2, ry2, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx1, ry1, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 2. Draw the center 'O'
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('O', cx - 18, cy + 8);
+
+        // 3. Draw Radius R₁
+        // The diagram uses a radial line and a separate arc to denote the inner radius.
+        const r1_angle = 200 * Math.PI / 180;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + rx1 * Math.cos(r1_angle), cy + ry1 * Math.sin(r1_angle));
+        ctx.stroke();
+        // Arc segment near the R₁ label
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx1, ry1, 0, 190 * Math.PI / 180, 240 * Math.PI / 180);
+        ctx.stroke();
+        // Label R₁
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('R₁', cx - 90, cy + 25);
+        
+        // 4. Draw Radius R₂
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + rx2, cy);
+        ctx.stroke();
+        // Label R₂
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('R₂', cx + 110, cy - 10);
+
+        // 5. Draw the rotation arrow
+        const rotArrowAngle = 25 * Math.PI / 180;
+        const rotArrowEndX = cx + rx2 * Math.cos(rotArrowAngle);
+        const rotArrowEndY = cy + ry2 * Math.sin(rotArrowAngle);
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx2, ry2, 0, -rotArrowAngle, rotArrowAngle);
+        ctx.stroke();
+        // Calculate tangent for arrowhead direction to follow the ellipse curve
+        const tangentAngle = Math.atan2(ry2 * Math.cos(rotArrowAngle), -rx2 * Math.sin(rotArrowAngle));
+        drawArrowhead(rotArrowEndX, rotArrowEndY, tangentAngle + Math.PI / 2, 12);
+        
+        // 6. Draw the laser apparatus
+        const laserX = cx - 60;
+        const laserY = cy + ry2 + 50;
+        const boxW = 40;
+        const boxH = 25;
+        const perspL = 15;
+        const perspD = -15;
+
+        // Draw a 3D-like box for the laser head
+        ctx.beginPath();
+        ctx.rect(laserX, laserY, boxW, boxH);
+        ctx.moveTo(laserX, laserY);
+        ctx.lineTo(laserX + perspL, laserY + perspD);
+        ctx.lineTo(laserX + boxW + perspL, laserY + perspD);
+        ctx.lineTo(laserX + boxW, laserY);
+        ctx.moveTo(laserX + boxW + perspL, laserY + perspD);
+        ctx.lineTo(laserX + boxW + perspL, laserY + boxH + perspD);
+        ctx.lineTo(laserX + boxW, laserY + boxH);
+        ctx.stroke();
+        
+        // Vertical arrow (representing the laser beam)
+        const vArrowStartX = laserX + boxW/2 + perspL/2;
+        const vArrowStartY = laserY + perspD;
+        const vArrowEndX = vArrowStartX;
+        const vArrowEndY = cy + ry2 * Math.sqrt(1 - Math.pow((vArrowEndX - cx) / rx2, 2));
+        ctx.beginPath();
+        ctx.moveTo(vArrowStartX, vArrowStartY);
+        ctx.lineTo(vArrowEndX, vArrowEndY);
+        ctx.stroke();
+        drawArrowhead(vArrowEndX, vArrowEndY, -Math.PI / 2, 12);
+
+        // Horizontal arrow (representing tangential velocity v)
+        const hArrowStartX = laserX + boxW + 10;
+        const hArrowStartY = laserY + boxH / 2;
+        const hArrowEndX = hArrowStartX + 70;
+        const hArrowEndY = hArrowStartY;
+        ctx.beginPath();
+        ctx.moveTo(hArrowStartX, hArrowStartY);
+        ctx.lineTo(hArrowEndX, hArrowEndY);
+        ctx.stroke();
+        drawArrowhead(hArrowEndX, hArrowEndY, 0, 12);
+        
+        // Label for velocity 'v'
+        ctx.font = 'italic bold 22px serif';
+        ctx.fillText('v', hArrowEndX + 8, hArrowEndY + 8);
+        
+        // Label "激光束" (Laser Beam)
+        ctx.font = '28px KaiTi, serif';
+        ctx.fillText('激光束', laserX, laserY + boxH + 35);
+        
+        // 7. Draw the Exercise label at the bottom
+        ctx.font = '24px KaiTi, serif';
+        const bottomText = '习题 1-21';
+        const textWidth = ctx.measureText(bottomText).width;
+        ctx.fillText(bottomText, cx - textWidth / 2, canvas.height - 30);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Capacitor with Two Dielectrics</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f9f9f9;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="capacitorCanvas" width="450" height="350"></canvas>
+    <script>
+        const canvas = document.getElementById('capacitorCanvas');
+        const ctx = canvas.getContext('2d');
+
+        /**
+         * Draws text with a subscript.
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {string} text - The main text.
+         * @param {string} sub - The subscript text.
+         * @param {number} x - The x-coordinate for alignment.
+         * @param {number} y - The y-coordinate for alignment (vertical center).
+         * @param {string} textAlign - 'left', 'center', or 'right'.
+         * @param {string} mainFont - The font for the main text.
+         * @param {string} subFont - The font for the subscript.
+         */
+        function drawSubscriptedText(ctx, text, sub, x, y, textAlign = 'center', mainFont = 'italic 18px Arial', subFont = '12px Arial') {
+            const mainFontSize = parseInt(mainFont.match(/\d+/)[0], 10);
+            
+            ctx.font = mainFont;
+            const mainTextWidth = ctx.measureText(text).width;
+            ctx.font = subFont;
+            const subTextWidth = ctx.measureText(sub).width;
+
+            const totalWidth = mainTextWidth + subTextWidth;
+            let startX = x;
+            if (textAlign === 'center') {
+                startX = x - totalWidth / 2;
+            } else if (textAlign === 'right') {
+                startX = x - totalWidth;
+            }
+
+            // Draw main text
+            ctx.font = mainFont;
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, startX + mainTextWidth / 2, y);
+
+            // Draw subscript
+            ctx.font = subFont;
+            ctx.textBaseline = 'alphabetic'; // Align subscript baseline correctly
+            ctx.fillText(sub, startX + mainTextWidth, y + mainFontSize * 0.3);
+        }
+
+        /**
+         * Draws a vertical dimension line with arrows and extension lines.
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} x - The x-coordinate of the vertical dimension line.
+         * @param {number} y1 - The starting y-coordinate.
+         * @param {number} y2 - The ending y-coordinate.
+         * @param {number} extLineStartX - The starting x-coordinate of the horizontal extension lines.
+         * @param {string} label - The label for the dimension (e.g., "d_1").
+         * @param {number} labelX - The x-coordinate for the label.
+         */
+        function drawVerticalDimensionLine(ctx, x, y1, y2, extLineStartX, label, labelX) {
+            const arrowSize = 5;
+            
+            // Draw horizontal extension lines
+            ctx.beginPath();
+            ctx.moveTo(extLineStartX, y1);
+            ctx.lineTo(x, y1);
+            ctx.moveTo(extLineStartX, y2);
+            ctx.lineTo(x, y2);
+            ctx.stroke();
+
+            // Draw vertical line with arrows
+            ctx.beginPath();
+            // Top arrow
+            ctx.moveTo(x - arrowSize, y1 + arrowSize);
+            ctx.lineTo(x, y1);
+            ctx.lineTo(x + arrowSize, y1 + arrowSize);
+            // Line itself
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, y2);
+            // Bottom arrow
+            ctx.moveTo(x - arrowSize, y2 - arrowSize);
+            ctx.lineTo(x, y2);
+            ctx.lineTo(x + arrowSize, y2 - arrowSize);
+            ctx.stroke();
+
+            // Draw label
+            const parts = label.split('_');
+            const labelY = (y1 + y2) / 2;
+            drawSubscriptedText(ctx, parts[0], parts[1], labelX, labelY, 'left', '18px Arial', '12px Arial');
+        }
+
+        // --- Main Drawing Logic ---
+        
+        // Define dimensions and positions
+        const W = 220; // width of plates
+        const H1 = 70; // height of top dielectric
+        const H2 = 50; // height of bottom dielectric
+        const H_TOTAL = H1 + H2;
+        const PLATE_H = 5;
+        const CX = canvas.width / 2;
+        const CY = 150;
+
+        const X0 = CX - W / 2;
+        const Y_DIEL_TOP = CY - H_TOTAL / 2;
+        const Y_INTERFACE = Y_DIEL_TOP + H1;
+        const Y_DIEL_BOTTOM = Y_INTERFACE + H2;
+        const Y_TOP_PLATE = Y_DIEL_TOP - PLATE_H;
+        const Y_BOTTOM_PLATE = Y_DIEL_BOTTOM;
+
+        // Set global styles
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // 1. Fill dielectrics
+        ctx.fillStyle = '#f0f0f0'; // Light gray for top layer
+        ctx.fillRect(X0, Y_DIEL_TOP, W, H1);
+        ctx.fillStyle = '#cccccc'; // Darker gray for bottom layer
+        ctx.fillRect(X0, Y_INTERFACE, W, H2);
+        
+        // 2. Draw capacitor outlines
+        ctx.strokeRect(X0, Y_DIEL_TOP, W, H_TOTAL);
+        ctx.beginPath();
+        ctx.moveTo(X0, Y_INTERFACE);
+        ctx.lineTo(X0 + W, Y_INTERFACE);
+        ctx.stroke();
+
+        // 3. Draw capacitor plates
+        ctx.fillStyle = '#222222';
+        ctx.fillRect(X0, Y_TOP_PLATE, W, PLATE_H);
+        ctx.fillRect(X0, Y_BOTTOM_PLATE, W, PLATE_H);
+
+        // 4. Draw connection wires
+        ctx.beginPath();
+        ctx.moveTo(CX, Y_TOP_PLATE);
+        ctx.lineTo(CX, Y_TOP_PLATE - 50);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(CX, Y_BOTTOM_PLATE + PLATE_H);
+        ctx.lineTo(CX, Y_BOTTOM_PLATE + PLATE_H + 50);
+        ctx.stroke();
+        
+        // 5. Draw internal labels (ε₁, ε₂)
+        ctx.fillStyle = 'black';
+        drawSubscriptedText(ctx, 'ε', '1', CX, Y_DIEL_TOP + H1 / 2);
+        drawSubscriptedText(ctx, 'ε', '2', CX, Y_INTERFACE + H2 / 2);
+        
+        // 6. Draw dimension lines (d₁, d₂)
+        const DIM_LINE_X = X0 + W + 30;
+        const DIM_LABEL_X = DIM_LINE_X + 15;
+        drawVerticalDimensionLine(ctx, DIM_LINE_X, Y_DIEL_TOP, Y_INTERFACE, X0 + W, 'd_1', DIM_LABEL_X);
+        drawVerticalDimensionLine(ctx, DIM_LINE_X, Y_INTERFACE, Y_DIEL_BOTTOM, X0 + W, 'd_2', DIM_LABEL_X);
+
+        // 7. Draw caption
+        ctx.font = '20px "SimSun", "Microsoft YaHei"';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'black';
+        ctx.fillText('习题 7-55 图', CX, canvas.height - 30);
+
+    </script>
+</body>
+</html>

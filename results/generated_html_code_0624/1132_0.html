@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Rolling Cylinder and Step</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="400" style="border:1px solid #000;"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper function to draw an arrow ---
+    function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 10) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // --- Drawing Parameters ---
+    // The following parameters are chosen to match the visual representation
+    // of the source image, based on the geometric constraints of the problem.
+    const R = 90;      // Radius of the cylinder
+    const h = 35;      // Height of the step
+
+    // Position of the step corner 'A'
+    const Ax = 280;
+    const Ay = 220;
+
+    // Calculate the center 'O' of the cylinder based on the constraints
+    // that it touches both the ground and the corner 'A'
+    const groundY = Ay + h; // Y-coordinate of the lower ground
+    // Center Y is R units above the ground
+    const Oy = groundY - R;
+    // Horizontal distance from O to A can be found using Pythagoras theorem
+    const dy_OA = Ay - Oy;
+    const dx_OA = Math.sqrt(R*R - dy_OA*dy_OA);
+    // Center X is dx_OA units to the left of A
+    const Ox = Ax - dx_OA;
+
+
+    // --- Start Drawing ---
+
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // 1. Draw Ground and Step with Hatching
+    ctx.lineWidth = 1;
+    // Hatching lines
+    for (let i = 20; i < 480; i += 15) {
+        if (i < Ax) {
+             // Lower ground hatching
+             ctx.beginPath();
+             ctx.moveTo(i, groundY);
+             ctx.lineTo(i - 10, groundY + 10);
+             ctx.stroke();
+        } else {
+            // Upper ground hatching
+            ctx.beginPath();
+            ctx.moveTo(i, Ay);
+            ctx.lineTo(i - 10, Ay + 10);
+            ctx.stroke();
+        }
+    }
+    // Step face hatching
+    for (let j = Ay; j < groundY; j += 15) {
+        ctx.beginPath();
+        ctx.moveTo(Ax, j);
+        ctx.lineTo(Ax - 10, j + 10);
+        ctx.stroke();
+    }
+
+
+    // Main outlines of the ground and step
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(20, groundY);
+    ctx.lineTo(Ax, groundY);
+    ctx.lineTo(Ax, Ay);
+    ctx.lineTo(480, Ay);
+    ctx.stroke();
+
+    // 2. Draw the Cylinder
+    ctx.beginPath();
+    ctx.arc(Ox, Oy, R, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 3. Draw Labels and Vectors
+
+    // Center 'O'
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('O', Ox - 15, Oy - 5);
+
+    // Velocity vector 'v₀'
+    const v_start_x = Ox;
+    const v_end_x = Ox + 80;
+    drawArrow(ctx, v_start_x, Oy, v_end_x, Oy);
+    ctx.fillText('v', (v_start_x + v_end_x) / 2, Oy + 20);
+    ctx.font = "italic 14px 'Times New Roman'";
+    ctx.fillText('0', (v_start_x + v_end_x) / 2 + 8, Oy + 26);
+
+    // Angular velocity 'ω₀'
+    ctx.font = "italic 20px 'Times New Roman'";
+    const omega_radius = R * 0.7;
+    const omega_start_angle = 1.25 * Math.PI;
+    const omega_end_angle = 1.75 * Math.PI;
+    ctx.beginPath();
+    ctx.arc(Ox, Oy, omega_radius, omega_start_angle, omega_end_angle);
+    ctx.stroke();
+    // Arrow head for the arc
+    const omega_arrow_x = Ox + omega_radius * Math.cos(omega_end_angle);
+    const omega_arrow_y = Oy + omega_radius * Math.sin(omega_end_angle);
+    const tangent_angle = omega_end_angle + Math.PI / 2;
+    drawArrow(ctx, 
+        omega_arrow_x - 6 * Math.cos(tangent_angle),
+        omega_arrow_y - 6 * Math.sin(tangent_angle),
+        omega_arrow_x, 
+        omega_arrow_y,
+        8);
+    ctx.fillText('ω', Ox - 60, Oy - 35);
+    ctx.font = "italic 14px 'Times New Roman'";
+    ctx.fillText('0', Ox - 51, Oy - 29);
+
+    // Radius 'R'
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash([5, 3]);
+    const R_angle = (7 / 6) * Math.PI;
+    const R_end_x = Ox + R * Math.cos(R_angle);
+    const R_end_y = Oy + R * Math.sin(R_angle);
+    ctx.moveTo(Ox, Oy);
+    ctx.lineTo(R_end_x, R_end_y);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillText('R', Ox + 0.5 * R * Math.cos(R_angle) - 10, Oy + 0.5 * R * Math.sin(R_angle));
+
+    // Height 'h'
+    const h_line_x = Ax + 80;
+    ctx.beginPath();
+    ctx.moveTo(h_line_x, Ay);
+    ctx.lineTo(h_line_x, groundY);
+    // Top arrowhead
+    ctx.moveTo(h_line_x - 5, Ay + 5);
+    ctx.lineTo(h_line_x, Ay);
+    ctx.lineTo(h_line_x + 5, Ay + 5);
+    // Bottom arrowhead
+    ctx.moveTo(h_line_x - 5, groundY - 5);
+    ctx.lineTo(h_line_x, groundY);
+    ctx.lineTo(h_line_x + 5, groundY - 5);
+    ctx.stroke();
+    ctx.fillText('h', h_line_x + 20, (Ay + groundY) / 2);
+
+    // Point 'A'
+    ctx.fillText('A', Ax - 15, groundY + 5);
+
+    // 4. Draw the Caption
+    ctx.font = "22px 'SimSun', 'STSong'";
+    ctx.fillText('力图 6.6.1', canvas.width / 2, 350);
+
+</script>
+</body>
+</html>

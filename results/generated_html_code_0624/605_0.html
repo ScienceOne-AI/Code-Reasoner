@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Semiconductor Laser Divergence</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrowhead
+        function drawArrowhead(ctx, fromX, fromY, toX, toY, radius) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            const x = toX;
+            const y = toY;
+            
+            ctx.save();
+            ctx.beginPath();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-radius, radius / 2);
+            ctx.lineTo(-radius, -radius / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        // Helper function to draw a line with an arrowhead in the middle
+        function drawRay(ctx, x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            
+            const midX = x1 + 0.6 * (x2 - x1);
+            const midY = y1 + 0.6 * (y2 - y1);
+            drawArrowhead(ctx, x1, y1, midX, midY, 8);
+        }
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1;
+        
+        // --- 1. Draw Lens and Axes ---
+        const lensCx = 650;
+        const lensCy = 200;
+        const lensRx = 35;
+        const lensRy = 130;
+
+        // Axes
+        ctx.lineWidth = 1.5;
+        ctx.font = 'italic 20px Times New Roman';
+        // z-axis
+        ctx.beginPath();
+        ctx.moveTo(20, lensCy);
+        ctx.lineTo(lensCx + 100, lensCy);
+        ctx.stroke();
+        drawArrowhead(ctx, lensCx, lensCy, lensCx + 100, lensCy, 10);
+        ctx.fillText('z', lensCx + 105, lensCy + 20);
+        
+        // y-axis
+        ctx.beginPath();
+        ctx.moveTo(lensCx, lensCy + lensRy + 20);
+        ctx.lineTo(lensCx, lensCy - lensRy - 20);
+        ctx.stroke();
+        drawArrowhead(ctx, lensCx, lensCy, lensCx, lensCy - lensRy - 20, 10);
+        ctx.fillText('y', lensCx + 10, lensCy - lensRy - 25);
+
+        // x-axis
+        const x_len = 60;
+        const x_angle = -Math.PI / 6;
+        const x_start_x = lensCx - x_len * Math.cos(x_angle);
+        const x_start_y = lensCy - x_len * Math.sin(x_angle);
+        const x_end_x = lensCx + x_len * Math.cos(x_angle);
+        const x_end_y = lensCy + x_len * Math.sin(x_angle);
+        ctx.beginPath();
+        ctx.moveTo(x_start_x, x_start_y);
+        ctx.lineTo(x_end_x, x_end_y);
+        ctx.stroke();
+        drawArrowhead(ctx, lensCx, lensCy, x_end_x, x_end_y, 10);
+        ctx.fillText('x', x_end_x, x_end_y - 10);
+        
+        // Lens
+        ctx.fillStyle = '#cccccc';
+        ctx.beginPath();
+        ctx.ellipse(lensCx, lensCy, lensRx, lensRy, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.beginPath(); // line through lens
+        ctx.moveTo(lensCx, lensCy-lensRy);
+        ctx.lineTo(lensCx, lensCy+lensRy);
+        ctx.stroke();
+
+        // --- 2. Draw the laser source ---
+        ctx.lineWidth = 1;
+        const lb = {x: 80, y: 170, w: 80, h: 60, p_x: 20, p_y: 20};
+        const layer_h = lb.h / 3;
+        const fb = { x: lb.x + lb.p_x, y: lb.y - lb.p_y };
+        
+        // Back face
+        ctx.strokeRect(lb.x, lb.y, lb.w, lb.h);
+        ctx.beginPath();
+        ctx.moveTo(lb.x, lb.y + layer_h); ctx.lineTo(lb.x+lb.w, lb.y + layer_h);
+        ctx.moveTo(lb.x, lb.y + 2*layer_h); ctx.lineTo(lb.x+lb.w, lb.y + 2*layer_h);
+        ctx.stroke();
+
+        // Front face
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(fb.x, fb.y, lb.w, layer_h);
+        ctx.strokeRect(fb.x, fb.y, lb.w, layer_h);
+        ctx.fillStyle = '#e0e0e0';
+        ctx.fillRect(fb.x, fb.y + layer_h, lb.w, layer_h);
+        ctx.strokeRect(fb.x, fb.y + layer_h, lb.w, layer_h);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(fb.x, fb.y + 2*layer_h, lb.w, layer_h);
+        ctx.strokeRect(fb.x, fb.y + 2*layer_h, lb.w, layer_h);
+        
+        // Connecting lines
+        ctx.beginPath();
+        ctx.moveTo(lb.x, lb.y); ctx.lineTo(fb.x, fb.y);
+        ctx.moveTo(lb.x + lb.w, lb.y); ctx.lineTo(fb.x + lb.w, fb.y);
+        ctx.moveTo(lb.x, lb.y+lb.h); ctx.lineTo(fb.x, fb.y+lb.h);
+        ctx.moveTo(lb.x+lb.w, lb.y+lb.h); ctx.lineTo(fb.x+lb.w, fb.y+lb.h);
+        ctx.stroke();
+
+        // Aperture
+        ctx.fillStyle = '#666666';
+        const aperture_x = fb.x + lb.w;
+        const aperture_y = fb.y + lb.h/2;
+        ctx.fillRect(aperture_x, aperture_y - 5, 2, 10);
+        
+        const sourcePt = { x: aperture_x + 2, y: aperture_y };
+
+        // --- 3. Draw Rays ---
+        const rayDestTop = { x: lensCx, y: lensCy - 120 };
+        const rayDestBottom = { x: lensCx, y: lensCy + 120 };
+        const rayDestMidTop = { x: lensCx, y: lensCy - 25 };
+        const rayDestMidBottom = { x: lensCx, y: lensCy + 25 };
+
+        ctx.fillStyle = 'black';
+        drawRay(ctx, sourcePt.x, sourcePt.y, lensCx, lensCy);
+        drawRay(ctx, sourcePt.x, sourcePt.y, rayDestTop.x, rayDestTop.y);
+        drawRay(ctx, sourcePt.x, sourcePt.y, rayDestBottom.x, rayDestBottom.y);
+        drawRay(ctx, sourcePt.x, sourcePt.y, rayDestMidTop.x, rayDestMidTop.y);
+        drawRay(ctx, sourcePt.x, sourcePt.y, rayDestMidBottom.x, rayDestMidBottom.y);
+
+        // --- 4. Draw labels a, b and angles ---
+        ctx.font = 'italic 18px Times New Roman';
+        
+        // Label 'a'
+        const label_a_x = sourcePt.x - 25;
+        ctx.beginPath();
+        ctx.moveTo(label_a_x, sourcePt.y - 5);
+        ctx.lineTo(label_a_x + 10, sourcePt.y - 5);
+        ctx.moveTo(label_a_x, sourcePt.y + 5);
+        ctx.lineTo(label_a_x + 10, sourcePt.y + 5);
+        ctx.stroke();
+        ctx.fillText('a', label_a_x - 15, sourcePt.y + 6);
+        
+        // Label 'b'
+        const b_line_x = fb.x + lb.w - 15;
+        const b_line_y = fb.y + lb.h + 5;
+        ctx.beginPath();
+        ctx.moveTo(b_line_x, b_line_y);
+        ctx.lineTo(b_line_x, b_line_y + 15);
+        ctx.moveTo(b_line_x - 3, b_line_y); ctx.lineTo(b_line_x + 3, b_line_y);
+        ctx.moveTo(b_line_x - 3, b_line_y+15); ctx.lineTo(b_line_x + 3, b_line_y+15);
+        ctx.stroke();
+        ctx.fillText('b', b_line_x - 20, b_line_y + 13);
+        
+        // Angle alpha_y
+        const top_ray_point = {x: 320, y: sourcePt.y + (rayDestTop.y - sourcePt.y) * (320 - sourcePt.x) / (rayDestTop.x - sourcePt.x)};
+        ctx.beginPath();
+        ctx.moveTo(top_ray_point.x, top_ray_point.y);
+        ctx.quadraticCurveTo(325, (lensCy+top_ray_point.y)/2, 325, lensCy);
+        ctx.stroke();
+        drawArrowhead(ctx, 325, (lensCy+top_ray_point.y)/2, top_ray_point.x, top_ray_point.y, 6);
+        drawArrowhead(ctx, 325, (lensCy+top_ray_point.y)/2, 325, lensCy, 6);
+        ctx.fillText('α', 345, 180);
+        ctx.save();
+        ctx.font = 'italic 12px Times New Roman';
+        ctx.fillText('y', 355, 185);
+        ctx.restore();
+       
+        // Angle alpha_x
+        const mid_ray_point = {x: 420, y: sourcePt.y + (rayDestMidTop.y - sourcePt.y) * (420 - sourcePt.x) / (rayDestMidTop.x - sourcePt.x)};
+        ctx.beginPath();
+        ctx.moveTo(mid_ray_point.x, mid_ray_point.y);
+        ctx.quadraticCurveTo(422, (lensCy+mid_ray_point.y)/2, 422, lensCy);
+        ctx.stroke();
+        drawArrowhead(ctx, 422, (lensCy+mid_ray_point.y)/2, mid_ray_point.x, mid_ray_point.y, 6);
+        drawArrowhead(ctx, 422, (lensCy+mid_ray_point.y)/2, 422, lensCy, 6);
+        ctx.fillText('α', 445, 195);
+        ctx.save();
+        ctx.font = 'italic 12px Times New Roman';
+        ctx.fillText('x', 455, 200);
+        ctx.restore();
+
+    </script>
+</body>
+</html>

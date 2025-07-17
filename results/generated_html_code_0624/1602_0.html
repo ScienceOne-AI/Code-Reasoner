@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bouncing Ball on Stairs</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="450" height="420"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 18px Times New Roman';
+
+        // Parameters for drawing (l = step size, H = peak height)
+        const l = 80;
+        // H is chosen to be visually similar to the diagram, e.g., H < l
+        const H = 60; 
+
+        // Origin 'O' position
+        const oX = 250;
+        const oY = 220;
+
+        // Helper function to draw an arrow
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headlen = 8; // length of head in pixels
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+        }
+        
+        // Helper function to draw a dimension line with ticks
+        function drawDimensionLine(x1, y1, x2, y2, tickLength = 5) {
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            // Ticks
+            if (y1 === y2) { // Horizontal line
+                ctx.moveTo(x1, y1 - tickLength);
+                ctx.lineTo(x1, y1 + tickLength);
+                ctx.moveTo(x2, y2 - tickLength);
+                ctx.lineTo(x2, y2 + tickLength);
+            } else { // Vertical line
+                ctx.moveTo(x1 - tickLength, y1);
+                ctx.lineTo(x1 + tickLength, y1);
+                ctx.moveTo(x2 - tickLength, y2);
+                ctx.lineTo(x2 + tickLength, y2);
+            }
+        }
+
+        // --- Start Drawing ---
+        ctx.beginPath();
+        
+        // 1. Draw the staircase
+        const p1x = oX - l, p1y = oY + l;
+        const p2x = oX,     p2y = oY;
+        const p3x = oX + l, p3y = oY - l;
+        const p4x = oX + 2*l, p4y = oY - 2*l;
+
+        // Bottom step platform
+        ctx.moveTo(p1x - l, p1y);
+        ctx.lineTo(p1x, p1y);
+        // Riser 1
+        ctx.lineTo(p1x, p2y);
+        // Middle step platform
+        ctx.lineTo(p2x, p2y);
+        // Riser 2 (at O)
+        ctx.lineTo(p2x, p3y);
+        // Top step platform
+        ctx.lineTo(p3x, p3y);
+        // Riser 3
+        ctx.lineTo(p3x, p4y);
+        // Highest step platform
+        ctx.lineTo(p4x, p4y);
+
+        ctx.stroke();
+
+        // 2. Draw the bouncing ball trajectories (parabolas)
+        ctx.beginPath();
+        // Trajectory for the first visible bounce
+        // Starts at a previous corner (p1x - l, p1y + l) and lands at (p1x, p1y)
+        const start1x = p1x - l;
+        const start1y = p1y + l;
+        const peak1x = start1x + l/2 - 5; // Peak is slightly left of center due to different start/end heights
+        const peak1y = start1y - H;
+        const ctrl1x = peak1x;
+        const ctrl1y = peak1y - 50; // Control point for a nice curve
+        // Drawing only the end part of the first trajectory
+        const partialStartX = start1x + l/2;
+        const t = 0.5;
+        const partialStartY = (1-t)*(1-t)*start1y + 2*t*(1-t)*ctrl1y + t*t*p1y;
+        ctx.moveTo(partialStartX, partialStartY);
+        ctx.quadraticCurveTo(ctrl1x, ctrl1y, p1x, p1y);
+
+        // Trajectory for the second bounce (from step 1 to step 2)
+        const peak2x = p1x + l/2 - 5;
+        const peak2y = p1y - H;
+        const ctrl2x = peak2x;
+        const ctrl2y = peak2y - 50;
+        ctx.moveTo(p1x, p1y);
+        ctx.quadraticCurveTo(ctrl2x, ctrl2y, p2x, p2y);
+
+        // Trajectory for the third bounce (from step 2 to step 3)
+        const peak3x = p2x + l/2 - 5;
+        const peak3y = p2y - H;
+        const ctrl3x = peak3x;
+        const ctrl3y = peak3y - 50;
+        ctx.moveTo(p2x, p2y);
+        ctx.quadraticCurveTo(ctrl3x, ctrl3y, p3x, p3y);
+
+        // Trajectory for the fourth bounce (starting from step 3)
+        const peak4x = p3x + l/2 - 5;
+        const peak4y = p3y - H;
+        const ctrl4x = peak4x;
+        const ctrl4y = peak4y - 50;
+        const partialEndX = p3x + l*0.7;
+        const t_end = 0.7;
+        const partialEndY = (1-t_end)*(1-t_end)*p3y + 2*t_end*(1-t_end)*ctrl4y + t_end*t_end*(p3y-H); // Approximate end point
+        ctx.moveTo(p3x, p3y);
+        ctx.quadraticCurveTo(ctrl4x, ctrl4y, partialEndX, partialEndY-H);
+        
+        ctx.stroke();
+
+        // 3. Draw Coordinate System and Labels
+        ctx.beginPath();
+        ctx.setLineDash([4, 3]);
+        // y-axis
+        drawArrow(oX, oY, oX, oY + l*1.2);
+        // x-axis
+        drawArrow(oX, oY, oX - l*0.8, oY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        ctx.fillText('O', oX + 5, oY - 5);
+        ctx.fillText('y', oX + 10, oY + l*1.2);
+        ctx.fillText('x', oX - l*0.8 - 15, oY + 5);
+        
+        // 4. Draw Dimensions
+        
+        // Dimension l (width)
+        ctx.beginPath();
+        drawDimensionLine(p1x, p1y + 20, p2x, p1y + 20);
+        ctx.stroke();
+        ctx.fillText('l', p1x + l/2 - 5, p1y + 40);
+        
+        // Dimension l (height)
+        ctx.beginPath();
+        drawDimensionLine(p3x + 20, p3y, p3x + 20, p2y);
+        ctx.stroke();
+        ctx.fillText('l', p3x + 25, p3y + l/2 + 5);
+
+        // Dimension H
+        // Helper dashed lines for H
+        ctx.beginPath();
+        ctx.setLineDash([4, 3]);
+        ctx.moveTo(peak2x, peak2y);
+        ctx.lineTo(p1x-10, peak2y);
+        ctx.moveTo(peak2x, peak2y);
+        ctx.lineTo(peak2x, p1y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // H dimension line with arrows
+        ctx.beginPath();
+        drawArrow(p1x - 20, p1y, p1x - 20, peak2y);
+        ctx.stroke();
+        ctx.fillText('H', p1x - 40, p1y - H/2);
+
+        // As identified in the analysis, the top 'l' label in the original diagram is inconsistent
+        // with the problem statement. Here, we correctly label the peak height from the next bounce.
+        // Dimension for the highest peak shown
+        ctx.beginPath();
+        ctx.setLineDash([4, 3]);
+        ctx.moveTo(peak4x, peak4y);
+        ctx.lineTo(p4x, peak4y);
+        ctx.moveTo(p3x, p3y);
+        ctx.lineTo(p4x, p3y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.beginPath();
+        drawArrow(p4x+10, p3y, p4x+10, peak4y); // This dimension is H
+        drawArrow(p4x+25, peak4y, p4x+25, p4y); // This dimension is l
+        ctx.stroke();
+
+        ctx.fillText('l', p4x+30, p3y-H-l/2);
+        ctx.fillText('H', p4x-20, p3y-H/2);
+
+
+        // 5. Add Caption
+        ctx.font = '16px SongTi'; // Use a common Chinese font like SongTi
+        ctx.textAlign = 'center';
+        ctx.fillText('力图 3.25.1', canvas.width / 2, canvas.height - 15);
+    </script>
+</body>
+</html>

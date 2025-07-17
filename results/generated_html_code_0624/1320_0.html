@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical Path Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw a filled arrowhead
+        function drawArrowhead(ctx, x, y, angle) {
+            const headlen = 10;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headlen, -headlen / 2);
+            ctx.lineTo(-headlen, headlen / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Helper function to draw a line with an arrowhead in the middle
+        function drawRay(ctx, x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            drawArrowhead(ctx, midX, midY, angle);
+        }
+
+        // Helper function for dimension lines with arrows at both ends
+        function drawDimensionLine(ctx, x1, y, x2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+            
+            // Ticks at ends
+            ctx.moveTo(x1, y - 5);
+            ctx.lineTo(x1, y + 5);
+            ctx.stroke();
+            ctx.moveTo(x2, y - 5);
+            ctx.lineTo(x2, y + 5);
+            ctx.stroke();
+            
+            // Arrowheads
+            drawArrowhead(ctx, x1, y, Math.PI);
+            drawArrowhead(ctx, x2, y, 0);
+        }
+
+        // Main drawing logic
+        function drawDiagram() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'black';
+            ctx.fillStyle = 'black';
+            ctx.lineWidth = 1.5;
+
+            // Define coordinates
+            const yAxis = 225;
+            const xL1 = 150;
+            const xF1 = 350; // First focal point (crossing point)
+            const xL2 = 500;
+            const xF2 = 700; // Second focal point
+
+            const l1Height = 100;
+            const l2Height = 100;
+            
+            const pL1_top = { x: xL1, y: yAxis - l1Height };
+            const pL1_bot = { x: xL1, y: yAxis + l1Height };
+            const pF1 = { x: xF1, y: yAxis };
+            const pL2_top = { x: xL2, y: yAxis - l2Height };
+            const pL2_bot = { x: xL2, y: yAxis + l2Height };
+            const pF2 = { x: xF2, y: yAxis };
+
+            // Draw principal axis
+            ctx.beginPath();
+            ctx.moveTo(0, yAxis);
+            ctx.lineTo(canvas.width, yAxis);
+            ctx.stroke();
+
+            // Draw Lenses
+            function drawLens(x, y_center, height, label) {
+                const y_top = y_center - height;
+                const y_bot = y_center + height;
+                ctx.beginPath();
+                ctx.moveTo(x, y_top);
+                ctx.lineTo(x, y_bot);
+                ctx.stroke();
+                // Arrows on lens
+                drawArrowhead(ctx, x, y_top, -Math.PI / 2);
+                drawArrowhead(ctx, x, y_bot, Math.PI / 2);
+                // Label
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(label, x, y_bot + 40);
+            }
+            drawLens(xL1, yAxis, l1Height, '1');
+            drawLens(xL2, yAxis, l2Height, '2');
+
+            // --- Draw Rays ---
+            const xStart = 50;
+            const xEnd = 780;
+            
+            // Incident rays
+            drawRay(ctx, xStart, pL1_top.y, pL1_top.x, pL1_top.y);
+            drawRay(ctx, xStart, yAxis, pL1_top.x, yAxis);
+            drawRay(ctx, xStart, pL1_bot.y, pL1_bot.x, pL1_bot.y);
+
+            // Rays between L1 and L2 (forming first diamond shape)
+            drawRay(ctx, pL1_top.x, pL1_top.y, pF1.x, pF1.y);
+            drawRay(ctx, pL1_bot.x, pL1_bot.y, pF1.x, pF1.y);
+            drawRay(ctx, pF1.x, pF1.y, pL2_top.x, pL2_top.y);
+            drawRay(ctx, pF1.x, pF1.y, pL2_bot.x, pL2_bot.y);
+
+            // Rays after L2 (forming second triangle shape)
+            drawRay(ctx, pL2_top.x, pL2_top.y, pF2.x, pF2.y);
+            drawRay(ctx, pL2_bot.x, pL2_bot.y, pF2.x, pF2.y);
+            
+            // Rays after final focus
+            // The ray from top of L2 crosses and goes down
+            const end_y1 = pF2.y + (pL2_top.y - pF2.y) * (xEnd - pF2.x) / (pL2_top.x - pF2.x);
+            // The ray from bottom of L2 crosses and goes up
+            const end_y2 = pF2.y + (pL2_bot.y - pF2.y) * (xEnd - pF2.x) / (pL2_bot.x - pF2.x);
+            
+            ctx.beginPath();
+            ctx.moveTo(pF2.x, pF2.y);
+            ctx.lineTo(xEnd, end_y1);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(pF2.x, pF2.y);
+            ctx.lineTo(xEnd, end_y2);
+            ctx.stroke();
+
+
+            // --- Draw Labels & Dimension Lines ---
+            ctx.font = 'italic 24px Times New Roman';
+            ctx.textAlign = 'center';
+
+            // Label f1
+            const f1_x = (xL1 + xF1) / 2;
+            const f1_y = yAxis - 40;
+            ctx.fillText('f', f1_x - 5, f1_y);
+            ctx.save();
+            ctx.font = 'italic 16px Times New Roman';
+            ctx.fillText('1', f1_x + 5, f1_y + 5);
+            ctx.restore();
+
+            // Label u
+            const u_x = (xF1 + xL2) / 2;
+            const u_y = yAxis - 40;
+            ctx.fillText('u', u_x, u_y);
+
+            // Label v
+            const v_x = (xL2 + xF2) / 2;
+            const v_y = yAxis - 40;
+            ctx.fillText('v', v_x, v_y);
+
+            // Dimension line for d
+            const d_y = yAxis + 120;
+            drawDimensionLine(ctx, xL1, d_y, xL2);
+            ctx.fillText('d', (xL1 + xL2) / 2, d_y - 10);
+        }
+
+        drawDiagram();
+    </script>
+</body>
+</html>

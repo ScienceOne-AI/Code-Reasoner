@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram - Water Gun</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="650" height="400"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style settings
+ctx.lineWidth = 2;
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+const labelFont = "italic 22px 'Times New Roman'";
+const subscriptFont = "16px 'Times New Roman'";
+const textFont = "22px 'SimSun'";
+
+// Helper function to draw an arrow for vectors
+function drawVectorArrow(ctx, fromx, fromy, tox, toy) {
+    const headlen = 10;
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+// Diagram parameters
+const yCenter = 200;
+const R = 70;
+const d = 25;
+
+const xRodStart = 50;
+const xRodEnd = 110;
+const xPiston = 110;
+const pistonWidth = 12;
+const xCylinderStart = xPiston + pistonWidth;
+
+const xCurveStart = 450;
+const xCurveEnd = 490;
+const xNozzleEnd = 580;
+
+// Draw Piston and Rod
+ctx.save();
+ctx.fillStyle = '#EAEAEA';
+// Rod
+ctx.fillRect(xRodStart, yCenter - 18, xRodEnd - xRodStart, 36);
+ctx.strokeRect(xRodStart, yCenter - 18, xRodEnd - xRodStart, 36);
+// Piston Head
+ctx.fillRect(xPiston, yCenter - R, pistonWidth, 2 * R);
+ctx.strokeRect(xPiston, yCenter - R, pistonWidth, 2 * R);
+ctx.restore();
+
+// Draw Cylinder Body
+ctx.beginPath();
+// Top part
+ctx.moveTo(xCylinderStart, yCenter - R);
+ctx.lineTo(xCurveStart, yCenter - R);
+ctx.quadraticCurveTo(xCurveEnd, yCenter - R, xCurveEnd, yCenter - d);
+ctx.lineTo(xNozzleEnd, yCenter - d);
+// Bottom part
+ctx.moveTo(xNozzleEnd, yCenter + d);
+ctx.lineTo(xCurveEnd, yCenter + d);
+ctx.quadraticCurveTo(xCurveEnd, yCenter + R, xCurveStart, yCenter + R);
+ctx.lineTo(xCylinderStart, yCenter + R);
+ctx.stroke();
+
+// Draw dashed centerline
+ctx.save();
+ctx.setLineDash([8, 4]);
+ctx.beginPath();
+ctx.moveTo(xPiston, yCenter);
+ctx.lineTo(xNozzleEnd + 60, yCenter);
+ctx.stroke();
+ctx.restore();
+
+// --- Labels and Annotations ---
+ctx.font = labelFont;
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+
+// Force F
+const forceArrowStartX = xRodStart - 60;
+const forceArrowEndX = xRodStart - 10;
+drawVectorArrow(ctx, forceArrowStartX, yCenter, forceArrowEndX, yCenter);
+ctx.fillText('F', (forceArrowStartX + forceArrowEndX) / 2, yCenter - 10);
+
+// Velocity v'
+const vPrimeArrowStartX = xCylinderStart + 40;
+const vPrimeArrowEndX = xCylinderStart + 140;
+drawVectorArrow(ctx, vPrimeArrowStartX, yCenter, vPrimeArrowEndX, yCenter);
+ctx.fillText("v'", (vPrimeArrowStartX + vPrimeArrowEndX) / 2, yCenter - 10);
+
+// Velocity v
+const vArrowStartX = xNozzleEnd + 10;
+const vArrowEndX = xNozzleEnd + 70;
+drawVectorArrow(ctx, vArrowStartX, yCenter, vArrowEndX, yCenter);
+ctx.fillText('v', (vArrowStartX + vArrowEndX) / 2, yCenter - 10);
+
+
+// Pressure p1
+ctx.textAlign = 'left';
+ctx.textBaseline = 'bottom';
+const p1x = xPiston + 20;
+const p1y = yCenter - R - 15;
+ctx.fillText('p', p1x, p1y);
+ctx.save();
+ctx.font = subscriptFont;
+ctx.fillText('1', p1x + 11, p1y + 6);
+ctx.restore();
+
+// Pressure p2
+const p2x = xNozzleEnd - 10;
+const p2y = yCenter - d - 15;
+ctx.fillText('p', p2x, p2y);
+ctx.save();
+ctx.font = subscriptFont;
+ctx.fillText('2', p2x + 11, p2y + 6);
+ctx.restore();
+
+
+// Dimension 2R
+ctx.font = labelFont;
+const dimRx = xCylinderStart + 200;
+ctx.beginPath();
+ctx.moveTo(dimRx, yCenter - R);
+ctx.lineTo(dimRx, yCenter + R);
+// arrows
+ctx.moveTo(dimRx - 5, yCenter - R + 5);
+ctx.lineTo(dimRx, yCenter - R);
+ctx.lineTo(dimRx + 5, yCenter - R + 5);
+ctx.moveTo(dimRx - 5, yCenter + R - 5);
+ctx.lineTo(dimRx, yCenter + R);
+ctx.lineTo(dimRx + 5, yCenter + R - 5);
+ctx.stroke();
+ctx.textAlign = 'left';
+ctx.textBaseline = 'middle';
+ctx.fillText('2R', dimRx + 15, yCenter);
+
+// Dimension 2d
+const dimdx = xCurveEnd + 40;
+ctx.beginPath();
+ctx.moveTo(dimdx, yCenter - d);
+ctx.lineTo(dimdx, yCenter + d);
+// arrows
+ctx.moveTo(dimdx - 5, yCenter - d + 5);
+ctx.lineTo(dimdx, yCenter - d);
+ctx.lineTo(dimdx + 5, yCenter - d + 5);
+ctx.moveTo(dimdx - 5, yCenter + d - 5);
+ctx.lineTo(dimdx, yCenter + d);
+ctx.lineTo(dimdx + 5, yCenter + d - 5);
+ctx.stroke();
+ctx.textAlign = 'left';
+ctx.fillText('2d', dimdx + 15, yCenter);
+
+
+// Draw caption
+ctx.font = textFont;
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+ctx.fillText('习题 3-29 图', canvas.width / 2, canvas.height - 20);
+</script>
+</body>
+</html>

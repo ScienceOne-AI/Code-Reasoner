@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="physicsCanvas" width="600" height="300"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Clear canvas with a white background
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // --- Drawing Parameters ---
+    const cy = 130; // Vertical center of the system
+    const wallLeftX = 50;
+    const wallRightX = 550;
+    const ringCenterX = 300;
+    const ringOuterR = 40;
+    const ringInnerR = 30;
+
+    const springAttachLeftX = ringCenterX - ringOuterR;
+    const springAttachRightX = ringCenterX + ringOuterR;
+
+    // --- Style Settings ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws a fixed wall with hatching.
+     * @param {number} x - The x-coordinate of the wall.
+     * @param {number} y - The y-coordinate of the center of the wall.
+     * @param {number} h - The height of the wall.
+     * @param {number} hatchDir - The direction of hatching (-1 for left, 1 for right).
+     */
+    function drawWall(x, y, h, hatchDir) {
+        ctx.beginPath();
+        ctx.moveTo(x, y - h / 2);
+        ctx.lineTo(x, y + h / 2);
+        ctx.stroke();
+        
+        ctx.save();
+        ctx.lineWidth = 1;
+        for (let i = -h / 2; i <= h / 2; i += 8) {
+            ctx.beginPath();
+            ctx.moveTo(x, y + i);
+            ctx.lineTo(x + hatchDir * 8, y + i + 8);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    /**
+     * Draws a spring as a zigzag line.
+     * @param {number} x1 - Start x-coordinate.
+     * @param {number} y - The y-coordinate.
+     * @param {number} x2 - End x-coordinate.
+     * @param {object} options - Drawing options (segments, amplitude).
+     */
+    function drawSpring(x1, y, x2, options) {
+        const { segments = 20, amplitude = 10 } = options || {};
+        const length = x2 - x1;
+        const segmentLength = length / segments;
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        for (let i = 0; i < segments; i++) {
+            const currentX = x1 + i * segmentLength;
+            const amp = amplitude * ((i % 2 === 0) ? -1 : 1);
+            ctx.lineTo(currentX + segmentLength / 2, y + amp);
+        }
+        ctx.lineTo(x2, y);
+        ctx.stroke();
+    }
+    
+    /**
+     * Draws a dimension line with labels and ticks.
+     * @param {number} x1 - Start x-coordinate.
+     * @param {number} x2 - End x-coordinate.
+     * @param {number} y - The y-coordinate of the dimension line.
+     * @param {string} label - The text label for the dimension.
+     * @param {string} leftType - Type of the left tick ('T' or '+').
+     * @param {string} rightType - Type of the right tick ('T' or '+').
+     */
+    function drawDimension(x1, x2, y, label, leftType, rightType) {
+        const tickSize = 8;
+        const textY = y + 20;
+        const connY = cy; // y-level of the spring system
+
+        ctx.save();
+        ctx.lineWidth = 1;
+
+        // Vertical connector lines
+        ctx.beginPath();
+        ctx.moveTo(x1, connY);
+        ctx.lineTo(x1, y);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x2, connY);
+        ctx.lineTo(x2, y);
+        ctx.stroke();
+
+        // Horizontal line
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x2, y);
+        ctx.stroke();
+
+        // Ticks
+        ctx.beginPath();
+        ctx.moveTo(x1, y - tickSize / 2);
+        ctx.lineTo(x1, y + tickSize / 2);
+        if (leftType === '+') {
+            ctx.moveTo(x1 - tickSize / 2, y);
+            ctx.lineTo(x1 + tickSize / 2, y);
+        }
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x2, y - tickSize / 2);
+        ctx.lineTo(x2, y + tickSize / 2);
+        if (rightType === '+') {
+            ctx.moveTo(x2 - tickSize / 2, y);
+            ctx.lineTo(x2 + tickSize / 2, y);
+        }
+        ctx.stroke();
+
+        // Label
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const centerX = (x1 + x2) / 2;
+
+        if (label === '2l₀') {
+            const space = 2;
+            const text_2 = '2';
+            const text_l = 'l';
+            ctx.font = '20px Times New Roman';
+            const width_2 = ctx.measureText(text_2).width;
+            ctx.font = 'italic 20px Times New Roman';
+            const width_l = ctx.measureText(text_l).width;
+            
+            const totalWidth = width_2 + space + width_l;
+            const startX = centerX - totalWidth/2;
+
+            ctx.font = '20px Times New Roman';
+            ctx.fillText(text_2, startX + width_2/2, textY);
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.fillText(text_l, startX + width_2 + space + width_l/2, textY);
+            ctx.font = 'italic 14px Times New Roman';
+            ctx.fillText('0', startX + width_2 + space + width_l + 2, textY + 6);
+
+        } else if (label === '2r') {
+            ctx.font = '20px Times New Roman';
+            ctx.fillText('2', centerX - 6, textY);
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.fillText('r', centerX + 6, textY);
+        }
+        ctx.restore();
+    }
+
+
+    // --- Main Drawing ---
+
+    // 1. Draw Walls
+    drawWall(wallLeftX, cy, 60, -1);
+    drawWall(wallRightX, cy, 60, 1);
+
+    // 2. Draw Springs
+    drawSpring(wallLeftX, cy, springAttachLeftX, { segments: 26, amplitude: 10 });
+    drawSpring(springAttachRightX, cy, wallRightX, { segments: 26, amplitude: 10 });
+
+    // 3. Draw Ring
+    ctx.beginPath();
+    ctx.arc(ringCenterX, cy, ringOuterR, 0, 2 * Math.PI);
+    ctx.moveTo(ringCenterX + ringInnerR, cy); // Move to inner edge for hole
+    ctx.arc(ringCenterX, cy, ringInnerR, 0, 2 * Math.PI, true); // Counter-clockwise for hole
+    ctx.stroke();
+    
+    // 4. Draw line connecting springs through the ring
+    ctx.beginPath();
+    ctx.moveTo(springAttachLeftX, cy);
+    ctx.lineTo(springAttachRightX, cy);
+    ctx.stroke();
+
+    // 5. Draw 'k' labels for spring constants
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('k', (wallLeftX + springAttachLeftX) / 2, cy - 20);
+    ctx.fillText('k', (springAttachRightX + wallRightX) / 2, cy - 20);
+
+    // 6. Draw Dimension Lines
+    const dimY = 210;
+    drawDimension(wallLeftX, springAttachLeftX, dimY, '2l₀', 'T', '+');
+    drawDimension(springAttachLeftX, springAttachRightX, dimY, '2r', '+', '+');
+    drawDimension(springAttachRightX, wallRightX, dimY, '2l₀', '+', 'T');
+    
+    // 7. Draw Figure Caption
+    ctx.font = '20px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Fig. 1.55.', ringCenterX, 290);
+
+</script>
+</body>
+</html>

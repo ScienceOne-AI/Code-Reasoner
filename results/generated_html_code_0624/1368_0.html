@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Spring Mass System</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-canvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 22px serif';
+
+        // Helper function to draw a filled arrowhead
+        function drawArrowhead(ctx, fromX, fromY, toX, toY, size) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            ctx.save();
+            ctx.translate(toX, toY);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.lineTo(-size, size / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        // Helper function for subscripts
+        function drawSubscript(ctx, text, sub, x, y, mainFontSize, subFontSize) {
+            ctx.font = `italic ${mainFontSize}px serif`;
+            const mainTextWidth = ctx.measureText(text).width;
+            ctx.fillText(text, x, y);
+
+            ctx.font = `italic ${subFontSize}px serif`;
+            ctx.fillText(sub, x + mainTextWidth, y + 5);
+        }
+
+        // --- Main Drawing ---
+
+        // 1. Define key points and dimensions
+        const oPoint = { x: 90, y: 200 };
+        const massPoint = { x: 450, y: 200 };
+        const massRadius = 8;
+
+        // 2. Draw Point O
+        ctx.font = '24px serif';
+        ctx.fillText('O', oPoint.x - 40, oPoint.y + 8);
+        ctx.beginPath();
+        ctx.arc(oPoint.x, oPoint.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 3. Draw Spring
+        const straightPartLength = 20;
+        const coilStart = { x: oPoint.x + straightPartLength, y: oPoint.y };
+        const coilEnd = { x: massPoint.x - straightPartLength, y: massPoint.y };
+        const coilLength = coilEnd.x - coilStart.x;
+        const numCoils = 8;
+        const coilWidth = coilLength / numCoils;
+
+        // Straight parts
+        ctx.beginPath();
+        ctx.moveTo(oPoint.x, oPoint.y);
+        ctx.lineTo(coilStart.x, coilStart.y);
+        ctx.moveTo(coilEnd.x, coilEnd.y);
+        ctx.lineTo(massPoint.x, massPoint.y);
+        ctx.stroke();
+
+        // Coiled part
+        ctx.beginPath();
+        for (let i = 0; i < numCoils; i++) {
+            ctx.arc(coilStart.x + i * coilWidth + coilWidth / 2, coilStart.y, coilWidth / 2, Math.PI, 2 * Math.PI);
+        }
+        ctx.stroke();
+        
+        // Label k
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('k', coilStart.x + coilLength / 2 - 5, oPoint.y - 30);
+
+        // 4. Draw Mass m
+        ctx.beginPath();
+        ctx.arc(massPoint.x, massPoint.y, massRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('m', massPoint.x + 15, massPoint.y - 15);
+
+        // 5. Draw Velocity Vector v₀
+        const vLength = 90;
+        const angleRad = -Math.PI / 4; // -45 degrees
+        const vEndPoint = {
+            x: massPoint.x + vLength * Math.cos(angleRad),
+            y: massPoint.y + vLength * Math.sin(angleRad)
+        };
+        ctx.beginPath();
+        ctx.moveTo(massPoint.x, massPoint.y);
+        ctx.lineTo(vEndPoint.x, vEndPoint.y);
+        ctx.stroke();
+        drawArrowhead(ctx, massPoint.x, massPoint.y, vEndPoint.x, vEndPoint.y, 15);
+        drawSubscript(ctx, 'v', '0', vEndPoint.x + 5, vEndPoint.y - 5, 22, 16);
+
+
+        // 6. Draw Angle Indicator
+        // Dashed line
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.moveTo(massPoint.x, massPoint.y);
+        ctx.lineTo(massPoint.x + 55, massPoint.y);
+        ctx.stroke();
+        ctx.restore();
+        
+        // Arc
+        ctx.beginPath();
+        ctx.arc(massPoint.x, massPoint.y, 40, 0, angleRad, true);
+        ctx.stroke();
+        
+        // Angle label
+        ctx.font = '22px serif';
+        ctx.fillText('45°', massPoint.x + 50, massPoint.y - 20);
+
+        // 7. Draw Length Indicator l₀
+        const l_y = 280;
+        const l_start_x = oPoint.x;
+        const l_end_x = massPoint.x;
+
+        // Ticks
+        ctx.beginPath();
+        ctx.moveTo(l_start_x, l_y - 10);
+        ctx.lineTo(l_start_x, l_y + 10);
+        ctx.moveTo(l_end_x, l_y - 10);
+        ctx.lineTo(l_end_x, l_y + 10);
+        ctx.stroke();
+        
+        // Arrow line
+        ctx.beginPath();
+        ctx.moveTo(l_start_x, l_y);
+        ctx.lineTo(l_end_x, l_y);
+        ctx.stroke();
+        
+        // Arrowheads
+        drawArrowhead(ctx, l_start_x + 20, l_y, l_start_x, l_y, 12);
+        drawArrowhead(ctx, l_end_x - 20, l_y, l_end_x, l_y, 12);
+        
+        // Label
+        drawSubscript(ctx, 'l', '0', l_start_x + (l_end_x - l_start_x)/2 - 10, l_y + 25, 22, 16);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="520"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "black";
+    ctx.lineWidth = 1.5;
+
+    /**
+     * Helper function to draw an arrow from one point to another.
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {number} fromx - The starting x-coordinate.
+     * @param {number} fromy - The starting y-coordinate.
+     * @param {number} tox - The ending x-coordinate.
+     * @param {number} toy - The ending y-coordinate.
+     */
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 10;
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    /**
+     * Helper function to draw a dimension line with a label in the middle.
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {number} x1 - The starting x-coordinate of the dimension.
+     * @param {number} x2 - The ending x-coordinate of the dimension.
+     * @param {number} y - The y-coordinate of the dimension line.
+     * @param {string} label - The label for the dimension.
+     */
+    function drawDimensionLine(ctx, x1, x2, y, label) {
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.font = "italic 20px 'Times New Roman'";
+        const tickHeight = 10;
+        const headlen = 8;
+        const labelWidth = ctx.measureText(label).width;
+        const midX = (x1 + x2) / 2;
+        const gap = labelWidth + 4;
+
+        // Ticks at the ends of the dimension
+        ctx.beginPath();
+        ctx.moveTo(x1, y - tickHeight / 2);
+        ctx.lineTo(x1, y + tickHeight / 2);
+        ctx.moveTo(x2, y - tickHeight / 2);
+        ctx.lineTo(x2, y + tickHeight / 2);
+        ctx.stroke();
+
+        // Left line segment with arrowhead
+        ctx.beginPath();
+        ctx.moveTo(midX - gap / 2, y);
+        ctx.lineTo(x1, y);
+        ctx.moveTo(x1 + headlen, y - headlen / 2);
+        ctx.lineTo(x1, y);
+        ctx.lineTo(x1 + headlen, y + headlen / 2);
+        ctx.stroke();
+
+        // Right line segment with arrowhead
+        ctx.beginPath();
+        ctx.moveTo(midX + gap / 2, y);
+        ctx.lineTo(x2, y);
+        ctx.moveTo(x2 - headlen, y - headlen / 2);
+        ctx.lineTo(x2, y);
+        ctx.lineTo(x2 - headlen, y + headlen / 2);
+        ctx.stroke();
+
+        // Label in the center
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, midX, y);
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+
+    // Define coordinates and dimensions
+    const wire_x = 100;
+    const b_len = 100;
+    const a_len = 180;
+
+    const Ax = wire_x + b_len;
+    const Ay = 370;
+    const Bx = Ax;
+    const By = Ay - a_len;
+    const Cx = Ax + a_len;
+    const Cy = Ay;
+
+    // 1. Long Straight Wire with current I₁
+    ctx.beginPath();
+    ctx.moveTo(wire_x, 40);
+    ctx.lineTo(wire_x, 450);
+    ctx.stroke();
+    drawArrow(ctx, wire_x, 60, wire_x, 40);
+
+    // Label for I₁
+    ctx.font = "italic 22px 'Times New Roman'";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText("I", 78, 100);
+    ctx.font = "italic 16px 'Times New Roman'";
+    ctx.fillText("1", 84, 106);
+
+    // 2. Triangular Loop ABC
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay);
+    ctx.lineTo(Bx, By);
+    ctx.lineTo(Cx, Cy);
+    ctx.closePath();
+    ctx.stroke();
+
+    // 3. Labels for vertices A, B, C
+    ctx.font = "20px 'Times New Roman'";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "top";
+    ctx.fillText("A", Ax - 5, Ay);
+    ctx.textBaseline = "bottom";
+    ctx.fillText("B", Bx - 5, By - 5);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText("C", Cx + 5, Cy);
+
+    // 4. Current I₂ in the loop
+    const mid_AB_y = (Ay + By) / 2;
+    drawArrow(ctx, Bx, mid_AB_y + 20, Bx, mid_AB_y - 20);
+    
+    // Label for I₂
+    ctx.font = "italic 22px 'Times New Roman'";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText("I", Bx - 15, mid_AB_y);
+    ctx.font = "italic 16px 'Times New Roman'";
+    ctx.fillText("2", Bx - 9, mid_AB_y + 6);
+
+    // 5. Velocity vector v
+    const v_y = (By + Cy) / 2 + 20;
+    const v_start_x = (Bx + Cx) / 2;
+    const v_end_x = v_start_x + 90;
+    drawArrow(ctx, v_start_x, v_y, v_end_x, v_y);
+
+    // Label for v
+    ctx.font = "italic 22px 'Times New Roman'";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText("v", v_end_x + 5, v_y);
+
+
+    // 6. Angle θ at vertex C
+    const arc_radius = 35;
+    ctx.beginPath();
+    ctx.arc(Cx, Cy, arc_radius, Math.PI, Math.PI * 1.25);
+    ctx.stroke();
+    
+    // Label for θ
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("θ", Cx - 25, Cy - 15);
+
+    // 7. Dimension lines for b and a
+    const dim_y = Ay + 50;
+    drawDimensionLine(ctx, wire_x, Ax, dim_y, "b");
+    drawDimensionLine(ctx, Ax, Cx, dim_y, "a");
+
+    // 8. Bottom Text Label
+    ctx.font = "20px 'SimSun', 'Songti SC', serif"; // Use a font that supports Chinese characters
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    ctx.fillText("习题 8-49 图", canvas.width / 2, canvas.height - 10);
+
+</script>
+</body>
+</html>

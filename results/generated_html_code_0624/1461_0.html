@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electromagnetic Field Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    background-color: #ffffff;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="520"></canvas>
+<script>
+// Helper function to draw an arrow
+function drawArrow(ctx, x1, y1, x2, y2) {
+    const headlen = 10;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+// Helper function to draw a double-headed arrow
+function drawDoubleArrow(ctx, x1, y1, x2, y2) {
+    const headlen = 8;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    let angle = Math.atan2(y2 - y1, x2 - x1);
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+    angle = Math.atan2(y1 - y2, x1 - x2);
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - headlen * Math.cos(angle - Math.PI / 6), y1 - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - headlen * Math.cos(angle + Math.PI / 6), y1 - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+ctx.strokeStyle = 'black';
+ctx.lineWidth = 1.5;
+ctx.fillStyle = 'black';
+
+// Define coordinates and dimensions
+const originX = 100;
+const axisY = 320;
+const wireSeparation = 400; // Represents 2a
+const rodLength = 200;      // Represents 2b
+const rodY = 160;
+const rodHeight = 25;
+
+const leftWireX = originX;
+const rightWireX = originX + wireSeparation;
+const rodCenterX = originX + wireSeparation / 2;
+const rodStartX = rodCenterX - rodLength / 2;
+const rodEndX = rodCenterX + rodLength / 2;
+
+// Draw x-axis
+drawArrow(ctx, 20, axisY, 580, axisY);
+ctx.font = 'italic 24px Times New Roman';
+ctx.textAlign = 'left';
+ctx.textBaseline = 'top';
+ctx.fillText('x', 585, axisY - 8);
+
+// Draw left wire and label
+drawArrow(ctx, leftWireX, 450, leftWireX, 50);
+ctx.textAlign = 'right';
+ctx.textBaseline = 'middle';
+ctx.fillText('I', leftWireX - 10, 80);
+
+// Draw right wire and label
+drawArrow(ctx, rightWireX, 50, rightWireX, 450);
+ctx.textAlign = 'left';
+ctx.fillText('I', rightWireX + 10, 80);
+
+// Draw metal rod
+ctx.strokeRect(rodStartX, rodY - rodHeight / 2, rodLength, rodHeight);
+ctx.beginPath();
+ctx.moveTo(rodStartX + rodLength / 3, rodY - rodHeight / 2);
+ctx.lineTo(rodStartX + rodLength / 3, rodY + rodHeight / 2);
+ctx.moveTo(rodStartX + 2 * rodLength / 3, rodY - rodHeight / 2);
+ctx.lineTo(rodStartX + 2 * rodLength / 3, rodY + rodHeight / 2);
+ctx.stroke();
+
+// Draw velocity vector
+drawArrow(ctx, rodCenterX, rodY, rodCenterX, rodY - 70);
+ctx.textAlign = 'left';
+ctx.textBaseline = 'middle';
+ctx.font = 'italic 28px Times New Roman';
+ctx.fillText('υ', rodCenterX + 10, rodY - 50);
+
+// --- Draw dimensions and labels ---
+ctx.font = 'italic 24px Times New Roman';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+
+// Dimension 2a
+const dim_2a_y = axisY + 60;
+ctx.beginPath();
+ctx.setLineDash([5, 5]);
+ctx.moveTo(leftWireX, axisY);
+ctx.lineTo(leftWireX, dim_2a_y);
+ctx.moveTo(rightWireX, axisY);
+ctx.lineTo(rightWireX, dim_2a_y);
+ctx.stroke();
+ctx.setLineDash([]);
+drawDoubleArrow(ctx, leftWireX, dim_2a_y, rightWireX, dim_2a_y);
+ctx.fillText('2a', rodCenterX, dim_2a_y);
+
+// Dimension 2b
+const dim_2b_y = rodY + 35;
+drawDoubleArrow(ctx, rodStartX, dim_2b_y, rodEndX, dim_2b_y);
+ctx.fillText('2b', rodCenterX, dim_2b_y);
+
+// Dimension dx
+const dx_y = rodY + 65;
+const dx_start_x = rodCenterX + 20;
+const dx_end_x = rodCenterX + 80;
+drawDoubleArrow(ctx, dx_start_x, dx_y, dx_end_x, dx_y);
+ctx.textAlign = 'left';
+ctx.textBaseline = 'middle';
+const dx_label_x = dx_end_x + 8;
+ctx.font = '24px Times New Roman';
+ctx.fillText('d', dx_label_x, dx_y);
+ctx.font = 'italic 24px Times New Roman';
+ctx.fillText('x', dx_label_x + ctx.measureText('d').width - 2, dx_y);
+
+// --- Labels on axis ---
+// Label O
+ctx.font = '24px Times New Roman';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'top';
+ctx.fillText('O', originX, axisY + 5);
+
+// Label x and dashed line
+ctx.beginPath();
+ctx.setLineDash([5, 3]);
+ctx.moveTo(rodCenterX, dim_2b_y);
+ctx.lineTo(rodCenterX, axisY);
+ctx.stroke();
+ctx.setLineDash([]);
+ctx.font = 'italic 24px Times New Roman';
+ctx.fillText('x', rodCenterX, axisY + 5);
+
+// Caption text
+ctx.font = '24px "SimSun", "Songti SC"';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('题 6 图', rodCenterX, 480);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Cylindrical Lens Interference</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // Geometric parameters
+    const x0 = 100;
+    const y0 = 250;
+    const w = 280; // width of the blocks
+    const L = 350; // length (depth) of the blocks
+    const hA = 50; // height of block A
+    const hB = 50; // height of block B
+    const d_height = 25; // visual height of the air gap 'd'
+
+    // Perspective calculation (for depth)
+    const angle = 22 * Math.PI / 180; // Perspective angle
+    const dx = L * Math.cos(angle);
+    const dy = -L * Math.sin(angle);
+
+    // --- Draw Block B (Bottom Plate) ---
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    // Front face of B
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x0 + w, y0);
+    ctx.lineTo(x0 + w, y0 - hB);
+    // Top surface of B
+    ctx.lineTo(x0 + w + dx, y0 - hB + dy);
+    ctx.lineTo(x0 + dx, y0 - hB + dy);
+    ctx.lineTo(x0, y0 - hB);
+    ctx.lineTo(x0, y0); // Back to start of front face bottom line
+    // Add the front-right vertical edge
+    ctx.moveTo(x0 + w, y0); 
+    ctx.lineTo(x0 + w, y0 - hB);
+    ctx.stroke();
+
+    // --- Draw Block A (Top Lens) ---
+    // Top surface of A
+    const yA_top = y0 - hB - hA;
+    ctx.beginPath();
+    ctx.moveTo(x0, yA_top);
+    ctx.lineTo(x0 + dx, yA_top + dy);
+    ctx.lineTo(x0 + w + dx, yA_top + dy);
+    ctx.lineTo(x0 + w, yA_top);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Front face of A (sides and bottom arc)
+    ctx.beginPath();
+    // Vertical sides
+    ctx.moveTo(x0, yA_top);
+    ctx.lineTo(x0, y0 - hB);
+    ctx.moveTo(x0 + w, yA_top);
+    ctx.lineTo(x0 + w, y0 - hB);
+    ctx.stroke();
+
+    // Bottom curved edge of A
+    // Calculate parameters for the arc
+    const R = (Math.pow(w / 2, 2) + Math.pow(d_height, 2)) / (2 * d_height);
+    const centerX = x0 + w / 2;
+    const yCenter = (y0 - hB) + R - d_height;
+    // Calculate start and end angles for the arc
+    const startAngle = Math.atan2((y0 - hB) - yCenter, (x0 + w) - centerX);
+    const endAngle = Math.atan2((y0 - hB) - yCenter, x0 - centerX);
+    ctx.beginPath();
+    ctx.arc(centerX, yCenter, R, startAngle, endAngle, false); // false for clockwise
+    ctx.stroke();
+
+    // --- Draw Hash Marks ---
+    ctx.save();
+    ctx.lineWidth = 1.5;
+
+    // Hashes on the front face of A (in the corners)
+    ctx.beginPath();
+    ctx.moveTo(x0 + 15, y0 - hB - 10); ctx.lineTo(x0 + 25, y0 - hB - 25);
+    ctx.moveTo(x0 + 22, y0 - hB - 10); ctx.lineTo(x0 + 32, y0 - hB - 25);
+    ctx.moveTo(x0 + w - 15, y0 - hB - 10); ctx.lineTo(x0 + w - 25, y0 - hB - 25);
+    ctx.moveTo(x0 + w - 22, y0 - hB - 10); ctx.lineTo(x0 + w - 32, y0 - hB - 25);
+    ctx.stroke();
+
+    // Hashes on the front face of B
+    ctx.beginPath();
+    ctx.moveTo(x0 + 140, y0 - 15); ctx.lineTo(x0 + 155, y0 - 30);
+    ctx.moveTo(x0 + 155, y0 - 25); ctx.lineTo(x0 + 170, y0 - 40);
+    ctx.moveTo(x0 + 170, y0 - 35); ctx.lineTo(x0 + 185, y0 - 50);
+    ctx.stroke();
+
+    // Hashes on the right side face
+    function drawSideHash(t) {
+        const hx_base = x0 + w + t * dx;
+        const hy_base = yA_top + t * dy;
+        // Hash for A
+        ctx.beginPath();
+        ctx.moveTo(hx_base - 5, hy_base + 15); ctx.lineTo(hx_base - 15, hy_base + 5);
+        ctx.moveTo(hx_base, hy_base + 15); ctx.lineTo(hx_base - 10, hy_base + 5);
+        ctx.stroke();
+        // Hash for B
+        ctx.beginPath();
+        ctx.moveTo(hx_base - 5, hy_base + hA + 20); ctx.lineTo(hx_base - 15, hy_base + hA + 10);
+        ctx.moveTo(hx_base, hy_base + hA + 20); ctx.lineTo(hx_base - 10, hy_base + hA + 10);
+        ctx.stroke();
+    }
+    drawSideHash(0.4);
+    drawSideHash(0.6);
+    drawSideHash(0.8);
+    ctx.restore();
+
+    // --- Annotations ---
+    ctx.lineWidth = 1;
+
+    // Label 'd'
+    const d_x = x0 + w / 2;
+    const d_y_top = y0 - hB - d_height;
+    const d_y_bottom = y0 - hB;
+    ctx.beginPath();
+    ctx.moveTo(d_x, d_y_top); ctx.lineTo(d_x, d_y_bottom);
+    ctx.moveTo(d_x, d_y_top); ctx.lineTo(d_x - 4, d_y_top + 6);
+    ctx.moveTo(d_x, d_y_top); ctx.lineTo(d_x + 4, d_y_top + 6);
+    ctx.moveTo(d_x, d_y_bottom); ctx.lineTo(d_x - 4, d_y_bottom - 6);
+    ctx.moveTo(d_x, d_y_bottom); ctx.lineTo(d_x + 4, d_y_bottom - 6);
+    ctx.stroke();
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.fillText('d', d_x + 10, d_y_top + d_height / 2 + 8);
+
+    // Dashed vertical line through 'd'
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash([3, 3]);
+    ctx.moveTo(d_x, d_y_top - 30);
+    ctx.lineTo(d_x, d_y_bottom + 50);
+    ctx.stroke();
+    ctx.restore();
+
+    // Diagonal line in the air gap
+    ctx.beginPath();
+    ctx.moveTo(x0 + 80, y0 - hB);
+    ctx.lineTo(x0 + 120, d_y_top + 5);
+    ctx.stroke();
+
+    // Label '空气隙' (Air Gap)
+    const airgap_label_x = x0 + 20;
+    const airgap_label_y = y0 + 40;
+    const airgap_point_x = x0 + 100;
+    const airgap_point_y = y0-hB - 5;
+    ctx.beginPath();
+    ctx.moveTo(airgap_label_x + 60, airgap_label_y - 15);
+    ctx.lineTo(airgap_point_x, airgap_point_y);
+    ctx.stroke();
+    ctx.font = '22px KaiTi';
+    ctx.fillText('空气隙', airgap_label_x, airgap_label_y);
+
+    // Labels 'A' and 'B'
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText('A', x0 - 30, yA_top + hA / 2 + 5);
+    ctx.fillText('B', x0 - 30, y0 - hB / 2 + 5);
+
+    // Caption
+    ctx.font = '24px KaiTi';
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 12-22 图', canvas.width / 2.2, y0 + 120);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gravitational Potential Graph</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="720" height="870"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const W = canvas.width;
+        const H = canvas.height;
+        // Margins for labels and titles
+        const margin = { top: 60, right: 40, bottom: 60, left: 80 };
+        // The actual drawing area for the graph
+        const graphWidth = W - margin.left - margin.right;
+        const graphHeight = H - margin.top - margin.bottom;
+
+        // Data ranges from the image axes
+        const xMin = 0;
+        const xMax = 3.2; // Extend slightly beyond the last label to match the image
+        const yMin = -4.0;
+        const yMax = 0;
+
+        // --- Coordinate Transformation Functions ---
+        // Maps a data x-value to a pixel x-coordinate on the canvas
+        function toPixelX(x) {
+            return margin.left + ((x - xMin) / (xMax - xMin)) * graphWidth;
+        }
+        // Maps a data y-value to a pixel y-coordinate on the canvas
+        function toPixelY(y) {
+            // The canvas y-axis is inverted (0 is at the top)
+            return margin.top + graphHeight - ((y - yMin) / (yMax - yMin)) * graphHeight;
+        }
+
+        // --- Drawing Functions ---
+
+        function drawGrid() {
+            ctx.lineWidth = 0.5;
+            ctx.strokeStyle = '#d3d3d3'; // Light grey for minor grid lines
+
+            // Draw minor vertical grid lines (every 0.1)
+            for (let i = 1; i <= Math.floor(xMax / 0.1); i++) {
+                const x = i * 0.1;
+                // Don't draw over major grid lines
+                if (Math.round(x * 10) % 10 !== 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(toPixelX(x), toPixelY(yMin));
+                    ctx.lineTo(toPixelX(x), toPixelY(yMax));
+                    ctx.stroke();
+                }
+            }
+
+            // Draw minor horizontal grid lines (every 0.05)
+            for (let i = 1; i <= Math.floor(Math.abs(yMin) / 0.05); i++) {
+                const y = yMax - i * 0.05;
+                 // Don't draw over major grid lines
+                 if (Math.round(y * 20) % 10 !== 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(toPixelX(xMin), toPixelY(y));
+                    ctx.lineTo(toPixelX(xMax), toPixelY(y));
+                    ctx.stroke();
+                 }
+            }
+
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#a9a9a9'; // Darker grey for major grid lines
+
+            // Draw major vertical grid lines (every 1)
+            for (let x = xMin + 1; x < xMax; x += 1) {
+                ctx.beginPath();
+                ctx.moveTo(toPixelX(x), toPixelY(yMin));
+                ctx.lineTo(toPixelX(x), toPixelY(yMax));
+                ctx.stroke();
+            }
+
+            // Draw major horizontal grid lines (every 0.5)
+            for (let y = yMin; y < yMax; y += 0.5) {
+                ctx.beginPath();
+                ctx.moveTo(toPixelX(xMin), toPixelY(y));
+                ctx.lineTo(toPixelX(xMax), toPixelY(y));
+                ctx.stroke();
+            }
+        }
+
+        function drawAxes() {
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'black';
+
+            // Y-axis (at x=0)
+            ctx.beginPath();
+            ctx.moveTo(toPixelX(0), toPixelY(yMin));
+            ctx.lineTo(toPixelX(0), toPixelY(yMax));
+            ctx.stroke();
+
+            // X-axis (at y=0)
+            ctx.beginPath();
+            ctx.moveTo(toPixelX(xMin), toPixelY(0));
+            ctx.lineTo(toPixelX(xMax), toPixelY(0));
+            ctx.stroke();
+        }
+
+        function drawLabels() {
+            ctx.fillStyle = 'black';
+            ctx.font = '18px Arial';
+
+            // X-axis labels and title
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            // Labels (0, 1, 2, 3)
+            for (let x = 0; x <= 3; x += 1) {
+                ctx.fillText(x, toPixelX(x), margin.top - 10);
+            }
+            // Title (x / 10^7 m)
+            ctx.fillText('x / 10\u2077 m', toPixelX(1.5), margin.top - 35);
+
+            // Y-axis labels and title
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            // Labels (-4.0, -3.5, ..., 0)
+            for (let y = yMin; y <= yMax; y += 0.5) {
+                // Special case for 0 to not show a decimal
+                ctx.fillText(y === 0 ? '0' : y.toFixed(1), margin.left - 10, toPixelY(y));
+            }
+            // Title (φ / 10^7 J kg^-1)
+            ctx.font = '18px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('\u03C6 / 10\u2077 J kg\u207B\u00B9', margin.left, toPixelY(-3.25));
+
+            // Figure caption
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('Fig. 1.1', W / 2, H - margin.bottom + 25);
+        }
+
+        function drawCurve() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            // The curve follows the gravitational potential formula φ = -C/x.
+            // From the graph, at x=0.48, φ_scaled=-3.5. So C = 3.5 * 0.48 = 1.68.
+            // The function for the scaled axes is y = -1.68 / x.
+            const k = 1.68;
+            const startX = 0.48; // Surface of the planet
+            const endX = 3.1;   // End of the curve in the image
+
+            let firstPoint = true;
+            // Iterate with small steps to draw a smooth curve
+            for (let x = startX; x <= endX; x += 0.01) {
+                let y = -k / x;
+                if (y >= yMin) { // Ensure the curve stays within the plotted area
+                    if (firstPoint) {
+                        ctx.moveTo(toPixelX(x), toPixelY(y));
+                        firstPoint = false;
+                    } else {
+                        ctx.lineTo(toPixelX(x), toPixelY(y));
+                    }
+                }
+            }
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Execution ---
+        // Clear canvas with white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, W, H);
+
+        // Draw components in order
+        drawGrid();
+        drawAxes();
+        drawCurve();
+        drawLabels();
+
+    </script>
+</body>
+</html>

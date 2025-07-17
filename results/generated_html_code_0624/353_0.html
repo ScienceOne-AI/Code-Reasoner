@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style and parameters
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        const varFont = 'italic 20px "Times New Roman"';
+        const labelFont = 'bold 20px "Times New Roman"';
+        const figFont = '18px "Times New Roman"';
+
+        // Coordinates and dimensions
+        const y_base = 200;
+        const x_start_margin = 50;
+        const x_end_margin = 750;
+
+        const x0_center = 150;
+        const a_px = 250;
+        const b_px = 60; // Width of one 'V' of the 'W' shape
+        const depth = 50;
+
+        const x1_center = x0_center + a_px;
+        const x_last_center = x1_center + a_px + 100;
+
+        const ellipsis_x_start = x1_center + b_px + 40;
+        const last_well_x_start = x_last_center - b_px - 40;
+
+        // --- Helper functions ---
+
+        function drawW(x_center) {
+            ctx.lineTo(x_center - b_px, y_base);
+            ctx.lineTo(x_center - b_px / 2, y_base + depth);
+            ctx.lineTo(x_center, y_base);
+            ctx.lineTo(x_center + b_px / 2, y_base + depth);
+            ctx.lineTo(x_center + b_px, y_base);
+        }
+
+        function drawXLabelAndPointer(x, label) {
+            const y_text = 80;
+            const y_line_top = y_text + 20;
+            
+            ctx.font = labelFont;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(label, x, y_text);
+
+            ctx.beginPath();
+            ctx.moveTo(x, y_line_top);
+            ctx.lineTo(x, y_base);
+            
+            const tick_len = 5;
+            ctx.moveTo(x - tick_len, y_base);
+            ctx.lineTo(x + tick_len, y_base);
+            
+            // Dashed extension as in the diagram for x=0 and x=a
+            if (label.includes("x = 0") || label.includes("x = a")) {
+                 ctx.stroke(); // Stroke the solid part
+                 ctx.beginPath();
+                 ctx.setLineDash([3, 3]);
+                 ctx.moveTo(x, y_base);
+                 ctx.lineTo(x, y_base + 10);
+                 ctx.stroke();
+                 ctx.setLineDash([]);
+            } else {
+                 ctx.stroke();
+            }
+        }
+
+        function drawDimLineA(x1, x2, y, label) {
+            const arrowSize = 8;
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x1 + arrowSize, y - arrowSize / 2);
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x1 + arrowSize, y + arrowSize / 2);
+            ctx.moveTo(x2, y);
+            ctx.lineTo(x2 - arrowSize, y - arrowSize / 2);
+            ctx.moveTo(x2, y);
+            ctx.lineTo(x2 - arrowSize, y + arrowSize / 2);
+            ctx.stroke();
+            
+            ctx.font = varFont;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(label, (x1 + x2) / 2, y-2);
+        }
+        
+        function drawDimLineB(x1, x2, y, label) {
+            const tickSize = 10;
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.moveTo(x1, y - tickSize / 2);
+            ctx.lineTo(x1, y + tickSize / 2);
+            ctx.moveTo(x2, y - tickSize / 2);
+            ctx.lineTo(x2, y + tickSize / 2);
+            ctx.stroke();
+            
+            ctx.font = varFont;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, (x1 + x2) / 2, y);
+        }
+
+        // --- Main drawing logic ---
+
+        // 1. Draw potential curve
+        ctx.beginPath();
+        // Left part including first two pairs of wells
+        ctx.moveTo(x_start_margin, y_base);
+        drawW(x0_center);
+        drawW(x1_center);
+        ctx.lineTo(ellipsis_x_start, y_base);
+        ctx.stroke();
+        
+        // Right part including the last pair of wells
+        ctx.beginPath();
+        ctx.moveTo(last_well_x_start, y_base);
+        drawW(x_last_center);
+        ctx.lineTo(x_end_margin, y_base);
+        ctx.stroke();
+
+        // 2. Draw labels and dimension lines
+        drawXLabelAndPointer(x0_center, "x = 0");
+        drawXLabelAndPointer(x1_center, "x = a");
+        drawXLabelAndPointer(x_last_center, "x = (N-1) a");
+
+        drawDimLineA(x0_center, x1_center, 120, "a");
+        
+        // The diagram labels 'b' as the width of the first V-shape in the pair
+        drawDimLineB(x0_center - b_px, x0_center, y_base + depth + 25, "b");
+
+        // 3. Draw ellipsis
+        ctx.font = labelFont;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(". . .", (ellipsis_x_start + last_well_x_start) / 2, y_base);
+        
+        // 4. Draw Figure caption
+        ctx.font = figFont;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText("Fig. 1.18", canvas.width / 2, 380);
+
+    </script>
+</body>
+</html>

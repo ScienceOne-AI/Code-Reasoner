@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resistor Ladder Circuit Diagram</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="900" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Drawing Parameters ---
+    const yTop = 150;
+    const yBottom = 300;
+    const resWidthH = 80;
+    const resHeightH = 30;
+    const resWidthV = 30;
+    const resHeightV = 80;
+    const nodeRadius = 4;
+    const wireSeg = 40;
+    const dashLength = 40;
+
+    // --- Global Context Settings ---
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const baseFont = 'italic 22px Times New Roman';
+    const subFont = 'italic 16px Times New Roman';
+
+    // --- Helper function for text with subscript ---
+    function drawSubscriptedText(text, sub, x, y, options = {}) {
+        const { align = 'center', baseline = 'middle', mainFont = baseFont, subFont = subFont } = options;
+        ctx.textAlign = align;
+        ctx.textBaseline = baseline;
+        
+        ctx.font = mainFont;
+        const textMetrics = ctx.measureText(text);
+        const textWidth = textMetrics.width;
+        
+        ctx.font = subFont;
+        const subMetrics = ctx.measureText(sub);
+        const subWidth = subMetrics.width;
+
+        const totalWidth = textWidth + subWidth;
+        let textX, subX;
+
+        if (align === 'center') {
+            textX = x - totalWidth / 2;
+            subX = textX + textWidth;
+        } else if (align === 'left') {
+            textX = x;
+            subX = textX + textWidth;
+        } else { // right
+            textX = x - subWidth - textWidth;
+            subX = x - subWidth;
+        }
+        
+        ctx.font = mainFont;
+        ctx.fillText(text, textX, y);
+        
+        ctx.font = subFont;
+        ctx.fillText(sub, subX, y + 5);
+
+        // Reset to default alignment for other drawing functions
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+    }
+    
+    // --- Component Drawing Functions ---
+    function drawHResistor(x_start, label, sub_label) {
+        const x_end = x_start + resWidthH;
+        ctx.beginPath();
+        ctx.rect(x_start, yTop - resHeightH / 2, resWidthH, resHeightH);
+        ctx.stroke();
+        drawSubscriptedText(label, sub_label, x_start + resWidthH / 2, yTop - 35);
+        return x_end;
+    }
+
+    function drawNodeAndVResistor(x_node, v_label, v_sub_label, r_label, r_sub_label) {
+        // Node
+        ctx.beginPath();
+        ctx.arc(x_node, yTop, nodeRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        drawSubscriptedText(v_label, v_sub_label, x_node, yTop - 25);
+        
+        // Vertical wire
+        ctx.beginPath();
+        ctx.moveTo(x_node, yTop);
+        const v_wire_len = (yBottom - yTop - resHeightV) / 2;
+        ctx.lineTo(x_node, yTop + v_wire_len);
+        ctx.stroke();
+        
+        // Vertical resistor
+        ctx.beginPath();
+        ctx.rect(x_node - resWidthV / 2, yTop + v_wire_len, resWidthV, resHeightV);
+        ctx.stroke();
+        drawSubscriptedText(r_label, r_sub_label, x_node + 25, yTop + v_wire_len + resHeightV / 2, { align: 'left' });
+
+        // Bottom vertical wire
+        ctx.beginPath();
+        ctx.moveTo(x_node, yTop + v_wire_len + resHeightV);
+        ctx.lineTo(x_node, yBottom);
+        ctx.stroke();
+    }
+
+    function drawDashedLine(x_start) {
+        const x_end = x_start + dashLength;
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(x_start, yTop);
+        ctx.lineTo(x_end, yTop);
+        ctx.moveTo(x_start, yBottom);
+        ctx.lineTo(x_end, yBottom);
+        ctx.stroke();
+        ctx.restore();
+        return x_end;
+    }
+
+    // --- Main Drawing Logic ---
+
+    // Draw bottom wire
+    ctx.beginPath();
+    ctx.moveTo(50, yBottom);
+    ctx.lineTo(850, yBottom);
+    ctx.stroke();
+
+    // Draw V0 source
+    const x_src = 80;
+    ctx.beginPath();
+    ctx.moveTo(x_src, yBottom);
+    ctx.lineTo(x_src, yTop + 12);
+    ctx.stroke();
+    // Short plate (-)
+    ctx.save();
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x_src - 15, yTop + 12);
+    ctx.lineTo(x_src + 15, yTop + 12);
+    ctx.stroke();
+    ctx.restore();
+    // Long plate (+)
+    ctx.beginPath();
+    ctx.moveTo(x_src - 15, yTop);
+    ctx.lineTo(x_src + 15, yTop);
+    // Connect to top wire
+    ctx.moveTo(x_src, yTop);
+    ctx.lineTo(120, yTop);
+    ctx.stroke();
+    // V0 label
+    drawSubscriptedText('V', '0', 50, yTop + (yBottom - yTop) / 2);
+
+    // --- Layout Coordinates ---
+    const x_start_top = 120;
+    const x_R1_start = x_start_top;
+    const x_V1_node = x_R1_start + resWidthH;
+    const x_R2_start = x_V1_node + wireSeg;
+    const x_V2_node = x_R2_start + resWidthH;
+    const x_dash1_start = x_V2_node + wireSeg;
+    const x_dash1_end = x_dash1_start + dashLength;
+    const x_Vn_node = x_dash1_end + wireSeg;
+    const x_RA1_start = x_Vn_node + wireSeg;
+    const x_Vn1_node = x_RA1_start + resWidthH;
+    const x_dash2_start = x_Vn1_node + wireSeg;
+    const x_dash2_end = x_dash2_start + dashLength;
+    const x_VN_1_node = x_dash2_end + wireSeg;
+    const x_RA2_start = x_VN_1_node + wireSeg;
+    const x_VN_node = x_RA2_start + resWidthH;
+    
+    // Draw connecting wires on top
+    ctx.beginPath();
+    ctx.moveTo(x_V1_node, yTop);
+    ctx.lineTo(x_R2_start, yTop);
+    ctx.moveTo(x_V2_node, yTop);
+    ctx.lineTo(x_dash1_start, yTop);
+    ctx.moveTo(x_dash1_end, yTop);
+    ctx.lineTo(x_Vn_node, yTop);
+    ctx.moveTo(x_Vn_node, yTop);
+    ctx.lineTo(x_RA1_start, yTop);
+    ctx.moveTo(x_Vn1_node, yTop);
+    ctx.lineTo(x_dash2_start, yTop);
+    ctx.moveTo(x_dash2_end, yTop);
+    ctx.lineTo(x_VN_1_node, yTop);
+    ctx.moveTo(x_VN_1_node, yTop);
+    ctx.lineTo(x_RA2_start, yTop);
+    ctx.stroke();
+
+    // Draw components
+    drawHResistor(x_R1_start, 'R', 'l');
+    drawNodeAndVResistor(x_V1_node, 'V', '1', 'R', 'B');
+
+    drawHResistor(x_R2_start, 'R', 'l');
+    drawNodeAndVResistor(x_V2_node, 'V', '2', 'R', 'B');
+
+    drawDashedLine(x_dash1_start);
+
+    drawNodeAndVResistor(x_Vn_node, 'V', 'n', 'R', 'B');
+    drawHResistor(x_RA1_start, 'R', 'A');
+    drawNodeAndVResistor(x_Vn1_node, 'V', 'n+1', 'R', 'B');
+    
+    drawDashedLine(x_dash2_start);
+    
+    drawNodeAndVResistor(x_VN_1_node, 'V', 'N-1', 'R', 'B');
+    drawHResistor(x_RA2_start, 'R', 'A');
+    drawNodeAndVResistor(x_VN_node, 'V', 'N', 'R', 'B');
+
+    // Caption
+    ctx.font = '24px KaiTi';
+    ctx.fillText('图 1', 450, 400);
+
+</script>
+</body>
+</html>

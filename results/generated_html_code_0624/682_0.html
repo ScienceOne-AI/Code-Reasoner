@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Wave Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="emWaveCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('emWaveCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+            const angle = Math.atan2(toy - fromy, tox - fromx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        // Drawing parameters
+        const origin = { x: 100, y: 200 };
+        const axisLength = { x: 180, z: 450, y: 50 };
+        const wave = {
+            amplitude: 70,
+            wavelength: 100,
+            numWaves: 4.2,
+            slantOffset: 15
+        };
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#000';
+        ctx.fillStyle = '#000';
+        ctx.lineWidth = 1.5;
+        ctx.font = 'italic 16px Times New Roman';
+
+        // Draw Axes
+        // z-axis
+        drawArrow(ctx, origin.x, origin.y, origin.x + axisLength.z, origin.y);
+        ctx.fillText('z', origin.x + axisLength.z + 10, origin.y + 5);
+
+        // x-axis
+        drawArrow(ctx, origin.x, origin.y, origin.x, origin.y - axisLength.x + 20);
+        ctx.fillText('x(E)', origin.x - 40, origin.y - axisLength.x + 25);
+        
+        // y-axis
+        const yAxisEnd = { x: origin.x - axisLength.y * Math.cos(Math.PI/4), y: origin.y + axisLength.y * Math.sin(Math.PI/4) };
+        drawArrow(ctx, origin.x, origin.y, yAxisEnd.x, yAxisEnd.y);
+        ctx.fillText('y(H)', yAxisEnd.x - 40, yAxisEnd.y + 5);
+
+        // Origin Label
+        ctx.fillText('O', origin.x - 20, origin.y + 20);
+
+        // Draw Wave Envelope
+        ctx.beginPath();
+        ctx.moveTo(origin.x, origin.y);
+        for (let z = 0; z <= wave.numWaves * wave.wavelength; z += 1) {
+            const y = -wave.amplitude * Math.sin(2 * Math.PI * z / wave.wavelength);
+            ctx.lineTo(origin.x + z, origin.y + y);
+        }
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(origin.x, origin.y);
+        for (let z = 0; z <= wave.numWaves * wave.wavelength; z += 1) {
+            const y = wave.amplitude * Math.sin(2 * Math.PI * z / wave.wavelength);
+            ctx.lineTo(origin.x + z, origin.y + y);
+        }
+        ctx.stroke();
+
+        // Draw Field Arrows
+        const numHalfWaves = Math.floor(wave.numWaves * 2);
+        for (let i = 0; i < numHalfWaves; i++) {
+            const z_base = i * wave.wavelength / 2;
+            const positions = [
+                z_base + wave.wavelength / 8,
+                z_base + wave.wavelength / 4,
+                z_base + wave.wavelength * 3 / 8
+            ];
+            
+            positions.forEach((z, k) => {
+                if (z < wave.numWaves * wave.wavelength) {
+                    const y = -wave.amplitude * Math.sin(2 * Math.PI * z / wave.wavelength);
+                    
+                    if (k === 1) { // Middle arrow in the group (at peak/trough) is solid
+                        ctx.setLineDash([]);
+                    } else { // Side arrows are dashed
+                        ctx.setLineDash([4, 3]);
+                    }
+                    
+                    drawArrow(ctx, origin.x + z - wave.slantOffset, origin.y, origin.x + z, origin.y + y);
+                }
+            });
+        }
+        ctx.setLineDash([]); // Reset to solid line
+
+        // Draw Propagation Vector u
+        const u_y = origin.y - wave.amplitude - 30;
+        const u_x_start = origin.x + 1.5 * wave.wavelength;
+        drawArrow(ctx, u_x_start, u_y, u_x_start + 50, u_y, 12);
+        ctx.fillText('u', u_x_start + 20, u_y - 10);
+        
+        // Draw Caption
+        ctx.font = '20px KaiTi'; // A common font for Chinese characters
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 11-18 图', canvas.width / 2, canvas.height - 20);
+    </script>
+</body>
+</html>

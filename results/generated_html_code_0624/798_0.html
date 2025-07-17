@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical Path Diagram</title>
+</head>
+<body>
+    <canvas id="opticalCanvas" width="900" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('opticalCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Config ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.8;
+
+        // --- Coordinates & Dimensions ---
+        const centerY = 180;
+        const x_P = 100;
+        const x_LA = 300;
+        const x_LB = 450;
+        const x_M2 = 650;
+        const x_M1 = 750;
+        const objectHeight = 25; // Represents 1cm
+        const lensHeight = 80;
+        const headlen = 10;
+
+        // --- Helper Function: Arrow ---
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const angle = Math.atan2(toy - fromy, tox - fromx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Helper Function: Dimension Line ---
+        function drawDimension(ctx, x1, x2, y, label) {
+            const tickHeight = 20;
+            const midX = (x1 + x2) / 2;
+
+            // Draw two arrows pointing outwards from the center of the label
+            drawArrow(ctx, midX, y, x1, y);
+            drawArrow(ctx, midX, y, x2, y);
+
+            // Ticks at the ends of the dimension line
+            ctx.beginPath();
+            ctx.moveTo(x1, y - tickHeight / 2);
+            ctx.lineTo(x1, y + tickHeight / 2);
+            ctx.moveTo(x2, y - tickHeight / 2);
+            ctx.lineTo(x2, y + tickHeight / 2);
+            ctx.stroke();
+
+            // Label
+            ctx.font = '20px Times New Roman';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            // Use clearRect to ensure text is readable over the arrow lines
+            ctx.clearRect(midX - ctx.measureText(label).width / 2 - 2, y - 12, ctx.measureText(label).width + 4, 24);
+            ctx.fillText(label, midX, y);
+        }
+
+        // --- Main Drawing ---
+
+        // 1. Principal Axis
+        ctx.beginPath();
+        ctx.moveTo(20, centerY);
+        ctx.lineTo(880, centerY);
+        ctx.stroke();
+
+        // 2. Object P
+        drawArrow(ctx, x_P, centerY, x_P, centerY - objectHeight - 2);
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('P', x_P - 20, centerY - objectHeight);
+        ctx.font = '20px Times New Roman';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('1cm', x_P + 10, centerY - objectHeight / 2);
+
+        // 3. Lens L_A (Convex)
+        ctx.beginPath();
+        ctx.moveTo(x_LA, centerY - lensHeight);
+        ctx.lineTo(x_LA, centerY + lensHeight);
+        // Top arrowhead ^
+        ctx.moveTo(x_LA - headlen / 1.5, centerY - lensHeight + headlen);
+        ctx.lineTo(x_LA, centerY - lensHeight);
+        ctx.lineTo(x_LA + headlen / 1.5, centerY - lensHeight + headlen);
+        // Bottom arrowhead v
+        ctx.moveTo(x_LA - headlen / 1.5, centerY + lensHeight - headlen);
+        ctx.lineTo(x_LA, centerY + lensHeight);
+        ctx.lineTo(x_LA + headlen / 1.5, centerY + lensHeight - headlen);
+        ctx.stroke();
+        // Label L_A
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('L', x_LA, centerY - lensHeight - 15);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('A', x_LA + 8, centerY - lensHeight - 10);
+
+        // 4. Lens L_B (Concave)
+        ctx.beginPath();
+        ctx.moveTo(x_LB, centerY - lensHeight);
+        ctx.lineTo(x_LB, centerY + lensHeight);
+        // Top arrowhead v
+        ctx.moveTo(x_LB - headlen / 1.5, centerY - lensHeight);
+        ctx.lineTo(x_LB, centerY - lensHeight + headlen);
+        ctx.lineTo(x_LB + headlen / 1.5, centerY - lensHeight);
+        // Bottom arrowhead ^
+        ctx.moveTo(x_LB - headlen / 1.5, centerY + lensHeight);
+        ctx.lineTo(x_LB, centerY + lensHeight - headlen);
+        ctx.lineTo(x_LB + headlen / 1.5, centerY + lensHeight);
+        ctx.stroke();
+        // Label L_B
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText('L', x_LB, centerY - lensHeight - 15);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('B', x_LB + 8, centerY - lensHeight - 10);
+
+        // 5. Screen M2
+        ctx.beginPath();
+        ctx.setLineDash([8, 8]);
+        ctx.moveTo(x_M2, centerY - lensHeight - 10);
+        ctx.lineTo(x_M2, centerY + lensHeight + 10);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Label M2
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText('M', x_M2, centerY - lensHeight - 15);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('2', x_M2 + 10, centerY - lensHeight - 10);
+
+        // 6. Screen M1
+        ctx.beginPath();
+        ctx.setLineDash([8, 8]);
+        ctx.moveTo(x_M1, centerY - lensHeight - 10);
+        ctx.lineTo(x_M1, centerY + lensHeight + 10);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Label M1
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText('M', x_M1, centerY - lensHeight - 15);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('1', x_M1 + 8, centerY - lensHeight - 10);
+
+        // 7. Dimension Lines
+        const dimY_bottom1 = centerY + 80;
+        const dimY_bottom2 = centerY + 140;
+
+        drawDimension(ctx, x_P, x_LA, dimY_bottom1, '20cm');
+        drawDimension(ctx, x_M2, x_M1, dimY_bottom1 + 20, '10cm');
+        drawDimension(ctx, x_LB, x_M1, dimY_bottom2, '30cm');
+
+    </script>
+</body>
+</html>

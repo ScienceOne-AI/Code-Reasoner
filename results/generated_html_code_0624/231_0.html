@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Not-so-parallel Plate Capacitor</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="capacitorCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('capacitorCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(x1, y1, x2, y2, lw = 2) {
+            ctx.save();
+            ctx.lineWidth = lw;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            const headlen = 10;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Define Plate Coordinates ---
+        const P1 = { x: 100, y: 350 }; // Bottom-front-left
+        const P2 = { x: 450, y: 350 }; // Bottom-front-right
+        const dz = { x: -60, y: -40 }; // z-direction vector for perspective
+        const P4 = { x: P1.x + dz.x, y: P1.y + dz.y }; // Bottom-back-left
+        const P3 = { x: P2.x + dz.x, y: P2.y + dz.y }; // Bottom-back-right
+
+        const d_height = 120;
+        const a_height = 40;
+        const P1_prime = { x: P1.x, y: P1.y - d_height }; // Top-front-left
+        const P2_prime = { x: P2.x, y: P2.y - (d_height + a_height) }; // Top-front-right
+        const P4_prime = { x: P1_prime.x + dz.x, y: P1_prime.y + dz.y }; // Top-back-left
+        const P3_prime = { x: P2_prime.x + dz.x, y: P2_prime.y + dz.y }; // Top-back-right
+
+        // --- Draw Plates ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2.5;
+        // Bottom plate (without back edge, as in source)
+        ctx.beginPath();
+        ctx.moveTo(P4.x, P4.y);
+        ctx.lineTo(P1.x, P1.y);
+        ctx.lineTo(P2.x, P2.y);
+        ctx.lineTo(P3.x, P3.y);
+        ctx.stroke();
+        // Top plate (complete quadrilateral)
+        ctx.beginPath();
+        ctx.moveTo(P1_prime.x, P1_prime.y);
+        ctx.lineTo(P2_prime.x, P2_prime.y);
+        ctx.lineTo(P3_prime.x, P3_prime.y);
+        ctx.lineTo(P4_prime.x, P4_prime.y);
+        ctx.closePath();
+        ctx.stroke();
+
+        // --- Draw Dimension Lines and Labels ---
+        ctx.lineWidth = 1.5;
+        ctx.font = "italic 20px 'Times New Roman'";
+        ctx.fillStyle = 'black';
+
+        // Dimension 'd'
+        ctx.beginPath();
+        ctx.moveTo(P1_prime.x, P1_prime.y);
+        ctx.lineTo(P1.x, P1.y);
+        ctx.stroke();
+        // Ticks for 'd'
+        ctx.beginPath();
+        ctx.moveTo(P1_prime.x - 5, P1_prime.y);
+        ctx.lineTo(P1_prime.x + 5, P1_prime.y);
+        ctx.moveTo(P1.x - 5, P1.y);
+        ctx.lineTo(P1.x + 5, P1.y);
+        ctx.stroke();
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('d', P1.x - 10, (P1.y + P1_prime.y) / 2);
+
+        // Dimension 'd + a'
+        const d_plus_a_mid_y = (P2.y + P2_prime.y) / 2;
+        ctx.beginPath();
+        ctx.moveTo(P2_prime.x, P2_prime.y);
+        ctx.lineTo(P2.x, P2.y);
+        ctx.stroke();
+        // Ticks for 'd + a'
+        ctx.beginPath();
+        ctx.moveTo(P2_prime.x - 5, P2_prime.y);
+        ctx.lineTo(P2_prime.x + 5, P2_prime.y);
+        ctx.moveTo(P2.x - 5, P2.y);
+        ctx.lineTo(P2.x + 5, P2.y);
+        ctx.stroke();
+        
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'white'; // Use white background to overlay text on line
+        ctx.fillRect(P2.x - 25, d_plus_a_mid_y - 12, 50, 24);
+        ctx.fillStyle = 'black';
+        ctx.fillText('d + a', P2.x, d_plus_a_mid_y);
+        ctx.restore();
+
+        // Dimension 'b'
+        ctx.beginPath();
+        ctx.moveTo(P1.x, P1.y + 15);
+        ctx.lineTo(P2.x, P2.y + 15);
+        // Ticks for 'b'
+        ctx.moveTo(P1.x, P1.y);
+        ctx.lineTo(P1.x, P1.y + 15);
+        ctx.moveTo(P2.x, P2.y);
+        ctx.lineTo(P2.x, P2.y + 15);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('b', (P1.x + P2.x) / 2, P1.y + 18);
+
+        // Dimension 'w' label
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('w', (P2.x + P3.x) / 2 + 10, (P2.y + P3.y) / 2);
+
+        // --- Draw Coordinate System ---
+        const axisOrigin = { x: 490, y: 110 };
+        ctx.font = "italic 22px 'Times New Roman'";
+        // x-axis
+        drawArrow(axisOrigin.x, axisOrigin.y, axisOrigin.x + 60, axisOrigin.y, 1.5);
+        ctx.fillText('x', axisOrigin.x + 70, axisOrigin.y + 5);
+        // y-axis
+        drawArrow(axisOrigin.x, axisOrigin.y, axisOrigin.x, axisOrigin.y - 60, 1.5);
+        ctx.fillText('y', axisOrigin.x, axisOrigin.y - 70);
+        // z-axis
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.moveTo(axisOrigin.x, axisOrigin.y);
+        ctx.lineTo(axisOrigin.x + 35, axisOrigin.y + 20); // Negative z-direction (dashed)
+        ctx.stroke();
+        ctx.restore();
+        drawArrow(axisOrigin.x, axisOrigin.y, axisOrigin.x - 35, axisOrigin.y - 20, 1.5); // Positive z-direction
+        ctx.fillText('z', axisOrigin.x - 45, axisOrigin.y - 25);
+
+        // --- Draw Figure Caption ---
+        ctx.font = "bold 20px 'Times New Roman'";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Fig. 1.25', 300, 440);
+    </script>
+</body>
+</html>

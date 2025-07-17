@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>U-Tube Oscillation</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper function to draw a U-Tube outline ---
+    function drawUTube(cx, cy, topY, innerR, outerR) {
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        ctx.beginPath();
+        // Outer wall
+        ctx.moveTo(cx - outerR, topY);
+        ctx.lineTo(cx - outerR, cy);
+        ctx.arc(cx, cy, outerR, Math.PI, 0, false);
+        ctx.lineTo(cx + outerR, topY);
+        // Inner wall
+        ctx.moveTo(cx + innerR, topY);
+        ctx.lineTo(cx + innerR, cy);
+        ctx.arc(cx, cy, innerR, 0, Math.PI, true);
+        ctx.lineTo(cx - innerR, topY);
+        ctx.stroke();
+    }
+
+    // --- Helper function to draw liquid fill and meniscus ---
+    function drawLiquid(cx, cy, innerR, outerR, levelL, levelR) {
+        const armWidth = outerR - innerR;
+        const meniscusDepth = 4;
+        
+        // Liquid fill
+        ctx.fillStyle = '#cccccc';
+        ctx.beginPath();
+        ctx.moveTo(cx - outerR, levelL);
+        ctx.lineTo(cx - outerR, cy);
+        ctx.arc(cx, cy, outerR, Math.PI, 0, false);
+        ctx.lineTo(cx + outerR, levelR);
+        ctx.lineTo(cx + innerR, levelR);
+        ctx.arc(cx, cy, innerR, 0, Math.PI, true);
+        ctx.lineTo(cx - innerR, levelL);
+        ctx.closePath();
+        ctx.fill();
+
+        // Meniscus lines
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        ctx.beginPath();
+        // Left meniscus
+        ctx.moveTo(cx - outerR, levelL);
+        ctx.quadraticCurveTo(cx - outerR + armWidth / 2, levelL - meniscusDepth, cx - innerR, levelL);
+        // Right meniscus
+        ctx.moveTo(cx + innerR, levelR);
+        ctx.quadraticCurveTo(cx + innerR + armWidth / 2, levelR - meniscusDepth, cx + outerR, levelR);
+        ctx.stroke();
+    }
+
+    // --- Helper function to draw a vertical double-headed arrow ---
+    function drawVerticalDoubleArrow(x, y1, y2, headlen) {
+        ctx.beginPath();
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, y2);
+        // Arrow head at y1
+        ctx.moveTo(x - headlen, y1 + headlen * Math.sign(y2-y1));
+        ctx.lineTo(x, y1);
+        ctx.lineTo(x + headlen, y1 + headlen * Math.sign(y2-y1));
+        // Arrow head at y2
+        ctx.moveTo(x - headlen, y2 - headlen * Math.sign(y2-y1));
+        ctx.lineTo(x, y2);
+        ctx.lineTo(x + headlen, y2 - headlen * Math.sign(y2-y1));
+        ctx.stroke();
+    }
+
+    // --- Drawing Parameters ---
+    const topY = 100;
+    const bendCenterY = 280;
+    const innerRadius = 40;
+    const outerRadius = 50;
+    const eqLevelY = 150;
+
+    // --- Figure 4.1 ---
+    const cx1 = 200;
+    
+    // Draw liquid and tube
+    drawLiquid(cx1, bendCenterY, innerRadius, outerRadius, eqLevelY, eqLevelY);
+    drawUTube(cx1, bendCenterY, topY, innerRadius, outerRadius);
+
+    // Labels for Fig 4.1
+    ctx.fillStyle = 'black';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText("Fig. 4.1", cx1, 360);
+    
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText("liquid", 70, 200);
+
+    // Arrow for "liquid"
+    ctx.beginPath();
+    ctx.moveTo(115, 200);
+    ctx.lineTo(cx1 - outerRadius, 200);
+    ctx.moveTo(cx1 - outerRadius - 5, 195);
+    ctx.lineTo(cx1 - outerRadius, 200);
+    ctx.lineTo(cx1 - outerRadius - 5, 205);
+    ctx.stroke();
+
+    // Dashed equilibrium line
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(cx1 - outerRadius - 15, eqLevelY);
+    ctx.lineTo(cx1 + outerRadius + 15, eqLevelY);
+    ctx.stroke();
+
+    // Dashed L path
+    const centerRadius = (innerRadius + outerRadius) / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx1 - centerRadius, eqLevelY);
+    ctx.lineTo(cx1 - centerRadius, bendCenterY);
+    ctx.arc(cx1, bendCenterY, centerRadius, Math.PI, 0, false);
+    ctx.lineTo(cx1 + centerRadius, eqLevelY);
+    ctx.stroke();
+
+    // Arrows for L
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(cx1 - centerRadius - 5, eqLevelY + 5);
+    ctx.lineTo(cx1 - centerRadius, eqLevelY);
+    ctx.lineTo(cx1 - centerRadius + 5, eqLevelY + 5);
+    ctx.moveTo(cx1 + centerRadius - 5, eqLevelY + 5);
+    ctx.lineTo(cx1 + centerRadius, eqLevelY);
+    ctx.lineTo(cx1 + centerRadius + 5, eqLevelY + 5);
+    ctx.stroke();
+    
+    // L label
+    ctx.font = 'italic 18px Arial';
+    ctx.fillText("L", cx1 + centerRadius + 15, 220);
+
+
+    // --- Figure 4.2 ---
+    const cx2 = 600;
+    const displacement = 30;
+    const leftLevelY = eqLevelY - displacement;
+    const rightLevelY = eqLevelY + displacement;
+
+    // Draw liquid and tube
+    drawLiquid(cx2, bendCenterY, innerRadius, outerRadius, leftLevelY, rightLevelY);
+    drawUTube(cx2, bendCenterY, topY, innerRadius, outerRadius);
+    
+    // Labels for Fig 4.2
+    ctx.fillStyle = 'black';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText("Fig. 4.2", cx2, 360);
+
+    // Dashed equilibrium line
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(cx2 - outerRadius - 30, eqLevelY);
+    ctx.lineTo(cx2 + outerRadius + 30, eqLevelY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // 'x' labels and arrows
+    ctx.font = 'italic 18px Arial';
+    // Left 'x'
+    const arrowX_left = cx2 - outerRadius - 20;
+    drawVerticalDoubleArrow(arrowX_left, leftLevelY, eqLevelY, 4);
+    ctx.textAlign = 'right';
+    ctx.fillText('x', arrowX_left - 8, (leftLevelY + eqLevelY) / 2);
+    
+    // Right 'x'
+    const arrowX_right = cx2 + outerRadius + 20;
+    drawVerticalDoubleArrow(arrowX_right, eqLevelY, rightLevelY, 4);
+    ctx.textAlign = 'left';
+    ctx.fillText('x', arrowX_right + 8, (rightLevelY + eqLevelY) / 2);
+
+</script>
+</body>
+</html>

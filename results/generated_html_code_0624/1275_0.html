@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Conducting Spherical Shell Diagram</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      background-color: #ffffff;
+      border: 1px solid #cccccc;
+    }
+  </style>
+</head>
+<body>
+<canvas id="physics-diagram" width="800" height="600"></canvas>
+<script>
+  const canvas = document.getElementById('physics-diagram');
+  const ctx = canvas.getContext('2d');
+
+  // --- Configuration ---
+  const cx = 400;
+  const cy = 300;
+  const R1 = 90;
+  const R2 = 130;
+  const chargeRadius = 4.5;
+
+  // --- Helper Functions ---
+
+  /**
+   * Draws a line with an arrowhead at the 'to' end.
+   * Uses standard mathematical angles (counter-clockwise from positive x-axis).
+   */
+  function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+    const angle = Math.atan2(toY - fromY, toX - fromX);
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+
+    // Arrowhead (filled triangle)
+    const savedFillStyle = ctx.fillStyle;
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 7), toY - headLength * Math.sin(angle - Math.PI / 7));
+    ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 7), toY - headLength * Math.sin(angle + Math.PI / 7));
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = savedFillStyle;
+  }
+  
+  /**
+   * Draws a line with arrowheads at both ends.
+   */
+  function drawDoubleArrowLine(x1, y1, x2, y2) {
+    drawArrow(x2, y2, x1, y1);
+    drawArrow(x1, y1, x2, y2);
+  }
+
+  /**
+   * Draws text with a subscript, e.g., R₁.
+   */
+  function drawTextWithSub(text, sub, x, y) {
+    ctx.save();
+    ctx.font = 'italic 22px "Times New Roman"';
+    ctx.textAlign = 'start';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x, y);
+    const textWidth = ctx.measureText(text).width;
+    ctx.font = 'italic 16px "Times New Roman"';
+    ctx.fillText(sub, x + textWidth, y + 6);
+    ctx.restore();
+  }
+
+  /**
+   * Draws a fraction label, e.g., R₁/2.
+   */
+  function drawFractionLabel(num_base, num_sub, den, x, y) {
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const originalFont = ctx.font;
+      
+      // Numerator R_1
+      drawTextWithSub(num_base, num_sub, x - 10, y - 11);
+      
+      // Denominator 2
+      ctx.font = 'italic 22px "Times New Roman"';
+      ctx.fillText(den, x, y + 13);
+      
+      // Fraction bar
+      ctx.beginPath();
+      ctx.lineWidth = 1;
+      ctx.moveTo(x - 18, y);
+      ctx.lineTo(x + 18, y);
+      ctx.stroke();
+      ctx.restore();
+  }
+
+  // Use a coordinate system where Y grows upwards.
+  function mathToCanvas(x, y) {
+    return { x: x, y: cy * 2 - y };
+  }
+  
+  // Convert math angle (deg) to canvas coordinate point
+  function getPoint(centerX, centerY, radius, angleDeg) {
+    const angleRad = angleDeg * Math.PI / 180;
+    const x = centerX + radius * Math.cos(angleRad);
+    const y = centerY + radius * Math.sin(angleRad); // Standard math
+    return { x, y };
+  }
+
+  // --- Main Drawing ---
+
+  ctx.translate(0, 600);
+  ctx.scale(1, -1); // Flip Y-axis to use standard math coordinates
+  
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+
+  // 1. Draw the conducting shell
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R1, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, R2, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  // 2. Draw axes/guidelines
+  ctx.save();
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 6]);
+
+  // Horizontal axis
+  ctx.beginPath();
+  ctx.moveTo(cx - 2.5 * R2, cy);
+  ctx.lineTo(cx + 2.5 * R2, cy);
+  ctx.stroke();
+
+  // 45-degree axis
+  const diagAxisLength = R1;
+  let p1 = getPoint(cx, cy, diagAxisLength, 45);
+  let p2 = getPoint(cx, cy, diagAxisLength, 45 + 180);
+  ctx.beginPath();
+  ctx.moveTo(p1.x, p1.y);
+  ctx.lineTo(p2.x, p2.y);
+  ctx.stroke();
+  
+  ctx.restore();
+
+  // 3. Draw Diameter lines (as in image)
+  ctx.lineWidth = 1.5;
+  // Diameter for R2 (top-left to bottom-right)
+  let p_d2_1 = getPoint(cx, cy, R2, 125);
+  let p_d2_2 = getPoint(cx, cy, R2, 125 + 180);
+  drawDoubleArrowLine(p_d2_1.x, p_d2_1.y, p_d2_2.x, p_d2_2.y);
+  
+  // Diameter for R1 (top-right to bottom-left)
+  let p_d1_1 = getPoint(cx, cy, R1, 60);
+  let p_d1_2 = getPoint(cx, cy, R1, 60 + 180);
+  drawDoubleArrowLine(p_d1_1.x, p_d1_1.y, p_d1_2.x, p_d1_2.y);
+
+  // 4. Draw Charges
+  ctx.lineWidth = 2;
+  // External charges Q
+  const Q_dist = 2 * R2;
+  let pQ1 = getPoint(cx, cy, Q_dist, 180);
+  let pQ2 = getPoint(cx, cy, Q_dist, 0);
+  ctx.beginPath();
+  ctx.arc(pQ1.x, pQ1.y, chargeRadius, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(pQ2.x, pQ2.y, chargeRadius, 0, 2 * Math.PI);
+  ctx.fill();
+
+  // Internal charges q
+  const q_dist = R1 / 2;
+  let pq1 = getPoint(cx, cy, q_dist, 45);
+  let pq2 = getPoint(cx, cy, q_dist, 45 + 180);
+  ctx.beginPath();
+  ctx.arc(pq1.x, pq1.y, chargeRadius, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(pq2.x, pq2.y, chargeRadius, 0, 2 * Math.PI);
+  ctx.fill();
+
+  // 5. Add Labels (with manual flipping for text)
+  ctx.save();
+  ctx.scale(1, -1); // Flip back for text drawing
+  
+  // Charge labels
+  ctx.font = 'italic 22px "Times New Roman"';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Q', pQ1.x - 20, -pQ1.y);
+  ctx.fillText('Q', pQ2.x + 20, -pQ2.y);
+  ctx.fillText('q', pq1.x + 20, -pq1.y - 5);
+  ctx.fillText('q', pq2.x - 20, -pq2.y + 5);
+
+  // Dimension labels
+  drawTextWithSub('R', '2', p_d2_1.x, -p_d2_1.y - 20);
+  drawTextWithSub('R', '1', p_d1_2.x, -p_d1_2.y + 25);
+
+  // Distance labels: 2R2
+  ctx.font = '18px "Times New Roman"';
+  ctx.fillText('2', cx - 1.5 * R2 - 12, -(cy + 15));
+  drawTextWithSub('R','2', cx - 1.5 * R2, -(cy + 15));
+  ctx.beginPath();
+  ctx.moveTo(cx - 2 * R2, cy + 10); ctx.lineTo(cx - 2 * R2, cy + 20);
+  ctx.moveTo(cx - R2, cy + 10); ctx.lineTo(cx - R2, cy + 20);
+  ctx.moveTo(cx - 2*R2, cy + 15); ctx.lineTo(cx-R2, cy + 15);
+  ctx.stroke();
+
+  ctx.fillText('2', cx + 1.5 * R2 - 12, -(cy + 15));
+  drawTextWithSub('R','2', cx + 1.5 * R2, -(cy + 15));
+  ctx.beginPath();
+  ctx.moveTo(cx + 2 * R2, cy + 10); ctx.lineTo(cx + 2 * R2, cy + 20);
+  ctx.moveTo(cx + R2, cy + 10); ctx.lineTo(cx + R2, cy + 20);
+  ctx.moveTo(cx + 2*R2, cy + 15); ctx.lineTo(cx+R2, cy + 15);
+  ctx.stroke();
+
+
+  // Distance labels: R1/2
+  let p_label_q1 = getPoint(cx, cy, q_dist * 0.5, 45);
+  drawFractionLabel('R', '1', '2', p_label_q1.x + 10, -p_label_q1.y + 20);
+  let p_label_q2 = getPoint(cx, cy, q_dist * 0.5, 225);
+  drawFractionLabel('R', '1', '2', p_label_q2.x - 10, -p_label_q2.y - 20);
+  ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx, -cy);
+  ctx.lineTo(pq1.x, -pq1.y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx, -cy);
+  ctx.lineTo(pq2.x, -pq2.y);
+  ctx.stroke();
+
+  // Angle label
+  ctx.font = '18px "Times New Roman"';
+  ctx.beginPath();
+  ctx.arc(cx, -cy, R1 * 0.4, 0, -45 * Math.PI / 180, true);
+  ctx.stroke();
+  ctx.fillText('45°', cx + R1 * 0.5, -cy + 15);
+
+  // Main text label
+  ctx.font = '24px "SimSun", "STSong"';
+  ctx.fillText('导体球壳', cx, -(cy - R2 - 40));
+
+  ctx.restore();
+</script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Position vs. Time Graph</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsGraph" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsGraph');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Graph parameters
+        const margin = 60;
+        const xMin = 0;
+        const xMax = 10;
+        const yMin = -5;
+        const yMax = 5;
+
+        // Scaling functions to convert graph coordinates to canvas coordinates
+        const xScale = (width - 2 * margin) / (xMax - xMin);
+        const yScale = (height - 2 * margin) / (yMax - yMin);
+        const xOrigin = margin;
+        const yOrigin = margin + (yMax / (yMax - yMin)) * (height - 2 * margin);
+
+        function tx(time) {
+            return xOrigin + (time - xMin) * xScale;
+        }
+
+        function ty(position) {
+            return yOrigin - position * yScale;
+        }
+
+        // --- Drawing Functions ---
+
+        function drawGrid() {
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
+
+            // Vertical grid lines
+            for (let i = xMin; i <= xMax; i++) {
+                ctx.beginPath();
+                ctx.moveTo(tx(i), ty(yMin));
+                ctx.lineTo(tx(i), ty(yMax));
+                ctx.stroke();
+            }
+
+            // Horizontal grid lines
+            for (let i = yMin; i <= yMax; i++) {
+                ctx.beginPath();
+                ctx.moveTo(tx(xMin), ty(i));
+                ctx.lineTo(tx(xMax), ty(i));
+                ctx.stroke();
+            }
+        }
+
+        function drawAxes() {
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+
+            // X-Axis
+            ctx.beginPath();
+            ctx.moveTo(tx(xMin), yOrigin);
+            ctx.lineTo(tx(xMax), yOrigin);
+            ctx.stroke();
+
+            // Y-Axis
+            ctx.beginPath();
+            ctx.moveTo(xOrigin, ty(yMin));
+            ctx.lineTo(xOrigin, ty(yMax));
+            ctx.stroke();
+        }
+
+        function drawLabels() {
+            ctx.fillStyle = '#000000';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.font = 'bold 18px sans-serif';
+
+            // X-Axis Ticks and Label
+            for (let i = xMin; i <= xMax; i += 2) {
+                ctx.fillText(i, tx(i), yOrigin + 8);
+            }
+            ctx.fillText('Time (s)', width / 2, height - margin / 2);
+
+            // Y-Axis Ticks and Label
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            const yLabels = [5, 0, -5];
+            yLabels.forEach(label => {
+                ctx.fillText(label, xOrigin - 10, ty(label));
+            });
+
+            ctx.save();
+            ctx.translate(margin / 2 - 10, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('Position (m)', 0, 0);
+            ctx.restore();
+        }
+
+        function drawCurve() {
+            ctx.beginPath();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3.5;
+
+            // Start point is slightly below zero
+            ctx.moveTo(tx(0), ty(-0.1));
+
+            // Curve up to the peak around t=3.5
+            ctx.bezierCurveTo(tx(1.5), ty(0.0), tx(3.0), ty(4.2), tx(3.5), ty(4.2));
+            
+            // Curve from the peak down to the trough around t=9.3
+            // The control points are chosen to create a flat top and bottom and a steep middle section.
+            ctx.bezierCurveTo(tx(4.0), ty(4.2), tx(7.5), ty(-5.0), tx(9.3), ty(-5.0));
+
+            // Curve up from the trough to the end at t=10
+            ctx.quadraticCurveTo(tx(9.6), ty(-5.0), tx(10), ty(-3.8));
+            
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+        ctx.clearRect(0, 0, width, height);
+        drawGrid();
+        // drawAxes(); // Grid lines already form the axes
+        drawLabels();
+        drawCurve();
+
+    </script>
+</body>
+</html>

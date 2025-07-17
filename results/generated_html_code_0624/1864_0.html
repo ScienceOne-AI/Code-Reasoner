@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fresnel Zones Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="fresnelCanvas" width="800" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('fresnelCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const cx = 350; // Canvas x-coordinate of the origin
+        const cy = 250; // Canvas y-coordinate of the origin
+        const a = 240;  // Pixel distance for 'a' (proportional to 1.5)
+        const b = 160;  // Pixel distance for 'b' (proportional to 1.0)
+        const r1 = 50;  // Radius for the first Fresnel zone boundary
+        const r2 = 70;  // Radius for the second Fresnel zone boundary
+
+        // --- Point Coordinates ---
+        const sx = cx - a;
+        const sy = cy;
+        const px = cx + b;
+        const py =cy;
+
+        // --- Helper function to draw an arrow in the middle of a line segment ---
+        function drawMidArrow(x1, y1, x2, y2) {
+            const size = 8;
+            const arrowAngle = Math.PI / 8;
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.translate(midX, midY);
+            ctx.rotate(angle);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size * Math.tan(arrowAngle));
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size * Math.tan(arrowAngle));
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Drawing ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // 1. Draw Axes
+        ctx.lineWidth = 2;
+        // Z-axis
+        ctx.beginPath();
+        ctx.moveTo(sx - 50, cy);
+        ctx.lineTo(px + 50, cy);
+        ctx.stroke();
+        // Arrowhead for z-axis
+        ctx.beginPath();
+        ctx.moveTo(px + 50, cy);
+        ctx.lineTo(px + 40, cy - 5);
+        ctx.moveTo(px + 50, cy);
+        ctx.lineTo(px + 40, cy + 5);
+        ctx.stroke();
+
+        // X,Y-axis
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 120);
+        ctx.lineTo(cx, cy + 120);
+        ctx.stroke();
+        // Arrowhead for x,y-axis
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 120);
+        ctx.lineTo(cx - 5, cy - 110);
+        ctx.moveTo(cx, cy - 120);
+        ctx.lineTo(cx + 5, cy - 110);
+        ctx.stroke();
+
+        // 2. Draw Rays and their Arrows
+        ctx.lineWidth = 1.5;
+        // Central ray
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(px, py);
+        ctx.stroke();
+        drawMidArrow(sx, sy, px, py);
+
+        // Function to draw a pair of rays for a given radius
+        function drawRayPair(radius) {
+            // Upper ray
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(cx, cy - radius);
+            ctx.lineTo(px, py);
+            ctx.stroke();
+            drawMidArrow(sx, sy, cx, cy - radius);
+            drawMidArrow(cx, cy - radius, px, py);
+
+            // Lower ray
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(cx, cy + radius);
+            ctx.lineTo(px, py);
+            ctx.stroke();
+            drawMidArrow(sx, sy, cx, cy + radius);
+            drawMidArrow(cx, cy + radius, px, py);
+        }
+
+        drawRayPair(r1);
+        drawRayPair(r2);
+
+        // 3. Draw Dimension Lines and Labels
+        const dim_y = cy + 150;
+        const tick_size = 5;
+
+        // Vertical guide lines
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(sx, cy); ctx.lineTo(sx, dim_y + tick_size); // From S
+        ctx.moveTo(px, cy); ctx.lineTo(px, dim_y + tick_size); // From P
+        ctx.moveTo(cx, dim_y - tick_size); ctx.lineTo(cx, dim_y + tick_size); // At origin
+        ctx.stroke();
+
+        // Function to draw a double-headed arrow for dimensions
+        function drawDimensionArrow(x1, y, x2, label) {
+            const arrowSize = 8;
+            const tickHeight = 4;
+            ctx.lineWidth = 1;
+            // Line
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+            // Arrowheads
+            ctx.beginPath();
+            ctx.moveTo(x1 + arrowSize, y - tickHeight);
+            ctx.lineTo(x1, y);
+            ctx.lineTo(x1 + arrowSize, y + tickHeight);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x2 - arrowSize, y - tickHeight);
+            ctx.lineTo(x2, y);
+            ctx.lineTo(x2 - arrowSize, y + tickHeight);
+            ctx.stroke();
+            // Label
+            ctx.font = 'italic 22px Times New Roman';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText(label, (x1 + x2) / 2, y + 8);
+        }
+        
+        drawDimensionArrow(sx, dim_y, cx, 'a');
+        drawDimensionArrow(cx, dim_y, px, 'b');
+
+
+        // 4. Draw Text Labels
+        ctx.font = 'italic bold 24px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('S', sx - 25, sy);
+        ctx.fillText('P', px + 25, py);
+        
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText('z', px + 65, cy + 5);
+        ctx.fillText('x, y', cx + 25, cy - 120);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Waveform Diagram</title>
+</head>
+<body>
+<canvas id="physicsWaveCanvas" width="600" height="400" style="border:1px solid #000;"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsWaveCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const ox = 100; // Origin x in pixels
+    const oy = 200; // Origin y in pixels
+    const scale = 9;  // Pixels per cm
+    ctx.font = '16px Arial';
+    ctx.lineWidth = 1.5;
+
+    // --- Helper function to draw an arrow ---
+    function drawArrow(fromX, fromY, toX, toY, headLength = 8) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // --- Draw Axes ---
+    function drawAxes() {
+        ctx.strokeStyle = '#000';
+        ctx.fillStyle = '#000';
+        
+        // X-axis
+        drawArrow(20, oy, 580, oy);
+        ctx.fillText('x/cm', 575, oy + 20);
+
+        // Y-axis
+        drawArrow(ox, 380, ox, 20);
+        ctx.fillText('y/cm', ox - 60, 30);
+        
+        // Origin label
+        ctx.fillText('0', ox - 15, oy + 18);
+    }
+
+    // --- Draw Waveform ---
+    function drawWave() {
+        ctx.beginPath();
+        ctx.strokeStyle = 'black';
+        let firstPoint = true;
+
+        // Wave equation for the snapshot: y(x) = 10 * cos((pi/20)x + 4pi/3)
+        for (let x_cm = -8; x_cm <= 42; x_cm += 0.1) {
+            const y_cm = 10 * Math.cos((Math.PI / 20) * x_cm + 4 * Math.PI / 3);
+            const px = ox + x_cm * scale;
+            const py = oy - y_cm * scale;
+            if (firstPoint) {
+                ctx.moveTo(px, py);
+                firstPoint = false;
+            } else {
+                ctx.lineTo(px, py);
+            }
+        }
+        ctx.stroke();
+    }
+    
+    // --- Draw Labels and Annotations ---
+    function drawAnnotations() {
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        
+        // Y-axis ticks and labels
+        const y_peak_val = 10;
+        const y_start_val = -5;
+        const py_peak = oy - y_peak_val * scale;
+        const py_start = oy - y_start_val * scale;
+        
+        ctx.fillText('10', ox - 25, py_peak + 5);
+        ctx.fillText('-5', ox - 25, py_start + 5);
+
+        // Peak position
+        const x_peak_cm = 40 / 3;
+        const px_peak = ox + x_peak_cm * scale;
+
+        // Dashed line from y-axis to peak
+        ctx.beginPath();
+        ctx.setLineDash([4, 2]);
+        ctx.moveTo(ox, py_peak);
+        ctx.lineTo(px_peak, py_peak);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // P and Q points and labels
+        const x_p_cm = 10 / 3;
+        const x_q_cm = 70 / 3;
+        const px_p = ox + x_p_cm * scale;
+        const px_q = ox + x_q_cm * scale;
+        
+        ctx.fillText('P', px_p - 5, oy + 20);
+        ctx.fillText('Q', px_q - 5, oy + 20);
+
+        // Dimension line for 20 cm
+        const arrow_y = oy + 40;
+        ctx.beginPath();
+        ctx.moveTo(px_p, arrow_y - 10);
+        ctx.lineTo(px_p, arrow_y + 10);
+        ctx.moveTo(px_q, arrow_y - 10);
+        ctx.lineTo(px_q, arrow_y + 10);
+        ctx.stroke();
+        drawArrow(px_p, arrow_y, px_q, arrow_y);
+        drawArrow(px_q, arrow_y, px_p, arrow_y);
+        ctx.fillText('20', (px_p + px_q) / 2 - 10, arrow_y - 5);
+
+        // Propagation velocity arrow 'u'
+        ctx.font = 'italic bold 18px Arial';
+        drawArrow(ox + 30 * scale, 60, ox + 22 * scale, 60);
+        ctx.fillText('u', ox + 32 * scale, 68);
+        
+        // Bottom label
+        ctx.font = '18px KaiTi'; // A font that supports Chinese characters
+        ctx.fillText('习题 11-9 图', 250, 380);
+    }
+    
+    // --- Main drawing execution ---
+    drawAxes();
+    drawWave();
+    drawAnnotations();
+
+</script>
+</body>
+</html>

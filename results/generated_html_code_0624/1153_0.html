@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Denisyuk Hologram Recording</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="550"></canvas>
+    <script>
+        window.onload = function() {
+            const canvas = document.getElementById('physicsCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Helper function to draw an arrow on a line segment
+            function drawArrow(x1, y1, x2, y2, size = 6) {
+                const angle = Math.atan2(y2 - y1, x2 - x1);
+                
+                // Draw the line itself
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+
+                // Draw the arrowhead at the end (x2, y2)
+                ctx.save();
+                ctx.translate(x2, y2);
+                ctx.rotate(angle);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-size, -size / 2);
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-size, size / 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+            
+            function drawLine(x1, y1, x2, y2) {
+                 ctx.beginPath();
+                 ctx.moveTo(x1, y1);
+                 ctx.lineTo(x2, y2);
+                 ctx.stroke();
+            }
+            
+            function addArrowToLine(x, y, angle, size=6) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-size, -size / 2);
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-size, size / 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // --- Main Drawing ---
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // --- Photographic Plate (P) ---
+            const p = { x: 350, y: 80, w: 120, h: 380 };
+            ctx.fillStyle = '#E0E0E0';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            ctx.strokeRect(p.x, p.y, p.w, p.h);
+            ctx.fillStyle = 'black';
+            ctx.font = '24px serif';
+            ctx.fillText('P', p.x + p.w / 2 - 10, p.y + p.h + 30);
+
+            // --- Scattering Object (S) ---
+            const s = {
+                x_left_outer: 510, x_left_inner: 530, x_right: 580,
+                y_top: 220, y_bottom: 330,
+                y_neck_top: 260, y_neck_bottom: 290
+            };
+            ctx.fillStyle = '#555555';
+            ctx.beginPath();
+            ctx.moveTo(s.x_left_outer, s.y_top);
+            ctx.lineTo(s.x_left_inner, s.y_neck_top);
+            ctx.lineTo(s.x_left_inner, s.y_neck_bottom);
+            ctx.lineTo(s.x_left_outer, s.y_bottom);
+            ctx.lineTo(s.x_right, s.y_bottom);
+            ctx.lineTo(s.x_right, s.y_top);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = 'black';
+            ctx.font = '24px serif';
+            ctx.fillText('S', s.x_left_inner + 15, s.y_top - 15);
+
+            // --- Light Rays ---
+            ctx.lineWidth = 1.5;
+
+            // Top angled ray
+            const r1_p1 = { x: 200, y: 120 };
+            const r1_p2 = { x: 350, y: 170 };
+            const r1_p3 = { x: 470, y: 200 };
+            const r1_p4 = { x: 510, y: 220 };
+            drawLine(r1_p1.x, r1_p1.y, r1_p2.x, r1_p2.y);
+            drawLine(r1_p2.x, r1_p2.y, r1_p3.x, r1_p3.y);
+            drawLine(r1_p3.x, r1_p3.y, r1_p4.x, r1_p4.y);
+            addArrowToLine(275, 145, Math.atan((r1_p2.y-r1_p1.y)/(r1_p2.x-r1_p1.x)));
+            addArrowToLine(410, 185, Math.atan((r1_p3.y-r1_p2.y)/(r1_p3.x-r1_p2.x)));
+            addArrowToLine(490, 210, Math.atan((r1_p4.y-r1_p3.y)/(r1_p4.x-r1_p3.x)));
+
+            // Center horizontal ray
+            const r2_y = 275;
+            drawLine(50, r2_y, s.x_left_inner, r2_y);
+            addArrowToLine(150, r2_y, 0);
+            addArrowToLine(430, r2_y, 0);
+
+            // Bottom angled ray
+            const r3_p1 = { x: 150, y: 320 };
+            const r3_p2 = { x: 350, y: 370 };
+            const r3_p3 = { x: 470, y: 390 };
+            const r3_p4_visual = { x: 510, y: 325 };
+            drawLine(r3_p1.x, r3_p1.y, r3_p2.x, r3_p2.y);
+            drawLine(r3_p2.x, r3_p2.y, r3_p3.x, r3_p3.y);
+            drawLine(r3_p3.x, r3_p3.y, r3_p4_visual.x, r3_p4_visual.y);
+            addArrowToLine(250, 345, Math.atan((r3_p2.y-r3_p1.y)/(r3_p2.x-r3_p1.x)));
+            addArrowToLine(410, 380, Math.atan((r3_p3.y-r3_p2.y)/(r3_p3.x-r3_p2.x)));
+            addArrowToLine(490, 357.5, Math.atan((r3_p4_visual.y-r3_p3.y)/(r3_p4_visual.x-r3_p3.x)));
+
+            // Another horizontal ray
+            const r4_y = 420;
+            drawLine(50, r4_y, p.x + p.w, r4_y);
+            addArrowToLine(150, r4_y, 0);
+            addArrowToLine(400, r4_y, 0);
+            
+            // --- Angle α₀ ---
+            ctx.font = '20px serif';
+            const angle_center = {x: r1_p2.x, y: r1_p2.y};
+            
+            ctx.save();
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(angle_center.x - 50, angle_center.y);
+            ctx.lineTo(angle_center.x, angle_center.y);
+            ctx.stroke();
+            ctx.restore();
+
+            const ray_angle = Math.atan2(r1_p1.y - angle_center.y, r1_p1.x - angle_center.x);
+            ctx.beginPath();
+            ctx.arc(angle_center.x, angle_center.y, 25, ray_angle, Math.PI);
+            ctx.stroke();
+            ctx.fillText('α', angle_center.x - 40, angle_center.y - 5);
+            ctx.font = '14px serif';
+            ctx.fillText('0', angle_center.x - 32, angle_center.y);
+
+            // --- Interference Fringes ---
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(p.x, p.y, p.w, p.h);
+            ctx.clip();
+            
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'black';
+            const fringe_slope = -3.5; 
+            for (let i = 0; i < 7; i++) {
+                const c = 1600 + i * 45; 
+                const y1 = p.y;
+                const x1 = (y1 - c) / fringe_slope;
+                const y2 = p.y + p.h;
+                const x2 = (y2 - c) / fringe_slope;
+                
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // --- Period Λ ---
+            ctx.lineWidth = 1;
+            ctx.font = '24px serif';
+            ctx.fillText('Λ', 485, 125);
+            
+            const perp_slope = -1 / fringe_slope;
+            const p1_start = { x: 450, y: 105 };
+            const p1_end = { x: p1_start.x + 20, y: p1_start.y + 20 * perp_slope };
+            const p2_start = { x: 435, y: 158 };
+            const p2_end = { x: p2_start.x + 20, y: p2_start.y + 20 * perp_slope };
+
+            ctx.save();
+            ctx.setLineDash([3, 3]);
+            drawLine(p1_start.x, p1_start.y, p1_end.x, p1_end.y);
+            drawLine(p2_start.x, p2_start.y, p2_end.x, p2_end.y);
+            ctx.restore();
+
+            const arrow_start = {x: 460, y: 112};
+            const arrow_end = {x: 445, y: 153};
+            ctx.lineWidth = 1.5;
+            drawArrow(arrow_start.x, arrow_start.y, arrow_end.x, arrow_end.y, 5);
+            drawArrow(arrow_end.x, arrow_end.y, arrow_start.x, arrow_start.y, 5);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram Fig. 3.26</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="450" height="420"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.font = '22px "Times New Roman"';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper functions ---
+
+        function drawResistor(ctx, x, y_coord1, y_coord2) {
+            const y_start = Math.min(y_coord1, y_coord2);
+            const y_end = Math.max(y_coord1, y_coord2);
+            const w = 12;
+            const len = y_end - y_start;
+            const leadRatio = 0.2;
+            const lead = len * leadRatio;
+            const zigZagLen = len - 2 * lead;
+            
+            const y1 = y_start + lead;
+            const y2 = y_end - lead;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y_start);
+            ctx.lineTo(x, y1);
+            ctx.lineTo(x - w, y1 + zigZagLen * 1 / 6);
+            ctx.lineTo(x + w, y1 + zigZagLen * 3 / 6);
+            ctx.lineTo(x - w, y1 + zigZagLen * 5 / 6);
+            ctx.lineTo(x, y2);
+            ctx.lineTo(x, y_end);
+            ctx.stroke();
+        }
+
+        function drawInductor(ctx, x, y, length) {
+            const loops = 4;
+            const loopRadius = 12;
+            const leadLength = (length - loops * 2 * loopRadius) / 2;
+            
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + leadLength, y);
+            let currentX = x + leadLength;
+            for (let i = 0; i < loops; i++) {
+                ctx.arc(currentX + loopRadius, y, loopRadius, Math.PI, 0, false);
+                currentX += 2 * loopRadius;
+            }
+            ctx.moveTo(currentX, y); // Resets the current path point after arc
+            ctx.lineTo(x + length, y);
+            ctx.stroke();
+        }
+
+        function drawBattery(ctx, x, y_center, height) {
+            const shortLineWidth = 20;
+            const longLineWidth = 40;
+            
+            // Positive pole (long, thin)
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(x - longLineWidth / 2, y_center - height / 2);
+            ctx.lineTo(x + longLineWidth / 2, y_center - height / 2);
+            ctx.stroke();
+
+            // Negative pole (short, thick)
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(x - shortLineWidth / 2, y_center + height / 2);
+            ctx.lineTo(x + shortLineWidth / 2, y_center + height / 2);
+            ctx.stroke();
+
+            ctx.lineWidth = 2.5; // Reset to default
+        }
+        
+        function drawGround(ctx, x, y) {
+            const width = 30;
+            const spacing = 6;
+            ctx.beginPath();
+            ctx.moveTo(x, y-10);
+            ctx.lineTo(x, y);
+            for (let i = 0; i < 3; i++) {
+                ctx.moveTo(x - (width - i * 10) / 2, y + i * spacing);
+                ctx.lineTo(x + (width - i * 10) / 2, y + i * spacing);
+            }
+            ctx.stroke();
+        }
+
+        function drawArrowhead(ctx, x, y, angle, size) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - size * Math.cos(angle - Math.PI / 6), y - size * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - size * Math.cos(angle + Math.PI / 6), y - size * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        // --- Main Drawing ---
+        
+        // Set white background
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "black";
+        
+        // Coordinates
+        const x1 = 100, x2 = 220, x3 = 380;
+        const y_top = 100, y_mid = 150, y_batt_top = 250, y_batt_bot = 300, y_gnd = 350;
+
+        // Left Branch
+        ctx.beginPath();
+        ctx.moveTo(x1, y_gnd);
+        ctx.lineTo(x1, y_batt_bot);
+        ctx.moveTo(x1, y_batt_top);
+        ctx.lineTo(x1, y_mid);
+        ctx.stroke();
+        drawBattery(ctx, x1, (y_batt_top + y_batt_bot) / 2, y_batt_bot - y_batt_top);
+        drawResistor(ctx, x1, y_mid, y_batt_top);
+        ctx.fillText("1V", x1 + 30, (y_batt_top + y_batt_bot) / 2);
+        ctx.fillText("1 Ω", x1 + 25, (y_mid + y_batt_top) / 2);
+        ctx.beginPath();
+        ctx.arc(x1, y_mid, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText("A", x1 - 30, y_mid);
+
+        // Middle Branch
+        drawResistor(ctx, x2, y_mid, y_gnd);
+        ctx.font = '22px "Times New Roman"';
+        ctx.fillText("R = 10", x2 + 20, y_mid + 100);
+        ctx.font = '16px "Times New Roman"';
+        ctx.fillText("4", x2 + 88, y_mid + 92);
+        ctx.font = '22px "Times New Roman"';
+        ctx.fillText("Ω", x2 + 100, y_mid + 100);
+        ctx.beginPath();
+        ctx.arc(x2, y_mid, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText("B", x2 + 10, y_mid - 20);
+        
+        // Right Branch & Top
+        const inductor_start_x = 150;
+        const inductor_end_x = 330;
+        drawInductor(ctx, inductor_start_x, y_top, inductor_end_x - inductor_start_x);
+        ctx.fillText("L = 1H", (inductor_start_x + inductor_end_x) / 2 - 30, y_top - 35);
+        ctx.beginPath();
+        ctx.moveTo(inductor_end_x, y_top);
+        ctx.lineTo(x3, y_top);
+        ctx.lineTo(x3, y_gnd);
+        ctx.stroke();
+        
+        // Switch S
+        const switch_pivot_x = inductor_start_x;
+        const switch_pivot_y = y_top;
+        ctx.beginPath();
+        ctx.moveTo(switch_pivot_x, switch_pivot_y);
+        ctx.lineTo(x1, y_mid); // Arm to A
+        ctx.stroke();
+        ctx.fillText("S", switch_pivot_x - 55, switch_pivot_y - 5);
+        
+        // Bottom Ground
+        ctx.beginPath();
+        ctx.moveTo(x1, y_gnd);
+        ctx.lineTo(x3, y_gnd);
+        ctx.stroke();
+        drawGround(ctx, x2, y_gnd);
+
+        // Current Arrow
+        const arrow_cx = (x2 + x3) / 2;
+        const arrow_cy = (y_top + y_gnd) / 2 - 20;
+        const arrow_r = 65;
+        const start_angle = Math.PI * 0.3;
+        const end_angle = Math.PI * 1.9;
+        ctx.beginPath();
+        ctx.arc(arrow_cx, arrow_cy, arrow_r, start_angle, end_angle, false); // false for clockwise
+        ctx.stroke();
+        const arrow_head_x = arrow_cx + arrow_r * Math.cos(end_angle);
+        const arrow_head_y = arrow_cy + arrow_r * Math.sin(end_angle);
+        const tangent_angle = end_angle + Math.PI / 2;
+        drawArrowhead(ctx, arrow_head_x, arrow_head_y, tangent_angle, 12);
+
+        // Figure Caption
+        ctx.font = '22px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.fillText("Fig. 3.26", canvas.width / 2, canvas.height - 20);
+    </script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spring-Mass System</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="300"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Drawing Parameters ---
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Geometric Parameters ---
+        const y_center = 120; // Vertical center for the spring-mass system
+        const marginX = 60;
+        const drawingWidth = canvasWidth - 2 * marginX;
+        const a = drawingWidth / 3;
+
+        const x_wall_left = marginX;
+        const x_mass1 = x_wall_left + a;
+        const x_mass2 = x_mass1 + a;
+        const x_wall_right = x_mass2 + a;
+
+        const massRadius = 8;
+        const springAmplitude = 12;
+        const springCoils = 12;
+
+        const y_dim_line = y_center + 50;
+        const tickHeight = 10;
+
+        // --- Drawing Functions ---
+
+        /**
+         * Draws a rigid wall with hatching.
+         * @param {number} x - The x-coordinate of the wall's inner edge.
+         * @param {number} yCenter - The vertical center of the wall.
+         * @param {number} height - The total height of the wall.
+         */
+        function drawWall(x, yCenter, height) {
+            const yTop = yCenter - height / 2;
+            const yBottom = yCenter + height / 2;
+            const hatchLength = 12;
+            const hatchCount = 7;
+            const hatchSpacing = height / (hatchCount -1);
+
+            // Main vertical line
+            ctx.beginPath();
+            ctx.moveTo(x, yTop);
+            ctx.lineTo(x, yBottom);
+            ctx.stroke();
+
+            // Hatching lines (top-right to bottom-left)
+            ctx.beginPath();
+            for (let i = 0; i < hatchCount; i++) {
+                const y = yTop + i * hatchSpacing;
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + (x < canvasWidth / 2 ? -hatchLength : hatchLength), y + hatchLength);
+            }
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a spring (coil) between two points.
+         * @param {number} x1 - Start x-coordinate.
+         * @param {number} y - The y-coordinate (axis of the spring).
+         * @param {number} x2 - End x-coordinate.
+         * @param {number} coils - Number of coils.
+         * @param {number} amplitude - The radius of the coils.
+         */
+        function drawSpring(x1, y, x2, coils, amplitude) {
+            const length = x2 - x1;
+            const numPoints = Math.max(80, coils * 8); // Ensure smoothness
+            const angleFactor = (coils * 2 * Math.PI) / length;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            for (let i = 1; i <= numPoints; i++) {
+                const currentX = x1 + (i / numPoints) * length;
+                const currentY = y + amplitude * Math.sin((currentX - x1) * angleFactor);
+                ctx.lineTo(currentX, currentY);
+            }
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a mass (filled circle).
+         * @param {number} x - The x-coordinate of the mass center.
+         * @param {number} y - The y-coordinate of the mass center.
+         * @param {number} radius - The radius of the mass.
+         */
+        function drawMass(x, y, radius) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+
+        // --- Main Drawing Logic ---
+
+        // 1. Draw the walls
+        drawWall(x_wall_left, y_center, 80);
+        drawWall(x_wall_right, y_center, 80);
+
+        // 2. Draw the springs
+        drawSpring(x_wall_left, y_center, x_mass1, springCoils, springAmplitude);
+        drawSpring(x_mass1, y_center, x_mass2, springCoils, springAmplitude);
+        drawSpring(x_mass2, y_center, x_wall_right, springCoils, springAmplitude);
+
+        // 3. Draw the masses
+        drawMass(x_mass1, y_center, massRadius);
+        drawMass(x_mass2, y_center, massRadius);
+
+        // 4. Draw the dimension lines and labels
+        // Horizontal base line
+        ctx.beginPath();
+        ctx.moveTo(x_wall_left, y_dim_line);
+        ctx.lineTo(x_wall_right, y_dim_line);
+        ctx.stroke();
+        
+        // Vertical connector lines and ticks
+        // Left wall tick
+        ctx.beginPath();
+        ctx.moveTo(x_wall_left, y_dim_line - tickHeight / 2);
+        ctx.lineTo(x_wall_left, y_dim_line + tickHeight / 2);
+        ctx.stroke();
+        
+        // Mass 1 connector and tick
+        ctx.beginPath();
+        ctx.moveTo(x_mass1, y_center);
+        ctx.lineTo(x_mass1, y_dim_line + tickHeight / 2);
+        ctx.stroke();
+
+        // Mass 2 connector and tick
+        ctx.beginPath();
+        ctx.moveTo(x_mass2, y_center);
+        ctx.lineTo(x_mass2, y_dim_line + tickHeight / 2);
+        ctx.stroke();
+
+        // Right wall tick
+        ctx.beginPath();
+        ctx.moveTo(x_wall_right, y_dim_line - tickHeight / 2);
+        ctx.lineTo(x_wall_right, y_dim_line + tickHeight / 2);
+        ctx.stroke();
+
+        // Arrow-like marks on dimension line
+        function drawDimArrow(x) {
+            ctx.beginPath();
+            ctx.moveTo(x - 5, y_dim_line - 5);
+            ctx.lineTo(x, y_dim_line);
+            ctx.lineTo(x + 5, y_dim_line - 5);
+            ctx.stroke();
+        }
+        // In the original, the arrows are subtle. We use simple labels.
+
+        // Labels 'a'
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('a', (x_wall_left + x_mass1) / 2, y_dim_line - 5);
+        ctx.fillText('a', (x_mass1 + x_mass2) / 2, y_dim_line - 5);
+        ctx.fillText('a', (x_mass2 + x_wall_right) / 2, y_dim_line - 5);
+
+        // 5. Draw the caption
+        ctx.font = 'bold 20px serif';
+        ctx.textBaseline = 'top';
+        ctx.fillText('Fig. 2.42.', canvasWidth / 2, 240);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram 8-2</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // --- Configuration ---
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '18px sans-serif';
+        ctx.textAlign = 'center';
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a resistor.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x - The x-coordinate of the center.
+         * @param {number} y - The y-coordinate of the center.
+         * @param {number} w - The width of the resistor.
+         * @param {number} h - The height of the resistor.
+         * @param {string} label - The text label for the resistor.
+         * @param {string} labelPos - The position of the label ('above' or 'below').
+         */
+        function drawResistor(ctx, x, y, w, h, label, labelPos = 'above') {
+            ctx.strokeRect(x - w / 2, y - h / 2, w, h);
+            const yOffset = (labelPos === 'above') ? -h/2 - 8 : h/2 + 20;
+            ctx.fillText(label, x, y + yOffset);
+        }
+
+        /**
+         * Draws a battery (voltage source).
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x - The x-coordinate of the center.
+         * @param {number} y - The y-coordinate of the center.
+         * @param {number} h - The height of the long plate.
+         * @param {string} label - The text label.
+         * @param {boolean} isReversed - If true, the polarity is reversed (+ on the left).
+         */
+        function drawBattery(ctx, x, y, h, label, isReversed = false) {
+            const shortPlateH = h * 0.6;
+            const gap = 10;
+            const negX = isReversed ? x + gap / 2 : x - gap / 2;
+            const posX = isReversed ? x - gap / 2 : x + gap / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(posX, y - h / 2);
+            ctx.lineTo(posX, y + h / 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(negX, y - shortPlateH / 2);
+            ctx.lineTo(negX, y + shortPlateH / 2);
+            ctx.stroke();
+            
+            ctx.fillText(label, x, y + h / 2 + 20);
+        }
+
+        /**
+         * Draws a node point with a label.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x - The x-coordinate of the node.
+         * @param {number} y - The y-coordinate of the node.
+         * @param {string} label - The text label.
+         * @param {string} labelPos - The position of the label ('above' or 'below').
+         */
+        function drawNode(ctx, x, y, label, labelPos = 'above') {
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.fill();
+            const yOffset = (labelPos === 'above') ? -12 : 25;
+            ctx.fillText(label, x, y + yOffset);
+        }
+
+        /**
+         * Draws the ground symbol.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x - The x-coordinate of the connection point.
+         * @param {number} y - The y-coordinate of the connection point.
+         */
+        function drawGround(ctx, x, y) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + 20);
+            ctx.moveTo(x - 15, y + 20);
+            ctx.lineTo(x + 15, y + 20);
+            ctx.moveTo(x - 10, y + 25);
+            ctx.lineTo(x + 10, y + 25);
+            ctx.moveTo(x - 5, y + 30);
+            ctx.lineTo(x + 5, y + 30);
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+        
+        // Coordinates
+        const yTop = 100;
+        const yR1 = 200;
+        const yR2 = 260;
+        const yMid = 230; // Midpoint between R1 and R2 for wire splitting
+        
+        const xLeft = 50;
+        const xR3 = 125;
+        const xA = 200;
+        const xParallelStart = 250;
+        const xResistorMid = 330;
+        const xParallelEnd = 410;
+        const xB = 460;
+        const xRight = 550;
+
+        // Draw top branch wires
+        ctx.beginPath();
+        ctx.moveTo(xLeft, yTop);
+        ctx.lineTo(xRight, yTop);
+        ctx.stroke();
+        
+        // Draw bottom branch wires (excluding the parallel part)
+        ctx.beginPath();
+        ctx.moveTo(xLeft, yMid);
+        ctx.lineTo(xR3 - 40, yMid);
+        ctx.moveTo(xR3 + 40, yMid);
+        ctx.lineTo(xA, yMid);
+        ctx.moveTo(xB, yMid);
+        ctx.lineTo(xRight, yMid);
+        ctx.stroke();
+
+        // Draw vertical connection wires
+        ctx.beginPath();
+        ctx.moveTo(xLeft, yTop);
+        ctx.lineTo(xLeft, yMid);
+        ctx.moveTo(xRight, yTop);
+        ctx.lineTo(xRight, yMid);
+        ctx.stroke();
+
+        // Draw parallel R1/R2 block
+        ctx.beginPath();
+        ctx.moveTo(xA, yMid);
+        ctx.lineTo(xParallelStart, yMid);
+        ctx.moveTo(xParallelStart, yMid);
+        ctx.lineTo(xParallelStart, yR1);
+        ctx.lineTo(xResistorMid - 40, yR1);
+        ctx.moveTo(xParallelStart, yMid);
+        ctx.lineTo(xParallelStart, yR2);
+        ctx.lineTo(xResistorMid - 40, yR2);
+        
+        ctx.moveTo(xResistorMid + 40, yR1);
+        ctx.lineTo(xParallelEnd, yR1);
+        ctx.lineTo(xParallelEnd, yMid);
+        ctx.lineTo(xB, yMid);
+        ctx.moveTo(xResistorMid + 40, yR2);
+        ctx.lineTo(xParallelEnd, yR2);
+        ctx.lineTo(xParallelEnd, yMid);
+        ctx.stroke();
+        
+        // Draw Components
+        drawResistor(ctx, xResistorMid, yR1, 80, 10, 'R\u2081', 'above');
+        drawResistor(ctx, xResistorMid, yR2, 80, 10, 'R\u2082', 'below');
+        drawResistor(ctx, xR3, yMid, 80, 10, 'R\u2083', 'above');
+        drawResistor(ctx, 300, yTop, 80, 10, 'R\u2084', 'above');
+        
+        drawBattery(ctx, 150, yTop, 20, '\u03B5\u2081, R\u1D62\u2081', false); // E1
+        drawBattery(ctx, 450, yTop, 20, '\u03B5\u2082, R\u1D62\u2082', true);  // E2 (reversed)
+
+        // Draw Nodes and Ground
+        drawNode(ctx, xA, yMid, 'A', 'below');
+        drawNode(ctx, xB, yMid, 'B', 'below');
+        drawNode(ctx, 220, yTop, 'C', 'above');
+        drawNode(ctx, 380, yTop, 'D', 'above');
+        drawGround(ctx, xB, yMid + 3);
+
+        // Draw Caption
+        ctx.font = '20px KaiTi'; // Using a common Chinese font
+        ctx.fillText('习题 8-2 图', canvas.width / 2, 400);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style settings ---
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Define Geometry ---
+        const V1 = { x: 100, y: 350 }; // Left base vertex
+        const V2 = { x: 500, y: 350 }; // Right base vertex
+        // Set apex x-coordinate and calculate height and other apex coord based on angles
+        // The original image has angles that look roughly like 45 and 60 degrees.
+        // Let's find an apex that produces these angles.
+        // h = (x_a - V1.x) * tan(a1)
+        // h = (V2.x - x_a) * tan(a2)
+        // (x_a - 100) * tan(45) = (500 - x_a) * tan(60)
+        // x_a - 100 = (500 - x_a) * 1.732
+        // x_a - 100 = 866 - 1.732 * x_a
+        // 2.732 * x_a = 966
+        // x_a = 353.6
+        const apex = { x: 354, y: 96 }; // Apex vertex (derived from angles)
+
+        // Calculate angles from vertices for accuracy in drawing
+        const alpha1_rad = Math.atan((V1.y - apex.y) / (apex.x - V1.x));
+        const alpha2_rad = Math.atan((V2.y - apex.y) / (V2.x - apex.x));
+
+        const pulleyCenter = { x: apex.x, y: apex.y - 20 };
+        const pulleyRadius = 20;
+
+        // Block dimensions
+        const blockWidth = 60;
+        const blockHeight = 40;
+
+        // --- Draw Components ---
+
+        // 1. Ground line
+        ctx.beginPath();
+        ctx.moveTo(30, V1.y);
+        ctx.lineTo(570, V1.y);
+        ctx.stroke();
+
+        // 2. Wedge (Triangle M)
+        ctx.beginPath();
+        ctx.moveTo(V1.x, V1.y);
+        ctx.lineTo(apex.x, apex.y);
+        ctx.lineTo(V2.x, V2.y);
+        ctx.closePath();
+        ctx.stroke();
+
+        // 3. Pulley
+        // Support
+        ctx.beginPath();
+        ctx.moveTo(apex.x, apex.y);
+        ctx.lineTo(pulleyCenter.x, pulleyCenter.y);
+        ctx.stroke();
+        // Pulley wheel
+        ctx.beginPath();
+        ctx.arc(pulleyCenter.x, pulleyCenter.y, pulleyRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Pulley axle
+        ctx.beginPath();
+        ctx.arc(pulleyCenter.x, pulleyCenter.y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Set font for masses
+        ctx.font = 'italic 22px "Times New Roman"';
+        
+        // 4. Block m1 (left)
+        const dist1 = 130; // distance from apex to block center along the incline
+        const c1 = {
+            x: apex.x - dist1 * Math.cos(alpha1_rad),
+            y: apex.y + dist1 * Math.sin(alpha1_rad)
+        };
+        ctx.save();
+        ctx.translate(c1.x, c1.y);
+        ctx.rotate(-alpha1_rad);
+        ctx.beginPath();
+        ctx.rect(-blockWidth / 2, -blockHeight / 2, blockWidth, blockHeight);
+        ctx.stroke();
+        ctx.fillText("m\u2081", 0, 2); // m with subscript 1
+        ctx.restore();
+
+        // 5. Block m2 (right)
+        const dist2 = 120; // distance from apex to block center along the incline
+        const c2 = {
+            x: apex.x + dist2 * Math.cos(alpha2_rad),
+            y: apex.y + dist2 * Math.sin(alpha2_rad)
+        };
+        ctx.save();
+        ctx.translate(c2.x, c2.y);
+        ctx.rotate(alpha2_rad);
+        ctx.beginPath();
+        ctx.rect(-blockWidth / 2, -blockHeight / 2, blockWidth, blockHeight);
+        ctx.stroke();
+        ctx.fillText("m\u2082", 0, 2); // m with subscript 2
+        ctx.restore();
+
+        // 6. Rope
+        // Left rope tangent point on pulley
+        const tangentAngle1 = Math.PI + alpha1_rad;
+        const t1 = {
+            x: pulleyCenter.x + pulleyRadius * Math.cos(tangentAngle1),
+            y: pulleyCenter.y + pulleyRadius * Math.sin(tangentAngle1)
+        };
+        // Rope attachment point on block m1
+        const attach1 = {
+            x: c1.x + (blockWidth / 2) * Math.cos(-alpha1_rad),
+            y: c1.y + (blockWidth / 2) * Math.sin(-alpha1_rad)
+        };
+        // Right rope tangent point on pulley
+        const tangentAngle2 = -alpha2_rad;
+        const t2 = {
+            x: pulleyCenter.x + pulleyRadius * Math.cos(tangentAngle2),
+            y: pulleyCenter.y + pulleyRadius * Math.sin(tangentAngle2)
+        };
+        // Rope attachment point on block m2
+        const attach2 = {
+            x: c2.x - (blockWidth / 2) * Math.cos(alpha2_rad),
+            y: c2.y - (blockWidth / 2) * Math.sin(alpha2_rad)
+        };
+        ctx.beginPath();
+        ctx.moveTo(attach1.x, attach1.y);
+        ctx.lineTo(t1.x, t1.y);
+        ctx.arc(pulleyCenter.x, pulleyCenter.y, pulleyRadius, tangentAngle1, tangentAngle2);
+        ctx.lineTo(attach2.x, attach2.y);
+        ctx.stroke();
+
+        // --- Draw Labels ---
+
+        // M for the wedge
+        ctx.font = 'italic 30px "Times New Roman"';
+        ctx.fillText("M", apex.x, 250);
+
+        // Angle labels
+        ctx.font = 'italic 22px "Times New Roman"';
+
+        // Angle alpha_1
+        ctx.beginPath();
+        ctx.arc(V1.x, V1.y, 40, -alpha1_rad, 0);
+        ctx.stroke();
+        ctx.fillText("\u03b1\u2081", V1.x + 30, V1.y - 20); // alpha with subscript 1
+
+        // Angle alpha_2
+        ctx.beginPath();
+        ctx.arc(V2.x, V2.y, 40, Math.PI, Math.PI - alpha2_rad, true);
+        ctx.stroke();
+        ctx.fillText("\u03b1\u2082", V2.x - 30, V2.y - 20); // alpha with subscript 2
+
+        // Caption
+        ctx.font = '20px "SimSun"';
+        ctx.fillText("力图 2.16.1", 300, 420);
+    </script>
+</body>
+</html>

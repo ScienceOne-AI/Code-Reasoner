@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Helper function to draw an arrow
+        function drawArrow(x1, y1, x2, y2, headLength = 10) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Base coordinates and dimensions
+        const groundY = 320;
+        const wallX = 50;
+        const blockWidth = 120;
+        const blockHeight = 100;
+        const blockX = 400;
+        const blockY = groundY - blockHeight;
+        
+        // 1. Draw Ground
+        ctx.beginPath();
+        ctx.moveTo(0, groundY);
+        ctx.lineTo(600, groundY);
+        ctx.stroke();
+
+        // Draw ground hash marks
+        for (let i = 10; i < 600; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(i, groundY);
+            ctx.lineTo(i - 10, groundY + 10);
+            ctx.stroke();
+        }
+
+        // 2. Draw Wall
+        ctx.beginPath();
+        ctx.moveTo(wallX, groundY);
+        ctx.lineTo(wallX, groundY - 220);
+        ctx.stroke();
+
+        // Draw wall hash marks
+        for (let i = groundY; i > groundY - 220; i -= 20) {
+            ctx.beginPath();
+            ctx.moveTo(wallX, i);
+            ctx.lineTo(wallX - 10, i - 10);
+            ctx.stroke();
+        }
+
+        // 3. Draw Block
+        ctx.beginPath();
+        ctx.rect(blockX, blockY, blockWidth, blockHeight);
+        ctx.stroke();
+        
+        // Label for block M
+        ctx.font = 'italic 30px Times New Roman';
+        ctx.fillText('M', blockX + blockWidth / 2, blockY + blockHeight / 2);
+
+        // 4. Draw Spring
+        const springY = groundY - blockHeight / 2;
+        const springStartX = wallX;
+        const springEndX = blockX;
+        
+        ctx.beginPath();
+        ctx.moveTo(springStartX, springY);
+        let currentX = springStartX + 20; // Start of coils, straight part
+        ctx.lineTo(currentX, springY);
+        
+        const springLength = springEndX - currentX;
+        const loops = 6;
+        const loopWidth = springLength / loops;
+        const springRadius = 12;
+
+        for (let i = 0; i < loops; i++) {
+            ctx.quadraticCurveTo(currentX + loopWidth / 4, springY - springRadius, currentX + loopWidth / 2, springY);
+            ctx.quadraticCurveTo(currentX + 3 * loopWidth / 4, springY + springRadius, currentX + loopWidth, springY);
+            currentX += loopWidth;
+        }
+        ctx.stroke();
+
+        // Label for spring R
+        ctx.font = 'italic 30px Times New Roman';
+        ctx.fillText('R', wallX + 80, springY - 50);
+
+        // 5. Draw Bullet
+        const bulletY = springY;
+        const bulletX = 250;
+        
+        // Draw bullet shape (oval)
+        ctx.beginPath();
+        ctx.ellipse(bulletX, bulletY, 15, 6, 0, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Label for bullet m
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText('m', bulletX, bulletY - 30);
+        
+        // 6. Draw velocity vector v₀
+        const arrowStartX = bulletX + 25;
+        const arrowEndX = blockX - 40;
+        drawArrow(arrowStartX, bulletY, arrowEndX, bulletY, 12);
+
+        // Label for v₀
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText('v', arrowStartX + 30, bulletY - 25);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('0', arrowStartX + 42, bulletY - 20);
+
+        // 7. Draw dimension d for the block
+        ctx.lineWidth = 1.5;
+        const dY = blockY - 30;
+        const dStartX = blockX;
+        const dEndX = blockX + blockWidth;
+        const midX = (dStartX + dEndX) / 2;
+        const labelGap = 12;
+
+        // Vertical terminators
+        ctx.beginPath();
+        ctx.moveTo(dStartX, dY - 10);
+        ctx.lineTo(dStartX, dY + 10);
+        ctx.moveTo(dEndX, dY - 10);
+        ctx.lineTo(dEndX, dY + 10);
+        ctx.stroke();
+
+        // Left arrow from center pointing left
+        drawArrow(midX - labelGap, dY, dStartX, dY, 10);
+        // Right arrow from center pointing right
+        drawArrow(midX + labelGap, dY, dEndX, dY, 10);
+
+        // Label 'd'
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillStyle = 'black';
+        ctx.fillText('d', midX, dY);
+
+    </script>
+</body>
+</html>

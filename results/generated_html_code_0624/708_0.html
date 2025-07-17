@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Linear Electric Quadrupole</title>
+</head>
+<body>
+<canvas id="quadrupoleCanvas" width="400" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('quadrupoleCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Parameter Definitions ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = 'italic 18px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Geometric parameters
+    const origin = { x: 180, y: 320 };
+    const l = 75;
+    const r = 240;
+    const theta_deg = 42;
+    const theta_rad = theta_deg * Math.PI / 180;
+    const chargeRadius = 5;
+    const pointRadius = 4;
+
+    // --- Drawing Functions ---
+
+    // Function to draw an arrow
+    function drawArrow(ctx, x1, y1, x2, y2) {
+        const headlen = 8;
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const angle = Math.atan2(dy, dx);
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+    }
+
+
+    // --- Main Drawing ---
+
+    // 1. Draw Vertical Axis
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y - l - 50);
+    ctx.lineTo(origin.x, origin.y + l + 50);
+    ctx.stroke();
+
+    // 2. Draw the Three Charges
+    // Middle Charge (-2q)
+    const midChargePos = { x: origin.x, y: origin.y };
+    ctx.beginPath();
+    ctx.arc(midChargePos.x, midChargePos.y, chargeRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = '#555'; // Filled gray circle
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'right';
+    ctx.fillText('-2q', midChargePos.x - 15, midChargePos.y);
+
+    // Top Charge (+q)
+    const topChargePos = { x: origin.x, y: origin.y - l };
+    ctx.beginPath();
+    ctx.arc(topChargePos.x, topChargePos.y, chargeRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white'; // Outlined circle
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+    ctx.fillText('+q', topChargePos.x - 15, topChargePos.y);
+
+    // Bottom Charge (+q)
+    const botChargePos = { x: origin.x, y: origin.y + l };
+    ctx.beginPath();
+    ctx.arc(botChargePos.x, botChargePos.y, chargeRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white'; // Outlined circle
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+    ctx.fillText('+q', botChargePos.x - 15, botChargePos.y);
+
+    // 3. Draw Point P and Line r
+    const pPos = {
+        x: origin.x + r * Math.sin(theta_rad),
+        y: origin.y - r * Math.cos(theta_rad)
+    };
+
+    // Line from origin to P
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(pPos.x, pPos.y);
+    ctx.stroke();
+
+    // Point P
+    ctx.beginPath();
+    ctx.arc(pPos.x, pPos.y, pointRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = '#888';
+    ctx.fill();
+    ctx.stroke();
+    
+    // Label for P
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'left';
+    ctx.fillText('P', pPos.x + 10, pPos.y);
+    
+    // Label for r
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.translate(origin.x + (r / 2) * Math.sin(theta_rad), origin.y - (r / 2) * Math.cos(theta_rad));
+    ctx.rotate(theta_rad);
+    ctx.fillText('r', 0, -12);
+    ctx.restore();
+
+    // 4. Draw Angle θ
+    const arcRadius = 35;
+    ctx.beginPath();
+    ctx.arc(origin.x, origin.y, arcRadius, -Math.PI / 2, -Math.PI / 2 + theta_rad);
+    ctx.stroke();
+    
+    // Label for θ
+    const thetaLabelPos = {
+        x: origin.x + (arcRadius + 15) * Math.sin(theta_rad / 2.2),
+        y: origin.y - (arcRadius + 15) * Math.cos(theta_rad / 2.2)
+    };
+    ctx.textAlign = 'center';
+    ctx.fillText('θ', thetaLabelPos.x, thetaLabelPos.y);
+
+    // 5. Draw Distance l Indicator
+    const lIndicatorX = origin.x + 50;
+    // Horizontal level markers
+    ctx.beginPath();
+    ctx.moveTo(lIndicatorX - 10, midChargePos.y);
+    ctx.lineTo(lIndicatorX + 10, midChargePos.y);
+    ctx.moveTo(lIndicatorX - 10, botChargePos.y);
+    ctx.lineTo(lIndicatorX + 10, botChargePos.y);
+    ctx.stroke();
+
+    // Vertical line with inward-pointing arrows
+    ctx.beginPath();
+    ctx.moveTo(lIndicatorX, midChargePos.y);
+    ctx.lineTo(lIndicatorX, botChargePos.y);
+    // Top arrow (points down)
+    drawArrow(ctx, lIndicatorX, botChargePos.y, lIndicatorX, midChargePos.y);
+    // Bottom arrow (points up)
+    drawArrow(ctx, lIndicatorX, midChargePos.y, lIndicatorX, botChargePos.y);
+    ctx.stroke();
+
+    // Label for l
+    ctx.textAlign = 'left';
+    ctx.fillText('l', lIndicatorX + 15, origin.y + l / 2);
+
+    // 6. Draw Figure Caption
+    ctx.font = '20px KaiTi'; // Use a font that supports Chinese characters
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'black';
+    ctx.fillText('习题 7-25 图', canvas.width / 2, 470);
+
+</script>
+</body>
+</html>

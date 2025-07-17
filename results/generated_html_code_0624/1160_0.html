@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Birefringence Diagram</title>
+<style>
+  body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f0f0; }
+  canvas { display: block; background-color: #fff; border: 1px solid #ccc; }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Function to draw an arrowhead
+  function drawArrowhead(ctx, fromX, fromY, toX, toY, size) {
+    const angle = Math.atan2(toY - fromY, toX - fromX);
+    const x1 = toX - size * Math.cos(angle - Math.PI / 6);
+    const y1 = toY - size * Math.sin(angle - Math.PI / 6);
+    const x2 = toX - size * Math.cos(angle + Math.PI / 6);
+    const y2 = toY - size * Math.sin(angle + Math.PI / 6);
+
+    // Store current line width
+    const originalLineWidth = ctx.lineWidth;
+    // Ensure arrow lines are not too thick
+    ctx.lineWidth = Math.max(1, originalLineWidth / 2);
+
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(x1, y1);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    // Restore original line width
+    ctx.lineWidth = originalLineWidth;
+  }
+
+  // --- Canvas and Drawing parameters ---
+  canvas.width = 500;
+  canvas.height = 450;
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const centerX = 250;
+  const centerY = 180;
+  const lineWidth = 2;
+  const arrowSize = 12;
+  const mainFont = "italic 22px Times New Roman";
+  const subFont = "italic 16px Times New Roman";
+  const color = "black";
+
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.font = mainFont;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // --- Draw interface ---
+  ctx.beginPath();
+  ctx.moveTo(0, centerY);
+  ctx.lineTo(canvas.width, centerY);
+  ctx.stroke();
+
+  // --- Draw normal ---
+  ctx.beginPath();
+  ctx.setLineDash([5, 5]);
+  ctx.moveTo(centerX, 50);
+  ctx.lineTo(centerX, canvas.height - 50);
+  ctx.stroke();
+  ctx.setLineDash([]); // Reset dash pattern
+
+  // --- Incident Ray ---
+  const angleIncidenceRad = 45 * Math.PI / 180;
+  const incidentRayLength = 200;
+  const startX = centerX - incidentRayLength * Math.sin(angleIncidenceRad);
+  const startY = centerY - incidentRayLength * Math.cos(angleIncidenceRad);
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  ctx.lineTo(centerX, centerY);
+  ctx.stroke();
+  // Arrowhead for incident ray (place it slightly before the end)
+  const arrowIncidentTipX = centerX - 10 * Math.sin(angleIncidenceRad);
+  const arrowIncidentTipY = centerY - 10 * Math.cos(angleIncidenceRad);
+  const arrowIncidentFromX = centerX - 20 * Math.sin(angleIncidenceRad);
+  const arrowIncidentFromY = centerY - 20 * Math.cos(angleIncidenceRad);
+  drawArrowhead(ctx, arrowIncidentFromX, arrowIncidentFromY, arrowIncidentTipX, arrowIncidentTipY, arrowSize);
+
+  // --- Angle of incidence (α₀) ---
+  const angleArcRadius = 45;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, angleArcRadius, -Math.PI / 2 - angleIncidenceRad, -Math.PI / 2);
+  ctx.stroke();
+  ctx.fillText("α", 275, 148);
+  ctx.font = subFont;
+  ctx.fillText("0", 285, 153);
+  ctx.font = mainFont; // Reset font
+
+  // --- Refracted Rays (visually exaggerated for clarity) ---
+  const refractedRayLength = 230;
+  const angleRefract1Rad = 28 * Math.PI / 180; // Outer ray (larger angle from normal)
+  const angleRefract2Rad = 20 * Math.PI / 180; // Inner ray (smaller angle from normal)
+
+  // Ray 1 (outer)
+  const endX1 = centerX + refractedRayLength * Math.sin(angleRefract1Rad);
+  const endY1 = centerY + refractedRayLength * Math.cos(angleRefract1Rad);
+  ctx.beginPath();
+  ctx.moveTo(centerX, centerY);
+  ctx.lineTo(endX1, endY1);
+  ctx.stroke();
+  drawArrowhead(ctx, centerX, centerY, endX1, endY1, arrowSize);
+
+  // Ray 2 (inner)
+  const endX2 = centerX + refractedRayLength * Math.sin(angleRefract2Rad);
+  const endY2 = centerY + refractedRayLength * Math.cos(angleRefract2Rad);
+  ctx.beginPath();
+  ctx.moveTo(centerX, centerY);
+  ctx.lineTo(endX2, endY2);
+  ctx.stroke();
+  drawArrowhead(ctx, centerX, centerY, endX2, endY2, arrowSize);
+
+  // --- Angle between refracted rays (Δα₂) ---
+  const angleSepArcRadius = 120;
+  const tickRadiusStart = 115;
+  const tickRadiusEnd = 125;
+  // Canvas angles (from positive x-axis, CCW)
+  const canvasAngle1 = Math.PI / 2 - angleRefract1Rad;
+  const canvasAngle2 = Math.PI / 2 - angleRefract2Rad;
+  
+  // Draw arc
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, angleSepArcRadius, canvasAngle1, canvasAngle2);
+  ctx.stroke();
+
+  // Draw ticks on rays
+  // Tick 1 (on outer ray)
+  ctx.beginPath();
+  ctx.moveTo(centerX + tickRadiusStart * Math.sin(angleRefract1Rad), centerY + tickRadiusStart * Math.cos(angleRefract1Rad));
+  ctx.lineTo(centerX + tickRadiusEnd * Math.sin(angleRefract1Rad), centerY + tickRadiusEnd * Math.cos(angleRefract1Rad));
+  ctx.stroke();
+  // Tick 2 (on inner ray)
+  ctx.beginPath();
+  ctx.moveTo(centerX + tickRadiusStart * Math.sin(angleRefract2Rad), centerY + tickRadiusStart * Math.cos(angleRefract2Rad));
+  ctx.lineTo(centerX + tickRadiusEnd * Math.sin(angleRefract2Rad), centerY + tickRadiusEnd * Math.cos(angleRefract2Rad));
+  ctx.stroke();
+
+  // Label for Δα₂
+  ctx.fillText("Δα", 380, 295);
+  ctx.font = subFont;
+  ctx.fillText("2", 405, 300);
+  ctx.font = mainFont; // Reset font
+
+  // --- Text Labels ---
+  ctx.textAlign = 'left';
+  // n₁
+  ctx.fillText("n", 100, 100);
+  ctx.font = subFont;
+  ctx.fillText("1", 110, 105);
+  ctx.font = mainFont;
+
+  // n₂o
+  ctx.fillText("n", 100, 230);
+  ctx.font = subFont;
+  ctx.fillText("2o", 110, 235);
+  ctx.font = mainFont;
+
+  // n₂e
+  ctx.fillText("n", 100, 260);
+  ctx.font = subFont;
+  ctx.fillText("2e", 110, 265);
+  ctx.font = mainFont;
+
+  // O-O'
+  ctx.beginPath();
+  ctx.arc(100, 315, 2.5, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.fillText("O-O'", 115, 315);
+
+</script>
+</body>
+</html>

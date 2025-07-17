@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Redrawing</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawArrow(ctx, fromx, fromy, tox, toy, label) {
+            const headlen = 10; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+            if (label) {
+                ctx.save();
+                ctx.translate(tox, toy);
+                ctx.rotate(angle);
+                ctx.fillText(label, 10, 10);
+                ctx.restore();
+            }
+        }
+
+        function drawPartA() {
+            ctx.save();
+            ctx.translate(0, 20);
+            ctx.strokeStyle = 'black';
+            ctx.fillStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.font = '20px "Times New Roman"';
+
+            const cx = 200;
+            const cy = 200;
+            const r = 60;
+
+            // Draw wall
+            ctx.beginPath();
+            ctx.moveTo(80, 100);
+            ctx.lineTo(80, 300);
+            ctx.stroke();
+            // Hatching for the wall
+            for (let y = 105; y < 300; y += 15) {
+                ctx.beginPath();
+                ctx.moveTo(80, y);
+                ctx.lineTo(70, y + 10);
+                ctx.stroke();
+            }
+
+            // Draw capstan (circle)
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Draw rope
+            // Horizontal part from wall
+            const startX = 80;
+            const tangencyX = cx - r;
+            ctx.beginPath();
+            ctx.moveTo(startX, cy);
+            ctx.lineTo(tangencyX, cy);
+            ctx.stroke();
+            
+            // Label T=?
+            ctx.fillText("T = ?", 100, cy - 20);
+
+            // Wrapped part of the rope
+            const startAngle = Math.PI; // 9 o'clock
+            const theta_val = Math.PI / 4; // 45 degrees for drawing
+            const endAngle = 3 * Math.PI / 2 + theta_val; // 90 degrees past 12 o'clock
+            
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, startAngle, endAngle);
+            ctx.stroke();
+
+            // Leaving part of the rope
+            const leaveX = cx + r * Math.cos(endAngle);
+            const leaveY = cy + r * Math.sin(endAngle);
+            const tangentAngle = endAngle + Math.PI / 2;
+            const ropeLength = 80;
+            const endRopeX = leaveX + ropeLength * Math.cos(tangentAngle);
+            const endRopeY = leaveY + ropeLength * Math.sin(tangentAngle);
+
+            drawArrow(ctx, leaveX, leaveY, endRopeX, endRopeY);
+            ctx.fillText("F", endRopeX + 5, endRopeY + 5);
+
+
+            // Angle markings
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'black';
+            // Radius to 9 o'clock
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx - r, cy);
+            ctx.stroke();
+            // Radius to 12 o'clock
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx, cy - r);
+            ctx.stroke();
+            // Radius to leave point
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(leaveX, leaveY);
+            ctx.stroke();
+
+            // Right angle symbol
+            const squareSize = 8;
+            ctx.strokeRect(cx - squareSize, cy - squareSize, squareSize, squareSize);
+
+            // Angle theta
+            ctx.beginPath();
+            ctx.arc(cx, cy, 30, 3*Math.PI/2, endAngle);
+            ctx.stroke();
+            const thetaLabelAngle = (3*Math.PI/2 + endAngle)/2;
+            ctx.fillText("\u03B8", cx + 40 * Math.cos(thetaLabelAngle), cy + 40 * Math.sin(thetaLabelAngle));
+
+            ctx.restore();
+
+            // Label (a)
+            ctx.fillText("(a)", cx-20, 360);
+            ctx.restore();
+        }
+
+        function drawPartB() {
+            ctx.save();
+            ctx.translate(580, 220);
+            ctx.strokeStyle = 'black';
+            ctx.fillStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.font = '20px "Times New Roman"';
+
+            const originX = 0;
+            const originY = 0;
+            const axisLen = 80;
+
+            // Draw Axes
+            const angleX = -30 * Math.PI / 180; // up-right
+            const angleY = angleX + Math.PI / 2; // up-left
+            
+            drawArrow(ctx, originX, originY, axisLen * Math.cos(angleX), axisLen * Math.sin(angleX));
+            ctx.fillText("X", axisLen * Math.cos(angleX) + 10, axisLen * Math.sin(angleX));
+
+            drawArrow(ctx, originX, originY, axisLen * Math.cos(angleY), axisLen * Math.sin(angleY));
+            ctx.fillText("Y", axisLen * Math.cos(angleY) + 5, axisLen * Math.sin(angleY) - 10);
+            
+            // Draw forces
+            const forceOriginX = 0;
+            const forceOriginY = 0;
+            const len_f = 60;
+            const len_N = 70;
+            const len_T2 = 100;
+            const len_T1 = 95;
+
+            // Vector f
+            drawArrow(ctx, forceOriginX, forceOriginY, len_f * Math.cos(angleX), len_f * Math.sin(angleX));
+            ctx.fillText("f", (len_f + 10) * Math.cos(angleX), (len_f + 10) * Math.sin(angleX));
+            
+            // Vector N
+            drawArrow(ctx, forceOriginX, forceOriginY, len_N * Math.cos(angleY), len_N * Math.sin(angleY));
+            ctx.fillText("N", len_N * Math.cos(angleY) - 20, len_N * Math.sin(angleY));
+
+            // Vectors T and T+ΔT. In the original, these seem to form an angle Δθ.
+            // Let's place them relative to the axes as in the diagram.
+            const angleT2_deg = -5;
+            const angleT1_deg = -35;
+            const angleT2 = angleT2_deg * Math.PI / 180;
+            const angleT1 = angleT1_deg * Math.PI / 180;
+
+            // Line for T+ΔT
+            drawArrow(ctx, forceOriginX, forceOriginY, len_T2 * Math.cos(angleT2), len_T2 * Math.sin(angleT2));
+            ctx.fillText("T+\u0394T", len_T2 * Math.cos(angleT2) - 30, len_T2 * Math.sin(angleT2) - 10);
+
+            // Line for T
+            drawArrow(ctx, forceOriginX, forceOriginY, len_T1 * Math.cos(angleT1), len_T1 * Math.sin(angleT1));
+            ctx.fillText("T", len_T1 * Math.cos(angleT1) - 20, len_T1 * Math.sin(angleT1) + 20);
+
+            // Angle Δθ
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(forceOriginX, forceOriginY, 40, angleT1, angleT2);
+            ctx.stroke();
+            const angle_d_theta_label = (angleT1 + angleT2) / 2;
+            ctx.fillText("\u0394\u03B8", forceOriginX + 50 * Math.cos(angle_d_theta_label), forceOriginY + 50 * Math.sin(angle_d_theta_label));
+            ctx.restore();
+            
+            // Label (b)
+            ctx.fillText("(b)", 0, 140);
+            
+            ctx.restore();
+        }
+
+
+        // Main drawing function
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawPartA();
+            drawPartB();
+
+            // Figure caption
+            ctx.fillStyle = 'black';
+            ctx.font = '20px "Times New Roman"';
+            ctx.textAlign = 'center';
+            ctx.fillText('Fig. 1.231.', canvas.width / 2, 420);
+        }
+
+        window.onload = draw;
+    </script>
+</body>
+</html>

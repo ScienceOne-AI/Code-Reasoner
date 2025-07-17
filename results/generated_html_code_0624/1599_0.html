@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Double-Slit Diffraction and Interference Setup</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper function to draw arrows ---
+        function drawArrow(fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        // --- Drawing parameters ---
+        const y_axis = 200;
+        const ray_half_height = 60;
+        const y_ray_top = y_axis - ray_half_height;
+        const y_ray_bottom = y_axis + ray_half_height;
+        
+        const x_start = 20;
+        const x_d_label = 120;
+        const x_aperture_ticks = 150;
+        const x_slit_plane = 190;
+        const x_lens_front = 200;
+        const x_lens_back_peak = 240;
+        const x_focal_plane = 650;
+        const x_end = 750;
+
+        const lens_half_height = 80;
+        
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // 1. Draw Optical Axis (as a thin line)
+        ctx.save();
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(0, y_axis);
+        ctx.lineTo(canvas.width, y_axis);
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Draw incoming parallel rays
+        ctx.beginPath();
+        ctx.moveTo(x_start, y_ray_top);
+        ctx.lineTo(x_slit_plane, y_ray_top);
+        ctx.moveTo(x_start, y_axis);
+        ctx.lineTo(x_slit_plane, y_axis);
+        ctx.moveTo(x_start, y_ray_bottom);
+        ctx.lineTo(x_slit_plane, y_ray_bottom);
+        ctx.stroke();
+        drawArrow(x_start + 60, y_ray_top, x_start + 60.1, y_ray_top);
+        drawArrow(x_start + 60, y_axis, x_start + 60.1, y_axis);
+        drawArrow(x_start + 60, y_ray_bottom, x_start + 60.1, y_ray_bottom);
+
+
+        // 3. Draw aperture symbols (ticks and inward arrows)
+        ctx.beginPath();
+        ctx.moveTo(x_aperture_ticks, y_ray_top - 5);
+        ctx.lineTo(x_aperture_ticks, y_ray_top + 5);
+        ctx.stroke();
+        drawArrow(x_aperture_ticks, y_ray_top, x_aperture_ticks, y_axis - 20);
+
+        ctx.beginPath();
+        ctx.moveTo(x_aperture_ticks, y_ray_bottom - 5);
+        ctx.lineTo(x_aperture_ticks, y_ray_bottom + 5);
+        ctx.stroke();
+        drawArrow(x_aperture_ticks, y_ray_bottom, x_aperture_ticks, y_axis + 20);
+        
+        // 4. Draw the label 'd'
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.fillText('d', x_d_label - 15, y_ray_top - 28);
+        ctx.beginPath();
+        ctx.moveTo(x_d_label - 30, y_ray_top - 35);
+        ctx.lineTo(x_d_label, y_ray_top - 35);
+        ctx.moveTo(x_d_label, y_ray_top - 35);
+        ctx.lineTo(x_d_label, y_ray_top);
+        ctx.stroke();
+        drawArrow(x_d_label, y_ray_top-1, x_d_label, y_ray_top, 8); // Arrowhead only
+
+
+        // 5. Draw the slit plane
+        ctx.save();
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x_slit_plane, y_axis - lens_half_height - 10);
+        ctx.lineTo(x_slit_plane, y_axis + lens_half_height + 10);
+        ctx.stroke();
+        // Plus sign
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'white'; // To create a cutout effect
+        ctx.beginPath();
+        ctx.moveTo(x_slit_plane, y_axis - 6);
+        ctx.lineTo(x_slit_plane, y_axis + 6);
+        ctx.moveTo(x_slit_plane - 6, y_axis);
+        ctx.lineTo(x_slit_plane + 6, y_axis);
+        ctx.stroke();
+        ctx.restore();
+
+
+        // 6. Draw the plano-convex lens
+        ctx.beginPath();
+        ctx.moveTo(x_lens_front, y_axis - lens_half_height);
+        ctx.lineTo(x_lens_front, y_axis + lens_half_height);
+        ctx.quadraticCurveTo(x_lens_back_peak + 20, y_axis, x_lens_front, y_axis - lens_half_height);
+        ctx.closePath();
+        ctx.fillStyle = '#E0E0E0'; // Light gray fill
+        ctx.fill();
+        ctx.stroke();
+        
+        // Rays inside the gap between slit and lens
+        ctx.beginPath();
+        ctx.moveTo(x_slit_plane, y_ray_top);
+        ctx.lineTo(x_lens_front, y_ray_top);
+        ctx.moveTo(x_slit_plane, y_axis);
+        ctx.lineTo(x_lens_front, y_axis);
+        ctx.moveTo(x_slit_plane, y_ray_bottom);
+        ctx.lineTo(x_lens_front, y_ray_bottom);
+        ctx.stroke();
+        
+
+        // 7. Draw refracted rays converging to focal point
+        const x_bend_plane = (x_lens_front + x_lens_back_peak)/2; // Effective plane of bending
+        drawArrow(x_lens_front, y_ray_top, x_focal_plane, y_axis);
+        drawArrow(x_lens_front, y_axis, x_focal_plane, y_axis);
+        drawArrow(x_lens_front, y_ray_bottom, x_focal_plane, y_axis);
+        
+        // 8. Draw focal plane (screen)
+        ctx.beginPath();
+        ctx.moveTo(x_focal_plane, y_axis - 120);
+        ctx.lineTo(x_focal_plane, y_axis + 120);
+        ctx.stroke();
+        drawArrow(x_focal_plane, y_axis - 120, x_focal_plane, y_axis - 120.1, 10); // Vertical axis arrow
+
+        // Labels for focal plane
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.textAlign = 'left';
+        ctx.fillText('x', x_focal_plane + 10, y_axis - 110);
+        ctx.font = '24px Times New Roman';
+        ctx.fillText('F', x_focal_plane - 8, y_axis + 30);
+        
+        // 9. Draw rays diverging after focal point
+        ctx.beginPath();
+        ctx.moveTo(x_focal_plane, y_axis);
+        ctx.lineTo(x_end, y_axis - 15);
+        ctx.moveTo(x_focal_plane, y_axis);
+        ctx.lineTo(x_end, y_axis + 15);
+        ctx.stroke();
+
+        // 10. Draw focal length 'f' label
+        const y_f_label = 320;
+        ctx.beginPath();
+        ctx.moveTo(x_lens_back_peak, y_f_label);
+        ctx.lineTo(x_focal_plane, y_f_label);
+        ctx.moveTo(x_lens_back_peak, y_f_label - 5);
+        ctx.lineTo(x_lens_back_peak, y_f_label + 5);
+        ctx.stroke();
+        drawArrow(x_focal_plane-1, y_f_label, x_focal_plane, y_f_label);
+        
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.fillText('f', (x_lens_back_peak + x_focal_plane) / 2, y_f_label - 10);
+
+    </script>
+</body>
+</html>

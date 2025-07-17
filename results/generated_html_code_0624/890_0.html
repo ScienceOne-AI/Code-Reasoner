@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram 8-2</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="650" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style and font settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        
+        // --- Helper Functions ---
+
+        /**
+         * Draws a resistor on a horizontal line.
+         * @param {number} cx - center x of the resistor.
+         * @param {number} cy - center y of the resistor.
+         * @param {string} label - The text label for the resistor.
+         * @param {string} labelPos - 'above' or 'below'.
+         */
+        function drawResistor(cx, cy, label, labelPos) {
+            const w = 80;
+            const h = 25;
+            // Erase the line segment underneath the resistor
+            ctx.clearRect(cx - w / 2 - 1, cy - h / 2 - 1, w + 2, h + 2);
+            // Draw the resistor box
+            ctx.strokeRect(cx - w / 2, cy - h / 2, w, h);
+
+            // Draw the label
+            ctx.font = 'italic 18px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const labelY = labelPos === 'above' ? cy - h / 2 - 12 : cy + h / 2 + 15;
+            ctx.fillText(label, cx, labelY);
+        }
+
+        /**
+         * Draws a battery on a vertical line.
+         * @param {number} x - The x-coordinate of the battery.
+         * @param {number} y - The center y-coordinate of the battery.
+         * @param {string} label1 - The EMF label (e.g., ℰ₁).
+         * @param {string} label2 - The internal resistance label (e.g., Rᵢ₁).
+         * @param {string} labelPos - 'left' or 'right'.
+         */
+        function drawBattery(x, y, label1, label2, labelPos) {
+            const h = 40; // total height of the battery symbol
+            const longW = 30;
+            const shortW = 15;
+            const positiveY = y - h / 2;
+            const negativeY = y + h / 2;
+            
+            // Erase the line segment underneath
+            ctx.clearRect(x - longW/2 - 1, y - h/2 - 1, longW + 2, h + 2);
+
+            // Draw plates
+            ctx.beginPath();
+            ctx.moveTo(x - longW / 2, positiveY);
+            ctx.lineTo(x + longW / 2, positiveY); // Positive plate
+            ctx.moveTo(x - shortW / 2, negativeY);
+            ctx.lineTo(x + shortW / 2, negativeY); // Negative plate
+            ctx.stroke();
+            
+            // Draw labels
+            ctx.font = 'italic 18px Arial';
+            ctx.textBaseline = 'middle';
+            const labelX = labelPos === 'left' ? x - longW / 2 - 10 : x + longW / 2 + 10;
+            ctx.textAlign = labelPos;
+
+            // Draw main label (e.g., ℰ, R)
+            ctx.fillText(label1, labelX, y - 8);
+            ctx.fillText(label2, labelX, y + 12);
+        }
+
+        /**
+         * Draws a labeled point (a small filled circle).
+         * @param {number} x - The x-coordinate of the point.
+         * @param {number} y - The y-coordinate of the point.
+         * @param {string} label - The label for the point (e.g., 'A').
+         * @param {string} labelPos - 'above', 'below', 'left', 'right'.
+         */
+        function drawPoint(x, y, label, labelPos) {
+            // Draw dot
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Draw label
+            ctx.font = '18px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            switch (labelPos) {
+                case 'above': ctx.fillText(label, x, y - 15); break;
+                case 'below': ctx.fillText(label, x, y + 18); break;
+                case 'left': ctx.textAlign = 'right'; ctx.fillText(label, x - 10, y + 2); break;
+                case 'right': ctx.textAlign = 'left'; ctx.fillText(label, x + 10, y + 2); break;
+            }
+        }
+
+        /**
+         * Draws a ground symbol.
+         * @param {number} x - The x-coordinate of the connection point.
+         * @param {number} y - The y-coordinate of the connection point.
+         */
+        function drawGround(x, y) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + 15);
+            ctx.moveTo(x - 18, y + 15);
+            ctx.lineTo(x + 18, y + 15);
+            ctx.moveTo(x - 11, y + 22);
+            ctx.lineTo(x + 11, y + 22);
+            ctx.moveTo(x - 5, y + 29);
+            ctx.lineTo(x + 5, y + 29);
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+
+        // Define coordinates
+        const yTop = 100;
+        const yR1 = 200;
+        const yBranch = 250;
+        const yR2 = 300;
+        const xBat1 = 100;
+        const xNodeA = 200;
+        const xNodeB = 450;
+        const xBat2 = 550;
+        const xNodeC = 150;
+        const xNodeD = 500;
+        const xRes4Center = (xNodeC + xNodeD) / 2;
+        const xRes12Center = (xNodeA + xNodeB) / 2;
+        const xRes3Center = (xBat1 + xNodeA) / 2;
+        const yBatCenter = (yTop + yBranch) / 2;
+
+        // Draw all connecting wires first
+        ctx.beginPath();
+        // Top wire
+        ctx.moveTo(xBat1, yTop);
+        ctx.lineTo(xBat2, yTop);
+        // Left vertical wire
+        ctx.moveTo(xBat1, yTop);
+        ctx.lineTo(xBat1, yBranch);
+        // Bottom wire
+        ctx.moveTo(xBat1, yBranch);
+        ctx.lineTo(xBat2, yBranch);
+        // Right vertical wire
+        ctx.moveTo(xBat2, yTop);
+        ctx.lineTo(xBat2, yBranch);
+        // Parallel block wires
+        ctx.moveTo(xNodeA, yBranch);
+        ctx.lineTo(xNodeA, yR1);
+        ctx.moveTo(xNodeA, yR1);
+        ctx.lineTo(xNodeB, yR1);
+        ctx.moveTo(xNodeB, yR1);
+        ctx.lineTo(xNodeB, yBranch);
+        ctx.moveTo(xNodeA, yBranch);
+        ctx.lineTo(xNodeA, yR2);
+        ctx.moveTo(xNodeA, yR2);
+        ctx.lineTo(xNodeB, yR2);
+        ctx.moveTo(xNodeB, yR2);
+        ctx.lineTo(xNodeB, yBranch);
+        ctx.stroke();
+
+        // Draw components on top of the wires
+        drawResistor(xRes4Center, yTop, 'R₄', 'above');
+        drawResistor(xRes3Center, yBranch, 'R₃', 'above');
+        drawResistor(xRes12Center, yR1, 'R₁', 'above');
+        drawResistor(xRes12Center, yR2, 'R₂', 'below');
+
+        // Draw batteries
+        drawBattery(xBat1, yBatCenter, 'ℰ₁,', 'Rᵢ₁', 'left');
+        drawBattery(xBat2, yBatCenter, 'ℰ₂,', 'Rᵢ₂', 'right');
+        
+        // Draw labeled points
+        drawPoint(xNodeA, yBranch, 'A', 'left');
+        drawPoint(xNodeB, yBranch, 'B', 'right');
+        drawPoint(xNodeC, yTop, 'C', 'below');
+        drawPoint(xNodeD, yTop, 'D', 'below');
+        
+        // Draw ground symbol
+        drawGround(xNodeB, yBranch);
+
+        // Draw caption
+        ctx.font = '22px "SimSun", "STSong"'; // Using a common Chinese serif font
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 8-2 图', canvas.width / 2, 400);
+
+    </script>
+</body>
+</html>

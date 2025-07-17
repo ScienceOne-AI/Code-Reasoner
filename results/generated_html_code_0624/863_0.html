@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="400" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Parameters
+    const cx = 200;
+    const cy = 205; // Slightly lower to make space for label A
+    const R = 150;
+    const ringThickness = 6;
+
+    // Point coordinates
+    const A = { x: cx, y: cy - R };
+    const C = { x: cx, y: cy + R };
+    // From the problem: AB = 1.6R.
+    // This places B at a specific position on the circle.
+    // Let θ be the angle from the vertical downward direction.
+    // Using law of cosines in triangle OAB (O is center):
+    // AB^2 = OA^2 + OB^2 - 2*OA*OB*cos(∠AOB)
+    // (1.6R)^2 = R^2 + R^2 - 2*R*R*cos(∠AOB)
+    // 2.56R^2 = 2R^2 - 2R^2*cos(∠AOB)
+    // 0.56R^2 = -2R^2*cos(∠AOB)
+    // cos(∠AOB) = -0.28
+    // Let's find the angle relative to the positive x-axis. A is at -90deg or 270deg.
+    // Let's use coordinates relative to the center O. A = (0, -R). B = (x, y).
+    // AB^2 = x^2 + (y - (-R))^2 = x^2 + (y+R)^2 = (1.6R)^2 = 2.56R^2
+    // B is on the circle, so x^2 + y^2 = R^2.
+    // R^2 - y^2 + y^2 + 2yR + R^2 = 2.56R^2
+    // 2R^2 + 2yR = 2.56R^2
+    // 2yR = 0.56R^2
+    // y = 0.28R
+    // x = sqrt(R^2 - y^2) = sqrt(R^2 - (0.28R)^2) = R * sqrt(1 - 0.0784) = R * sqrt(0.9216) = 0.96R
+    const B = { x: cx + 0.96 * R, y: cy + 0.28 * R };
+    
+
+    /**
+     * Draws a spring between two points.
+     * @param {CanvasRenderingContext2D} ctx The canvas context.
+     * @param {number} x1 Start x-coordinate.
+     * @param {number} y1 Start y-coordinate.
+     * @param {number} x2 End x-coordinate.
+     * @param {number} y2 End y-coordinate.
+     * @param {number} coils Number of coils.
+     * @param {number} amplitude Amplitude of the zig-zag.
+     */
+    function drawSpring(ctx, x1, y1, x2, y2, coils, amplitude) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
+
+        ctx.save();
+        ctx.translate(x1, y1);
+        ctx.rotate(angle);
+        
+        const path = new Path2D();
+        path.moveTo(0, 0);
+        const segmentLength = length / coils;
+        for (let i = 0; i < coils; i++) {
+            path.lineTo((i + 0.25) * segmentLength, amplitude);
+            path.lineTo((i + 0.75) * segmentLength, -amplitude);
+        }
+        path.lineTo(length, 0);
+
+        // Drawing with a shaded effect
+        ctx.strokeStyle = '#808080'; // Gray color for depth
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke(path);
+
+        ctx.strokeStyle = 'black'; // Black outline
+        ctx.lineWidth = 1.5;
+        ctx.stroke(path);
+
+        ctx.restore();
+    }
+
+    // 1. Draw the circular ring
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, R + ringThickness, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 2. Draw the spring
+    drawSpring(ctx, A.x, A.y, B.x, B.y, 11, 8);
+
+    // 3. Draw the mass at B
+    ctx.beginPath();
+    ctx.arc(B.x, B.y, 6, 0, 2 * Math.PI);
+    ctx.fillStyle = '#333333'; // Dark gray fill
+    ctx.fill();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // 4. Draw dashed lines
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+
+    // Vertical dashed line AC
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y);
+    ctx.lineTo(C.x, C.y);
+    ctx.stroke();
+
+    // Dashed radius line
+    const rAngle = 5 * Math.PI / 4; // Angle for the radius line in the second quadrant (canvas coordinates)
+    const rEndX = cx + R * Math.cos(rAngle);
+    const rEndY = cy + R * Math.sin(rAngle);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(rEndX, rEndY);
+    ctx.stroke();
+    
+    // Reset line style
+    ctx.setLineDash([]);
+
+    // 5. Draw labels
+    ctx.fillStyle = 'black';
+    ctx.font = '20px Arial';
+    
+    // Label A
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('A', A.x, A.y - 5);
+
+    // Label B
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('B', B.x + 10, B.y);
+    
+    // Label C
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('C', C.x, C.y + 5);
+
+    // Label R
+    ctx.font = 'italic 20px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('R', cx + (R / 2 + 10) * Math.cos(rAngle), cy + (R / 2 + 10) * Math.sin(rAngle));
+
+    // 6. Draw the caption
+    ctx.font = '20px "SimSun", "STSong"'; // Specify Chinese fonts
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('习题 2-19 图', canvas.width / 2, canvas.height - 5);
+
+</script>
+</body>
+</html>

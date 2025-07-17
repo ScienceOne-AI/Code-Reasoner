@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Telescope Optics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="850" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings to emulate the hand-drawn look
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    // Use a bold, simple font similar to the original drawing
+    const mainFontSize = 24;
+    const subFontSize = 18;
+    const font = 'bold';
+    const fontFamily = 'sans-serif';
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Helper Functions ---
+
+    function drawLens(x, y, h, w) {
+        ctx.beginPath();
+        ctx.moveTo(x, y - h / 2);
+        ctx.quadraticCurveTo(x + w, y, x, y + h / 2);
+        ctx.quadraticCurveTo(x - w, y, x, y - h / 2);
+        ctx.stroke();
+    }
+
+    function drawArrow(fromX, fromY, toX, toY) {
+        const headlen = 10; // length of head in pixels
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    function drawLabelWithSubscript(label, sub, x, y) {
+        ctx.font = `${font} ${mainFontSize}px ${fontFamily}`;
+        const labelWidth = ctx.measureText(label).width;
+        ctx.fillText(label, x - labelWidth / 4, y);
+        
+        ctx.font = `${font} ${subFontSize}px ${fontFamily}`;
+        ctx.fillText(sub, x + labelWidth / 2, y + 5);
+    }
+
+    // --- Main Drawing ---
+
+    const y_axis = 225;
+
+    // Positions based on the diagram's proportions
+    const x1 = 160;
+    const d12 = 400;
+    const d23 = 80;
+    const x2 = x1 + d12;
+    const x3 = x2 + d23;
+
+    // --- 1. Draw Principal Axis ---
+    ctx.beginPath();
+    ctx.moveTo(40, y_axis);
+    ctx.lineTo(810, y_axis);
+    ctx.stroke();
+
+    // --- 2. Draw Incoming Light ---
+    ctx.font = `${font} ${mainFontSize}px ${fontFamily}`;
+    drawArrow(60, y_axis - 40, 120, y_axis - 40);
+    drawArrow(60, y_axis + 40, 120, y_axis + 40);
+    ctx.fillText("light", 80, y_axis - 70);
+
+    // --- 3. Draw Lenses ---
+    // Lens L1 (Objective)
+    const h1 = 140, w1 = 25;
+    drawLens(x1, y_axis, h1, w1);
+    ctx.beginPath();
+    ctx.moveTo(x1, y_axis - h1 / 2);
+    ctx.lineTo(x1, y_axis + h1 / 2);
+    ctx.stroke();
+    drawLabelWithSubscript('L', '1', x1, y_axis + h1 / 2 + 25);
+
+    // Lens L2 (Field Lens)
+    const h2 = 60, w2 = 15;
+    drawLens(x2, y_axis, h2, w2);
+    ctx.beginPath();
+    ctx.moveTo(x2, y_axis - h2 / 2);
+    ctx.lineTo(x2, y_axis + h2 / 2);
+    ctx.moveTo(x2 - w2 + 5, y_axis);
+    ctx.lineTo(x2 + w2 - 5, y_axis);
+    ctx.stroke();
+    drawLabelWithSubscript('L', '2', x2, y_axis + h2 / 2 + 25);
+
+    // Lens L3 (Eye Lens)
+    const h3 = 40, w3 = 10;
+    drawLens(x3, y_axis, h3, w3);
+    ctx.beginPath();
+    ctx.moveTo(x3, y_axis - h3 / 2);
+    ctx.lineTo(x3, y_axis + h3 / 2);
+    ctx.moveTo(x3 - w3 + 3, y_axis);
+    ctx.lineTo(x3 + w3 - 3, y_axis);
+    ctx.stroke();
+    drawLabelWithSubscript('L', '3', x3, y_axis + h3 / 2 + 25);
+
+    // --- 4. Draw Dimensions ---
+    const y_dim = y_axis - h1 / 2 - 40;
+    ctx.font = `${font} ${mainFontSize}px ${fontFamily}`;
+
+    // Dimension for 10 cm
+    ctx.beginPath();
+    ctx.moveTo(x1, y_dim);
+    ctx.lineTo(x2, y_dim);
+    ctx.moveTo(x1, y_dim - 10);
+    ctx.lineTo(x1, y_dim + 10);
+    ctx.moveTo(x2, y_dim - 10);
+    ctx.lineTo(x2, y_dim + 10);
+    ctx.stroke();
+    ctx.fillText("10 cm", (x1 + x2) / 2, y_dim - 25);
+
+    // Dimension for 2 cm
+    ctx.beginPath();
+    ctx.moveTo(x2, y_dim);
+    ctx.lineTo(x3, y_dim);
+    ctx.moveTo(x2, y_dim - 10);
+    ctx.lineTo(x2, y_dim + 10);
+    ctx.moveTo(x3, y_dim - 10);
+    ctx.lineTo(x3, y_dim + 10);
+    ctx.stroke();
+    ctx.fillText("2 cm", (x2 + x3) / 2, y_dim - 25);
+
+    // --- 5. Draw the Eye ---
+    const x_eye = x3 + 100;
+    ctx.beginPath();
+    ctx.moveTo(x_eye, y_axis);
+    ctx.lineTo(x_eye + 50, y_axis - 20);
+    ctx.moveTo(x_eye, y_axis);
+    ctx.lineTo(x_eye + 50, y_axis + 20);
+    ctx.stroke();
+    
+    // Pupil and Iris
+    ctx.beginPath();
+    ctx.arc(x_eye + 30, y_axis, 8, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x_eye + 30, y_axis, 4, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Eyebrow
+    ctx.beginPath();
+    ctx.arc(x_eye + 30, y_axis - 15, 20, Math.PI * 1.2, Math.PI * 1.8);
+    ctx.stroke();
+
+    // Line of sight
+    ctx.beginPath();
+    ctx.moveTo(x_eye + 50, y_axis);
+    ctx.lineTo(x_eye + 70, y_axis);
+    ctx.stroke();
+
+    ctx.fillText("eye", x_eye + 25, y_axis + 40);
+
+    // --- 6. Draw Figure Caption ---
+    ctx.fillText("Fig. 1.46", canvas.width / 2, canvas.height - 30);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<canvas id="physicsCanvas" width="400" height="500" style="border:1px solid #d3d3d3;"></canvas>
+
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style settings
+const primaryColor = 'black';
+const pulleyHolderFillColor = 'rgb(220, 220, 220)';
+const lineWidth = 2;
+
+// Clear canvas
+ctx.fillStyle = 'white';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// --- Create a pattern for fills to mimic the texture in the original image ---
+const patternCanvas = document.createElement('canvas');
+const pctx = patternCanvas.getContext('2d');
+patternCanvas.width = 4;
+patternCanvas.height = 4;
+pctx.fillStyle = 'rgb(200, 200, 200)'; // Base gray color
+pctx.fillRect(0, 0, 4, 4);
+pctx.fillStyle = 'rgb(170, 170, 170)'; // Darker dots for texture
+pctx.fillRect(0, 2, 1, 1);
+pctx.fillRect(2, 0, 1, 1);
+const texturePattern = ctx.createPattern(patternCanvas, 'repeat');
+
+
+// --- Define Geometry ---
+const p = { // Pulley
+    x: 200,
+    y: 150,
+    r: 30
+};
+const groundY = 450;
+// X-coordinates for the vertical rope segments, tangent to the pulley
+const ropeAX = p.x - p.r;
+const ropeBX = p.x + p.r;
+
+// Block A
+const blockA = { w: 60, h: 80 }; 
+blockA.x = ropeAX - blockA.w / 2; // Center the block under the rope
+blockA.y = groundY - blockA.h;
+
+// Block B
+const blockB = { w: 40, h: 40 }; 
+blockB.x = ropeBX - blockB.w / 2; // Center the block under the rope
+blockB.y = groundY - blockB.h;
+
+
+// --- Drawing Execution (in layers from back to front) ---
+
+// 1. Ground
+ctx.beginPath();
+ctx.moveTo(50, groundY);
+ctx.lineTo(350, groundY);
+ctx.strokeStyle = primaryColor;
+ctx.lineWidth = lineWidth;
+ctx.stroke();
+// Ground texture (small hatches)
+ctx.lineWidth = 1;
+ctx.strokeStyle = '#aaa';
+for(let i = 0; i < 20; i++) {
+    const x1 = 50 + Math.random() * 300;
+    const y1 = groundY + 3 + Math.random() * 4;
+    const len = 5 + Math.random() * 10;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 + len, y1);
+    ctx.stroke();
+}
+
+// 2. Pulley Holder (drawn first, to be behind the wheel)
+ctx.fillStyle = pulleyHolderFillColor;
+ctx.strokeStyle = primaryColor;
+ctx.lineWidth = lineWidth;
+// Part inside wheel
+ctx.beginPath();
+ctx.rect(p.x - 6, p.y - 15, 12, 30);
+ctx.fill();
+ctx.stroke();
+// Shaft
+ctx.beginPath();
+ctx.rect(p.x - 6, p.y - 50, 12, 35);
+ctx.fill();
+ctx.stroke();
+
+// 3. Pulley Wheel
+ctx.beginPath();
+ctx.arc(p.x, p.y, p.r, 0, 2 * Math.PI);
+ctx.fillStyle = texturePattern; // Use the texture pattern
+ctx.fill();
+ctx.strokeStyle = primaryColor;
+ctx.stroke();
+
+// 4. Blocks
+ctx.fillStyle = texturePattern; // Use the same texture pattern
+ctx.strokeStyle = primaryColor;
+ctx.lineWidth = lineWidth;
+// Block A
+ctx.fillRect(blockA.x, blockA.y, blockA.w, blockA.h);
+ctx.strokeRect(blockA.x, blockA.y, blockA.w, blockA.h);
+// Block B
+ctx.fillRect(blockB.x, blockB.y, blockB.w, blockB.h);
+ctx.strokeRect(blockB.x, blockB.y, blockB.w, blockB.h);
+// Block Labels
+ctx.fillStyle = primaryColor;
+ctx.font = 'bold 24px Arial';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('A', blockA.x + blockA.w/2, blockA.y + blockA.h/2);
+ctx.fillText('B', blockB.x + blockB.w/2, blockB.y + blockB.h/2);
+
+// 5. Rope (drawn over the blocks and pulley wheel)
+ctx.beginPath();
+ctx.strokeStyle = primaryColor;
+ctx.lineWidth = lineWidth;
+ctx.moveTo(ropeAX, blockA.y); // From top of block A
+ctx.lineTo(ropeAX, p.y);      // To pulley tangent point
+ctx.arc(p.x, p.y, p.r, Math.PI, 0); // Over the pulley
+ctx.lineTo(ropeBX, blockB.y); // To top of block B
+ctx.stroke();
+
+// 6. Force Vector
+const forceStart = { x: p.x, y: p.y - 50 };
+const forceEnd = { x: p.x, y: forceStart.y - 40 };
+// Line
+ctx.beginPath();
+ctx.moveTo(forceStart.x, forceStart.y);
+ctx.lineTo(forceEnd.x, forceEnd.y);
+ctx.strokeStyle = primaryColor;
+ctx.lineWidth = lineWidth;
+ctx.stroke();
+// Filled Arrowhead
+ctx.beginPath();
+ctx.moveTo(forceEnd.x, forceEnd.y);
+ctx.lineTo(forceEnd.x - 6, forceEnd.y + 12);
+ctx.lineTo(forceEnd.x + 6, forceEnd.y + 12);
+ctx.closePath();
+ctx.fillStyle = primaryColor;
+ctx.fill();
+// Label 'F'
+ctx.fillStyle = primaryColor;
+ctx.font = 'italic bold 24px Times New Roman';
+ctx.textAlign = 'left';
+ctx.textBaseline = 'middle';
+ctx.fillText('F', forceEnd.x + 10, forceEnd.y + 15);
+
+
+// 7. Caption
+ctx.fillStyle = primaryColor;
+ctx.font = '22px KaiTi';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('习题 1-29 图', 200, groundY + 35);
+
+</script>
+
+</body>
+</html>

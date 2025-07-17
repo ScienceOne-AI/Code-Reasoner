@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Acousto-Optic Diffraction Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="500"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Helper function to draw a line with an arrowhead at the end
+  function drawArrowOnLine(ctx, x1, y1, x2, y2) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    const headlen = 12;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+  }
+
+  // --- Main Drawing ---
+
+  // General settings
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+
+  // Dashed horizontal reference line
+  const centerY = 250;
+  ctx.beginPath();
+  ctx.setLineDash([5, 5]);
+  ctx.moveTo(80, centerY);
+  ctx.lineTo(720, centerY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Acousto-optic crystal (the main gray block)
+  const crystal = {
+    p1: { x: 340, y: 130 }, // top left
+    p2: { x: 490, y: 130 }, // top right
+    p3: { x: 490, y: 370 }, // bottom right
+    p4: { x: 310, y: 370 }  // bottom left
+  };
+  ctx.beginPath();
+  ctx.moveTo(crystal.p1.x, crystal.p1.y);
+  ctx.lineTo(crystal.p2.x, crystal.p2.y);
+  ctx.lineTo(crystal.p3.x, crystal.p3.y);
+  ctx.lineTo(crystal.p4.x, crystal.p4.y);
+  ctx.closePath();
+  ctx.fillStyle = '#E0E0E0';
+  ctx.fill();
+  ctx.stroke();
+
+  // Grating lines inside the crystal
+  ctx.save();
+  ctx.clip(); // Clip drawing to the crystal's shape
+  ctx.lineWidth = 3.5;
+  for (let y = 150; y < 370; y += 16) {
+    // Leave a gap in the middle as in the original image
+    if (y > 230 && y < 270) continue;
+    ctx.beginPath();
+    ctx.moveTo(crystal.p4.x, y);
+    ctx.lineTo(crystal.p2.x, y);
+    ctx.stroke();
+  }
+  ctx.restore(); // Stop clipping
+  ctx.lineWidth = 2;
+
+  // Piezoelectric transducer (PET) attached to the crystal
+  ctx.fillStyle = '#E0E0E0';
+  ctx.fillRect(300, 370, 40, 8);
+  ctx.strokeRect(300, 370, 40, 8);
+  ctx.fillStyle = 'black';
+  ctx.fillRect(350, 370, 50, 12);
+
+  // --- Light Rays ---
+  const theta = 20 * Math.PI / 180;
+  const tan_theta = Math.tan(theta);
+  const inner_offsets = [-25, 25];
+  const outer_offsets = [-55, 55];
+  
+  const x_start = 120;
+  const x_in_end = 370;
+  const x_out_start = 460;
+  const x_end = 680;
+
+  // Incoming rays (slope downwards)
+  for (const offset of [...inner_offsets, ...outer_offsets]) {
+    drawArrowOnLine(ctx, x_start, centerY + offset - (x_start - x_in_end) * tan_theta, x_in_end, centerY + offset);
+  }
+
+  // Rays inside the crystal
+  ctx.beginPath();
+  // Outer rays go straight
+  ctx.moveTo(x_in_end, centerY + outer_offsets[0]);
+  ctx.lineTo(x_out_start, centerY + outer_offsets[0]);
+  ctx.moveTo(x_in_end, centerY + outer_offsets[1]);
+  ctx.lineTo(x_out_start, centerY + outer_offsets[1]);
+  // Inner rays cross over
+  ctx.moveTo(x_in_end, centerY + inner_offsets[0]);
+  ctx.lineTo(x_out_start, centerY + inner_offsets[1]);
+  ctx.moveTo(x_in_end, centerY + inner_offsets[1]);
+  ctx.lineTo(x_out_start, centerY + inner_offsets[0]);
+  ctx.stroke();
+
+  // Outgoing rays (slope upwards)
+  // Outer rays (undiffracted)
+  drawArrowOnLine(ctx, x_out_start, centerY + outer_offsets[0], x_end, centerY + outer_offsets[0] + (x_end - x_out_start) * tan_theta);
+  drawArrowOnLine(ctx, x_out_start, centerY + outer_offsets[1], x_end, centerY + outer_offsets[1] + (x_end - x_out_start) * tan_theta);
+  // Inner rays (diffracted)
+  drawArrowOnLine(ctx, x_out_start, centerY + inner_offsets[0], x_end, centerY + inner_offsets[1] + (x_end - x_out_start) * tan_theta);
+  drawArrowOnLine(ctx, x_out_start, centerY + inner_offsets[1], x_end, centerY + inner_offsets[0] + (x_end - x_out_start) * tan_theta);
+
+  // --- Labels and Angles ---
+  ctx.font = 'italic 24px serif';
+  
+  // Angle arcs and 'θ' labels
+  const angle_radius = 70;
+  // Incident angle
+  ctx.beginPath();
+  ctx.arc(300, centerY, angle_radius, -theta, 0);
+  ctx.stroke();
+  ctx.fillText('θ', 300 + 40, centerY - 10);
+  // Diffracted angle
+  ctx.beginPath();
+  ctx.arc(530, centerY, angle_radius, 0, theta);
+  ctx.stroke();
+  ctx.fillText('θ', 530 + 40, centerY + 25);
+
+  // 'λ₀' label for incoming wavelength
+  ctx.fillText('λ', 180, 190);
+  ctx.font = 'italic 16px serif';
+  ctx.fillText('0', 195, 195);
+  
+  // 'PET' label
+  ctx.font = 'bold 24px sans-serif';
+  ctx.fillText('PET', 550, 400);
+
+  // Transducer input labels 'Ũ' and 'f'
+  ctx.font = 'italic 30px serif';
+  ctx.fillText('U', 210, 360);
+  ctx.font = '30px serif';
+  ctx.fillText('~', 210, 345); // Tilde over U
+  ctx.font = 'italic 30px serif';
+  ctx.fillText('f', 210, 400);
+
+  // Double-headed arrow for AC input
+  ctx.beginPath();
+  ctx.lineWidth = 1.5;
+  const arrow_y = 375;
+  const arrow_x_start = 200;
+  const arrow_x_end = 240;
+  ctx.moveTo(arrow_x_start, arrow_y);
+  ctx.lineTo(arrow_x_end, arrow_y);
+  // Arrow heads
+  ctx.moveTo(arrow_x_start + 8, arrow_y - 4);
+  ctx.lineTo(arrow_x_start, arrow_y);
+  ctx.lineTo(arrow_x_start + 8, arrow_y + 4);
+  ctx.moveTo(arrow_x_end - 8, arrow_y - 4);
+  ctx.lineTo(arrow_x_end, arrow_y);
+  ctx.lineTo(arrow_x_end - 8, arrow_y + 4);
+  ctx.stroke();
+
+</script>
+</body>
+</html>

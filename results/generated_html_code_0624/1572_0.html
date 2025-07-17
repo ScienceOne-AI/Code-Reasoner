@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="420"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style and Font
+        const baseFont = '20px sans-serif';
+        const baseBoldFont = 'bold ' + baseFont;
+        const varFont = 'italic bold ' + baseFont;
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Parameters
+        const x0 = 150;
+        const y0 = 210; // Center y-coordinate of the entire setup
+        const d = 140; // Distance between the centers of the two arrays
+        const arrayLength = 80; // Length of a single radiator array
+        const numRadiators = 5;
+        const radiatorRadius = 2.5;
+        const r_len = 250;
+        const theta_deg = 20;
+        const theta_rad = theta_deg * Math.PI / 180;
+
+        // --- Helper Functions ---
+
+        function drawRadiators(centerX, centerY, length, num, radius) {
+            const spacing = length / (num - 1);
+            const startY = centerY - length / 2;
+            for (let i = 0; i < num; i++) {
+                const y = startY + i * spacing;
+                ctx.beginPath();
+                ctx.arc(centerX, y, radius, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
+        function drawVerticalDimensionLine(x, y1, y2, label) {
+            ctx.beginPath();
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, y2);
+            // Ticks at the ends
+            ctx.moveTo(x - 5, y1);
+            ctx.lineTo(x + 5, y1);
+            ctx.moveTo(x - 5, y2);
+            ctx.lineTo(x + 5, y2);
+            ctx.stroke();
+
+            ctx.font = varFont;
+            ctx.fillText(label, x - 15, (y1 + y2) / 2);
+        }
+
+        function drawCurlyBrace(x_base, y1, y2, width, text) {
+            const y_mid = (y1 + y2) / 2;
+            const x_tip = x_base + width * 0.5; // x-coordinate of the brace tip
+            const x_ctrl = x_base + width;      // x-coordinate of the Bezier control point
+
+            ctx.beginPath();
+            ctx.moveTo(x_base, y1);
+            ctx.quadraticCurveTo(x_ctrl, (y1 + y_mid) / 2, x_tip, y_mid);
+            ctx.quadraticCurveTo(x_ctrl, (y2 + y_mid) / 2, x_base, y2);
+            ctx.stroke();
+
+            ctx.font = baseBoldFont;
+            ctx.textAlign = 'left';
+            ctx.fillText(text, x_ctrl + 10, y_mid);
+            ctx.textAlign = 'center'; // Reset alignment
+        }
+
+        function drawArrow(x1, y1, x2, y2) {
+            const headlen = 10;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.beginPath();
+            // Line
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            // Arrowhead
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Logic ---
+
+        // 1. Vertical line for radiators
+        const y_start = 80;
+        const y_end = 340;
+        ctx.beginPath();
+        ctx.moveTo(x0, y_start);
+        ctx.lineTo(x0, y_end);
+        ctx.stroke();
+
+        // 2. Radiator arrays
+        const center_top_y = y0 - d / 2;
+        const center_bottom_y = y0 + d / 2;
+        drawRadiators(x0, center_top_y, arrayLength, numRadiators, radiatorRadius);
+        drawRadiators(x0, center_bottom_y, arrayLength, numRadiators, radiatorRadius);
+
+        // 3. Central axis (dashed)
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x0 + 300, y0);
+        ctx.stroke();
+        ctx.restore();
+
+        // 4. Ray `r`
+        const r_endX = x0 + r_len * Math.cos(-theta_rad);
+        const r_endY = y0 + r_len * Math.sin(-theta_rad);
+        drawArrow(x0, y0, r_endX, r_endY);
+
+        // 5. Labels and Dimensions
+
+        // `r` label
+        ctx.font = varFont;
+        const r_label_pos_ratio = 0.5;
+        const r_label_x = x0 + r_len * r_label_pos_ratio * Math.cos(-theta_rad);
+        const r_label_y = y0 + r_len * r_label_pos_ratio * Math.sin(-theta_rad);
+        ctx.save();
+        ctx.translate(r_label_x, r_label_y);
+        ctx.rotate(-theta_rad);
+        ctx.fillText('r', 0, -15);
+        ctx.restore();
+
+        // `theta` (θ) label
+        const arc_radius = 50;
+        ctx.beginPath();
+        ctx.arc(x0, y0, arc_radius, 0, -theta_rad, true);
+        ctx.stroke();
+        const theta_label_x = x0 + (arc_radius * 0.8) * Math.cos(-theta_rad / 2);
+        const theta_label_y = y0 + (arc_radius * 0.8) * Math.sin(-theta_rad / 2);
+        ctx.fillText('θ', theta_label_x + 5, theta_label_y - 2);
+
+        // `d` label
+        drawVerticalDimensionLine(x0 - 50, center_top_y, center_bottom_y, 'd');
+
+        // `c` label
+        const top_array_y1 = center_top_y - arrayLength / 2;
+        const c_y1 = top_array_y1;
+        const c_y2 = top_array_y1 + arrayLength / (numRadiators - 1);
+        drawVerticalDimensionLine(x0 - 30, c_y1, c_y2, 'c');
+
+        // "radiator" labels with braces
+        const brace_x_base = x0 + 10;
+        const brace_width = 20;
+        const top_array_y2 = center_top_y + arrayLength / 2;
+        drawCurlyBrace(brace_x_base, top_array_y1, top_array_y2, brace_width, 'radiator');
+
+        const bottom_array_y1 = center_bottom_y - arrayLength / 2;
+        const bottom_array_y2 = center_bottom_y + arrayLength / 2;
+        drawCurlyBrace(brace_x_base, bottom_array_y1, bottom_array_y2, brace_width, 'radiator');
+
+        // 6. Figure caption
+        ctx.font = baseBoldFont;
+        ctx.fillText('Fig. 2.62', 250, 400);
+
+    </script>
+</body>
+</html>

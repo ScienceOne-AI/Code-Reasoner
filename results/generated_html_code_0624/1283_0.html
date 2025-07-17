@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  canvas {
+    border: 1px solid #f0f0f0;
+  }
+</style>
+</head>
+<body>
+<canvas id="myCanvas" width="600" height="450"></canvas>
+<script>
+const canvas = document.getElementById('myCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style
+ctx.lineWidth = 2;
+ctx.font = 'italic 20px Times New Roman';
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+
+// --- Define Geometry using a simple perspective ---
+const origin = { x: 200, y: 320 };
+const mn_length = 300;
+const depth = 180;
+const angle_rad = 30 * Math.PI / 180;
+
+const dx = depth * Math.cos(angle_rad);
+const dy = depth * Math.sin(angle_rad);
+
+// Corner points of the planes
+const M = { x: origin.x, y: origin.y };
+const MN_end = { x: origin.x + mn_length, y: origin.y };
+
+// Plane Sigma_2 (bottom)
+const S2_back_left = { x: M.x - dx, y: M.y + dy };
+const S2_back_right = { x: MN_end.x - dx, y: MN_end.y + dy };
+
+// Plane Sigma_1 (top)
+const S1_back_left = { x: M.x - dx, y: M.y - dy }; // This is point N
+const N = S1_back_left;
+const S1_back_right = { x: MN_end.x - dx, y: MN_end.y - dy };
+
+// --- Drawing functions ---
+function drawArrow(fromx, fromy, tox, toy) {
+    const headlen = 12;
+    const angle = Math.atan2(toy - fromy, tox - fromx);
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+// --- Draw elements ---
+
+// Draw Plane Sigma_1 (top)
+ctx.beginPath();
+ctx.moveTo(M.x, M.y);
+ctx.lineTo(N.x, N.y);
+ctx.lineTo(S1_back_right.x, S1_back_right.y);
+ctx.stroke();
+
+// Dashed line from N
+ctx.beginPath();
+ctx.setLineDash([6, 6]);
+ctx.moveTo(N.x, N.y);
+ctx.lineTo(N.x + mn_length * 0.6, N.y);
+ctx.stroke();
+ctx.setLineDash([]);
+
+
+// Draw Plane Sigma_2 (bottom)
+ctx.beginPath();
+ctx.moveTo(M.x, M.y);
+ctx.lineTo(MN_end.x, MN_end.y); // MN line
+ctx.lineTo(S2_back_right.x, S2_back_right.y);
+ctx.lineTo(S2_back_left.x, S2_back_left.y);
+ctx.closePath();
+ctx.stroke();
+
+// Draw the resistor network on Sigma_2
+// Define the perspective vectors for the network
+const p_vec_side = { x: -dx, y: dy };
+const p_vec_front = { x: mn_length, y: 0 };
+
+// Position 'a' on the plane
+const a = {
+    x: M.x + p_vec_side.x * 0.6 + p_vec_front.x * 0.15,
+    y: M.y + p_vec_side.y * 0.6 + p_vec_front.y * 0.15
+};
+
+// Define segment lengths in perspective
+const side_len = 0.35; // percentage of plane depth
+const front_len1 = 0.20; // percentage of plane width
+const front_len2 = 0.20; // percentage of plane width
+
+// Calculate other vertices
+const b = { x: a.x + p_vec_side.x * side_len, y: a.y + p_vec_side.y * side_len };
+const f = { x: a.x + p_vec_front.x * front_len1, y: a.y + p_vec_front.y * front_len1 };
+const c = { x: f.x + p_vec_side.x * side_len, y: f.y + p_vec_side.y * side_len };
+const e = { x: f.x + p_vec_front.x * front_len2, y: f.y + p_vec_front.y * front_len2 };
+const d = { x: e.x + p_vec_side.x * side_len, y: e.y + p_vec_side.y * side_len };
+
+
+// Draw network segments
+ctx.beginPath();
+// Bottom edge: a-f-e
+ctx.moveTo(a.x, a.y);
+ctx.lineTo(f.x, f.y);
+ctx.lineTo(e.x, e.y);
+// Top edge: b-c-d
+ctx.moveTo(b.x, b.y);
+ctx.lineTo(c.x, c.y);
+ctx.lineTo(d.x, d.y);
+// Vertical edges: a-b, f-c, e-d
+ctx.moveTo(a.x, a.y);
+ctx.lineTo(b.x, b.y);
+ctx.moveTo(f.x, f.y);
+ctx.lineTo(c.x, c.y);
+ctx.moveTo(e.x, e.y);
+ctx.lineTo(d.x, d.y);
+ctx.stroke();
+
+// Draw Angle phi
+ctx.beginPath();
+const angle_radius = 45;
+ctx.arc(M.x, M.y, angle_radius, -(30 * Math.PI / 180), 30 * Math.PI / 180, false);
+ctx.stroke();
+
+// Draw B field vectors
+// Direction should be parallel to the side of Sigma_1
+const b_dir = { x: S1_back_right.x - MN_end.x, y: S1_back_right.y - MN_end.y };
+const b_scale = 1.0;
+
+const b_start1 = { x: M.x + mn_length*0.2, y: M.y };
+const b_end1 = { x: b_start1.x + b_dir.x * b_scale, y: b_start1.y + b_dir.y * b_scale };
+drawArrow(b_start1.x, b_start1.y, b_end1.x, b_end1.y);
+
+const b_start2 = { x: M.x + mn_length*0.9, y: M.y + dy*0.4 };
+const b_end2 = { x: b_start2.x + b_dir.x * b_scale, y: b_start2.y + b_dir.y * b_scale };
+drawArrow(b_start2.x, b_start2.y, b_end2.x, b_end2.y);
+
+
+// --- Add Labels ---
+ctx.font = 'italic 24px Times New Roman';
+// Planes
+ctx.fillText('Σ₁', S1_back_left.x + 50, S1_back_left.y - 10);
+ctx.fillText('Σ₂', S2_back_right.x - 30, S2_back_right.y + 30);
+// Points
+ctx.fillText('M', M.x - 30, M.y + 10);
+ctx.fillText('N', N.x - 20, N.y + 15);
+// Angle
+ctx.fillText('ϕ', M.x + angle_radius + 5, M.y + 10);
+// B field
+ctx.font = 'bold italic 24px Times New Roman';
+ctx.fillText('B', b_end1.x + 10, b_end1.y);
+ctx.fillText('B', b_end2.x + 10, b_end2.y);
+
+// Network vertices
+ctx.font = 'italic 20px Times New Roman';
+ctx.fillText('a', a.x - 20, a.y + 5);
+ctx.fillText('b', b.x - 20, b.y - 5);
+ctx.fillText('c', c.x, c.y - 10);
+ctx.fillText('d', d.x + 5, d.y - 5);
+ctx.fillText('e', e.x + 5, e.y + 5);
+ctx.fillText('f', f.x, f.y + 20);
+
+</script>
+</body>
+</html>

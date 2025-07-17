@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Thermodynamics Diagram</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    canvas {
+      border: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="thermo-diagram" width="600" height="700"></canvas>
+  <script>
+    const canvas = document.getElementById('thermo-diagram');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = "20px 'Times New Roman'"; // Default font
+    
+    // Helper function to draw an arrow head
+    function drawArrowHead(ctx, x, y, angle) {
+      const headLength = 8;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - headLength * Math.cos(angle - Math.PI / 6), y - headLength * Math.sin(angle - Math.PI / 6));
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - headLength * Math.cos(angle + Math.PI / 6), y - headLength * Math.sin(angle + Math.PI / 6));
+      ctx.stroke();
+    }
+
+    // Helper function to draw dimension lines with two arrows
+    function drawDoubleArrow(ctx, x1, y1, x2, y2) {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      drawArrowHead(ctx, x1, y1, angle + Math.PI);
+      drawArrowHead(ctx, x2, y2, angle);
+    }
+    
+    // Helper function for stippling pattern
+    function drawStipple(ctx, x, y, w, h, count) {
+      const originalFill = ctx.fillStyle;
+      ctx.fillStyle = 'black';
+      for (let i = 0; i < count; i++) {
+        const px = x + Math.random() * w;
+        const py = y + Math.random() * h;
+        ctx.fillRect(px, py, 1, 1);
+      }
+      ctx.fillStyle = originalFill;
+    }
+    
+    // Helper function for hatching pattern (top-right to bottom-left)
+    function drawHatch(ctx, x, y, w, h, spacing) {
+      const originalLineWidth = ctx.lineWidth;
+      ctx.lineWidth = 1;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+      ctx.clip();
+      ctx.beginPath();
+      for (let i = 0; i < w + h; i += spacing) {
+          ctx.moveTo(x + i, y);
+          ctx.lineTo(x + i - h, y + h);
+      }
+      ctx.stroke();
+      ctx.restore();
+      ctx.lineWidth = originalLineWidth;
+    }
+
+    // --- Main Drawing ---
+
+    const centerX = 300;
+    const ySupport = 100;
+    const len2a = 150;
+    const lenC = 120;
+    const lenA = 100;
+    const lenB = 100;
+
+    const xPlateLeft = centerX - lenA;
+    const xPlateRight = centerX + lenB;
+    const yPlateTop = ySupport + len2a;
+    const yPlateBottom = yPlateTop + lenC;
+
+    // 1. Draw the top support
+    ctx.beginPath();
+    ctx.moveTo(xPlateLeft - 20, ySupport);
+    ctx.lineTo(xPlateRight + 20, ySupport);
+    ctx.stroke();
+    drawHatch(ctx, xPlateLeft - 20, ySupport - 10, (lenA + lenB) + 40, 10, 8);
+
+    // 2. Draw suspension lines
+    ctx.beginPath();
+    ctx.moveTo(xPlateLeft, ySupport);
+    ctx.lineTo(xPlateLeft, yPlateTop);
+    ctx.moveTo(xPlateRight, ySupport);
+    ctx.lineTo(xPlateRight, yPlateTop);
+    ctx.stroke();
+    
+    // 3. Draw the main plate (front view)
+    ctx.beginPath();
+    ctx.rect(xPlateLeft, yPlateTop, lenA + lenB, lenC);
+    ctx.stroke();
+    
+    // 4. Fill the left part with stippling
+    drawStipple(ctx, xPlateLeft, yPlateTop, lenA, lenC, 1500);
+
+    // 5. Draw the central dashed line
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(centerX, ySupport + 20);
+    ctx.lineTo(centerX, yPlateBottom + 180);
+    ctx.stroke();
+    ctx.restore();
+
+    // 6. Draw the bottom view (俯视图)
+    const yBottomView = yPlateBottom + 100;
+    const hBottomViewGlass = 15;
+    const hBottomViewCoating = 5;
+
+    // Left part of bottom view
+    const yBottomLeft = yBottomView + hBottomViewCoating; // Align with the bottom layer of the right part
+    ctx.beginPath();
+    ctx.rect(xPlateLeft, yBottomLeft, lenA, hBottomViewGlass);
+    ctx.stroke();
+    // This part in the original image is a single rectangle, hatched.
+    // Let's draw it as a single rectangle to be more accurate to the source.
+    ctx.clearRect(xPlateLeft-1, yBottomLeft-1, lenA+2, hBottomViewGlass+2); // Clear previous rect
+    ctx.beginPath();
+    ctx.rect(xPlateLeft, yBottomView + 5, lenA, 15);
+    ctx.stroke();
+    drawHatch(ctx, xPlateLeft, yBottomView + 5, lenA, 15, 6);
+
+
+    // Right part of bottom view (detail view)
+    // Glass plate part
+    ctx.beginPath();
+    ctx.rect(centerX, yBottomView + hBottomViewCoating, lenB, hBottomViewGlass);
+    ctx.stroke();
+    // Metal coating part
+    ctx.beginPath();
+    ctx.rect(centerX, yBottomView, lenB, hBottomViewCoating);
+    ctx.stroke();
+    drawHatch(ctx, centerX, yBottomView, lenB, hBottomViewCoating, 4);
+
+    // 7. Draw dimension lines and labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    const dimLineX = 80;
+    // Dimension 2a
+    drawDoubleArrow(ctx, dimLineX, ySupport, dimLineX, yPlateTop);
+    ctx.fillText('2a', dimLineX - 20, ySupport + len2a / 2);
+    
+    // Dimension c
+    drawDoubleArrow(ctx, dimLineX, yPlateTop, dimLineX, yPlateBottom);
+    ctx.fillText('c', dimLineX - 20, yPlateTop + lenC / 2);
+
+    const dimLineY = yPlateBottom + 40;
+    // Dimension a
+    drawDoubleArrow(ctx, xPlateLeft, dimLineY, centerX, dimLineY);
+    ctx.fillText('a', xPlateLeft + lenA / 2, dimLineY + 20);
+    
+    // Dimension b
+    drawDoubleArrow(ctx, centerX, dimLineY, xPlateRight, dimLineY);
+    ctx.fillText('b', centerX + lenB / 2, dimLineY + 20);
+
+    // 8. Add Chinese labels
+    ctx.font = "22px KaiTi";
+    ctx.textAlign = 'left';
+    
+    // 玻璃板 (front view)
+    ctx.fillText('玻', xPlateRight + 15, yPlateTop + lenC / 2 - 20);
+    ctx.fillText('璃', xPlateRight + 15, yPlateTop + lenC / 2);
+    ctx.fillText('板', xPlateRight + 15, yPlateTop + lenC / 2 + 20);
+    ctx.beginPath();
+    ctx.moveTo(xPlateRight, yPlateTop + lenC/2);
+    ctx.lineTo(xPlateRight + 10, yPlateTop + lenC/2);
+    ctx.stroke();
+
+
+    // 俯视图
+    ctx.textAlign = 'center';
+    ctx.fillText('俯', 120, yBottomView + 20);
+    ctx.fillText('视', 120, yBottomView + 40);
+    ctx.fillText('图', 120, yBottomView + 60);
+    
+    // 金属涂层 & 玻璃板 (bottom detail)
+    ctx.textAlign = 'left';
+    const labelX = xPlateRight + 20;
+    ctx.fillText('金属涂层', labelX, yBottomView + hBottomViewCoating / 2);
+    ctx.beginPath();
+    ctx.moveTo(xPlateRight, yBottomView + hBottomViewCoating / 2);
+    ctx.lineTo(labelX - 5, yBottomView + hBottomViewCoating / 2);
+    ctx.stroke();
+
+    ctx.fillText('玻璃板', labelX, yBottomView + hBottomViewCoating + hBottomViewGlass / 2);
+    ctx.beginPath();
+    ctx.moveTo(xPlateRight, yBottomView + hBottomViewCoating + hBottomViewGlass / 2);
+    ctx.lineTo(labelX - 5, yBottomView + hBottomViewCoating + hBottomViewGlass / 2);
+    ctx.stroke();
+
+    // Diagram Title
+    ctx.textAlign = 'center';
+    ctx.font = "24px KaiTi";
+    ctx.fillText('热图 3.2.1', centerX, yBottomView + 150);
+
+  </script>
+</body>
+</html>

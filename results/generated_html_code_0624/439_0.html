@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Physics Incline Plane</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      background-color: #fff;
+    }
+  </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="520"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Helper function to draw an arrowhead at a specific point and angle
+  function drawArrowhead(x, y, angle, headlen = 10) {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - headlen * Math.cos(angle - Math.PI / 7), y - headlen * Math.sin(angle - Math.PI / 7));
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - headlen * Math.cos(angle + Math.PI / 7), y - headlen * Math.sin(angle + Math.PI / 7));
+    ctx.stroke();
+  }
+
+  // Helper function to draw a line with arrows on both ends
+  function drawDoubleArrowLine(x1, y1, x2, y2) {
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    // Arrow at end 1 should point away from end 2
+    drawArrowhead(x1, y1, angle + Math.PI);
+    // Arrow at end 2 should point away from end 1
+    drawArrowhead(x2, y2, angle);
+  }
+
+  // Define triangle coordinates and dimensions based on a scale
+  const scale = 38; // pixels per meter
+  const base_len = 8.0 * scale; 
+  const height_len = 6.0 * scale;
+  
+  const origin = { x: 80, y: 450 };
+  
+  const v_top = { x: origin.x, y: origin.y - height_len };
+  const v_bottom_left = { x: origin.x, y: origin.y };
+  const v_bottom_right = { x: origin.x + base_len, y: origin.y };
+
+  // Draw the main triangle (inclined plane)
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'black';
+  ctx.beginPath();
+  ctx.moveTo(v_top.x, v_top.y);
+  ctx.lineTo(v_bottom_left.x, v_bottom_left.y);
+  ctx.lineTo(v_bottom_right.x, v_bottom_right.y);
+  ctx.closePath();
+  ctx.stroke();
+
+  // --- Draw Dimensions and Labels ---
+  ctx.font = 'bold 24px sans-serif';
+  ctx.fillStyle = 'black';
+  ctx.textAlign = 'center';
+  
+  // Draw height dimension
+  ctx.lineWidth = 1;
+  drawDoubleArrowLine(v_top.x - 30, v_top.y, v_bottom_left.x - 30, v_bottom_left.y);
+  ctx.fillText('6.0 m', v_top.x - 65, (v_top.y + v_bottom_left.y) / 2 + 8);
+  
+  // Draw base dimension
+  drawDoubleArrowLine(v_bottom_left.x, v_bottom_left.y + 30, v_bottom_right.x, v_bottom_right.y + 30);
+  ctx.fillText('8.0 m', (v_bottom_left.x + v_bottom_right.x) / 2, v_bottom_left.y + 55);
+
+  // Draw hypotenuse dimension
+  const hypotenuseAngle = Math.atan2(v_bottom_right.y - v_top.y, v_bottom_right.x - v_top.x);
+  const offset = 40;
+  // Perpendicular vector pointing up and left: (dy, -dx)
+  const perp_x = v_bottom_right.y - v_top.y;
+  const perp_y = -(v_bottom_right.x - v_top.x);
+  const perp_mag = Math.sqrt(perp_x * perp_x + perp_y * perp_y);
+  const norm_perp_x = perp_x / perp_mag;
+  const norm_perp_y = perp_y / perp_mag;
+
+  const h_start_x = v_top.x + offset * norm_perp_x;
+  const h_start_y = v_top.y + offset * norm_perp_y;
+  const h_end_x = v_bottom_right.x + offset * norm_perp_x;
+  const h_end_y = v_bottom_right.y + offset * norm_perp_y;
+
+  drawDoubleArrowLine(h_start_x, h_start_y, h_end_x, h_end_y);
+  const mid_x = (h_start_x + h_end_x) / 2;
+  const mid_y = (h_start_y + h_end_y) / 2;
+  ctx.fillText('10.0 m', mid_x + 40, mid_y - 5);
+  
+  // --- Draw the box and forces ---
+  // Position the box near the bottom of the incline
+  const box_pos_fraction = 0.85; // 0 is top, 1 is bottom
+  const box_center = {
+      x: v_top.x + box_pos_fraction * (v_bottom_right.x - v_top.x),
+      y: v_top.y + box_pos_fraction * (v_bottom_right.y - v_top.y)
+  };
+  
+  ctx.save();
+  ctx.translate(box_center.x, box_center.y);
+
+  // Draw force F
+  const force_len = 100;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(-force_len, 0);
+  ctx.stroke();
+  drawArrowhead(-force_len, 0, Math.PI, 15);
+  ctx.font = 'bold 30px sans-serif';
+  ctx.fillText('F', -force_len / 2, -10);
+  
+  // Draw the box
+  const box_size = 40;
+  ctx.rotate(hypotenuseAngle);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-box_size / 2, -box_size / 2, box_size, box_size);
+  
+  // Draw mass 'm'
+  ctx.font = 'bold 24px sans-serif';
+  ctx.fillText('m', 0, 8);
+
+  ctx.restore();
+</script>
+</body>
+</html>

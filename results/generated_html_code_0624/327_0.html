@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Circuit Diagram Fig. 3.67</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="circuitCanvas" width="600" height="400"></canvas>
+<script>
+  const canvas = document.getElementById('circuitCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.font = 'bold 18px sans-serif';
+  ctx.strokeStyle = '#000';
+  ctx.fillStyle = '#000';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+
+  // Helper function to draw a resistor with a label
+  function drawResistor(x1, y1, x2, y2, label) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx);
+
+    ctx.save();
+    ctx.translate(x1, y1);
+    ctx.rotate(angle);
+
+    const zigzags = 7;
+    const zigzagHeight = 8;
+    const resistorLen = 50;
+    const wireLen = (len - resistorLen) / 2;
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(wireLen, 0);
+    let currentX = wireLen;
+    let segmentLen = resistorLen / zigzags;
+    for (let i = 0; i < zigzags; i++) {
+        const y_off = (i % 2 === 0) ? -zigzagHeight : zigzagHeight;
+        ctx.lineTo(currentX + (i * segmentLen) + segmentLen/2, y_off);
+    }
+    ctx.lineTo(wireLen + resistorLen, 0);
+    ctx.lineTo(len, 0);
+    ctx.stroke();
+    
+    // Position label
+    let labelX = len / 2;
+    let labelY = -15;
+
+    // Adjust label position for diagonal lines to avoid overlap
+    if (Math.abs(angle) > Math.PI/8 && Math.abs(angle) < 3*Math.PI/8) {
+      labelY = -20;
+    }
+    if (label === '50K') {
+        labelY = -15;
+    }
+    if (label === '25K') {
+        labelX = 15;
+        labelY = -len/2 + 10;
+    }
+    
+    ctx.save();
+    ctx.translate(labelX, labelY);
+    ctx.rotate(-angle);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, 0, 0);
+    ctx.restore();
+    
+    ctx.restore();
+  }
+
+  // Helper function to draw a capacitor with a label
+  function drawCapacitor(x1, y1, x2, y2, label) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx);
+    
+    ctx.save();
+    ctx.translate(x1, y1);
+    ctx.rotate(angle);
+
+    const plateGap = 5;
+    const plateLen = 20;
+    const wireLen = (len - plateGap) / 2;
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(wireLen, 0);
+    ctx.moveTo(wireLen, -plateLen/2);
+    ctx.lineTo(wireLen, plateLen/2);
+    ctx.moveTo(wireLen + plateGap, -plateLen/2);
+    ctx.lineTo(wireLen + plateGap, plateLen/2);
+    ctx.moveTo(wireLen + plateGap, 0);
+    ctx.lineTo(len, 0);
+    ctx.stroke();
+
+    if (label) {
+        ctx.save();
+        ctx.translate(len / 2, -15);
+        ctx.rotate(-angle);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(label, 0, 0);
+        ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  // Helper function to draw an NPN transistor
+  function drawNPN(x, y, label) {
+    // Base line
+    ctx.beginPath();
+    ctx.moveTo(x - 20, y);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+
+    // Collector & Emitter lines
+    ctx.beginPath();
+    ctx.moveTo(x, y - 20);
+    ctx.lineTo(x, y + 20);
+    ctx.stroke();
+    
+    // Angled lines
+    ctx.beginPath();
+    ctx.moveTo(x-1, y-15);
+    ctx.lineTo(x-1, y-35); // Collector stem
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x-1, y+15);
+    ctx.lineTo(x-1, y+50); // Emitter stem
+    ctx.stroke();
+
+    // Arrow on emitter
+    ctx.beginPath();
+    ctx.moveTo(x-1, y + 20);
+    ctx.lineTo(x-9, y + 12);
+    ctx.moveTo(x-1, y + 20);
+    ctx.lineTo(x+7, y + 12);
+    ctx.stroke();
+
+    // Label
+    if (label) {
+        ctx.fillText(label, x - 45, y + 15);
+    }
+  }
+  
+  // Helper function to draw ground
+  function drawGround(x, y) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y + 5);
+      ctx.moveTo(x - 12, y + 5);
+      ctx.lineTo(x + 12, y + 5);
+      ctx.moveTo(x - 7, y + 10);
+      ctx.lineTo(x + 7, y + 10);
+      ctx.moveTo(x - 3, y + 15);
+      ctx.lineTo(x + 3, y + 15);
+      ctx.stroke();
+  }
+
+  // --- Main Drawing ---
+  
+  const q1x = 120;
+  const q2x = 420;
+  const topY = 60;
+  const cY = 120;
+  const bY = 200;
+  const gndY = 270;
+  const vposY = 300;
+  
+  // Top rail
+  ctx.beginPath();
+  ctx.moveTo(q1x, topY);
+  ctx.lineTo(q2x, topY);
+  ctx.lineTo(q2x + 50, topY);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(q2x + 50, topY, 3, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.fillText('-20V', q2x + 60, topY + 6);
+
+  // Q1 and its circuit
+  drawNPN(q1x, bY, 'Q₁');
+  drawGround(q1x - 1, gndY + 20);
+  drawResistor(q1x, topY, q1x, cY, '5K');
+  
+  // Q2 and its circuit
+  drawNPN(q2x, bY, 'Q₂');
+  drawGround(q2x-1, gndY + 20);
+  drawResistor(q2x, topY, q2x, cY, '5K');
+  
+  // Define nodes
+  const c1Node = { x: q1x, y: cY };
+  const b1Node = { x: q1x - 20, y: bY };
+  const c2Node = { x: q2x, y: cY };
+  const b2Node = { x: q2x - 20, y: bY };
+  
+  const j1Node = { x: 200, y: 220};
+  
+  // Connections to Base 1
+  ctx.beginPath();
+  ctx.moveTo(b1Node.x, b1Node.y);
+  ctx.lineTo(j1Node.x, j1Node.y);
+  ctx.stroke();
+
+  // Feedback from C2 to J1
+  drawResistor(c2Node.x, c2Node.y, j1Node.x, j1Node.y, '100K');
+  
+  // Feedback from C1 to B2
+  drawCapacitor(c1Node.x, c1Node.y, b2Node.x, b2Node.y, 'C');
+
+  // Resistor from J1 to B2
+  drawResistor(j1Node.x, j1Node.y, b2Node.x, b2Node.y, '50K');
+  
+  // Resistor from J1 to +6V
+  const vPosConn = { x: j1Node.x, y: vposY };
+  drawResistor(j1Node.x, j1Node.y, vPosConn.x, vPosConn.y, '25K');
+  
+  // +6V supply
+  ctx.beginPath();
+  ctx.arc(vPosConn.x, vPosConn.y, 3, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.fillText('+6V', vPosConn.x + 10, vPosConn.y + 6);
+
+  // Figure label
+  ctx.font = '20px serif';
+  ctx.fillText('Fig. 3.67', 260, 380);
+
+</script>
+</body>
+</html>

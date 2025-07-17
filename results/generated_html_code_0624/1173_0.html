@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical Interference Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Common styles
+    const grayColor = '#8C8C8C';
+    const lineColor = '#000000';
+    const labelFont = 'bold 24px Arial';
+
+    function drawLeftDiagram() {
+        ctx.save();
+        ctx.translate(0, 0);
+
+        // Define coordinates
+        const wedgeTopY = 50;
+        const wedgeBottomY = 400;
+        const wedgeRightX = 250;
+        const plateWidth = 30;
+        const plateRightX = wedgeRightX + plateWidth;
+        const wedgeLeftTopX = 150;
+        const wedgeLeftBottomX = 120;
+
+        // Draw Wedge 'W'
+        ctx.beginPath();
+        ctx.moveTo(wedgeLeftTopX, wedgeTopY + 20); // Top-left point after protrusion
+        ctx.lineTo(wedgeLeftBottomX, wedgeBottomY); // Bottom-left point
+        ctx.lineTo(wedgeRightX, wedgeBottomY); // Bottom-right point
+        ctx.lineTo(wedgeRightX, wedgeTopY); // Top-right point
+        ctx.lineTo(wedgeLeftTopX + 10, wedgeTopY); // Protrusion top-right
+        ctx.lineTo(wedgeLeftTopX, wedgeTopY + 20); // Protrusion top-left
+        ctx.closePath();
+        
+        ctx.fillStyle = grayColor;
+        ctx.fill();
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Draw Plate 'P'
+        ctx.fillStyle = grayColor;
+        ctx.fillRect(wedgeRightX, wedgeTopY, plateWidth, wedgeBottomY - wedgeTopY);
+        ctx.strokeRect(wedgeRightX, wedgeTopY, plateWidth, wedgeBottomY - wedgeTopY);
+
+        // Draw Light Rays
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 1.5;
+        const numRays = 5;
+        const startX = 20;
+        const endX = plateRightX + 60;
+        
+        for (let i = 0; i < numRays; i++) {
+            const y = 85 + i * 70;
+            
+            // Main ray line
+            ctx.beginPath();
+            ctx.moveTo(startX, y);
+            ctx.lineTo(endX, y);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(endX, y);
+            ctx.lineTo(endX - 12, y - 6);
+            ctx.moveTo(endX, y);
+            ctx.lineTo(endX - 12, y + 6);
+            ctx.stroke();
+            
+            // Pulse/wavefront markers
+            const pulseX = 100;
+            const pulseRadius = 6;
+            const pulseGap = 10;
+            ctx.beginPath();
+            ctx.arc(pulseX, y, pulseRadius, 0.5 * Math.PI, 1.5 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(pulseX + pulseGap, y, pulseRadius, 1.5 * Math.PI, 0.5 * Math.PI);
+            ctx.stroke();
+        }
+
+        // Draw Labels
+        ctx.fillStyle = lineColor;
+        ctx.font = labelFont;
+        
+        // Label 'W'
+        ctx.fillText('W', 180, 45);
+        ctx.beginPath();
+        ctx.moveTo(190, 50);
+        ctx.lineTo(170, 70);
+        ctx.stroke();
+
+        // Label 'P'
+        ctx.fillText('P', plateRightX - 5, 45);
+
+        ctx.restore();
+    }
+
+    function drawRightDiagram() {
+        ctx.save();
+        ctx.translate(400, 0);
+
+        // Define coordinates
+        const frameX = 25;
+        const frameY = 50;
+        const frameWidth = 350;
+        const frameHeight = 350;
+        const borderWidth = 25;
+
+        // Draw outer frame
+        ctx.fillStyle = grayColor;
+        ctx.fillRect(frameX, frameY, frameWidth, frameHeight);
+
+        // Define inner pattern area
+        const patternX = frameX + borderWidth;
+        const patternY = frameY + borderWidth;
+        const patternWidth = frameWidth - 2 * borderWidth;
+        const patternHeight = frameHeight - 2 * borderWidth;
+
+        // Draw the interference fringes
+        drawFringes(patternX, patternY, patternWidth, patternHeight);
+        
+        // Draw inner border line on top of the pattern
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(patternX, patternY, patternWidth, patternHeight);
+        
+        // Draw Labels
+        ctx.fillStyle = lineColor;
+        ctx.font = labelFont;
+        
+        // Label 'W'
+        ctx.fillText('W', 100, 45);
+        ctx.beginPath();
+        ctx.lineWidth = 1.5;
+        ctx.moveTo(110, 50);
+        ctx.lineTo(130, 80);
+        ctx.stroke();
+
+        // Label 'P'
+        ctx.fillText('P', frameX + frameWidth - 25, 45);
+
+        ctx.restore();
+    }
+
+    function drawFringes(x, y, width, height) {
+        // Draw a subtle background gradient for the pattern area
+        const bgGrad = ctx.createLinearGradient(0, y, 0, y + height);
+        bgGrad.addColorStop(0, '#B0B0B0');
+        bgGrad.addColorStop(1, '#808080');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(x, y, width, height);
+        
+        let currentY = y;
+        let fringeIndex = 0;
+        
+        while (currentY < y + height) {
+            const progress = (currentY - y) / height; // 0 at top, 1 at bottom
+
+            // Fringe period decreases down the screen
+            let period = 45 * Math.pow(0.98, fringeIndex);
+            if (period < 6) period = 6;
+            
+            // Dark band is a fraction of the period
+            const darkHeight = period * 0.5;
+            const lightHeight = period - darkHeight;
+
+            if (currentY + darkHeight > y + height) break;
+            
+            // Contrast increases down the screen
+            const contrast = 0.2 + 0.8 * Math.pow(progress, 2);
+            
+            // Top section is blurry, bottom is sharp
+            if (progress < 0.3) {
+                // Blurry fringes using a gradient
+                const grad = ctx.createLinearGradient(0, currentY, 0, currentY + darkHeight);
+                const midColor = `rgba(50, 50, 50, ${contrast})`;
+                grad.addColorStop(0, 'transparent');
+                grad.addColorStop(0.5, midColor);
+                grad.addColorStop(1, 'transparent');
+                ctx.fillStyle = grad;
+                ctx.fillRect(x, currentY, width, darkHeight);
+            } else {
+                // Sharper fringes
+                if (progress > 0.7) {
+                    // High-contrast black and white at the bottom
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(x, currentY, width, darkHeight);
+                    
+                    if (currentY + period <= y + height) {
+                         ctx.fillStyle = 'white';
+                         ctx.fillRect(x, currentY + darkHeight, width, lightHeight);
+                    }
+                } else {
+                    // Mid-section with increasing sharpness
+                    ctx.fillStyle = `rgba(0, 0, 0, ${contrast})`;
+                    ctx.fillRect(x, currentY, width, darkHeight);
+                }
+            }
+            
+            currentY += period;
+            fringeIndex++;
+        }
+    }
+
+    // Clear canvas and draw everything
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawLeftDiagram();
+    drawRightDiagram();
+
+</script>
+</body>
+</html>

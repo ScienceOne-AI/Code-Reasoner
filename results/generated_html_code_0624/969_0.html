@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Graph of ln(I/I₀) vs x</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    canvas {
+        border: 1px solid black;
+        background-color: white;
+    }
+</style>
+</head>
+<body>
+<canvas id="physicsGraph" width="700" height="550"></canvas>
+<script>
+    window.onload = function() {
+        const canvas = document.getElementById('physicsGraph');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const margin = { top: 40, right: 40, bottom: 80, left: 80 };
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const graphWidth = canvasWidth - margin.left - margin.right;
+        const graphHeight = canvasHeight - margin.top - margin.bottom;
+
+        const xMin = 0;
+        const xMax = 11;
+        const yMin = -2.4;
+        const yMax = 0;
+
+        // --- Coordinate Transformation Functions ---
+        function scaleX(x) {
+            return margin.left + (x - xMin) / (xMax - xMin) * graphWidth;
+        }
+
+        function scaleY(y) {
+            return margin.top + (yMax - y) / (yMax - yMin) * graphHeight;
+        }
+
+        // --- Drawing Functions ---
+
+        function drawGrid() {
+            ctx.strokeStyle = '#cccccc';
+            ctx.lineWidth = 0.75;
+
+            // Vertical grid lines
+            const xStep = 0.1;
+            for (let x = xMin; x <= xMax + xStep/2; x += xStep) {
+                ctx.beginPath();
+                ctx.moveTo(scaleX(x), scaleY(yMin));
+                ctx.lineTo(scaleX(x), scaleY(yMax));
+                ctx.stroke();
+            }
+
+            // Horizontal grid lines
+            const yStep = 0.02;
+            const epsilon = 1e-9;
+            for (let y = yMin; y <= yMax + epsilon; y += yStep) {
+                ctx.beginPath();
+                ctx.moveTo(scaleX(xMin), scaleY(y));
+                ctx.lineTo(scaleX(xMax), scaleY(y));
+                ctx.stroke();
+            }
+        }
+
+        function drawAxes() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1.5;
+
+            // Y-axis (at x=0)
+            ctx.beginPath();
+            ctx.moveTo(scaleX(xMin), scaleY(yMin));
+            ctx.lineTo(scaleX(xMin), scaleY(yMax));
+            ctx.stroke();
+
+            // X-axis (at y=0)
+            ctx.beginPath();
+            ctx.moveTo(scaleX(xMin), scaleY(yMax));
+            ctx.lineTo(scaleX(xMax), scaleY(yMax));
+            ctx.stroke();
+        }
+
+        function drawLabelsAndTitles() {
+            ctx.fillStyle = 'black';
+            
+            // X-axis labels
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let i = 0; i <= 11; i++) {
+                ctx.fillText(i, scaleX(i), scaleY(0) + 8);
+            }
+            
+            // X-axis title
+            ctx.font = '18px Arial';
+            ctx.fillText("x / cm", margin.left + graphWidth / 2, margin.top + graphHeight + 45);
+
+            // Y-axis labels
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let i = 0; i >= -12; i--) {
+                const y = i * 0.2;
+                const label = y === 0 ? "0" : y.toFixed(1);
+                ctx.fillText(label, scaleX(0) - 10, scaleY(y));
+            }
+            
+            // Y-axis title: ln (I/I₀)
+            ctx.font = '18px Arial';
+            ctx.textAlign = 'center';
+            const yLabelX = margin.left - 50;
+            const yLabelY = margin.top + graphHeight / 2;
+            
+            // Draw the label in parts to handle the subscript
+            ctx.fillText("ln (I/I", yLabelX, yLabelY);
+            
+            // Manually position the subscript and closing parenthesis
+            const subXOffset = 19;
+            const subYOffset = 5;
+            const parenXOffset = 25;
+
+            ctx.font = '12px Arial'; // smaller font for subscript
+            ctx.fillText("0", yLabelX + subXOffset, yLabelY + subYOffset);
+            
+            ctx.font = '18px Arial'; // back to normal font
+            ctx.fillText(")", yLabelX + parenXOffset, yLabelY);
+        }
+        
+        function drawDataLine() {
+            // The line passes through (0, 0) and has a slope of -0.22.
+            // At x=10, y = -2.2.
+            // At x=11, y = -0.22 * 11 = -2.42
+            const x1 = 0;
+            const y1 = 0;
+            const x2 = 11;
+            const y2 = -2.42;
+
+            ctx.beginPath();
+            ctx.moveTo(scaleX(x1), scaleY(y1));
+            ctx.lineTo(scaleX(x2), scaleY(y2));
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function drawCaption() {
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('Fig. 11.1', canvasWidth / 2, canvasHeight - 10);
+        }
+
+        // --- Main drawing sequence ---
+        drawGrid();
+        drawAxes();
+        drawLabelsAndTitles();
+        drawDataLine();
+        drawCaption();
+    };
+</script>
+</body>
+</html>

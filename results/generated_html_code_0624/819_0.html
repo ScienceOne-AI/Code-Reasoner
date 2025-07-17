@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electron in Magnetic Field</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="650" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrowhead
+        function drawArrowhead(ctx, x, y, angle, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Styles ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '16px Arial';
+
+        // --- Draw Magnetic Field Region ---
+        const boxX = 250;
+        const boxY = 70;
+        const boxSize = 250;
+        ctx.fillStyle = '#cccccc'; // Light grey
+        ctx.fillRect(boxX, boxY, boxSize, boxSize);
+        ctx.fillStyle = 'black'; // Reset fill style for text
+
+        // --- Draw Electron Path ---
+        const entryY = 170;
+        const exitX = boxX + 220; // 470
+        const exitY = boxY + boxSize; // 320
+        
+        // Control point for the curve to ensure smooth transitions
+        // Initial tangent is horizontal, so control point y is same as entry y.
+        // Final tangent slope determines control point x.
+        const cpX = boxX + 110; // 360
+        const cpY = entryY;
+
+        ctx.beginPath();
+        // Initial straight path
+        ctx.moveTo(50, entryY);
+        ctx.lineTo(boxX, entryY);
+
+        // Curved path inside the field
+        ctx.quadraticCurveTo(cpX, cpY, exitX, exitY);
+
+        // Final straight path (tangent to the curve at exit)
+        const slope = (exitY - cpY) / (exitX - cpX);
+        const finalX = exitX + 60;
+        const finalY = exitY + slope * 60;
+        ctx.lineTo(finalX, finalY);
+        ctx.stroke();
+
+        // --- Draw Arrowheads on the path ---
+        // Arrow on the initial path
+        drawArrowhead(ctx, 150, entryY, 0, 10);
+        // Arrow on the final path
+        const arrowAngle = Math.atan(slope);
+        const arrowX = exitX + 30;
+        const arrowY = exitY + slope * 30;
+        drawArrowhead(ctx, arrowX, arrowY, arrowAngle, 10);
+
+        // --- Draw Labels ---
+        // "path of electron" label
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('path of', 80, entryY - 28);
+        ctx.fillText('electron', 80, entryY - 12);
+
+        // "uniform magnetic field" label
+        const labelLineX = boxX + boxSize + 10; // 510
+        const labelLineY = 110;
+        ctx.beginPath();
+        ctx.moveTo(labelLineX, labelLineY);
+        ctx.lineTo(labelLineX + 30, labelLineY);
+        ctx.stroke();
+
+        ctx.fillText('uniform magnetic', labelLineX + 35, labelLineY - 16);
+        ctx.fillText('field into plane', labelLineX + 35, labelLineY);
+        ctx.fillText('of paper', labelLineX + 35, labelLineY + 16);
+
+        // "Fig. 7.1" caption
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 7.1', canvas.width / 2, 400);
+
+    </script>
+</body>
+</html>

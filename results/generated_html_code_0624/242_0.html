@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rotating Charges Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.font = 'italic 20px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Parameters
+        const cx = canvas.width / 2;
+        const cy = 200; // Center y, leaving space for caption
+        const l = 120; // Length from origin to charge
+        const angle_deg = 30; // Angle in degrees for visualization
+        const angle_rad = angle_deg * Math.PI / 180;
+        const v_len = 45; // Length of velocity vector
+        const particle_radius = 4;
+        const arrowhead_len = 10;
+
+        // Helper function to draw an arrow
+        function drawArrow(fromX, fromY, toX, toY) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            
+            // Draw the line
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            // Draw the arrowhead
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - arrowhead_len * Math.cos(angle - Math.PI / 6), toY - arrowhead_len * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - arrowhead_len * Math.cos(angle + Math.PI / 6), toY - arrowhead_len * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // 1. Draw Coordinate Axes
+        // X-axis
+        drawArrow(50, cy, canvas.width - 50, cy);
+        ctx.fillText('x', canvas.width - 35, cy);
+        // Y-axis
+        drawArrow(cx, canvas.height - 100, cx, 50);
+        ctx.fillText('y', cx, 35);
+        // Origin label
+        ctx.fillText('O', cx - 15, cy + 15);
+
+        // 2. Draw the rotating rod
+        const x1 = l * Math.cos(angle_rad);
+        const y1 = -l * Math.sin(angle_rad); // Negative for canvas y-coordinates
+        const x2 = -x1;
+        const y2 = -y1;
+
+        ctx.beginPath();
+        ctx.moveTo(cx + x2, cy + y2);
+        ctx.lineTo(cx + x1, cy + y1);
+        ctx.stroke();
+
+        // 3. Draw the charges 'e'
+        // Top charge
+        ctx.beginPath();
+        ctx.arc(cx + x1, cy + y1, particle_radius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('e', cx + x1 + 20, cy + y1 - 5);
+
+        // Bottom charge
+        ctx.beginPath();
+        ctx.arc(cx + x2, cy + y2, particle_radius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('e', cx + x2 - 20, cy + y2 + 5);
+
+        // 4. Draw the velocity vectors 'v'
+        // Velocity vector for top charge (perpendicular to the rod)
+        const v1_angle = angle_rad + Math.PI / 2;
+        const v1_dx = v_len * Math.cos(v1_angle);
+        const v1_dy = -v_len * Math.sin(v1_angle); // Negative for canvas y
+        drawArrow(cx + x1, cy + y1, cx + x1 + v1_dx, cy + y1 + v1_dy);
+        ctx.fillText('v', cx + x1 + v1_dx - 15, cy + y1 + v1_dy - 15);
+
+        // Velocity vector for bottom charge (opposite direction)
+        const v2_dx = -v1_dx;
+        const v2_dy = -v1_dy;
+        drawArrow(cx + x2, cy + y2, cx + x2 + v2_dx, cy + y2 + v2_dy);
+        ctx.fillText('v', cx + x2 + v2_dx + 15, cy + y2 + v2_dy + 15);
+        
+        // 5. Draw the angle arc and label
+        const arc_radius = 60;
+        ctx.beginPath();
+        ctx.arc(cx, cy, arc_radius, 0, -angle_rad, true); // True for counter-clockwise
+        ctx.stroke();
+
+        // Angle label 'ωt/2'
+        const label_angle = -angle_rad / 2;
+        const label_r = arc_radius + 20;
+        const label_x = cx + label_r * Math.cos(label_angle);
+        const label_y = cy + label_r * Math.sin(label_angle);
+        
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('ωt', label_x, label_y - 10);
+        ctx.beginPath();
+        ctx.moveTo(label_x - 15, label_y);
+        ctx.lineTo(label_x + 15, label_y);
+        ctx.stroke();
+        ctx.fillText('2', label_x, label_y + 12);
+        
+        // Reset font for other labels
+        ctx.font = 'italic 20px serif';
+
+        // 6. Draw length labels 'l'
+        // Top segment
+        const l_label1_offset_x = 20 * Math.sin(angle_rad);
+        const l_label1_offset_y = 20 * Math.cos(angle_rad);
+        ctx.fillText('l', cx + x1 / 2 + l_label1_offset_x, cy + y1 / 2 + l_label1_offset_y);
+
+        // Bottom segment
+        const l_label2_offset_x = -20 * Math.sin(angle_rad);
+        const l_label2_offset_y = -20 * Math.cos(angle_rad);
+        ctx.fillText('l', cx + x2 / 2 + l_label2_offset_x, cy + y2 / 2 + l_label2_offset_y);
+        
+        // 7. Draw the figure caption
+        ctx.font = '18px sans-serif';
+        ctx.fillText('Fig. 4.31', cx, canvas.height - 25);
+    </script>
+</body>
+</html>

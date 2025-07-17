@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="550" height="300"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.font = '20px serif';
+        ctx.textAlign = 'center';
+
+        /**
+         * Draws an inductor symbol (horizontal coil).
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x - The starting x-coordinate.
+         * @param {number} y - The y-coordinate of the centerline.
+         * @param {number} len - The total length of the inductor.
+         * @param {number} numLoops - The number of loops in the coil.
+         */
+        function drawInductor(ctx, x, y, len, numLoops) {
+            const loopRadius = len / (2 * numLoops);
+            ctx.moveTo(x, y);
+            for (let i = 0; i < numLoops; i++) {
+                ctx.arc(x + (2 * i + 1) * loopRadius, y, loopRadius, Math.PI, 0, false);
+            }
+            ctx.moveTo(x + len, y);
+        }
+
+        /**
+         * Draws a resistor symbol (horizontal zigzag).
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x - The starting x-coordinate.
+         * @param {number} y - The y-coordinate of the centerline.
+         * @param {number} width - The total width of the resistor.
+         * @param {number} height - The height of the peaks.
+         */
+        function drawResistor(ctx, x, y, width, height) {
+            const zigzags = 6;
+            const dx = width / zigzags;
+            ctx.moveTo(x, y);
+            for (let i = 0; i < zigzags; i++) {
+                ctx.lineTo(x + (i + 0.5) * dx, y + (i % 2 === 0 ? -height : height));
+            }
+            ctx.lineTo(x + width, y);
+        }
+
+        /**
+         * Draws a capacitor symbol (horizontal).
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x - The x-coordinate of the first plate.
+         * @param {number} y - The y-coordinate of the centerline.
+         * @param {number} gap - The distance between the plates.
+         * @param {number} plateLen - The length of the plates.
+         */
+        function drawCapacitor(ctx, x, y, gap, plateLen) {
+            ctx.moveTo(x, y - plateLen / 2);
+            ctx.lineTo(x, y + plateLen / 2);
+            ctx.moveTo(x + gap, y - plateLen / 2);
+            ctx.lineTo(x + gap, y + plateLen / 2);
+        }
+        
+        /**
+         * Draws a capacitor symbol (vertical).
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x - The x-coordinate of the center.
+         * @param {number} y - The y-coordinate of the top plate.
+         * @param {number} plateWidth - The width of the plates.
+         * @param {number} gap - The distance between the plates.
+         */
+        function drawCapacitorVertical(ctx, x, y, plateWidth, gap) {
+            ctx.moveTo(x - plateWidth / 2, y);
+            ctx.lineTo(x + plateWidth / 2, y);
+            ctx.moveTo(x - plateWidth / 2, y + gap);
+            ctx.lineTo(x + plateWidth / 2, y + gap);
+        }
+
+        /**
+         * Draws an inductor symbol (vertical coil).
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x - The x-coordinate of the centerline.
+         * @param {number} y - The starting y-coordinate.
+         * @param {number} height - The total height of the inductor.
+         * @param {number} numLoops - The number of loops.
+         */
+        function drawInductorVertical(ctx, x, y, height, numLoops) {
+            const loopRadius = height / (2 * numLoops);
+            ctx.moveTo(x, y);
+            for (let i = 0; i < numLoops; i++) {
+                ctx.arc(x, y + (2 * i + 1) * loopRadius, loopRadius, 1.5 * Math.PI, 0.5 * Math.PI, false);
+            }
+            ctx.moveTo(x, y + height);
+        }
+
+        // --- Main Drawing ---
+        window.onload = function() {
+            // Layout parameters
+            const yTop = 100;
+            const yBottom = 220;
+            const terminalRadius = 4;
+            let currentX = 50;
+
+            // Start drawing paths
+            ctx.beginPath();
+
+            // Input Terminals
+            ctx.moveTo(currentX - 10 + terminalRadius, yTop);
+            ctx.arc(currentX - 10, yTop, terminalRadius, 0, 2 * Math.PI);
+            ctx.moveTo(currentX - 10 + terminalRadius, yBottom);
+            ctx.arc(currentX - 10, yBottom, terminalRadius, 0, 2 * Math.PI);
+
+            // Connective wires and components
+            ctx.moveTo(currentX - 10, yTop);
+            ctx.lineTo(currentX, yTop);
+
+            // Inductor L
+            const inductorLen = 70;
+            drawInductor(ctx, currentX, yTop, inductorLen, 4);
+            ctx.fillText('L', currentX + inductorLen / 2, yTop - 15);
+            currentX += inductorLen;
+            ctx.lineTo(currentX, yTop);
+
+            // Resistor R
+            const resistorLen = 70;
+            const resistorHeight = 10;
+            const lineToR = 30;
+            ctx.lineTo(currentX + lineToR, yTop);
+            currentX += lineToR;
+            drawResistor(ctx, currentX, yTop, resistorLen, resistorHeight);
+            ctx.fillText('R', currentX + resistorLen / 2, yTop - 15);
+            currentX += resistorLen;
+
+            // Capacitor C
+            const capacitorGap = 12;
+            const capacitorPlateLen = 24;
+            const lineToC = 30;
+            ctx.lineTo(currentX + lineToC, yTop);
+            currentX += lineToC;
+            drawCapacitor(ctx, currentX, yTop, capacitorGap, capacitorPlateLen);
+            ctx.fillText('C', currentX + capacitorGap / 2, yTop - 15);
+            currentX += capacitorGap;
+            
+            // Parallel section
+            const lineToJunction = 30;
+            ctx.moveTo(currentX, yTop);
+            ctx.lineTo(currentX + lineToJunction, yTop);
+            const junctionX = currentX + lineToJunction;
+
+            // C1 branch
+            const C1_plateWidth = 30;
+            const C1_gap = 12;
+            ctx.moveTo(junctionX, yTop);
+            ctx.lineTo(junctionX, yTop + 50);
+            drawCapacitorVertical(ctx, junctionX, yTop + 50, C1_plateWidth, C1_gap);
+            ctx.moveTo(junctionX, yTop + 50 + C1_gap);
+            ctx.lineTo(junctionX, yBottom);
+            ctx.textAlign = 'left';
+            ctx.fillText('C\u2081', junctionX + 10, yTop + 60);
+
+            // L1 branch
+            const L1_x = junctionX + 80;
+            const L1_height = 80;
+            ctx.moveTo(junctionX, yTop);
+            ctx.lineTo(L1_x, yTop);
+            ctx.moveTo(L1_x, yTop);
+            ctx.lineTo(L1_x, yTop + 20);
+            drawInductorVertical(ctx, L1_x, yTop + 20, L1_height, 4);
+            ctx.moveTo(L1_x, yTop + 20 + L1_height);
+            ctx.lineTo(L1_x, yBottom);
+            ctx.fillText('L\u2081', L1_x + 10, yTop + 65);
+            
+            // Bottom wire
+            ctx.moveTo(currentX - 350, yBottom); // Back to start terminal
+            ctx.lineTo(L1_x, yBottom);
+
+            // Stroke all paths
+            ctx.stroke();
+
+            // Figure Caption
+            ctx.textAlign = 'center';
+            ctx.fillText('Fig. 3.87', canvas.width / 2, yBottom + 40);
+        };
+    </script>
+</body>
+</html>

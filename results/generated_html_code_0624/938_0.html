@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Temperature-Time Graph</title>
+</head>
+<body>
+    <canvas id="physicsGraph" width="650" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsGraph');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const margin = { top: 40, right: 30, bottom: 80, left: 80 };
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const graphWidth = canvasWidth - margin.left - margin.right;
+        const graphHeight = canvasHeight - margin.top - margin.bottom;
+
+        const xMin = 0;
+        const xMax = 60;
+        const yMin = 0;
+        const yMax = 100;
+
+        // --- Coordinate Transformation Functions ---
+        function toX(t) {
+            return margin.left + (t - xMin) / (xMax - xMin) * graphWidth;
+        }
+
+        function toY(temp) {
+            return margin.top + graphHeight - (temp - yMin) / (yMax - yMin) * graphHeight;
+        }
+
+        // --- Drawing ---
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+        // 1. Draw Grid
+        // Minor grid lines (thin, light gray)
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 0.5;
+        // Vertical lines every 1s
+        for (let t = 1; t < xMax; t++) {
+            if (t % 10 !== 0) {
+                ctx.beginPath();
+                ctx.moveTo(toX(t), toY(yMin));
+                ctx.lineTo(toX(t), toY(yMax));
+                ctx.stroke();
+            }
+        }
+        // Horizontal lines every 1°C
+        for (let temp = 1; temp < yMax; temp++) {
+            if (temp % 5 !== 0) {
+                ctx.beginPath();
+                ctx.moveTo(toX(xMin), toY(temp));
+                ctx.lineTo(toX(xMax), toY(temp));
+                ctx.stroke();
+            }
+        }
+        
+        // Intermediate grid lines (medium, gray)
+        ctx.strokeStyle = '#b0b0b0';
+        ctx.lineWidth = 1;
+        // Vertical lines every 10s
+        for (let t = 10; t < xMax; t += 10) {
+            ctx.beginPath();
+            ctx.moveTo(toX(t), toY(yMin));
+            ctx.lineTo(toX(t), toY(yMax));
+            ctx.stroke();
+        }
+        // Horizontal lines every 5°C
+        for (let temp = 5; temp <= yMax; temp += 5) {
+             if (temp % 25 !== 0) {
+                ctx.beginPath();
+                ctx.moveTo(toX(xMin), toY(temp));
+                ctx.lineTo(toX(xMax), toY(temp));
+                ctx.stroke();
+            }
+        }
+
+        // 2. Draw Axes and Major Labeled Grid Lines (thick, black)
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+        // Y-axis and major horizontal lines
+        for (let temp = 0; temp <= yMax; temp += 25) {
+            ctx.beginPath();
+            ctx.moveTo(toX(xMin), toY(temp));
+            ctx.lineTo(toX(xMax), toY(temp));
+            ctx.stroke();
+        }
+        // X-axis (re-drawn to be on top)
+        ctx.beginPath();
+        ctx.moveTo(toX(xMin), toY(yMin));
+        ctx.lineTo(toX(xMax), toY(yMin));
+        ctx.stroke();
+        // Y-axis (re-drawn to be on top)
+        ctx.beginPath();
+        ctx.moveTo(toX(xMin), toY(yMin));
+        ctx.lineTo(toX(xMin), toY(yMax));
+        ctx.stroke();
+
+
+        // 3. Draw Ticks and Labels
+        ctx.fillStyle = 'black';
+        ctx.font = "16px 'Times New Roman'";
+        const tickLength = 5;
+
+        // X-axis ticks and labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let t = 0; t <= xMax; t += 10) {
+            ctx.fillText(t, toX(t), toY(yMin) + tickLength + 5);
+            ctx.beginPath();
+            ctx.moveTo(toX(t), toY(yMin));
+            ctx.lineTo(toX(t), toY(yMin) + tickLength);
+            ctx.stroke();
+        }
+
+        // Y-axis ticks and labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let temp = 0; temp <= yMax; temp += 25) {
+            ctx.fillText(temp, toX(xMin) - tickLength - 5, toY(temp));
+            ctx.beginPath();
+            ctx.moveTo(toX(xMin), toY(temp));
+            ctx.lineTo(toX(xMin) - tickLength, toY(temp));
+            ctx.stroke();
+        }
+
+        // 4. Draw Axis Titles
+        ctx.font = "18px 'Times New Roman'";
+        // X-axis Title
+        ctx.textAlign = 'center';
+        ctx.fillText('t / s', toX(30), toY(0) + 40);
+        // Y-axis Title
+        ctx.save();
+        ctx.translate(margin.left - 60, margin.top + graphHeight / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('temperature / °C', 0, 0);
+        ctx.restore();
+
+        // 5. Draw the Data Line
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(toX(0), toY(25));
+        ctx.lineTo(toX(22), toY(80));
+        ctx.lineTo(toX(60), toY(80));
+        ctx.stroke();
+        
+        // 6. Draw Figure Caption
+        ctx.font = "bold 16px 'Times New Roman'";
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 3.2', canvasWidth / 2, canvasHeight - 20);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamic Process Diagram</title>
+</head>
+<body>
+<canvas id="physics-diagram" width="550" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physics-diagram');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Configuration ---
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.fillStyle = 'black';
+    const axisFont = 'italic 20px "Times New Roman"';
+    const labelFont = 'italic 20px "Times New Roman"';
+    const captionFont = '20px "SimSun", "Times New Roman"';
+    const arrowSize = 8;
+
+    // --- Coordinates ---
+    const origin = { x: 60, y: 440 };
+    const pAxisEnd = { x: origin.x, y: 40 };
+    const vAxisEnd = { x: 510, y: origin.y };
+
+    // Vertices of the rectangle
+    const a = { x: 150, y: 350 };
+    const d = { x: 450, y: 350 };
+    const b = { x: 450, y: 100 };
+    const c = { x: 150, y: 100 };
+
+    // Control points for the S-shaped curve from a to b
+    const P0 = a;
+    const P3 = b;
+    // The curve in the image has an inflection point. It appears to be concave up near 'a'
+    // and concave down near 'b'. For a cubic Bezier curve, this is achieved by placing
+    // the control points on opposite sides of the line connecting the start and end points.
+    const P1 = { x: 220, y: 330 }; 
+    const P2 = { x: 400, y: 180 }; 
+
+    // --- Drawing Functions ---
+
+    function drawAxisArrow(x1, y1, x2, y2, size) {
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.save();
+        ctx.translate(x2, y2);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size * 1.5, -size * 0.6);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size * 1.5, size * 0.6);
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    function drawMidArrow(from, to, size) {
+        const midX = (from.x + to.x) / 2;
+        const midY = (from.y + to.y) / 2;
+        const angle = Math.atan2(to.y - from.y, to.x - from.x);
+        
+        ctx.save();
+        ctx.translate(midX, midY);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    function drawArrowOnCurve(t, p0, p1, p2, p3, size) {
+        // Calculate point on curve at parameter t
+        const Bx = (1-t)**3*p0.x + 3*(1-t)**2*t*p1.x + 3*(1-t)*t**2*p2.x + t**3*p3.x;
+        const By = (1-t)**3*p0.y + 3*(1-t)**2*t*p1.y + 3*(1-t)*t**2*p2.y + t**3*p3.y;
+        
+        // Calculate tangent vector on curve at t
+        const Bpx = 3*(1-t)**2*(p1.x-p0.x) + 6*(1-t)*t*(p2.x-p1.x) + 3*t**2*(p3.x-p2.x);
+        const Bpy = 3*(1-t)**2*(p1.y-p0.y) + 6*(1-t)*t*(p2.y-p1.y) + 3*t**2*(p3.y-p2.y);
+        
+        const angle = Math.atan2(Bpy, Bpx);
+
+        ctx.save();
+        ctx.translate(Bx, By);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+
+    // 1. Axes and Axis Labels
+    ctx.font = axisFont;
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(pAxisEnd.x, pAxisEnd.y);
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(vAxisEnd.x, vAxisEnd.y);
+    ctx.stroke();
+    drawAxisArrow(origin.x, origin.y, pAxisEnd.x, pAxisEnd.y, arrowSize);
+    drawAxisArrow(origin.x, origin.y, vAxisEnd.x, vAxisEnd.y, arrowSize);
+    ctx.fillText('p', pAxisEnd.x - 25, pAxisEnd.y + 10);
+    ctx.fillText('V', vAxisEnd.x + 5, vAxisEnd.y + 15);
+    ctx.fillText('O', origin.x - 25, origin.y + 20);
+
+    // 2. Rectangular Cycle
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(d.x, d.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.lineTo(c.x, c.y);
+    ctx.closePath();
+    ctx.stroke();
+    
+    // Arrows for the rectangular cycle
+    drawMidArrow(a, d, arrowSize);
+    drawMidArrow(d, b, arrowSize);
+    drawMidArrow(b, c, arrowSize);
+    drawMidArrow(c, a, arrowSize);
+
+    // 3. Curved Path
+    ctx.beginPath();
+    ctx.moveTo(P0.x, P0.y);
+    ctx.bezierCurveTo(P1.x, P1.y, P2.x, P2.y, P3.x, P3.y);
+    ctx.stroke();
+    
+    // Arrow for the curved path
+    drawArrowOnCurve(0.55, P0, P1, P2, P3, arrowSize);
+
+    // 4. Point Labels (positions adjusted to match the original image)
+    ctx.font = labelFont;
+    ctx.fillText('a', a.x, a.y + 20);
+    ctx.fillText('b', b.x - 20, b.y + 5);
+    ctx.fillText('c', c.x + 5, c.y - 5);
+    ctx.fillText('d', d.x + 5, d.y + 5);
+
+    // 5. Caption
+    ctx.font = captionFont;
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 6-1 图', canvas.width / 2, 480);
+
+</script>
+</body>
+</html>

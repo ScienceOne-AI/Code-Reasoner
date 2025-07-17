@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="420"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2 - 20; // Move up for caption
+    const scale = 1.0;
+    
+    // Physical parameters in canvas units
+    const D = 180 * scale; // Diameter
+    const R = D / 2;       // Radius
+    const centerDist = D / 2; // Distance between centers
+
+    const c1_x = -centerDist / 2;
+    const c2_x = centerDist / 2;
+
+    // Style
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = "20px 'Times New Roman'";
+
+    // --- Drawing Functions ---
+
+    // Function to draw axes
+    function drawAxes() {
+        const axisLength = 160 * scale;
+        const arrowSize = 10;
+        ctx.lineWidth = 1.5;
+
+        // X-axis
+        ctx.beginPath();
+        ctx.moveTo(-axisLength, 0);
+        ctx.lineTo(axisLength, 0);
+        ctx.moveTo(axisLength, 0);
+        ctx.lineTo(axisLength - arrowSize, -arrowSize / 2);
+        ctx.moveTo(axisLength, 0);
+        ctx.lineTo(axisLength - arrowSize, arrowSize / 2);
+        ctx.stroke();
+        ctx.fillText('x', axisLength + 10, 8);
+
+        // Y-axis
+        ctx.beginPath();
+        ctx.moveTo(0, -axisLength + 40);
+        ctx.lineTo(0, axisLength - 40);
+        ctx.moveTo(0, -axisLength + 40);
+        ctx.lineTo(-arrowSize / 2, -axisLength + 40 + arrowSize);
+        ctx.moveTo(0, -axisLength + 40);
+        ctx.lineTo(arrowSize / 2, -axisLength + 40 + arrowSize);
+        ctx.stroke();
+        ctx.fillText('y', 10, -axisLength + 40);
+
+        // Origin Label
+        ctx.font = "italic 22px 'Times New Roman'";
+        ctx.fillText('O', 5, 20);
+    }
+
+    // Function to draw hatching lines in a bounding box
+    function drawHatches() {
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.8;
+        const hatchSpacing = 12 * scale;
+        
+        // Bounding box that covers both circles
+        const box = {
+            x1: c1_x - R,
+            y1: -R,
+            x2: c2_x + R,
+            y2: R
+        };
+
+        // Lines have equation y = x + c (slope 1 in canvas coordinates)
+        // Find range of c = y - x
+        const c_min = box.y1 - box.x2;
+        const c_max = box.y2 - box.x1;
+        
+        for (let c = c_min; c <= c_max; c += hatchSpacing) {
+            ctx.beginPath();
+            ctx.moveTo(box.x1, box.x1 + c);
+            ctx.lineTo(box.x2, box.x2 + c);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    // --- Main Drawing Logic ---
+
+    // 1. Translate origin
+    ctx.translate(centerX, centerY);
+
+    // 2. Draw Axes
+    drawAxes();
+
+    // 3. Draw Left Conductor (C+)
+    ctx.lineWidth = 2.5;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(c1_x, 0, R, 0, 2 * Math.PI);
+    ctx.clip(); // Restrict drawing to inside the circle path
+    drawHatches();
+    ctx.restore(); // Remove clipping region
+    // Draw circle border on top of hatches
+    ctx.beginPath();
+    ctx.arc(c1_x, 0, R, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 4. Draw Right Conductor (C-)
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(c2_x, 0, R, 0, 2 * Math.PI);
+    ctx.clip();
+    drawHatches();
+    ctx.restore();
+    // Draw circle border
+    ctx.beginPath();
+    ctx.arc(c2_x, 0, R, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 5. Draw Labels
+    // C+
+    ctx.font = "italic 32px 'Times New Roman'";
+    ctx.fillText('C', c1_x - 45, -35);
+    ctx.font = "italic 22px 'Times New Roman'";
+    ctx.fillText('+', c1_x - 20, -32);
+    
+    // C-
+    ctx.font = "italic 32px 'Times New Roman'";
+    ctx.fillText('C', c2_x + 20, -35);
+    ctx.font = "bold 22px 'Times New Roman'";
+    ctx.fillText('–', c2_x + 45, -32); // Using en-dash for a proper minus sign
+
+    // 6. Draw Caption
+    ctx.resetTransform(); // Reset to default coordinate system
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'black';
+    ctx.font = "24px 'SimSun', 'STSong'";
+    ctx.fillText('电图 2.5.1', centerX, canvas.height - 20);
+
+</script>
+</body>
+</html>

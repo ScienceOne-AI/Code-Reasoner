@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="750" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '22px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Helper function to draw hatch marks for surfaces
+        function drawHatches(x1, y1, x2, y2, angleDegrees, len, spacing) {
+            ctx.save();
+            ctx.lineWidth = 1;
+            const angleRad = angleDegrees * Math.PI / 180;
+            const dx = len * Math.cos(angleRad);
+            const dy = len * Math.sin(angleRad);
+            for (let x = x1; x <= x2; x += spacing) {
+                ctx.beginPath();
+                ctx.moveTo(x, y1);
+                ctx.lineTo(x - dx, y1 + dy);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+        
+        // Helper function to draw an arrowhead
+        function drawArrowhead(x, y, angleDegrees, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angleDegrees * Math.PI / 180);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+
+        // Define key coordinates and parameters
+        const groundY = 370;
+        const ceilingY = 100;
+        const pulleyX = 520;
+        const pulleyY = 150;
+        const pulleyR = 40;
+        const blockH = 40;
+        const blockW = 100;
+        const blockTopY = groundY - blockH;
+
+        // Calculate block connection points based on geometry
+        const dy_ropes = blockTopY - pulleyY;
+        
+        // Position I (30 degrees)
+        const angle1_rad = 30 * Math.PI / 180;
+        const dx1 = dy_ropes / Math.tan(angle1_rad);
+        const conn1X = pulleyX - dx1;
+
+        // Position II (60 degrees)
+        const angle2_rad = 60 * Math.PI / 180;
+        const dx2 = dy_ropes / Math.tan(angle2_rad);
+        const conn2X = pulleyX - dx2;
+
+        // 1. Draw Surfaces (Ground and Ceiling)
+        // Ground
+        ctx.beginPath();
+        ctx.moveTo(50, groundY);
+        ctx.lineTo(700, groundY);
+        ctx.stroke();
+        drawHatches(50, groundY, 700, groundY, 135, 10, 15);
+
+        // Ceiling
+        ctx.beginPath();
+        ctx.moveTo(440, ceilingY);
+        ctx.lineTo(600, ceilingY);
+        ctx.stroke();
+        drawHatches(440, ceilingY, 600, ceilingY, 45, 10, 15);
+
+        // 2. Draw Ropes (behind pulley and blocks)
+        ctx.beginPath();
+        // Rope from block I
+        ctx.moveTo(conn1X, blockTopY);
+        ctx.lineTo(pulleyX, pulleyY);
+        // Rope from block II
+        ctx.moveTo(conn2X, blockTopY);
+        ctx.lineTo(pulleyX, pulleyY);
+        // Rope for force F
+        ctx.arc(pulleyX, pulleyY, pulleyR, 0, -Math.PI/2, true);
+        ctx.lineTo(pulleyX, 250); // The diagram shows F vertically aligned with the center. Let's adjust this.
+        ctx.stroke();
+        
+        // Redraw vertical rope to match diagram
+        ctx.beginPath();
+        ctx.moveTo(pulleyX, pulleyY + pulleyR);
+        ctx.lineTo(pulleyX, 250);
+        ctx.stroke();
+
+
+        // 3. Draw Pulley System (over the rope intersections)
+        // Pulley Support (U-bracket)
+        ctx.beginPath();
+        ctx.moveTo(pulleyX - 20, ceilingY);
+        ctx.lineTo(pulleyX - 20, pulleyY);
+        ctx.arc(pulleyX, pulleyY, 20, Math.PI, 0);
+        ctx.lineTo(pulleyX + 20, ceilingY);
+        ctx.stroke();
+        
+        // Pulley Wheel
+        ctx.fillStyle = 'white'; // Fill to hide the rope lines underneath
+        ctx.beginPath();
+        ctx.arc(pulleyX, pulleyY, pulleyR, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        
+        // Pulley Axle
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(pulleyX, pulleyY, 4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 4. Draw Blocks
+        // Block I (solid)
+        ctx.fillStyle = 'white';
+        ctx.fillRect(conn1X - blockW, blockTopY, blockW, blockH);
+        ctx.strokeRect(conn1X - blockW, blockTopY, blockW, blockH);
+        
+        // Block II (dashed)
+        ctx.beginPath();
+        ctx.setLineDash([6, 4]);
+        ctx.strokeRect(conn2X - blockW, blockTopY, blockW, blockH);
+        ctx.setLineDash([]);
+        
+        // 5. Labels and Annotations
+        ctx.fillStyle = 'black';
+        
+        // Block labels
+        ctx.fillText('I', conn1X - blockW - 20, blockTopY + blockH/2);
+        ctx.fillText('m', conn1X - blockW + 25, blockTopY + blockH/2);
+        ctx.fillText('II', conn2X - blockW/2, blockTopY - 20);
+
+        // Angle 30°
+        ctx.beginPath();
+        ctx.arc(conn1X, blockTopY, 40, -angle1_rad, 0);
+        ctx.stroke();
+        ctx.fillText('30°', conn1X + 50, blockTopY - 15);
+
+        // Angle 60°
+        // Dashed line for angle reference
+        ctx.beginPath();
+        ctx.setLineDash([3, 3]);
+        ctx.moveTo(conn2X - 50, blockTopY);
+        ctx.lineTo(conn2X, blockTopY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Arc for angle
+        ctx.beginPath();
+        ctx.arc(conn2X, blockTopY, 30, -angle2_rad, 0);
+        ctx.stroke();
+        ctx.fillText('60°', conn2X + 38, blockTopY - 20);
+        
+        // Force F
+        const forceArrowY = 250;
+        ctx.fillText('F', pulleyX, forceArrowY + 20);
+        drawArrowhead(pulleyX, forceArrowY, 270, 15);
+
+
+        // Height h
+        const hLineX = 650;
+        ctx.beginPath();
+        ctx.moveTo(hLineX, pulleyY);
+        ctx.lineTo(hLineX, groundY);
+        // T-ends
+        ctx.moveTo(hLineX - 10, pulleyY);
+        ctx.lineTo(hLineX + 10, pulleyY);
+        ctx.moveTo(hLineX - 10, groundY);
+        ctx.lineTo(hLineX + 10, groundY);
+        ctx.stroke();
+        ctx.fillText('h', hLineX + 25, (pulleyY + groundY) / 2);
+        
+        // Small smudge/defect from the original image
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(250, 130, 5, 2, Math.PI / 3, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.restore();
+
+        // 6. Bottom Title Text
+        ctx.font = '24px "SimSun", "Songti SC"';
+        ctx.fillText('习题 2-17 图', canvas.width / 2.5, groundY + 45);
+
+    </script>
+</body>
+</html>

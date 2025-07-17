@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Physics Diagram</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    canvas {
+      border: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="physics-diagram-canvas" width="600" height="500"></canvas>
+  <script>
+    const canvas = document.getElementById('physics-diagram-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Utility Functions ---
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    function drawArrowHead(ctx, fromX, fromY, toX, toY, headLength = 8) {
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+      const angle = Math.atan2(dy, dx);
+      ctx.save();
+      ctx.beginPath();
+      ctx.translate(toX, toY);
+      ctx.rotate(angle);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-headLength, headLength / 2);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-headLength, -headLength / 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawVector(ctx, fromX, fromY, toX, toY) {
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(toX, toY);
+      ctx.stroke();
+      drawArrowHead(ctx, fromX, fromY, toX, toY, 10);
+    }
+
+    // --- Coordinates and Dimensions ---
+    const hingeX = 100;
+    const leverY = 150;
+    const leverThickness = 6;
+    
+    // Using pixels directly to match the image's proportions
+    const d1 = 150; // Represents 0.50m
+    const d2 = 225; // Represents 0.75m
+
+    const brakeShoeX = hingeX + d1;
+    const leverEndX = brakeShoeX + d2;
+    const wallX = hingeX - 15;
+
+    const flywheelRadius = 90;
+    const brakeShoeHeight = 10;
+    const flywheelTopY = leverY + leverThickness / 2 + brakeShoeHeight;
+    const flywheelCX = brakeShoeX;
+    const flywheelCY = flywheelTopY + flywheelRadius;
+    
+    // --- Drawing ---
+    
+    // 1. Wall
+    ctx.beginPath();
+    ctx.moveTo(wallX, leverY - 100);
+    ctx.lineTo(wallX, leverY + 100);
+    ctx.stroke();
+    // Hatching
+    for (let i = -90; i <= 90; i += 20) {
+      ctx.beginPath();
+      ctx.moveTo(wallX, leverY + i);
+      ctx.lineTo(wallX - 10, leverY + i + 10);
+      ctx.stroke();
+    }
+
+    // 2. Hinge
+    ctx.beginPath();
+    ctx.moveTo(wallX, leverY - 12);
+    ctx.lineTo(hingeX, leverY);
+    ctx.lineTo(wallX, leverY + 12);
+    ctx.closePath();
+    ctx.stroke();
+    // Pin at the end of the lever
+    ctx.beginPath();
+    ctx.rect(hingeX, leverY - leverThickness / 2, 5, leverThickness);
+    ctx.fill();
+
+    // 3. Lever Arm
+    ctx.beginPath();
+    ctx.rect(hingeX + 5, leverY - leverThickness / 2, d1 + d2 - 5, leverThickness);
+    ctx.fill();
+
+    // 4. Brake Shoe
+    ctx.beginPath();
+    ctx.moveTo(brakeShoeX, leverY + leverThickness / 2);
+    ctx.lineTo(brakeShoeX - 10, flywheelTopY);
+    ctx.lineTo(brakeShoeX + 10, flywheelTopY);
+    ctx.closePath();
+    ctx.fill();
+
+    // 5. Flywheel
+    ctx.beginPath();
+    ctx.arc(flywheelCX, flywheelCY, flywheelRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // Center point 'O'
+    ctx.beginPath();
+    ctx.arc(flywheelCX, flywheelCY, 2.5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('O', flywheelCX + 25, flywheelCY + 7);
+
+    // 6. Angular Velocity 'ω'
+    const omegaRadius = flywheelRadius * 0.7;
+    const omegaAngleStart = -Math.PI / 8;
+    const omegaAngleEnd = Math.PI / 2.5;
+    ctx.beginPath();
+    ctx.arc(flywheelCX, flywheelCY, omegaRadius, omegaAngleStart, omegaAngleEnd);
+    ctx.stroke();
+    // Arrowhead for ω
+    const arrowX = flywheelCX + omegaRadius * Math.cos(omegaAngleEnd);
+    const arrowY = flywheelCY + omegaRadius * Math.sin(omegaAngleEnd);
+    drawArrowHead(ctx, 0, 0, arrowX, arrowY, 10);
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.fillText('ω', arrowX + 20, arrowY + 10);
+    ctx.font = '20px Arial'; // Reset font
+
+    // 7. Force 'F'
+    const forceYStart = leverY;
+    const forceYEnd = leverY + 50;
+    drawVector(ctx, leverEndX, forceYStart, leverEndX, forceYEnd);
+    ctx.fillText('F', leverEndX + 25, (forceYStart + forceYEnd) / 2);
+
+    // 8. Dimension Lines
+    const dimY = leverY - 50;
+    const tickHeight = 8;
+    
+    // Dimension 1: 0.50m
+    ctx.beginPath();
+    ctx.moveTo(hingeX, dimY);
+    ctx.lineTo(brakeShoeX, dimY);
+    ctx.moveTo(hingeX, dimY - tickHeight / 2);
+    ctx.lineTo(hingeX, dimY + tickHeight / 2);
+    ctx.moveTo(brakeShoeX, dimY - tickHeight / 2);
+    ctx.lineTo(brakeShoeX, dimY + tickHeight / 2);
+    ctx.stroke();
+    drawArrowHead(ctx, brakeShoeX, dimY, hingeX, dimY);
+    drawArrowHead(ctx, hingeX, dimY, brakeShoeX, dimY);
+    ctx.fillText('0.50m', hingeX + d1 / 2, dimY - 5);
+
+    // Dimension 2: 0.75m
+    ctx.beginPath();
+    ctx.moveTo(brakeShoeX, dimY);
+    ctx.lineTo(leverEndX, dimY);
+    ctx.moveTo(leverEndX, dimY - tickHeight / 2);
+    ctx.lineTo(leverEndX, dimY + tickHeight / 2);
+    ctx.stroke();
+    drawArrowHead(ctx, leverEndX, dimY, brakeShoeX, dimY);
+    drawArrowHead(ctx, brakeShoeX, dimY, leverEndX, dimY);
+    ctx.fillText('0.75m', brakeShoeX + d2 / 2, dimY - 5);
+
+    // 9. Caption Text
+    ctx.font = '24px "KaiTi", "SimSun", sans-serif'; // Chinese fonts
+    ctx.fillText('题 10 图', canvas.width / 2, 450);
+
+  </script>
+</body>
+</html>

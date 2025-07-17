@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Mass-Spring System</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="550" height="400"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style settings
+ctx.lineWidth = 1.5;
+ctx.font = "16px Arial";
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+
+// Helper function to draw an arrowhead
+function drawArrowhead(fromX, fromY, toX, toY, angle, length) {
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const headAngle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - length * Math.cos(headAngle - angle), toY - length * Math.sin(headAngle - angle));
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - length * Math.cos(headAngle + angle), toY - length * Math.sin(headAngle + angle));
+    ctx.stroke();
+}
+
+// 1. Draw fixed support
+const supportY = 50;
+const supportStartX = 150;
+const supportEndX = 350;
+ctx.beginPath();
+ctx.moveTo(supportStartX, supportY);
+ctx.lineTo(supportEndX, supportY);
+ctx.stroke();
+
+// Draw hatching for the fixed support
+const hatchLength = 10;
+for (let x = supportStartX; x <= supportEndX; x += 10) {
+    ctx.beginPath();
+    ctx.moveTo(x, supportY);
+    ctx.lineTo(x - hatchLength, supportY - hatchLength);
+    ctx.stroke();
+}
+
+// 2. Draw fixed point
+const fixedPointX = 250;
+const fixedPointY = 50;
+ctx.beginPath();
+ctx.arc(fixedPointX, fixedPointY, 4, 0, 2 * Math.PI);
+ctx.fill();
+
+// 3. Draw the spring
+ctx.beginPath();
+ctx.moveTo(fixedPointX, fixedPointY);
+let y = 60;
+ctx.lineTo(fixedPointX, y);
+
+const coils = 4; // Number of full S-cycles, gives 8 loops
+const pitch = 20; // Vertical distance for one C-curve
+const controlRadius = 55;
+const springRadius = 40;
+
+for (let i = 0; i < coils; i++) {
+    // Right curve
+    ctx.bezierCurveTo(fixedPointX + controlRadius, y, fixedPointX + controlRadius, y + pitch, fixedPointX, y + pitch);
+    y += pitch;
+    // Left curve
+    ctx.bezierCurveTo(fixedPointX - controlRadius, y, fixedPointX - controlRadius, y + pitch, fixedPointX, y + pitch);
+    y += pitch;
+}
+const springEndY = y; // y is now 60 + 8 * 20 = 220
+ctx.lineTo(fixedPointX, springEndY + 10); // End y at 230
+ctx.stroke();
+
+// 4. Draw the object
+const objectAttachY = springEndY + 15; // 235
+const objectTopY = objectAttachY + 5; // 240
+const objectHeight = 35;
+const objectTopWidth = 50;
+const objectBottomWidth = 80;
+
+// Attachment point (small circle)
+ctx.beginPath();
+ctx.arc(fixedPointX, objectAttachY, 4, 0, 2 * Math.PI);
+ctx.fillStyle = 'white';
+ctx.fill();
+ctx.stroke();
+ctx.fillStyle = 'black'; // Reset fillStyle
+
+// Trapezoid body
+ctx.beginPath();
+ctx.moveTo(fixedPointX - objectTopWidth / 2, objectTopY);
+ctx.lineTo(fixedPointX + objectTopWidth / 2, objectTopY);
+ctx.lineTo(fixedPointX + objectBottomWidth / 2, objectTopY + objectHeight);
+ctx.lineTo(fixedPointX - objectBottomWidth / 2, objectTopY + objectHeight);
+ctx.closePath();
+ctx.stroke();
+
+
+// 5. Draw equilibrium position line
+const equilibriumY = 270;
+ctx.beginPath();
+ctx.setLineDash([5, 5]);
+ctx.moveTo(100, equilibriumY);
+ctx.lineTo(480, equilibriumY);
+ctx.stroke();
+ctx.setLineDash([]); // Reset line dash
+
+// 6. Draw oscillations arrow
+const arrowX = 400;
+const arrowTopY = 220;
+const arrowBottomY = 320;
+ctx.beginPath();
+ctx.moveTo(arrowX, arrowTopY);
+ctx.lineTo(arrowX, arrowBottomY);
+ctx.stroke();
+drawArrowhead(arrowX, arrowBottomY, arrowX, arrowTopY, Math.PI / 6, 10);
+drawArrowhead(arrowX, arrowTopY, arrowX, arrowBottomY, Math.PI / 6, 10);
+
+// 7. Add labels
+ctx.textAlign = 'left';
+// Fixed point
+ctx.fillText("fixed point", fixedPointX + 25, fixedPointY + 5);
+ctx.beginPath();
+ctx.moveTo(fixedPointX + 23, fixedPointY + 2);
+ctx.lineTo(fixedPointX + 5, fixedPointY);
+ctx.stroke();
+// Spring
+ctx.fillText("spring", 140, 150);
+ctx.beginPath();
+ctx.moveTo(188, 150);
+ctx.lineTo(fixedPointX - springRadius, 150);
+ctx.stroke();
+// Object
+ctx.fillText("object", 180, 260);
+ctx.beginPath();
+ctx.moveTo(225, 260);
+ctx.lineTo(fixedPointX - objectTopWidth / 2, 260);
+ctx.stroke();
+// Oscillations
+ctx.fillText("oscillations", arrowX + 15, 240);
+// Equilibrium position
+ctx.fillText("equilibrium position", arrowX + 15, equilibriumY + 5);
+
+// 8. Add caption
+ctx.textAlign = 'center';
+ctx.fillText("Fig. 3.1", 250, 380);
+
+</script>
+</body>
+</html>

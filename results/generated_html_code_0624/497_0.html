@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gravitational Potential Graph</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsGraph" width="700" height="750"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsGraph');
+        const ctx = canvas.getContext('2d');
+
+        // Graph parameters
+        const margin = { top: 60, right: 40, bottom: 60, left: 70 };
+        const graphWidth = canvas.width - margin.left - margin.right;
+        const graphHeight = canvas.height - margin.top - margin.bottom;
+
+        const xRange = { min: 0, max: 3.2 };
+        const yRange = { min: -4.0, max: 0.5 };
+
+        // --- Coordinate mapping functions ---
+        function mapX(x) {
+            return margin.left + ((x - xRange.min) / (xRange.max - xRange.min)) * graphWidth;
+        }
+
+        function mapY(y) {
+            return margin.top + graphHeight - ((y - yRange.min) / (yRange.max - yRange.min)) * graphHeight;
+        }
+
+        // --- Drawing functions ---
+
+        function drawGrid() {
+            ctx.strokeStyle = '#dcdcdc'; // Light gray for grid lines
+            ctx.lineWidth = 1;
+
+            // There are major grid lines every 0.1 units, subdivided into 5, so steps of 0.02.
+            const xStep = 0.02;
+            const yStep = 0.02;
+
+            // Vertical grid lines
+            for (let x = xRange.min + xStep; x <= xRange.max; x += xStep) {
+                // Use a tolerance for floating point comparison
+                const isMajor = Math.abs(Math.round(x * 10) - x * 10) < 1e-5;
+                ctx.strokeStyle = isMajor ? '#c0c0c0' : '#e8e8e8';
+                ctx.beginPath();
+                ctx.moveTo(mapX(x), mapY(yRange.min));
+                ctx.lineTo(mapX(x), mapY(yRange.max));
+                ctx.stroke();
+            }
+
+            // Horizontal grid lines
+            for (let y = yRange.min + yStep; y <= yRange.max; y += yStep) {
+                const isMajor = Math.abs(Math.round(y * 10) - y * 10) < 1e-5;
+                ctx.strokeStyle = isMajor ? '#c0c0c0' : '#e8e8e8';
+                ctx.beginPath();
+                ctx.moveTo(mapX(xRange.min), mapY(y));
+                ctx.lineTo(mapX(xRange.max), mapY(y));
+                ctx.stroke();
+            }
+        }
+
+        function drawAxes() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+
+            // Y-axis (x=0)
+            ctx.beginPath();
+            ctx.moveTo(mapX(0), mapY(yRange.min));
+            ctx.lineTo(mapX(0), mapY(yRange.max));
+            ctx.stroke();
+
+            // X-axis (y=0)
+            ctx.beginPath();
+            ctx.moveTo(mapX(xRange.min), mapY(0));
+            ctx.lineTo(mapX(xRange.max), mapY(0));
+            ctx.stroke();
+        }
+
+        function drawLabelsAndTicks() {
+            ctx.fillStyle = 'black';
+            ctx.font = '16px Arial';
+
+            // Y-axis ticks and labels
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let y = -4.0; y <= 0; y += 0.5) {
+                const label = (y === 0) ? '0' : y.toFixed(1);
+                ctx.fillText(label, margin.left - 8, mapY(y));
+            }
+
+            // X-axis ticks and labels
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let x = 1; x <= 3; x += 1) {
+                ctx.fillText(x.toString(), mapX(x), mapY(0) + 8);
+            }
+            // Special label for x=0
+            ctx.textAlign = 'center';
+            ctx.fillText('0', mapX(0), mapY(0) + 8);
+
+            // Axis titles
+            // X-axis title
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            const xTitleX = mapX(xRange.max);
+            const xTitleY = margin.top - 15;
+            ctx.font = 'italic 16px Arial';
+            ctx.fillText('x', xTitleX - 60, xTitleY);
+            ctx.font = '16px Arial';
+            ctx.fillText('/ 10\u2077 m', xTitleX, xTitleY);
+
+            // Y-axis title
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'bottom';
+            const yTitleX = margin.left;
+            const yTitleY = mapY(-3.4);
+            ctx.font = 'italic 16px Arial';
+            ctx.fillText('\u03C6', yTitleX, yTitleY);
+            ctx.font = '16px Arial';
+            ctx.fillText(' / 10\u2077 J kg\u207B\u00B9', yTitleX + 10, yTitleY);
+            
+            // Figure caption
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('Fig. 1.1', canvas.width / 2, canvas.height - 10);
+        }
+
+        function drawCurve() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+
+            // The curve is of the form φ = -GM/x, so φ*x is constant.
+            // From the graph, at the surface x_axis = 0.48, φ_axis = -3.5.
+            // Let x' = x/10^7 and φ' = φ/10^7. The curve is φ' = k/x'.
+            // k = φ' * x' = -3.5 * 0.48 = -1.68.
+            // So, φ'_axis = -1.68 / x'_axis.
+            const k = -1.68;
+            const startX = 0.48;
+            const endX = 3.2;
+
+            let firstPoint = true;
+            for (let x_data = startX; x_data <= endX; x_data += 0.01) {
+                const y_data = k / x_data;
+                if (y_data < yRange.min) continue; // Don't draw outside the range
+
+                const px = mapX(x_data);
+                const py = mapY(y_data);
+
+                if (firstPoint) {
+                    ctx.moveTo(px, py);
+                    firstPoint = false;
+                } else {
+                    ctx.lineTo(px, py);
+                }
+            }
+            ctx.stroke();
+        }
+
+        // --- Main drawing sequence ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+        drawAxes();
+        drawLabelsAndTicks();
+        drawCurve();
+
+    </script>
+</body>
+</html>

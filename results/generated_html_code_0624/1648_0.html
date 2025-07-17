@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+    <canvas id="canvas" width="500" height="480"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a spring (coil) between two points.
+         * @param {CanvasRenderingContext2D} ctx The canvas context.
+         * @param {number} x1 The x-coordinate of the start point.
+         * @param {number} y1 The y-coordinate of the start point.
+         * @param {number} x2 The x-coordinate of the end point.
+         * @param {number} y2 The y-coordinate of the end point.
+         * @param {number} amplitude The amplitude of the coils.
+         * @param {number} numCoils The number of coils.
+         */
+        function drawSpring(ctx, x1, y1, x2, y2, amplitude, numCoils) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+
+            const springLen = dist;
+            // Each coil has an "up" and a "down" part in the rotated frame
+            const numSegments = numCoils * 2; 
+            const segLenX = springLen / numSegments;
+
+            for (let i = 0; i < numSegments; i++) {
+                const currX = i * segLenX;
+                const nextX = (i + 1) * segLenX;
+                const peakX = (currX + nextX) / 2;
+                // Alternate between positive and negative amplitude for the coil effect
+                // Start with a negative y offset in the rotated frame to go "inside" the triangle first
+                const peakY = amplitude * ((i % 2 === 0) ? -1 : 1);
+                ctx.quadraticCurveTo(peakX, peakY, nextX, 0);
+            }
+            
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        /**
+         * Draws a filled arrowhead at a given point and angle.
+         * @param {CanvasRenderingContext2D} ctx The canvas context.
+         * @param {number} x The x-coordinate of the arrow's tip.
+         * @param {number} y The y-coordinate of the arrow's tip.
+         * @param {number} angle The angle of the arrow in radians.
+         * @param {number} headLength The length of the arrowhead.
+         */
+        function drawArrowHead(ctx, x, y, angle, headLength) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headLength, headLength / 2);
+            ctx.lineTo(-headLength, -headLength / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // --- Main Drawing Logic ---
+        
+        // Constants
+        const cx = 250;
+        const cy = 230; // Center y, shifted up for caption space
+        const l = 110;  // Distance from center to vertex
+        const axisLength = 60;
+        const lineWidth = 2.5;
+        const arrowHeadLength = 12;
+        const springAmplitude = 7;
+        const springCoils = 17;
+        const fontSize = 20;
+
+        // Canvas setup
+        ctx.lineWidth = lineWidth;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = `italic ${fontSize}px 'Times New Roman'`;
+
+        // Angles are in math degrees (0 is right, 90 is up), chosen to match image orientation
+        const angle1_deg = 195; // for x₁ (bottom-left)
+        const angle2_deg = 315; // for x₂ (bottom-right)
+        const angle3_deg = 75;  // for x₃ (top-right)
+
+        // Convert degrees to radians for JS Math functions
+        const angle1_rad = angle1_deg * Math.PI / 180;
+        const angle2_rad = angle2_deg * Math.PI / 180;
+        const angle3_rad = angle3_deg * Math.PI / 180;
+
+        // Calculate vertex coordinates using math angles (y is inverted for canvas)
+        const v1 = {
+            x: cx + l * Math.cos(angle1_rad),
+            y: cy - l * Math.sin(angle1_rad)
+        };
+        const v2 = {
+            x: cx + l * Math.cos(angle2_rad),
+            y: cy - l * Math.sin(angle2_rad)
+        };
+        const v3 = {
+            x: cx + l * Math.cos(angle3_rad),
+            y: cy - l * Math.sin(angle3_rad)
+        };
+
+        // Draw internal lines (from center to vertices)
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(v1.x, v1.y);
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(v2.x, v2.y);
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(v3.x, v3.y);
+        ctx.stroke();
+
+        // Draw springs connecting the vertices
+        drawSpring(ctx, v1.x, v1.y, v2.x, v2.y, springAmplitude, springCoils);
+        drawSpring(ctx, v2.x, v2.y, v3.x, v3.y, springAmplitude, springCoils);
+        drawSpring(ctx, v3.x, v3.y, v1.x, v1.y, springAmplitude, springCoils);
+
+        // Draw external axes and arrows
+        // Axis 1 (for x₁) - inward arrow
+        const e1_end = {
+            x: v1.x + axisLength * Math.cos(angle1_rad),
+            y: v1.y - axisLength * Math.sin(angle1_rad)
+        };
+        ctx.beginPath();
+        ctx.moveTo(v1.x, v1.y);
+        ctx.lineTo(e1_end.x, e1_end.y);
+        ctx.stroke();
+        drawArrowHead(ctx, v1.x, v1.y, angle1_rad + Math.PI, arrowHeadLength);
+
+        // Axis 2 (for x₂) - outward arrow
+        const e2_end = {
+            x: v2.x + axisLength * Math.cos(angle2_rad),
+            y: v2.y - axisLength * Math.sin(angle2_rad)
+        };
+        ctx.beginPath();
+        ctx.moveTo(v2.x, v2.y);
+        ctx.lineTo(e2_end.x, e2_end.y);
+        ctx.stroke();
+        drawArrowHead(ctx, e2_end.x, e2_end.y, angle2_rad, arrowHeadLength);
+
+        // Axis 3 (for x₃) - outward arrow
+        const e3_end = {
+            x: v3.x + axisLength * Math.cos(angle3_rad),
+            y: v3.y - axisLength * Math.sin(angle3_rad)
+        };
+        ctx.beginPath();
+        ctx.moveTo(v3.x, v3.y);
+        ctx.lineTo(e3_end.x, e3_end.y);
+        ctx.stroke();
+        drawArrowHead(ctx, e3_end.x, e3_end.y, angle3_rad, arrowHeadLength);
+
+        // Draw labels
+        const label_offset_x1 = 28;
+        ctx.textAlign = 'right';
+        ctx.fillText("x₁", v1.x - label_offset_x1, v1.y + 10);
+
+        ctx.textAlign = 'left';
+        ctx.fillText("x₂", v2.x + 10, v2.y + 25);
+        ctx.fillText("x₃", v3.x + 10, v3.y - 10);
+
+        // Label 'l' on the line from center to v1
+        const l_pos = {
+            x: (cx + v1.x) / 2,
+            y: (cy + v1.y) / 2
+        };
+        const perp_angle = angle1_rad + Math.PI / 2;
+        const l_offset_dist = 18;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText("l", l_pos.x + l_offset_dist * Math.cos(perp_angle),
+                        l_pos.y - l_offset_dist * Math.sin(perp_angle));
+
+        // Figure caption
+        ctx.font = `18px 'Times New Roman'`;
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText("Fig. 1.94.", cx, canvas.height - 20);
+
+    </script>
+</body>
+</html>

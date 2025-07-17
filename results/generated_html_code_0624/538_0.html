@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Non-inverting Amplifier Circuit Diagram</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="550" height="420"></canvas>
+<script>
+const canvas = document.getElementById('circuitCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style and Helper Functions ---
+ctx.lineWidth = 1.5;
+ctx.font = '16px Arial';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+
+function drawResistor(x, y, width, height, orientation) {
+    ctx.beginPath();
+    if (orientation === 'h') {
+        ctx.rect(x - width / 2, y - height / 2, width, height);
+    } else { // 'v'
+        ctx.rect(x - height / 2, y - width / 2, height, width);
+    }
+    ctx.stroke();
+}
+
+function drawTerminal(x, y, filled = false) {
+    ctx.beginPath();
+    ctx.arc(x, y, filled ? 3 : 5, 0, 2 * Math.PI);
+    ctx.closePath();
+    if (filled) {
+        ctx.fill();
+    } else {
+        ctx.stroke();
+    }
+}
+
+function drawArrow(fromx, fromy, tox, toy) {
+    const headlen = 8;
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+// --- Component Coordinates ---
+const opamp_x_base = 250;
+const opamp_x_tip = 350;
+const opamp_y_mid = 150;
+const opamp_h_half = 40;
+const inv_y = opamp_y_mid - opamp_h_half;
+const non_inv_y = opamp_y_mid + opamp_h_half;
+
+const ground_y = 350;
+const input_node_x = 150;
+
+// --- Draw Ground ---
+ctx.beginPath();
+ctx.moveTo(80, ground_y);
+ctx.lineTo(520, ground_y);
+ctx.stroke();
+
+// Ground symbol
+const ground_symbol_x = 400;
+ctx.beginPath();
+ctx.moveTo(ground_symbol_x, ground_y);
+ctx.lineTo(ground_symbol_x, ground_y + 20);
+ctx.moveTo(ground_symbol_x - 15, ground_y + 20);
+ctx.lineTo(ground_symbol_x + 15, ground_y + 20);
+ctx.moveTo(ground_symbol_x - 10, ground_y + 25);
+ctx.lineTo(ground_symbol_x + 10, ground_y + 25);
+ctx.moveTo(ground_symbol_x - 5, ground_y + 30);
+ctx.lineTo(ground_symbol_x + 5, ground_y + 30);
+ctx.stroke();
+
+// --- Draw Op-Amp ---
+ctx.beginPath();
+ctx.moveTo(opamp_x_base, inv_y);
+ctx.lineTo(opamp_x_base, non_inv_y);
+ctx.lineTo(opamp_x_tip, opamp_y_mid);
+ctx.closePath();
+ctx.stroke();
+
+// Op-Amp Labels (+/-)
+ctx.font = '24px Arial';
+ctx.fillText('-', opamp_x_base + 12, inv_y + 20);
+ctx.fillText('+', opamp_x_base + 12, non_inv_y - 20);
+ctx.font = '16px Arial';
+
+// Op-Amp power supplies
+const opamp_x_power = 280;
+// +5.0V
+ctx.beginPath();
+ctx.moveTo(opamp_x_power, inv_y);
+ctx.lineTo(opamp_x_power, inv_y - 20);
+ctx.stroke();
+ctx.textBaseline = 'bottom';
+ctx.fillText('+5.0 V', opamp_x_power, inv_y - 20);
+
+// -5.0V
+ctx.beginPath();
+ctx.moveTo(opamp_x_power, non_inv_y);
+ctx.lineTo(opamp_x_power, non_inv_y + 20);
+ctx.stroke();
+ctx.textBaseline = 'top';
+ctx.fillText('-5.0 V', opamp_x_power, non_inv_y + 20);
+ctx.textBaseline = 'middle'; // Reset baseline
+
+// --- Input Side (V_IN) ---
+const vin_x = 80;
+ctx.beginPath();
+ctx.moveTo(vin_x, non_inv_y);
+ctx.lineTo(opamp_x_base, non_inv_y);
+ctx.stroke();
+drawTerminal(vin_x, non_inv_y);
+drawTerminal(input_node_x, ground_y, true);
+
+// V_IN label and arrow
+drawArrow(vin_x, ground_y, vin_x, non_inv_y);
+ctx.textAlign = 'right';
+ctx.fillText('V', vin_x - 10, (non_inv_y + ground_y) / 2 - 5);
+ctx.font = '12px Arial';
+ctx.fillText('IN', vin_x - 5, (non_inv_y + ground_y) / 2 + 3);
+ctx.font = '16px Arial';
+ctx.textAlign = 'center';
+
+// --- Feedback Network ---
+const feedback_y_top = 80;
+const r_gnd_y_mid = 250;
+// Wire from op-amp to input node
+ctx.beginPath();
+ctx.moveTo(opamp_x_base, inv_y);
+ctx.lineTo(input_node_x, inv_y);
+ctx.stroke();
+drawTerminal(input_node_x, inv_y, true);
+
+// 800 Ohm Resistor (to ground)
+drawResistor(input_node_x, r_gnd_y_mid, 50, 20, 'v');
+ctx.beginPath();
+ctx.moveTo(input_node_x, inv_y);
+ctx.lineTo(input_node_x, r_gnd_y_mid - 25);
+ctx.moveTo(input_node_x, r_gnd_y_mid + 25);
+ctx.lineTo(input_node_x, ground_y);
+ctx.stroke();
+ctx.textAlign = 'right';
+ctx.fillText('800 Ω', input_node_x - 15, r_gnd_y_mid);
+ctx.textAlign = 'center';
+
+// 4.0 kOhm Feedback Resistor
+const r_fb_x_mid = (input_node_x + opamp_x_tip + 20) / 2;
+const r_fb_w = 120;
+drawResistor(r_fb_x_mid, feedback_y_top, r_fb_w, 20, 'h');
+ctx.textBaseline = 'bottom';
+ctx.fillText('4.0 kΩ', r_fb_x_mid, feedback_y_top - 10);
+ctx.textBaseline = 'middle';
+
+// Wires for feedback resistor
+ctx.beginPath();
+ctx.moveTo(input_node_x, inv_y);
+ctx.lineTo(input_node_x, feedback_y_top);
+ctx.lineTo(r_fb_x_mid - r_fb_w/2, feedback_y_top);
+ctx.moveTo(r_fb_x_mid + r_fb_w/2, feedback_y_top);
+ctx.lineTo(opamp_x_tip, feedback_y_top);
+ctx.lineTo(opamp_x_tip, opamp_y_mid);
+ctx.stroke();
+
+
+// --- Output Side ---
+const vout_x = 520;
+const led_branch_x = 440;
+
+// Output wire
+ctx.beginPath();
+ctx.moveTo(opamp_x_tip, opamp_y_mid);
+ctx.lineTo(vout_x, opamp_y_mid);
+ctx.stroke();
+drawTerminal(opamp_x_tip, opamp_y_mid, true);
+drawTerminal(vout_x, opamp_y_mid, false);
+
+// V_OUT label and arrow
+drawArrow(vout_x, ground_y, vout_x, opamp_y_mid);
+ctx.textAlign = 'left';
+ctx.fillText('V', vout_x + 10, (opamp_y_mid + ground_y) / 2 - 5);
+ctx.font = '12px Arial';
+ctx.fillText('OUT', vout_x + 15, (opamp_y_mid + ground_y) / 2 + 5);
+ctx.font = '16px Arial';
+ctx.textAlign = 'center';
+
+// LED Branch
+drawTerminal(led_branch_x, opamp_y_mid, true);
+
+// LED Symbol
+const triangle_top_y = opamp_y_mid + 30;
+const triangle_height = 20;
+const triangle_width = 20;
+const triangle_bottom_y = triangle_top_y + triangle_height;
+const cathode_line_y = triangle_bottom_y + 2;
+
+// Wire from output line to LED
+ctx.beginPath();
+ctx.moveTo(led_branch_x, opamp_y_mid);
+ctx.lineTo(led_branch_x, triangle_top_y);
+ctx.stroke();
+
+// Diode triangle (anode is top flat side)
+ctx.beginPath();
+ctx.moveTo(led_branch_x - triangle_width / 2, triangle_top_y);
+ctx.lineTo(led_branch_x + triangle_width / 2, triangle_top_y);
+ctx.lineTo(led_branch_x, triangle_bottom_y);
+ctx.closePath();
+ctx.stroke();
+// Cathode line
+ctx.beginPath();
+ctx.moveTo(led_branch_x - triangle_width / 2, cathode_line_y);
+ctx.lineTo(led_branch_x + triangle_width / 2, cathode_line_y);
+ctx.stroke();
+// Arrows for light emission
+ctx.save();
+ctx.translate(led_branch_x + 8, triangle_top_y + 8);
+ctx.rotate(Math.PI / 6);
+drawArrow(0, 0, 15, 0);
+ctx.translate(5, -5);
+drawArrow(0, 0, 15, 0);
+ctx.restore();
+
+// Resistor R
+const resistor_r_y_mid = 280;
+drawResistor(led_branch_x, resistor_r_y_mid, 50, 20, 'v');
+ctx.textAlign = 'right';
+ctx.fillText('R', led_branch_x - 15, resistor_r_y_mid);
+ctx.textAlign = 'center';
+
+// Connections for LED/R branch
+ctx.beginPath();
+// Line from LED to Resistor R
+ctx.moveTo(led_branch_x, cathode_line_y);
+ctx.lineTo(led_branch_x, resistor_r_y_mid - 25);
+// Line from Resistor R to ground
+ctx.moveTo(led_branch_x, resistor_r_y_mid + 25);
+ctx.lineTo(led_branch_x, ground_y);
+ctx.stroke();
+drawTerminal(led_branch_x, ground_y, true);
+
+// --- Final Label ---
+ctx.textBaseline = 'bottom';
+ctx.fillText('Fig. 7.1', canvas.width / 2, canvas.height - 5);
+
+</script>
+</body>
+</html>

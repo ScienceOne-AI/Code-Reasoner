@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Thermodynamic Cycle p-V Diagram</title>
+  <style>
+    canvas {
+      border: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="thermo-diagram" width="450" height="400"></canvas>
+  <script>
+    const canvas = document.getElementById('thermo-diagram');
+    const ctx = canvas.getContext('2d');
+
+    // Style and settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    
+    // Parameters for drawing
+    const ox = 80;
+    const oy = 320;
+    const scaleV = 100;
+    const scaleP = 80;
+    const axisArrowSize = 10;
+    const pathArrowSize = 10;
+
+    /**
+     * Draws an arrowhead at the midpoint of a line segment.
+     * The arrowhead points from (x1, y1) towards (x2, y2).
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {number} x1 - Start x-coordinate.
+     * @param {number} y1 - Start y-coordinate.
+     * @param {number} x2 - End x-coordinate.
+     * @param {number} y2 - End y-coordinate.
+     * @param {number} size - The length of the arrowhead's sides.
+     */
+    function drawArrowOnLine(ctx, x1, y1, x2, y2, size) {
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.save();
+        ctx.translate(midX, midY);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    /**
+     * Draws a filled arrowhead at the end of a line.
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {number} x - The x-coordinate of the arrow tip.
+     * @param {number} y - The y-coordinate of the arrow tip.
+     * @param {number} angle - The angle of the line in radians.
+     * @param {number} size - The length of the arrowhead's sides.
+     */
+    function drawAxisArrow(ctx, x, y, angle, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.lineTo(-size, size / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    /**
+     * Draws text with a subscript. e.g., p₁, 2V₁
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {string} base - The base text (e.g., 'p', '2V').
+     * @param {string} sub - The subscript text (e.g., '1').
+     * @param {number} x - The x-coordinate for alignment.
+     * @param {number} y - The y-coordinate for alignment.
+     */
+    function drawSubscriptedText(ctx, base, sub, x, y) {
+        const originalFont = ctx.font;
+        const mainFontSize = parseInt(originalFont.match(/\d+/)[0]);
+        const subFontSize = Math.round(mainFontSize * 0.7);
+        const subFont = `italic ${subFontSize}px Times New Roman`;
+
+        const baseMetrics = ctx.measureText(base);
+        ctx.font = subFont;
+        const subMetrics = ctx.measureText(sub);
+        ctx.font = originalFont;
+
+        const totalWidth = baseMetrics.width + subMetrics.width;
+        
+        let startX;
+        if (ctx.textAlign === 'center') {
+            startX = x - totalWidth / 2;
+        } else if (ctx.textAlign === 'right') {
+            startX = x - totalWidth;
+        } else { // left
+            startX = x;
+        }
+
+        const baselineOffset = (ctx.textBaseline === 'top') ? subFontSize * 0.5 : (ctx.textBaseline === 'middle') ? subFontSize * 0.4 : 0;
+        
+        ctx.fillText(base, startX, y);
+        ctx.font = subFont;
+        ctx.fillText(sub, startX + baseMetrics.width, y + baselineOffset);
+        
+        ctx.font = originalFont;
+    }
+
+    // Coordinates of points A, B, C
+    const pA = { x: ox + 2 * scaleV, y: oy - 1 * scaleP };
+    const pB = { x: ox + 1 * scaleV, y: oy - 1 * scaleP };
+    const pC = { x: ox + 1 * scaleV, y: oy - 2 * scaleP };
+
+    // 1. Draw Axes
+    ctx.beginPath();
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(ox + 2.7 * scaleV, oy); // V-axis
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(ox, oy - 2.5 * scaleP); // p-axis
+    ctx.stroke();
+
+    // Draw axis arrowheads
+    drawAxisArrow(ctx, ox + 2.7 * scaleV, oy, 0, axisArrowSize);
+    drawAxisArrow(ctx, ox, oy - 2.5 * scaleP, -Math.PI / 2, axisArrowSize);
+
+    // Axis labels
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('p', ox - 25, oy - 2.5 * scaleP + 10);
+    ctx.fillText('V', ox + 2.7 * scaleV + 5, oy + 8);
+    ctx.font = '20px Times New Roman';
+    ctx.fillText('O', ox - 20, oy + 20);
+
+    // 2. Draw Dashed lines
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(ox, pC.y); ctx.lineTo(pC.x, pC.y);
+    ctx.moveTo(ox, pB.y); ctx.lineTo(pB.x, pB.y);
+    ctx.moveTo(pC.x, oy); ctx.lineTo(pC.x, pC.y);
+    ctx.moveTo(pA.x, oy); ctx.lineTo(pA.x, pA.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // 3. Draw Cycle A->B->C->A
+    ctx.beginPath();
+    ctx.moveTo(pA.x, pA.y);
+    ctx.lineTo(pB.x, pB.y);
+    ctx.lineTo(pC.x, pC.y);
+    ctx.lineTo(pA.x, pA.y);
+    ctx.stroke();
+
+    // 4. Draw arrows on cycle paths
+    drawArrowOnLine(ctx, pA.x, pA.y, pB.x, pB.y, pathArrowSize); // A -> B
+    drawArrowOnLine(ctx, pB.x, pB.y, pC.x, pC.y, pathArrowSize); // B -> C
+    drawArrowOnLine(ctx, pC.x, pC.y, pA.x, pA.y, pathArrowSize); // C -> A
+
+    // 5. Draw labels
+    // Point labels A, B, C
+    ctx.font = '20px Times New Roman';
+    ctx.fillText('A', pA.x + 8, pA.y + 8);
+    ctx.fillText('B', pB.x - 20, pB.y + 8);
+    ctx.fillText('C', pC.x + 8, pC.y - 5);
+    
+    // Axis value labels
+    const labelFont = 'italic 18px Times New Roman';
+    ctx.font = labelFont;
+    
+    // p-axis labels
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    drawSubscriptedText(ctx, 'p', '1', ox - 10, pB.y);
+    drawSubscriptedText(ctx, '2p', '1', ox - 10, pC.y);
+    
+    // V-axis labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    drawSubscriptedText(ctx, 'V', '1', pB.x, oy + 5);
+    drawSubscriptedText(ctx, '2V', '1', pA.x, oy + 5);
+
+    // 6. Draw Caption
+    ctx.font = '16px "Microsoft YaHei", sans-serif'; // Common font for Chinese
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('热图 2.19.1', canvas.width / 2, oy + 60);
+
+  </script>
+</body>
+</html>

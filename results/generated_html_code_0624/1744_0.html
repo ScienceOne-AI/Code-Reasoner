@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pendulum Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="400" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 10; // length of head in pixels
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // --- Main Drawing ---
+
+    // Clear canvas
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Parameters
+    const x_pivot = 200;
+    const y_pivot = 70;
+    const l_pixels = 220;
+    const theta = Math.PI / 6.5; // Approx 27.7 degrees, visually similar to diagram
+    const bob_radius = 9;
+    const force_arrow_length = 55;
+
+    // Calculate bob position
+    const x_bob = x_pivot + l_pixels * Math.sin(theta);
+    const y_bob = y_pivot + l_pixels * Math.cos(theta);
+
+    // Set default styles
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // Draw support structure
+    ctx.beginPath();
+    ctx.moveTo(x_pivot - 70, y_pivot);
+    ctx.lineTo(x_pivot + 70, y_pivot);
+    ctx.stroke();
+    // Hatching lines for the fixed support
+    for (let i = 0; i < 12; i++) {
+        ctx.beginPath();
+        ctx.moveTo(x_pivot - 70 + i * 12, y_pivot);
+        ctx.lineTo(x_pivot - 70 + i * 12 - 10, y_pivot - 10);
+        ctx.stroke();
+    }
+
+    // Draw vertical dashed line
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.moveTo(x_pivot, y_pivot);
+    ctx.lineTo(x_pivot, y_bob + 40);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line
+
+    // Draw pendulum rope
+    ctx.beginPath();
+    ctx.moveTo(x_pivot, y_pivot);
+    ctx.lineTo(x_bob, y_bob);
+    ctx.stroke();
+
+    // Draw pendulum bob (filled circle)
+    ctx.beginPath();
+    ctx.arc(x_bob, y_bob, bob_radius, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Draw angle arc and label
+    const arc_radius = 45;
+    ctx.beginPath();
+    ctx.lineWidth = 1;
+    ctx.arc(x_pivot, y_pivot, arc_radius, Math.PI / 2 - theta, Math.PI / 2);
+    ctx.stroke();
+    
+    // Labels font
+    ctx.font = 'italic 20px Times New Roman';
+    
+    // Angle label 'θ'
+    ctx.fillText('θ', x_pivot + 15, y_pivot + arc_radius - 5);
+    
+    // Rope length label 'l'
+    ctx.fillText('l', x_pivot + (l_pixels / 2) * Math.sin(theta) + 10, y_pivot + (l_pixels / 2) * Math.cos(theta));
+
+    // Reset line width for forces
+    ctx.lineWidth = 2;
+    
+    // --- Draw Forces ---
+
+    // 1. Gravity force (mg), straight down
+    drawArrow(ctx, x_bob, y_bob, x_bob, y_bob + force_arrow_length);
+    ctx.fillText('mg', x_bob + 10, y_bob + force_arrow_length + 5);
+
+    // 2. Pushing force (mg), curved along the arc
+    // The direction is tangential (towards decreasing theta)
+    const tx_end = x_bob - force_arrow_length * Math.cos(theta);
+    const ty_end = y_bob + force_arrow_length * Math.sin(theta);
+    
+    // Control point for the curve, offset radially outward from the chord midpoint
+    const mid_x = (x_bob + tx_end) / 2;
+    const mid_y = (y_bob + ty_end) / 2;
+    const offset_dist = 10;
+    const ctrl_x = mid_x + offset_dist * Math.sin(theta);
+    const ctrl_y = mid_y + offset_dist * Math.cos(theta);
+
+    // Draw the curved line
+    ctx.beginPath();
+    ctx.moveTo(x_bob, y_bob);
+    ctx.quadraticCurveTo(ctrl_x, ctrl_y, tx_end, ty_end);
+    ctx.stroke();
+
+    // Draw the arrowhead for the curved line
+    const tangent_angle = Math.atan2(ty_end - ctrl_y, tx_end - ctrl_x);
+    const headlen = 10;
+    ctx.beginPath();
+    ctx.moveTo(tx_end, ty_end);
+    ctx.lineTo(tx_end - headlen * Math.cos(tangent_angle - Math.PI / 6), ty_end - headlen * Math.sin(tangent_angle - Math.PI / 6));
+    ctx.moveTo(tx_end, ty_end);
+    ctx.lineTo(tx_end - headlen * Math.cos(tangent_angle + Math.PI / 6), ty_end - headlen * Math.sin(tangent_angle + Math.PI / 6));
+    ctx.stroke();
+    
+    // Label for the pushing force
+    ctx.fillText('mg', x_bob - force_arrow_length * Math.cos(theta) - 45, y_bob + force_arrow_length * Math.sin(theta));
+
+    // --- Figure Caption ---
+    ctx.font = 'bold 18px Arial';
+    ctx.fillStyle = 'black';
+    ctx.fillText('Fig. 1.10.', canvas.width / 2 - 40, canvas.height - 15);
+
+</script>
+</body>
+</html>

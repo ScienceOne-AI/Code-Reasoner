@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical System Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="opticsCanvas" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('opticsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow on a line segment
+        function drawArrow(fromX, fromY, toX, toY, headLength = 8) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 7), toY - headLength * Math.sin(angle - Math.PI / 7));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 7), toY - headLength * Math.sin(angle + Math.PI / 7));
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Helper function to draw a ray with an arrow in the middle
+        function drawRay(fromX, fromY, toX, toY) {
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            const midX = (fromX + toX) / 2;
+            const midY = (fromY + toY) / 2;
+            drawArrow(fromX, fromY, midX, midY);
+        }
+        
+        // General settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = "bold 22px 'Times New Roman'";
+
+        // Coordinates
+        const y_axis = 225;
+        const x_P = 120;
+        const x_H = 400;
+        const x_Hp = 440;
+        const x_Aprime = 700;
+        const lens_half_height = 80;
+        const object_half_height = 90;
+
+        // Points
+        const A = { x: x_P, y: y_axis };
+        const P_top = { x: x_P, y: y_axis - object_half_height };
+        const S = { x: 250, y: 70 };
+        const P_refl = { x: x_P, y: y_axis + 40 };
+        const A_prime = { x: x_Aprime, y: y_axis };
+
+        const H_top = { x: x_H, y: y_axis - lens_half_height };
+        const Hp_top = { x: x_Hp, y: y_axis - lens_half_height };
+        const H_bottom = { x: x_H, y: y_axis + lens_half_height };
+        const Hp_bottom = { x: x_Hp, y: y_axis + lens_half_height };
+
+        // 1. Optical Axis
+        ctx.beginPath();
+        ctx.moveTo(0, y_axis);
+        ctx.lineTo(canvas.width, y_axis);
+        ctx.stroke();
+
+        // 2. Object Plane P
+        ctx.fillStyle = '#cccccc';
+        ctx.fillRect(x_P - 12, y_axis - object_half_height, 12, 2 * object_half_height);
+        ctx.strokeStyle = 'black';
+        ctx.strokeRect(x_P - 12, y_axis - object_half_height, 12, 2 * object_half_height);
+        ctx.fillStyle = 'black';
+        ctx.fillText('P', x_P - 15, y_axis - object_half_height - 10);
+        ctx.fillText('A', x_P + 10, y_axis + 8);
+
+        // 3. Lens System
+        // Principal Planes H and H'
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(x_H, 70);
+        ctx.lineTo(x_H, 380);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x_Hp, 70);
+        ctx.lineTo(x_Hp, 380);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillText('H', x_H - 8, 60);
+        ctx.fillText("H'", x_Hp - 8, 60);
+
+        // Lens Body
+        ctx.fillStyle = '#e0e0e0';
+        ctx.beginPath();
+        ctx.moveTo(x_H, H_top.y);
+        ctx.quadraticCurveTo(x_H + 50, y_axis, x_H, H_bottom.y);
+        ctx.lineTo(x_Hp, Hp_bottom.y);
+        ctx.quadraticCurveTo(x_Hp - 20, y_axis, x_Hp, Hp_top.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Aperture Diaphragm
+        ctx.save();
+        ctx.lineWidth = 4;
+        // Top
+        ctx.beginPath();
+        ctx.moveTo(x_H - 10, Hp_top.y);
+        ctx.lineTo(x_Hp + 5, Hp_top.y);
+        ctx.lineTo(x_Hp + 5, Hp_top.y - 10);
+        ctx.stroke();
+        // Bottom
+        ctx.beginPath();
+        ctx.moveTo(x_H - 10, Hp_bottom.y);
+        ctx.lineTo(x_Hp + 5, Hp_bottom.y);
+        ctx.lineTo(x_Hp + 5, Hp_bottom.y + 10);
+        ctx.stroke();
+        ctx.restore();
+
+        // 4. Image Plane
+        ctx.beginPath();
+        ctx.moveTo(x_Aprime, 50);
+        ctx.lineTo(x_Aprime, 400);
+        ctx.stroke();
+        ctx.fillText("A'", x_Aprime + 10, y_axis + 8);
+
+        // 5. Rays
+        // Rays from A
+        drawRay(A.x, A.y, H_top.x, H_top.y);
+        drawRay(Hp_top.x, Hp_top.y, A_prime.x, A_prime.y);
+        ctx.beginPath(); ctx.moveTo(H_top.x, H_top.y); ctx.lineTo(Hp_top.x, Hp_top.y); ctx.stroke();
+        
+        drawRay(A.x, A.y, H_bottom.x, H_bottom.y);
+        drawRay(Hp_bottom.x, Hp_bottom.y, A_prime.x, A_prime.y);
+        ctx.beginPath(); ctx.moveTo(H_bottom.x, H_bottom.y); ctx.lineTo(Hp_bottom.x, Hp_bottom.y); ctx.stroke();
+
+        drawRay(A.x, A.y, A_prime.x, A_prime.y);
+
+        // Rays from S and P
+        ctx.fillText('S', S.x - 5, S.y - 10);
+        
+        // Ray S -> P_refl -> lens
+        const P_refl_lens_H = { x: x_H, y: y_axis - 50 };
+        const P_refl_lens_Hp = { x: x_Hp, y: y_axis - 50 };
+        const P_refl_img = { x: x_Aprime, y: y_axis + 60 };
+        ctx.beginPath(); ctx.moveTo(S.x, S.y); ctx.lineTo(P_refl.x, P_refl.y); ctx.stroke();
+        drawRay(P_refl.x, P_refl.y, P_refl_lens_H.x, P_refl_lens_H.y);
+        drawRay(P_refl_lens_Hp.x, P_refl_lens_Hp.y, P_refl_img.x, P_refl_img.y);
+        ctx.beginPath(); ctx.moveTo(P_refl_lens_H.x, P_refl_lens_H.y); ctx.lineTo(P_refl_lens_Hp.x, P_refl_lens_Hp.y); ctx.stroke();
+        
+        // Ray S -> lens
+        const S_lens_H = { x: x_H, y: y_axis - 65 };
+        const S_lens_Hp = { x: x_Hp, y: y_axis - 65 };
+        const S_img = { x: x_Aprime, y: y_axis + 20 };
+        drawRay(S.x, S.y, S_lens_H.x, S_lens_H.y);
+        drawRay(S_lens_Hp.x, S_lens_Hp.y, S_img.x, S_img.y);
+        ctx.beginPath(); ctx.moveTo(S_lens_H.x, S_lens_H.y); ctx.lineTo(S_lens_Hp.x, S_lens_Hp.y); ctx.stroke();
+
+        // 6. Dimensions and Labels
+        ctx.font = "italic 20px 'Times New Roman'";
+        // z0
+        ctx.beginPath();
+        ctx.moveTo(x_P, y_axis + 120);
+        ctx.lineTo(x_H, y_axis + 120);
+        ctx.moveTo(x_P, y_axis + 115);
+        ctx.lineTo(x_P, y_axis + 125);
+        ctx.moveTo(x_H, y_axis + 115);
+        ctx.lineTo(x_H, y_axis + 125);
+        ctx.stroke();
+        drawArrow(x_H, y_axis + 120, x_P, y_axis + 120);
+        drawArrow(x_P, y_axis + 120, x_H, y_axis + 120);
+        ctx.fillText('z₀', (x_P + x_H) / 2 - 10, y_axis + 115);
+        
+        // z
+        ctx.beginPath();
+        ctx.moveTo(x_Hp, y_axis + 150);
+        ctx.lineTo(x_Aprime, y_axis + 150);
+        ctx.moveTo(x_Hp, y_axis + 145);
+        ctx.lineTo(x_Hp, y_axis + 155);
+        ctx.moveTo(x_Aprime, y_axis + 145);
+        ctx.lineTo(x_Aprime, y_axis + 155);
+        ctx.stroke();
+        drawArrow(x_Aprime, y_axis + 150, x_Hp, y_axis + 150);
+        drawArrow(x_Hp, y_axis + 150, x_Aprime, y_axis + 150);
+        ctx.fillText('z', (x_Hp + x_Aprime) / 2 - 5, y_axis + 145);
+
+        // D
+        ctx.beginPath();
+        ctx.moveTo(x_Hp + 20, y_axis - lens_half_height);
+        ctx.lineTo(x_Hp + 20, y_axis - lens_half_height - 20);
+        ctx.moveTo(x_Hp + 20, y_axis - lens_half_height);
+        ctx.lineTo(x_Hp + 25, y_axis - lens_half_height);
+        ctx.stroke();
+        drawArrow(x_Hp + 20, y_axis - lens_half_height - 20, x_Hp + 20, y_axis - lens_half_height, 8);
+        ctx.fillText('D', x_Hp + 25, y_axis - lens_half_height - 15);
+    </script>
+</body>
+</html>

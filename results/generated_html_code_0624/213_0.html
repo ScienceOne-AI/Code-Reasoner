@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Circular Motion</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="400" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Configuration ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = 'italic 18px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper Function to Draw Arrows ---
+        function drawArrow(ctx, fromX, fromY, toX, toY) {
+            const headLength = 8;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Geometric Parameters ---
+        const cx = canvas.width / 2;
+        const cy = 230;
+        const radiusA = 80;
+        const hoopThickness = 5;
+        const thetaDeg = 50;
+        const thetaRad = thetaDeg * Math.PI / 180;
+
+        // --- Particle Coordinates ---
+        const particleX = cx + radiusA * Math.sin(thetaRad);
+        const particleY = cy - radiusA * Math.cos(thetaRad);
+
+        // --- Draw Ground and Support ---
+        const groundY = 450;
+        // Base line
+        ctx.beginPath();
+        ctx.moveTo(cx - 35, groundY);
+        ctx.lineTo(cx + 35, groundY);
+        ctx.stroke();
+        // Hatches
+        for (let i = 0; i <= 7; i++) {
+            ctx.beginPath();
+            ctx.moveTo(cx - 35 + i * 10, groundY);
+            ctx.lineTo(cx - 35 + i * 10 - 7, groundY + 10);
+            ctx.stroke();
+        }
+        // Triangle support symbol
+        const supportApexY = groundY - 12;
+        ctx.beginPath();
+        ctx.moveTo(cx - 10, groundY);
+        ctx.lineTo(cx, supportApexY);
+        ctx.lineTo(cx + 10, groundY);
+        ctx.stroke();
+
+        // --- Draw Vertical Axis/Rod ---
+        ctx.beginPath();
+        ctx.moveTo(cx, supportApexY);
+        ctx.lineTo(cx, cy - radiusA - 50);
+        ctx.stroke();
+
+        // --- Draw Circular Tube ---
+        ctx.beginPath();
+        ctx.arc(cx, cy, radiusA, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, cy, radiusA + hoopThickness, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // --- Draw Rotation Indicator (ω) ---
+        const rotCenterY = cy - radiusA - 25;
+        const rotStartX = cx;
+        const rotStartY = rotCenterY - 12;
+        const rotEndX = cx;
+        const rotEndY = rotCenterY + 12;
+        const rotCtrlX = cx + 30;
+        const rotCtrlY = rotCenterY;
+
+        ctx.beginPath();
+        ctx.moveTo(rotStartX, rotStartY);
+        ctx.quadraticCurveTo(rotCtrlX, rotCtrlY, rotEndX, rotEndY);
+        ctx.stroke();
+
+        // Arrowhead for rotation curve
+        const headlen = 8;
+        const dx_rot = rotEndX - rotCtrlX;
+        const dy_rot = rotEndY - rotCtrlY;
+        const angle_rot = Math.atan2(dy_rot, dx_rot);
+        ctx.beginPath();
+        ctx.moveTo(rotEndX, rotEndY);
+        ctx.lineTo(rotEndX - headlen * Math.cos(angle_rot - Math.PI / 6), rotEndY - headlen * Math.sin(angle_rot - Math.PI / 6));
+        ctx.moveTo(rotEndX, rotEndY);
+        ctx.lineTo(rotEndX - headlen * Math.cos(angle_rot + Math.PI / 6), rotEndY - headlen * Math.sin(angle_rot + Math.PI / 6));
+        ctx.stroke();
+
+        ctx.fillText('ω', cx + 25, rotCenterY - 15);
+
+        // --- Draw Particle ---
+        ctx.beginPath();
+        ctx.arc(particleX, particleY, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // --- Draw Radius Line 'a' ---
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(particleX, particleY);
+        ctx.stroke();
+        ctx.fillText('a', (cx + particleX) / 2 + 12, (cy + particleY) / 2 - 5);
+        
+        // --- Draw Angle 'θ' ---
+        const angleArcRadius = 25;
+        ctx.beginPath();
+        ctx.arc(cx, cy, angleArcRadius, -Math.PI / 2, -Math.PI / 2 + thetaRad);
+        ctx.stroke();
+        const thetaLabelAngle = -Math.PI / 2 + thetaRad / 2;
+        ctx.fillText('θ', cx + (angleArcRadius + 10) * Math.cos(thetaLabelAngle), cy + (angleArcRadius + 10) * Math.sin(thetaLabelAngle));
+
+        // --- Draw Force Vectors ---
+        // Gravity force 'mg'
+        const mgLength = 60;
+        drawArrow(ctx, particleX, particleY, particleX, particleY + mgLength);
+        ctx.fillText('mg', particleX + 15, particleY + mgLength + 5);
+
+        // Normal force 'N'
+        const nLength = 60;
+        const nEndX = particleX + nLength * Math.sin(thetaRad);
+        const nEndY = particleY - nLength * Math.cos(thetaRad);
+        drawArrow(ctx, particleX, particleY, nEndX, nEndY);
+        ctx.fillText('N', nEndX + 10, nEndY - 5);
+
+        // --- Draw Gravity Acceleration Vector 'g' ---
+        const gVectorX = 70;
+        const gVectorY = cy - 20;
+        const gLength = 50;
+        drawArrow(ctx, gVectorX, gVectorY, gVectorX, gVectorY + gLength);
+        ctx.fillText('g', gVectorX - 15, gVectorY + gLength / 2);
+
+        // --- Draw Figure Caption ---
+        ctx.font = '16px "Times New Roman"';
+        ctx.fillStyle = 'black';
+        ctx.fillText('Fig. 1.79.', cx, canvas.height - 20);
+    </script>
+</body>
+</html>

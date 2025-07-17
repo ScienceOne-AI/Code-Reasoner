@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="750" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper functions ---
+        
+        // Function to draw a vertical double-headed arrow
+        function drawDoubleArrowY(x, y1, y2, headSize) {
+            ctx.beginPath();
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, y2);
+            // Arrow head at y1
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x - headSize, y1 + headSize);
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x + headSize, y1 + headSize);
+            // Arrow head at y2
+            ctx.moveTo(x, y2);
+            ctx.lineTo(x - headSize, y2 - headSize);
+            ctx.moveTo(x, y2);
+            ctx.lineTo(x + headSize, y2 - headSize);
+            ctx.stroke();
+        }
+        
+        // Function to draw text with a subscript (e.g., V_IN)
+        function drawSubscriptedText(text, sub, x, y, font, subFont) {
+            ctx.font = font;
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillText(text, x, y);
+            
+            ctx.font = subFont;
+            ctx.fillText(sub, x + textWidth, y + 5);
+        }
+
+        // --- Main Drawing ---
+
+        // Set global styles
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Define coordinates
+        const yTop = 150;
+        const yBottom = 350;
+        const yCenter = (yTop + yBottom) / 2;
+        
+        const xVinArrow = 80;
+        const xVinTerm = 120;
+        const xMissingStart = 200;
+        const xMissingEnd = 320;
+        const xNode = 420;
+        const xRes = 560;
+        const xVoutArrow = 610;
+
+        // 1. Draw V_IN label and arrow
+        drawDoubleArrowY(xVinArrow, yTop, yBottom, 8);
+        drawSubscriptedText('V', 'IN', xVinArrow - 25, yCenter, '24px Arial', '16px Arial');
+
+        // 2. Draw input terminals
+        ctx.beginPath();
+        ctx.arc(xVinTerm, yTop, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.arc(xVinTerm, yBottom, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'black'; // Reset fillStyle
+
+        // 3. Draw top and bottom wires
+        ctx.beginPath();
+        ctx.moveTo(xVinTerm, yTop);
+        ctx.lineTo(xMissingStart, yTop);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(xVinTerm, yBottom);
+        ctx.lineTo(xRes, yBottom);
+        ctx.stroke();
+
+        // 4. Draw missing component
+        ctx.beginPath();
+        ctx.moveTo(xMissingStart, yTop);
+        ctx.lineTo(xMissingEnd, yTop);
+        ctx.stroke();
+
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(xMissingStart, yTop - 30, xMissingEnd - xMissingStart, 60);
+        ctx.restore();
+
+        // Label for missing component
+        ctx.font = '20px Arial';
+        ctx.fillText('missing component', (xMissingStart + xMissingEnd) / 2, yTop - 70);
+        ctx.beginPath();
+        ctx.moveTo((xMissingStart + xMissingEnd) / 2 - 20, yTop - 55);
+        ctx.lineTo((xMissingStart + xMissingEnd) / 2, yTop - 30);
+        ctx.stroke();
+        
+        // 5. Draw connecting wire to the parallel section
+        ctx.beginPath();
+        ctx.moveTo(xMissingEnd, yTop);
+        ctx.lineTo(xRes, yTop);
+        ctx.stroke();
+
+        // 6. Draw Capacitor
+        ctx.beginPath();
+        ctx.moveTo(xNode, yTop);
+        ctx.lineTo(xNode, yCenter - 25);
+        ctx.stroke();
+        // Plates
+        ctx.beginPath();
+        ctx.moveTo(xNode - 25, yCenter - 25);
+        ctx.lineTo(xNode + 25, yCenter - 25);
+        ctx.moveTo(xNode - 25, yCenter + 25);
+        ctx.lineTo(xNode + 25, yCenter + 25);
+        ctx.stroke();
+        // Bottom wire
+        ctx.beginPath();
+        ctx.moveTo(xNode, yCenter + 25);
+        ctx.lineTo(xNode, yBottom);
+        ctx.stroke();
+        // Label
+        ctx.font = '24px Arial';
+        ctx.fillText('C', xNode - 45, yCenter);
+        
+        // 7. Draw Resistor
+        ctx.beginPath();
+        ctx.moveTo(xRes, yTop);
+        ctx.lineTo(xRes, yCenter - 45);
+        ctx.stroke();
+        // Body
+        ctx.strokeRect(xRes - 15, yCenter - 45, 30, 90);
+        // Bottom wire
+        ctx.beginPath();
+        ctx.moveTo(xRes, yCenter + 45);
+        ctx.lineTo(xRes, yBottom);
+        ctx.stroke();
+        // Label
+        ctx.font = '22px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText('14 kΩ', xRes - 25, yCenter);
+        ctx.textAlign = 'center'; // Reset alignment
+
+        // 8. Draw output terminals
+        ctx.beginPath();
+        ctx.arc(xRes, yTop, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.arc(xRes, yBottom, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'black'; // Reset fillStyle
+
+        // 9. Draw V_OUT label and arrow
+        drawDoubleArrowY(xVoutArrow, yTop, yBottom, 8);
+        ctx.textAlign = 'left';
+        drawSubscriptedText('V', 'OUT', xVoutArrow + 15, yCenter, '24px Arial', '16px Arial');
+        ctx.textAlign = 'center';
+
+        // 10. Draw junction dots
+        ctx.beginPath();
+        ctx.arc(xNode, yTop, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(xNode, yBottom, 4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 11. Draw Figure Caption
+        ctx.font = '20px Arial';
+        ctx.fillText('Fig. 5.1', canvas.width / 2, yBottom + 60);
+
+    </script>
+</body>
+</html>

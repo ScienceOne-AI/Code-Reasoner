@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+    <canvas id="myCanvas" width="450" height="450" style="border:1px solid #d3d3d3;"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Parameters
+        const cx = 225; // center x
+        const cy = 225; // center y
+        const R = 160;  // radius of the circle
+        const lineWidth = 2.5;
+
+        // --- Clear canvas ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+
+        // --- Draw the main circle (wire ring ABC) ---
+        ctx.beginPath();
+        ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+        ctx.lineWidth = lineWidth;
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+
+        // --- Define key points ---
+        // Point A (top)
+        const Ax = cx;
+        const Ay = cy - R;
+
+        // To create a visually similar diagram, we choose a plausible angle.
+        // Let the angle AOB (where O is the center) be 120 degrees.
+        // In a standard coordinate system (0 deg = right), A is at 90 deg.
+        // B would be at 90 - 120 = -30 degrees.
+        const angleB_math = -30 * Math.PI / 180;
+        const Bx = cx + R * Math.cos(angleB_math);
+        const By = cy - R * Math.sin(angleB_math); // Use minus for sin because canvas Y-axis is inverted
+
+        // Point O (center)
+        const Ox = cx;
+        const Oy = cy;
+
+        // Point C (on the left)
+        const Cx = cx - R;
+        const Cy = cy;
+
+        // --- Draw dashed vertical line from A through O ---
+        ctx.beginPath();
+        ctx.setLineDash([6, 4]);
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(Ox, Oy);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid line
+
+        // --- Draw elastic rope AB ---
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(Bx, By);
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+
+        // --- Draw point markers for A and O ---
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(Ax, Ay, 5, 0, 2 * Math.PI); // Point A marker
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(Ox, Oy, 5, 0, 2 * Math.PI); // Point O marker
+        ctx.fill();
+
+        // --- Draw the small ring B ---
+        ctx.save();
+        ctx.translate(Bx, By);
+        // The ring is on the wire, so its orientation is tangent to the circle.
+        // The radius OB has a mathematical angle of `angleB_math`.
+        // The tangent is perpendicular to the radius. Tangent angle = angleB_math + 90 degrees.
+        const tangentAngle = angleB_math + Math.PI / 2;
+        ctx.rotate(-tangentAngle); // Canvas rotation is clockwise.
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = lineWidth;
+        ctx.fillStyle = 'white';
+        const ringWidth = 28;
+        const ringHeight = 14;
+        ctx.fillRect(-ringWidth / 2, -ringHeight / 2, ringWidth, ringHeight);
+        ctx.strokeRect(-ringWidth / 2, -ringHeight / 2, ringWidth, ringHeight);
+        ctx.restore();
+
+        // --- Draw the angle φ ---
+        const arcRadius = 45;
+        // The angle is between the line AB and the vertical downward line from A.
+        // Angle of line AB in canvas coordinates
+        const angle_AB = Math.atan2(By - Ay, Bx - Ax);
+        // Angle of vertical line (down from A) in canvas coordinates is 90 deg
+        const angle_Vert = Math.PI / 2;
+
+        ctx.beginPath();
+        ctx.arc(Ax, Ay, arcRadius, angle_AB, angle_Vert);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Draw the perpendicular tick mark on the vertical line
+        const tickLength = 12;
+        const tickX = Ax + arcRadius * Math.cos(angle_Vert);
+        const tickY = Ay + arcRadius * Math.sin(angle_Vert);
+        ctx.beginPath();
+        ctx.moveTo(tickX, tickY);
+        // Perpendicular to the vertical line is horizontal.
+        ctx.lineTo(tickX + tickLength, tickY);
+        ctx.stroke();
+
+        // --- Add labels ---
+        ctx.fillStyle = 'black';
+        ctx.font = "italic 24px 'Times New Roman'";
+
+        // Label A
+        ctx.fillText("A", Ax - 30, Ay + 18);
+
+        // Label O
+        ctx.fillText("O", Ox - 30, Oy + 10);
+
+        // Label C
+        ctx.fillText("C", Cx - 30, Cy + 10);
+
+        // Label B
+        ctx.fillText("B", Bx + 15, By + 8);
+
+        // Label φ
+        ctx.font = "italic 28px 'Times New Roman'";
+        ctx.fillText("φ", Ax + 20, Ay + 40);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Neutron Interferometer Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="570"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper function to draw an arrowhead ---
+    function drawArrowhead(ctx, x, y, angle, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // --- Style and coordinate setup ---
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.2;
+    ctx.font = '18px serif';
+    
+    // Coordinates
+    const xB = 150, yB = 400;
+    const L = 450, H = 250;
+    const xA = xB, yA = yB - H;
+    const xC = xB + L, yC = yB;
+    const xD = xB + L, yD = yB - H;
+    const x_in_start = 50;
+    const x_E_start = xD;
+    const x_E_box = x_E_start + 20;
+
+    // --- Draw main paths ---
+    ctx.beginPath();
+    // Incident beam
+    ctx.moveTo(x_in_start, yB);
+    ctx.lineTo(xB, yB);
+    // Path B -> C
+    ctx.moveTo(xB, yB);
+    ctx.lineTo(xC, yC);
+    // Path B -> A
+    ctx.moveTo(xB, yB);
+    ctx.lineTo(xA, yA);
+    // Path A -> D
+    ctx.moveTo(xA, yA);
+    ctx.lineTo(xD, yD);
+    // Path C -> D
+    ctx.moveTo(xC, yC);
+    ctx.lineTo(xD, yD);
+    // Path D -> E
+    ctx.moveTo(xD, yD);
+    ctx.lineTo(x_E_box, yD);
+    ctx.stroke();
+
+    // --- Draw arrows on paths ---
+    drawArrowhead(ctx, (x_in_start + xB) / 2 + 20, yB, 0, 8); // incident
+    drawArrowhead(ctx, xB, (yB + yA) / 2, -Math.PI / 2, 8); // B -> A
+    drawArrowhead(ctx, (xB + xC) / 2, yB, 0, 8); // B -> C
+    drawArrowhead(ctx, (xA + xD) / 2, yA, 0, 8); // A -> D
+    drawArrowhead(ctx, xC, (yC + yD) / 2, -Math.PI / 2, 8); // C -> D
+    drawArrowhead(ctx, (xD + x_E_box) / 2, yD, 0, 8); // D -> E
+    
+    // --- Draw beam splitters (dashed lines) ---
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    // Splitter B at (150, 400) - '/' shape
+    ctx.beginPath();
+    ctx.moveTo(xB - 20, yB + 20);
+    ctx.lineTo(xB + 20, yB - 20);
+    ctx.stroke();
+    // Splitter D at (600, 150) - '\' shape
+    ctx.beginPath();
+    ctx.moveTo(xD - 20, yD - 20);
+    ctx.lineTo(xD + 20, yD + 20);
+    ctx.stroke();
+    ctx.restore();
+
+    // --- Draw mirrors (solid lines with hatching) ---
+    // Mirror A at (150, 150) - '\' shape
+    ctx.beginPath();
+    ctx.moveTo(130, 170);
+    ctx.lineTo(170, 130);
+    ctx.stroke();
+    // Hatching for A (top-left)
+    ctx.beginPath();
+    for (let i = 0; i <= 8; i++) {
+        const p = i * 5;
+        const startX = 130 + p * (1 / Math.sqrt(2));
+        const startY = 170 - p * (1 / Math.sqrt(2));
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(startX - 5, startY - 5);
+    }
+    ctx.stroke();
+
+    // Mirror C at (600, 400) - '/' shape
+    ctx.beginPath();
+    ctx.moveTo(580, 420);
+    ctx.lineTo(620, 380);
+    ctx.stroke();
+    // Hatching for C (bottom-left)
+    ctx.beginPath();
+    for (let i = 0; i <= 8; i++) {
+        const p = i * 5;
+        const startX = 580 + p * (1 / Math.sqrt(2));
+        const startY = 420 - p * (1 / Math.sqrt(2));
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(startX - 5, startY + 5);
+    }
+    ctx.stroke();
+    
+    // --- Draw magnetic field region ---
+    ctx.save();
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.arc((xB + xC) / 2, yC, 60, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.restore();
+
+    // --- Draw detector E ---
+    ctx.strokeRect(x_E_box, yD - 20, 60, 40);
+    ctx.textAlign = 'center';
+    ctx.fillText("E", x_E_box + 30, yD + 7);
+
+    // --- Draw Labels ---
+    ctx.textAlign = 'left';
+    ctx.fillText("incident", x_in_start - 20, yB - 25);
+    ctx.fillText("neutrons", x_in_start - 20, yB - 5);
+    
+    ctx.textAlign = 'center';
+    ctx.fillText("Region of magnetic", (xB + xC) / 2, yC + 80);
+    ctx.fillText("field", (xB + xC) / 2, yC + 100);
+    ctx.fillText("Fig. 1.7", (xB + xC) / 2, yC + 140);
+
+    ctx.fillText("A", xA + 25, yA - 5);
+    ctx.fillText("B", xB + 10, yB + 25);
+    ctx.fillText("C", xC - 25, yC + 25);
+    ctx.fillText("D", xD - 25, yD - 5);
+    
+    // --- Draw Dimensions L and H ---
+    // L
+    ctx.save();
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(xA, yA - 20);
+    ctx.lineTo(xA, yA - 50);
+    ctx.moveTo(xD, yD - 20);
+    ctx.lineTo(xD, yD - 50);
+    ctx.stroke();
+    ctx.restore();
+    ctx.beginPath();
+    ctx.moveTo(xA, yA - 35);
+    ctx.lineTo(xD, yD - 35);
+    ctx.stroke();
+    drawArrowhead(ctx, xA + 5, yA - 35, Math.PI, 8);
+    drawArrowhead(ctx, xD - 5, yD - 35, 0, 8);
+    ctx.fillText("L", (xA + xD) / 2, yA - 45);
+
+    // H
+    ctx.beginPath();
+    ctx.moveTo(xD + 50, yD);
+    ctx.lineTo(xD + 50, yC);
+    ctx.stroke();
+    drawArrowhead(ctx, xD + 50, yD + 5, Math.PI / 2, 8);
+    drawArrowhead(ctx, xD + 50, yC - 5, -Math.PI / 2, 8);
+    ctx.fillText("H", xD + 60, (yD + yC) / 2);
+
+    // --- Draw Spin vectors ---
+    // On path BA
+    const spin_s1_y = (yA + yB) / 2 + 20;
+    ctx.beginPath();
+    ctx.moveTo(xA, spin_s1_y);
+    ctx.lineTo(xA, spin_s1_y - 30);
+    ctx.stroke();
+    drawArrowhead(ctx, xA, spin_s1_y - 30, -Math.PI / 2, 8);
+    ctx.fillText("s", xA - 15, spin_s1_y - 15);
+
+    // On path CD
+    const spin_s2_y = (yC + yD) / 2 + 60;
+    const spin_len = 40;
+    const theta_deg = 20;
+    const theta_rad = theta_deg * Math.PI / 180;
+    ctx.save();
+    ctx.translate(xC, spin_s2_y);
+    // Vector s
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-spin_len * Math.sin(theta_rad), -spin_len * Math.cos(theta_rad));
+    ctx.stroke();
+    drawArrowhead(ctx, -spin_len * Math.sin(theta_rad), -spin_len * Math.cos(theta_rad), -Math.PI / 2 - theta_rad, 8);
+    // Angle guide line
+    ctx.save();
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -spin_len);
+    ctx.stroke();
+    ctx.restore();
+    // Angle arc
+    const arc_radius = 20;
+    ctx.beginPath();
+    ctx.arc(0, 0, arc_radius, -Math.PI / 2, -Math.PI / 2 - theta_rad, false); // false for clockwise
+    ctx.stroke();
+    // Labels
+    ctx.fillText("s", -spin_len * Math.sin(theta_rad) - 15, -spin_len * Math.cos(theta_rad) + 5);
+    ctx.fillText("θ", -arc_radius + 5, -arc_radius + 5);
+    ctx.restore();
+
+</script>
+</body>
+</html>

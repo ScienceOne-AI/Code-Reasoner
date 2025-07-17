@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spectral Contour Graph</title>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="450" height="350"></canvas>
+
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style and Constants ---
+const mainFont = 'italic 20px Arial';
+const subFont = 'italic 14px Arial';
+
+// --- Coordinates ---
+const originX = 60;
+const originY = 300;
+const xAxisLength = 350;
+const yAxisLength = 260;
+const centerX = originX + 170; // Center frequency position
+const peakY = originY - 230;   // Peak height of the curve
+const curveBaseY = originY - 2;
+
+/**
+ * Draws the main X and Y axes with arrowheads.
+ * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+ */
+function drawAxes(ctx) {
+    ctx.beginPath();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+
+    // X-axis
+    ctx.moveTo(originX, originY);
+    ctx.lineTo(originX + xAxisLength, originY);
+    // Arrowhead for X-axis
+    ctx.moveTo(originX + xAxisLength, originY);
+    ctx.lineTo(originX + xAxisLength - 10, originY - 5);
+    ctx.moveTo(originX + xAxisLength, originY);
+    ctx.lineTo(originX + xAxisLength - 10, originY + 5);
+
+    // Y-axis
+    ctx.moveTo(originX, originY);
+    ctx.lineTo(originX, originY - yAxisLength);
+    // Arrowhead for Y-axis
+    ctx.moveTo(originX, originY - yAxisLength);
+    ctx.lineTo(originX - 5, originY - yAxisLength + 10);
+    ctx.moveTo(originX, originY - yAxisLength);
+    ctx.lineTo(originX + 5, originY - yAxisLength + 10);
+    
+    ctx.stroke();
+}
+
+/**
+ * Draws the bell-shaped spectral curve.
+ * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+ */
+function drawCurve(ctx) {
+    const curveHalfBaseWidth = 110;
+    const startX = centerX - curveHalfBaseWidth;
+    const endX = centerX + curveHalfBaseWidth;
+
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.moveTo(startX, curveBaseY);
+
+    // A symmetric curve using two Bezier curve segments
+    ctx.bezierCurveTo(startX + 50, curveBaseY, centerX - 60, peakY, centerX, peakY);
+    ctx.bezierCurveTo(centerX + 60, peakY, endX - 50, curveBaseY, endX, curveBaseY);
+    
+    ctx.stroke();
+}
+
+/**
+ * Draws all annotations, dashed lines, and labels on the graph.
+ * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+ */
+function drawMarkingsAndLabels(ctx) {
+    // --- Dashed Lines ---
+    ctx.save();
+    ctx.setLineDash([5, 4]);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+
+    // Vertical dashed line from peak to x-axis
+    ctx.beginPath();
+    ctx.moveTo(centerX, peakY);
+    ctx.lineTo(centerX, originY);
+    ctx.stroke();
+
+    // Horizontal dashed line from peak to y-axis
+    ctx.beginPath();
+    ctx.moveTo(originX, peakY);
+    ctx.lineTo(centerX, peakY);
+    ctx.stroke();
+    ctx.restore();
+
+    // --- FWHM (Δω) Indicator ---
+    const fwhmY = peakY + (originY - peakY) / 2; // Position at half-maximum
+    const fwhmHalfWidth = 52; // An estimated width to fit the curve's shape
+    const xLeft = centerX - fwhmHalfWidth;
+    const xRight = centerX + fwhmHalfWidth;
+
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.beginPath();
+    // The main horizontal line for the width
+    ctx.moveTo(xLeft, fwhmY);
+    ctx.lineTo(xRight, fwhmY);
+    // Left arrowhead
+    ctx.moveTo(xLeft + 8, fwhmY - 5);
+    ctx.lineTo(xLeft, fwhmY);
+    ctx.lineTo(xLeft + 8, fwhmY + 5);
+    // Right arrowhead
+    ctx.moveTo(xRight - 8, fwhmY - 5);
+    ctx.lineTo(xRight, fwhmY);
+    ctx.lineTo(xRight - 8, fwhmY + 5);
+    ctx.stroke();
+    ctx.restore();
+
+    // --- Text Labels ---
+    ctx.fillStyle = 'black';
+    ctx.textBaseline = 'middle';
+
+    // Label G(ω) for the Y-axis
+    ctx.font = mainFont;
+    ctx.textAlign = 'right';
+    ctx.fillText('G(\u03C9)', originX - 10, originY - yAxisLength + 10);
+    
+    // Label ω for the X-axis
+    ctx.textAlign = 'center';
+    ctx.fillText('\u03C9', originX + xAxisLength + 10, originY + 5);
+    
+    // Label ω₀ for the center frequency
+    ctx.fillText('\u03C9', centerX, originY + 20);
+    ctx.font = subFont;
+    ctx.fillText('0', centerX + 11, originY + 23);
+    
+    // Label Δω for the FWHM
+    ctx.font = mainFont;
+    ctx.textAlign = 'left';
+    ctx.fillText('\u0394\u03C9', xRight + 10, fwhmY);
+}
+
+// --- Main execution ---
+drawAxes(ctx);
+drawCurve(ctx);
+drawMarkingsAndLabels(ctx);
+
+</script>
+
+</body>
+</html>

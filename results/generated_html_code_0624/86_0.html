@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagrams</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style settings ---
+        ctx.lineWidth = 2;
+        ctx.font = '20px "Comic Sans MS", cursive, sans-serif';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        // --- Helper function to draw an arrowhead ---
+        function drawArrowhead(x, y, angle, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Helper function to draw a resistor ---
+        function drawResistor(x1, y1, x2, y2, segments, height) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            const segLength = length / segments;
+
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+            
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            for (let i = 0; i < segments; i++) {
+                const x = (i + 0.5) * segLength;
+                const y = (i % 2 === 0 ? -1 : 1) * height;
+                ctx.lineTo(x, y);
+            }
+            ctx.lineTo(length, 0);
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        // --- Helper function to draw an inductor ---
+        function drawInductor(x1, y1, x2, y2, coils, radius) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            const coilLength = length / coils;
+
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            for (let i = 0; i < coils; i++) {
+                ctx.arc((i + 0.5) * coilLength, 0, radius, Math.PI, 0, false);
+            }
+            // Move to the end point to ensure continuous line
+            ctx.moveTo(length, 0);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+
+        // --- Draw Diagram (a) ---
+        function drawDiagramA() {
+            const c_x_front = 180;
+            const c_x_back = 450;
+            const c_y = 130;
+            const r_outer = 70;
+            const r_inner = 20;
+            const ellipse_rx = 25;
+
+            // Dashed lines
+            ctx.save();
+            ctx.setLineDash([5, 5]);
+            // Center line
+            ctx.beginPath();
+            ctx.moveTo(c_x_front - 120, c_y);
+            ctx.lineTo(c_x_back + 30, c_y);
+            ctx.stroke();
+            // Inner cylinder sides
+            ctx.beginPath();
+            ctx.moveTo(c_x_front, c_y - r_inner);
+            ctx.lineTo(c_x_back, c_y - r_inner);
+            ctx.moveTo(c_x_front, c_y + r_inner);
+            ctx.lineTo(c_x_back, c_y + r_inner);
+            ctx.stroke();
+             // Back ellipse (inner)
+            ctx.beginPath();
+            ctx.ellipse(c_x_back, c_y, ellipse_rx / 2, r_inner, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.restore();
+
+            // Outer cylinder
+            ctx.beginPath();
+            ctx.moveTo(c_x_front, c_y - r_outer);
+            ctx.lineTo(c_x_back, c_y - r_outer);
+            ctx.moveTo(c_x_front, c_y + r_outer);
+            ctx.lineTo(c_x_back, c_y + r_outer);
+            ctx.stroke();
+            
+            // Front face
+            ctx.beginPath();
+            ctx.ellipse(c_x_front, c_y, ellipse_rx, r_outer, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.ellipse(c_x_front, c_y, ellipse_rx / 2, r_inner, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Back face
+            ctx.beginPath();
+            ctx.ellipse(c_x_back, c_y, ellipse_rx, r_outer, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Particle P and trajectory cone
+            ctx.font = '24px "Comic Sans MS", cursive, sans-serif';
+            ctx.fillText('P', 20, 135);
+            ctx.fillText('π', 60, 100);
+            ctx.beginPath();
+            ctx.moveTo(40, 130);
+            ctx.lineTo(120, 130);
+            ctx.stroke();
+            drawArrowhead(120, 130, 0, 10);
+            ctx.beginPath();
+            ctx.moveTo(40, 130);
+            ctx.lineTo(120, 130 - 30);
+            ctx.stroke();
+
+            // Dimensions
+            ctx.font = '16px "Comic Sans MS", cursive, sans-serif';
+            // 5 cm
+            const dim_x_5 = 145;
+            ctx.beginPath();
+            ctx.moveTo(dim_x_5, c_y);
+            ctx.lineTo(dim_x_5, c_y - r_inner);
+            ctx.stroke();
+            drawArrowhead(dim_x_5, c_y, -Math.PI/2, 8);
+            drawArrowhead(dim_x_5, c_y - r_inner, Math.PI/2, 8);
+            ctx.fillText('5 cm', dim_x_5 - 45, c_y - r_inner/2 + 5);
+
+            // 40 cm
+            const dim_x_40 = 110;
+            ctx.beginPath();
+            ctx.moveTo(dim_x_40, c_y);
+            ctx.lineTo(dim_x_40, c_y - r_outer);
+            ctx.stroke();
+            drawArrowhead(dim_x_40, c_y, -Math.PI/2, 8);
+            drawArrowhead(dim_x_40, c_y - r_outer, Math.PI/2, 8);
+            ctx.fillText('40 cm', dim_x_40 - 55, c_y - r_outer/2 + 5);
+
+
+            // Label (a)
+            ctx.font = '20px "Comic Sans MS", cursive, sans-serif';
+            ctx.fillText('(a)', 240, 260);
+        }
+
+        // --- Draw Diagram (b) ---
+        function drawDiagramB() {
+            const y_top = 350;
+            const y_bottom = 490;
+            
+            // Wires
+            ctx.beginPath();
+            // Bottom wire
+            ctx.moveTo(120, y_bottom);
+            ctx.lineTo(400, y_bottom);
+            // Left branch
+            ctx.moveTo(120, y_bottom);
+            ctx.lineTo(120, y_top + 20);
+            // Top left wire with switch
+            ctx.moveTo(120, y_top + 20);
+            ctx.lineTo(180, y_top + 20);
+            ctx.lineTo(195, y_top); // Angled cut
+            
+            // Capacitor branch
+            ctx.moveTo(225, y_top);
+            ctx.lineTo(225, y_bottom);
+            
+            // RLC branch
+            ctx.moveTo(280, y_top);
+            ctx.lineTo(310, y_top); // Start of R
+            ctx.moveTo(370, y_top); // End of R
+            ctx.lineTo(400, y_top);
+            ctx.lineTo(400, y_bottom);
+            ctx.stroke();
+
+            // Components
+            // V0 source
+            const v0_x = 120;
+            const v0_y = 435;
+            ctx.beginPath();
+            ctx.moveTo(v0_x - 15, v0_y - 5);
+            ctx.lineTo(v0_x + 15, v0_y - 5);
+            ctx.moveTo(v0_x - 8, v0_y + 5);
+            ctx.lineTo(v0_x + 8, v0_y + 5);
+            ctx.stroke();
+            ctx.fillText('V₀', 145, 445);
+            
+            // Capacitor C
+            const c_x = 225;
+            const c_y = 420;
+            ctx.beginPath();
+            ctx.moveTo(c_x - 15, c_y - 5);
+            ctx.lineTo(c_x + 15, c_y - 5);
+            ctx.moveTo(c_x - 15, c_y + 5);
+            ctx.lineTo(c_x + 15, c_y + 5);
+            ctx.stroke();
+            ctx.fillText('C', c_x + 25, 425);
+            
+            // Resistor R
+            drawResistor(310, y_top, 370, y_top, 6, 8);
+            ctx.fillText('R', 335, y_top - 10);
+            
+            // Inductor L
+            drawInductor(400, y_top + 20, 400, y_bottom - 20, 4, 8);
+            ctx.fillText('L', 415, 425);
+            
+            // Label (b)
+            ctx.fillText('(b)', 240, 530);
+        }
+        
+        // --- Main drawing function ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawDiagramA();
+            drawDiagramB();
+
+            // Figure Caption
+            ctx.textAlign = 'center';
+            ctx.fillText('Fig. 3.78', canvas.width / 2, 580);
+        }
+
+        draw();
+    </script>
+</body>
+</html>

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Projectile Motion Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.textAlign = 'center';
+
+        // Drawing parameters
+        const padding = 60;
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        // Origin in canvas coordinates
+        const oX = padding;
+        const oY = canvasHeight - padding;
+
+        // Virtual coordinate system for physics
+        // Based on image proportions, H is roughly 2/3 of R
+        const R_virt = 300;
+        const H_virt = (2 / 3) * R_virt; // H_virt = 200
+
+        // Coordinate transformation functions
+        const x_scale = (canvasWidth - 2 * padding) / R_virt;
+        const y_scale = (canvasHeight - 2 * padding) / H_virt;
+
+        function tx(x_v) {
+            return oX + x_v * x_scale;
+        }
+
+        function ty(y_v) {
+            return oY - y_v * y_scale;
+        }
+
+        // Helper function to draw an arrow
+        function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // 1. Draw Axes
+        function drawAxes() {
+            ctx.beginPath();
+            // X-axis
+            drawArrow(oX - 10, oY, canvasWidth - padding / 2, oY);
+            // Y-axis
+            drawArrow(oX, oY + 10, oX, padding / 2);
+            ctx.stroke();
+
+            // Labels for axes
+            ctx.fillText('O', oX - 25, oY + 20);
+            ctx.fillText('x', canvasWidth - padding / 2 + 10, oY + 8);
+            ctx.fillText('y', oX - 10, padding / 2 - 5);
+        }
+
+        // 2. Draw Trajectories
+        // Trajectory 1: y(x) = H * (1 - (x/R)^2)
+        function drawTrajectory1() {
+            ctx.beginPath();
+            ctx.moveTo(tx(0), ty(H_virt));
+            for (let x_v = 0; x_v <= R_virt; x_v += 1) {
+                const y_v = H_virt * (1 - Math.pow(x_v / R_virt, 2));
+                ctx.lineTo(tx(x_v), ty(y_v));
+            }
+            ctx.stroke();
+        }
+
+        // Trajectory 2: Two parts
+        function drawTrajectory2() {
+            // Part 1: y(x) = H * (1 - 9*(x/R)^2)
+            ctx.beginPath();
+            ctx.moveTo(tx(0), ty(H_virt));
+            for (let x_v = 0; x_v <= R_virt / 3; x_v += 1) {
+                const y_v = H_virt * (1 - 9 * Math.pow(x_v / R_virt, 2));
+                if (ty(y_v) <= oY) {
+                    ctx.lineTo(tx(x_v), ty(y_v));
+                }
+            }
+            ctx.stroke();
+
+            // Part 2: y(x) = (9H/R^2) * (x - R/3) * (R - x)
+            ctx.beginPath();
+            ctx.moveTo(tx(R_virt / 3), ty(0));
+            for (let x_v = R_virt / 3; x_v <= R_virt; x_v += 1) {
+                const y_v = (9 * H_virt / Math.pow(R_virt, 2)) * (x_v - R_virt / 3) * (R_virt - x_v);
+                 if (ty(y_v) <= oY) {
+                    ctx.lineTo(tx(x_v), ty(y_v));
+                }
+            }
+            ctx.stroke();
+        }
+
+        // 3. Draw Annotations
+        function drawAnnotations() {
+            // H dimension line
+            ctx.beginPath();
+            ctx.moveTo(oX - 15, ty(H_virt));
+            ctx.lineTo(oX - 25, ty(H_virt));
+            ctx.moveTo(oX - 15, ty(0));
+            ctx.lineTo(oX - 25, ty(0));
+            ctx.stroke();
+            drawArrow(oX - 20, ty(0), oX - 20, ty(H_virt));
+            drawArrow(oX - 20, ty(H_virt), oX - 20, ty(0));
+            ctx.fillText('H', oX - 45, ty(H_virt / 2));
+            
+            // X-axis labels
+            const y_label_base = oY + 25;
+            ctx.textAlign = 'center';
+
+            // 1/3 R
+            const x_1_3_R = tx(R_virt / 3);
+            ctx.beginPath();
+            ctx.moveTo(x_1_3_R, oY);
+            ctx.lineTo(x_1_3_R, oY + 5);
+            ctx.stroke();
+            ctx.fillText('1', x_1_3_R, y_label_base - 5);
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x_1_3_R - 7, y_label_base + 2);
+            ctx.lineTo(x_1_3_R + 7, y_label_base + 2);
+            ctx.stroke();
+            ctx.restore();
+            ctx.fillText('3', x_1_3_R, y_label_base + 20);
+            ctx.textAlign = 'left';
+            ctx.fillText('R', x_1_3_R + 12, y_label_base + 8);
+            ctx.textAlign = 'center';
+
+            // x_p = R/2
+            const x_p_virt = R_virt / 2;
+            const x_p_canvas = tx(x_p_virt);
+            ctx.beginPath();
+            ctx.moveTo(x_p_canvas, oY);
+            ctx.lineTo(x_p_canvas, oY + 5);
+            ctx.stroke();
+            ctx.fillText('x', x_p_canvas, y_label_base + 15);
+            ctx.font = 'italic 14px Times New Roman';
+            ctx.fillText('P', x_p_canvas + 8, y_label_base + 20);
+            ctx.font = 'italic 20px Times New Roman';
+
+            // 2/3 R
+            const x_2_3_R = tx(2 * R_virt / 3);
+            ctx.beginPath();
+            ctx.moveTo(x_2_3_R, oY);
+            ctx.lineTo(x_2_3_R, oY + 5);
+            ctx.stroke();
+            ctx.fillText('2', x_2_3_R, y_label_base - 5);
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x_2_3_R - 7, y_label_base + 2);
+            ctx.lineTo(x_2_3_R + 7, y_label_base + 2);
+            ctx.stroke();
+            ctx.restore();
+            ctx.fillText('3', x_2_3_R, y_label_base + 20);
+            ctx.textAlign = 'left';
+            ctx.fillText('R', x_2_3_R + 12, y_label_base + 8);
+            ctx.textAlign = 'center';
+
+            // R
+            const x_R = tx(R_virt);
+            ctx.beginPath();
+            ctx.moveTo(x_R, oY);
+            ctx.lineTo(x_R, oY + 5);
+            ctx.stroke();
+            ctx.fillText('R', x_R, y_label_base + 15);
+            ctx.textAlign = 'left';
+
+            // Dashed line at 2/3 R
+            ctx.save();
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(x_2_3_R, oY);
+            // Peak of the second parabola is at H_virt
+            ctx.lineTo(x_2_3_R, ty(H_virt));
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // 4. Draw Rod and h label
+        function drawRod() {
+            const x_p_virt = R_virt / 2;
+            const h_virt = H_virt * (1 - Math.pow(x_p_virt / R_virt, 2)); // h = 3/4 H
+            const rod_width = 10;
+            const rod_x = tx(x_p_virt) - rod_width / 2;
+            const rod_y = ty(h_virt);
+            const rod_height = oY - rod_y;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(rod_x, rod_y, rod_width, rod_height);
+            ctx.stroke();
+            
+            // Add hatching
+            ctx.clip();
+            ctx.lineWidth = 1;
+            for (let i = -rod_height; i < rod_width; i += 5) {
+                ctx.beginPath();
+                ctx.moveTo(rod_x + i, rod_y);
+                ctx.lineTo(rod_x + i + rod_height, rod_y + rod_height);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // h label
+            ctx.fillText('h', rod_x + rod_width + 15, rod_y + rod_height / 2);
+        }
+
+        // 5. Draw Velocity Vectors
+        function drawVelocities() {
+            const startX = tx(0);
+            const startY = ty(H_virt);
+
+            // Labels
+            ctx.font = 'italic 22px Times New Roman';
+            ctx.textAlign = 'left';
+            const labelY = startY - 15;
+            ctx.fillText('v', startX + 20, labelY);
+            ctx.font = 'italic 15px Times New Roman';
+            ctx.fillText('2', startX + 32, labelY + 5);
+            
+            ctx.font = 'italic 22px Times New Roman';
+            ctx.fillText('v', startX + 50, labelY);
+            ctx.font = 'italic 15px Times New Roman';
+            ctx.fillText('1', startX + 62, labelY + 5);
+            
+            // Arrow for v2 (shorter, thin)
+            ctx.save();
+            ctx.lineWidth = 2;
+            drawArrow(startX, startY, startX + 45, startY, 8);
+            ctx.restore();
+            
+            // Arrow for v1 (longer, thick, filled head)
+            ctx.save();
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(startX + 80, startY);
+            ctx.stroke();
+            // Filled head
+            ctx.beginPath();
+            ctx.moveTo(startX + 85, startY);
+            ctx.lineTo(startX + 75, startY - 5);
+            ctx.lineTo(startX + 75, startY + 5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        // 6. Draw Caption
+        function drawCaption() {
+            ctx.textAlign = 'center';
+            ctx.font = '20px SimHei';
+            ctx.fillText('力图 1.7.1', canvasWidth / 2, canvasHeight - 15);
+        }
+
+        // Execute drawing functions
+        drawAxes();
+        drawTrajectory1();
+        drawTrajectory2();
+        drawAnnotations();
+        drawRod();
+        drawVelocities();
+        drawCaption();
+
+    </script>
+</body>
+</html>

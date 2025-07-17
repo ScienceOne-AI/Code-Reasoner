@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Uniaxial Anisotropic Medium</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="300" style="border:1px solid #000;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    // --- 1. Background ---
+    ctx.fillStyle = '#EBEBEB'; // Light grey background
+    ctx.fillRect(0, 0, width, height);
+
+    // --- 2. General Drawing Styles ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = 'italic 20px Times New Roman';
+
+    // --- 3. Optical Axis (O-O') ---
+    const axisY = centerY + 30; // Position the horizontal axis
+    ctx.beginPath();
+    ctx.moveTo(40, axisY);
+    ctx.lineTo(width - 40, axisY);
+    ctx.stroke();
+
+    // Labels for the optical axis
+    ctx.font = '24px Times New Roman';
+    ctx.fillText('O', 60, axisY + 30);
+    ctx.fillText("O'", width - 80, axisY + 30);
+
+    // --- 4. Ray Direction Line ---
+    const angleDeg = 30;
+    const angleRad = angleDeg * Math.PI / 180;
+    const lineLength = 280;
+    const crossX = centerX - 20; // Intersection point
+    const crossY = axisY;
+
+    ctx.save();
+    ctx.translate(crossX, crossY);
+    ctx.rotate(-angleRad); // Canvas rotation is clockwise
+    ctx.beginPath();
+    ctx.moveTo(-lineLength, 0);
+    ctx.lineTo(lineLength, 0);
+    ctx.stroke();
+    ctx.restore();
+
+    // --- 5. Angle Arc and Label (θ) ---
+    const arcRadius = 60;
+    ctx.beginPath();
+    ctx.arc(crossX, crossY, arcRadius, 0, -angleRad, true);
+    ctx.stroke();
+
+    // Angle label θ
+    const thetaX = crossX + (arcRadius + 20) * Math.cos(angleRad / 2);
+    const thetaY = crossY - (arcRadius + 20) * Math.sin(angleRad / 2);
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('θ', thetaX - 5, thetaY + 10);
+
+    // --- 6. Helper functions for vectors ---
+
+    // Function to draw an arrow from (fromx, fromy) to (tox, toy)
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // Function to draw a vector label (e.g., u with an arrow on top and a subscript)
+    function drawVectorLabel(ctx, text, sub, x, y) {
+        ctx.save();
+        ctx.font = 'italic 22px Times New Roman';
+        const textMetrics = ctx.measureText(text);
+        const textWidth = textMetrics.width;
+
+        // Draw the main letter
+        ctx.fillText(text, x, y);
+
+        // Draw the subscript
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText(sub, x + textWidth - 2, y + 5);
+
+        // Draw the arrow on top
+        ctx.lineWidth = 1.5;
+        const arrowY = y - 22;
+        const arrowStartX = x;
+        const arrowEndX = x + textWidth;
+        ctx.beginPath();
+        ctx.moveTo(arrowStartX, arrowY);
+        ctx.lineTo(arrowEndX, arrowY);
+        ctx.moveTo(arrowEndX, arrowY);
+        ctx.lineTo(arrowEndX - 5, arrowY - 3);
+        ctx.moveTo(arrowEndX, arrowY);
+        ctx.lineTo(arrowEndX - 5, arrowY + 3);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- 7. Vectors (u_o and u_e) and their Labels ---
+    ctx.lineWidth = 2; // Ensure vector line width is correct
+
+    // Vector properties
+    const uo_len = 45;
+    const ue_len = 55; // u_e is slightly longer than u_o
+    const gap = 15;
+
+    // Position the block of vectors on the ray line
+    const block_end_dist = 40; // distance from the intersection point
+    const block_end_x = crossX - block_end_dist * Math.cos(angleRad);
+    const block_end_y = crossY - block_end_dist * Math.sin(angleRad);
+
+    // Calculate and draw vector u_e
+    const ue_start_x = block_end_x - ue_len * Math.cos(angleRad);
+    const ue_start_y = block_end_y - ue_len * Math.sin(angleRad);
+    drawArrow(ctx, ue_start_x, block_end_y, block_end_x, ue_start_y); // Incorrect call, fixed below
+    drawArrow(ctx, ue_start_x, ue_start_y, block_end_x, block_end_y);
+
+
+    // Calculate and draw vector u_o
+    const uo_end_x = ue_start_x - gap * Math.cos(angleRad);
+    const uo_end_y = ue_start_y - gap * Math.sin(angleRad);
+    const uo_start_x = uo_end_x - uo_len * Math.cos(angleRad);
+    const uo_start_y = uo_end_y - uo_len * Math.sin(angleRad);
+    drawArrow(ctx, uo_start_x, uo_start_y, uo_end_x, uo_end_y);
+
+    // Position and draw labels
+    const label_offset = 35; // Perpendicular distance from the line for the labels
+
+    // Label for u_o
+    const uo_mid_x = uo_start_x + (uo_len / 2) * Math.cos(angleRad);
+    const uo_mid_y = uo_start_y + (uo_len / 2) * Math.sin(angleRad);
+    const uo_label_x = uo_mid_x - label_offset * Math.sin(angleRad);
+    const uo_label_y = uo_mid_y + label_offset * Math.cos(angleRad);
+    drawVectorLabel(ctx, 'u', 'o', uo_label_x - 10, uo_label_y);
+
+    // Label for u_e
+    const ue_mid_x = ue_start_x + (ue_len / 2) * Math.cos(angleRad);
+    const ue_mid_y = ue_start_y + (ue_len / 2) * Math.sin(angleRad);
+    const ue_label_x = ue_mid_x - label_offset * Math.sin(angleRad);
+    const ue_label_y = ue_mid_y + label_offset * Math.cos(angleRad);
+    drawVectorLabel(ctx, 'u', 'e', ue_label_x - 5, ue_label_y);
+
+</script>
+</body>
+</html>

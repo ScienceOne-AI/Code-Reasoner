@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Feynman Diagram</title>
+</head>
+<body>
+    <canvas id="feynmanCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('feynmanCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '24px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Coordinates ---
+        const canvasWidth = 600;
+        const canvasHeight = 450;
+        
+        const boxPadding = 40;
+        const box = {
+            x: boxPadding,
+            y: boxPadding,
+            width: canvasWidth - 2 * boxPadding,
+            height: canvasHeight - 150 // Leave space for caption
+        };
+
+        const centerY = box.y + box.height / 2;
+        const vertexSpacing = 200;
+        const v1 = { x: canvasWidth / 2 - vertexSpacing / 2, y: centerY };
+        const v2 = { x: canvasWidth / 2 + vertexSpacing / 2, y: centerY };
+
+        const legLength = 150;
+        const angle = Math.PI / 5; // approx 36 degrees
+
+        // Left particles
+        const p_v_start = { x: v1.x - legLength * Math.cos(angle), y: v1.y + legLength * Math.sin(angle) };
+        const p_mu_end = { x: v1.x - legLength * Math.cos(angle), y: v1.y - legLength * Math.sin(angle) };
+
+        // Right particles
+        const p_d_start = { x: v2.x + legLength * Math.cos(angle), y: v2.y + legLength * Math.sin(angle) };
+        const p_u_end = { x: v2.x + legLength * Math.cos(angle), y: v2.y - legLength * Math.sin(angle) };
+
+
+        // --- Drawing Functions ---
+
+        /**
+         * Draws a line with an arrow in the middle, pointing from (x1, y1) to (x2, y2).
+         * @param {CanvasRenderingContext2D} context The canvas rendering context.
+         * @param {number} x1 The x-coordinate of the starting point.
+         * @param {number} y1 The y-coordinate of the starting point.
+         * @param {number} x2 The x-coordinate of the ending point.
+         * @param {number} y2 The y-coordinate of the ending point.
+         */
+        function drawFermionLine(context, x1, y1, x2, y2) {
+            context.beginPath();
+            context.moveTo(x1, y1);
+            context.lineTo(x2, y2);
+            context.stroke();
+
+            // Draw arrow in the middle
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const lineAngle = Math.atan2(y2 - y1, x2 - x1);
+            const arrowSize = 12;
+
+            context.beginPath();
+            context.moveTo(midX, midY);
+            context.lineTo(midX - arrowSize * Math.cos(lineAngle - Math.PI / 6), midY - arrowSize * Math.sin(lineAngle - Math.PI / 6));
+            context.moveTo(midX, midY);
+            context.lineTo(midX - arrowSize * Math.cos(lineAngle + Math.PI / 6), midY - arrowSize * Math.sin(lineAngle + Math.PI / 6));
+            context.stroke();
+        }
+
+        // --- Main Drawing ---
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+        // Draw outer box
+        ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+        // Draw W boson (propagator)
+        ctx.beginPath();
+        ctx.setLineDash([8, 8]);
+        ctx.moveTo(v1.x, v1.y);
+        ctx.lineTo(v2.x, v2.y);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset line dash
+
+        // Draw fermion lines
+        drawFermionLine(ctx, p_v_start.x, p_v_start.y, v1.x, v1.y); // v ->
+        drawFermionLine(ctx, v1.x, v1.y, p_mu_end.x, p_mu_end.y);     // -> mu
+        drawFermionLine(ctx, p_d_start.x, p_d_start.y, v2.x, v2.y);  // d ->
+        drawFermionLine(ctx, v2.x, v2.y, p_u_end.x, p_u_end.y);      // -> u
+
+
+        // --- Labels ---
+        
+        // W boson
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('W', (v1.x + v2.x) / 2, v1.y - 15);
+
+        // --- Left side ---
+        // Momentum k'
+        ctx.textBaseline = 'bottom';
+        ctx.fillText("k'", p_mu_end.x, p_mu_end.y - 5);
+
+        // Muon μ⁻
+        let pos_mu = { x: (v1.x + p_mu_end.x) * 0.6, y: (v1.y + p_mu_end.y) * 0.6 };
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText("\u03BC\u207B", pos_mu.x - 35, pos_mu.y + 10);
+
+        // Momentum k
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText("k", p_v_start.x, p_v_start.y + 5);
+
+        // Neutrino v
+        let pos_v = { x: (v1.x + p_v_start.x) / 2, y: (v1.y + p_v_start.y) / 2 };
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText("v", pos_v.x - 30, pos_v.y);
+
+        // --- Right side ---
+        ctx.textAlign = 'center';
+
+        // Momentum p'
+        ctx.textBaseline = 'bottom';
+        ctx.fillText("p'", p_u_end.x, p_u_end.y - 5);
+
+        // Up quark u
+        let pos_u = { x: (v2.x + p_u_end.x) / 2, y: (v2.y + p_u_end.y) / 2 };
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText("u", pos_u.x + 25, pos_u.y);
+
+        // Momentum p
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText("p", p_d_start.x, p_d_start.y + 5);
+
+        // Down quark d
+        let pos_d = { x: (v2.x + p_d_start.x) / 2, y: (v2.y + p_d_start.y) / 2 };
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText("d", pos_d.x + 25, pos_d.y);
+
+
+        // --- Figure Caption ---
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('Fig. 3.19', canvasWidth / 2, box.y + box.height + 40);
+
+    </script>
+</body>
+</html>

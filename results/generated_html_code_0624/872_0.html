@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Diagram of a Disk with Holes</title>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="500" height="450" style="border:1px solid #d3d3d3;"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const cx = canvas.width / 2;
+    const cy = 200; // Y-center of the main figure
+    const R_pixels = 120;
+    // The problem states the hole centers are at the midpoint of the radius (OO₁ = R/2).
+    // The diagram visually suggests the holes are tangent to the center O, which means r = OO₁ = R/2.
+    // We will use r = R/2 to match the visual representation.
+    const r_pixels = R_pixels / 2;
+
+    const o1x = cx - R_pixels / 2;
+    const o2x = cx + R_pixels / 2;
+    const oy = cy;
+
+    // --- 1. Draw Shaded Area (Big disk with holes) ---
+    // This technique uses a single path with reversed sub-paths for the holes to create the final shape.
+    ctx.beginPath();
+    ctx.fillStyle = '#E0E0E0'; // Light gray fill
+    // Outer boundary of the large disk
+    ctx.arc(cx, oy, R_pixels, 0, 2 * Math.PI);
+    // Move to the start of the first hole's path to connect it
+    ctx.moveTo(o1x + r_pixels, oy);
+    // Add the first hole's path in the reverse direction (clockwise)
+    ctx.arc(o1x, oy, r_pixels, 0, 2 * Math.PI, true);
+    // Move to the start of the second hole's path
+    ctx.moveTo(o2x + r_pixels, oy);
+    // Add the second hole's path in the reverse direction (clockwise)
+    ctx.arc(o2x, oy, r_pixels, 0, 2 * Math.PI, true);
+    ctx.fill();
+
+    // --- 2. Draw Outlines and Lines ---
+    ctx.beginPath();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // Large circle outline
+    ctx.arc(cx, oy, R_pixels, 0, 2 * Math.PI);
+
+    // Small circles outlines
+    ctx.moveTo(o1x + r_pixels, oy);
+    ctx.arc(o1x, oy, r_pixels, 0, 2 * Math.PI);
+    ctx.moveTo(o2x + r_pixels, oy);
+    ctx.arc(o2x, oy, r_pixels, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // Draw horizontal diameter with gaps for labels
+    ctx.beginPath();
+    const label_gap = 18;
+    ctx.moveTo(cx - R_pixels, oy);
+    ctx.lineTo(o1x - label_gap, oy);
+    ctx.moveTo(o1x + label_gap, oy);
+    ctx.lineTo(cx - label_gap / 2, oy);
+    ctx.moveTo(cx + label_gap / 2, oy);
+    ctx.lineTo(o2x - label_gap, oy);
+    ctx.moveTo(o2x + label_gap, oy);
+    ctx.lineTo(cx + R_pixels, oy);
+    ctx.stroke();
+
+    // Radius R line
+    ctx.beginPath();
+    const angleR = -Math.PI / 4.5; // Angle for the radius R line
+    ctx.moveTo(cx, oy);
+    ctx.lineTo(cx + R_pixels * Math.cos(angleR), oy + R_pixels * Math.sin(angleR));
+    ctx.stroke();
+
+    // Radius r line in the left circle
+    ctx.beginPath();
+    const angler = -Math.PI * 3 / 4; // Angle for the radius r line
+    ctx.moveTo(o1x, oy);
+    ctx.lineTo(o1x + r_pixels * Math.cos(angler), oy + r_pixels * Math.sin(angler));
+    ctx.stroke();
+
+    // --- 3. Draw Rotation Arrow on the left circle ---
+    ctx.beginPath();
+    ctx.lineWidth = 1.5;
+    const arrowStartAngle = Math.PI;
+    const arrowEndAngle = Math.PI * 1.3;
+    ctx.arc(o1x, oy, r_pixels, arrowStartAngle, arrowEndAngle, false); // false for counter-clockwise
+    ctx.stroke();
+
+    // Arrowhead for the rotation arrow
+    const tipX = o1x + r_pixels * Math.cos(arrowEndAngle);
+    const tipY = oy + r_pixels * Math.sin(arrowEndAngle);
+    // The tangent angle for a CCW arc in canvas coordinates is angle - PI/2
+    const tangentAngle = arrowEndAngle - Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(tipX, tipY);
+    ctx.lineTo(tipX - 10 * Math.cos(tangentAngle - Math.PI / 6), tipY - 10 * Math.sin(tangentAngle - Math.PI / 6));
+    ctx.lineTo(tipX - 10 * Math.cos(tangentAngle + Math.PI / 6), tipY - 10 * Math.sin(tangentAngle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fillStyle = 'black';
+    ctx.fill();
+
+    // --- 4. Draw Labels ---
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Center labels O, O₁, O₂ (using Unicode subscripts)
+    ctx.fillText('O', cx, oy);
+    ctx.fillText('O₁', o1x, oy);
+    ctx.fillText('O₂', o2x, oy);
+
+    // Radius labels R and r
+    ctx.fillText('R', cx + R_pixels * 0.5 * Math.cos(angleR / 1.5), oy + R_pixels * 0.5 * Math.sin(angleR / 1.5));
+    ctx.fillText('r', o1x + r_pixels * 0.6 * Math.cos(angler*0.8), oy + r_pixels * 0.6 * Math.sin(angler*0.8));
+    ctx.fillText('r', o2x, oy - r_pixels * 0.4);
+
+    // --- 5. Draw Caption ---
+    ctx.font = '24px KaiTi'; // Use a common Chinese font like KaiTi
+    ctx.fillStyle = 'black';
+    ctx.fillText('习题 3-9 图', cx, cy + R_pixels + 50);
+
+</script>
+
+</body>
+</html>

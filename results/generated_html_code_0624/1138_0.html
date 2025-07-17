@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram - Spring and Ramp</title>
+<style>
+    body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+    canvas { border: 1px solid #999; background-color: white; }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="750" height="450"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Main Drawing Function ---
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // --- Define Coordinates & Parameters ---
+    const y_base = 300;
+    const wall_x = 50;
+    
+    // Spring system
+    const x0_pos = 150; // Position of -x0 label (left edge of block)
+    const O_pos = 250;  // Position of O (equilibrium)
+    const block_w = 40;
+    const block_h = 40;
+
+    // Ramp system
+    const B_pos_x = 450;
+    const A_pos = { x: 600, y: y_base - 120 };
+    
+    // Axis end
+    const axis_end_x = 720;
+
+    // --- Drawing Components ---
+    
+    // 1. Horizontal Surface and X-axis
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(wall_x - 1, y_base); // Start slightly before the wall for a clean join
+    ctx.lineTo(axis_end_x, y_base);
+    ctx.stroke();
+    // Arrowhead for x-axis
+    ctx.beginPath();
+    ctx.moveTo(axis_end_x, y_base);
+    ctx.lineTo(axis_end_x - 12, y_base - 6);
+    ctx.moveTo(axis_end_x, y_base);
+    ctx.lineTo(axis_end_x - 12, y_base + 6);
+    ctx.stroke();
+
+    // 2. Vertical Wall
+    ctx.beginPath();
+    ctx.moveTo(wall_x, y_base + 1);
+    ctx.lineTo(wall_x, y_base - 180);
+    ctx.stroke();
+
+    // 3. Spring
+    drawSpring(wall_x, y_base, x0_pos, y_base, 8, 12);
+
+    // 4. Block on Spring (m1)
+    ctx.beginPath();
+    ctx.rect(x0_pos, y_base - block_h, block_w, block_h);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    // Tiny line to show contact with ground
+    ctx.beginPath();
+    ctx.moveTo(x0_pos + block_w / 2 - 5, y_base);
+    ctx.lineTo(x0_pos + block_w / 2 + 5, y_base);
+    ctx.stroke();
+
+    // 5. Curved Ramp
+    const control_x = 550; // Control point for quadratic bezier
+    ctx.beginPath();
+    ctx.moveTo(A_pos.x, A_pos.y);
+    ctx.quadraticCurveTo(control_x, y_base, B_pos_x, y_base);
+    ctx.stroke();
+    
+    // 6. Block on Ramp (m2)
+    ctx.save();
+    const ramp_block_w = 40;
+    const ramp_block_h = 40;
+    ctx.translate(A_pos.x, A_pos.y);
+    // The angle of the tangent at the start of a quadratic Bezier curve is the angle of the line from the start point to the control point.
+    const angle = Math.atan2(y_base - A_pos.y, control_x - A_pos.x);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.rect(-ramp_block_w/2, -ramp_block_h/2, ramp_block_w, ramp_block_h);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // --- Labels and Dimensions ---
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    
+    // Text labels
+    ctx.font = 'italic 22px "Times New Roman"';
+    ctx.fillText('k', 90, 275);
+    ctx.fillText('m', x0_pos + 10, y_base - block_h - 10);
+    ctx.fillText('m', A_pos.x - 5, A_pos.y - ramp_block_h/2 - 15);
+    ctx.font = '20px "Times New Roman"';
+    ctx.fillText('O', O_pos - 5, y_base + 25);
+    ctx.fillText('B', B_pos_x - 5, y_base + 25);
+    ctx.fillText('A', A_pos.x + ramp_block_w/2 + 5, A_pos.y - 5);
+    ctx.fillText('x', axis_end_x + 8, y_base + 7);
+    
+    // -x0 label
+    ctx.font = '20px "Times New Roman"';
+    ctx.fillText('−x', x0_pos - 5, y_base + 25);
+    ctx.font = '15px "Times New Roman"';
+    ctx.fillText('0', x0_pos + 8, y_base + 30);
+    
+    // Mark points on axis
+    ctx.beginPath();
+    ctx.moveTo(O_pos, y_base - 4);
+    ctx.lineTo(O_pos, y_base + 4);
+    ctx.moveTo(B_pos_x, y_base - 4);
+    ctx.lineTo(B_pos_x, y_base + 4);
+    ctx.stroke();
+
+    // Dimension l
+    const l_y = y_base + 45;
+    ctx.beginPath();
+    ctx.moveTo(O_pos, l_y - 5);
+    ctx.lineTo(O_pos, l_y + 5);
+    ctx.moveTo(B_pos_x, l_y - 5);
+    ctx.lineTo(B_pos_x, l_y + 5);
+    ctx.moveTo(O_pos, l_y);
+    ctx.lineTo(B_pos_x, l_y);
+    ctx.stroke();
+    ctx.font = 'italic 22px "Times New Roman"';
+    ctx.fillText('l', (O_pos + B_pos_x)/2 - 5, l_y - 5);
+
+    // Dimension h
+    const h_x = A_pos.x + 50;
+    ctx.beginPath();
+    ctx.moveTo(h_x - 5, A_pos.y);
+    ctx.lineTo(h_x + 5, A_pos.y);
+    ctx.moveTo(h_x - 5, y_base);
+    ctx.lineTo(h_x + 5, y_base);
+    ctx.moveTo(h_x, A_pos.y);
+    ctx.lineTo(h_x, y_base);
+    // Arrowheads for h
+    ctx.moveTo(h_x, A_pos.y);
+    ctx.lineTo(h_x - 4, A_pos.y + 6);
+    ctx.moveTo(h_x, A_pos.y);
+    ctx.lineTo(h_x + 4, A_pos.y + 6);
+    ctx.moveTo(h_x, y_base);
+    ctx.lineTo(h_x - 4, y_base - 6);
+    ctx.moveTo(h_x, y_base);
+    ctx.lineTo(h_x + 4, y_base - 6);
+    ctx.stroke();
+    ctx.fillText('h', h_x + 10, (A_pos.y + y_base)/2 + 8);
+
+    // Figure caption
+    ctx.font = '20px "SimSun", "STSong"'; // Use common Chinese fonts
+    ctx.fillText('力图 7.1.1', canvas.width / 2 - 50, y_base + 100);
+}
+
+// Helper Function to draw a spring with zig-zag coils
+function drawSpring(startX, startY, endX, endY, segments, amplitude) {
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+    const springLength = endX - startX;
+    const straightPartLength = 15;
+    const coilLength = springLength - 2 * straightPartLength;
+    
+    if (coilLength <= 0) {
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+        return;
+    }
+
+    const coilStartX = startX + straightPartLength;
+    const coilEndX = endX - straightPartLength;
+    const segmentLength = coilLength / segments;
+
+    // First straight part
+    ctx.moveTo(startX, startY);
+    ctx.lineTo(coilStartX, startY);
+
+    // Coils
+    ctx.moveTo(coilStartX, startY);
+    for (let i = 0; i < segments; i++) {
+        const x_p1 = coilStartX + i * segmentLength + segmentLength / 2;
+        const y_p1 = startY + amplitude * ((i % 2 === 0) ? -1 : 1);
+        const x_p2 = coilStartX + (i + 1) * segmentLength;
+        const y_p2 = startY;
+        ctx.lineTo(x_p1, y_p1);
+        ctx.lineTo(x_p2, y_p2);
+    }
+
+    // Second straight part
+    ctx.lineTo(endX, endY);
+    
+    ctx.stroke();
+}
+
+
+draw();
+</script>
+</body>
+</html>

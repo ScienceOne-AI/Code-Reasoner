@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electrical Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Helper function to draw a resistor (rectangle)
+        // isVertical controls the orientation
+        function drawResistor(x, y, width, height, isVertical = false) {
+            const w = isVertical ? height : width;
+            const h = isVertical ? width : height;
+            ctx.strokeRect(x - w / 2, y - h / 2, w, h);
+        }
+
+        // Helper function to draw a battery symbol (horizontal orientation, positive to the right)
+        function drawBattery(x, y, size) {
+            const shortHeight = size;
+            const longHeight = size * 1.5;
+            const plateGap = 6;
+
+            // Short plate (negative)
+            ctx.beginPath();
+            ctx.moveTo(x - plateGap / 2, y - shortHeight / 2);
+            ctx.lineTo(x - plateGap / 2, y + shortHeight / 2);
+            ctx.stroke();
+
+            // Long plate (positive)
+            ctx.beginPath();
+            ctx.moveTo(x + plateGap / 2, y - longHeight / 2);
+            ctx.lineTo(x + plateGap / 2, y + longHeight / 2);
+            ctx.stroke();
+        }
+        
+        // Helper function to draw labels with subscripts
+        function drawLabel(base, sub, x, y) {
+            const baseFont = 'italic 18px Times New Roman';
+            const regularFont = '18px Times New Roman';
+            const subFont = '14px Times New Roman';
+            
+            // Use non-italic font for 'R'
+            ctx.font = (base === 'R') ? regularFont : baseFont;
+            ctx.fillText(base, x, y);
+
+            const baseMetrics = ctx.measureText(base);
+            const sub_x = x + baseMetrics.width * 0.85;
+            const sub_y = y + 5;
+
+            ctx.font = subFont;
+            ctx.fillText(sub, sub_x, sub_y);
+        }
+        
+        // Helper function to draw a terminal point (circle)
+        function drawTerminal(label, x, y, labelOffsetX, labelOffsetY) {
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI, false);
+            ctx.stroke();
+            
+            ctx.font = '18px Times New Roman';
+            ctx.fillStyle = 'black';
+            ctx.fillText(label, x + labelOffsetX, y + labelOffsetY);
+        }
+
+        // --- Main Drawing Logic ---
+
+        // Define coordinates
+        const x_left = 100, x_right = 500;
+        const y_top = 80, y_mid = 200, y_bot = 320;
+        const res_w = 50, res_h = 20; // width and height for a horizontal resistor
+        const batt_size = 15;
+
+        // --- Draw Vertical Branches ---
+        ctx.beginPath();
+        // Left branch
+        const y_r1 = y_top + (y_mid - y_top) / 2;
+        const y_r2 = y_mid + (y_bot - y_mid) / 2;
+        drawResistor(x_left, y_r1, res_w, res_h, true);
+        drawResistor(x_left, y_r2, res_w, res_h, true);
+        ctx.moveTo(x_left, y_top);
+        ctx.lineTo(x_left, y_r1 - res_w / 2);
+        ctx.moveTo(x_left, y_r1 + res_w / 2);
+        ctx.lineTo(x_left, y_r2 - res_w / 2);
+        ctx.moveTo(x_left, y_r2 + res_w / 2);
+        ctx.lineTo(x_left, y_bot);
+
+        // Right branch
+        const y_r3 = y_top + (y_mid - y_top) / 2;
+        const y_r4 = y_mid + (y_bot - y_mid) / 2;
+        drawResistor(x_right, y_r3, res_w, res_h, true);
+        drawResistor(x_right, y_r4, res_w, res_h, true);
+        ctx.moveTo(x_right, y_top);
+        ctx.lineTo(x_right, y_r3 - res_w / 2);
+        ctx.moveTo(x_right, y_r3 + res_w / 2);
+        ctx.lineTo(x_right, y_r4 - res_w / 2);
+        ctx.moveTo(x_right, y_r4 + res_w / 2);
+        ctx.lineTo(x_right, y_bot);
+        ctx.stroke();
+        
+        // --- Draw Horizontal Branches ---
+        
+        // Top Branch
+        const x_top_center = (x_left + x_right) / 2;
+        const x_e1 = x_top_center - 50;
+        const x_ri1 = x_top_center + 60;
+        ctx.beginPath();
+        ctx.moveTo(x_left, y_top);
+        ctx.lineTo(x_e1 - 10, y_top);
+        drawBattery(x_e1, y_top, batt_size);
+        ctx.moveTo(x_e1 + 10, y_top);
+        ctx.lineTo(x_ri1 - res_w/2, y_top);
+        drawResistor(x_ri1, y_top, res_w, res_h, false);
+        ctx.moveTo(x_ri1 + res_w/2, y_top);
+        ctx.lineTo(x_right, y_top);
+        ctx.stroke();
+        
+        // Bottom Branch
+        const x_bot_center = (x_left + x_right) / 2;
+        const x_e3 = x_bot_center - 50;
+        const x_ri3 = x_bot_center + 60;
+        ctx.beginPath();
+        ctx.moveTo(x_left, y_bot);
+        ctx.lineTo(x_e3 - 10, y_bot);
+        drawBattery(x_e3, y_bot, batt_size);
+        ctx.moveTo(x_e3 + 10, y_bot);
+        ctx.lineTo(x_ri3 - res_w/2, y_bot);
+        drawResistor(x_ri3, y_bot, res_w, res_h, false);
+        ctx.moveTo(x_ri3 + res_w/2, y_bot);
+        ctx.lineTo(x_right, y_bot);
+        ctx.stroke();
+        
+        // Middle Branch
+        const x_c = x_left + 40;
+        const x_d = x_left + 90;
+        const x_e2 = x_d + 50;
+        const x_ri2 = x_e2 + 65;
+        const x_r5 = x_ri2 + 75;
+        ctx.beginPath();
+        ctx.moveTo(x_left, y_mid);
+        ctx.lineTo(x_c, y_mid); // Wire to c
+        drawTerminal('c', x_c, y_mid, -5, -10);
+        drawTerminal('d', x_d, y_mid, -5, -10);
+        ctx.moveTo(x_d, y_mid);
+        ctx.lineTo(x_e2 - 10, y_mid);
+        drawBattery(x_e2, y_mid, batt_size);
+        ctx.moveTo(x_e2 + 10, y_mid);
+        ctx.lineTo(x_ri2 - res_w/2, y_mid);
+        drawResistor(x_ri2, y_mid, res_w, res_h, false);
+        ctx.moveTo(x_ri2 + res_w/2, y_mid);
+        ctx.lineTo(x_r5 - res_w/2, y_mid);
+        drawResistor(x_r5, y_mid, res_w, res_h, false);
+        ctx.moveTo(x_r5 + res_w/2, y_mid);
+        ctx.lineTo(x_right, y_mid);
+        ctx.stroke();
+
+        // --- Add Labels ---
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'left';
+
+        // Left labels
+        drawLabel('R', '1', x_left - 35, y_r1 + 5);
+        drawLabel('R', '2', x_left - 35, y_r2 + 5);
+        ctx.font = '18px Times New Roman';
+        ctx.fillText('a', x_left + 10, y_mid + 5);
+        
+        // Right labels
+        drawLabel('R', '3', x_right + 15, y_r3 + 5);
+        drawLabel('R', '4', x_right + 15, y_r4 + 5);
+        ctx.font = '18px Times New Roman';
+        ctx.fillText('b', x_right - 20, y_mid + 5);
+
+        // Top labels
+        drawLabel('ℰ', '1', x_e1-8, y_top - 20);
+        drawLabel('R', 'i1', x_ri1-5, y_top - 20);
+
+        // Bottom labels
+        drawLabel('ℰ', '3', x_e3-8, y_bot + 28);
+        drawLabel('R', 'i3', x_ri3-5, y_bot + 28);
+        
+        // Middle labels
+        drawLabel('ℰ', '2', x_e2-8, y_mid - 20);
+        drawLabel('R', 'i2', x_ri2-5, y_mid - 20);
+        drawLabel('R', '5', x_r5-5, y_mid + 30);
+        
+        // --- Add Caption ---
+        ctx.font = '22px SimSun';
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 8-3 图', canvas.width / 2, y_bot + 80);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Force Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="450"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Drawing Parameters ---
+    const origin = { x: 80, y: 380 };
+    const axisLength = 350;
+    const arrowSize = 8;
+    const rodCanvasLength = 330;
+    const theta = Math.PI / 5; // ~36 degrees
+    const rodThickness = 5;
+
+    // --- Helper function to draw an arrow ---
+    function drawArrow(ctx, fromX, fromY, toX, toY) {
+        const headlen = arrowSize;
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    // --- Main Drawing ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    
+    // 1. Draw Coordinate System
+    ctx.lineWidth = 2;
+    drawArrow(ctx, origin.x, origin.y, origin.x, origin.y - axisLength + 50); // Y-axis
+    drawArrow(ctx, origin.x, origin.y, origin.x + axisLength, origin.y);   // X-axis
+
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.fillText('y', origin.x - 25, origin.y - axisLength + 60);
+    ctx.fillText('x', origin.x + axisLength + 5, origin.y + 10);
+    ctx.fillText('O', origin.x - 25, origin.y + 20);
+
+    // 2. Draw the Rod
+    const rodBottom = { x: origin.x + rodCanvasLength * Math.cos(theta), y: origin.y };
+    const rodTop = { x: origin.x, y: origin.y - rodCanvasLength * Math.sin(theta) };
+
+    const dx = rodThickness * Math.sin(theta);
+    const dy = rodThickness * Math.cos(theta);
+
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(rodTop.x - dx / 2, rodTop.y + dy / 2);
+    ctx.lineTo(rodBottom.x - dx / 2, rodBottom.y + dy / 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(rodTop.x + dx / 2, rodTop.y - dy / 2);
+    ctx.lineTo(rodBottom.x + dx / 2, rodBottom.y - dy / 2);
+    ctx.stroke();
+    
+    // Draw caps on the rod ends
+    ctx.beginPath();
+    ctx.moveTo(rodTop.x - dx / 2, rodTop.y + dy / 2);
+    ctx.lineTo(rodTop.x + dx / 2, rodTop.y - dy / 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(rodBottom.x - dx / 2, rodBottom.y + dy / 2);
+    ctx.lineTo(rodBottom.x + dx / 2, rodBottom.y - dy / 2);
+    ctx.stroke();
+
+
+    // 3. Draw Forces
+    ctx.lineWidth = 1.5;
+    const forceLength = 60;
+    
+    // N1 (Normal force from wall)
+    drawArrow(ctx, rodTop.x, rodTop.y, rodTop.x + forceLength + 10, rodTop.y);
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('N', rodTop.x + forceLength + 15, rodTop.y - 5);
+    ctx.font = 'italic 16px Times New Roman';
+    ctx.fillText('1', rodTop.x + forceLength + 30, rodTop.y);
+
+    // N2 (Normal force from floor)
+    drawArrow(ctx, rodBottom.x, rodBottom.y, rodBottom.x, rodBottom.y - forceLength);
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('N', rodBottom.x + 10, rodBottom.y - forceLength - 5);
+    ctx.font = 'italic 16px Times New Roman';
+    ctx.fillText('2', rodBottom.x + 25, rodBottom.y - forceLength);
+
+    // mg (Gravity)
+    const center = {
+        x: (rodTop.x + rodBottom.x) / 2,
+        y: (rodTop.y + rodBottom.y) / 2
+    };
+    const gravityForceLength = 80;
+    // Draw thin line from rod center to start of arrow
+    ctx.beginPath();
+    ctx.moveTo(center.x, center.y);
+    ctx.lineTo(center.x, center.y + 15);
+    ctx.stroke();
+    drawArrow(ctx, center.x, center.y + 15, center.x, center.y + 15 + gravityForceLength);
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('mg', center.x + 10, center.y + 15 + gravityForceLength + 5);
+
+    // 4. Draw Angle
+    const angleRadius = 45;
+    ctx.beginPath();
+    ctx.arc(rodBottom.x, rodBottom.y, angleRadius, Math.PI, Math.PI + theta, false);
+    ctx.stroke();
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('θ', rodBottom.x - angleRadius * 0.75, rodBottom.y - angleRadius * 0.3);
+
+    // 5. Draw Caption
+    ctx.font = '22px "Songti SC", "SimSun", serif';
+    ctx.fillText('力图 6.23.1', canvas.width / 2 - 60, origin.y + 50);
+
+</script>
+</body>
+</html>

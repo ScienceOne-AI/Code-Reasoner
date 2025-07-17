@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="600" height="500"></canvas>
+
+<script>
+    window.onload = function() {
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px Arial';
+
+        // --- Main Drawing Functions ---
+
+        function drawWallsAndSurface() {
+            ctx.beginPath();
+            ctx.moveTo(50, 200);
+            ctx.lineTo(400, 200); // Horizontal surface top
+            ctx.moveTo(400, 200);
+            ctx.lineTo(400, 400); // Corner vertical wall
+            ctx.moveTo(50, 100);
+            ctx.lineTo(50, 200);  // Left wall
+            ctx.stroke();
+
+            // Hatching for surfaces
+            ctx.lineWidth = 1;
+            // Horizontal surface
+            for (let x = 50; x <= 400; x += 15) {
+                ctx.beginPath();
+                ctx.moveTo(x, 200);
+                ctx.lineTo(x + 15, 200 + 15);
+                ctx.stroke();
+            }
+            // Left wall
+            for (let y = 100; y <= 200; y += 15) {
+                ctx.beginPath();
+                ctx.moveTo(50, y);
+                ctx.lineTo(50 - 15, y + 15);
+                ctx.stroke();
+            }
+            // Corner wall
+             for (let y = 200; y <= 400; y += 15) {
+                ctx.beginPath();
+                ctx.moveTo(400, y);
+                ctx.lineTo(400 + 15, y + 15);
+                ctx.stroke();
+            }
+
+            ctx.lineWidth = 2; // Reset line width
+        }
+
+        function drawSpring() {
+            const y = 140; // Vertical position of the spring
+            const startX = 50;
+            const coilStartX = 80;
+            const coilEndX = 240;
+            const endX = 260;
+            const numCoils = 6;
+            const coilAmplitude = 15;
+
+            // Attachment to the wall
+            ctx.beginPath();
+            ctx.moveTo(startX, y - 10);
+            ctx.lineTo(startX, y + 10);
+            ctx.stroke();
+
+            // Spring body
+            ctx.beginPath();
+            ctx.moveTo(startX, y);
+            ctx.lineTo(coilStartX, y);
+
+            // Coils
+            const coilWidth = coilEndX - coilStartX;
+            const step = coilWidth / (numCoils * 2);
+            for (let i = 0; i < numCoils * 2; i++) {
+                const x1 = coilStartX + i * step;
+                const x2 = coilStartX + (i + 1) * step;
+                const cpY = y + (i % 2 === 0 ? -coilAmplitude : coilAmplitude);
+                ctx.quadraticCurveTo((x1 + x2) / 2, cpY, x2, y);
+            }
+            
+            ctx.lineTo(endX, y);
+            ctx.stroke();
+
+            // End loop of the spring
+            ctx.beginPath();
+            ctx.arc(endX + 4, y, 4, 0, 2 * Math.PI);
+            ctx.stroke();
+        }
+
+        function drawPulleyAndString() {
+            const pulleyCenterX = 400;
+            const pulleyCenterY = 170;
+            const pulleyRadius = 30;
+
+            // Pulley
+            ctx.beginPath();
+            ctx.arc(pulleyCenterX, pulleyCenterY, pulleyRadius, 0, 2 * Math.PI);
+            ctx.stroke();
+            // Axle
+            ctx.beginPath();
+            ctx.arc(pulleyCenterX, pulleyCenterY, 4, 0, 2 * Math.PI);
+            ctx.fill();
+            // Spoke
+            ctx.beginPath();
+            ctx.moveTo(pulleyCenterX, pulleyCenterY);
+            ctx.lineTo(pulleyCenterX + pulleyRadius * Math.cos(3*Math.PI/4), pulleyCenterY + pulleyRadius * Math.sin(3*Math.PI/4));
+            ctx.stroke();
+
+            // String
+            ctx.beginPath();
+            // Horizontal part from spring to pulley
+            const springEnd_X = 268; // x-pos of spring end loop
+            const string_Y = pulleyCenterY - pulleyRadius; // y-pos of horizontal string
+            ctx.moveTo(springEnd_X, string_Y);
+            ctx.lineTo(pulleyCenterX, string_Y);
+            // Arc over pulley
+            ctx.arc(pulleyCenterX, pulleyCenterY, pulleyRadius, -Math.PI / 2, 0);
+            // Vertical part
+            const string_X = pulleyCenterX + pulleyRadius; // x-pos of vertical string
+            ctx.lineTo(string_X, 280);
+            ctx.stroke();
+            
+            // Hook before mass
+            const hookX = string_X;
+            const hookStartY = 280;
+            ctx.beginPath();
+            ctx.moveTo(hookX, hookStartY);
+            ctx.bezierCurveTo(hookX - 10, hookStartY + 5, hookX + 10, hookStartY + 15, hookX, hookStartY + 20);
+            ctx.stroke();
+
+        }
+
+        function drawMass() {
+            const massTopY = 300;
+            const massX = 430;
+            const massWidth = 40;
+            const massHeight = 60;
+
+            // Mass rectangle
+            ctx.beginPath();
+            ctx.rect(massX - massWidth / 2, massTopY, massWidth, massHeight);
+            ctx.stroke();
+
+            // Texture dots inside mass
+            ctx.fillStyle = '#666';
+            for (let i = 0; i < 15; i++) {
+                const dotX = massX - massWidth / 2 + Math.random() * massWidth;
+                const dotY = massTopY + Math.random() * massHeight;
+                ctx.beginPath();
+                ctx.arc(dotX, dotY, 1, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            ctx.fillStyle = 'black';
+        }
+        
+        function drawLabels() {
+            ctx.font = 'italic 22px "Times New Roman"';
+            ctx.fillText('k', 160, 125);
+            ctx.fillText('M', 410, 130);
+            ctx.fillText('m', 460, 335);
+
+            ctx.font = '24px "KaiTi"';
+            ctx.textAlign = 'center';
+            ctx.fillText('习题 10-14 图', canvas.width / 2, 480);
+        }
+
+        // --- Execution ---
+        drawWallsAndSurface();
+        drawSpring();
+        drawPulleyAndString();
+        drawMass();
+        drawLabels();
+
+    };
+</script>
+
+</body>
+</html>

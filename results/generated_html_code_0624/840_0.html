@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coupled Spring-Mass System</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-diagram" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-diagram');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const config = {
+            // General
+            lineWidth: 2,
+            strokeStyle: 'black',
+            
+            // Layout
+            y_floor: 250,
+            x_wall: 100,
+            
+            // Masses
+            box_size: 80,
+            
+            // Springs
+            spring_length: 180,
+            spring_coils: 8,
+            
+            // Hatching
+            hatch_spacing: 12,
+            hatch_length: 10,
+
+            // Fonts
+            labelFont: '24px sans-serif',
+            subscriptFontRatio: 0.7,
+            captionFont: '30px "KaiTi", "SimSun", serif'
+        };
+
+        // --- Drawing Functions ---
+
+        /**
+         * Draws a subscripted text like m₁
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {string} baseText - The main text (e.g., 'm').
+         * @param {string} subText - The subscript text (e.g., '1').
+         * @param {number} x - The center x-coordinate for the entire text block.
+         * @param {number} y - The center y-coordinate for the entire text block.
+         */
+        function drawSubscriptText(ctx, baseText, subText, x, y) {
+            const originalFont = ctx.font;
+            const originalAlign = ctx.textAlign;
+            const originalBaseline = ctx.textBaseline;
+
+            ctx.font = config.labelFont;
+            const baseWidth = ctx.measureText(baseText).width;
+            
+            const fontSize = parseInt(ctx.font.match(/\d+/)[0], 10);
+            const subFontSize = Math.round(fontSize * config.subscriptFontRatio);
+            const subFont = ctx.font.replace(/\d+px/, subFontSize + 'px');
+            
+            ctx.font = subFont;
+            const subWidth = ctx.measureText(subText).width;
+            
+            const totalWidth = baseWidth + subWidth;
+            const startX = x - totalWidth / 2;
+
+            // Draw base text
+            ctx.font = config.labelFont;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(baseText, startX, y);
+
+            // Draw subscript
+            ctx.font = subFont;
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(subText, startX + baseWidth, y + fontSize * 0.3);
+
+            // Restore context state
+            ctx.font = originalFont;
+            ctx.textAlign = originalAlign;
+            ctx.textBaseline = originalBaseline;
+        }
+
+        /**
+         * Draws a helical spring.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x1 - The starting x-coordinate.
+         * @param {number} y - The y-coordinate (centerline).
+         * @param {number} x2 - The ending x-coordinate.
+         * @param {number} coils - The number of coils.
+         */
+        function drawSpring(ctx, x1, y, x2, coils) {
+            const straightEndLength = 5;
+            const springBodyLength = x2 - x1 - 2 * straightEndLength;
+            const coilWidth = springBodyLength / coils;
+            const radius = coilWidth / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x1 + straightEndLength, y);
+
+            let currentX = x1 + straightEndLength;
+            for (let i = 0; i < coils; i++) {
+                ctx.arc(currentX + radius, y, radius, Math.PI, 0);
+                currentX += coilWidth;
+            }
+
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws hatching lines for a surface.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x - The starting x of the surface boundary.
+         * @param {number} y - The starting y of the surface boundary.
+         * @param {number} length - The length of the surface line (width for floor, height for wall).
+         * @param {boolean} isVertical - True for wall, false for floor.
+         */
+        function drawHatching(ctx, x, y, length, isVertical) {
+            ctx.save();
+            ctx.lineWidth = 1;
+            const { hatch_spacing, hatch_length } = config;
+
+            if (isVertical) { // Wall
+                const y_end = y + length;
+                for (let currentY = y + hatch_spacing; currentY < y_end; currentY += hatch_spacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, currentY);
+                    ctx.lineTo(x - hatch_length, currentY + hatch_length);
+                    ctx.stroke();
+                }
+            } else { // Floor
+                const x_end = x + length;
+                for (let currentX = x + hatch_spacing; currentX < x_end; currentX += hatch_spacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(currentX, y);
+                    ctx.lineTo(currentX - hatch_length, y + hatch_length);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+
+        /**
+         * Main drawing function.
+         */
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Setup context
+            ctx.strokeStyle = config.strokeStyle;
+            ctx.lineWidth = config.lineWidth;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // --- Calculate positions ---
+            const { y_floor, x_wall, box_size, spring_length } = config;
+            const y_center = y_floor - box_size / 2;
+            const wall_top_y = y_center - box_size / 2 - 20;
+            
+            const x1_left = x_wall + spring_length;
+            const x1_center = x1_left + box_size / 2;
+            const x1_right = x1_left + box_size;
+
+            const x2_left = x1_right + spring_length;
+            const x2_center = x2_left + box_size / 2;
+            const x2_right = x2_left + box_size;
+
+            const floor_end_x = x2_right + 100;
+
+            // --- Draw elements ---
+
+            // Draw Wall and Floor
+            ctx.beginPath();
+            ctx.moveTo(x_wall, wall_top_y);
+            ctx.lineTo(x_wall, y_floor);
+            ctx.lineTo(floor_end_x, y_floor);
+            ctx.stroke();
+
+            // Draw Hatching
+            drawHatching(ctx, x_wall, wall_top_y, y_floor - wall_top_y, true);
+            drawHatching(ctx, x_wall, y_floor, floor_end_x - x_wall, false);
+
+            // Draw Spring 1 and its label
+            drawSpring(ctx, x_wall, y_center, x1_left, config.spring_coils);
+            ctx.font = config.labelFont;
+            ctx.fillText('k', x_wall + spring_length / 2, y_center - 35);
+            
+            // Draw Mass 1
+            ctx.strokeRect(x1_left, y_center - box_size / 2, box_size, box_size);
+            drawSubscriptText(ctx, 'm', '1', x1_center, y_center);
+
+            // Draw Spring 2 and its label
+            drawSpring(ctx, x1_right, y_center, x2_left, config.spring_coils);
+            ctx.font = config.labelFont;
+            ctx.fillText('k', x1_right + spring_length / 2, y_center - 35);
+            
+            // Draw Mass 2
+            ctx.strokeRect(x2_left, y_center - box_size / 2, box_size, box_size);
+            drawSubscriptText(ctx, 'm', '2', x2_center, y_center);
+            
+            // Draw Caption
+            ctx.font = config.captionFont;
+            ctx.fillStyle = config.strokeStyle;
+            ctx.fillText('习题 10-30 图', canvas.width / 2, y_floor + 80);
+        }
+
+        // Run the drawing
+        draw();
+    </script>
+</body>
+</html>

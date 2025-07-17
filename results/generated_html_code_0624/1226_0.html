@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Railway Crane Static Analysis</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="craneCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('craneCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Setup drawing parameters ---
+        const origin = { x: 230, y: 360 }; // Corresponds to point K on the ground
+        const scale = 80; // pixels per meter
+
+        // Helper function to convert model coordinates (meters) to canvas coordinates (pixels)
+        function p(x_m, y_m) {
+            return {
+                x: origin.x + x_m * scale,
+                y: origin.y - y_m * scale
+            };
+        }
+
+        // Helper function for drawing points and labels
+        function drawPoint(point, label, options = {}) {
+            const { color = 'black', size = 3, labelOffset = {x: 5, y: -5}, shape = 'dot' } = options;
+            ctx.fillStyle = color;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
+
+            ctx.beginPath();
+            if (shape === 'cross') {
+                ctx.moveTo(point.x - size, point.y - size);
+                ctx.lineTo(point.x + size, point.y + size);
+                ctx.moveTo(point.x + size, point.y - size);
+                ctx.lineTo(point.x - size, point.y + size);
+            } else { // dot
+                ctx.arc(point.x, point.y, size, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+             ctx.stroke();
+
+            if (label) {
+                ctx.font = '16px Times New Roman';
+                ctx.fillText(label, point.x + labelOffset.x, point.y + labelOffset.y);
+            }
+        }
+        
+        // Helper to draw dashed lines
+        function drawDashedLine(p1, p2) {
+            ctx.beginPath();
+            ctx.setLineDash([4, 3]);
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // --- Define key points in meters ---
+        const K = p(0, 0);
+        const A = p(0, 0.4);
+        const F = p(0.75, 0.9);
+        const E = p(-1, 1.25);
+        const C = p(-0.1, 1.8);
+        const L = p(0, 2.1);
+        const G = p(2, 2.5);
+        const H = p(1, 1.58); // Calculated to be on line FG
+        const M = p(2, 2.1); // Same x as G, same y as L for dimension line
+        const Q_center = p(2, 1.0);
+
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+
+        // --- 1. Draw Ground and Rails ---
+        ctx.fillStyle = '#E0E0E0';
+        ctx.fillRect(0, K.y, canvas.width, canvas.height - K.y);
+        ctx.beginPath();
+        ctx.moveTo(0, K.y);
+        ctx.lineTo(canvas.width, K.y);
+        ctx.stroke();
+
+        function drawRail(x_m) {
+            const railTop = p(x_m, 0);
+            const w = 8;
+            ctx.beginPath();
+            ctx.moveTo(railTop.x - w, railTop.y);
+            ctx.lineTo(railTop.x + w, railTop.y);
+            ctx.moveTo(railTop.x, railTop.y);
+            ctx.lineTo(railTop.x, railTop.y + 5);
+            ctx.moveTo(railTop.x - w/2, railTop.y + 5);
+            ctx.lineTo(railTop.x + w/2, railTop.y + 5);
+            ctx.stroke();
+        }
+        drawRail(-0.75);
+        drawRail(0.75);
+
+        // --- 2. Draw Chassis and Wheels ---
+        ctx.lineWidth = 2;
+        const chassisBottom = p(0, 0.2).y;
+        const chassisTop = p(0, 0.6).y;
+        // Frame
+        ctx.strokeRect(p(-1.1, 0.2).x, chassisBottom, p(2.2,0).x, chassisTop - chassisBottom);
+        // Wheels
+        function drawWheels(x_m) {
+            const wheelCenter = p(x_m, 0.4);
+            ctx.beginPath();
+            ctx.arc(wheelCenter.x, wheelCenter.y, 10, 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(wheelCenter.x, wheelCenter.y, 3, 0, 2*Math.PI);
+            ctx.fill();
+        }
+        drawWheels(-0.75);
+        drawWheels(0.75);
+        
+        // --- 3. Draw Crane Body ---
+        ctx.beginPath();
+        const bodyLeft = p(-1.5, 0.9);
+        const bodyRight = p(1.1, 0.9);
+        const counterWeightP1 = p(-1.5, 1.6);
+        const counterWeightP2 = p(-0.5, 1.6);
+        const counterWeightP3 = p(-0.5, 0.9);
+        
+        const curveP1 = p(-0.4, 0.9);
+        const curveControl1 = p(-0.3, 2.3);
+        const curveP2 = L;
+        const curveControl2 = p(0.3, 2.3);
+        const curveP3 = p(0.5, 0.9);
+
+        ctx.moveTo(bodyRight.x, bodyRight.y);
+        ctx.lineTo(curveP3.x, curveP3.y);
+        ctx.bezierCurveTo(curveControl2.x, curveControl2.y, curveControl1.x, curveControl1.y, curveP1.x, curveP1.y);
+        ctx.lineTo(counterWeightP3.x, counterWeightP3.y);
+        ctx.lineTo(counterWeightP2.x, counterWeightP2.y);
+        ctx.lineTo(counterWeightP1.x, counterWeightP1.y);
+        ctx.lineTo(bodyLeft.x, bodyLeft.y);
+        ctx.stroke();
+
+        // Label for D (counterweight)
+        ctx.font = '16px Times New Roman';
+        ctx.fillText('D', p(-1.3, 1.4).x, p(-1.3, 1.4).y);
+        
+        // Label for B (winch)
+        ctx.fillText('B', p(0.1, 1.5).x, p(0.1, 1.5).y);
+
+
+        // --- 4. Draw Boom (FG) ---
+        ctx.lineWidth = 2;
+        const boomWidth = 4;
+        const angle = Math.atan2(G.y - F.y, G.x - F.x);
+        const dx = boomWidth * Math.sin(angle);
+        const dy = boomWidth * Math.cos(angle);
+        
+        const H_on_boom_x = F.x + (H.x - F.x) * 0.9;
+        const H_on_boom_y = F.y + (H.y - F.y) * 0.9;
+
+        // Outer part of the boom
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(F.x + dx, F.y - dy);
+        ctx.lineTo(H_on_boom_x + dx, H_on_boom_y - dy);
+        ctx.moveTo(F.x - dx, F.y + dy);
+        ctx.lineTo(H_on_boom_x - dx, H_on_boom_y + dy);
+        ctx.stroke();
+        
+        // Inner part of the boom
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(H_on_boom_x + dx/1.5, H_on_boom_y - dy/1.5);
+        ctx.lineTo(G.x + dx/1.5, G.y - dy/1.5);
+        ctx.moveTo(H_on_boom_x - dx/1.5, H_on_boom_y + dy/1.5);
+        ctx.lineTo(G.x - dx/1.5, G.y + dy/1.5);
+        ctx.stroke();
+        
+        // Telescopic actuator representation
+        ctx.lineWidth = 1;
+        ctx.strokeRect(F.x-10, F.y, 20, 15);
+        ctx.beginPath();
+        ctx.arc(F.x, F.y, 4, 0, 2*Math.PI);
+        ctx.fill();
+
+        // --- 5. Draw Cables and Load ---
+        ctx.lineWidth = 1;
+        // Support cable
+        ctx.beginPath();
+        ctx.moveTo(L.x, L.y);
+        ctx.lineTo(G.x, G.y);
+        ctx.stroke();
+        
+        // Hoist cable
+        const cableTop = p(2, 2.4);
+        ctx.beginPath();
+        ctx.moveTo(cableTop.x, cableTop.y);
+        ctx.lineTo(Q_center.x, Q_center.y + 20);
+        ctx.stroke();
+        
+        // Pulley at G
+        ctx.beginPath();
+        ctx.arc(G.x, G.y, 5, 0, 2*Math.PI);
+        ctx.stroke();
+
+        // Load Q
+        ctx.lineWidth = 2;
+        ctx.strokeRect(Q_center.x - 20, Q_center.y - 20, 40, 40);
+        ctx.font = '16px Times New Roman';
+        ctx.fillText('Q', Q_center.x - 5, Q_center.y + 5);
+
+
+        // --- 6. Draw Dimension Lines and Labels ---
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'black';
+        ctx.font = '14px Times New Roman';
+        ctx.textAlign = 'center';
+        
+        // Vertical dashed lines
+        const dim_y_top = p(0, 2.6).y;
+        const dim_y_bottom_E = p(0, 1.25).y;
+        const dim_y_bottom_H = p(0, 1.58).y;
+        
+        drawDashedLine({x: L.x, y: L.y}, {x: L.x, y: dim_y_top}); // KL line part 1
+        drawDashedLine({x: K.x, y: K.y}, {x: K.x, y: p(0, 0.9).y}); // KL line part 2
+        drawDashedLine({x: E.x, y: dim_y_bottom_E}, {x: E.x, y: dim_y_top});
+        drawDashedLine({x: C.x, y: C.y}, {x: L.x, y: C.y});
+        drawDashedLine({x: H.x, y: dim_y_bottom_H}, {x: H.x, y: dim_y_top});
+        drawDashedLine({x: G.x, y: G.y}, {x: G.x, y: dim_y_top});
+
+        // Horizontal dimension line
+        ctx.beginPath();
+        ctx.moveTo(p(-1, 2.6).x, dim_y_top);
+        ctx.lineTo(p(2, 2.6).x, dim_y_top);
+        ctx.stroke();
+
+        // Ticks for horizontal dimensions
+        function drawTick(pt) {
+            ctx.beginPath();
+            ctx.moveTo(pt.x, pt.y - 4);
+            ctx.lineTo(pt.x, pt.y + 4);
+            ctx.stroke();
+        }
+        drawTick({x: p(-1, 2.6).x, y: dim_y_top});
+        drawTick({x: L.x, y: dim_y_top});
+        drawTick({x: H.x, y: dim_y_top});
+        drawTick({x: G.x, y: dim_y_top});
+
+        // Dimension text
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('1 m', p(-0.5, 2.6).x, dim_y_top - 2);
+        ctx.fillText('1 m', p(0.5, 2.6).x, dim_y_top - 2);
+        ctx.fillText('1 m', p(1.5, 2.6).x, dim_y_top - 2);
+        
+        // 0.1m dimension
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'right';
+        drawDashedLine(C, {x: L.x, y: C.y});
+        ctx.beginPath();
+        ctx.moveTo(C.x, C.y + 5); ctx.lineTo(C.x, C.y - 5);
+        ctx.moveTo(L.x, C.y + 5); ctx.lineTo(L.x, C.y - 5);
+        ctx.stroke();
+        ctx.fillText('0.1 m', C.x - 5, C.y);
+        
+        // Rail gauge dimension
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const dim_y_rail = p(0, 0.1).y;
+        drawDashedLine(p(-0.75, 0.2), p(-0.75, -0.2));
+        drawDashedLine(p(0.75, 0.2), p(0.75, -0.2));
+        drawDashedLine(p(0, 0.4), p(0, -0.2));
+        
+        const rail_dim_y = K.y + 20;
+        ctx.beginPath();
+        ctx.moveTo(p(-0.75,0).x, rail_dim_y);
+        ctx.lineTo(p(0.75,0).x, rail_dim_y);
+        drawTick({x: p(-0.75,0).x, y: rail_dim_y});
+        drawTick({x: p(0.75,0).x, y: rail_dim_y});
+        drawTick({x: K.x, y: rail_dim_y});
+        ctx.stroke();
+        ctx.fillText('3/4', p(-0.375,0).x, rail_dim_y + 5);
+        ctx.fillText('3/4', p(0.375,0).x, rail_dim_y + 5);
+
+
+        // --- 7. Draw Labels for Points ---
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        drawPoint(A, 'A', { labelOffset: {x: -15, y: 0} });
+        drawPoint(C, 'C', { shape: 'dot', size: 2, labelOffset: {x: -15, y: -5} });
+        drawPoint(E, 'E', { shape: 'cross', labelOffset: {x: 8, y: 5} });
+        drawPoint(F, 'F', { shape: 'dot', size: 2, labelOffset: {x: -15, y: 5} });
+        drawPoint(G, 'G', { shape: 'dot', size: 2, labelOffset: {x: 8, y: -5} });
+        drawPoint(H, 'H', { shape: 'dot', size: 2, labelOffset: {x: 8, y: 15} });
+        drawPoint(K, 'K', { shape: 'dot', size: 1, labelOffset: {x: -15, y: 15} });
+        drawPoint(L, 'L', { shape: 'dot', size: 2, labelOffset: {x: 5, y: -5} });
+        drawPoint(M, 'M', { shape: 'dot', size: 2, labelOffset: {x: 8, y: 0} });
+
+    </script>
+</body>
+</html>

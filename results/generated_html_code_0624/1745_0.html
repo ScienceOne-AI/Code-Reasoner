@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electrostatic Repulsion Diagram</title>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="500" height="480"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Settings ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = '16px sans-serif';
+
+    // --- Helper Functions ---
+    function drawArrowhead(ctx, p1, p2, size) {
+        const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+        ctx.save();
+        ctx.translate(p2.x, p2.y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2.5);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2.5);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Key Coordinates ---
+    const supportPoint = { x: 220, y: 70 };
+    const sphereRadius = 20;
+    const angleRad = 17 * Math.PI / 180; // Visually determined angle
+    const threadLengthPx = 300;
+    
+    const sphereY = { 
+        x: supportPoint.x + threadLengthPx * Math.sin(angleRad),
+        y: supportPoint.y + threadLengthPx * Math.cos(angleRad)
+    };
+    // Position sphere X vertically below the support, at the same height as sphere Y
+    const sphereX = { x: supportPoint.x, y: sphereY.y };
+
+    // --- Draw Scene ---
+
+    // 1. Draw Support Structure
+    const supportWidth = 160;
+    const supportHeight = 12;
+    const supportX = supportPoint.x - 40;
+    const supportY = supportPoint.y - supportHeight;
+    ctx.beginPath();
+    ctx.rect(supportX - supportWidth/2, supportY, supportWidth, supportHeight);
+    ctx.stroke();
+    // Hatching
+    ctx.save();
+    ctx.clip();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = supportX - supportWidth/2 - 20; i < supportX + supportWidth/2 + 20; i += 8) {
+        ctx.moveTo(i, supportY);
+        ctx.lineTo(i + 20, supportY + supportHeight + 10);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 2. Draw Thread (solid line)
+    ctx.beginPath();
+    ctx.moveTo(supportPoint.x, supportPoint.y);
+    ctx.lineTo(sphereY.x, sphereY.y);
+    ctx.stroke();
+
+    // 3. Draw Vertical Line (dashed)
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(supportPoint.x, supportPoint.y);
+    ctx.lineTo(sphereX.x, sphereX.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // 4. Draw Spheres
+    ctx.beginPath();
+    ctx.arc(sphereX.x, sphereX.y, sphereRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(sphereY.x, sphereY.y, sphereRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 5. Draw Stand for Sphere X
+    const standTopY = sphereX.y + sphereRadius;
+    const standBottomY = 410;
+    const standBaseWidth = 60;
+    const standBaseHeight = 10;
+    ctx.beginPath();
+    ctx.moveTo(sphereX.x, standTopY);
+    ctx.lineTo(sphereX.x, standBottomY);
+    ctx.stroke();
+    ctx.fillRect(sphereX.x - standBaseWidth / 2, standBottomY, standBaseWidth, standBaseHeight);
+    ctx.strokeRect(sphereX.x - standBaseWidth / 2, standBottomY, standBaseWidth, standBaseHeight);
+
+    // 6. Draw Dimension Lines
+
+    // Horizontal distance
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(sphereX.x, sphereY.y);
+    ctx.lineTo(sphereY.x, sphereY.y);
+    ctx.stroke();
+    ctx.restore();
+    // Ticks
+    ctx.beginPath();
+    ctx.moveTo(sphereX.x, sphereY.y - 5);
+    ctx.lineTo(sphereX.x, sphereY.y + 5);
+    ctx.moveTo(sphereY.x, sphereY.y - 5);
+    ctx.lineTo(sphereY.x, sphereY.y + 5);
+    ctx.stroke();
+    
+    // Thread length dimension
+    const threadVec = { x: sphereY.x - supportPoint.x, y: sphereY.y - supportPoint.y };
+    const unitThread = { x: threadVec.x / threadLengthPx, y: threadVec.y / threadLengthPx };
+    const offset = 45;
+    
+    const dimStart = { x: supportPoint.x - 20 * unitThread.x, y: supportPoint.y - 20 * unitThread.y };
+    const dimEnd = { x: sphereY.x + 20 * unitThread.x, y: sphereY.y + 20 * unitThread.y };
+    
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(supportPoint.x, supportPoint.y);
+    ctx.lineTo(dimStart.x, dimStart.y);
+    ctx.moveTo(sphereY.x, sphereY.y);
+    ctx.lineTo(dimEnd.x, dimEnd.y);
+    ctx.stroke();
+    ctx.restore();
+    
+    const perpVec = { x: -unitThread.y, y: unitThread.x };
+    const arrowStart = { x: supportPoint.x + offset * perpVec.x, y: supportPoint.y + offset * perpVec.y };
+    const arrowEnd = { x: sphereY.x + offset * perpVec.x, y: sphereY.y + offset * perpVec.y };
+    
+    ctx.beginPath();
+    ctx.moveTo(arrowStart.x, arrowStart.y);
+    ctx.lineTo(arrowEnd.x, arrowEnd.y);
+    ctx.stroke();
+    drawArrowhead(ctx, arrowEnd, arrowStart, 10);
+    drawArrowhead(ctx, arrowStart, arrowEnd, 10);
+    
+    // 7. Draw Labels
+    ctx.textAlign = 'right';
+    ctx.fillText('vertical', 150, 110);
+    ctx.fillText('line', 150, 130);
+    ctx.beginPath();
+    ctx.moveTo(155, 120);
+    ctx.lineTo(supportPoint.x - 5, 160);
+    ctx.stroke();
+
+    ctx.fillText('thread', 160, 200);
+    ctx.beginPath();
+    ctx.moveTo(165, 200);
+    ctx.lineTo(supportPoint.x + 30, 220);
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.fillText('sphere X', 140, 345);
+    ctx.fillText('charge +96 nC', 140, 365);
+    ctx.fillText('stand', 140, 415);
+
+    ctx.textAlign = 'left';
+    ctx.fillText('sphere Y', sphereY.x + 30, sphereY.y - 5);
+    ctx.fillText('charge +64 nC', sphereY.x + 30, sphereY.y + 15);
+    
+    ctx.textAlign = 'center';
+    ctx.fillText('0.080 m', (sphereX.x + sphereY.x) / 2, sphereX.y + 25);
+    
+    ctx.textAlign = 'left';
+    ctx.fillText('1.2 m', arrowEnd.x + 5, (arrowStart.y + arrowEnd.y) / 2 + 5);
+
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 4.1', canvas.width / 2, 450);
+
+</script>
+
+</body>
+</html>

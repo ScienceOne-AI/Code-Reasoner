@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rod in Perpendicular Slots</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Parameters ---
+        const originX = 120; // x-coordinate of the vertical slot centerline
+        const originY = 400; // y-coordinate of the horizontal slot centerline
+        const a = 120; // Distance from A to M
+        const b = 200; // Distance from M to B
+        const L = a + b; // Total length of the rod
+        const theta = 33 * Math.PI / 180; // Angle of the rod with the horizontal
+        
+        const slotWidth = 12;
+        const rodThickness = 6;
+        const rollerRadius = slotWidth / 2;
+        
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper function to draw an arrow ---
+        function drawArrow(x1, y1, x2, y2, arrowSize = 6) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            
+            // Arrowhead at the end (x2, y2)
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - arrowSize * Math.cos(angle - Math.PI / 6), y2 - arrowSize * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - arrowSize * Math.cos(angle + Math.PI / 6), y2 - arrowSize * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Helper function for dimension lines with two arrows ---
+        function drawDimensionLine(p1x, p1y, p2x, p2y, label, labelOffset) {
+            const dx = p2x - p1x;
+            const dy = p2y - p1y;
+            const angle = Math.atan2(dy, dx);
+            const perpAngle = angle + Math.PI / 2;
+
+            // Main line
+            ctx.beginPath();
+            ctx.moveTo(p1x, p1y);
+            ctx.lineTo(p2x, p2y);
+            ctx.stroke();
+            
+            // Arrows
+            const arrowSize = 8;
+            // Arrow at p1
+            ctx.beginPath();
+            ctx.moveTo(p1x + arrowSize * Math.cos(angle + Math.PI / 6), p1y + arrowSize * Math.sin(angle + Math.PI / 6));
+            ctx.lineTo(p1x, p1y);
+            ctx.lineTo(p1x + arrowSize * Math.cos(angle - Math.PI / 6), p1y + arrowSize * Math.sin(angle - Math.PI / 6));
+            ctx.stroke();
+             // Arrow at p2
+            ctx.beginPath();
+            ctx.moveTo(p2x - arrowSize * Math.cos(angle + Math.PI / 6), p2y - arrowSize * Math.sin(angle + Math.PI / 6));
+            ctx.lineTo(p2x, p2y);
+            ctx.lineTo(p2x - arrowSize * Math.cos(angle - Math.PI / 6), p2y - arrowSize * Math.sin(angle - Math.PI / 6));
+            ctx.stroke();
+
+            // Label
+            const midX = (p1x + p2x) / 2;
+            const midY = (p1y + p2y) / 2;
+            ctx.save();
+            ctx.fillStyle = 'black';
+            ctx.translate(midX, midY);
+            ctx.rotate(angle);
+            ctx.fillText(label, 0, -labelOffset);
+            ctx.restore();
+        }
+
+        // --- Calculations ---
+        const cos_t = Math.cos(theta);
+        const sin_t = Math.sin(theta);
+
+        // Coordinates of A, B, and M
+        const Ax = originX;
+        const Ay = originY - L * sin_t;
+        const Bx = originX + L * cos_t;
+        const By = originY;
+        const Mx = originX + a * cos_t;
+        const My = originY - b * sin_t;
+
+        // --- Drawing ---
+        
+        // 1. Draw the guide slots
+        ctx.beginPath();
+        // Vertical slot
+        ctx.moveTo(originX - slotWidth, 0);
+        ctx.lineTo(originX - slotWidth, originY + slotWidth);
+        ctx.moveTo(originX + slotWidth, 0);
+        ctx.lineTo(originX + slotWidth, originY - slotWidth);
+        ctx.moveTo(originX - slotWidth, originY + slotWidth);
+        ctx.lineTo(canvas.width, originY + slotWidth);
+        // Horizontal slot
+        ctx.moveTo(0, originY - slotWidth);
+        ctx.lineTo(originX + slotWidth, originY - slotWidth);
+        ctx.moveTo(0, originY + slotWidth);
+        ctx.lineTo(originX - slotWidth, originY + slotWidth);
+        ctx.moveTo(originX + slotWidth, originY - slotWidth);
+        ctx.lineTo(canvas.width, originY - slotWidth);
+        ctx.stroke();
+        
+        // 2. Draw the rod AB (as two parallel lines)
+        const perp_dx = -sin_t;
+        const perp_dy = cos_t;
+        const half_thick = rodThickness / 2;
+        
+        const A1x = Ax + half_thick * perp_dx;
+        const A1y = Ay + half_thick * perp_dy;
+        const B1x = Bx + half_thick * perp_dx;
+        const B1y = By + half_thick * perp_dy;
+
+        const A2x = Ax - half_thick * perp_dx;
+        const A2y = Ay - half_thick * perp_dy;
+        const B2x = Bx - half_thick * perp_dx;
+        const B2y = By - half_thick * perp_dy;
+
+        ctx.beginPath();
+        ctx.moveTo(A1x, A1y);
+        ctx.lineTo(B1x, B1y);
+        ctx.moveTo(A2x, A2y);
+        ctx.lineTo(B2x, B2y);
+        // End caps for the rod
+        ctx.moveTo(A1x, A1y);
+        ctx.lineTo(A2x, A2y);
+        ctx.moveTo(B1x, B1y);
+        ctx.lineTo(B2x, B2y);
+        ctx.stroke();
+
+        // 3. Draw rollers at A and B
+        ctx.beginPath();
+        ctx.arc(Ax, Ay, rollerRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(Bx, By, rollerRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 4. Draw point M
+        ctx.beginPath();
+        ctx.arc(Mx, My, 3, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 5. Draw labels A, B, M
+        ctx.fillText('A', Ax - 25, Ay);
+        ctx.fillText('B', Bx, By + 25);
+        ctx.fillText('M', Mx + 15, My - 15);
+        
+        // 6. Draw annotations
+        // Angle theta
+        ctx.beginPath();
+        ctx.arc(Bx, By, 40, -theta, 0);
+        ctx.stroke();
+        ctx.fillText('θ', Bx - 25, By - 25);
+        
+        // Lengths a and b
+        const annotOffset = 25;
+        const tickLength = 5;
+
+        // Points for annotation line, offset from the rod
+        const A_annot_x = Ax + annotOffset * perp_dx;
+        const A_annot_y = Ay + annotOffset * perp_dy;
+        const M_annot_x = Mx + annotOffset * perp_dx;
+        const M_annot_y = My + annotOffset * perp_dy;
+        const B_annot_x = Bx + annotOffset * perp_dx;
+        const B_annot_y = By + annotOffset * perp_dy;
+
+        // Ticks (extension lines)
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(A_annot_x + tickLength * perp_dx, A_annot_y + tickLength * perp_dy);
+        ctx.moveTo(Mx, My);
+        ctx.lineTo(M_annot_x, M_annot_y);
+        ctx.moveTo(Bx, By);
+        ctx.lineTo(B_annot_x - tickLength * perp_dx, B_annot_y - tickLength * perp_dy);
+        ctx.stroke();
+
+        // Draw dimension lines
+        drawDimensionLine(A_annot_x, A_annot_y, M_annot_x, M_annot_y, 'a', 15);
+        drawDimensionLine(M_annot_x, M_annot_y, B_annot_x, B_annot_y, 'b', 15);
+
+        // Small right angle symbol at tick A
+        const tick_perp_dx = cos_t;
+        const tick_perp_dy = sin_t;
+        const angle_size = 4;
+        ctx.beginPath();
+        ctx.moveTo(A_annot_x, A_annot_y);
+        ctx.lineTo(A_annot_x + angle_size*tick_perp_dx, A_annot_y + angle_size*tick_perp_dy);
+        ctx.lineTo(A_annot_x + angle_size*tick_perp_dx + angle_size*perp_dx, A_annot_y + angle_size*tick_perp_dy + angle_size*perp_dy);
+        ctx.lineTo(A_annot_x + angle_size*perp_dx, A_annot_y + angle_size*perp_dy);
+        ctx.stroke();
+
+
+        // 7. Draw the caption
+        ctx.font = '20px "SimSun", "Songti SC", serif';
+        ctx.fillText('习题 1-8 图', canvas.width / 2, 470);
+
+    </script>
+</body>
+</html>

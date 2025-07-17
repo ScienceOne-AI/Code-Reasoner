@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Rotating Turntable Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="380"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style and global settings
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+
+    // --- Main Drawing Parameters ---
+    const cx = 240;
+    const cy = 200;
+    const diskRadiusX = 160;
+    const diskRadiusY = 45;
+    const diskThickness = 25;
+
+    // --- 1. Draw the Turntable (Disk) ---
+    // The drawing order is important for correct perspective (occlusion).
+    // Bottom arc (front part)
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + diskThickness, diskRadiusX, diskRadiusY, 0, 0, Math.PI);
+    ctx.stroke();
+
+    // Side walls
+    ctx.beginPath();
+    ctx.moveTo(cx - diskRadiusX, cy);
+    ctx.lineTo(cx - diskRadiusX, cy + diskThickness);
+    ctx.moveTo(cx + diskRadiusX, cy);
+    ctx.lineTo(cx + diskRadiusX, cy + diskThickness);
+    ctx.stroke();
+
+    // Top surface ellipse
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, diskRadiusX, diskRadiusY, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+
+
+    // --- 2. Draw Sand Path (Dashed Ellipse) and Radius 'r' ---
+    const sandRadiusX = diskRadiusX * 0.7;
+    const sandRadiusY = diskRadiusY * 0.7;
+
+    // Dashed ellipse
+    ctx.beginPath();
+    ctx.setLineDash([6, 5]);
+    ctx.ellipse(cx, cy, sandRadiusX, sandRadiusY, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line
+
+    // Radius line
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + sandRadiusX, cy);
+    ctx.stroke();
+
+    // Radius label 'r'
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('r', cx + sandRadiusX / 2 + 10, cy + 5);
+
+
+    // --- 3. Draw Rotation Axis and Angular Velocity 'ω' ---
+    const axisHeight = 110;
+    // Axis line
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx, cy - axisHeight);
+    ctx.stroke();
+
+    // Angular velocity label 'ω'
+    ctx.font = 'italic 28px Times New Roman';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('ω', cx + 10, cy - axisHeight + 15);
+
+    // Rotation arrow
+    ctx.beginPath();
+    ctx.moveTo(cx + 20, cy - 80);
+    ctx.quadraticCurveTo(cx - 30, cy - 115, cx - 60, cy - 75);
+    ctx.stroke();
+    // Arrowhead
+    const arrowEnd = { x: cx - 60, y: cy - 75 };
+    const angle = Math.atan2(-35, -90); // Angle of the curve's end tangent
+    const arrowLength = 15;
+    ctx.beginPath();
+    ctx.moveTo(arrowEnd.x, arrowEnd.y);
+    ctx.lineTo(arrowEnd.x - arrowLength * Math.cos(angle - Math.PI / 6), arrowEnd.y - arrowLength * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(arrowEnd.x, arrowEnd.y);
+    ctx.lineTo(arrowEnd.x - arrowLength * Math.cos(angle + Math.PI / 6), arrowEnd.y - arrowLength * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+
+
+    // --- 4. Draw the Funnel with Sand ---
+    const funnelCenterX = cx + sandRadiusX;
+    const funnelTopY = cy - 95;
+    const funnelConeBottomY = cy - 45;
+    const funnelSpoutBottomY = cy - 20;
+    const funnelTopWidth = 50;
+    const funnelSpoutWidth = 14;
+
+    // Funnel cone
+    ctx.beginPath();
+    ctx.moveTo(funnelCenterX - funnelTopWidth / 2, funnelTopY);
+    ctx.lineTo(funnelCenterX + funnelTopWidth / 2, funnelTopY);
+    ctx.lineTo(funnelCenterX + funnelSpoutWidth / 2, funnelConeBottomY);
+    ctx.lineTo(funnelCenterX - funnelSpoutWidth / 2, funnelConeBottomY);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Funnel spout (as a rectangle)
+    ctx.strokeRect(funnelCenterX - funnelSpoutWidth / 2, funnelConeBottomY, funnelSpoutWidth, funnelSpoutBottomY - funnelConeBottomY);
+    
+    // Sand inside the funnel
+    ctx.fillStyle = '#666'; // Dark gray for sand
+    ctx.beginPath();
+    ctx.ellipse(funnelCenterX, funnelTopY + 4, funnelTopWidth / 2 - 4, 8, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Sand grains on top
+    ctx.fillStyle = 'black';
+    for (let i = 0; i < 20; i++) {
+        const sandX = funnelCenterX + (Math.random() - 0.5) * (funnelTopWidth - 12);
+        const sandY = funnelTopY + 2 + (Math.random() - 0.5) * 4;
+        ctx.fillRect(sandX, sandY, 1, 1);
+    }
+    
+    // --- 5. Draw the Main Text Label ---
+    ctx.font = '30px "KaiTi", "SimSun"'; // Use common Chinese fonts
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('题 9 图', cx, canvas.height - 10);
+
+</script>
+</body>
+</html>

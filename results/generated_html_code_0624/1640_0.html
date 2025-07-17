@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Physics Diagram of Wire and Loop</title>
+</head>
+<body>
+<canvas id="physics_diagram" width="450" height="500"></canvas>
+<script>
+const canvas = document.getElementById('physics_diagram');
+const ctx = canvas.getContext('2d');
+
+// Parameters
+const cx = canvas.width / 2;
+const cy = 230; // Center y, leaving space for text at the bottom
+const R = 120; // Radius of the circle
+const lineWidth = 2;
+
+// Clear canvas with a white background
+ctx.fillStyle = 'white';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// --- Helper Functions ---
+
+/**
+ * Draws an arrowhead at the end of a line segment.
+ * @param {CanvasRenderingContext2D} ctx The canvas context.
+ * @param {number} x1 Start x of the line (for direction).
+ * @param {number} y1 Start y of the line (for direction).
+ * @param {number} x2 End x of the line (arrow tip position).
+ * @param {number} y2 End y of the line (arrow tip position).
+ * @param {number} size The length of the arrowhead.
+ */
+function drawArrow(ctx, x1, y1, x2, y2, size) {
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    ctx.save();
+    ctx.translate(x2, y2);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, -size / 2.5);
+    ctx.lineTo(-size, size / 2.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+/**
+ * Draws an arrowhead on a circular arc to indicate current direction.
+ * @param {CanvasRenderingContext2D} ctx The canvas context.
+ * @param {number} centerX The x-coordinate of the circle's center.
+ * @param {number} centerY The y-coordinate of the circle's center.
+ * @param {number} radius The radius of the circle.
+ * @param {number} angle_rad The angle (in radians) on the circle where the arrow is placed.
+ * @param {number} size The length of the arrowhead.
+ */
+function drawArcArrow(ctx, centerX, centerY, radius, angle_rad, size) {
+    // Position on the circle
+    const x = centerX + radius * Math.cos(angle_rad);
+    const y = centerY - radius * Math.sin(angle_rad); // Canvas y-axis is inverted
+    // The angle of the tangent for a clockwise direction
+    const tangent_angle = angle_rad + Math.PI / 2;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(tangent_angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, -size / 2.5);
+    ctx.lineTo(-size, size / 2.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+// --- Main Drawing ---
+
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = lineWidth;
+
+// 1. Draw the circular loop
+ctx.beginPath();
+ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+ctx.stroke();
+
+// 2. Draw the straight wire AB
+// Solid part inside the circle
+ctx.beginPath();
+ctx.moveTo(cx, cy - R);
+ctx.lineTo(cx, cy + R);
+ctx.stroke();
+
+// Dashed parts extending outside the circle
+ctx.beginPath();
+ctx.setLineDash([6, 4]);
+ctx.moveTo(cx, cy - R);
+ctx.lineTo(cx, cy - R - 40); // Extend upwards
+ctx.moveTo(cx, cy + R);
+ctx.lineTo(cx, cy + R + 40); // Extend downwards
+ctx.stroke();
+ctx.setLineDash([]); // Reset to solid line
+
+// 3. Draw the radius line R
+const radiusAngle = 150 * Math.PI / 180; // Angle in the second quadrant
+ctx.beginPath();
+ctx.moveTo(cx, cy);
+ctx.lineTo(cx + R * Math.cos(radiusAngle), cy - R * Math.sin(radiusAngle));
+ctx.stroke();
+
+// 4. Draw Arrows for currents
+// Arrow for I₁ (upward on the straight wire)
+drawArrow(ctx, cx, cy, cx, cy - 40, 12);
+// Arrow for I₂ (clockwise on the circular loop)
+const i2ArrowAngle = 35 * Math.PI / 180;
+drawArcArrow(ctx, cx, cy, R, i2ArrowAngle, 12);
+
+// 5. Add Labels
+// Labels A and B for the wire ends
+ctx.font = '22px Times New Roman';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('B', cx, cy - R - 20);
+ctx.fillText('A', cx, cy + R + 20);
+
+// Label R for the radius
+ctx.font = 'italic 24px Times New Roman';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+const rLabelPos = {
+    x: cx + (R * 0.55) * Math.cos(radiusAngle),
+    y: cy - (R * 0.55) * Math.sin(radiusAngle) - 5
+};
+ctx.fillText('R', rLabelPos.x, rLabelPos.y);
+
+// Label I₁ (with subscript)
+ctx.font = 'italic 24px Times New Roman';
+ctx.textAlign = 'left';
+ctx.textBaseline = 'middle';
+ctx.fillText('I', cx + 15, cy - 30);
+ctx.font = 'italic 16px Times New Roman';
+ctx.fillText('1', cx + 25, cy - 22);
+
+// Label I₂ (with subscript)
+const i2LabelAngle = 30 * Math.PI / 180;
+const i2LabelPos = {
+    x: cx + R * Math.cos(i2LabelAngle) + 15,
+    y: cy - R * Math.sin(i2LabelAngle)
+};
+ctx.font = 'italic 24px Times New Roman';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('I', i2LabelPos.x, i2LabelPos.y);
+ctx.font = 'italic 16px Times New Roman';
+ctx.fillText('2', i2LabelPos.x + 10, i2LabelPos.y + 8);
+
+// 6. Draw the bottom caption
+ctx.font = '24px "Song Ti", "SimSun", serif';
+ctx.fillStyle = 'black';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+ctx.fillText('习题 8-43 图', canvas.width / 2, canvas.height - 10);
+
+</script>
+</body>
+</html>

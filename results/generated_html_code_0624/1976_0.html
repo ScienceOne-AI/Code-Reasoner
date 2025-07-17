@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram: Trolley with Springs</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="420" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Helper Functions ---
+
+// Function to draw a spring using quadratic curves for a sine-wave look
+function drawSpring(x_start, y_center, length, coils, amplitude) {
+    ctx.beginPath();
+    const w = length / coils; // width of one coil
+    ctx.moveTo(x_start, y_center);
+    let x = x_start;
+    for (let i = 0; i < coils; i++) {
+        ctx.quadraticCurveTo(x + w / 4, y_center - amplitude, x + w / 2, y_center);
+        ctx.quadraticCurveTo(x + 3 * w / 4, y_center + amplitude, x + w, y_center);
+        x += w;
+    }
+    ctx.stroke();
+}
+
+// Function to draw an arrow head
+function drawArrow(x, y, angle) {
+    const headlen = 8;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - headlen * Math.cos(angle - Math.PI / 6), y - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - headlen * Math.cos(angle + Math.PI / 6), y - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+// --- Drawing Parameters ---
+const benchY = 250;
+const trolleyY = 195; // Center Y of trolley and springs
+const trolleyWidth = 150;
+const trolleyHeight = 50;
+const wheelRadius = 15;
+const springCoils = 8;
+const springAmplitude = 15;
+
+const leftSupportX = 100;
+const rightSupportX = 700;
+
+const springTotalLength = 225;
+const trolleyLeftX = leftSupportX + springTotalLength;
+const trolleyRightX = rightSupportX - springTotalLength;
+const trolleyCenterX = (trolleyLeftX + trolleyRightX) / 2;
+
+// --- Main Drawing ---
+
+// Set default styles
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = 2;
+ctx.font = '22px Arial';
+
+// 1. Draw bench
+ctx.beginPath();
+ctx.moveTo(50, benchY);
+ctx.lineTo(750, benchY);
+ctx.stroke();
+
+// 2. Draw supports
+// Left support
+ctx.beginPath();
+ctx.moveTo(leftSupportX, trolleyY - 10);
+ctx.lineTo(leftSupportX, benchY);
+ctx.stroke();
+// Left support hatching
+ctx.lineWidth = 1;
+ctx.beginPath();
+for (let y = trolleyY - 10; y < benchY; y += 8) {
+    ctx.moveTo(leftSupportX, y);
+    ctx.lineTo(leftSupportX - 10, y + 10);
+}
+ctx.stroke();
+
+// Right support
+ctx.lineWidth = 2;
+ctx.beginPath();
+ctx.moveTo(rightSupportX, trolleyY - 10);
+ctx.lineTo(rightSupportX, benchY);
+ctx.stroke();
+// Right support hatching
+ctx.lineWidth = 1;
+ctx.beginPath();
+for (let y = trolleyY - 10; y < benchY; y += 8) {
+    ctx.moveTo(rightSupportX, y);
+    ctx.lineTo(rightSupportX + 10, y - 10);
+}
+ctx.stroke();
+
+// 3. Draw trolley
+ctx.lineWidth = 2;
+const trolleyTopY = trolleyY - trolleyHeight / 2;
+// Trolley body
+ctx.strokeRect(trolleyLeftX, trolleyTopY, trolleyWidth, trolleyHeight);
+// Trolley wheels
+const wheel1X = trolleyLeftX + trolleyWidth / 4;
+const wheel2X = trolleyRightX - trolleyWidth / 4;
+const wheelY = benchY - wheelRadius;
+ctx.beginPath();
+ctx.arc(wheel1X, wheelY, wheelRadius, 0, 2 * Math.PI);
+ctx.stroke();
+ctx.beginPath();
+ctx.arc(wheel2X, wheelY, wheelRadius, 0, 2 * Math.PI);
+ctx.stroke();
+
+// 4. Draw Springs
+ctx.lineWidth = 1.5;
+const straightSegment = 22.5;
+// Left Spring
+const springStartLeft = leftSupportX + straightSegment;
+const springEndLeft = trolleyLeftX - straightSegment;
+const leftSpringCoiledLength = springEndLeft - springStartLeft;
+
+ctx.beginPath();
+ctx.moveTo(leftSupportX, trolleyY);
+ctx.lineTo(springStartLeft, trolleyY);
+ctx.stroke();
+drawSpring(springStartLeft, trolleyY, leftSpringCoiledLength, springCoils, springAmplitude);
+ctx.beginPath();
+ctx.moveTo(springEndLeft, trolleyY);
+ctx.lineTo(trolleyLeftX, trolleyY);
+ctx.stroke();
+
+// Right Spring
+const springStartRight = trolleyRightX + straightSegment;
+const springEndRight = rightSupportX - straightSegment;
+const rightSpringCoiledLength = springEndRight - springStartRight;
+
+ctx.beginPath();
+ctx.moveTo(trolleyRightX, trolleyY);
+ctx.lineTo(springStartRight, trolleyY);
+ctx.stroke();
+drawSpring(springStartRight, trolleyY, rightSpringCoiledLength, springCoils, springAmplitude);
+ctx.beginPath();
+ctx.moveTo(springEndRight, trolleyY);
+ctx.lineTo(rightSupportX, trolleyY);
+ctx.stroke();
+
+// 5. Draw Dimension Line for left spring
+const dimY = 130;
+const dimTextY = 120;
+const dimStartX = leftSupportX;
+const dimEndX = trolleyLeftX;
+
+ctx.lineWidth = 1;
+// Dashed vertical lines
+ctx.setLineDash([3, 3]);
+ctx.beginPath();
+ctx.moveTo(dimStartX, dimY);
+ctx.lineTo(dimStartX, trolleyY);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(dimEndX, dimY);
+ctx.lineTo(dimEndX, trolleyY);
+ctx.stroke();
+ctx.setLineDash([]);
+
+// Horizontal line with arrows
+ctx.beginPath();
+ctx.moveTo(dimStartX, dimY);
+ctx.lineTo(dimEndX, dimY);
+ctx.stroke();
+drawArrow(dimStartX, dimY, Math.PI); // Arrow pointing left
+drawArrow(dimEndX, dimY, 0);       // Arrow pointing right
+
+// Dimension text
+ctx.font = '20px Arial';
+ctx.textAlign = 'center';
+ctx.fillText('18.0 cm', (dimStartX + dimEndX) / 2, dimTextY);
+
+// 6. Labels and Pointers
+ctx.lineWidth = 1;
+ctx.font = '22px Arial';
+ctx.textAlign = 'left';
+// "support"
+ctx.fillText('support', 110, 60);
+ctx.beginPath();
+ctx.moveTo(150, 70);
+ctx.lineTo(105, 185);
+ctx.stroke();
+ctx.fillText('support', 600, 60);
+ctx.beginPath();
+ctx.moveTo(640, 70);
+ctx.lineTo(695, 185);
+ctx.stroke();
+
+// "spring"
+ctx.textAlign = 'center';
+ctx.fillText('spring', 170, 310);
+ctx.beginPath();
+ctx.moveTo(170, 295);
+ctx.lineTo(210, 210);
+ctx.stroke();
+ctx.fillText('spring', 630, 310);
+ctx.beginPath();
+ctx.moveTo(630, 295);
+ctx.lineTo(590, 210);
+ctx.stroke();
+
+// "bench"
+ctx.fillText('bench', 220, 280);
+ctx.beginPath();
+ctx.moveTo(245, 270);
+ctx.lineTo(245, benchY + 5);
+ctx.stroke();
+
+// "trolley"
+ctx.fillText('trolley', trolleyCenterX, 310);
+ctx.beginPath();
+ctx.moveTo(trolleyCenterX, 295);
+ctx.lineTo(trolleyCenterX, trolleyTopY + trolleyHeight + 5);
+ctx.stroke();
+
+// 7. Figure Caption
+ctx.font = 'bold 22px Arial';
+ctx.fillText('Fig. 4.1', trolleyCenterX, 380);
+
+</script>
+</body>
+</html>

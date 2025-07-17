@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Rolling Ball on a Track</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="650" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a dashed line from (x1, y1) to (x2, y2).
+         */
+        function drawDashedLine(x1, y1, x2, y2, dashLen = 5) {
+            ctx.beginPath();
+            ctx.setLineDash([dashLen, dashLen]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset to solid line
+        }
+
+        /**
+         * Draws an arc to represent an angle.
+         */
+        function drawAngleArc(x, y, radius, startAngle, endAngle, clockwise = false) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, startAngle, endAngle, clockwise);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws an arrow at the end of a line segment.
+         */
+        function drawArrow(x1, y1, x2, y2, size = 8) {
+             const angle = Math.atan2(y2 - y1, x2 - x1);
+             ctx.beginPath();
+             ctx.moveTo(x2, y2);
+             ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 6), y2 - size * Math.sin(angle - Math.PI / 6));
+             ctx.moveTo(x2, y2);
+             ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 6), y2 - size * Math.sin(angle + Math.PI / 6));
+             ctx.stroke();
+        }
+
+
+        // --- Main Drawing Logic ---
+
+        // Parameters based on the diagram
+        const theta = 30 * Math.PI / 180; // 30 degrees in radians
+        const R = 110; // Radius of the circular track
+        const r = 35;  // Radius of the small ball
+        const h = 80;  // Initial height of the ball's contact point
+
+        // Position parameters for drawing
+        const arcCenterX = 400;
+        const arcCenterY = 220;
+        const groundY = arcCenterY + R;
+
+        // --- Calculate Key Coordinates ---
+
+        // Point where the slope meets the arc
+        const slopeTangentX = arcCenterX - R * Math.sin(theta);
+        const slopeTangentY = arcCenterY + R * Math.cos(theta); // In canvas, Y increases downwards
+
+        // Start point of the slope (for drawing)
+        const slopeStartX = 50;
+        const slopeStartY = slopeTangentY - (slopeTangentX - slopeStartX) * Math.tan(theta);
+        
+        // Ball's contact point on the slope
+        const ballContactX = slopeTangentX - h / Math.tan(theta);
+        const ballContactY = slopeTangentY - h;
+
+        // Ball's center
+        const ballCenterX = ballContactX + r * Math.sin(theta);
+        const ballCenterY = ballContactY - r * Math.cos(theta);
+
+        // --- Start Drawing ---
+        
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 20px Times New Roman';
+
+        // 1. Draw the main track (slope + arc + ground)
+        ctx.beginPath();
+        ctx.moveTo(slopeStartX, slopeStartY);
+        ctx.lineTo(slopeTangentX, slopeTangentY);
+        // The arc starts at the tangent point with the slope and ends at the tangent point with the ground.
+        // Angle of slope tangent from center: atan2(y,x) -> atan2(R*cos(theta), -R*sin(theta)) -> PI - theta
+        // Angle of ground tangent from center: atan2(R, 0) -> PI/2
+        ctx.arc(arcCenterX, arcCenterY, R, Math.PI - theta, Math.PI / 2);
+        ctx.lineTo(canvas.width - 50, groundY);
+        ctx.stroke();
+
+        // 2. Draw ground hatching and label
+        ctx.font = '20px KaiTi'; // Use a font that supports Chinese characters
+        ctx.fillText('水平地面', 500, groundY + 40);
+        ctx.font = 'italic 20px Times New Roman'; // Revert font
+        for (let i = 0; i < 25; i++) {
+            const x = arcCenterX + i * 15;
+            ctx.beginPath();
+            ctx.moveTo(x, groundY + 2);
+            ctx.lineTo(x - 10, groundY + 12);
+            ctx.stroke();
+        }
+
+        // 3. Draw the ball
+        ctx.beginPath();
+        ctx.arc(ballCenterX, ballCenterY, r, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Draw ball's center dot
+        ctx.beginPath();
+        ctx.arc(ballCenterX, ballCenterY, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // 4. Draw labels and geometric guides
+
+        // Label 'r' for ball radius
+        ctx.beginPath();
+        ctx.moveTo(ballCenterX, ballCenterY);
+        ctx.lineTo(ballContactX, ballContactY);
+        ctx.stroke();
+        ctx.save();
+        ctx.translate((ballCenterX + ballContactX)/2, (ballCenterY + ballContactY)/2);
+        ctx.rotate(Math.PI/2 - theta);
+        ctx.fillText('r', 10, 5);
+        ctx.restore();
+
+        // Label 'h' for height
+        const h_line_x = ballContactX - 40;
+        drawDashedLine(slopeTangentX, slopeTangentY, h_line_x - 20, slopeTangentY);
+        ctx.beginPath();
+        ctx.moveTo(h_line_x, ballContactY);
+        ctx.lineTo(h_line_x, slopeTangentY);
+        ctx.stroke();
+        drawArrow(h_line_x, slopeTangentY, h_line_x, ballContactY);
+        drawArrow(h_line_x, ballContactY, h_line_x, slopeTangentY);
+        ctx.fillText('h', h_line_x - 25, ballContactY + h / 2 + 5);
+
+        // Label 'θ' for slope angle
+        drawDashedLine(slopeTangentX, slopeTangentY, slopeTangentX + 60, slopeTangentY);
+        drawAngleArc(slopeTangentX, slopeTangentY, 30, Math.PI, Math.PI + theta);
+        ctx.fillText('θ', slopeTangentX + 35, slopeTangentY + 20);
+
+        // Labels 'R' and 'θ' for the arc
+        // As per the diagram, 'θ' is between the radius to the tangent point and the vertical.
+        const vertLineTopY = arcCenterY - 50;
+        drawDashedLine(arcCenterX, arcCenterY, arcCenterX, vertLineTopY); // Vertical line up from center
+        drawDashedLine(arcCenterX, arcCenterY, slopeTangentX, slopeTangentY); // Radius to tangent
+        drawAngleArc(arcCenterX, arcCenterY, 40, -Math.PI/2, -Math.PI/2 + theta);
+        ctx.fillText('θ', arcCenterX + 10, arcCenterY - 50);
+
+        // The label 'R' is placed next to a vertical dashed line.
+        // In the diagram, this line seems to go from the top of the angle arc down to the horizontal level of the arc's center.
+        const R_label_line_x = arcCenterX + 60;
+        const R_label_line_y_top = vertLineTopY; // The image is a bit ambiguous, this is an interpretation
+        const R_label_line_y_bottom = arcCenterY;
+        drawDashedLine(R_label_line_x, R_label_line_y_top, R_label_line_x, R_label_line_y_bottom);
+        ctx.fillText('R', R_label_line_x + 10, arcCenterY - 10);
+
+    </script>
+</body>
+</html>

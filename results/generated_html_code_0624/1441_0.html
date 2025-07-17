@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Recreation</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="650" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+
+        // --- Geometric Parameters ---
+        const d = 100; // Distance between plates
+        const plateThickness = 8;
+        const plateLength = 450;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2 + 30;
+
+        const y_bottom_outer = centerY + d / 2 + plateThickness;
+        const y_bottom_inner = centerY + d / 2;
+        const y_top_inner = centerY - d / 2;
+        const y_top_outer = centerY - d / 2 - plateThickness;
+        const y_mid = centerY;
+
+        const liquidLength = 250;
+        const x_left_body = centerX - liquidLength / 2;
+        const x_right_body = centerX + liquidLength / 2;
+
+        // --- Draw Plates ---
+        // Lower plate
+        ctx.beginPath();
+        ctx.moveTo(centerX - plateLength / 2, y_bottom_inner);
+        ctx.lineTo(centerX + plateLength / 2, y_bottom_inner);
+        ctx.moveTo(centerX - plateLength / 2, y_bottom_outer);
+        ctx.lineTo(centerX + plateLength / 2, y_bottom_outer);
+        ctx.stroke();
+
+        // Lower plate hatching (fixed support)
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 20; i++) {
+            const x_start = centerX - plateLength / 2 + 5 + i * 22;
+            ctx.beginPath();
+            ctx.moveTo(x_start, y_bottom_outer);
+            ctx.lineTo(x_start - 10, y_bottom_outer + 10);
+            ctx.stroke();
+        }
+
+        // Upper plate
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(centerX - plateLength / 2, y_top_inner);
+        ctx.lineTo(centerX + plateLength / 2, y_top_inner);
+        ctx.moveTo(centerX - plateLength / 2, y_top_outer);
+        ctx.lineTo(centerX + plateLength / 2, y_top_outer);
+        ctx.stroke();
+
+
+        // --- Draw Liquid ---
+        // Create the path for the liquid drop
+        ctx.beginPath();
+
+        // Right meniscus (concave)
+        const theta_draw_deg = 60;
+        const theta_draw_rad = theta_draw_deg * Math.PI / 180;
+        const theta_half = theta_draw_rad / 2;
+        const radius_R1 = (d / 2) / Math.sin(theta_half);
+        const cx_R1 = x_right_body + Math.sqrt(radius_R1**2 - (d/2)**2);
+        ctx.moveTo(x_right_body, y_top_inner);
+        ctx.arc(cx_R1, y_mid, radius_R1, Math.PI + theta_half, Math.PI - theta_half, true);
+
+        // Bottom line
+        ctx.lineTo(x_left_body, y_bottom_inner);
+
+        // Left meniscus (convex)
+        ctx.arc(x_left_body, y_mid, d / 2, Math.PI / 2, -Math.PI / 2, true);
+
+        // Top line
+        ctx.closePath();
+
+        // Fill the liquid with slanted lines
+        ctx.save();
+        ctx.clip();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#444';
+        for (let x = x_left_body - d/2 - 20; x < x_right_body + 20; x += 10) {
+            ctx.beginPath();
+            ctx.moveTo(x, y_top_inner - 20);
+            ctx.lineTo(x + 50, y_bottom_inner + 20);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // Draw the outline of the liquid
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+
+        // --- Draw Annotations ---
+
+        // Label 'd'
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.fillText('d', 80, y_mid + 8);
+        ctx.beginPath();
+        ctx.moveTo(95, y_top_inner);
+        ctx.lineTo(95, y_bottom_inner);
+        ctx.moveTo(95, y_top_inner);
+        ctx.lineTo(90, y_top_inner + 8);
+        ctx.moveTo(95, y_top_inner);
+        ctx.lineTo(100, y_top_inner + 8);
+        ctx.moveTo(95, y_bottom_inner);
+        ctx.lineTo(90, y_bottom_inner - 8);
+        ctx.moveTo(95, y_bottom_inner);
+        ctx.lineTo(100, y_bottom_inner - 8);
+        ctx.stroke();
+
+
+        // Label 'm'
+        ctx.fillText('m', 150, y_top_outer - 15);
+
+        // Label 'R2'
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        // Diagonal line
+        ctx.moveTo(x_left_body, y_mid);
+        const diag_angle = Math.PI / 4;
+        ctx.lineTo(x_left_body - (d / 2) * Math.cos(diag_angle), y_mid - (d / 2) * Math.sin(diag_angle));
+        // Horizontal line with arrow
+        ctx.moveTo(x_left_body, y_mid);
+        ctx.lineTo(x_left_body + 40, y_mid);
+        ctx.stroke();
+        ctx.restore();
+        // Arrowhead for R2
+        ctx.beginPath();
+        ctx.moveTo(x_left_body + 40, y_mid);
+        ctx.lineTo(x_left_body + 32, y_mid - 4);
+        ctx.moveTo(x_left_body + 40, y_mid);
+        ctx.lineTo(x_left_body + 32, y_mid + 4);
+        ctx.stroke();
+        // Text R2
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText('R', x_left_body + 55, y_mid + 8);
+        ctx.font = '18px Times New Roman';
+        ctx.fillText('2', x_left_body + 65, y_mid + 12);
+
+
+        // Label 'A'
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText('A', centerX + 40, y_mid + 8);
+
+
+        // Angle 'θ' on the right
+        ctx.lineWidth = 1.5;
+        const apex_dist = (d/2) / Math.tan(theta_half);
+        const x_apex = x_right_body + apex_dist;
+        // Tangent lines
+        ctx.beginPath();
+        ctx.moveTo(x_right_body, y_top_inner);
+        ctx.lineTo(x_apex, y_mid);
+        ctx.moveTo(x_right_body, y_bottom_inner);
+        ctx.lineTo(x_apex, y_mid);
+        ctx.stroke();
+        // Angle arc
+        ctx.beginPath();
+        ctx.arc(x_apex, y_mid, 30, -theta_half, theta_half);
+        ctx.stroke();
+        // θ label
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText('θ', x_apex + 45, y_mid + 8);
+        
+        // Small contact angle arcs on the right
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x_right_body, y_top_inner, 15, -theta_half, 0);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x_right_body, y_bottom_inner, 15, 0, theta_half);
+        ctx.stroke();
+        
+        // Dot inside the wedge
+        ctx.beginPath();
+        ctx.arc(x_right_body + 20, y_mid, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Bottom text
+        ctx.font = '30px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.fillText('θ = 135°', centerX, canvas.height - 20);
+
+    </script>
+</body>
+</html>

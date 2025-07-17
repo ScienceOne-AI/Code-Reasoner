@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3-Slit Diffraction with Phase Filter</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Clear canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Style
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 20px serif';
+        
+        // Helper function to draw an arrow on a line segment
+        function drawArrow(ctx, x1, y1, x2, y2, headlen = 8) {
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.save();
+            ctx.beginPath();
+            ctx.translate(x2, y2);
+            ctx.rotate(angle);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headlen, headlen / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headlen, -headlen / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Parameters based on the image proportions
+        const y_center = 250;
+        const d = 60;
+        const a = 25; // slit width
+        const x_wave = 100;
+        const x_mask = 120;
+        const x_lens = 320;
+        const lens_height = 200;
+        const lens_width_half = 20;
+        const x_screen = 540;
+        const theta_rad = 0.2; // Angle of diffraction in radians
+
+        // Slit positions (centers)
+        const y_top = y_center - d;
+        const y_mid = y_center;
+        const y_bot = y_center + d;
+
+        // 1. Draw Wavy Wavefront on the left
+        ctx.save();
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        const wave_amp = 4;
+        const wave_freq = 0.1;
+        ctx.moveTo(x_wave + wave_amp * Math.sin(100 * wave_freq), 100);
+        for (let y = 101; y <= 400; y++) {
+            ctx.lineTo(x_wave + wave_amp * Math.sin(y * wave_freq), y);
+        }
+        ctx.stroke();
+        // Arrows for incident wave
+        drawArrow(ctx, x_wave - 20, y_top - 20, x_wave, y_top - 20);
+        drawArrow(ctx, x_wave - 20, y_bot + 20, x_wave, y_bot + 20);
+        ctx.restore();
+
+
+        // 2. Draw Slit Mask
+        ctx.save();
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        // Solid parts of the mask
+        ctx.moveTo(x_mask, 100);
+        ctx.lineTo(x_mask, y_top - a / 2);
+        ctx.moveTo(x_mask, y_top + a / 2);
+        ctx.lineTo(x_mask, y_mid - a / 2);
+        ctx.moveTo(x_mask, y_mid + a / 2);
+        ctx.lineTo(x_mask, y_bot - a / 2);
+        ctx.moveTo(x_mask, y_bot + a / 2);
+        ctx.lineTo(x_mask, 400);
+        ctx.stroke();
+        ctx.restore();
+
+        // 3. Draw Biconvex Lens
+        ctx.beginPath();
+        ctx.moveTo(x_lens, y_center - lens_height / 2);
+        ctx.quadraticCurveTo(x_lens + lens_width_half * 2, y_center, x_lens, y_center + lens_height / 2);
+        ctx.quadraticCurveTo(x_lens - lens_width_half * 2, y_center, x_lens, y_center - lens_height / 2);
+        ctx.stroke();
+
+        // 4. Draw Screen
+        ctx.save();
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(x_screen, 100);
+        ctx.lineTo(x_screen, 400);
+        ctx.stroke();
+        ctx.restore();
+
+        // 5. Draw Rays
+        const tan_theta = Math.tan(theta_rad);
+        const y_focus = y_center - (x_screen - x_lens) * tan_theta;
+
+        const ray_sources = [y_top, y_mid, y_bot];
+        ray_sources.forEach(y_start => {
+            const x_start = x_mask;
+            const y_lens_intercept = y_start - (x_lens - x_start) * tan_theta;
+
+            // Ray from slit to lens
+            ctx.beginPath();
+            ctx.moveTo(x_start, y_start);
+            ctx.lineTo(x_lens, y_lens_intercept);
+            ctx.stroke();
+            drawArrow(ctx, (x_start + x_lens)/2, (y_start + y_lens_intercept)/2, (x_start + x_lens)/2 + 20, (y_start + y_lens_intercept)/2 - 20 * tan_theta);
+            
+            // Ray from lens to screen
+            ctx.beginPath();
+            ctx.moveTo(x_lens, y_lens_intercept);
+            ctx.lineTo(x_screen, y_focus);
+            ctx.stroke();
+            drawArrow(ctx, (x_lens + x_screen)/2, (y_lens_intercept+y_focus)/2, (x_lens + x_screen)/2 + 20, (y_lens_intercept+y_focus)/2 + (y_focus-y_lens_intercept)/(x_screen-x_lens)*20);
+        });
+
+        // 6. Draw Annotations
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // d labels
+        const dim_x = x_mask - 30;
+        // Upper d
+        ctx.beginPath();
+        ctx.moveTo(dim_x, y_top);
+        ctx.lineTo(dim_x, y_mid);
+        ctx.moveTo(dim_x - 5, y_top);
+        ctx.lineTo(dim_x + 5, y_top);
+        ctx.moveTo(dim_x - 5, y_mid);
+        ctx.lineTo(dim_x + 5, y_mid);
+        ctx.stroke();
+        ctx.fillText('d', dim_x - 15, (y_top + y_mid) / 2);
+        // Lower d
+        ctx.beginPath();
+        ctx.moveTo(dim_x, y_mid);
+        ctx.lineTo(dim_x, y_bot);
+        ctx.moveTo(dim_x - 5, y_mid);
+        ctx.lineTo(dim_x + 5, y_mid);
+        ctx.moveTo(dim_x - 5, y_bot);
+        ctx.lineTo(dim_x + 5, y_bot);
+        ctx.stroke();
+        ctx.fillText('d', dim_x - 15, (y_mid + y_bot) / 2);
+
+        // a label (replicating the original diagram's layout)
+        const y_a_start = y_bot + 15;
+        ctx.beginPath();
+        ctx.moveTo(dim_x, y_a_start);
+        ctx.lineTo(dim_x, y_a_start + a);
+        ctx.moveTo(dim_x - 5, y_a_start);
+        ctx.lineTo(dim_x + 5, y_a_start);
+        ctx.moveTo(dim_x - 5, y_a_start + a);
+        ctx.lineTo(dim_x + 5, y_a_start + a);
+        ctx.stroke();
+        ctx.textAlign = 'left';
+        ctx.fillText('a', dim_x + 10, y_a_start + a + 15);
+        
+        // theta (θ) label
+        ctx.textAlign = 'center';
+        const angle_radius = 50;
+        // Horizontal dashed line for reference
+        ctx.save();
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(x_mask, y_mid);
+        ctx.lineTo(x_mask + angle_radius + 10, y_mid);
+        ctx.stroke();
+        ctx.restore();
+        // Angle arc
+        ctx.beginPath();
+        ctx.arc(x_mask, y_mid, angle_radius, 0, -theta_rad, true);
+        ctx.stroke();
+        ctx.fillText('θ', x_mask + angle_radius - 10, y_mid - 15);
+
+        // 'filter' label
+        ctx.textAlign = 'left';
+        ctx.fillText('filter', x_mask + 20, y_mid - 25);
+        // Arrow for filter
+        ctx.beginPath();
+        ctx.moveTo(x_mask + 40, y_mid - 18);
+        ctx.lineTo(x_mask + 10, y_mid - 2);
+        ctx.stroke();
+        drawArrow(ctx, x_mask + 40, y_mid - 18, x_mask + 10, y_mid-2);
+
+
+        // Figure Caption
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 20px serif';
+        ctx.fillText('Fig. 2.53', canvas.width / 2, canvas.height - 30);
+
+    </script>
+</body>
+</html>

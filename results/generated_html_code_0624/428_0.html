@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Spring Force Diagram</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      background-color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="physicsCanvas" width="500" height="450"></canvas>
+  <script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw a spring
+    function drawSpring(ctx, x1, y1, x2, y2, windings = 8, amplitude = 8) {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx);
+
+      const leadRatio = 0.15; // Portion for straight leads at each end
+      const springLen = len * (1 - 2 * leadRatio);
+      const leadLen = len * leadRatio;
+
+      ctx.save();
+      ctx.translate(x1, y1);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(leadLen, 0); // Start lead
+
+      // Zig-zag part
+      const segmentLen = springLen / windings;
+      for (let i = 0; i < windings; i++) {
+        const currentX = leadLen + i * segmentLen;
+        const amp = (i % 2 === 0) ? amplitude : -amplitude;
+        ctx.lineTo(currentX + segmentLen / 2, amp);
+      }
+      ctx.lineTo(leadLen + springLen, 0); // End of zig-zag
+      ctx.lineTo(len, 0); // End lead
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Helper function to draw an arrowhead
+    function drawArrowhead(ctx, x, y, angle, length = 10, width = 5) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-length, -width);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-length, width);
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // --- Main Drawing ---
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // Define key points and angles based on physics equilibrium
+    // F_C = 13 N (downwards)
+    // F_A = 8 N, F_B = 7 N
+    // Horizontal equilibrium: 8*sin(alpha) = 7*sin(beta)
+    // Vertical equilibrium: 8*cos(alpha) + 7*cos(beta) = 13
+    // Solving gives: cos(alpha) = 23/26, cos(beta) = 11/13
+    const alpha_rad = Math.acos(23 / 26);
+    const beta_rad = Math.acos(11 / 13);
+
+    const D = { x: 250, y: 220 };
+    const spring_len_upper = 140;
+    const spring_len_lower = 150;
+    
+    const A = { x: D.x - spring_len_upper * Math.sin(alpha_rad), y: D.y - spring_len_upper * Math.cos(alpha_rad) };
+    const B = { x: D.x + spring_len_upper * Math.sin(beta_rad), y: D.y - spring_len_upper * Math.cos(beta_rad) };
+    const C = { x: D.x, y: D.y + spring_len_lower };
+
+    // Draw the three springs
+    drawSpring(ctx, A.x, A.y, D.x, D.y, 8, 8);
+    drawSpring(ctx, B.x, B.y, D.x, D.y, 8, 8);
+    drawSpring(ctx, C.x, C.y, D.x, D.y, 10, 8);
+
+    // Draw the connection points
+    function drawKnot(x, y, radius) {
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.save();
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.restore();
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        ctx.stroke();
+    }
+    drawKnot(A.x, A.y, 5);
+    drawKnot(B.x, B.y, 5);
+    drawKnot(C.x, C.y, 5);
+    ctx.beginPath();
+    ctx.arc(D.x, D.y, 6, 0, 2 * Math.PI);
+    ctx.fill();
+
+
+    // Draw labels for points and forces
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('A', A.x - 20, A.y - 5);
+    ctx.fillText('B', B.x + 20, B.y - 5);
+    ctx.fillText('C', C.x, C.y + 25);
+    ctx.fillText('D', D.x + 18, D.y + 8);
+    
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillText('8 N', A.x + 35, A.y + 40);
+    ctx.fillText('7 N', B.x - 35, B.y + 40);
+    ctx.fillText('13 N', C.x - 40, C.y - 75);
+
+    // Draw vertical dashed reference line
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(D.x, D.y);
+    ctx.lineTo(D.x, D.y - 80);
+    ctx.stroke();
+    ctx.restore();
+
+    // Draw angle arcs and labels
+    const angleRadius = 45;
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(D.x, D.y, angleRadius, -Math.PI / 2, -Math.PI / 2 - alpha_rad, true);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(D.x, D.y, angleRadius, -Math.PI / 2, -Math.PI / 2 + beta_rad, false);
+    ctx.stroke();
+    ctx.restore();
+    
+    ctx.font = 'italic bold 24px serif';
+    ctx.fillText('α', D.x - 20, D.y - 35);
+    ctx.fillText('β', D.x + 20, D.y - 35);
+    
+    // Draw the horizontal annotation bar with arrows
+    const bar_y = 100;
+    const x_intersect_A = D.x - (D.y - bar_y) * Math.tan(alpha_rad);
+    const x_intersect_B = D.x + (D.y - bar_y) * Math.tan(beta_rad);
+    
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x_intersect_A, bar_y);
+    ctx.lineTo(x_intersect_B, bar_y);
+    ctx.moveTo(D.x, bar_y - 5); // Central tick
+    ctx.lineTo(D.x, bar_y + 5);
+    ctx.stroke();
+    
+    // Draw arrows for the bar, pointing from the center outwards
+    const arrow_start_L = D.x - (D.y - bar_y) * Math.tan(alpha_rad) + 10;
+    const arrow_start_R = D.x + (D.y - bar_y) * Math.tan(beta_rad) - 10;
+    
+    // This is a direct representation of the original's arrows
+    const arrowLength = 12;
+    // Left arrow
+    ctx.beginPath();
+    ctx.moveTo(D.x, bar_y);
+    ctx.lineTo(x_intersect_A, bar_y);
+    ctx.stroke();
+    drawArrowhead(ctx, x_intersect_A, bar_y, Math.PI, arrowLength, 5);
+
+    // Right arrow
+    ctx.beginPath();
+    ctx.moveTo(D.x, bar_y);
+    ctx.lineTo(x_intersect_B, bar_y);
+    ctx.stroke();
+    drawArrowhead(ctx, x_intersect_B, bar_y, 0, arrowLength, 5);
+    ctx.restore();
+
+  </script>
+</body>
+</html>

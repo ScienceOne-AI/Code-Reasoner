@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>T-S Diagram for Paramagnetic Substance</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="tsDiagram" width="650" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('tsDiagram');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Layout Configuration ---
+        const config = {
+            width: canvas.width,
+            height: canvas.height,
+            margin: { top: 40, right: 40, bottom: 60, left: 60 },
+            font: '16px "Comic Sans MS", cursive, sans-serif',
+            lineWidth: 2,
+            axisColor: '#000',
+            gridColor: '#000',
+            curveColor: '#000',
+            cycleColor: '#000'
+        };
+
+        const plotWidth = config.width - config.margin.left - config.margin.right;
+        const plotHeight = config.height - config.margin.top - config.margin.bottom;
+        const originX = config.margin.left;
+        const originY = config.height - config.margin.bottom;
+
+        // --- Data Ranges ---
+        const xMax = 2.0; // S/R
+        const yMax = 1.2; // T (K)
+
+        // --- Coordinate Transformation Functions ---
+        function toCanvasX(sr) {
+            return originX + (sr / xMax) * plotWidth;
+        }
+        function toCanvasY(t) {
+            return originY - (t / yMax) * plotHeight;
+        }
+
+        // --- Drawing Functions ---
+        function drawAxes() {
+            ctx.strokeStyle = config.axisColor;
+            ctx.lineWidth = config.lineWidth;
+            ctx.beginPath();
+            // Y-Axis
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(originX, config.margin.top);
+            // X-Axis
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(originX + plotWidth, originY);
+            ctx.stroke();
+        }
+
+        function drawGridAndLabels() {
+            ctx.strokeStyle = config.gridColor;
+            ctx.fillStyle = config.axisColor;
+            ctx.lineWidth = 1;
+            ctx.font = config.font;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Y-Axis Ticks and Labels (T in K)
+            ctx.textAlign = 'right';
+            for (let t = 0.2; t <= 1.0; t += 0.2) {
+                const y = toCanvasY(t);
+                ctx.beginPath();
+                ctx.moveTo(originX, y);
+                ctx.lineTo(originX + plotWidth, y);
+                ctx.stroke();
+                ctx.fillText(t.toFixed(1), originX - 8, y);
+            }
+            ctx.fillText('0', originX - 8, toCanvasY(0));
+            ctx.save();
+            ctx.translate(config.margin.left / 2 - 10, config.height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('T (K)', 0, 0);
+            ctx.restore();
+
+            // X-Axis Ticks and Labels (S/R)
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let sr = 0.5; sr <= 2.0; sr += 0.5) {
+                const x = toCanvasX(sr);
+                ctx.beginPath();
+                ctx.moveTo(x, originY);
+                ctx.lineTo(x, config.margin.top);
+                ctx.stroke();
+                ctx.fillText(sr.toFixed(1), x, originY + 8);
+            }
+             ctx.fillText('0', toCanvasX(0), originY + 8);
+            ctx.fillText('S/R', toCanvasX(xMax / 2), config.height - config.margin.bottom / 2 + 10);
+        }
+
+        function drawCurves() {
+            ctx.strokeStyle = config.curveColor;
+            ctx.lineWidth = config.lineWidth;
+            
+            const curvesData = {
+                'H=0': [[0,0], [0.5, 0.05], [1.0, 0.1], [1.35, 0.2], [1.58, 0.4], [1.7, 0.6], [1.78, 0.8], [1.82, 1.0]],
+                '2':   [[0,0], [0.75, 0.2], [1.1, 0.4], [1.35, 0.6], [1.5, 0.8], [1.6, 1.0]],
+                '3':   [[0,0], [0.58, 0.2], [0.9, 0.4], [1.15, 0.6], [1.3, 0.8], [1.45, 1.0]],
+                '4':   [[0,0], [0.45, 0.2], [0.75, 0.4], [0.95, 0.6], [1.1, 0.8], [1.25, 1.0]],
+                '5':   [[0,0], [0.35, 0.2], [0.6, 0.4], [0.8, 0.6], [0.95, 0.8], [1.1, 1.0]],
+                '7':   [[0,0], [0.25, 0.2], [0.45, 0.4], [0.6, 0.6], [0.75, 0.8], [0.88, 1.0]],
+                '10':  [[0,0], [0.15, 0.2], [0.28, 0.4], [0.4, 0.6], [0.5, 0.8], [0.6, 1.0]],
+                '15':  [[0,0], [0.1, 0.2], [0.18, 0.4], [0.25, 0.6], [0.32, 0.8], [0.4, 1.0]],
+                '20kg':[[0,0], [0.05, 0.2], [0.1, 0.4], [0.15, 0.6], [0.2, 0.8], [0.25, 1.0]]
+            };
+
+            for (const key in curvesData) {
+                const points = curvesData[key];
+                ctx.beginPath();
+                ctx.moveTo(toCanvasX(points[0][0]), toCanvasY(points[0][1]));
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(toCanvasX(points[i][0]), toCanvasY(points[i][1]));
+                }
+                ctx.stroke();
+            }
+
+            // Curve Labels
+            ctx.fillStyle = config.axisColor;
+            ctx.font = 'bold ' + config.font;
+            ctx.fillText('20 kg', toCanvasX(0.15), toCanvasY(1.0));
+            ctx.fillText('15', toCanvasX(0.35), toCanvasY(1.1));
+            ctx.fillText('10', toCanvasX(0.55), toCanvasY(0.9));
+            ctx.fillText('7', toCanvasX(0.7), toCanvasY(0.7));
+            ctx.fillText('5', toCanvasX(0.9), toCanvasY(0.7));
+            ctx.fillText('4', toCanvasX(1.1), toCanvasY(0.65));
+            ctx.fillText('3', toCanvasX(1.25), toCanvasY(0.55));
+            ctx.fillText('2', toCanvasX(1.4), toCanvasY(0.45));
+            ctx.fillText('H = 0', toCanvasX(1.1), toCanvasY(0.15));
+        }
+        
+        function drawCarnotCycle() {
+            ctx.strokeStyle = config.cycleColor;
+            ctx.fillStyle = config.cycleColor;
+            ctx.lineWidth = config.lineWidth;
+
+            const A = { sr: 0.5, t: 1.0 };
+            const B = { sr: 0.5, t: 0.2 };
+            const C = { sr: 1.35, t: 0.2 };
+            const D = { sr: 1.35, t: 1.0 };
+
+            // Draw rectangle
+            ctx.beginPath();
+            ctx.moveTo(toCanvasX(A.sr), toCanvasY(A.t));
+            ctx.lineTo(toCanvasX(B.sr), toCanvasY(B.t));
+            ctx.lineTo(toCanvasX(C.sr), toCanvasY(C.t));
+            ctx.lineTo(toCanvasX(D.sr), toCanvasY(D.t));
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Draw dot on A->B path
+            const dotT = 0.6;
+            ctx.beginPath();
+            ctx.arc(toCanvasX(A.sr), toCanvasY(dotT), 3, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Draw arrowhead on A->B path
+            const arrowY = toCanvasY((A.t + B.t) / 2 + 0.1);
+            const arrowX = toCanvasX(A.sr);
+            ctx.beginPath();
+            ctx.moveTo(arrowX - 5, arrowY - 5);
+            ctx.lineTo(arrowX, arrowY);
+            ctx.lineTo(arrowX + 5, arrowY - 5);
+            ctx.stroke();
+
+            // Draw labels
+            ctx.font = 'bold ' + config.font;
+            ctx.fillText('A', toCanvasX(A.sr - 0.1), toCanvasY(A.t + 0.05));
+            ctx.fillText('B', toCanvasX(B.sr - 0.1), toCanvasY(B.t - 0.08));
+            ctx.fillText('C', toCanvasX(C.sr + 0.1), toCanvasY(C.t - 0.08));
+            ctx.fillText('D', toCanvasX(D.sr + 0.1), toCanvasY(D.t + 0.05));
+
+        }
+
+        function drawFigureCaption() {
+            ctx.fillStyle = config.axisColor;
+            ctx.font = config.font;
+            ctx.textAlign = 'center';
+            ctx.fillText('Fig. 1.24.', config.width / 2, config.height - 15);
+        }
+
+        // --- Main Drawing ---
+        ctx.clearRect(0, 0, config.width, config.height);
+        drawAxes();
+        drawGridAndLabels();
+        drawCurves();
+        drawCarnotCycle();
+        drawFigureCaption();
+
+    </script>
+</body>
+</html>

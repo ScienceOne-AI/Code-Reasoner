@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Recreation</title>
+</head>
+<body>
+<canvas id="myCanvas" width="500" height="450" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    /**
+     * Draws an arrowhead at the end of a line segment.
+     * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+     * @param {number} fromX - The x-coordinate of the start point of the line segment (used to determine direction).
+     * @param {number} fromY - The y-coordinate of the start point of the line segment.
+     * @param {number} toX - The x-coordinate of the arrowhead tip.
+     * @param {number} toY - The y-coordinate of the arrowhead tip.
+     * @param {number} headLength - The length of the arrowhead sides.
+     */
+    function drawArrowhead(ctx, fromX, fromY, toX, toY, headLength) {
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // --- General Drawing Styles ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Define Key Coordinates ---
+    const cx = 250;
+    const o_prime_y = 120;
+    const o_y = 280;
+    
+    // --- Draw Components ---
+
+    // 1. Tilted Rod
+    const rod_y1 = 110, rod_y2 = 130;
+    const rod_x1 = 150, rod_x2 = 350;
+    ctx.beginPath();
+    ctx.moveTo(rod_x1, rod_y1);
+    ctx.lineTo(rod_x2, rod_y2);
+    ctx.stroke();
+
+    // 2. Supports and Hooks (Rings)
+    // The y-coordinate where the supports touch the top of the ellipse
+    const support_y_bottom = 224.8;
+    
+    // Left Support & Hook
+    const support1_x = 180;
+    const support1_y_top = rod_y1 + (rod_y2 - rod_y1) / (rod_x2 - rod_x1) * (support1_x - rod_x1);
+    ctx.beginPath();
+    ctx.moveTo(support1_x, support1_y_top);
+    ctx.lineTo(support1_x, support_y_bottom);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(support1_x, support1_y_top, 5, 0, 2 * Math.PI);
+    ctx.stroke();
+    
+    // Right Support & Hook
+    const support2_x = 320;
+    const support2_y_top = rod_y1 + (rod_y2 - rod_y1) / (rod_x2 - rod_x1) * (support2_x - rod_x1);
+    ctx.beginPath();
+    ctx.moveTo(support2_x, support2_y_top);
+    ctx.lineTo(support2_x, support_y_bottom);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(support2_x, support2_y_top, 5, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 3. Rotating Disk (drawn as an ellipse for perspective)
+    const ellipse_rx = 180;
+    const ellipse_ry = 60;
+    ctx.beginPath();
+    ctx.ellipse(cx, o_y, ellipse_rx, ellipse_ry, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 4. Rotation Arrow and Symbol (Ω)
+    const arrow_radius = ellipse_rx + 15;
+    const arrow_angle_rad = 25 * Math.PI / 180;
+    ctx.beginPath();
+    ctx.arc(cx, o_y, arrow_radius, arrow_angle_rad, -arrow_angle_rad, true); // true for counter-clockwise arc
+    ctx.stroke();
+    // Arrowhead
+    const arrow_tip_x = cx + arrow_radius * Math.cos(-arrow_angle_rad);
+    const arrow_tip_y = o_y + arrow_radius * Math.sin(-arrow_angle_rad);
+    const arrow_base_x = cx + arrow_radius * Math.cos(-arrow_angle_rad + 0.1); // a point just before the tip for direction
+    const arrow_base_y = o_y + arrow_radius * Math.sin(-arrow_angle_rad + 0.1);
+    drawArrowhead(ctx, arrow_base_x, arrow_base_y, arrow_tip_x, arrow_tip_y, 10);
+    
+    // 5. Dashed Vertical Axis of Rotation (OO')
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash([4, 4]);
+    ctx.moveTo(cx, 100);
+    ctx.lineTo(cx, o_y);
+    ctx.stroke();
+    ctx.restore();
+
+    // 6. Pendulum
+    const pendulum_length = 95;
+    const theta_deg = 20;
+    const theta_rad = theta_deg * Math.PI / 180;
+    const mass_x = cx + pendulum_length * Math.sin(theta_rad);
+    const mass_y = o_prime_y + pendulum_length * Math.cos(theta_rad);
+    // Pendulum rod
+    ctx.beginPath();
+    ctx.moveTo(cx, o_prime_y);
+    ctx.lineTo(mass_x, mass_y);
+    ctx.stroke();
+    // Mass
+    ctx.beginPath();
+    ctx.arc(mass_x, mass_y, 6, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(mass_x, mass_y, 1.5, 0, 2 * Math.PI); // Center dot
+    ctx.fill();
+
+    // 7. Angle Arc for θ
+    const arc_radius = 25;
+    ctx.beginPath();
+    // Angles are measured from positive x-axis, so vertical down is PI/2
+    ctx.arc(cx, o_prime_y, arc_radius, Math.PI / 2, Math.PI / 2 + theta_rad);
+    ctx.stroke();
+
+    // 8. Labels
+    ctx.font = "italic 22px Times New Roman";
+    ctx.fillText("O'", cx - 20, o_prime_y - 5);
+    ctx.fillText("O", cx - 18, o_y + 10);
+    
+    ctx.font = "italic 20px Times New Roman";
+    ctx.fillText("l", 270, 175);
+    ctx.fillText("m", mass_x + 15, mass_y);
+    ctx.fillText("θ", 268, 140);
+    
+    ctx.font = "italic 24px Times New Roman";
+    ctx.fillText("Ω", cx + arrow_radius + 25, o_y);
+
+    // 9. Caption
+    ctx.font = "20px SimSun";
+    ctx.fillText("力图 7.22.1", cx, canvas.height - 30);
+</script>
+</body>
+</html>

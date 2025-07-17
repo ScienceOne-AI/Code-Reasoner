@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Physics Diagram - Spring Mass System</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      background-color: #fff;
+    }
+  </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="500"></canvas>
+
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Helper Functions ---
+  /**
+   * Draws a dimension line with arrows at both ends.
+   * @param {CanvasRenderingContext2D} ctx - The canvas context.
+   * @param {number} y - The y-coordinate of the dimension line.
+   * @param {number} x1 - The starting x-coordinate.
+   * @param {number} x2 - The ending x-coordinate.
+   * @param {string} label - The text label for the dimension.
+   */
+  function drawDimensionLine(ctx, y, x1, x2, label) {
+    const arrowHeadLength = 8;
+    const arrowHeadAngle = Math.PI / 8;
+
+    // Main horizontal line
+    ctx.beginPath();
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x2, y);
+    ctx.stroke();
+
+    // Arrow at start (pointing left)
+    ctx.beginPath();
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x1 + arrowHeadLength * Math.cos(arrowHeadAngle), y - arrowHeadLength * Math.sin(arrowHeadAngle));
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x1 + arrowHeadLength * Math.cos(arrowHeadAngle), y + arrowHeadLength * Math.sin(arrowHeadAngle));
+    ctx.stroke();
+
+    // Arrow at end (pointing right)
+    ctx.beginPath();
+    ctx.moveTo(x2, y);
+    ctx.lineTo(x2 - arrowHeadLength * Math.cos(arrowHeadAngle), y - arrowHeadLength * Math.sin(arrowHeadAngle));
+    ctx.moveTo(x2, y);
+    ctx.lineTo(x2 - arrowHeadLength * Math.cos(arrowHeadAngle), y + arrowHeadLength * Math.sin(arrowHeadAngle));
+    ctx.stroke();
+
+    // Label
+    ctx.font = "italic 18px 'Times New Roman'";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillStyle = 'black';
+    ctx.fillText(label, (x1 + x2) / 2, y - 5);
+  }
+
+  /**
+   * Draws an arrow at the end of a line segment.
+   * @param {CanvasRenderingContext2D} ctx - The canvas context.
+   * @param {number} fromx - The starting x-coordinate of the base line.
+   * @param {number} fromy - The starting y-coordinate of the base line.
+   * @param {number} tox - The ending x-coordinate (where the arrow head should be).
+   * @param {number} toy - The ending y-coordinate (where the arrow head should be).
+   * @param {number} headLength - The length of the arrow head sides.
+   */
+  function drawArrow(ctx, fromx, fromy, tox, toy, headLength = 10) {
+    const angle = Math.atan2(toy - fromy, tox - fromx);
+    ctx.save();
+    ctx.fillStyle = 'black';
+    ctx.beginPath();
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headLength * Math.cos(angle - Math.PI / 6), toy - headLength * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(tox - headLength * Math.cos(angle + Math.PI / 6), toy - headLength * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+
+  // --- Parameters and Coordinates ---
+  const x_O = 80;
+  const y_center = 200;
+  const pos_r0 = x_O + 200;
+  const pos_R = x_O + 300;
+  const pos_r = x_O + 400;
+
+  const mass_radius = 10;
+  const font_style_main = "italic 22px 'Times New Roman'";
+  const caption_font_style = "20px 'SimSun', 'sans-serif'";
+
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 1.5;
+
+  // --- Drawing in Layers ---
+
+  // 1. Point O and its vertical line
+  ctx.font = font_style_main;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('O', x_O, y_center - 10);
+  ctx.beginPath();
+  ctx.moveTo(x_O, y_center);
+  ctx.lineTo(x_O, y_center + 150);
+  ctx.stroke();
+
+  // 2. Dimension lines and their vertical ticks
+  const dim_y_r0 = y_center + 50;
+  const dim_y_R = y_center + 90;
+  const dim_y_r = y_center + 130;
+  const tick_height = 5;
+
+  // Ticks
+  ctx.beginPath();
+  // for r0
+  ctx.moveTo(pos_r0, y_center); ctx.lineTo(pos_r0, dim_y_r0 + tick_height);
+  // for R
+  ctx.moveTo(pos_R, y_center); ctx.lineTo(pos_R, dim_y_R + tick_height);
+  // for r
+  ctx.moveTo(pos_r, y_center); ctx.lineTo(pos_r, dim_y_r + tick_height);
+  ctx.stroke();
+  
+  // Lines and Labels
+  drawDimensionLine(ctx, dim_y_r0, x_O, pos_r0, 'r₀');
+  drawDimensionLine(ctx, dim_y_R, x_O, pos_R, 'R');
+  drawDimensionLine(ctx, dim_y_r, x_O, pos_r, 'r');
+
+  // 3. Caption
+  ctx.font = caption_font_style;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('力图 7.15.1', 300, dim_y_r + 50);
+
+  // 4. Horizontal dashed line representing the axis of radial motion
+  ctx.save();
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.moveTo(pos_r0 - 30, y_center);
+  ctx.lineTo(pos_r + 30, y_center);
+  ctx.stroke();
+  ctx.restore();
+
+  // 5. Dashed reference circles
+  ctx.save();
+  ctx.setLineDash([4, 3]);
+  // At r0
+  ctx.beginPath();
+  ctx.arc(pos_r0, y_center, mass_radius, 0, 2 * Math.PI);
+  ctx.stroke();
+  // At r
+  ctx.beginPath();
+  ctx.arc(pos_r, y_center, mass_radius, 0, 2 * Math.PI);
+  ctx.stroke();
+  ctx.restore();
+
+  // 6. Circular path and angular velocity ω
+  const arc_radius = pos_R - x_O;
+  const arc_angle_start = -Math.PI / 5;
+  const arc_angle_end = Math.PI / 5;
+  ctx.beginPath();
+  ctx.arc(x_O, y_center, arc_radius, arc_angle_start, arc_angle_end);
+  ctx.stroke();
+  
+  // Arrow on the arc for ω
+  const arrow_angle = arc_angle_end;
+  const arrow_x_on_arc = x_O + arc_radius * Math.cos(arrow_angle);
+  const arrow_y_on_arc = y_center + arc_radius * Math.sin(arrow_angle);
+  const tangent_angle = arrow_angle + Math.PI / 2; // Counter-clockwise rotation
+  const arrow_base_x = arrow_x_on_arc - 20 * Math.cos(tangent_angle);
+  const arrow_base_y = arrow_y_on_arc - 20 * Math.sin(tangent_angle);
+  ctx.beginPath();
+  ctx.moveTo(arrow_base_x, arrow_base_y);
+  ctx.lineTo(arrow_x_on_arc, arrow_y_on_arc);
+  ctx.stroke();
+  drawArrow(ctx, arrow_base_x, arrow_base_y, arrow_x_on_arc, arrow_y_on_arc, 8);
+  
+  // Label ω
+  ctx.font = font_style_main;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('ω', arrow_x_on_arc + 5, arrow_y_on_arc - 15);
+
+  // 7. Spring
+  const spring_end_pos = pos_R; // Spring is attached to the mass at its equilibrium position R
+  const num_coils = 7;
+  const start_line_len = 10;
+  const coil_section_len = spring_end_pos - (x_O + start_line_len) - 10; // -10 for end line
+  const coil_width = coil_section_len / num_coils;
+
+  // Straight part from O
+  ctx.beginPath();
+  ctx.moveTo(x_O, y_center);
+  ctx.lineTo(x_O + start_line_len, y_center);
+  ctx.stroke();
+  // Coils
+  ctx.beginPath();
+  ctx.moveTo(x_O + start_line_len, y_center);
+  for (let i = 0; i < num_coils; i++) {
+    let cx = x_O + start_line_len + i * coil_width + coil_width / 2;
+    ctx.arc(cx, y_center, coil_width / 2, Math.PI, 2 * Math.PI);
+  }
+  ctx.stroke();
+  // Straight part to mass
+  ctx.beginPath();
+  ctx.moveTo(x_O + start_line_len + coil_section_len, y_center);
+  ctx.lineTo(pos_R, y_center);
+  ctx.stroke();
+
+  // Spring constant label 'k'
+  ctx.font = font_style_main;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('k', x_O + (spring_end_pos - x_O) / 2 - 40, y_center - coil_width/2 - 10);
+
+  // 8. Mass 'm'
+  ctx.save();
+  ctx.fillStyle = 'white'; // Fill to obscure the dashed line underneath
+  ctx.beginPath();
+  ctx.arc(pos_R, y_center, mass_radius, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+  
+  // Cross inside the mass
+  ctx.beginPath();
+  ctx.moveTo(pos_R - mass_radius, y_center);
+  ctx.lineTo(pos_R + mass_radius, y_center);
+  ctx.moveTo(pos_R, y_center - mass_radius);
+  ctx.lineTo(pos_R, y_center + mass_radius);
+  ctx.stroke();
+  
+  // Label 'm'
+  ctx.font = font_style_main;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('m', pos_R + mass_radius + 5, y_center - 5);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical Path Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw a line with an arrow at the end
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headlen = 10; // length of head in pixels
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Helper function to draw a dashed line
+        function drawDashedLine(x1, y1, x2, y2, dashArray = [5, 5]) {
+            ctx.beginPath();
+            ctx.setLineDash(dashArray);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        // Helper function to draw a biconvex lens
+        function drawLens(cx, cy, h, w, angle) {
+            // h: height, w: center thickness
+            // Calculate radius of curvature for the arcs
+            const r = (h * h / 4 + w * w / 4) / w;
+            const arcAngle = Math.asin(h / (2 * r));
+            
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angle);
+            
+            ctx.beginPath();
+            const c1x = -r + w / 2;
+            const c2x = r - w / 2;
+            
+            // Draw the two arcs that form the lens
+            ctx.arc(c1x, 0, r, -arcAngle, arcAngle, false);
+            ctx.arc(c2x, 0, r, Math.PI - arcAngle, Math.PI + arcAngle, false);
+            ctx.closePath();
+            
+            ctx.fillStyle = 'rgba(230, 230, 230, 0.7)';
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = "italic 24px 'Times New Roman'";
+        ctx.fillStyle = 'black';
+
+        // Parameters
+        const plateY = 320;
+        const plateH = 80; // This is d
+        const plateX = 50;
+        const plateW = 600;
+
+        const incX = 220;
+        const incY = plateY;
+
+        const alpha0 = 35 * Math.PI / 180; // Angle of incidence in radians
+        const n1 = 1.0;
+        const n2 = 1.5;
+        const alpha2 = Math.asin(n1 / n2 * Math.sin(alpha0)); // Angle of refraction
+
+        // 1. Draw the Plate
+        ctx.fillStyle = '#E0E0E0';
+        ctx.fillRect(plateX, plateY, plateW, plateH);
+        ctx.strokeStyle = 'black';
+        ctx.strokeRect(plateX, plateY, plateW, plateH);
+        ctx.fillStyle = 'black';
+        
+        // Labels for the plate
+        ctx.fillText("n₁", 450, plateY - 20);
+        ctx.fillText("n₂", 450, plateY + 50);
+        ctx.fillText("n₁", 450, plateY + plateH + 30);
+        
+        ctx.fillText("d", plateX + plateW + 15, plateY + 50);
+        ctx.beginPath();
+        ctx.moveTo(plateX + plateW + 10, plateY);
+        ctx.lineTo(plateX + plateW + 10, plateY + plateH);
+        ctx.moveTo(plateX + plateW + 5, plateY);
+        ctx.lineTo(plateX + plateW + 15, plateY);
+        ctx.moveTo(plateX + plateW + 5, plateY + plateH);
+        ctx.lineTo(plateX + plateW + 15, plateY + plateH);
+        ctx.stroke();
+        
+        // 2. Draw Normal
+        drawDashedLine(incX, incY - 80, incX, incY + plateH + 20);
+
+        // 3. Draw Incident Ray from S
+        const sLen = 180;
+        const sX = incX - sLen * Math.sin(alpha0);
+        const sY = incY - sLen * Math.cos(alpha0);
+        drawArrow(sX, sY, incX, incY);
+        ctx.fillText("S", sX - 35, sY + 5);
+        
+        // 4. Draw Angle alpha0
+        const arcR = 40;
+        ctx.beginPath();
+        ctx.arc(incX, incY, arcR, -Math.PI / 2, -Math.PI / 2 + alpha0);
+        ctx.stroke();
+        const alphaLabelAngle = -Math.PI / 2 + alpha0 / 2;
+        const alphaLabelX = incX + (arcR - 12) * Math.cos(alphaLabelAngle);
+        const alphaLabelY = incY + (arcR - 12) * Math.sin(alphaLabelAngle);
+        ctx.fillText("α₀", alphaLabelX, alphaLabelY + 5);
+
+        // 5. Draw Ray path inside the plate and exiting
+        const x_offset = plateH * Math.tan(alpha2);
+        const bottomX = incX + x_offset;
+        const bottomY = incY + plateH;
+        const exitX = incX + 2 * x_offset;
+        const exitY = incY;
+        
+        drawArrow(incX, incY, bottomX, bottomY);
+        drawArrow(bottomX, bottomY, exitX, exitY);
+        
+        // 6. Define ray paths towards the lens
+        // Ray 1 (from first reflection) and Ray 2 (from exit) are parallel
+        const rayLenToLens = 200;
+        const p1_lensX = incX + rayLenToLens * Math.sin(alpha0);
+        const p1_lensY = incY - rayLenToLens * Math.cos(alpha0);
+        const p2_lensX = exitX + rayLenToLens * Math.sin(alpha0);
+        const p2_lensY = exitY - rayLenToLens * Math.cos(alpha0);
+        
+        // 7. Draw Lens L
+        const lensCenterX = (p1_lensX + p2_lensX) / 2;
+        const lensCenterY = (p1_lensY + p2_lensY) / 2;
+        const lensHeight = 130;
+        const lensWidth = 30;
+        // Angle to make lens perpendicular to rays. Ray angle from +x is (alpha0 - PI/2). Perpendicular is (alpha0 - PI/2 + PI/2) = alpha0
+        // But visually, the rotation seems to be alpha0 - PI/2
+        const lensAngle = alpha0 - Math.PI / 2; 
+        
+        drawLens(lensCenterX, lensCenterY, lensHeight, lensWidth, lensAngle);
+        ctx.fillText("L", lensCenterX - 60, lensCenterY - 15);
+        
+        // Rays from plate to lens (stopping at lens surface)
+        // Approximate intersection points for a visually correct representation
+        const p1_lens_surfX = lensCenterX - (lensHeight / 2.5) * Math.cos(lensAngle);
+        const p1_lens_surfY = lensCenterY - (lensHeight / 2.5) * Math.sin(lensAngle);
+        const p2_lens_surfX = lensCenterX + (lensHeight / 2.5) * Math.cos(lensAngle);
+        const p2_lens_surfY = lensCenterY + (lensHeight / 2.5) * Math.sin(lensAngle);
+        
+        drawArrow(incX, incY, p1_lens_surfX, p1_lens_surfY);
+        drawArrow(exitX, exitY, p2_lens_surfX, p2_lens_surfY);
+        
+        // 8. Draw focused rays and screen P
+        const pX = 580;
+        const pY = 100;
+        
+        drawArrow(p1_lens_surfX, p1_lens_surfY, pX, pY);
+        drawArrow(p2_lens_surfX, p2_lens_surfY, pX, pY);
+
+        ctx.fillText("P", pX + 20, pY + 10);
+        
+        // Draw the screen line
+        const screenLen = 100;
+        const dx_focus = pX - lensCenterX;
+        const dy_focus = pY - lensCenterY;
+        const screenAngle = Math.atan2(dx_focus, -dy_focus); // Perpendicular angle to central ray
+        
+        const s1x = pX - screenLen/2 * Math.cos(screenAngle);
+        const s1y = pY - screenLen/2 * Math.sin(screenAngle);
+        const s2x = pX + screenLen/2 * Math.cos(screenAngle);
+        const s2y = pY + screenLen/2 * Math.sin(screenAngle);
+        
+        ctx.beginPath();
+        ctx.moveTo(s1x, s1y);
+        ctx.lineTo(s2x, s2y);
+        ctx.stroke();
+
+        // 9. Draw the central ray path (dashed then solid)
+        const dashedStartX = (incX + exitX) / 2;
+        const dashedStartY = incY;
+        
+        drawDashedLine(dashedStartX, dashedStartY, lensCenterX, lensCenterY);
+        ctx.beginPath();
+        ctx.moveTo(lensCenterX, lensCenterY);
+        ctx.lineTo(pX, pY);
+        ctx.stroke();
+    </script>
+</body>
+</html>

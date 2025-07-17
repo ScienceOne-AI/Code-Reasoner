@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Particle in a Paraboloid Vessel</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="500"></canvas>
+
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 20px Times New Roman';
+
+        // Center point / Origin
+        const ox = 250;
+        const oy = 380;
+
+        // Function to draw an arrow
+        function drawArrow(fromx, fromy, tox, toy) {
+            const headlen = 10; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Draw Axes
+        // z-axis
+        drawArrow(ox, oy, ox, 100);
+        ctx.fillText('z', ox + 10, 100);
+        // y-axis
+        drawArrow(ox, oy, ox + 180, oy);
+        ctx.fillText('y', ox + 185, oy + 8);
+        // x-axis
+        const x_end_x = ox - 150;
+        const x_end_y = oy + 60;
+        drawArrow(ox, oy, x_end_x, x_end_y);
+        ctx.fillText('x', x_end_x - 20, x_end_y + 5);
+
+        // Paraboloid Vessel Dimensions
+        const bowl_w = 110; // half-width at the top
+        const bowl_h = 140; // height of the bowl
+        const bowl_persp = 0.4; // perspective factor for ellipses
+
+        // Draw Paraboloid profiles
+        ctx.beginPath();
+        ctx.moveTo(ox, oy);
+        ctx.quadraticCurveTo(ox + bowl_w, oy, ox + bowl_w, oy - bowl_h);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(ox, oy);
+        ctx.quadraticCurveTo(ox - bowl_w, oy, ox - bowl_w, oy - bowl_h);
+        ctx.stroke();
+
+        // Draw top rim
+        ctx.beginPath();
+        ctx.ellipse(ox, oy - bowl_h, bowl_w, bowl_w * bowl_persp, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // Dashed lines
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+
+        // Dashed inner circle (particle path)
+        const inner_h = 90;
+        const inner_w = bowl_w * Math.sqrt(inner_h / bowl_h);
+        ctx.beginPath();
+        ctx.ellipse(ox, oy - inner_h, inner_w, inner_w * bowl_persp, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Dashed z-axis inside the bowl
+        ctx.beginPath();
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(ox, oy - bowl_h);
+        ctx.stroke();
+        
+        ctx.restore();
+
+
+        // Coordinate indicators (r, z, theta)
+        // Point on the surface for r and z indicators
+        const r_demo = 80;
+        const z_demo = bowl_h * (r_demo / bowl_w)**2;
+
+        // Draw z-indicator
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(ox, oy - z_demo);
+        ctx.lineTo(ox, oy);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillText('z', ox - 20, oy - z_demo/2);
+        
+        // Draw r-indicator
+        ctx.beginPath();
+        ctx.moveTo(ox, oy-z_demo);
+        const r_end_x = ox + r_demo;
+        const r_end_y = oy - z_demo;
+        ctx.lineTo(r_end_x, r_end_y);
+        ctx.stroke();
+        
+        // Draw the right-angle indicator for r and z
+        ctx.save()
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(ox+r_demo, r_end_y-15);
+        ctx.lineTo(ox+r_demo, r_end_y);
+        ctx.lineTo(ox+r_demo-15, r_end_y);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillText('r', r_end_x + 5, r_end_y + 8);
+
+
+        // Draw theta (θ) arc
+        ctx.beginPath();
+        const angle_radius = 40;
+        const x_axis_angle = Math.atan2(x_end_y - oy, x_end_x - ox);
+        ctx.arc(ox, oy, angle_radius, x_axis_angle, 0);
+        ctx.stroke();
+        const theta_label_angle = x_axis_angle / 2;
+        ctx.fillText('θ', ox + angle_radius*1.2 * Math.cos(theta_label_angle), oy + angle_radius*1.2 * Math.sin(theta_label_angle) + 8);
+
+        // Draw gravity vector 'g'
+        drawArrow(ox + 130, 140, ox + 130, 190);
+        ctx.fillText('g', ox + 140, 170);
+        
+        // Draw Figure Caption
+        ctx.font = '16px Times New Roman';
+        ctx.fillText('Fig. 2.38.', ox - 40, oy + 80);
+
+    </script>
+</body>
+</html>

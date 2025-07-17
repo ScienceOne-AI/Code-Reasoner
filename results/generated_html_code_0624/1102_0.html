@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+
+<canvas id="canvas" width="600" height="500"></canvas>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 10; // length of head in pixels
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // --- Configuration ---
+    const O = { x: 350, y: 250 };
+    const H = 100;
+    const h = 80;
+    const theta_deg = 15;
+    const theta_rad = theta_deg * Math.PI / 180;
+    const alpha_deg = 40; // Visual choice for demonstration
+    const alpha_rad = alpha_deg * Math.PI / 180;
+
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    
+    // --- Drawing starts here ---
+    
+    // 1. Ground
+    ctx.lineWidth = 1.5;
+    const groundY = O.y + H;
+    ctx.beginPath();
+    ctx.moveTo(50, groundY);
+    ctx.lineTo(550, groundY);
+    ctx.stroke();
+
+    // 2. Wedge (schematic representation)
+    const wedgeLeftX = O.x - 200;
+    const wedgeRightX = O.x + 20;
+    const inclineTopLeftY = O.y + (O.x - wedgeLeftX) * Math.tan(theta_rad);
+    
+    ctx.beginPath();
+    // Use a right trapezoid shape which is a good schematic for the diagram
+    // The inclined surface passes through O
+    const inclineAtRight = O.y + (O.x - wedgeRightX) * Math.tan(theta_rad);
+    ctx.moveTo(wedgeRightX, inclineAtRight);
+    ctx.lineTo(wedgeLeftX, inclineTopLeftY);
+    ctx.lineTo(wedgeLeftX, groundY);
+    ctx.lineTo(wedgeRightX, groundY);
+    ctx.closePath();
+    
+    // Fill the wedge to obscure anything behind it
+    ctx.save();
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.restore();
+    ctx.stroke();
+
+
+    // 3. Coordinate Systems at O
+    const axisLen = 150;
+    const axisLenShort = 130;
+    ctx.font = "italic 18px 'Times New Roman'";
+    // x' axis (horizontal)
+    drawArrow(ctx, O.x, O.y, O.x + axisLen, O.y);
+    ctx.fillText("x'", O.x + axisLen + 10, O.y + 8);
+    // y' axis (vertical)
+    drawArrow(ctx, O.x, O.y, O.x, O.y - axisLenShort);
+    ctx.fillText("y'", O.x - 25, O.y - axisLenShort - 5);
+    
+    // x axis (inclined)
+    const xAxisEndX = O.x + axisLen * Math.cos(theta_rad);
+    const xAxisEndY = O.y + axisLen * Math.sin(theta_rad);
+    drawArrow(ctx, O.x, O.y, xAxisEndX, xAxisEndY);
+    ctx.fillText("x", xAxisEndX + 10, xAxisEndY + 5);
+    // y axis (perpendicular to incline)
+    const yAxisEndX = O.x + axisLenShort * Math.sin(theta_rad);
+    const yAxisEndY = O.y - axisLenShort * Math.cos(theta_rad);
+    drawArrow(ctx, O.x, O.y, yAxisEndX, yAxisEndY);
+    ctx.fillText("y", yAxisEndX + 5, yAxisEndY - 10);
+
+    // 4. Dimension lines h and H
+    ctx.font = "italic 18px 'Times New Roman'";
+    // H
+    const dimLineH_x = wedgeLeftX - 40;
+    ctx.beginPath();
+    ctx.moveTo(dimLineH_x, O.y);
+    ctx.lineTo(dimLineH_x, groundY);
+    ctx.moveTo(dimLineH_x - 5, O.y);
+    ctx.lineTo(dimLineH_x + 5, O.y);
+    ctx.moveTo(dimLineH_x - 5, groundY);
+    ctx.lineTo(dimLineH_x + 5, groundY);
+    ctx.stroke();
+    ctx.fillText("H", dimLineH_x - 25, O.y + H / 2 + 5);
+    // Dashed line from O to dimension line
+    ctx.save();
+    ctx.setLineDash([5, 3]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(O.x, O.y);
+    ctx.lineTo(dimLineH_x, O.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // h
+    const ballPos = { x: O.x, y: O.y - h };
+    const dimLineh_x = O.x - 70;
+    ctx.beginPath();
+    ctx.moveTo(dimLineh_x, O.y);
+    ctx.lineTo(dimLineh_x, ballPos.y);
+    ctx.moveTo(dimLineh_x - 5, O.y);
+    ctx.lineTo(dimLineh_x + 5, O.y);
+    ctx.moveTo(dimLineh_x - 5, ballPos.y);
+    ctx.lineTo(dimLineh_x + 5, ballPos.y);
+    ctx.stroke();
+    ctx.fillText("h", dimLineh_x - 25, O.y - h / 2 + 5);
+
+    // 5. Objects and Vectors
+    // Ball m
+    ctx.beginPath();
+    ctx.arc(ballPos.x, ballPos.y, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText("m", ballPos.x + 15, ballPos.y + 5);
+    
+    // Vector u1
+    const u1_len = 70;
+    drawArrow(ctx, O.x, O.y, O.x, O.y + u1_len);
+    ctx.font = "bold italic 18px 'Times New Roman'";
+    ctx.fillText("u", O.x - 22, O.y + u1_len - 15);
+    ctx.font = "bold 14px 'Times New Roman'";
+    ctx.fillText("1", O.x - 14, O.y + u1_len - 10);
+    ctx.font = "italic 18px 'Times New Roman'";
+    ctx.fillText("M", O.x + 20, O.y + u1_len - 30);
+    
+    // Vector v2
+    const v2_len = 60;
+    const v2_y = groundY - H/2 - 10;
+    drawArrow(ctx, wedgeLeftX, v2_y, wedgeLeftX - v2_len, v2_y);
+    ctx.font = "bold italic 18px 'Times New Roman'";
+    ctx.fillText("v", wedgeLeftX - v2_len - 25, v2_y + 5);
+    ctx.font = "bold 14px 'Times New Roman'";
+    ctx.fillText("2", wedgeLeftX - v2_len - 17, v2_y + 10);
+    
+    // Vector v1
+    const v1_len = 100;
+    const v1_end_x = O.x + v1_len * Math.cos(alpha_rad);
+    const v1_end_y = O.y - v1_len * Math.sin(alpha_rad);
+    drawArrow(ctx, O.x, O.y, v1_end_x, v1_end_y);
+    ctx.font = "bold italic 18px 'Times New Roman'";
+    ctx.fillText("v", v1_end_x + 5, v1_end_y - 5);
+    ctx.font = "bold 14px 'Times New Roman'";
+    ctx.fillText("1", v1_end_x + 13, v1_end_y);
+
+    // 6. Angles
+    ctx.lineWidth = 1;
+    ctx.font = "18px 'Times New Roman'";
+    // Angle θ (inclination)
+    const theta_arc_center = {x: xAxisEndX - 50, y: xAxisEndY - 50 * Math.tan(theta_rad)};
+    ctx.beginPath();
+    ctx.moveTo(theta_arc_center.x - 30, theta_arc_center.y);
+    ctx.lineTo(theta_arc_center.x + 30, theta_arc_center.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(theta_arc_center.x, theta_arc_center.y, 20, 0, -theta_rad, true);
+    ctx.stroke();
+    ctx.fillText("θ", theta_arc_center.x + 5, theta_arc_center.y - 15);
+
+    // Angle θ (between y' and y)
+    ctx.beginPath();
+    ctx.arc(O.x, O.y, 45, -Math.PI / 2, -Math.PI / 2 + theta_rad);
+    ctx.stroke();
+    ctx.fillText("θ", O.x + 15, O.y - 48);
+
+    // Angle α (between x' and v1)
+    ctx.beginPath();
+    ctx.arc(O.x, O.y, 65, 0, -alpha_rad, true);
+    ctx.stroke();
+    ctx.fillText("α", O.x + 65, O.y - 20);
+
+    // Angle θ' (between y and v1)
+    const angle_y_axis = -Math.PI / 2 + theta_rad;
+    const angle_v1 = -alpha_rad;
+    ctx.beginPath();
+    ctx.arc(O.x, O.y, 85, angle_y_axis, angle_v1);
+    ctx.stroke();
+    ctx.fillText("θ'", O.x + 45, O.y - 70);
+
+    // 7. Final Labels
+    // Origin O
+    ctx.font = "italic 18px 'Times New Roman'";
+    ctx.fillText("O", O.x - 20, O.y + 15);
+    
+    // Caption
+    ctx.font = "18px 'SimSun'";
+    ctx.fillText("力图 3.27.1", 250, 470);
+
+</script>
+
+</body>
+</html>

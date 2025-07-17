@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Concentric Conductor Spheres</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Clear canvas with a white background
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // --- Drawing Parameters ---
+    const cx = 250;
+    const cy = 220; // Center Y, moved down to make space
+    const a = 60;
+    const b = 120;
+    const c = 150;
+    const mainLineWidth = 2.5;
+    const radiusLineWidth = 1.5;
+    const hatchLineWidth = 1;
+    const hatchSpacing = 7;
+    const arrowHeadLength = 10;
+
+    // --- Helper function to draw hatching pattern ---
+    // Draws diagonal lines (slope=1) over a large area
+    function drawHatchPattern(ctx) {
+        ctx.save();
+        ctx.lineWidth = hatchLineWidth;
+        ctx.strokeStyle = 'black';
+        const hatchBounds = c * 2; // A large area to ensure full coverage
+        for (let i = -hatchBounds; i < hatchBounds; i += hatchSpacing) {
+            ctx.beginPath();
+            ctx.moveTo(cx + i - hatchBounds, cy - hatchBounds);
+            ctx.lineTo(cx + i + hatchBounds, cy + hatchBounds);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+    
+    // --- Helper function to draw a filled arrowhead ---
+    function drawArrowhead(ctx, fromX, fromY, toX, toY, headLength) {
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        ctx.save();
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Main Drawing Logic ---
+
+    // 1. Draw Hatching for Inner Sphere
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, a, 0, 2 * Math.PI, false);
+    ctx.clip();
+    drawHatchPattern(ctx);
+    ctx.restore();
+
+    // 2. Draw Hatching for Outer Shell
+    ctx.save();
+    ctx.beginPath();
+    // Create a "donut" shape for clipping
+    ctx.arc(cx, cy, c, 0, 2 * Math.PI, false); // Outer path
+    ctx.arc(cx, cy, b, 0, 2 * Math.PI, true);  // Inner path (counter-clockwise)
+    ctx.clip();
+    drawHatchPattern(ctx);
+    ctx.restore();
+
+    // 3. Draw Main Circle Outlines (on top of hatching)
+    ctx.lineWidth = mainLineWidth;
+    ctx.beginPath();
+    ctx.arc(cx, cy, a, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, b, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, c, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 4. Draw Radii Lines and Arrows
+    ctx.lineWidth = radiusLineWidth;
+
+    // Radius 'a'
+    const angle_a = 130 * Math.PI / 180;
+    const ax_end = cx + a * Math.cos(angle_a);
+    const ay_end = cy + a * Math.sin(angle_a);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(ax_end, ay_end);
+    ctx.stroke();
+    drawArrowhead(ctx, cx, cy, ax_end, ay_end, arrowHeadLength);
+
+    // Radius 'b'
+    const angle_b = 40 * Math.PI / 180;
+    const bx_end = cx + b * Math.cos(angle_b);
+    const by_end = cy + b * Math.sin(angle_b);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(bx_end, by_end);
+    ctx.stroke();
+    drawArrowhead(ctx, cx, cy, bx_end, by_end, arrowHeadLength);
+
+    // Radius 'c'
+    const angle_c = 0;
+    const cx_end = cx + c * Math.cos(angle_c);
+    const cy_end = cy + c * Math.sin(angle_c);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx_end, cy_end);
+    ctx.stroke();
+    drawArrowhead(ctx, cx, cy, cx_end, cy_end, arrowHeadLength);
+
+    // 5. Add Labels
+    // Label 'O'
+    ctx.font = '24px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('O', cx - 12, cy + 12);
+    
+    // Labels 'a', 'b', 'c'
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('a', cx + (a / 2) * Math.cos(angle_a) + 5, cy + (a / 2) * Math.sin(angle_a) - 10);
+    ctx.fillText('b', cx + (b / 1.8) * Math.cos(angle_b), cy + (b / 1.8) * Math.sin(angle_b) - 5);
+    ctx.fillText('c', cx + c / 2, cy - 15);
+
+    // 6. Add Caption Text
+    ctx.font = '28px KaiTi'; // A common Chinese font
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('题 7 图', cx, canvas.height - 20);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Op-Amp Circuit Diagram</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="600" height="450" style="border:1px solid #eee;"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.lineCap = 'butt';
+    ctx.lineWidth = 1.5;
+    ctx.font = "16px sans-serif";
+    
+    // --- Helper Functions ---
+    function drawResistor(x, y, width, label, orientation) {
+        ctx.beginPath();
+        if (orientation === 'h') {
+            ctx.strokeRect(x - width/2, y - 6, width, 12);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(label, x, y - 10);
+        } else { // vertical
+            ctx.strokeRect(x - 20, y - 6, 40, 12); // Using horizontal rectangle for vertical line to match image
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, x + 25, y);
+        }
+    }
+
+    function drawArrow(fromX, fromY, toX, toY, label) {
+        const headlen = 8;
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+
+        if (label) {
+            ctx.save();
+            const labelX = (label === 'V_IN') ? fromX - 8 : fromX + 8;
+            const textAlign = (label === 'V_IN') ? 'right' : 'left';
+            ctx.translate(labelX, (fromY + toY)/2);
+            ctx.textAlign = textAlign;
+            ctx.textBaseline = 'middle';
+            ctx.font = "italic 18px sans-serif";
+            
+            // Draw V with subscript
+            const vText = "V";
+            const subText = label.substring(2);
+            ctx.fillText(vText, 0, 0);
+            ctx.font = "italic 12px sans-serif";
+            ctx.fillText(subText, ctx.measureText(vText).width, 3);
+            
+            ctx.restore();
+        }
+    }
+
+    function drawTerminal(x, y) {
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+    }
+    
+    function drawJunction(x, y) {
+        ctx.beginPath();
+        ctx.arc(x, y, 3.5, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+    }
+    
+    function drawGround(x, y) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y + 10);
+        ctx.moveTo(x - 15, y + 10);
+        ctx.lineTo(x + 15, y + 10);
+        ctx.moveTo(x - 9, y + 15);
+        ctx.lineTo(x + 9, y + 15);
+        ctx.moveTo(x - 4, y + 20);
+        ctx.lineTo(x + 4, y + 20);
+        ctx.stroke();
+    }
+
+    // --- Main Drawing ---
+    
+    // --- Define coordinates ---
+    const groundY = 380;
+    const vinX = 100;
+    const r1X = 180;
+    const opampBaseX = 220;
+    const opampTipX = 380;
+    const opampCenterY = 200;
+    const opampSpanY = 50; // half-height
+    const feedbackY = 100;
+    const outJunctionX = 420;
+    const voutX = 500;
+    
+    // --- Draw Wires & Components ---
+    
+    // Ground Line
+    ctx.beginPath();
+    ctx.moveTo(50, groundY);
+    ctx.lineTo(550, groundY);
+    ctx.stroke();
+
+    // Op-amp
+    ctx.beginPath();
+    ctx.moveTo(opampTipX, opampCenterY);
+    ctx.lineTo(opampBaseX, opampCenterY - opampSpanY);
+    ctx.lineTo(opampBaseX, opampCenterY + opampSpanY);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Op-amp +/- labels
+    const nonInvY = opampCenterY + 25;
+    const invY = opampCenterY - 25;
+    ctx.font = "24px sans-serif";
+    ctx.fillText("–", opampBaseX + 10, invY + 8);
+    ctx.fillText("+", opampBaseX + 10, nonInvY + 8);
+    ctx.font = "16px sans-serif";
+
+    // Op-amp power supplies
+    const pwrX = opampBaseX + 70;
+    ctx.beginPath();
+    ctx.moveTo(pwrX, opampCenterY - opampSpanY);
+    ctx.lineTo(pwrX, opampCenterY - opampSpanY - 20);
+    ctx.moveTo(pwrX, opampCenterY + opampSpanY);
+    ctx.lineTo(pwrX, opampCenterY + opampSpanY + 20);
+    ctx.stroke();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("+ 3.0 V", pwrX + 8, opampCenterY - opampSpanY - 10);
+    ctx.fillText("– 3.0 V", pwrX + 8, opampCenterY + opampSpanY + 10);
+
+    // V_IN path
+    ctx.beginPath();
+    ctx.moveTo(vinX, nonInvY);
+    ctx.lineTo(opampBaseX, nonInvY);
+    ctx.stroke();
+    drawTerminal(vinX, nonInvY);
+    drawArrow(vinX, groundY, vinX, nonInvY + 10, "V_IN");
+
+    // Inverting path and R1
+    ctx.beginPath();
+    ctx.moveTo(opampBaseX, invY);
+    ctx.lineTo(r1X, invY);
+    ctx.moveTo(r1X, invY);
+    ctx.lineTo(r1X, groundY - 50);
+    ctx.moveTo(r1X, groundY - 30);
+    ctx.lineTo(r1X, groundY);
+    ctx.stroke();
+    // In the original image, the vertical resistor is drawn as a horizontal box on a vertical line.
+    drawResistor(r1X, groundY-40, 40, "0.72 kΩ", 'v');
+    drawGround(r1X, groundY);
+
+    // V_OUT path
+    ctx.beginPath();
+    ctx.moveTo(opampTipX, opampCenterY);
+    ctx.lineTo(voutX, opampCenterY); // Main output line
+    ctx.stroke();
+    drawTerminal(voutX, opampCenterY);
+    drawArrow(voutX, groundY, voutX, opampCenterY + 10, "V_OUT");
+
+    // Feedback path and Rf
+    ctx.beginPath();
+    ctx.moveTo(r1X, invY); // From inverting junction
+    ctx.lineTo(r1X, feedbackY);
+    ctx.lineTo(outJunctionX, feedbackY);
+    ctx.lineTo(outJunctionX, opampCenterY); // Down to output line
+    ctx.stroke();
+    drawResistor((r1X + outJunctionX) / 2, feedbackY, 80, "3.6 kΩ", 'h');
+    
+    // Junctions
+    drawJunction(r1X, invY);
+    drawJunction(outJunctionX, opampCenterY);
+    
+    // Caption
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText("Fig. 7.1", canvas.width / 2, canvas.height - 10);
+
+</script>
+</body>
+</html>

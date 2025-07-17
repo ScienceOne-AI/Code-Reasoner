@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Heating Curve</title>
+</head>
+<body>
+<canvas id="myCanvas" width="600" height="550"></canvas>
+<script>
+const canvas = document.getElementById('myCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Configuration ---
+const margin = { top: 40, right: 30, bottom: 60, left: 60 };
+const canvasWidth = canvas.width;
+const canvasHeight = canvas.height;
+const graphWidth = canvasWidth - margin.left - margin.right;
+const graphHeight = canvasHeight - margin.top - margin.bottom;
+
+// Set axis ranges based on the data in the image
+const timeRange = [0, 10];
+const tempRange = [-120, 90]; // Y-axis from -120 to 80, plus a bit of room for the top of the graph
+
+// --- Coordinate mapping functions ---
+function mapX(time) {
+    return margin.left + (time - timeRange[0]) / (timeRange[1] - timeRange[0]) * graphWidth;
+}
+
+function mapY(temp) {
+    // Y-axis is inverted in canvas coordinates
+    return margin.top + graphHeight - (temp - tempRange[0]) / (tempRange[1] - tempRange[0]) * graphHeight;
+}
+
+// --- Drawing functions ---
+
+function drawGrid() {
+    ctx.strokeStyle = '#e0e0e0'; // Light grey for grid lines
+    ctx.lineWidth = 1;
+
+    // Vertical grid lines (minor, every 0.2 min)
+    for (let t = timeRange[0]; t <= timeRange[1] + 0.01; t += 0.2) {
+        if (Math.abs(t - timeRange[0]) > 0.01) {
+            ctx.beginPath();
+            ctx.moveTo(mapX(t), margin.top);
+            ctx.lineTo(mapX(t), margin.top + graphHeight);
+            ctx.stroke();
+        }
+    }
+
+    // Horizontal grid lines (minor, every 2 °C)
+    for (let temp = tempRange[0]; temp <= tempRange[1]; temp += 2) {
+        if (Math.abs(temp - 0) > 0.1) {
+            ctx.beginPath();
+            ctx.moveTo(margin.left, mapY(temp));
+            ctx.lineTo(margin.left + graphWidth, mapY(temp));
+            ctx.stroke();
+        }
+    }
+    
+    // Major grid lines (overlay with a darker color)
+    ctx.strokeStyle = '#b0b0b0'; // Darker grey for major grid
+
+    // Vertical major grid lines (every 1 min)
+    for (let t = Math.ceil(timeRange[0]); t <= timeRange[1]; t += 1) {
+        if (t > timeRange[0]) {
+            ctx.beginPath();
+            ctx.moveTo(mapX(t), margin.top);
+            ctx.lineTo(mapX(t), margin.top + graphHeight);
+            ctx.stroke();
+        }
+    }
+
+    // Horizontal major grid lines (every 20 °C)
+    for (let temp = -120; temp <= 80; temp += 20) {
+        if (temp !== 0) { // Avoid redrawing the x-axis
+             ctx.beginPath();
+             ctx.moveTo(margin.left, mapY(temp));
+             ctx.lineTo(margin.left + graphWidth, mapY(temp));
+             ctx.stroke();
+        }
+    }
+}
+
+function drawAxes() {
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    // Y-axis
+    ctx.beginPath();
+    ctx.moveTo(mapX(0), margin.top);
+    ctx.lineTo(mapX(0), margin.top + graphHeight);
+    ctx.stroke();
+    
+    // X-axis (at T=0)
+    ctx.beginPath();
+    ctx.moveTo(margin.left, mapY(0));
+    ctx.lineTo(margin.left + graphWidth, mapY(0));
+    ctx.stroke();
+
+    // Axis labels and ticks
+    ctx.fillStyle = 'black';
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+
+    // X-axis ticks and label
+    for (let t = 0; t <= 10; t += 1) {
+        ctx.fillText(t, mapX(t), mapY(0) + 8);
+    }
+    ctx.fillText('time / min', margin.left + graphWidth / 2, canvasHeight - margin.bottom + 30);
+
+
+    // Y-axis ticks and label
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let temp = -120; temp <= 80; temp += 20) {
+        ctx.fillText(temp, margin.left - 8, mapY(temp));
+    }
+    
+    ctx.save();
+    ctx.translate(25, margin.top + graphHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText('temperature / °C', 0, 0);
+    ctx.restore();
+}
+
+function drawGraph() {
+    // Points determined by careful analysis of the original image grid
+    const points = [
+        { t: 0.2, T: -120 },
+        { t: 0.6, T: -100 },
+        { t: 1.0, T: -100 },
+        { t: 3.4, T: 60 },
+        { t: 8.4, T: 60 },
+        { t: 9.4, T: 88 }
+    ];
+
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    
+    ctx.beginPath();
+    ctx.moveTo(mapX(points[0].t), mapY(points[0].T));
+    for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(mapX(points[i].t), mapY(points[i].T));
+    }
+    ctx.stroke();
+
+    // Add labels P and Q at their specified grid coordinates
+    ctx.font = 'bold 16px Arial';
+    ctx.fillStyle = 'black';
+    
+    // Point P at (2, -10)
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('P', mapX(2) - 5, mapY(-10));
+
+    // Point Q at (8.6, 70)
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Q', mapX(8.6) - 5, mapY(70));
+}
+
+function drawCaption() {
+    ctx.fillStyle = 'black';
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 3.1', canvasWidth / 2, canvasHeight - 15);
+}
+
+
+// --- Main drawing sequence ---
+ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+drawGrid();
+drawAxes();
+drawGraph();
+drawCaption();
+
+</script>
+</body>
+</html>

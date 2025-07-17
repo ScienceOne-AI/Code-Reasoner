@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Op-Amp Circuit Diagram</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="600" height="450"></canvas>
+<script>
+const canvas = document.getElementById('circuitCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style settings
+ctx.lineWidth = 1.5;
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.font = '18px Arial';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// Helper function to draw an arrow
+function drawArrow(fromX, fromY, toX, toY) {
+    const headlen = 10; // length of head in pixels
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const angle = Math.atan2(dy, dx);
+
+    // Draw the line
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+
+    // Draw the arrowhead
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+}
+
+// --- Main Drawing ---
+
+// Op-Amp coordinates
+const opampBaseX = 280;
+const opampTipX = 380;
+const opampCenterY = 210;
+const opampHeight = 120;
+
+// Draw Op-Amp triangle
+ctx.beginPath();
+ctx.moveTo(opampBaseX, opampCenterY - opampHeight / 2); // top-left
+ctx.lineTo(opampBaseX, opampCenterY + opampHeight / 2); // bottom-left
+ctx.lineTo(opampTipX, opampCenterY); // right tip
+ctx.closePath();
+ctx.stroke();
+
+// Op-Amp inputs and labels
+const invY = opampCenterY - opampHeight / 4; // Inverting input (-)
+const nonInvY = opampCenterY + opampHeight / 4; // Non-inverting input (+)
+
+// Draw Op-Amp symbols (+/-)
+ctx.font = '24px Arial';
+ctx.fillText('-', opampBaseX + 15, invY);
+ctx.fillText('+', opampBaseX + 15, nonInvY);
+ctx.font = '18px Arial'; // Reset font
+
+// Power supply connections
+const pwrTopY = opampCenterY - opampHeight / 2;
+const pwrBottomY = opampCenterY + opampHeight / 2;
+const pwrX = opampBaseX + (opampTipX - opampBaseX) / 2;
+ctx.beginPath();
+ctx.moveTo(pwrX, pwrTopY);
+ctx.lineTo(pwrX, pwrTopY - 20);
+ctx.stroke();
+ctx.textAlign = 'left';
+ctx.fillText('+9.0 V', pwrX + 5, pwrTopY - 10);
+
+ctx.beginPath();
+ctx.moveTo(pwrX, pwrBottomY);
+ctx.lineTo(pwrX, pwrBottomY + 20);
+ctx.stroke();
+ctx.fillText('-9.0 V', pwrX + 5, pwrBottomY + 25);
+
+// Ground line
+const groundY = 370;
+ctx.beginPath();
+ctx.moveTo(50, groundY);
+ctx.lineTo(550, groundY);
+ctx.stroke();
+
+// Ground symbol
+const groundSymbolX = 425;
+ctx.beginPath();
+ctx.moveTo(groundSymbolX, groundY);
+ctx.lineTo(groundSymbolX, groundY + 15);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(groundSymbolX - 20, groundY + 15);
+ctx.lineTo(groundSymbolX + 20, groundY + 15);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(groundSymbolX - 12, groundY + 20);
+ctx.lineTo(groundSymbolX + 12, groundY + 20);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(groundSymbolX - 6, groundY + 25);
+ctx.lineTo(groundSymbolX + 6, groundY + 25);
+ctx.stroke();
+
+// Feedback and Input Network
+const nodeX = 220;
+const outputNodeX = 420;
+
+// Draw input wire to op-amp inverting input
+ctx.beginPath();
+ctx.moveTo(nodeX, invY);
+ctx.lineTo(opampBaseX, invY);
+ctx.stroke();
+
+// Resistor R1 (800 Ohm)
+const r1_top_y = invY + 50;
+const r1_height = 50;
+ctx.beginPath();
+ctx.moveTo(nodeX, invY); // wire from node to resistor
+ctx.lineTo(nodeX, r1_top_y);
+ctx.stroke();
+ctx.strokeRect(nodeX - 10, r1_top_y, 20, r1_height);
+ctx.beginPath();
+ctx.moveTo(nodeX, r1_top_y + r1_height); // wire from resistor to ground
+ctx.lineTo(nodeX, groundY);
+ctx.stroke();
+ctx.textAlign = 'left';
+ctx.fillText('800 \u03A9', nodeX + 15, r1_top_y + r1_height / 2);
+
+// Feedback resistor (Rf = 6400 Ohm)
+const rf_y = 120;
+const rf_width = 100;
+ctx.beginPath();
+ctx.moveTo(nodeX, invY); // wire from node up
+ctx.lineTo(nodeX, rf_y);
+ctx.moveTo(outputNodeX, opampCenterY); // wire from output node up
+ctx.lineTo(outputNodeX, rf_y);
+ctx.stroke();
+// Resistor
+ctx.strokeRect(nodeX + (outputNodeX - nodeX - rf_width)/2, rf_y - 10, rf_width, 20);
+// Connecting wires to resistor
+ctx.beginPath();
+ctx.moveTo(nodeX, rf_y);
+ctx.lineTo(nodeX + (outputNodeX - nodeX - rf_width)/2, rf_y);
+ctx.moveTo(nodeX + (outputNodeX - nodeX + rf_width)/2, rf_y);
+ctx.lineTo(outputNodeX, rf_y);
+ctx.stroke();
+// Label
+ctx.textAlign = 'center';
+ctx.fillText('6400 \u03A9', (nodeX + outputNodeX) / 2, rf_y - 25);
+
+
+// Input (Vin)
+const vin_terminal_x = 100;
+// Wire from terminal to op-amp non-inverting input
+ctx.beginPath();
+ctx.moveTo(vin_terminal_x, nonInvY);
+ctx.lineTo(opampBaseX, nonInvY);
+ctx.stroke();
+// Input terminal (open circle)
+ctx.beginPath();
+ctx.arc(vin_terminal_x, nonInvY, 5, 0, 2 * Math.PI);
+ctx.fillStyle = 'white';
+ctx.fill();
+ctx.stroke();
+// Input Arrow and Label
+drawArrow(vin_terminal_x, groundY, vin_terminal_x, nonInvY + 20);
+ctx.fillStyle = 'black'; // Set back to black for text
+ctx.textAlign = 'right';
+ctx.fillText('V', vin_terminal_x - 5, groundY - 50);
+ctx.font = '14px Arial';
+ctx.textAlign = 'left';
+ctx.fillText('IN', vin_terminal_x - 3, groundY - 48);
+ctx.font = '18px Arial';
+
+
+// Output (Vout)
+const vout_terminal_x = 520;
+// Wire from op-amp to terminal
+ctx.beginPath();
+ctx.moveTo(opampTipX, opampCenterY);
+ctx.lineTo(vout_terminal_x, opampCenterY);
+ctx.stroke();
+// Output terminal (open circle)
+ctx.beginPath();
+ctx.arc(vout_terminal_x, opampCenterY, 5, 0, 2 * Math.PI);
+ctx.fillStyle = 'white';
+ctx.fill();
+ctx.stroke();
+// Output Arrow and Label
+const voutArrowX = 500;
+drawArrow(voutArrowX, groundY, voutArrowX, opampCenterY + 20);
+ctx.fillStyle = 'black';
+ctx.textAlign = 'right';
+ctx.fillText('V', voutArrowX + 30, groundY - 50);
+ctx.font = '14px Arial';
+ctx.textAlign = 'left';
+ctx.fillText('OUT', voutArrowX + 33, groundY - 48);
+ctx.font = '18px Arial';
+
+// Connection nodes (filled circles)
+ctx.fillStyle = 'black';
+function drawNode(x, y) {
+    ctx.beginPath();
+    ctx.arc(x, y, 3.5, 0, 2 * Math.PI);
+    ctx.fill();
+}
+drawNode(nodeX, invY);
+drawNode(nodeX, groundY);
+drawNode(outputNodeX, opampCenterY);
+drawNode(425, groundY); // Node on ground line, below ground symbol
+
+// Figure Caption
+ctx.textAlign = 'center';
+ctx.fillText('Fig. 7.1', canvas.width / 2, 430);
+
+</script>
+</body>
+</html>

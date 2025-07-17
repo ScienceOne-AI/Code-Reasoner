@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="500" height="700"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Font settings ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // --- Helper Drawing Functions ---
+
+        function drawInductor(x, y, len, num_loops) {
+            ctx.beginPath();
+            const loop_len = len / num_loops;
+            ctx.moveTo(x, y);
+            let current_x = x;
+            for (let i = 0; i < num_loops; i++) {
+                ctx.arc(current_x + loop_len / 2, y, loop_len / 2, Math.PI, 0);
+                current_x += loop_len;
+            }
+            // ctx.lineTo(current_x, y); // The arc command already ends at the right point
+            ctx.stroke();
+        }
+
+        function drawCapacitor(x, y, plate_dist, plate_len) {
+            ctx.beginPath();
+            // Left plate
+            ctx.moveTo(x, y - plate_len / 2);
+            ctx.lineTo(x, y + plate_len / 2);
+            // Right plate
+            ctx.moveTo(x + plate_dist, y - plate_len / 2);
+            ctx.lineTo(x + plate_dist, y + plate_len / 2);
+            ctx.stroke();
+        }
+
+        function drawResistor(x, y, w, h) {
+            ctx.strokeRect(x, y - h / 2, w, h);
+        }
+
+        function drawACSource(x, y, radius) {
+            // Circle
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            // Sine wave inside
+            ctx.beginPath();
+            ctx.moveTo(x - radius * 0.8, y);
+            ctx.quadraticCurveTo(x - radius * 0.4, y - radius * 0.8, x, y);
+            ctx.quadraticCurveTo(x + radius * 0.4, y + radius * 0.8, x + radius * 0.8, y);
+            ctx.stroke();
+        }
+
+        function drawArrow(x, y, len, isUp) {
+            ctx.beginPath();
+            const headlen = 10;
+            const angle = Math.PI / 6;
+            let fromx = x;
+            let fromy = isUp ? y + len / 2 : y - len / 2;
+            let tox = x;
+            let toy = isUp ? y - len / 2 : y + len / 2;
+
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            // Arrow head
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(Math.PI / 2 - angle), toy + (isUp ? 1 : -1) * headlen * Math.sin(Math.PI / 2 - angle));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox + headlen * Math.cos(Math.PI / 2 - angle), toy + (isUp ? 1 : -1) * headlen * Math.sin(Math.PI / 2 - angle));
+            ctx.stroke();
+        }
+        
+        function drawLabelWithSubscript(label, sub, x, y) {
+            const baseFont = '24px Arial';
+            const subFont = '18px Arial';
+            
+            ctx.font = baseFont;
+            const labelWidth = ctx.measureText(label).width;
+            ctx.font = subFont;
+            const subWidth = ctx.measureText(sub).width;
+
+            const totalWidth = labelWidth + subWidth;
+            const startX = x - totalWidth / 2;
+
+            ctx.font = baseFont;
+            ctx.fillText(label, startX + labelWidth / 2, y);
+            
+            ctx.font = subFont;
+            ctx.fillText(sub, startX + labelWidth + subWidth / 2, y + 5);
+        }
+        
+        function drawItalicLabelWithSubscript(label, sub, x, y) {
+            const baseFont = 'italic 22px Arial';
+            const subFont = 'italic 16px Arial';
+
+            ctx.textAlign = 'left';
+            ctx.font = baseFont;
+            ctx.fillText(label, x, y);
+            const labelWidth = ctx.measureText(label).width;
+            
+            ctx.font = subFont;
+            ctx.fillText(sub, x + labelWidth, y + 4);
+        }
+
+        // --- Main Drawing Logic ---
+
+        // Layout coordinates
+        const xLeft = 100;
+        const xRight = 400;
+        const compCenterX = (xLeft + xRight) / 2;
+        const compWidth = 120;
+        const compX = compCenterX - compWidth/2;
+
+        const yL1 = 100;
+        const yC1 = 180;
+        const yC2 = 260;
+        const yL2 = 340;
+        const switchTopY = 410;
+        const switchBottomY = 440;
+        const yR = 510;
+        const ySource = 600;
+
+        // --- Draw Wires ---
+        ctx.beginPath();
+        // Left main wire
+        ctx.moveTo(xLeft, yL1);
+        ctx.lineTo(xLeft, ySource);
+        
+        // Right main wire (in segments due to switch)
+        ctx.moveTo(xRight, yL1);
+        ctx.lineTo(xRight, switchTopY); // Top segment
+        ctx.moveTo(xRight, switchBottomY); // Bottom segment
+        ctx.lineTo(xRight, ySource);
+
+        // Connecting wires for components
+        const componentsY = [yL1, yC1, yC2, yL2, yR, ySource];
+        componentsY.forEach(y => {
+            ctx.moveTo(xLeft, y);
+            ctx.lineTo(compCenterX, y);
+            ctx.moveTo(compCenterX, y);
+            ctx.lineTo(xRight, y);
+        });
+        ctx.stroke();
+
+        // --- Draw Components ---
+        drawInductor(compX, yL1, compWidth, 4);
+        drawCapacitor(compCenterX - 10, yC1, 20, 25);
+        drawCapacitor(compCenterX - 10, yC2, 20, 25);
+        drawInductor(compX, yL2, compWidth, 4);
+        drawResistor(compCenterX - 40, yR, 80, 30);
+        drawACSource(compCenterX, ySource, 25);
+
+        // --- Draw Switch ---
+        ctx.beginPath();
+        const armLength = 35;
+        // The arm is hinged on the bottom wire and swings up-left
+        ctx.moveTo(xRight, switchBottomY);
+        ctx.lineTo(xRight - armLength * Math.cos(Math.PI / 4), switchBottomY - armLength * Math.sin(Math.PI / 4));
+        ctx.stroke();
+        
+        // --- Draw Labels and Arrows ---
+        ctx.font = '24px Arial';
+        ctx.textAlign = 'center';
+
+        // Component Labels
+        drawLabelWithSubscript('L', '1', compCenterX, yL1 - 20);
+        drawLabelWithSubscript('C', '1', compCenterX, yC1 - 20);
+        drawLabelWithSubscript('C', '2', compCenterX, yC2 - 20);
+        drawLabelWithSubscript('L', '2', compCenterX, yL2 - 20);
+        ctx.fillText('R', compCenterX, yR - 25);
+
+        // Current i01
+        drawArrow(xRight, 140, 30, false); // Arrow down
+        drawItalicLabelWithSubscript('i', '01', xRight + 15, 148);
+        
+        // Current i02
+        drawArrow(xRight, 380, 30, true); // Arrow up
+        drawItalicLabelWithSubscript('i', '02', xRight + 15, 378);
+
+        // Reset font and alignment for other labels
+        ctx.font = '24px Arial';
+        ctx.textAlign = 'left';
+
+        // Node A
+        ctx.fillText('A', xRight + 15, yC1 + 8);
+        
+        // Node B
+        ctx.fillText('B', xRight + 15, yC2 + 8);
+
+        // Switch K
+        ctx.fillText('K', xRight + 15, (switchTopY + switchBottomY) / 2 + 8);
+        
+        // Caption
+        ctx.textAlign = 'center';
+        ctx.font = '24px sans-serif';
+        ctx.fillText('电图 5.11.1', canvas.width / 2, 670);
+    </script>
+</body>
+</html>

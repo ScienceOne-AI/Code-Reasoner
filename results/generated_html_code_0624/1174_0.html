@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="myCanvas" width="1000" height="500" style="border:1px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.
+</canvas>
+<script>
+const canvas = document.getElementById('myCanvas');
+const ctx = canvas.getContext('2d');
+const y_axis = 250; // Center Y coordinate
+
+// Helper function to draw a biconvex lens
+function drawLens(x, y_center, height, thickness, fill) {
+    const r = (height * height) / (8 * thickness) + thickness / 2;
+    const angle = Math.asin(height / (2 * r));
+    ctx.beginPath();
+    ctx.arc(x - r + thickness, y_center, r, -angle, angle);
+    ctx.arc(x + r - thickness, y_center, r, Math.PI - angle, Math.PI + angle);
+    ctx.closePath();
+    if (fill) {
+        ctx.fillStyle = '#E0E0E0';
+        ctx.fill();
+    }
+    ctx.stroke();
+}
+
+// Helper function to draw an arrow on a line
+function drawArrow(fromx, fromy, tox, toy) {
+    const headlen = 8;
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.stroke();
+    
+    // arrowhead
+    ctx.beginPath();
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+// Helper function to draw the interference pattern
+function drawPattern(x, y, radius) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.stroke(); 
+    ctx.clip(); 
+    
+    ctx.fillStyle = 'black';
+    const numStripes = 4;
+    const stripeHeight = (radius * 2) / (numStripes * 2 - 1);
+    for (let i = 0; i < numStripes; i++) {
+        ctx.fillRect(x - radius, y - radius + i * 2 * stripeHeight, radius * 2, stripeHeight);
+    }
+    ctx.restore();
+}
+
+// --- Main Drawing ---
+ctx.strokeStyle = 'black';
+ctx.lineWidth = 1.5;
+ctx.font = '24px serif';
+ctx.textAlign = 'center';
+
+// Central optical axis line
+ctx.beginPath();
+ctx.moveTo(0, y_axis);
+ctx.lineTo(canvas.width, y_axis);
+ctx.lineWidth = 1;
+ctx.stroke();
+ctx.lineWidth = 1.5;
+
+// S1 Source
+ctx.fillStyle = '#AAAAAA';
+ctx.fillRect(50, y_axis - 10, 10, 20);
+ctx.strokeRect(50, y_axis - 10, 10, 20);
+ctx.fillStyle = 'black';
+ctx.textAlign = 'right';
+ctx.fillText('S\u2081', 45, y_axis + 8);
+
+// Lens between S1 and S2
+drawLens(100, y_axis, 60, 10, true);
+
+// S2 Slit
+ctx.textAlign = 'center';
+ctx.fillText('S\u2082', 150, y_axis - 35);
+ctx.beginPath();
+ctx.moveTo(150, y_axis - 50);
+ctx.lineTo(150, y_axis - 5);
+ctx.moveTo(150, y_axis + 5);
+ctx.lineTo(150, y_axis + 50);
+ctx.stroke();
+
+// Rays from lens to S2
+ctx.beginPath();
+ctx.moveTo(100, y_axis - 20);
+ctx.lineTo(150, y_axis);
+ctx.moveTo(100, y_axis + 20);
+ctx.lineTo(150, y_axis);
+ctx.stroke();
+
+// Rays from S2 to L1
+const x_L1_1 = 250;
+const y_beam_sep = 50;
+drawArrow(150, y_axis, x_L1_1, y_axis - y_beam_sep);
+drawArrow(150, y_axis, x_L1_1, y_axis + y_beam_sep);
+
+// Lens L1 (first)
+ctx.fillText('L\u2081', x_L1_1, y_axis - 90);
+drawLens(x_L1_1, y_axis, 140, 20, true);
+
+// Double slit separator 'I'
+const x_I = 290;
+ctx.fillText('I', x_I, y_axis + y_beam_sep + 30);
+ctx.beginPath();
+ctx.moveTo(x_I, y_axis - y_beam_sep);
+ctx.lineTo(x_I, y_axis + y_beam_sep);
+ctx.moveTo(x_I - 5, y_axis - y_beam_sep);
+ctx.lineTo(x_I + 5, y_axis - y_beam_sep);
+ctx.moveTo(x_I - 5, y_axis + y_beam_sep);
+ctx.lineTo(x_I + 5, y_axis + y_beam_sep);
+ctx.stroke();
+
+// Cuvettes
+const x_cuvette_start = 330;
+const cuvette_length = 120;
+ctx.fillStyle = '#E0E0E0';
+// Cuvette 1
+ctx.fillRect(x_cuvette_start, y_axis - y_beam_sep - 10, cuvette_length, 20);
+ctx.strokeRect(x_cuvette_start, y_axis - y_beam_sep - 10, cuvette_length, 20);
+ctx.fillStyle = 'black';
+ctx.fillText('cuvette 1', x_cuvette_start + cuvette_length / 2, y_axis - y_beam_sep - 20);
+// Cuvette 2
+ctx.fillStyle = '#E0E0E0';
+ctx.fillRect(x_cuvette_start, y_axis + y_beam_sep - 10, cuvette_length, 20);
+ctx.strokeRect(x_cuvette_start, y_axis + y_beam_sep - 10, cuvette_length, 20);
+ctx.fillStyle = 'black';
+ctx.fillText('cuvette 2', x_cuvette_start + cuvette_length / 2, y_axis + y_beam_sep + 30);
+
+const x_L1_2 = x_cuvette_start + cuvette_length + 50;
+
+// Parallel rays
+drawArrow(x_L1_1, y_axis - y_beam_sep, x_L1_2, y_axis - y_beam_sep);
+drawArrow(x_L1_1, y_axis + y_beam_sep, x_L1_2, y_axis + y_beam_sep);
+
+// Lens L1 (second)
+ctx.fillText('L\u2081', x_L1_2, y_axis - 90);
+drawLens(x_L1_2, y_axis, 140, 20, true);
+
+// Converging rays to S2'
+const x_S2_prime = 650;
+drawArrow(x_L1_2, y_axis - y_beam_sep, x_S2_prime, y_axis);
+drawArrow(x_L1_2, y_axis + y_beam_sep, x_S2_prime, y_axis);
+
+// S2'
+ctx.fillText("S\u2082'", x_S2_prime, y_axis - 15);
+
+// Ocular
+const x_ocular = 710;
+ctx.fillText('ocular', x_ocular, y_axis + 65);
+drawLens(x_ocular, y_axis, 80, 15, true);
+
+// Rays from S2' to ocular
+const y_ocular_beam_sep = 30;
+ctx.beginPath();
+ctx.moveTo(x_S2_prime, y_axis);
+ctx.lineTo(x_ocular, y_axis - y_ocular_beam_sep);
+ctx.moveTo(x_S2_prime, y_axis);
+ctx.lineTo(x_ocular, y_axis + y_ocular_beam_sep);
+ctx.stroke();
+
+// Eye of observer
+const x_eye_center = 820;
+const eye_radius = 50;
+ctx.fillText('eye of observer', x_eye_center, y_axis + eye_radius + 30);
+ctx.fillStyle = '#E0E0E0';
+ctx.beginPath();
+ctx.arc(x_eye_center, y_axis, eye_radius, 0, 2 * Math.PI);
+ctx.fill();
+ctx.stroke();
+// Eye lens
+ctx.fillStyle = 'white';
+drawLens(x_eye_center - eye_radius + 20, y_axis, 60, 10, true);
+ctx.fillStyle = 'black';
+
+// Rays from ocular to eye and inside
+const x_eye_lens_center = x_eye_center - eye_radius + 20;
+const x_retina = x_eye_center + eye_radius;
+// Upper ray
+drawArrow(x_ocular, y_axis - y_ocular_beam_sep, x_eye_lens_center, y_axis - y_ocular_beam_sep);
+ctx.beginPath();
+ctx.moveTo(x_eye_lens_center, y_axis - y_ocular_beam_sep);
+ctx.lineTo(x_retina, y_axis);
+ctx.stroke();
+// Lower ray
+drawArrow(x_ocular, y_axis + y_ocular_beam_sep, x_eye_lens_center, y_axis + y_ocular_beam_sep);
+ctx.beginPath();
+ctx.moveTo(x_eye_lens_center, y_axis + y_ocular_beam_sep);
+ctx.lineTo(x_retina, y_axis);
+ctx.stroke();
+
+// Interference patterns
+ctx.fillStyle = 'black';
+// Pattern 1 (by eye)
+ctx.fillText('interference pattern', 890, y_axis - 90);
+const pattern_radius1 = 20;
+drawPattern(890, y_axis - 60, pattern_radius1);
+ctx.beginPath();
+ctx.moveTo(x_retina, y_axis);
+ctx.lineTo(880, y_axis - 45);
+ctx.stroke();
+
+// Pattern 2 (by S2')
+ctx.fillText('interference pattern', x_S2_prime + 40, y_axis + 85);
+const pattern_radius2 = 20;
+drawPattern(x_S2_prime + 40, y_axis + 55, pattern_radius2);
+ctx.beginPath();
+ctx.moveTo(x_S2_prime, y_axis);
+ctx.lineTo(x_S2_prime + 30, y_axis + 40);
+ctx.stroke();
+
+</script>
+</body>
+</html>

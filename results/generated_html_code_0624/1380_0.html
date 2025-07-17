@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamics System Diagram</title>
+</head>
+<body>
+<canvas id="thermoCanvas" width="500" height="370"></canvas>
+<script>
+    const canvas = document.getElementById('thermoCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style and font settings
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Geometrical Definitions ---
+    const groundY = 330;
+    const topY = 60;
+
+    const leftCylX = 80;
+    const cylWidth = 140;
+    const rightCylX = 280;
+
+    const pistonH = 20;
+    const pistonLY = 140;
+    const pistonRY = 170;
+
+    const pipeTopY = 250;
+    const valveBoxBottomY = 290;
+    const valveBoxW = 40;
+    const valveCenter = leftCylX + cylWidth + (rightCylX - (leftCylX + cylWidth)) / 2;
+    const valveBoxX = valveCenter - valveBoxW / 2;
+
+    // --- Drawing Functions ---
+
+    function drawHatchedRect(x, y, w, h) {
+        ctx.beginPath();
+        ctx.rect(x, y, w, h);
+        ctx.stroke();
+        ctx.save();
+        ctx.clip();
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let i = -h; i < w; i += 8) {
+            ctx.moveTo(x + i, y);
+            ctx.lineTo(x + i + h, y + h);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawLabelWithSubscript(baseText, subText, x, y, baseFont, subFont) {
+        ctx.font = baseFont;
+        const baseWidth = ctx.measureText(baseText).width;
+        ctx.fillText(baseText, x, y);
+        
+        ctx.font = subFont;
+        ctx.fillText(subText, x + baseWidth / 2 + 2, y + 5);
+    }
+    
+    function drawPairLabel(text1, sub1, text2, sub2, x, y, baseFont, subFont) {
+        ctx.font = baseFont;
+        const spacing = 40;
+        const T_width = ctx.measureText(text1).width;
+        ctx.fillText(text1, x - spacing/2, y);
+        ctx.font = subFont;
+        ctx.fillText(sub1, x - spacing/2 + T_width/2 + 2, y+5);
+
+        ctx.font = baseFont;
+        const V_width = ctx.measureText(text2).width;
+        ctx.fillText(text2, x + spacing/2, y);
+        ctx.font = subFont;
+        ctx.fillText(sub2, x + spacing/2 + V_width/2 + 2, y+5);
+    }
+
+    // --- Main Drawing ---
+
+    // 1. Draw Ground
+    ctx.beginPath();
+    ctx.moveTo(30, groundY);
+    ctx.lineTo(470, groundY);
+    ctx.stroke();
+    // Hatch ground
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    for (let i = 30; i <= 470; i += 15) {
+        ctx.moveTo(i, groundY);
+        ctx.lineTo(i - 15, groundY + 15);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 2. Draw main structure (containers and connection block)
+    ctx.beginPath();
+    // Left side
+    ctx.moveTo(leftCylX, topY);
+    ctx.lineTo(leftCylX, groundY);
+    ctx.lineTo(leftCylX + cylWidth, groundY);
+    ctx.lineTo(leftCylX + cylWidth, pipeTopY);
+    // Connection top
+    ctx.lineTo(valveBoxX, pipeTopY);
+    // Valve housing
+    ctx.lineTo(valveBoxX, valveBoxBottomY);
+    ctx.lineTo(valveBoxX + valveBoxW, valveBoxBottomY);
+    ctx.lineTo(valveBoxX + valveBoxW, pipeTopY);
+    // Connection top to right
+    ctx.lineTo(rightCylX, pipeTopY);
+    // Right side
+    ctx.lineTo(rightCylX, groundY);
+    ctx.lineTo(rightCylX + cylWidth, groundY);
+    ctx.lineTo(rightCylX + cylWidth, topY);
+    // Upper parts of inner walls (will be covered by pistons)
+    ctx.moveTo(leftCylX + cylWidth, topY);
+    ctx.lineTo(leftCylX + cylWidth, pipeTopY);
+    ctx.moveTo(rightCylX, topY);
+    ctx.lineTo(rightCylX, pipeTopY);
+    ctx.stroke();
+    
+    // 3. Draw Pistons
+    drawHatchedRect(leftCylX, pistonLY, cylWidth, pistonH);
+    drawHatchedRect(rightCylX, pistonRY, cylWidth, pistonH);
+    
+    // 4. Draw Valve Symbol 'K'
+    const handleY = 225;
+    const handleW = 25;
+    ctx.beginPath();
+    // T-handle
+    ctx.moveTo(valveCenter, handleY);
+    ctx.lineTo(valveCenter, pipeTopY);
+    ctx.moveTo(valveCenter - handleW/2, handleY);
+    ctx.lineTo(valveCenter + handleW/2, handleY);
+    // Lower stem and bar
+    ctx.moveTo(valveCenter, pipeTopY);
+    ctx.lineTo(valveCenter, valveBoxBottomY);
+    ctx.moveTo(valveCenter - handleW/2, valveBoxBottomY);
+    ctx.lineTo(valveCenter + handleW/2, valveBoxBottomY);
+    ctx.stroke();
+    // Label 'K'
+    ctx.font = "bold 24px 'Times New Roman'";
+    ctx.fillText("K", valveCenter, handleY - 15);
+
+    // 5. Draw Labels
+    const baseFont = "italic 24px 'Times New Roman'";
+    const subFont = "italic 16px 'Times New Roman'";
+
+    // p₀ labels
+    drawLabelWithSubscript("p", "0", leftCylX + cylWidth/2, pistonLY - 25, baseFont, subFont);
+    drawLabelWithSubscript("p", "0", rightCylX + cylWidth/2, pistonRY - 25, baseFont, subFont);
+
+    // Cᵥ labels
+    drawLabelWithSubscript("C", "V1", leftCylX + cylWidth/2, pistonLY + pistonH + 25, baseFont, subFont);
+    drawLabelWithSubscript("C", "V2", rightCylX + cylWidth/2, pistonRY + pistonH + 25, baseFont, subFont);
+    
+    // T, V labels
+    drawPairLabel("T", "1", "V", "1", leftCylX + cylWidth/2, groundY - 40, baseFont, subFont);
+    drawPairLabel("T", "2", "V", "2", rightCylX + cylWidth/2, groundY - 40, baseFont, subFont);
+
+</script>
+</body>
+</html>

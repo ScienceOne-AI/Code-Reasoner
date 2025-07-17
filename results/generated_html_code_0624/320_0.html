@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram Fig. 3.46</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="600" height="450" style="border:1px solid #000;"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General styling to mimic hand-drawn look
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.font = '20px "Comic Sans MS", cursive, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper Functions for Drawing Components ---
+
+        function drawResistor(x1, y, x2, segments, height) {
+            const width = x2 - x1;
+            const dx = width / (segments * 2);
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            for (let i = 0; i < segments; i++) {
+                ctx.lineTo(x1 + (2 * i + 1) * dx, y + height);
+                ctx.lineTo(x1 + (2 * i + 2) * dx, y - height);
+            }
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+        }
+
+        function drawInductor(x, y1, y2, turns, radius, side) {
+            const height = y2 - y1;
+            const turnHeight = height / turns;
+            
+            // Draw the coil loops
+            ctx.beginPath();
+            for (let i = 0; i < turns; i++) {
+                const yCenter = y1 + (i + 0.5) * turnHeight;
+                if (side === 'right') { // Arcs on the right
+                    ctx.arc(x, yCenter, radius, -Math.PI / 2, Math.PI / 2, false);
+                } else { // Arcs on the left
+                    ctx.arc(x, yCenter, radius, Math.PI / 2, -Math.PI / 2, false);
+                }
+            }
+            ctx.stroke();
+            
+            // Draw the straight wire part
+            ctx.beginPath();
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, y2);
+            ctx.stroke();
+        }
+
+        function drawMeter(x, y, radius, label) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.fillText(label, x, y);
+        }
+
+        function drawSource(x, y, width, height) {
+            // Positive plate (long)
+            ctx.beginPath();
+            ctx.moveTo(x, y - height / 2);
+            ctx.lineTo(x, y + height / 2);
+            ctx.stroke();
+            // Negative plate (short)
+            ctx.beginPath();
+            ctx.moveTo(x - width, y - height/3);
+            ctx.lineTo(x - width, y + height/3);
+            ctx.stroke();
+            // Let's use the simpler two vertical lines style from the image
+            ctx.beginPath();
+            ctx.moveTo(x, y-height/2);
+            ctx.lineTo(x, y+height/2);
+            ctx.moveTo(x-width, y-height/3);
+            ctx.lineTo(x-width, y+height/3);
+            ctx.stroke();
+        }
+        
+        function drawSourceSimple(x, y, plateWidth, plateGap, heightLong, heightShort) {
+            ctx.beginPath();
+            // Positive Plate
+            ctx.moveTo(x - plateWidth/2, y - plateGap/2);
+            ctx.lineTo(x + plateWidth/2, y - plateGap/2);
+            // Negative Plate
+            ctx.moveTo(x - plateWidth*0.7/2, y + plateGap/2);
+            ctx.lineTo(x + plateWidth*0.7/2, y + plateGap/2);
+            ctx.stroke();
+        }
+
+
+        function drawSwitch(x, y1, y2) {
+            const armAngle = -Math.PI / 5;
+            const armLength = 40;
+            ctx.beginPath();
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x + armLength * Math.sin(armAngle), y1 + armLength * Math.cos(armAngle));
+            ctx.stroke();
+        }
+
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headlen = 10;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Draw Left Circuit (Primary) ---
+        const x_left = 100, x_coil_1 = 250;
+        const y_top = 100, y_bottom = 350;
+
+        // Wires
+        ctx.beginPath();
+        ctx.moveTo(x_left, y_top);
+        ctx.lineTo(x_left, 135); // top-left vertical
+        ctx.moveTo(x_left, 165); // below source
+        ctx.lineTo(x_left, 230); // to switch
+        ctx.moveTo(x_left, 270); // below switch
+        ctx.lineTo(x_left, y_bottom); // to bottom wire
+        ctx.lineTo(x_coil_1, y_bottom); // bottom wire
+        ctx.lineTo(x_coil_1, y_top); // right wire (inductor location)
+        ctx.lineTo(x_left, y_top); // top wire
+        ctx.stroke();
+        
+        // Components
+        drawSourceSimple(x_left, 150, 20, 10);
+        drawSwitch(x_left, 230, 270);
+        drawResistor(120, y_top, 230, 6, 8);
+        drawInductor(x_coil_1, 120, 330, 8, 10, 'right');
+        drawMeter(175, y_bottom, 25, 'I');
+        
+        // --- Draw Right Circuit (Secondary) ---
+        const x_coil_2 = 350, x_right = 500;
+
+        // Wires
+        ctx.beginPath();
+        ctx.moveTo(x_coil_2, y_top);
+        ctx.lineTo(x_right, y_top); // top wire
+        ctx.lineTo(x_right, y_bottom); // right wire (inductor L location)
+        ctx.lineTo(x_coil_2, y_bottom); // bottom wire
+        ctx.lineTo(x_coil_2, y_top); // left wire
+        ctx.stroke();
+        
+        // Components
+        drawResistor(370, y_top, 480, 6, 8);
+        drawInductor(x_coil_2, 120, 330, 8, 10, 'left');
+        drawMeter(425, y_bottom, 25, 'G');
+
+        // --- Add Labels and Text ---
+        ctx.font = '22px "Comic Sans MS", cursive, sans-serif';
+        // Left Circuit Labels
+        ctx.fillText('ε', 75, 150);
+        ctx.fillText('S', 75, 250);
+        ctx.fillText('R', 175, 75);
+        ctx.font = '16px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('2', 185, 82);
+        ctx.font = '20px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('100 Ω', 175, 125);
+        ctx.fillText('I = 1A', 175, 390);
+        drawArrow(270, 100, 270, 130);
+        ctx.fillText('i', 285, 115);
+        ctx.font = '16px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('2', 292, 122);
+        
+        // Right Circuit Labels
+        ctx.font = '22px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('R', 425, 75);
+        ctx.font = '16px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('1', 435, 82);
+        ctx.font = '20px "Comic Sans MS", cursive, sans-serif';
+        drawArrow(330, 100, 330, 130);
+        ctx.fillText('i', 315, 115);
+        ctx.font = '16px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('1', 322, 122);
+        
+        // Coil L labels (rotated text)
+        ctx.font = '20px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('L', 525, 150);
+        
+        ctx.save();
+        ctx.translate(525, 225);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('a = 1 cm', 0, 0);
+        ctx.restore();
+
+        ctx.save();
+        ctx.translate(525, 300);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('N = 100', 0, 0);
+        ctx.restore();
+
+        // Coupling Label
+        ctx.fillText('M = 1 H', 300, 225);
+        
+        // Figure Caption
+        ctx.fillText('Fig. 3.46', 300, 430);
+
+    </script>
+</body>
+</html>

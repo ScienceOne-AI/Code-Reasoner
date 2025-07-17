@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Spring Collision Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style Settings ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // --- Drawing Functions ---
+
+        /**
+         * Draws a horizontal surface with hatch marks.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} y - The y-coordinate of the surface line.
+         * @param {number} startX - The starting x-coordinate of the surface.
+         * @param {number} endX - The ending x-coordinate of the surface.
+         */
+        function drawSurface(ctx, y, startX, endX) {
+            ctx.beginPath();
+            ctx.moveTo(startX, y);
+            ctx.lineTo(endX, y);
+            ctx.stroke();
+
+            // Draw hatch marks
+            const hatchLength = 10;
+            const hatchSpacing = 20;
+            for (let x = startX; x <= endX; x += hatchSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - hatchLength, y + hatchLength);
+                ctx.stroke();
+            }
+        }
+
+        /**
+         * Draws a cart on the surface.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} cx - The center x-coordinate of the cart.
+         * @param {number} y_base - The y-coordinate of the surface the wheels rest on.
+         * @param {string} label - The mass label for the cart.
+         */
+        function drawCart(ctx, cx, y_base, label) {
+            const width = 120;
+            const height = 70;
+            const wheelRadius = 12;
+            const wheelWellRadius = 25;
+
+            const topY = y_base - height - wheelRadius;
+            const bottomY = y_base - wheelRadius;
+            const leftX = cx - width / 2;
+            const rightX = cx + width / 2;
+            
+            const wheelCenterX1 = cx - width / 4;
+            const wheelCenterX2 = cx + width / 4;
+
+            // Draw cart body with wheel wells
+            ctx.beginPath();
+            ctx.moveTo(leftX, topY);
+            ctx.lineTo(rightX, topY);
+            ctx.lineTo(rightX, bottomY);
+            ctx.lineTo(wheelCenterX2 + wheelWellRadius, bottomY);
+            ctx.arc(wheelCenterX2, bottomY, wheelWellRadius, 0, Math.PI, true);
+            ctx.lineTo(wheelCenterX1 + wheelWellRadius, bottomY);
+            ctx.arc(wheelCenterX1, bottomY, wheelWellRadius, 0, Math.PI, true);
+            ctx.lineTo(leftX, bottomY);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Draw wheels
+            ctx.beginPath();
+            ctx.arc(wheelCenterX1, y_base - wheelRadius, wheelRadius, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(wheelCenterX2, y_base - wheelRadius, wheelRadius, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Draw mass label
+            ctx.font = 'bold 30px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, cx, topY + height / 2);
+        }
+        
+        /**
+         * Draws a spring attached to a point.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x_attach - The x-coordinate where the spring is attached to the cart.
+         * @param {number} y - The y-coordinate of the spring's centerline.
+         * @param {number} length - The total length of the spring.
+         * @param {number} coils - The number of coils (zig-zags).
+         */
+        function drawSpring(ctx, x_attach, y, length, coils) {
+            const amplitude = 10;
+            const freeEndPlateHeight = 20;
+            const freeEnd_x = x_attach - length;
+
+            ctx.beginPath();
+            // Free end plate
+            ctx.moveTo(freeEnd_x, y - freeEndPlateHeight / 2);
+            ctx.lineTo(freeEnd_x, y + freeEndPlateHeight / 2);
+            
+            // Coils
+            ctx.moveTo(freeEnd_x, y);
+            const segmentLength = length / (coils * 2);
+            for (let i = 0; i < coils; i++) {
+                ctx.lineTo(freeEnd_x + (2 * i + 1) * segmentLength, y - amplitude);
+                ctx.lineTo(freeEnd_x + (2 * i + 2) * segmentLength, y);
+            }
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a velocity vector arrow.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x_start - The starting x-coordinate of the vector shaft.
+         * @param {number} y - The y-coordinate of the vector.
+         * @param {number} length - The length of the vector shaft.
+         */
+        function drawVelocityVector(ctx, x_start, y, length) {
+            const x_end = x_start + length;
+            const arrowHeadSize = 12;
+            const arrowHeadAngle = Math.PI / 6;
+
+            // Shaft
+            ctx.beginPath();
+            ctx.moveTo(x_start, y);
+            ctx.lineTo(x_end, y);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(x_end, y);
+            ctx.lineTo(x_end - arrowHeadSize * Math.cos(arrowHeadAngle), y - arrowHeadSize * Math.sin(arrowHeadAngle));
+            ctx.moveTo(x_end, y);
+            ctx.lineTo(x_end - arrowHeadSize * Math.cos(arrowHeadAngle), y + arrowHeadSize * Math.sin(arrowHeadAngle));
+            ctx.stroke();
+            
+            // Label
+            ctx.font = 'italic bold 28px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('v', x_start + length / 2, y - 5);
+        }
+
+        // --- Main Drawing Logic ---
+        const ySurface = 320;
+        
+        // Draw surface
+        drawSurface(ctx, ySurface, 30, 670);
+
+        // Draw first cart (m)
+        const xCart1 = 180;
+        drawCart(ctx, xCart1, ySurface, 'm');
+
+        // Calculate y-centerline for vector and spring
+        const cartHeight = 70;
+        const wheelRadius = 12;
+        const yCenter = ySurface - cartHeight / 2 - wheelRadius;
+
+        // Draw velocity vector
+        const cartWidth = 120;
+        drawVelocityVector(ctx, xCart1 + cartWidth / 2 + 15, yCenter, 50);
+
+        // Draw second cart (3m)
+        const xCart2 = 520;
+        drawCart(ctx, xCart2, ySurface, '3m');
+        
+        // Draw spring attached to the second cart
+        drawSpring(ctx, xCart2 - cartWidth / 2, yCenter, 70, 5);
+        
+        // Draw figure caption
+        ctx.font = '24px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText('Fig. 1.81.', canvas.width / 2, ySurface + 70);
+
+    </script>
+</body>
+</html>

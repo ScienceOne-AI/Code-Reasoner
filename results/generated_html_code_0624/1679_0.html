@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Refraction Diagram</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+    canvas {
+        border: 1px solid #d3d3d3;
+    }
+</style>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="600" height="420"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrowhead
+    function drawArrowhead(ctx, fromX, fromY, toX, toY, headLength) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.translate(toX, toY);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headLength, headLength / 2);
+        ctx.lineTo(-headLength, -headLength / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Style settings
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = '20px sans-serif';
+
+    // Coordinates
+    const blockX = 120;
+    const blockY = 100;
+    const blockWidth = 420;
+    const blockHeight = 200;
+
+    const pointAx = blockX;
+    const pointAy = blockY + 130; // 230
+
+    const incidentStartX = 40;
+    const incidentStartY = 310;
+
+    // Calculate point B to make a 30 degree angle with the top surface
+    const angleAtB_deg = 30;
+    const angleAtB_rad = angleAtB_deg * Math.PI / 180;
+    const verticalDist = pointAy - blockY; 
+    const horizontalDist = verticalDist / Math.tan(angleAtB_rad);
+    const pointBx = pointAx + horizontalDist;
+    const pointBy = blockY;
+
+    // Draw glass block
+    ctx.strokeRect(blockX, blockY, blockWidth, blockHeight);
+
+    // Draw incident ray
+    ctx.beginPath();
+    ctx.moveTo(incidentStartX, incidentStartY);
+    ctx.lineTo(pointAx, pointAy);
+    ctx.stroke();
+    // Arrow on incident ray
+    const midIncidentX = incidentStartX + (pointAx - incidentStartX) * 0.6;
+    const midIncidentY = incidentStartY + (pointAy - incidentStartY) * 0.6;
+    drawArrowhead(ctx, incidentStartX, incidentStartY, midIncidentX, midIncidentY, 10);
+
+    // Draw refracted ray (inside the block)
+    ctx.beginPath();
+    ctx.moveTo(pointAx, pointAy);
+    ctx.lineTo(pointBx, pointBy);
+    ctx.stroke();
+    // Arrow on refracted ray
+    const midRefractedX = pointAx + (pointBx - pointAx) * 0.5;
+    const midRefractedY = pointAy + (pointBy - pointAy) * 0.5;
+    drawArrowhead(ctx, pointAx, pointAy, midRefractedX, midRefractedY, 10);
+
+    // Draw normal at A
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(pointAx, pointAy);
+    ctx.lineTo(pointAx + 120, pointAy);
+    ctx.stroke();
+    ctx.restore();
+
+    // Draw angle arc at B
+    const arcRadiusB = 45;
+    const rayAngleRad = Math.atan2(pointAy - pointBy, pointAx - pointBx); // angle of line BA
+    const surfaceAngleRad = Math.PI; // angle of line to the left of B
+    ctx.beginPath();
+    ctx.arc(pointBx, pointBy, arcRadiusB, rayAngleRad, surfaceAngleRad);
+    ctx.stroke();
+
+    // Labels
+    ctx.font = '22px sans-serif';
+    ctx.textAlign = 'left';
+    // "air"
+    ctx.fillText('air', 150, 75);
+    // "ray of light"
+    ctx.fillText('ray of light', 10, 330);
+    
+    // "glass block" and its leader line
+    const glassLabelX = 420;
+    const glassLabelY = 330;
+    ctx.fillText('glass block', glassLabelX, glassLabelY);
+    ctx.beginPath();
+    ctx.moveTo(glassLabelX, glassLabelY - 15);
+    ctx.lineTo(glassLabelX - 25, glassLabelY - 30);
+    ctx.stroke();
+
+    // A, B, 30 degrees labels
+    ctx.font = '24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('A', pointAx + 20, pointAy);
+    ctx.fillText('B', pointBx + 5, pointBy - 20);
+    // Position the angle label inside the arc
+    const angleLabelRad = (rayAngleRad + surfaceAngleRad) / 2;
+    const angleLabelX = pointBx + arcRadiusB * 0.65 * Math.cos(angleLabelRad);
+    const angleLabelY = pointBy - arcRadiusB * 0.65 * Math.sin(angleLabelRad);
+    ctx.fillText('30°', angleLabelX, angleLabelY);
+
+    // Fig. caption
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('Fig. 6.1 (not to scale)', canvas.width / 2, canvas.height - 25);
+
+</script>
+
+</body>
+</html>

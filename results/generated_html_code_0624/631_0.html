@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Interference Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Helper function to draw arrows ---
+  function drawArrow(x1, y1, x2, y2, color = 'black', lineWidth = 1.5) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = lineWidth;
+
+    // Draw line
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    // Draw arrowhead
+    const headLength = 8;
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  
+  // --- Define coordinates and parameters ---
+  const layerX1 = 300;
+  const layerX2 = 420;
+  const layerWidth = layerX2 - layerX1;
+  
+  const topY1 = 100;
+  const topY2 = 95;
+  const bottomY1 = 320;
+  const bottomY2 = 325;
+
+  const mirrorColor = '#696969';
+  const layerLightColor = '#E0E0E0';
+  const layerDarkColor = 'black';
+  const rayColor = 'black';
+  const labelColor = 'black';
+
+  // --- Draw Photosensitive Layer ---
+  // Create a clipping path for the layer
+  ctx.save();
+  const clipPath = new Path2D();
+  clipPath.moveTo(layerX1, topY1);
+  clipPath.lineTo(layerX2, topY2);
+  clipPath.lineTo(layerX2, bottomY2);
+  clipPath.lineTo(layerX1, bottomY1);
+  clipPath.closePath();
+  ctx.clip(clipPath);
+
+  // Draw the bands inside the clipped region
+  const numLightBands = 4;
+  const numDarkLines = 5;
+  const darkLineWidth = 2;
+  const totalDarkWidth = numDarkLines * darkLineWidth;
+  const lightBandWidth = (layerWidth - totalDarkWidth) / numLightBands;
+  
+  let currentX = layerX1;
+  const bandRegionTop = Math.min(topY1, topY2) - 5;
+  const bandRegionHeight = Math.max(bottomY1, bottomY2) - bandRegionTop + 5;
+
+  for(let i = 0; i < numLightBands; i++){
+      // Dark line
+      ctx.fillStyle = layerDarkColor;
+      ctx.fillRect(currentX, bandRegionTop, darkLineWidth, bandRegionHeight);
+      currentX += darkLineWidth;
+      // Light band
+      ctx.fillStyle = layerLightColor;
+      ctx.fillRect(currentX, bandRegionTop, lightBandWidth, bandRegionHeight);
+      currentX += lightBandWidth;
+  }
+  // Last dark line
+  ctx.fillStyle = layerDarkColor;
+  ctx.fillRect(currentX, bandRegionTop, darkLineWidth, bandRegionHeight);
+
+  ctx.restore(); // Remove clipping
+
+  // --- Draw Mirror (M) ---
+  ctx.fillStyle = mirrorColor;
+  ctx.strokeStyle = layerDarkColor;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(layerX2, topY2);
+  ctx.quadraticCurveTo(480, 80, 530, 110);
+  ctx.lineTo(535, 200);
+  ctx.lineTo(530, 310);
+  ctx.quadraticCurveTo(480, 345, layerX2, bottomY2);
+  ctx.closePath();
+  ctx.fill();
+  
+  // Draw layer outline
+  ctx.strokeStyle = layerDarkColor;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(layerX1, topY1);
+  ctx.lineTo(layerX1, bottomY1);
+  ctx.moveTo(layerX2, topY2);
+  ctx.lineTo(layerX2, bottomY2);
+  ctx.stroke();
+
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(layerX1, topY1);
+  ctx.lineTo(layerX2, topY2);
+  ctx.moveTo(layerX1, bottomY1);
+  ctx.lineTo(layerX2, bottomY2);
+  ctx.stroke();
+
+  // --- Draw Rays ---
+  // Incident rays (slope = -1)
+  drawArrow(180, 340, 300, 220, rayColor);
+  drawArrow(180, 300, 300, 180, rayColor);
+  drawArrow(180, 260, 300, 140, rayColor);
+  
+  // Reflected rays (slope = 1)
+  drawArrow(300, 140, 180, 20, rayColor);
+  drawArrow(300, 180, 180, 60, rayColor);
+  
+  const incidencePointX = 300;
+  const incidencePointY = 220;
+  const exitPointX = 180;
+  const exitPointY = incidencePointY + (exitPointX - incidencePointX) * 1; // slope = 1
+  drawArrow(incidencePointX, incidencePointY, exitPointX, exitPointY, rayColor);
+  
+  // Internal zig-zag path
+  ctx.beginPath();
+  ctx.moveTo(300, 180);
+  ctx.lineTo(420, 160);
+  ctx.lineTo(300, 140);
+  ctx.lineTo(420, 120);
+  ctx.lineTo(300, 100);
+  ctx.strokeStyle = rayColor;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // --- Draw Labels and Annotations ---
+  ctx.fillStyle = labelColor;
+  ctx.strokeStyle = labelColor;
+  ctx.font = 'italic 18px Times New Roman';
+
+  // Label M
+  ctx.fillText('M', 430, 85);
+
+  // Angle alpha_0
+  const angleCenter = { x: 300, y: 220 };
+  const angleRadius = 35;
+  // Dashed normal line
+  ctx.save();
+  ctx.beginPath();
+  ctx.setLineDash([4, 4]);
+  ctx.moveTo(angleCenter.x - 60, angleCenter.y);
+  ctx.lineTo(angleCenter.x, angleCenter.y);
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+  
+  // Arc for angle
+  ctx.beginPath();
+  ctx.lineWidth = 1;
+  ctx.arc(angleCenter.x, angleCenter.y, angleRadius, Math.PI, Math.PI * 1.25, false);
+  ctx.stroke();
+  
+  // Label alpha_0
+  ctx.fillText('α', 268, 238);
+  ctx.font = 'italic 12px Times New Roman';
+  ctx.fillText('0', 277, 242);
+  
+  // Label Lambda (Λ)
+  ctx.font = 'italic 20px Times New Roman';
+  const period = darkLineWidth + lightBandWidth;
+  const lambdaY = 70;
+  const lambdaDashTop = Math.min(topY1, topY2) - 2;
+  const lambdaX1 = layerX1 + darkLineWidth + lightBandWidth/2; 
+  const lambdaX2 = lambdaX1 + period;
+
+  // Dashed lines
+  ctx.save();
+  ctx.setLineDash([3, 3]);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(lambdaX1, lambdaDashTop);
+  ctx.lineTo(lambdaX1, lambdaY);
+  ctx.moveTo(lambdaX2, lambdaDashTop);
+  ctx.lineTo(lambdaX2, lambdaY);
+  ctx.stroke();
+  ctx.restore();
+  
+  // Horizontal line with arrows for Lambda
+  ctx.beginPath();
+  ctx.lineWidth = 1;
+  ctx.moveTo(lambdaX1, lambdaY);
+  ctx.lineTo(lambdaX2, lambdaY);
+  ctx.stroke();
+  // Arrowheads
+  ctx.fillStyle = labelColor;
+  ctx.beginPath();
+  ctx.moveTo(lambdaX1, lambdaY);
+  ctx.lineTo(lambdaX1 + 4, lambdaY - 3);
+  ctx.lineTo(lambdaX1 + 4, lambdaY + 3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(lambdaX2, lambdaY);
+  ctx.lineTo(lambdaX2 - 4, lambdaY - 3);
+  ctx.lineTo(lambdaX2 - 4, lambdaY + 3);
+  ctx.closePath();
+  ctx.fill();
+
+  // Text label Lambda
+  ctx.fillText('Λ', (lambdaX1 + lambdaX2) / 2 - 8, lambdaY - 5);
+
+</script>
+</body>
+</html>

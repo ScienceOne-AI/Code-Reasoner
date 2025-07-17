@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamic Cycle p-V Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #d3d3d3;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="thermo-diagram" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('thermo-diagram');
+        const ctx = canvas.getContext('2d');
+
+        // Style and layout parameters
+        const margin = 60;
+        const arrowSize = 8;
+        const axisColor = '#333';
+        const pathColor = '#000';
+        const font = '16px Times New Roman';
+        const labelFont = 'italic 18px Times New Roman';
+        const captionFont = '20px "KaiTi", "STKaiti", sans-serif';
+
+        const origin = {
+            x: margin,
+            y: canvas.height - margin
+        };
+
+        const plotArea = {
+            width: canvas.width - 2 * margin,
+            height: canvas.height - 2 * margin
+        };
+
+        // Define the points of the cycle in canvas coordinates
+        const a = {
+            x: origin.x + plotArea.width * 0.2,
+            y: origin.y - plotArea.height * 0.85
+        };
+        const b = {
+            x: origin.x + plotArea.width * 0.8,
+            y: origin.y - plotArea.height * 0.85
+        };
+        const c = {
+            x: origin.x + plotArea.width * 0.8,
+            y: origin.y - plotArea.height * 0.2
+        };
+
+        // Helper function to draw an arrowhead
+        function drawArrowhead(ctx, x, y, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowSize, -arrowSize / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowSize, arrowSize / 2);
+            ctx.strokeStyle = pathColor;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        // 1. Draw Coordinate System Axes
+        ctx.strokeStyle = axisColor;
+        ctx.lineWidth = 1.5;
+
+        // p-axis (vertical)
+        ctx.beginPath();
+        ctx.moveTo(origin.x, origin.y);
+        ctx.lineTo(origin.x, origin.y - plotArea.height - 10);
+        ctx.stroke();
+        drawArrowhead(ctx, origin.x, origin.y - plotArea.height - 10, -Math.PI / 2);
+
+        // V-axis (horizontal)
+        ctx.beginPath();
+        ctx.moveTo(origin.x, origin.y);
+        ctx.lineTo(origin.x + plotArea.width + 10, origin.y);
+        ctx.stroke();
+        drawArrowhead(ctx, origin.x + plotArea.width + 10, origin.y, 0);
+
+        // 2. Draw Axis Labels
+        ctx.fillStyle = axisColor;
+        ctx.font = labelFont;
+        ctx.textAlign = 'center';
+        ctx.fillText('p', origin.x, origin.y - plotArea.height - 25);
+        ctx.fillText('O', origin.x - 15, origin.y + 20);
+        ctx.textAlign = 'left';
+        ctx.fillText('V', origin.x + plotArea.width + 20, origin.y + 6);
+
+        // 3. Draw the Thermodynamic Cycle
+        ctx.strokeStyle = pathColor;
+        ctx.lineWidth = 2;
+
+        // Path a -> b (isobaric)
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        drawArrowhead(ctx, (a.x + b.x) / 2, b.y, 0);
+
+        // Path b -> c (isochoric)
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y);
+        ctx.lineTo(c.x, c.y);
+        ctx.stroke();
+        drawArrowhead(ctx, c.x, (b.y + c.y) / 2, Math.PI / 2);
+
+        // Path c -> a (isothermal)
+        const controlPoint = {
+             x: a.x, 
+             y: c.y
+        };
+        ctx.beginPath();
+        ctx.moveTo(c.x, c.y);
+        ctx.quadraticCurveTo(controlPoint.x, controlPoint.y, a.x, a.y);
+        ctx.stroke();
+
+        // Arrow for path c -> a
+        const t = 0.55; // Parameter for point on the curve (0 to 1)
+        const arrowX = Math.pow(1 - t, 2) * c.x + 2 * (1 - t) * t * controlPoint.x + Math.pow(t, 2) * a.x;
+        const arrowY = Math.pow(1 - t, 2) * c.y + 2 * (1 - t) * t * controlPoint.y + Math.pow(t, 2) * a.y;
+        // Derivative to find tangent angle
+        const dx = 2 * (1 - t) * (controlPoint.x - c.x) + 2 * t * (a.x - controlPoint.x);
+        const dy = 2 * (1 - t) * (controlPoint.y - c.y) + 2 * t * (a.y - controlPoint.y);
+        const angle = Math.atan2(dy, dx);
+        drawArrowhead(ctx, arrowX, arrowY, angle);
+
+
+        // 4. Draw Point Labels
+        ctx.fillStyle = pathColor;
+        ctx.font = font;
+        ctx.textAlign = 'right';
+        ctx.fillText('a(p₁, V₁, T₁)', a.x - 5, a.y - 5);
+        ctx.textAlign = 'left';
+        ctx.fillText('b(p₁, V₂, T₂)', b.x + 8, b.y - 5);
+        ctx.fillText('c(p₂, V₂, T₁)', c.x + 8, c.y + 5);
+        
+        // 5. Draw Caption
+        ctx.fillStyle = '#000';
+        ctx.font = captionFont;
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 6-16 图', canvas.width / 2, canvas.height - 15);
+
+    </script>
+</body>
+</html>

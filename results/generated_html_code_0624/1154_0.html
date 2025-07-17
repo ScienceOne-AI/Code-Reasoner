@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Total Internal Reflection Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const ox = canvas.width / 2;
+        const oy = canvas.height / 2;
+        const axisColor = 'black';
+        const beamColor = '#E0E0E0';
+        const strokeColor = 'black';
+        const textColor = 'black';
+        
+        // Parameters from the image/problem
+        const alpha_deg = 45;
+        const alpha_rad = alpha_deg * Math.PI / 180;
+        
+        // Drawing parameters
+        const ray_len = 160;
+        const beam_x_width = 180;
+        const w_half = beam_x_width / 2;
+
+        // Helper function to draw an arrowhead
+        function drawArrowhead(ctx, x, y, angle, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size/2.5);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size/2.5);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Drawing ---
+
+        // 1. Draw Coordinate Axes and Interface
+        ctx.strokeStyle = axisColor;
+        ctx.lineWidth = 1.5;
+        
+        // X,Y-axis (Interface)
+        ctx.beginPath();
+        ctx.moveTo(50, oy);
+        ctx.lineTo(canvas.width - 50, oy);
+        ctx.stroke();
+        drawArrowhead(ctx, canvas.width - 50, oy, 0, 10);
+
+        // Z-axis (Normal)
+        ctx.beginPath();
+        ctx.moveTo(ox, oy - 180);
+        ctx.lineTo(ox, oy + 150);
+        ctx.stroke();
+        drawArrowhead(ctx, ox, oy + 150, Math.PI / 2, 10);
+
+        // 2. Draw Evanescent Field
+        const z_depth_evan = 80;
+        const grad = ctx.createLinearGradient(ox, oy, ox, oy + z_depth_evan);
+        grad.addColorStop(0, '#A0A0A0'); // Darker gray at the interface
+        grad.addColorStop(0.8, '#F0F0F0');
+        grad.addColorStop(1, 'white'); // Fading to white
+        
+        ctx.fillStyle = grad;
+        ctx.fillRect(ox - w_half, oy, beam_x_width, z_depth_evan);
+
+        // 3. Draw Dashed Lines
+        ctx.save();
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(ox - w_half, oy);
+        ctx.lineTo(ox - w_half, oy + z_depth_evan + 10);
+        ctx.moveTo(ox + w_half, oy);
+        ctx.lineTo(ox + w_half, oy + z_depth_evan + 10);
+        ctx.stroke();
+        ctx.restore();
+
+        // 4. Draw Incident and Reflected Beams
+        ctx.fillStyle = beamColor;
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 1.5;
+
+        const L_sin_a = ray_len * Math.sin(alpha_rad);
+        const L_cos_a = ray_len * Math.cos(alpha_rad);
+
+        // Incident Beam
+        ctx.beginPath();
+        ctx.moveTo(ox - w_half, oy);
+        ctx.lineTo(ox - w_half - L_sin_a, oy - L_cos_a);
+        ctx.lineTo(ox + w_half - L_sin_a, oy - L_cos_a);
+        ctx.lineTo(ox + w_half, oy);
+        ctx.closePath(); // This is for filling, stroke needs explicit lines
+        ctx.fill();
+        ctx.beginPath(); // Re-path for clean stroke
+        ctx.moveTo(ox - w_half, oy);
+        ctx.lineTo(ox - w_half - L_sin_a, oy - L_cos_a);
+        ctx.moveTo(ox + w_half - L_sin_a, oy - L_cos_a);
+        ctx.lineTo(ox + w_half, oy);
+        ctx.stroke();
+
+        // Reflected Beam
+        ctx.beginPath();
+        ctx.moveTo(ox - w_half, oy);
+        ctx.lineTo(ox - w_half + L_sin_a, oy - L_cos_a);
+        ctx.lineTo(ox + w_half + L_sin_a, oy - L_cos_a);
+        ctx.lineTo(ox + w_half, oy);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(ox - w_half, oy);
+        ctx.lineTo(ox - w_half + L_sin_a, oy - L_cos_a);
+        ctx.moveTo(ox + w_half + L_sin_a, oy - L_cos_a);
+        ctx.lineTo(ox + w_half, oy);
+        ctx.stroke();
+
+        // 5. Draw Arrows on Beams
+        // Incident Arrow
+        const inc_arrow_angle = Math.atan2(L_cos_a, L_sin_a);
+        drawArrowhead(ctx, ox - 0.5 * L_sin_a, oy - 0.5 * L_cos_a, inc_arrow_angle, 12);
+        // Reflected Arrow
+        const refl_arrow_angle = Math.atan2(-L_cos_a, L_sin_a);
+        drawArrowhead(ctx, ox + 0.5 * L_sin_a, oy - 0.5 * L_cos_a, refl_arrow_angle, 12);
+        
+        // 6. Draw Angle Arc and Label
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 1;
+        const arc_radius = 45;
+        const startAngle = -Math.PI / 2; // Upwards
+        const endAngle = -Math.PI/2 - alpha_rad; // Towards incident ray
+        ctx.beginPath();
+        ctx.arc(ox, oy, arc_radius, startAngle, endAngle, true); // counter-clockwise
+        ctx.stroke();
+        
+        // 7. Add Labels
+        ctx.fillStyle = textColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // n1, n2
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('n', 120, oy - 40);
+        ctx.fillText('n', 120, oy + 40);
+        ctx.font = '16px serif';
+        ctx.fillText('1', 120 + 12, oy - 38);
+        ctx.fillText('2', 120 + 12, oy + 42);
+        
+        // E0, E2
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('E', ox - 100, oy - 90);
+        ctx.fillText('E', ox + 25, oy + 60);
+        ctx.font = '16px serif';
+        ctx.fillText('0', ox - 100 + 12, oy - 88);
+        ctx.fillText('2', ox + 25 + 12, oy + 62);
+        
+        // alpha_0
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('α', ox - 55, oy - 60);
+        ctx.font = '16px serif';
+        ctx.fillText('0', ox - 55 + 11, oy - 58);
+        
+        // Axes labels
+        ctx.font = 'italic 18px serif';
+        ctx.fillText('x,y', canvas.width - 40, oy + 15);
+        ctx.fillText('z', ox + 15, oy + 145);
+
+    </script>
+</body>
+</html>

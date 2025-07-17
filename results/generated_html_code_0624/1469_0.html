@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Harmonic Wave</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="waveCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const originX = 200;
+        const originY = 200;
+        const scaleX = 15; // pixels per meter
+        const scaleY = 1200; // pixels per meter
+
+        // --- Helper functions to convert physics coordinates to canvas coordinates ---
+        function xc(x) {
+            return originX + x * scaleX;
+        }
+
+        function yc(y) {
+            return originY - y * scaleY;
+        }
+
+        // --- Drawing functions ---
+
+        // Draw coordinate axes
+        function drawAxes() {
+            ctx.beginPath();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+
+            // X-axis
+            ctx.moveTo(20, originY);
+            ctx.lineTo(canvas.width - 20, originY);
+            ctx.lineTo(canvas.width - 30, originY - 5);
+            ctx.moveTo(canvas.width - 20, originY);
+            ctx.lineTo(canvas.width - 30, originY + 5);
+
+            // Y-axis
+            ctx.moveTo(originX, canvas.height - 20);
+            ctx.lineTo(originX, 20);
+            ctx.lineTo(originX - 5, 30);
+            ctx.moveTo(originX, 20);
+            ctx.lineTo(originX + 5, 30);
+            
+            ctx.stroke();
+
+            // Labels
+            ctx.font = 'italic 16px Times New Roman';
+            ctx.fillStyle = '#000';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText('y/m', originX + 10, 20);
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('x/m', canvas.width - 25, originY + 15);
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'top';
+            ctx.fillText('0', originX - 5, originY + 5);
+        }
+
+        // Draw the sinusoidal wave
+        function drawWave() {
+            ctx.beginPath();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2.5;
+
+            // Wave function derived from problem statement: y(x, 0) = 0.1 * sin( (pi/20)x + 5pi/6 )
+            // This matches y(0)=0.05, slope at x=0 is negative, and distance from trough to next zero is 10m.
+            const A = 0.10;
+            const k = Math.PI / 20;
+            const phi = 5 * Math.PI / 6;
+
+            let firstPoint = true;
+            for (let x_val = -12; x_val < 29; x_val += 0.1) {
+                const y_val = A * Math.sin(k * x_val + phi);
+                if (firstPoint) {
+                    ctx.moveTo(xc(x_val), yc(y_val));
+                    firstPoint = false;
+                } else {
+                    ctx.lineTo(xc(x_val), yc(y_val));
+                }
+            }
+            ctx.stroke();
+        }
+
+        // Draw labels, markers, and points
+        function drawLabelsAndMarkers() {
+            ctx.font = '16px Times New Roman';
+            ctx.fillStyle = '#000';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            
+            // Y-axis labels and dashed lines
+            // y = 0.10
+            ctx.fillText('0.10', originX + 8, yc(0.10));
+            const x_crest = -20/3; // x-coordinate of the first crest
+            ctx.beginPath();
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1;
+            ctx.moveTo(xc(x_crest), yc(0.10));
+            ctx.lineTo(originX, yc(0.10));
+            ctx.stroke();
+            
+            // y = 0.05
+            ctx.fillText('0.05', originX + 8, yc(0.05));
+
+            // y = -0.10
+            ctx.fillText('–0.10', originX + 8, yc(-0.10));
+            const x_trough = 40/3; // x-coordinate of the trough
+            ctx.beginPath();
+            ctx.moveTo(xc(x_trough), yc(-0.10));
+            ctx.lineTo(originX, yc(-0.10));
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset line dash
+
+            // Point P and velocity arrow
+            // Placing P at a visually representative position on a rising slope
+            const x_p = 18;
+            const A = 0.10;
+            const k = Math.PI / 20;
+            const phi = 5 * Math.PI / 6;
+            const y_p = A * Math.sin(k * x_p + phi); // y is actually negative here, let's pick a better point
+            
+            const x_p_vis = 19; // A visually better position
+            const y_p_vis = 0.05;
+
+            ctx.beginPath();
+            ctx.fillStyle = '#000';
+            ctx.arc(xc(x_p_vis), yc(y_p_vis), 4, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.fillText('P', xc(x_p_vis) - 20, yc(y_p_vis) - 2);
+
+            // Arrow for velocity
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#000';
+            ctx.moveTo(xc(x_p_vis), yc(y_p_vis));
+            ctx.lineTo(xc(x_p_vis), yc(y_p_vis) - 25);
+            ctx.lineTo(xc(x_p_vis) - 4, yc(y_p_vis) - 18);
+            ctx.moveTo(xc(x_p_vis), yc(y_p_vis) - 25);
+            ctx.lineTo(xc(x_p_vis) + 4, yc(y_p_vis) - 18);
+            ctx.stroke();
+
+            // 10.0m marker
+            const x_start_marker = 40/3; // trough
+            const x_end_marker = 70/3; // next zero-crossing
+            const y_marker = yc(0) + 50;
+            
+            ctx.beginPath();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#000';
+            // Horizontal line with arrows
+            ctx.moveTo(xc(x_start_marker), y_marker);
+            ctx.lineTo(xc(x_end_marker), y_marker);
+            // Arrowhead left
+            ctx.moveTo(xc(x_start_marker), y_marker);
+            ctx.lineTo(xc(x_start_marker) + 5, y_marker - 3);
+            ctx.moveTo(xc(x_start_marker), y_marker);
+            ctx.lineTo(xc(x_start_marker) + 5, y_marker + 3);
+            // Arrowhead right
+            ctx.moveTo(xc(x_end_marker), y_marker);
+            ctx.lineTo(xc(x_end_marker) - 5, y_marker - 3);
+            ctx.moveTo(xc(x_end_marker), y_marker);
+            ctx.lineTo(xc(x_end_marker) - 5, y_marker + 3);
+            
+            // Vertical guides
+            ctx.moveTo(xc(x_start_marker), yc(-0.1));
+            ctx.lineTo(xc(x_start_marker), y_marker);
+            ctx.moveTo(xc(x_end_marker), yc(0));
+            ctx.lineTo(xc(x_end_marker), y_marker);
+            
+            ctx.stroke();
+            
+            // Text label for marker
+            ctx.font = '16px Times New Roman';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('10.0m', xc((x_start_marker + x_end_marker)/2), y_marker - 2);
+
+        }
+
+        // --- Main drawing call ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawAxes();
+            drawWave();
+            drawLabelsAndMarkers();
+        }
+
+        draw();
+
+    </script>
+</body>
+</html>

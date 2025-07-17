@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electrostatics Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="myCanvas" width="550" height="420"></canvas>
+<script>
+  const canvas = document.getElementById('myCanvas');
+  const ctx = canvas.getContext('2d');
+
+  /**
+   * Draws an arrowhead at the 'to' point of a line segment.
+   * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+   * @param {number} fromX - The x-coordinate of the starting point.
+   * @param {number} fromY - The y-coordinate of the starting point.
+   * @param {number} toX - The x-coordinate of the ending point (where the arrowhead is).
+   * @param {number} toY - The y-coordinate of the ending point.
+   * @param {number} [angle=Math.PI / 8] - The angle of the arrowhead wings.
+   * @param {number} [length=10] - The length of the arrowhead wings.
+   */
+  function drawArrowhead(ctx, fromX, fromY, toX, toY, angle = Math.PI / 8, length = 10) {
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const lineAngle = Math.atan2(dy, dx);
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - length * Math.cos(lineAngle - angle), toY - length * Math.sin(lineAngle - angle));
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - length * Math.cos(lineAngle + angle), toY - length * Math.sin(lineAngle + angle));
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // --- Style settings ---
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 2;
+  ctx.font = 'italic 24px "Times New Roman"';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // --- Main drawing parameters ---
+  const y_center = 200;
+  const plate_height = 250;
+  const plate_thickness = 10;
+  const y_top = y_center - plate_height / 2;
+  const y_bottom = y_center + plate_height / 2;
+  
+  const d_plates = 140; // distance between plates' inner surfaces
+  const d_particle = 140; // distance from plate's outer surface to particle
+
+  const x_left_plate_inner_edge = 120;
+  const x_left_plate_outer_edge = x_left_plate_inner_edge - plate_thickness;
+  const x_right_plate_inner_edge = x_left_plate_inner_edge + d_plates;
+  const x_right_plate_outer_edge = x_right_plate_inner_edge + plate_thickness;
+  const x_particle = x_right_plate_outer_edge + d_particle;
+
+  const x_left_plate_center = (x_left_plate_inner_edge + x_left_plate_outer_edge) / 2;
+  const x_right_plate_center = (x_right_plate_inner_edge + x_right_plate_outer_edge) / 2;
+
+  // --- Draw Plates ---
+  ctx.beginPath();
+  ctx.rect(x_left_plate_outer_edge, y_top, plate_thickness, plate_height);
+  ctx.stroke();
+  
+  ctx.beginPath();
+  ctx.rect(x_right_plate_inner_edge, y_top, plate_thickness, plate_height);
+  ctx.stroke();
+
+  // --- Draw Plate Labels ---
+  // Charge labels
+  ctx.fillText('3Q', x_left_plate_center, y_top - 25);
+  ctx.fillText('3Q', x_right_plate_center, y_top - 25);
+  
+  // Area labels
+  ctx.fillText('S', x_left_plate_outer_edge - 25, y_center);
+  ctx.fillText('S', x_right_plate_inner_edge - 25, y_center);
+
+  // --- Draw Particle and its labels ---
+  // Dashed line from right surface of right plate.
+  ctx.save();
+  ctx.setLineDash([5, 5]);
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x_right_plate_outer_edge, y_center);
+  ctx.lineTo(x_particle, y_center);
+  ctx.stroke();
+  ctx.restore();
+
+  // Particle
+  const particle_radius = 4;
+  ctx.beginPath();
+  ctx.arc(x_particle, y_center, particle_radius, 0, 2 * Math.PI);
+  ctx.fillStyle = 'black';
+  ctx.fill();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'black';
+  ctx.stroke();
+  
+  // Particle labels
+  ctx.lineWidth = 2; // Restore default line width for text stroke if any
+  ctx.fillStyle = 'black';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('m, –q', x_particle, y_center - 15);
+  
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('P', x_particle + 15, y_center);
+
+  // --- Draw Distance Markers ---
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.lineWidth = 1.5;
+
+  // Distance between plates
+  const dist_line_y1 = y_bottom + 30;
+  ctx.beginPath();
+  ctx.moveTo(x_left_plate_inner_edge, dist_line_y1);
+  ctx.lineTo(x_right_plate_inner_edge, dist_line_y1);
+  ctx.stroke();
+  // Arrowheads
+  drawArrowhead(ctx, x_right_plate_inner_edge, dist_line_y1, x_left_plate_inner_edge, dist_line_y1);
+  drawArrowhead(ctx, x_left_plate_inner_edge, dist_line_y1, x_right_plate_inner_edge, dist_line_y1);
+  ctx.fillText('d', (x_left_plate_inner_edge + x_right_plate_inner_edge) / 2, dist_line_y1 + 5);
+
+  // Distance to particle
+  const dist_line_y2 = y_center + 60;
+  ctx.beginPath();
+  ctx.moveTo(x_right_plate_outer_edge, dist_line_y2);
+  ctx.lineTo(x_particle, dist_line_y2);
+  ctx.stroke();
+  // Arrowhead pointing left to the plate
+  drawArrowhead(ctx, x_particle, dist_line_y2, x_right_plate_outer_edge, dist_line_y2);
+  // Vertical tick at the particle's x-position
+  ctx.beginPath();
+  ctx.moveTo(x_particle, dist_line_y2 - 8);
+  ctx.lineTo(x_particle, dist_line_y2 + 8);
+  ctx.stroke();
+  ctx.fillText('d', (x_right_plate_outer_edge + x_particle) / 2, dist_line_y2 + 5);
+</script>
+</body>
+</html>

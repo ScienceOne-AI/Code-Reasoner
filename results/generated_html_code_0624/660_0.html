@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Settings ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+
+
+        // --- Coordinates and Dimensions ---
+        const tube_cx = 300;
+        const tube_rx = 75;
+        const tube_ry = 20;
+        const y_top = 80;
+        const y_surface = 240;
+        const h_pixels = 150;
+        const y_bottom = y_surface + h_pixels; // 390
+        const y_sand_top = 350;
+        const y_water_inside = y_surface;
+
+
+        // 1. Draw Liquid Body (dashed lines)
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.setLineDash([7, 7]);
+        ctx.strokeStyle = '#444';
+        for (let y = y_surface + 25; y < canvas.height - 50; y += 20) {
+            if (y < y_bottom) {
+                // Left side
+                ctx.beginPath();
+                ctx.moveTo(10, y);
+                ctx.lineTo(tube_cx - tube_rx - 5, y);
+                ctx.stroke();
+                // Right side
+                ctx.beginPath();
+                ctx.moveTo(tube_cx + tube_rx + 5, y);
+                ctx.lineTo(canvas.width - 10, y);
+                ctx.stroke();
+            } else {
+                // Full width below the tube
+                ctx.beginPath();
+                ctx.moveTo(10, y);
+                ctx.lineTo(canvas.width - 10, y);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+
+
+        // 2. Draw Sand
+        ctx.fillStyle = '#C0C0C0'; // A light grey color for sand
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // Main body of sand fill
+        ctx.beginPath();
+        ctx.moveTo(tube_cx - tube_rx, y_sand_top);
+        ctx.lineTo(tube_cx - tube_rx, y_bottom);
+        ctx.ellipse(tube_cx, y_bottom, tube_rx, tube_ry, 0, Math.PI, 0); // Bottom arc
+        ctx.lineTo(tube_cx + tube_rx, y_sand_top);
+        ctx.closePath();
+        ctx.fill();
+
+        // Top ellipse of sand fill
+        ctx.beginPath();
+        ctx.ellipse(tube_cx, y_sand_top, tube_rx, tube_ry, 0, 0, 2 * Math.PI);
+        ctx.fill();
+
+
+        // 3. Draw Tube Outlines (on top of sand fill)
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // Tube Sides
+        ctx.beginPath();
+        ctx.moveTo(tube_cx - tube_rx, y_top);
+        ctx.lineTo(tube_cx - tube_rx, y_bottom);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(tube_cx + tube_rx, y_top);
+        ctx.lineTo(tube_cx + tube_rx, y_bottom);
+        ctx.stroke();
+
+        // Tube Bottom (over sand)
+        ctx.beginPath();
+        ctx.ellipse(tube_cx, y_bottom, tube_rx, tube_ry, 0, 0, Math.PI);
+        ctx.stroke();
+
+        // Sand top outline
+        ctx.beginPath();
+        ctx.ellipse(tube_cx, y_sand_top, tube_rx, tube_ry, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Water level inside tube
+        ctx.beginPath();
+        ctx.ellipse(tube_cx, y_water_inside, tube_rx, tube_ry, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Tube Top
+        ctx.beginPath();
+        ctx.ellipse(tube_cx, y_top, tube_rx, tube_ry, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+
+        // 4. Draw Liquid Surface Line
+        ctx.beginPath();
+        ctx.moveTo(0, y_surface);
+        ctx.lineTo(tube_cx - tube_rx, y_surface);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(tube_cx + tube_rx, y_surface);
+        ctx.lineTo(canvas.width, y_surface);
+        ctx.stroke();
+
+
+        // 5. Annotations
+        ctx.fillStyle = 'black';
+
+        // h dimension
+        const h_line_x = 100;
+        ctx.save();
+        ctx.lineWidth = 1.5;
+
+        // Vertical line
+        ctx.beginPath();
+        ctx.moveTo(h_line_x, y_surface);
+        ctx.lineTo(h_line_x, y_bottom);
+        ctx.stroke();
+
+        // Arrow heads
+        const h_arrow_size = 8;
+        // Top arrow head (pointing up)
+        ctx.beginPath();
+        ctx.moveTo(h_line_x - h_arrow_size/2, y_surface + h_arrow_size);
+        ctx.lineTo(h_line_x, y_surface);
+        ctx.lineTo(h_line_x + h_arrow_size/2, y_surface + h_arrow_size);
+        ctx.stroke();
+        // Bottom arrow head (pointing down)
+        ctx.beginPath();
+        ctx.moveTo(h_line_x - h_arrow_size/2, y_bottom - h_arrow_size);
+        ctx.lineTo(h_line_x, y_bottom);
+        ctx.lineTo(h_line_x + h_arrow_size/2, y_bottom - h_arrow_size);
+        ctx.stroke();
+
+        // Dashed horizontal lines
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(h_line_x, y_surface);
+        ctx.lineTo(tube_cx - tube_rx, y_surface);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(h_line_x, y_bottom);
+        ctx.lineTo(tube_cx - tube_rx, y_bottom);
+        ctx.stroke();
+        ctx.restore();
+        
+        // 'h' label
+        ctx.font = 'italic 24px Arial';
+        ctx.fillText('h', h_line_x - 30, y_surface + h_pixels / 2);
+
+
+        // Reset font for other labels
+        ctx.font = '20px Arial';
+
+        // Label: "tube, area of cross-section A"
+        ctx.textAlign = 'left';
+        let label_x = tube_cx + tube_rx + 30;
+        let label_y = y_top - 20;
+        ctx.fillText('tube, area', label_x, label_y);
+        ctx.fillText('of cross-section A', label_x, label_y + 25);
+        ctx.beginPath();
+        ctx.moveTo(label_x - 5, label_y + 12.5);
+        ctx.lineTo(tube_cx + tube_rx * 0.8, y_top);
+        ctx.stroke();
+
+        // Label: "liquid, density ρ"
+        label_y = y_surface + 40;
+        ctx.fillText('liquid, density \u03C1', label_x, label_y);
+        ctx.beginPath();
+        ctx.moveTo(label_x - 5, label_y);
+        ctx.lineTo(tube_cx + tube_rx + 20, y_surface + 15);
+        ctx.stroke();
+
+        // Label: "sand"
+        label_y = y_bottom + 10;
+        ctx.fillText('sand', label_x, label_y);
+        ctx.beginPath();
+        ctx.moveTo(label_x - 5, label_y);
+        ctx.lineTo(tube_cx + tube_rx*0.7, y_bottom - tube_ry);
+        ctx.stroke();
+
+        // Caption
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 20px Arial';
+        ctx.fillText('Fig. 3.1', canvas.width / 2, y_bottom + 80);
+
+    </script>
+</body>
+</html>

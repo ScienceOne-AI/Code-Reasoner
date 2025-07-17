@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fig. 10.1 Reproduction</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="500"></canvas>
+    <script>
+        window.onload = function() {
+            const canvas = document.getElementById('physicsCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // --- Configuration ---
+            const padding = { top: 40, right: 40, bottom: 60, left: 60 };
+            const gridSize = 12;
+
+            // Grid dimensions in small grid units
+            const xGridSquares = 52;
+            const yMajorUnits = 3; // From 0 to 3
+            const ySubdivisions = 5; // 5 small squares per major unit
+
+            const gridWidth = xGridSquares * gridSize;
+            const gridHeight = 2 * yMajorUnits * ySubdivisions * gridSize;
+
+            // Calculate canvas size based on content
+            canvas.width = gridWidth + padding.left + padding.right;
+            canvas.height = gridHeight + padding.top + padding.bottom;
+            
+            // Origin of the graph's coordinate system
+            const originX = padding.left;
+            const originY = padding.top + gridHeight / 2;
+
+            // Function to map graph coordinates to canvas coordinates
+            function mapY(currentI) {
+                // 1 unit of current corresponds to ySubdivisions * gridSize pixels
+                return originY - currentI * ySubdivisions * gridSize;
+            }
+
+            // --- Drawing Functions ---
+
+            function drawGrid() {
+                ctx.strokeStyle = '#d3d3d3'; // Light gray for minor grid
+                ctx.lineWidth = 0.5;
+
+                // Minor vertical lines
+                for (let i = 1; i <= xGridSquares; i++) {
+                    if (i % ySubdivisions !== 0) {
+                        ctx.beginPath();
+                        ctx.moveTo(originX + i * gridSize, padding.top);
+                        ctx.lineTo(originX + i * gridSize, padding.top + gridHeight);
+                        ctx.stroke();
+                    }
+                }
+                
+                // Minor horizontal lines
+                for (let i = -yMajorUnits * ySubdivisions; i <= yMajorUnits * ySubdivisions; i++) {
+                    if (i % ySubdivisions !== 0 && i !== 0) {
+                        ctx.beginPath();
+                        ctx.moveTo(originX, originY + i * gridSize);
+                        ctx.lineTo(originX + gridWidth, originY + i * gridSize);
+                        ctx.stroke();
+                    }
+                }
+                
+                ctx.strokeStyle = '#a9a9a9'; // Darker gray for major grid
+                ctx.lineWidth = 1;
+
+                // Major vertical lines
+                for (let i = 1; i * ySubdivisions <= xGridSquares; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(originX + i * ySubdivisions * gridSize, padding.top);
+                    ctx.lineTo(originX + i * ySubdivisions * gridSize, padding.top + gridHeight);
+                    ctx.stroke();
+                }
+
+                // Major horizontal lines
+                for (let i = -yMajorUnits; i <= yMajorUnits; i++) {
+                    if (i !== 0) {
+                        ctx.beginPath();
+                        ctx.moveTo(originX, originY + i * ySubdivisions * gridSize);
+                        ctx.lineTo(originX + gridWidth, originY + i * ySubdivisions * gridSize);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            function drawAxes() {
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 1.5;
+
+                // Y-axis
+                ctx.beginPath();
+                ctx.moveTo(originX, padding.top);
+                ctx.lineTo(originX, padding.top + gridHeight);
+                ctx.stroke();
+
+                // X-axis
+                ctx.beginPath();
+                ctx.moveTo(originX, originY);
+                ctx.lineTo(originX + gridWidth + 10, originY);
+                ctx.stroke();
+
+                // Arrowhead for x-axis
+                ctx.beginPath();
+                ctx.moveTo(originX + gridWidth + 15, originY);
+                ctx.lineTo(originX + gridWidth + 5, originY - 5);
+                ctx.lineTo(originX + gridWidth + 5, originY + 5);
+                ctx.closePath();
+                ctx.fillStyle = 'black';
+                ctx.fill();
+            }
+            
+            function drawLabels() {
+                ctx.fillStyle = 'black';
+                ctx.font = '16px Arial';
+
+                // Y-axis labels
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                for (let i = -yMajorUnits; i <= yMajorUnits; i++) {
+                    if (i !== 0) {
+                        ctx.fillText(i, originX - 8, mapY(i));
+                    }
+                }
+                // Origin '0' label
+                ctx.fillText('0', originX - 8, originY);
+
+                // Y-axis title
+                ctx.font = 'bold 18px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('I\u2081 / A', padding.left, padding.top - 20);
+
+                // X-axis title
+                ctx.font = 'italic 18px Arial';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText('t', originX + gridWidth + 2, originY + 5);
+
+                // Figure caption
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText('Fig. 10.1', canvas.width / 2, canvas.height - 10);
+            }
+
+            function drawCurve() {
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+
+                const amplitude = 2.5; // Peak value from the graph
+                const periodInGrids = 20; // One cycle covers 20 small grid squares
+                const angularFrequency = (2 * Math.PI) / periodInGrids;
+
+                // Move to the starting point (0,0)
+                ctx.moveTo(originX, originY);
+
+                // Draw the sine wave pixel by pixel for smoothness
+                for (let x_px = 0; x_px <= gridWidth; x_px++) {
+                    const t_grid = x_px / gridSize;
+                    const i_val = amplitude * Math.sin(angularFrequency * t_grid);
+                    const y_px = mapY(i_val);
+                    ctx.lineTo(originX + x_px, y_px);
+                }
+                ctx.stroke();
+            }
+
+            // --- Execution ---
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            drawGrid();
+            drawAxes();
+            drawLabels();
+            drawCurve();
+        };
+    </script>
+</body>
+</html>

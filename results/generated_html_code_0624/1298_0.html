@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram on a Cube</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper functions for drawing circuit components ---
+
+        function drawLine(x1, y1, x2, y2, dashed = false) {
+            ctx.beginPath();
+            if (dashed) {
+                ctx.setLineDash([5, 5]);
+            }
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            if (dashed) {
+                ctx.setLineDash([]);
+            }
+        }
+
+        function drawCapacitor(x1, y1, x2, y2, label = '', slashed = false) {
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const len = 20; // length of the component lines
+            const gap = 8; // gap between plates
+            const plateLen = 15;
+
+            // Wires to component
+            drawLine(x1, y1, midX - len / 2 * Math.cos(angle), midY - len / 2 * Math.sin(angle));
+            drawLine(x2, y2, midX + len / 2 * Math.cos(angle), midY + len / 2 * Math.sin(angle));
+
+            // Capacitor plates
+            const p1_x1 = midX - gap / 2 * Math.cos(angle) - plateLen / 2 * Math.sin(angle);
+            const p1_y1 = midY - gap / 2 * Math.sin(angle) + plateLen / 2 * Math.cos(angle);
+            const p1_x2 = midX - gap / 2 * Math.cos(angle) + plateLen / 2 * Math.sin(angle);
+            const p1_y2 = midY - gap / 2 * Math.sin(angle) - plateLen / 2 * Math.cos(angle);
+            drawLine(p1_x1, p1_y1, p1_x2, p1_y2);
+
+            const p2_x1 = midX + gap / 2 * Math.cos(angle) - plateLen / 2 * Math.sin(angle);
+            const p2_y1 = midY + gap / 2 * Math.sin(angle) + plateLen / 2 * Math.cos(angle);
+            const p2_x2 = midX + gap / 2 * Math.cos(angle) + plateLen / 2 * Math.sin(angle);
+            const p2_y2 = midY + gap / 2 * Math.sin(angle) - plateLen / 2 * Math.cos(angle);
+            drawLine(p2_x1, p2_y1, p2_x2, p2_y2);
+
+            if (slashed) {
+                const s_angle = angle + Math.PI / 4;
+                const s_len = 15;
+                drawLine(midX - s_len * Math.cos(s_angle), midY - s_len * Math.sin(s_angle),
+                         midX + s_len * Math.cos(s_angle), midY + s_len * Math.sin(s_angle));
+                drawLine(midX - s_len * Math.cos(s_angle-Math.PI/2), midY - s_len * Math.sin(s_angle-Math.PI/2),
+                         midX + s_len * Math.cos(s_angle-Math.PI/2), midY + s_len * Math.sin(s_angle-Math.PI/2));
+            }
+
+            // Label
+            if (label) {
+                ctx.save();
+                ctx.translate(midX, midY);
+                ctx.rotate(angle);
+                if (angle > Math.PI/2 || angle < -Math.PI/2) {
+                    ctx.rotate(Math.PI);
+                    ctx.fillText(label, 0, -15);
+                } else {
+                    ctx.fillText(label, 0, -15);
+                }
+                ctx.restore();
+            }
+        }
+        
+        function drawBattery(x1, y1, x2, y2, label = '') {
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const len = 20;
+            const gap = 6;
+            const longLen = 18;
+            const shortLen = 10;
+
+            // Wires to component
+            drawLine(x1, y1, midX - len / 2 * Math.cos(angle), midY - len / 2 * Math.sin(angle), Math.abs(x1-x2) > 100);
+            drawLine(x2, y2, midX + len / 2 * Math.cos(angle), midY + len / 2 * Math.sin(angle), Math.abs(x1-x2) > 100);
+
+            // Plates (positive towards x2,y2)
+            // Negative plate (short)
+            const n_x1 = midX - gap / 2 * Math.cos(angle) - shortLen / 2 * Math.sin(angle);
+            const n_y1 = midY - gap / 2 * Math.sin(angle) + shortLen / 2 * Math.cos(angle);
+            const n_x2 = midX - gap / 2 * Math.cos(angle) + shortLen / 2 * Math.sin(angle);
+            const n_y2 = midY - gap / 2 * Math.sin(angle) - shortLen / 2 * Math.cos(angle);
+            drawLine(n_x1, n_y1, n_x2, n_y2);
+            
+            // Positive plate (long)
+            const p_x1 = midX + gap / 2 * Math.cos(angle) - longLen / 2 * Math.sin(angle);
+            const p_y1 = midY + gap / 2 * Math.sin(angle) + longLen / 2 * Math.cos(angle);
+            const p_x2 = midX + gap / 2 * Math.cos(angle) + longLen / 2 * Math.sin(angle);
+            const p_y2 = midY + gap / 2 * Math.sin(angle) - longLen / 2 * Math.cos(angle);
+            drawLine(p_x1, p_y1, p_x2, p_y2);
+
+            // Label
+            if (label) {
+                ctx.save();
+                ctx.translate(midX, midY);
+                ctx.rotate(angle);
+                if (angle > Math.PI / 2 || angle < -Math.PI / 2) {
+                     ctx.rotate(Math.PI);
+                     ctx.fillText(label, 0, -20);
+                } else {
+                     ctx.fillText(label, 0, -20);
+                }
+                ctx.restore();
+            }
+        }
+
+
+        // --- Main Drawing Logic ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = "italic 20px 'Times New Roman'";
+
+        // Define cube vertices based on visual representation
+        const v = {
+            A:  { x: 130, y: 80 },  // Top-Back-Left
+            B:  { x: 470, y: 80 },  // Top-Back-Right
+            TFL: { x: 180, y: 120 }, // Top-Front-Left
+            TFR: { x: 520, y: 120 }, // Top-Front-Right
+            A_prime: { x: 180, y: 400 }, // Bottom-Front-Left
+            B_prime: { x: 520, y: 400 }, // Bottom-Front-Right
+            BBL: { x: 130, y: 360 }, // Bottom-Back-Left
+            BBR: { x: 470, y: 360 }  // Bottom-Back-Right
+        };
+
+        // Draw cube edges
+        // Top face
+        drawLine(v.A.x, v.A.y, v.B.x, v.B.y);
+        drawLine(v.B.x, v.B.y, v.TFR.x, v.TFR.y);
+        drawLine(v.TFR.x, v.TFR.y, v.TFL.x, v.TFL.y);
+        drawLine(v.TFL.x, v.TFL.y, v.A.x, v.A.y);
+
+        // Bottom face
+        drawLine(v.A_prime.x, v.A_prime.y, v.B_prime.x, v.B_prime.y);
+        drawLine(v.B_prime.x, v.B_prime.y, v.BBR.x, v.BBR.y);
+        drawLine(v.BBR.x, v.BBR.y, v.BBL.x, v.BBL.y, true);
+        drawLine(v.BBL.x, v.BBL.y, v.A_prime.x, v.A_prime.y, true);
+
+        // Vertical edges
+        drawLine(v.A.x, v.A.y, v.BBL.x, v.BBL.y, true);
+        drawLine(v.B.x, v.B.y, v.BBR.x, v.BBR.y);
+        drawLine(v.TFL.x, v.TFL.y, v.A_prime.x, v.A_prime.y);
+        drawLine(v.TFR.x, v.TFR.y, v.B_prime.x, v.B_prime.y);
+
+
+        // Add components
+        // Capacitors
+        const x1 = { x: v.TFL.x, y: (v.TFL.y + v.A_prime.y) * 0.4 };
+        const y1 = { x: v.TFR.x, y: (v.TFR.y + v.B_prime.y) * 0.4 };
+        
+        drawCapacitor(v.TFL.x, (v.TFL.y + v.A_prime.y) * 0.65, v.A_prime.x, v.A_prime.y, 'C');
+        drawLine(v.TFL.x, v.TFL.y, x1.x, x1.y);
+        
+        drawCapacitor(v.TFR.x, (v.TFR.y + v.B_prime.y) * 0.65, v.B_prime.x, v.B_prime.y, 'C');
+        drawLine(v.TFR.x, v.TFR.y, y1.x, y1.y);
+
+        drawCapacitor(v.A_prime.x, v.A_prime.y, v.B_prime.x, v.B_prime.y, 'C');
+        drawCapacitor(v.A_prime.x, v.A_prime.y, v.BBL.x, v.BBL.y, 'C', true);
+        drawCapacitor(v.B_prime.x, v.B_prime.y, v.BBR.x, v.BBR.y, 'C');
+
+        // Sources
+        drawBattery(x1.x, x1.y, y1.x, y1.y, 'ε₁');
+
+        const x2 = { x: (v.A_prime.x + v.BBL.x) / 2, y: (v.A_prime.y + v.BBL.y) / 2 };
+        const y2 = { x: (v.B_prime.x + v.BBR.x) / 2, y: (v.B_prime.y + v.BBR.y) / 2 };
+        
+        drawBattery(x2.x, x2.y, y2.x, y2.y, 'ε₂');
+        
+        // Dashed guide lines
+        drawLine(v.A.x, v.A.y, x2.x-30, x2.y-40, true);
+        drawLine(x2.x, x2.y, x2.x-30, x2.y-40, true);
+
+        // Add labels
+        ctx.fillStyle = 'black';
+        ctx.font = "italic 24px 'Times New Roman'";
+        ctx.fillText('A', v.A.x - 30, v.A.y + 10);
+        ctx.fillText('B', v.B.x + 15, v.B.y + 10);
+        ctx.fillText("A'", v.A_prime.x - 35, v.A_prime.y + 15);
+        ctx.fillText("B'", v.B_prime.x + 15, v.B_prime.y + 15);
+        
+        ctx.font = "italic 20px 'Times New Roman'";
+        ctx.fillText('x₁', x1.x - 20, x1.y + 5);
+        ctx.fillText('y₁', y1.x + 10, y1.y + 5);
+        ctx.fillText('x₂', x2.x - 20, x2.y + 15);
+        ctx.fillText('y₂', y2.x + 10, y2.y + 5);
+        
+        ctx.beginPath();
+        ctx.arc(x2.x, x2.y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+
+    </script>
+</body>
+</html>

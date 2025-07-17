@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>SHM Graph</title>
+</head>
+<body>
+<canvas id="shmCanvas" width="700" height="550"></canvas>
+<script>
+    const canvas = document.getElementById('shmCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const margin = { top: 40, right: 40, bottom: 90, left: 80 };
+    const plotWidth = canvas.width - margin.left - margin.right;
+    const plotHeight = canvas.height - margin.top - margin.bottom;
+
+    const tMin = 0, tMax = 8;
+    const hMin = 0, hMax = 18;
+
+    // --- Coordinate Mapping Functions ---
+    function mapX(t) {
+        return margin.left + (t - tMin) / (tMax - tMin) * plotWidth;
+    }
+
+    function mapY(h) {
+        return canvas.height - margin.bottom - (h - hMin) / (hMax - hMin) * plotHeight;
+    }
+
+    // --- Drawing ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // 1. Draw Grid
+    ctx.strokeStyle = '#cccccc';
+    ctx.lineWidth = 1;
+
+    // Vertical grid lines (every 0.5s)
+    const tStepGrid = 0.5;
+    for (let t = tMin; t <= tMax; t += tStepGrid) {
+        ctx.beginPath();
+        ctx.moveTo(mapX(t), mapY(hMin));
+        ctx.lineTo(mapX(t), mapY(hMax));
+        ctx.stroke();
+    }
+
+    // Horizontal grid lines (every 1cm)
+    const hStepGrid = 1;
+    for (let h = hMin; h <= hMax; h += hStepGrid) {
+        ctx.beginPath();
+        ctx.moveTo(mapX(tMin), mapY(h));
+        ctx.lineTo(mapX(tMax), mapY(h));
+        ctx.stroke();
+    }
+
+    // 2. Draw Axes
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // Y-axis
+    ctx.beginPath();
+    ctx.moveTo(mapX(tMin), mapY(hMin));
+    ctx.lineTo(mapX(tMin), mapY(hMax));
+    ctx.stroke();
+
+    // X-axis
+    ctx.beginPath();
+    ctx.moveTo(mapX(tMin), mapY(hMin));
+    ctx.lineTo(mapX(tMax), mapY(hMin));
+    ctx.stroke();
+    
+    // 3. Draw Ticks and Labels
+    ctx.fillStyle = 'black';
+    const numberFontSize = 24;
+    const labelFontSize = 28;
+    const captionFontSize = 26;
+
+    // Y-axis labels
+    ctx.font = `${numberFontSize}px Arial`;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    const yLabels = [2, 10, 18];
+    yLabels.forEach(h => {
+        ctx.fillText(h.toString(), mapX(tMin) - 10, mapY(h));
+    });
+
+    // Y-axis title
+    ctx.font = `italic ${labelFontSize}px Arial`;
+    ctx.fillText('h / cm', mapX(tMin) - 20, mapY(14));
+
+    // X-axis labels
+    ctx.font = `${numberFontSize}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const xLabels = [0, 2, 4, 6, 8];
+    xLabels.forEach(t => {
+        ctx.fillText(t.toString(), mapX(t), mapY(hMin) + 10);
+    });
+
+    // X-axis title
+    ctx.font = `italic ${labelFontSize}px Arial`;
+    ctx.fillText('t / s', mapX(tMax - 0.5), mapY(hMin) + 45);
+
+    // 4. Draw the SHM Curve
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+
+    const A = 8;        // Amplitude (cm)
+    const h_eq = 10;    // Equilibrium height (cm)
+    const T = 4;        // Period (s)
+    const omega = (2 * Math.PI) / T;
+
+    const t_start = 0;
+    const h_start = h_eq + A * Math.cos(omega * t_start);
+    ctx.moveTo(mapX(t_start), mapY(h_start));
+
+    const numPoints = 500;
+    for (let i = 1; i <= numPoints; i++) {
+        const t = (i / numPoints) * tMax;
+        const h = h_eq + A * Math.cos(omega * t);
+        ctx.lineTo(mapX(t), mapY(h));
+    }
+    ctx.stroke();
+
+    // 5. Draw Caption
+    ctx.font = `bold ${captionFontSize}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 4.1', canvas.width / 2, canvas.height - 20);
+
+</script>
+</body>
+</html>

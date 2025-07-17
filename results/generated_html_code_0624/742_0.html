@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram</title>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="600" height="450" style="border:1px solid #000;"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function for drawing double-headed arrows
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 8; // length of head in pixels
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        
+        // Arrowhead at 'to' end
+        let angle = Math.atan2(toy - fromy, tox - fromx);
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        
+        // Arrowhead at 'from' end
+        angle = Math.atan2(fromy - toy, fromx - tox);
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(fromx - headlen * Math.cos(angle - Math.PI / 6), fromy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(fromx - headlen * Math.cos(angle + Math.PI / 6), fromy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // --- Start Drawing ---
+    ctx.font = '17px Arial';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // --- Plate Coordinates & Dimensions ---
+    const y_A = 350;
+    const y_B = 150;
+    const plate_x_start = 120;
+    const plate_x_end = 480;
+    const plate_conn_x = 280; // Connection point x-coordinate
+    const nucleus_x = 200;
+    const nucleus_y = y_A - (y_A - y_B) / 3; // at distance x = 0.4cm from plate A
+
+    // --- Dashed Reference Lines ---
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    // Top dashed line
+    ctx.beginPath();
+    ctx.moveTo(plate_x_start - 80, y_B);
+    ctx.lineTo(plate_x_end + 70, y_B);
+    ctx.stroke();
+    // Bottom dashed line
+    ctx.beginPath();
+    ctx.moveTo(plate_x_start - 80, y_A);
+    ctx.lineTo(plate_x_end + 70, y_A);
+    ctx.stroke();
+    // Nucleus dashed line
+    ctx.beginPath();
+    ctx.moveTo(plate_x_start - 80, nucleus_y);
+    ctx.lineTo(plate_x_end - 150, nucleus_y);
+    ctx.stroke();
+    ctx.restore();
+
+    // --- Plate B (Top) ---
+    ctx.save();
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(plate_x_start, y_B);
+    ctx.lineTo(plate_x_end, y_B);
+    ctx.stroke();
+    ctx.restore();
+
+    // Plate B label
+    ctx.textAlign = 'left';
+    ctx.fillText('plate B', 490, 130);
+    ctx.beginPath();
+    ctx.moveTo(500, 132);
+    ctx.lineTo(475, 148);
+    ctx.stroke();
+
+    // Voltage connection for Plate B
+    ctx.beginPath();
+    ctx.moveTo(plate_conn_x, y_B);
+    ctx.lineTo(plate_conn_x, y_B - 50);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(plate_conn_x, y_B, 3, 0, 2 * Math.PI); // Connection point
+    ctx.fill();
+    ctx.textAlign = 'center';
+    ctx.fillText('-75 V', plate_conn_x, y_B - 60);
+
+    // --- Plate A (Bottom) ---
+    ctx.save();
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(plate_x_start, y_A);
+    ctx.lineTo(plate_x_end, y_A);
+    ctx.stroke();
+    ctx.restore();
+
+    // Plate A label
+    ctx.textAlign = 'left';
+    ctx.fillText('plate A', 490, 370);
+    ctx.beginPath();
+    ctx.moveTo(500, 368);
+    ctx.lineTo(475, 352);
+    ctx.stroke();
+
+    // Ground connection for Plate A
+    ctx.beginPath();
+    ctx.moveTo(plate_conn_x, y_A);
+    ctx.lineTo(plate_conn_x, y_A + 20);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(plate_conn_x, y_A, 3, 0, 2 * Math.PI); // Connection point
+    ctx.fill();
+
+    // Ground symbol
+    ctx.beginPath();
+    ctx.moveTo(plate_conn_x - 20, y_A + 20);
+    ctx.lineTo(plate_conn_x + 20, y_A + 20);
+    ctx.moveTo(plate_conn_x - 15, y_A + 25);
+    ctx.lineTo(plate_conn_x + 15, y_A + 25);
+    ctx.moveTo(plate_conn_x - 10, y_A + 30);
+    ctx.lineTo(plate_conn_x + 10, y_A + 30);
+    ctx.stroke();
+    ctx.textAlign = 'left';
+    ctx.fillText('0 V', plate_conn_x - 50, 340);
+
+    // --- Helium Nucleus ---
+    // Nucleus circle (open)
+    ctx.beginPath();
+    ctx.arc(nucleus_x, nucleus_y, 5, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // Nucleus label
+    ctx.textAlign = 'left';
+    ctx.fillText('helium nucleus', 90, 240);
+    ctx.beginPath();
+    ctx.moveTo(140, 245);
+    ctx.lineTo(nucleus_x - 5, nucleus_y - 2);
+    ctx.stroke();
+
+    // --- Distance Markers ---
+    // Distance '1.2 cm'
+    const x_dist_1 = plate_x_end + 40;
+    drawArrow(ctx, x_dist_1, y_A, x_dist_1, y_B);
+    ctx.textAlign = 'left';
+    ctx.fillText('1.2 cm', x_dist_1 + 10, (y_A + y_B) / 2);
+
+    // Distance 'x'
+    const x_dist_2 = plate_x_start - 40;
+    drawArrow(ctx, x_dist_2, y_A, x_dist_2, nucleus_y);
+    ctx.textAlign = 'right';
+    ctx.fillText('x', x_dist_2 - 5, (y_A + nucleus_y) / 2);
+    
+    // --- Figure Caption ---
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 6.1', canvas.width / 2, 420);
+
+</script>
+
+</body>
+</html>

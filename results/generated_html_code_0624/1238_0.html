@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body { margin: 20px; font-family: sans-serif; display: flex; justify-content: center; align-items: center; }
+        canvas { border: 1px solid black; }
+    </style>
+</head>
+<body>
+
+<canvas id="myCanvas" width="550" height="500"></canvas>
+
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2.5;
+    ctx.font = 'bold 20px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Scale and origin
+    const scale = 45; // pixels per meter
+    const origin = { x: 150, y: 420 }; // Point A is at this origin
+
+    // Helper function for dimension lines with arrows
+    function drawDimensionLine(x1, y1, x2, y2, text, textOffset = {x: 0, y: 0}) {
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Arrowheads
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        const arrowLength = 8;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 + arrowLength * Math.cos(angle + Math.PI / 6), y1 + arrowLength * Math.sin(angle + Math.PI / 6));
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 + arrowLength * Math.cos(angle - Math.PI / 6), y1 + arrowLength * Math.sin(angle - Math.PI / 6));
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - arrowLength * Math.cos(angle + Math.PI / 6), y2 - arrowLength * Math.sin(angle + Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - arrowLength * Math.cos(angle - Math.PI / 6), y2 - arrowLength * Math.sin(angle - Math.PI / 6));
+        ctx.stroke();
+        
+        // Text
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 18px sans-serif';
+        ctx.fillText(text, (x1 + x2) / 2 + textOffset.x, (y1 + y2) / 2 + textOffset.y);
+        ctx.restore();
+    }
+    
+    // Helper to draw an arrow
+    function drawArrow(x1, y1, x2, y2) {
+        ctx.save();
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        const arrowLength = 12;
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - arrowLength * Math.cos(angle - Math.PI / 6), y2 - arrowLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - arrowLength * Math.cos(angle + Math.PI / 6), y2 - arrowLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // 1. Draw Ground and Pit
+    const groundY = origin.y - 2 * scale;
+    const pitBottomY = origin.y + 15;
+    const pitLeftX = origin.x - 40;
+    const pitRightX = origin.x + 40;
+    
+    // Create the path for the ground material
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    ctx.lineTo(pitLeftX, groundY);
+    ctx.lineTo(pitLeftX, pitBottomY);
+    ctx.lineTo(pitRightX, pitBottomY);
+    ctx.lineTo(pitRightX, groundY);
+    ctx.lineTo(canvas.width, groundY);
+    ctx.lineTo(canvas.width, canvas.height);
+    ctx.lineTo(0, canvas.height);
+    ctx.closePath();
+
+    // Fill with hatching
+    ctx.save();
+    ctx.clip();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    for (let i = -canvas.height; i < canvas.width; i += 10) {
+        ctx.beginPath();
+        ctx.moveTo(i, canvas.height);
+        ctx.lineTo(i + canvas.height, 0);
+        ctx.stroke();
+    }
+    ctx.restore();
+    
+    // Outline the ground
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    ctx.lineTo(pitLeftX, groundY);
+    ctx.lineTo(pitLeftX, pitBottomY);
+    ctx.lineTo(pitRightX, pitBottomY);
+    ctx.lineTo(pitRightX, groundY);
+    ctx.lineTo(canvas.width, groundY);
+    ctx.stroke();
+
+
+    // 2. Draw Coordinate Axes
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    // y-axis
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y + 25);
+    ctx.lineTo(origin.x, 50);
+    ctx.stroke();
+    // x-axis
+    ctx.beginPath();
+    ctx.moveTo(origin.x - 40, origin.y);
+    ctx.lineTo(origin.x + 100, origin.y);
+    ctx.stroke();
+    ctx.restore();
+    // Labels for axes
+    ctx.font = 'bold 24px serif';
+    ctx.fillText('y', origin.x - 25, 60);
+    ctx.fillText('x', origin.x + 110, origin.y + 5);
+
+
+    // 3. Draw Crane Structure
+    // Support A (base)
+    ctx.beginPath();
+    ctx.rect(origin.x - 35, origin.y, 70, 8);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(origin.x, origin.y, 6, 0, Math.PI, true);
+    ctx.stroke();
+
+    // Support B (collar)
+    const shaftWidthAtB = 40;
+    ctx.beginPath();
+    ctx.rect(origin.x - shaftWidthAtB/2 - 5, groundY - 8, shaftWidthAtB + 10, 8);
+    ctx.stroke();
+
+    // Main Crane Body
+    ctx.beginPath();
+    // Lower tapering part
+    const shaftWidthAtA = 8;
+    ctx.moveTo(origin.x - shaftWidthAtA/2, origin.y - 4);
+    ctx.lineTo(origin.x - shaftWidthAtB/2, groundY);
+    ctx.moveTo(origin.x + shaftWidthAtA/2, origin.y - 4);
+    ctx.lineTo(origin.x + shaftWidthAtB/2, groundY);
+    
+    // Curved upper part
+    const E_point = { x: origin.x + 5 * scale, y: 150 };
+    const craneTopY = 110;
+    // Outer curve
+    ctx.moveTo(origin.x - shaftWidthAtB/2, groundY);
+    ctx.bezierCurveTo(origin.x - 90, 220, origin.x + 120, craneTopY, E_point.x, E_point.y);
+    // Inner curve
+    ctx.moveTo(origin.x + shaftWidthAtB/2, groundY);
+    ctx.bezierCurveTo(origin.x + 100, 270, E_point.x - 80, E_point.y + 50, E_point.x - 12, E_point.y + 25);
+    ctx.stroke();
+    
+    // Pulley at E
+    ctx.beginPath();
+    ctx.arc(E_point.x, E_point.y, 20, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(E_point.x, E_point.y, 6, 0, 2 * Math.PI);
+    ctx.fill();
+
+
+    // 4. Draw Load P
+    const loadP = { x: E_point.x, y: 250, w: 60, h: 50 };
+    // Rope
+    ctx.beginPath();
+    ctx.moveTo(E_point.x, E_point.y + 20);
+    ctx.lineTo(E_point.x, loadP.y - 10);
+    ctx.stroke();
+    // Attachment
+    ctx.beginPath();
+    ctx.arc(E_point.x, loadP.y - 10, 5, 0, Math.PI, true);
+    ctx.stroke();
+    // Weight block
+    ctx.beginPath();
+    ctx.rect(loadP.x - loadP.w/2, loadP.y, loadP.w, loadP.h);
+    ctx.stroke();
+    ctx.font = 'bold 24px serif';
+    ctx.fillText('P', loadP.x, loadP.y + 30);
+
+
+    // 5. Draw Force at C
+    const C_point = { x: origin.x + 2 * scale, y: 240 };
+    ctx.beginPath();
+    ctx.arc(C_point.x, C_point.y, 5, 0, 2 * Math.PI);
+    ctx.stroke();
+    drawArrow(C_point.x, C_point.y + 5, C_point.x, C_point.y + 70);
+    
+
+    // 6. Draw Dimensions and Labels
+    // Dimension 2m (vertical)
+    drawDimensionLine(pitRightX + 25, groundY, pitRightX + 25, origin.y, '2 m', {x: 20, y: 0});
+    // Dimension 2m (horizontal)
+    const dimLine2mY = C_point.y - 60;
+    drawDimensionLine(origin.x, dimLine2mY, C_point.x, dimLine2mY, '2 m', {x: 0, y: -12});
+    // Dimension 5m (horizontal)
+    const dimLine5mY = E_point.y - 50;
+    const D_point_on_curve = {x: 130, y: 168};
+    drawDimensionLine(D_point_on_curve.x, dimLine5mY, E_point.x, dimLine5mY, '5 m', {x: 0, y: -12});
+
+    // Point Labels
+    ctx.font = 'bold 24px serif';
+    ctx.fillText('A', origin.x - 30, origin.y + 25);
+    ctx.fillText('B', origin.x + 40, groundY - 20);
+    ctx.fillText('C', C_point.x + 15, C_point.y + 5);
+    ctx.fillText('D', D_point_on_curve.x - 20, dimLine5mY);
+    ctx.fillText('E', E_point.x + 30, E_point.y);
+
+</script>
+
+</body>
+</html>

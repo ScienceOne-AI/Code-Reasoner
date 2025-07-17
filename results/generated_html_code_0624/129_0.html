@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Toroid Diagram</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+        canvas { background-color: white; }
+    </style>
+</head>
+<body>
+    <canvas id="toroidCanvas" width="400" height="350"></canvas>
+    <script>
+        const canvas = document.getElementById('toroidCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'butt';
+        ctx.lineJoin = 'miter';
+
+        // Core parameters for the toroid
+        const cx = 200, cy = 140;
+        const outerR = 95, innerR = 45;
+        const height = 48;
+
+        // Draw the main body of the toroid
+        
+        // Bottom outer arc
+        ctx.beginPath();
+        ctx.arc(cx, cy + height, outerR, 0.05 * Math.PI, 0.95 * Math.PI);
+        ctx.stroke();
+
+        // Top inner arc (full circle)
+        ctx.beginPath();
+        ctx.arc(cx, cy, innerR, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // Top outer arc segments (leaving gaps for windings and cutaway)
+        const windStartAngle = 1.35 * Math.PI;
+        const windEndAngle = 1.65 * Math.PI;
+        const cutAngle = 1.88 * Math.PI;
+        
+        ctx.beginPath();
+        ctx.arc(cx, cy, outerR, Math.PI, windStartAngle);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.arc(cx, cy, outerR, windEndAngle, cutAngle);
+        ctx.stroke();
+
+        // Left side line
+        ctx.beginPath();
+        ctx.moveTo(cx - outerR, cy);
+        ctx.lineTo(cx - outerR, cy + height);
+        ctx.stroke();
+        
+        // Draw the wire windings
+        ctx.lineWidth = 2.5;
+        const numTurns = 4;
+        for (let i = 0; i < numTurns; i++) {
+            const angle = windStartAngle + (i + 0.5) * (windEndAngle - windStartAngle) / numTurns;
+            ctx.beginPath();
+            ctx.moveTo(cx + innerR * Math.cos(angle), cy + innerR * Math.sin(angle));
+            ctx.lineTo(cx + outerR * Math.cos(angle), cy + outerR * Math.sin(angle));
+            ctx.lineTo(cx + outerR * Math.cos(angle), cy + outerR * Math.sin(angle) + height);
+            ctx.stroke();
+        }
+
+        // Draw wire leads for "N turns"
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.moveTo(175, 205);
+        ctx.lineTo(175, 225);
+        ctx.moveTo(185, 205);
+        ctx.lineTo(185, 225);
+        ctx.stroke();
+
+        // Reset line width for the rest
+        ctx.lineWidth = 3;
+
+        // Draw the cutaway section
+        const cutSize = 48;
+        const cutX = cx + outerR * Math.cos(cutAngle) - 12;
+        const cutY = cy + outerR * Math.sin(cutAngle);
+        
+        const cutPath = new Path2D();
+        cutPath.rect(cutX, cutY, cutSize, cutSize);
+        
+        // Erase toroid lines behind the cutaway
+        ctx.save();
+        ctx.clip(cutPath);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+
+        // Draw hatching inside the cutaway
+        ctx.save();
+        ctx.clip(cutPath);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for(let i = -5; i < 15; i++) {
+            ctx.moveTo(cutX, cutY + i * 8);
+            ctx.lineTo(cutX + cutSize, cutY + cutSize + i * 8);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw the outline of the cutaway square
+        ctx.stroke(cutPath);
+        
+        // Connect the main toroid body to the cutaway
+        ctx.beginPath();
+        ctx.moveTo(cx + outerR * Math.cos(cutAngle), cy + outerR * Math.sin(cutAngle));
+        ctx.lineTo(cutX, cutY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        const p_bottom_right = {x: cx + outerR*Math.cos(0.05*Math.PI), y: cy+height+outerR*Math.sin(0.05*Math.PI)};
+        ctx.moveTo(p_bottom_right.x, p_bottom_right.y);
+        ctx.lineTo(cutX + cutSize, cutY + cutSize);
+        ctx.stroke();
+
+
+        // Add text labels
+        // "N turns" label
+        const labelX = 160, labelY = 250;
+        ctx.save();
+        ctx.font = '24px serif';
+        ctx.beginPath();
+        ctx.lineWidth = 2.5;
+        ctx.moveTo(labelX - 12, labelY - 20);
+        ctx.lineTo(labelX - 2, labelY-2);
+        ctx.stroke();
+        ctx.font = 'italic 24px serif';
+        ctx.fillText('N', labelX + 5, labelY);
+        ctx.font = '24px serif';
+        ctx.fillText(' turns', labelX + 22, labelY);
+        ctx.restore();
+        
+        // "Fig. 2.17" label
+        ctx.font = 'bold 24px serif';
+        ctx.fillText('Fig. 2.17', 165, 300);
+
+    </script>
+</body>
+</html>

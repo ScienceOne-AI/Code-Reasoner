@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 500;
+        canvas.height = 420;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // Parameters
+        const cx = 250;
+        const cy = 200;
+        const radius = 110;
+        const plateHeight = 80;
+        const plateSlant = 40;
+        const arrowSize = 8;
+
+        // Helper function for drawing arrows
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headlen = arrowSize;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        // Helper function for drawing points and labels
+        function drawPoint(p, label) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 2.5, 0, 2 * Math.PI);
+            ctx.fill();
+            if (label) {
+                ctx.save();
+                ctx.font = '16px serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                let dx = 0, dy = 0;
+                // Adjust label positions for clarity
+                switch(label) {
+                    case 'a': dx = -10; dy = 10; ctx.textAlign = 'right'; break;
+                    case 'b': dx = -12; dy = -8; break;
+                    case 'c': dx = 12; dy = -8; break;
+                    case 'd': dx = 10; dy = 10; ctx.textAlign = 'left'; break;
+                    case 'e': dx = -12; dy = 5; break;
+                    case 'f': dx = 12; dy = 5; break;
+                }
+                ctx.fillText(label, p.x + dx, p.y + dy);
+                ctx.restore();
+            }
+        }
+
+        // --- Start Drawing ---
+
+        // 1. Draw Conductor Plate
+        const p_tl = { x: cx - radius, y: cy };
+        const p_tr = { x: cx + radius, y: cy };
+        const p_bl = { x: p_tl.x - plateSlant, y: p_tl.y + plateHeight };
+        const p_br = { x: p_tr.x - plateSlant, y: p_tr.y + plateHeight };
+        
+        ctx.beginPath();
+        ctx.moveTo(p_bl.x, p_bl.y);
+        ctx.lineTo(p_tl.x, p_tl.y);
+        ctx.lineTo(p_tr.x, p_tr.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(p_tr.x, p_tr.y);
+        ctx.lineTo(p_br.x, p_br.y);
+        ctx.stroke();
+
+        // 2. Draw Semicircle wire `aebcfd`
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, Math.PI, 0);
+        ctx.stroke();
+
+        // 3. Define and draw points a,b,c,d,e,f
+        const a = { x: cx - radius, y: cy };
+        const d = { x: cx + radius, y: cy };
+        
+        // Using angles that visually match the original diagram
+        const b_angle = 2 * Math.PI / 3;
+        const c_angle = Math.PI / 3;
+        const b = { x: cx + radius * Math.cos(b_angle), y: cy - radius * Math.sin(b_angle) };
+        const c = { x: cx + radius * Math.cos(c_angle), y: cy - radius * Math.sin(c_angle) };
+
+        const e_angle = (Math.PI + b_angle) / 2;
+        const f_angle = c_angle / 2;
+        const e = { x: cx + radius * Math.cos(e_angle), y: cy - radius * Math.sin(e_angle) };
+        const f = { x: cx + radius * Math.cos(f_angle), y: cy - radius * Math.sin(f_angle) };
+
+        drawPoint(a, 'a');
+        drawPoint(b, 'b');
+        drawPoint(c, 'c');
+        drawPoint(d, 'd');
+        drawPoint(e, 'e');
+        drawPoint(f, 'f');
+
+        // 4. Draw Voltmeter V
+        const voltmeterRadius = 15;
+        const voltmeterPos = { x: (b.x + c.x) / 2, y: b.y + 15 };
+        ctx.beginPath();
+        ctx.arc(voltmeterPos.x, voltmeterPos.y, voltmeterRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.font = '20px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('V', voltmeterPos.x, voltmeterPos.y);
+
+        // Connection lines for Voltmeter
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(b.x, b.y);
+        ctx.lineTo(voltmeterPos.x - voltmeterRadius * 0.707, voltmeterPos.y - voltmeterRadius * 0.707);
+        ctx.moveTo(c.x, c.y);
+        ctx.lineTo(voltmeterPos.x + voltmeterRadius * 0.707, voltmeterPos.y - voltmeterRadius * 0.707);
+        ctx.stroke();
+        ctx.lineWidth = 2;
+
+        // 5. Draw Axes and Vectors
+        ctx.font = 'bold 20px serif';
+        const axis_x_pos = cx + 80;
+
+        // Vertical axis (right side)
+        ctx.beginPath();
+        ctx.moveTo(axis_x_pos, cy - 120);
+        ctx.lineTo(axis_x_pos, cy);
+        ctx.stroke();
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(axis_x_pos, cy);
+        ctx.lineTo(axis_x_pos, p_br.y + 20);
+        ctx.stroke();
+        ctx.restore();
+
+        // Left dashed line
+        const left_dash_x = cx - radius;
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(left_dash_x, cy);
+        ctx.lineTo(left_dash_x, p_bl.y + 20);
+        ctx.stroke();
+        ctx.restore();
+
+        // B vector
+        const b_vec_start = { x: axis_x_pos, y: cy-20 };
+        const b_vec_end = { x: axis_x_pos, y: cy-100 };
+        drawArrow(b_vec_start.x, b_vec_start.y, b_vec_end.x, b_vec_end.y);
+        ctx.fillText('B', b_vec_end.x + 15, b_vec_end.y + 10);
+
+        // v vector and x-axis
+        const axis_line_start = { x: axis_x_pos - 10, y: cy };
+        const v_vec_end = { x: axis_x_pos + 120, y: cy };
+        drawArrow(axis_line_start.x, axis_line_start.y, v_vec_end.x, v_vec_end.y);
+        ctx.fillText('v', axis_x_pos + 40, cy - 15);
+        ctx.fillText('x', v_vec_end.x + 10, v_vec_end.y + 5);
+
+        // 6. Draw L dimension
+        const l_start = { x: p_tl.x - 25, y: p_tl.y };
+        const l_end = { x: p_bl.x - 25, y: p_bl.y };
+        drawArrow(l_start.x, l_start.y, l_end.x, l_end.y);
+        drawArrow(l_end.x, l_end.y, l_start.x, l_start.y);
+        ctx.beginPath(); // Ticks
+        ctx.moveTo(l_start.x, l_start.y);
+        ctx.lineTo(p_tl.x, p_tl.y);
+        ctx.moveTo(l_end.x, l_end.y);
+        ctx.lineTo(p_bl.x, p_bl.y);
+        ctx.stroke();
+        ctx.fillText('L', l_start.x - 20, (l_start.y + l_end.y) / 2);
+
+        // 7. Small dash at the top
+        ctx.beginPath();
+        ctx.moveTo(cx, 40);
+        ctx.lineTo(cx + 10, 40);
+        ctx.stroke();
+
+        // 8. Caption
+        ctx.font = '20px "Songti SC", "SimSun"';
+        ctx.textAlign = 'center';
+        ctx.fillText('电图 3.8.1', cx, canvas.height - 20);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Undulator Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // Helper function to draw an arrowhead
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Parameters ---
+        const y_center = 220; // Y-coordinate for the central axis
+        const path_y_center = 100; // Y-coordinate for the center of the wavy path
+
+        // Magnet parameters
+        const mag_w = 40;
+        const mag_h = 50;
+        const mag_gap = 20;
+        const v_gap = 10;
+        const mag_start_x = 120;
+        const num_magnets = 8;
+        const unit_len = mag_w + mag_gap;
+
+        // Path and axis parameters
+        const axis_end_x = mag_start_x + num_magnets * unit_len;
+        const path_start_x = 20;
+
+
+        // --- Draw Wavy Electron Path (Top) ---
+        const amplitude = 15;
+        const path_period = 2 * unit_len; // The period of the path oscillation
+        const k = (2 * Math.PI) / path_period;
+        
+        ctx.beginPath();
+        ctx.setLineDash([6, 4]);
+        
+        const path_phase_offset = mag_start_x;
+        ctx.moveTo(path_start_x, path_y_center - amplitude * Math.sin(k * (path_start_x - path_phase_offset)));
+        for (let x = path_start_x + 1; x <= axis_end_x; x++) {
+            const y = path_y_center - amplitude * Math.sin(k * (x - path_phase_offset));
+            ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Arrowhead for the wavy path
+        const x_end_wavy = axis_end_x;
+        const y_end_arg = k * (x_end_wavy - path_phase_offset);
+        const y_end_wavy = path_y_center - amplitude * Math.sin(y_end_arg);
+        const slope_wavy = -amplitude * k * Math.cos(y_end_arg);
+        const angle_wavy = Math.atan(slope_wavy);
+        const arrow_tip_x = x_end_wavy + 5 * Math.cos(angle_wavy);
+        const arrow_tip_y = y_end_wavy + 5 * Math.sin(angle_wavy);
+        drawArrow(ctx, x_end_wavy, y_end_wavy, arrow_tip_x, arrow_tip_y, 12);
+        
+        // Arrowhead at the start of the wavy path
+        const x_start_wavy = path_start_x;
+        const y_start_arg = k * (x_start_wavy - path_phase_offset);
+        const y_start_wavy = path_y_center - amplitude * Math.sin(y_start_arg);
+        const slope_start_wavy = -amplitude * k * Math.cos(y_start_arg);
+        const angle_start_wavy = Math.atan(slope_start_wavy);
+        const arrow_start_tip_x = x_start_wavy + 5 * Math.cos(angle_start_wavy);
+        const arrow_start_tip_y = y_start_wavy + 5 * Math.sin(angle_start_wavy);
+        drawArrow(ctx, x_start_wavy, y_start_wavy, arrow_start_tip_x, arrow_start_tip_y, 12);
+
+
+        // --- Draw Central Axis and 'c' label ---
+        ctx.font = 'italic 24px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('c', 40, y_center);
+        
+        // Solid arrow next to 'c'
+        ctx.beginPath();
+        const arrow_start = 60;
+        const arrow_end = 90;
+        ctx.moveTo(arrow_start, y_center);
+        ctx.lineTo(arrow_end, y_center);
+        ctx.stroke();
+        drawArrow(ctx, arrow_end - 10, y_center, arrow_end, y_center);
+
+        // Dashed line for the rest of the axis
+        ctx.beginPath();
+        ctx.setLineDash([6, 4]);
+        ctx.moveTo(arrow_end, y_center);
+        ctx.lineTo(axis_end_x, y_center);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        drawArrow(ctx, axis_end_x - 10, y_center, axis_end_x, y_center);
+
+
+        // --- Draw Magnets ---
+        ctx.font = 'bold 24px sans-serif';
+        for (let i = 0; i < num_magnets; i++) {
+            const x = mag_start_x + i * unit_len;
+            const y_top = y_center - v_gap - mag_h;
+            const y_bot = y_center + v_gap;
+
+            // Draw magnet boxes
+            ctx.beginPath();
+            ctx.rect(x, y_top, mag_w, mag_h);
+            ctx.rect(x, y_bot, mag_w, mag_h);
+            ctx.stroke();
+
+            // Draw N/S labels
+            const top_label = (i % 2 === 0) ? 'N' : 'S';
+            const bot_label = (i % 2 === 0) ? 'S' : 'N';
+            ctx.fillText(top_label, x + mag_w / 2, y_top + mag_h / 2);
+            ctx.fillText(bot_label, x + mag_w / 2, y_bot + mag_h / 2);
+        }
+
+        // --- Draw Length Scale 'd' ---
+        // 'd' spans from the center of the 2nd magnet to the center of the 4th magnet.
+        const d_start_x = mag_start_x + 1 * unit_len + mag_w / 2;
+        const d_end_x = mag_start_x + 3 * unit_len + mag_w / 2;
+        const d_y = y_center + v_gap + mag_h + 40;
+        const tick_h = 10;
+
+        ctx.beginPath();
+        ctx.moveTo(d_start_x, d_y);
+        ctx.lineTo(d_end_x, d_y);
+        ctx.moveTo(d_start_x, d_y - tick_h);
+        ctx.lineTo(d_start_x, d_y + tick_h);
+        ctx.moveTo(d_end_x, d_y - tick_h);
+        ctx.lineTo(d_end_x, d_y + tick_h);
+        ctx.stroke();
+
+        // 'd' label
+        ctx.font = 'italic 24px serif';
+        ctx.fillText('d', (d_start_x + d_end_x) / 2, d_y);
+
+
+        // --- Draw Figure Label ---
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Fig. 3.5', canvas.width / 2, canvas.height - 10);
+
+    </script>
+</body>
+</html>

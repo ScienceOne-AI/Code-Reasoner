@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RC Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="460" height="220" style="border: 1px solid #d3d3d3;"></canvas>
+
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '16px Arial';
+
+        /**
+         * Draws a resistor on a horizontal line.
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} x - The starting x-coordinate.
+         * @param {number} y - The y-coordinate of the line.
+         * @param {number} width - The total width of the resistor.
+         * @param {number} height - The height of the zigzag peaks.
+         */
+        function drawResistor(ctx, x, y, width, height) {
+            const zigzags = 6;
+            const pre_len = width * 0.15;
+            const zigzag_width = width * 0.7 / zigzags;
+            
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + pre_len, y);
+            let currentX = x + pre_len;
+            for (let i = 0; i < zigzags; i++) {
+                ctx.lineTo(currentX + zigzag_width / 2, y + (i % 2 === 0 ? -height / 2 : height / 2));
+                currentX += zigzag_width;
+                ctx.lineTo(currentX, y);
+            }
+            ctx.lineTo(x + width, y);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a DC voltage source on a vertical line.
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} x - The x-coordinate of the source.
+         * @param {number} y - The center y-coordinate of the source.
+         * @param {number} longPlateWidth - The width of the positive plate.
+         * @param {number} shortPlateWidth - The width of the negative plate.
+         * @param {number} gap - The gap between plates.
+         */
+        function drawVoltageSource(ctx, x, y, longPlateWidth, shortPlateWidth, gap) {
+            // Positive plate (long)
+            ctx.beginPath();
+            ctx.moveTo(x - longPlateWidth / 2, y - gap / 2);
+            ctx.lineTo(x + longPlateWidth / 2, y - gap / 2);
+            ctx.stroke();
+
+            // Negative plate (short)
+            ctx.beginPath();
+            ctx.lineWidth = 2.5;
+            ctx.moveTo(x - shortPlateWidth / 2, y + gap / 2);
+            ctx.lineTo(x + shortPlateWidth / 2, y + gap / 2);
+            ctx.stroke();
+            ctx.lineWidth = 1.5; // Reset line width
+        }
+
+        /**
+         * Draws a capacitor on a horizontal line.
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} x - The center x-coordinate of the capacitor.
+         * @param {number} y - The y-coordinate of the line.
+         * @param {number} plateHeight - The height of the capacitor plates.
+         * @param {number} gap - The gap between the plates.
+         */
+        function drawCapacitor(ctx, x, y, plateHeight, gap) {
+            ctx.beginPath();
+            ctx.moveTo(x - gap / 2, y - plateHeight / 2);
+            ctx.lineTo(x - gap / 2, y + plateHeight / 2);
+            ctx.moveTo(x + gap / 2, y - plateHeight / 2);
+            ctx.lineTo(x + gap / 2, y + plateHeight / 2);
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+        
+        // Define coordinates
+        const y_top = 50;
+        const y_bot = 170;
+        const x_left = 50;
+        const x_r1_start = 80;
+        const x_r1_end = 160;
+        const x_junc = 200;
+        const x_r2_start = 240;
+        const x_r2_end = 320;
+        const x_right = 380;
+        const cap_center_x = (x_junc + x_right) / 2;
+
+        // Draw wires
+        ctx.beginPath();
+        // Left wires
+        ctx.moveTo(x_left, y_top);
+        ctx.lineTo(x_left, y_bot);
+        ctx.moveTo(x_left, y_top);
+        ctx.lineTo(x_r1_start, y_top);
+        // Top wires
+        ctx.moveTo(x_r1_end, y_top);
+        ctx.lineTo(x_junc, y_top);
+        ctx.lineTo(x_r2_start, y_top);
+        ctx.moveTo(x_r2_end, y_top);
+        ctx.lineTo(x_right, y_top);
+        // Right wire
+        ctx.moveTo(x_right, y_top);
+        ctx.lineTo(x_right, y_bot);
+        // Bottom wires
+        ctx.moveTo(x_right, y_bot);
+        ctx.lineTo(cap_center_x + 10, y_bot);
+        ctx.moveTo(cap_center_x - 10, y_bot);
+        ctx.lineTo(x_left, y_bot);
+        ctx.stroke();
+
+        // Draw Components
+        // Voltage Source (9V)
+        drawVoltageSource(ctx, x_left, (y_top + y_bot) / 2, 25, 15, 8);
+        ctx.textAlign = 'center';
+        ctx.fillText('9 V', x_left - 30, (y_top + y_bot) / 2 + 5);
+
+        // Resistor 1 (3 kΩ)
+        drawResistor(ctx, x_r1_start, y_top, x_r1_end - x_r1_start, 12);
+        ctx.fillText('3 k\u03A9', (x_r1_start + x_r1_end) / 2, y_top - 15);
+
+        // Resistor 2 (1 kΩ)
+        drawResistor(ctx, x_r2_start, y_top, x_r2_end - x_r2_start, 12);
+        ctx.fillText('1 k\u03A9', (x_r2_start + x_r2_end) / 2, y_top - 15);
+
+        // Capacitor (10 µF)
+        drawCapacitor(ctx, cap_center_x, y_bot, 20, 8);
+        ctx.fillText('10 \u00B5F', cap_center_x, y_bot + 25);
+
+        // Switch (S)
+        const switch_top_y = y_top + 15;
+        const switch_bot_y = y_bot - 15;
+        ctx.beginPath();
+        ctx.moveTo(x_junc, y_top);
+        ctx.lineTo(x_junc, switch_top_y);
+        ctx.moveTo(x_junc, y_bot);
+        ctx.lineTo(x_junc, switch_bot_y);
+        ctx.moveTo(x_junc, switch_top_y);
+        ctx.lineTo(x_junc + 10, switch_bot_y - 20);
+        ctx.stroke();
+        // Switch terminals
+        ctx.beginPath();
+        ctx.arc(x_junc, switch_top_y, 2.5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x_junc, switch_bot_y, 2.5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.textAlign = 'left';
+        ctx.fillText('S', x_junc + 10, (y_top + y_bot) / 2);
+    </script>
+</body>
+</html>

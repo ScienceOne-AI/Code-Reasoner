@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical Path Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="opticalSystemCanvas" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('opticalSystemCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const config = {
+            yAxis: 220,
+            scale: 25, // pixels per cm
+            mainLineWidth: 2,
+            dimLineWidth: 1.5,
+            font: 'bold 22px serif',
+            subFont: 'bold 16px serif',
+            color: 'black'
+        };
+
+        // --- Object and Lens Positions ---
+        const objectPosCm = 10;
+        const lensSeparationCm = 5;
+
+        const lens1_x = 350;
+        const object_x = lens1_x - objectPosCm * config.scale;
+        const lens2_x = lens1_x + lensSeparationCm * config.scale;
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws an arrow from one point to another.
+         * @param {number} fromX - Start x-coordinate.
+         * @param {number} fromY - Start y-coordinate.
+         * @param {number} toX - End x-coordinate.
+         * @param {number} toY - End y-coordinate.
+         */
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headlen = 10; // length of head in pixels
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a converging (biconvex) lens.
+         * @param {number} x - Center x-coordinate.
+         * @param {number} y - Center y-coordinate (on principal axis).
+         * @param {number} h - Total height of the lens.
+         * @param {number} w - Max half-width (curvature).
+         */
+        function drawConvergingLens(x, y, h, w) {
+            const topY = y - h / 2;
+            const bottomY = y + h / 2;
+            ctx.beginPath();
+            ctx.moveTo(x, topY);
+            ctx.quadraticCurveTo(x + w, y, x, bottomY);
+            ctx.quadraticCurveTo(x - w, y, x, topY);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a diverging (biconcave) lens.
+         * @param {number} x - Center x-coordinate.
+         * @param {number} y - Center y-coordinate (on principal axis).
+         * @param {number} h - Total height of the lens.
+         * @param {number} w - Half-width at the edges.
+         * @param {number} c - Inward curvature control.
+         */
+        function drawDivergingLens(x, y, h, w, c) {
+            const topY = y - h / 2;
+            const bottomY = y + h / 2;
+            const halfW = w / 2;
+            ctx.beginPath();
+            ctx.moveTo(x - halfW, topY);
+            ctx.lineTo(x + halfW, topY);
+            ctx.quadraticCurveTo(x + halfW - c, y, x + halfW, bottomY);
+            ctx.lineTo(x - halfW, bottomY);
+            ctx.quadraticCurveTo(x - halfW + c, y, x - halfW, topY);
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a dimension line with labels.
+         * @param {number} x1 - Start x-coordinate.
+         * @param {number} x2 - End x-coordinate.
+         * @param {number} y_line - y-coordinate for the horizontal line.
+         * @param {string} label - The text label.
+         */
+        function drawDimensionLine(x1, x2, y_line, label) {
+            const arrowSize = 8;
+            ctx.save();
+            ctx.lineWidth = config.dimLineWidth;
+
+            // Vertical ticks from the principal axis
+            ctx.beginPath();
+            ctx.moveTo(x1, config.yAxis);
+            ctx.lineTo(x1, y_line);
+            ctx.moveTo(x2, config.yAxis);
+            ctx.lineTo(x2, y_line);
+            ctx.stroke();
+
+            // Horizontal line with inward-pointing arrows
+            ctx.beginPath();
+            ctx.moveTo(x1, y_line);
+            ctx.lineTo(x2, y_line);
+            // Left arrow
+            ctx.moveTo(x1 + arrowSize, y_line - arrowSize / 2);
+            ctx.lineTo(x1, y_line);
+            ctx.lineTo(x1 + arrowSize, y_line + arrowSize / 2);
+            // Right arrow
+            ctx.moveTo(x2 - arrowSize, y_line - arrowSize / 2);
+            ctx.lineTo(x2, y_line);
+            ctx.lineTo(x2 - arrowSize, y_line + arrowSize / 2);
+            ctx.stroke();
+            
+            // Text Label
+            ctx.font = config.font;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            const textWidth = ctx.measureText(label).width;
+            ctx.clearRect((x1 + x2) / 2 - textWidth / 2, y_line - 25, textWidth, 25);
+            ctx.fillText(label, (x1 + x2) / 2, y_line - 3);
+
+            ctx.restore();
+        }
+        
+        /**
+         * Draws text with a subscript.
+         * @param {string} base - The base text (e.g., "f").
+         * @param {string} sub - The subscript text (e.g., "1").
+         * @param {string} rest - The text after the subscript.
+         * @param {number} x - Center x-coordinate for the whole text block.
+         * @param {number} y - y-coordinate for the baseline of the main text.
+         */
+        function drawSubscriptedText(base, sub, rest, x, y) {
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Measure widths
+            ctx.font = config.font;
+            const baseWidth = ctx.measureText(base).width;
+            const restWidth = ctx.measureText(rest).width;
+            ctx.font = config.subFont;
+            const subWidth = ctx.measureText(sub).width;
+
+            const totalWidth = baseWidth + subWidth + restWidth;
+            let currentX = x - totalWidth / 2;
+
+            // Draw base text
+            ctx.font = config.font;
+            ctx.fillText(base, currentX + baseWidth / 2, y);
+            currentX += baseWidth;
+
+            // Draw subscript
+            ctx.font = config.subFont;
+            ctx.fillText(sub, currentX + subWidth / 2, y + 6);
+            currentX += subWidth;
+
+            // Draw rest of text
+            ctx.font = config.font;
+            ctx.fillText(rest, currentX + restWidth / 2, y);
+
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+        ctx.strokeStyle = config.color;
+        ctx.fillStyle = config.color;
+        ctx.lineWidth = config.mainLineWidth;
+
+        // 1. Draw Principal Axis
+        ctx.beginPath();
+        ctx.moveTo(20, config.yAxis);
+        ctx.lineTo(780, config.yAxis);
+        ctx.stroke();
+
+        // 2. Draw Object
+        const objectHeight = 60;
+        drawArrow(object_x, config.yAxis, object_x, config.yAxis - objectHeight);
+
+        // 3. Draw Lenses
+        const lensHeight = 140;
+        const lensTop = config.yAxis - lensHeight / 2;
+        const lensBottom = config.yAxis + lensHeight / 2;
+
+        // Converging Lens (Lens 1)
+        drawConvergingLens(lens1_x, config.yAxis, lensHeight, 35);
+        ctx.beginPath();
+        ctx.moveTo(lens1_x, lensTop - 10);
+        ctx.lineTo(lens1_x, lensBottom + 10);
+        ctx.stroke();
+
+        // Diverging Lens (Lens 2)
+        drawDivergingLens(lens2_x, config.yAxis, lensHeight, 15, 20);
+        ctx.beginPath();
+        ctx.moveTo(lens2_x, lensTop - 10);
+        ctx.lineTo(lens2_x, lensBottom + 10);
+        ctx.stroke();
+
+        // 4. Draw Dimension Lines
+        const dim_y = config.yAxis + 70;
+        drawDimensionLine(object_x, lens1_x, dim_y, "10 cm");
+        drawDimensionLine(lens1_x, lens2_x, dim_y, "5 cm");
+
+        // 5. Draw Labels
+        const label_y = lensTop - 25;
+        drawSubscriptedText("f", "1", "=10 cm", lens1_x, label_y);
+        drawSubscriptedText("f", "2", "=-15 cm", lens2_x, label_y);
+
+        // 6. Draw Figure Caption
+        ctx.font = "bold 24px serif";
+        ctx.textAlign = 'center';
+        ctx.fillText("Fig. 1.27", canvas.width / 2, canvas.height - 30);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Radioactive Decay Graph</title>
+</head>
+<body>
+
+<canvas id="decayGraphCanvas" width="520" height="550" style="border:1px solid #ccc;"></canvas>
+
+<script>
+    const canvas = document.getElementById('decayGraphCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const margin = { top: 40, right: 20, bottom: 60, left: 70 };
+    const plotWidth = canvas.width - margin.left - margin.right;
+    const plotHeight = canvas.height - margin.top - margin.bottom;
+
+    const tMin = 0, tMax = 40;
+    const yMin = 0, yMax = 10;
+
+    // --- Scaling Functions ---
+    function scaleX(t) {
+        return margin.left + ((t - tMin) / (tMax - tMin)) * plotWidth;
+    }
+
+    function scaleY(y) {
+        return margin.top + height - ((y - yMin) / (yMax - yMin)) * plotHeight;
+    }
+    // Using a more descriptive alias for plotHeight
+    const height = plotHeight; 
+
+    // --- Drawing ---
+
+    // 1. Clear canvas with a white background
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 2. Draw Grid
+    ctx.lineWidth = 0.5;
+    ctx.strokeStyle = '#d3d3d3'; // Light gray for minor grid
+
+    // Minor horizontal grid lines (every 0.2 units)
+    for (let i = 1; i < 50; i++) {
+        if (i % 10 !== 0) {
+            const y = yMin + i * 0.2;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, scaleY(y));
+            ctx.lineTo(margin.left + plotWidth, scaleY(y));
+            ctx.stroke();
+        }
+    }
+
+    // Minor vertical grid lines (every 1 min)
+    for (let i = 1; i < 40; i++) {
+        if (i % 10 !== 0) {
+            const t = tMin + i * 1;
+            ctx.beginPath();
+            ctx.moveTo(scaleX(t), margin.top);
+            ctx.lineTo(scaleX(t), margin.top + plotHeight);
+            ctx.stroke();
+        }
+    }
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#a9a9a9'; // Darker gray for major grid
+
+    // Major horizontal grid lines (every 2.0 units)
+    for (let i = 0; i <= 5; i++) {
+        const y = yMin + i * 2;
+        ctx.beginPath();
+        ctx.moveTo(margin.left, scaleY(y));
+        ctx.lineTo(margin.left + plotWidth, scaleY(y));
+        ctx.stroke();
+    }
+
+    // Major vertical grid lines (every 10 min)
+    for (let i = 0; i <= 4; i++) {
+        const t = tMin + i * 10;
+        ctx.beginPath();
+        ctx.moveTo(scaleX(t), margin.top);
+        ctx.lineTo(scaleX(t), margin.top + plotHeight);
+        ctx.stroke();
+    }
+
+    // 3. Draw Axes
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    
+    // Y-axis
+    ctx.beginPath();
+    ctx.moveTo(margin.left, margin.top);
+    ctx.lineTo(margin.left, margin.top + plotHeight);
+    ctx.stroke();
+
+    // X-axis
+    ctx.beginPath();
+    ctx.moveTo(margin.left, margin.top + plotHeight);
+    ctx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+    ctx.stroke();
+
+    // 4. Draw Ticks and Labels
+    ctx.fillStyle = 'black';
+    ctx.font = '14px Arial';
+    
+    // X-axis labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let i = 1; i <= 4; i++) {
+        const t = tMin + i * 10;
+        ctx.fillText(t, scaleX(t), margin.top + plotHeight + 6);
+    }
+
+    // Y-axis labels
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let i = 1; i <= 5; i++) {
+        const y = yMin + i * 2;
+        ctx.fillText(y.toFixed(1), margin.left - 8, scaleY(y));
+    }
+    
+    // Origin label '0'
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText('0', margin.left - 8, margin.top + plotHeight + 6);
+
+    // 5. Draw Axis Titles
+    // X-axis Title: t / min
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    const xTitleX = margin.left + plotWidth / 2;
+    const xTitleY = canvas.height - 25;
+    ctx.font = 'italic 16px Arial';
+    const tWidth = ctx.measureText('t').width;
+    ctx.font = '16px Arial';
+    const minWidth = ctx.measureText(' / min').width;
+    const totalXWidth = tWidth + minWidth;
+    ctx.font = 'italic 16px Arial';
+    ctx.fillText('t', xTitleX - totalXWidth / 2 + tWidth / 2, xTitleY);
+    ctx.font = '16px Arial';
+    ctx.fillText(' / min', xTitleX - totalXWidth / 2 + tWidth + minWidth / 2, xTitleY);
+    
+    // Y-axis Title: N / 10^7
+    ctx.save();
+    ctx.translate(margin.left - 50, margin.top + plotHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'italic 16px Arial';
+    const nWidth = ctx.measureText('N').width;
+    ctx.font = '16px Arial';
+    const restText = ' / 10';
+    const restWidth = ctx.measureText(restText).width;
+    ctx.font = '12px Arial';
+    const supText = '7';
+    const supWidth = ctx.measureText(supText).width;
+    const totalYWidth = nWidth + restWidth + supWidth;
+    const startX_Ylabel = -totalYWidth / 2;
+    // Draw 'N'
+    ctx.font = 'italic 16px Arial';
+    ctx.fillText('N', startX_Ylabel + nWidth / 2, 0);
+    // Draw ' / 10'
+    ctx.font = '16px Arial';
+    ctx.fillText(restText, startX_Ylabel + nWidth + restWidth / 2, 0);
+    // Draw superscript '7'
+    ctx.font = '12px Arial';
+    ctx.fillText(supText, startX_Ylabel + nWidth + restWidth, -7);
+    ctx.restore();
+
+    // 6. Draw the Decay Curve
+    ctx.beginPath();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2.5;
+    
+    const N0_scaled = 8.8;
+    const T_half = 14.0;
+    const lambda = Math.log(2) / T_half;
+    
+    let isFirstPoint = true;
+    for (let t = tMin; t <= tMax; t += 0.1) {
+        const y = N0_scaled * Math.exp(-lambda * t);
+        if (isFirstPoint) {
+            ctx.moveTo(scaleX(t), scaleY(y));
+            isFirstPoint = false;
+        } else {
+            ctx.lineTo(scaleX(t), scaleY(y));
+        }
+    }
+    ctx.stroke();
+
+    // 7. Draw Figure Caption
+    ctx.fillStyle = 'black';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Fig. 13.1', canvas.width / 2, canvas.height - 5);
+
+</script>
+
+</body>
+</html>

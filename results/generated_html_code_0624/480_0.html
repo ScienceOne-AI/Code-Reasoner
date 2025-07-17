@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ultrasound Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="ultrasoundCanvas" width="800" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('ultrasoundCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 10, lineWidth = 2) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+
+            ctx.save();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = lineWidth;
+
+            // Line
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+        
+        // Define colors
+        const fatColor = '#e6e6e6';
+        const muscleColor = '#cccccc';
+        const lineColor = 'black';
+        const textColor = 'black';
+
+        // Define dimensions and positions
+        const yTop = 100;
+        const blockHeight = 250;
+        const yBottom = yTop + blockHeight;
+
+        const fatX = 240;
+        const fatWidth = 90; // Relative width, not to scale
+        const muscleX = fatX + fatWidth;
+        const muscleWidth = 210; // Relative width, not to scale
+        const muscleEndX = muscleX + muscleWidth;
+
+        // 1. Draw Tissue Blocks
+        ctx.fillStyle = fatColor;
+        ctx.fillRect(fatX, yTop, fatWidth, blockHeight);
+
+        ctx.fillStyle = muscleColor;
+        ctx.fillRect(muscleX, yTop, muscleWidth, blockHeight);
+
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(fatX, yTop, fatWidth, blockHeight);
+        ctx.strokeRect(muscleX, yTop, muscleWidth, blockHeight);
+
+        // 2. Draw Ultrasound Beams
+        const arrowYPositions = [yTop + 60, yTop + 125, yTop + 190];
+        const arrowLength = 150;
+        const incomingArrowStartX = fatX - arrowLength - 20;
+        const incomingArrowEndX = fatX;
+        const transmittedArrowStartX = muscleEndX;
+        const transmittedArrowEndX = muscleEndX + arrowLength + 20;
+
+        arrowYPositions.forEach(y => {
+            drawArrow(ctx, incomingArrowStartX, y, incomingArrowEndX, y);
+            drawArrow(ctx, transmittedArrowStartX, y, transmittedArrowEndX, y);
+        });
+
+        // 3. Draw Labels
+        ctx.fillStyle = textColor;
+        ctx.font = '22px sans-serif';
+
+        // Left label
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('beam', incomingArrowStartX, arrowYPositions[0] - 25);
+        ctx.fillText('of ultrasound', incomingArrowStartX, arrowYPositions[0]);
+
+        // Top labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('fat', fatX + fatWidth / 2, yTop - 10);
+        ctx.fillText('muscle', muscleX + muscleWidth / 2, yTop - 10);
+        
+        // Right label
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('transmitted beam', transmittedArrowStartX + 20, arrowYPositions[0] - 25);
+        ctx.fillText('of ultrasound', transmittedArrowStartX + 20, arrowYPositions[0]);
+
+        // 4. Draw Dimension Lines
+        const dimY = yBottom + 40;
+        const extLineStartY = yBottom;
+        const extLineEndY = dimY + 8;
+        const tickHeight = 10;
+        
+        // Dashed extension lines
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = lineColor;
+        
+        ctx.beginPath();
+        ctx.moveTo(fatX, extLineStartY);
+        ctx.lineTo(fatX, extLineEndY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(muscleX, extLineStartY);
+        ctx.lineTo(muscleX, extLineEndY);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(muscleEndX, extLineStartY);
+        ctx.lineTo(muscleEndX, extLineEndY);
+        ctx.stroke();
+        
+        ctx.restore(); // Restore to solid lines
+
+        // Solid dimension lines with ticks
+        ctx.lineWidth = 1;
+        
+        // Fat dimension line
+        ctx.beginPath();
+        ctx.moveTo(fatX, dimY);
+        ctx.lineTo(muscleX, dimY);
+        ctx.moveTo(fatX, dimY - tickHeight / 2);
+        ctx.lineTo(fatX, dimY + tickHeight / 2);
+        ctx.moveTo(muscleX, dimY - tickHeight / 2);
+        ctx.lineTo(muscleX, dimY + tickHeight / 2);
+        ctx.stroke();
+        
+        // Muscle dimension line
+        ctx.beginPath();
+        ctx.moveTo(muscleX, dimY);
+        ctx.lineTo(muscleEndX, dimY);
+        ctx.moveTo(muscleX, dimY - tickHeight / 2);
+        ctx.lineTo(muscleX, dimY + tickHeight / 2);
+        ctx.moveTo(muscleEndX, dimY - tickHeight / 2);
+        ctx.lineTo(muscleEndX, dimY + tickHeight / 2);
+        ctx.stroke();
+        
+        // Dimension text
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('0.45 cm', fatX + fatWidth / 2, dimY + 8);
+        ctx.fillText('2.1 cm', muscleX + muscleWidth / 2, dimY + 8);
+
+        // 5. Figure Caption
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillText('Fig. 5.1', canvas.width / 2 - 40, canvas.height - 30);
+        ctx.font = '20px sans-serif';
+        ctx.fillText('(not to scale)', canvas.width / 2 + 50, canvas.height - 30);
+
+    </script>
+</body>
+</html>

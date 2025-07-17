@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram - Molecular Beam</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #999;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="650" height="450"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style Settings ---
+ctx.lineWidth = 2;
+ctx.font = '20px Times New Roman';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+
+// --- Drawing Parameters ---
+const ovenPos = { x: 50, y: 175 };
+const ovenSize = { w: 100, h: 100 };
+const nozzleSize = { w: 20, h: 20 };
+const aperturePos = { x: ovenPos.x + ovenSize.w + nozzleSize.w, y: ovenPos.y + ovenSize.h / 2 };
+const screenX = 550;
+const screenSize = { y1: 125, y2: 325 };
+const D_pixels = 80;
+const beamSpread = { y_top: aperturePos.y - D_pixels / 2, y_bottom: aperturePos.y + D_pixels / 2 };
+
+// --- Helper function to draw an arrow from (x1, y1) to (x2, y2) ---
+function drawArrow(ctx, x1, y1, x2, y2) {
+    const headlen = 10;
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+}
+
+// --- Start Drawing ---
+
+// 1. Draw Oven as a single continuous shape
+ctx.beginPath();
+ctx.moveTo(ovenPos.x, ovenPos.y);
+ctx.lineTo(ovenPos.x + ovenSize.w, ovenPos.y);
+ctx.lineTo(ovenPos.x + ovenSize.w, aperturePos.y - nozzleSize.h / 2);
+ctx.lineTo(aperturePos.x, aperturePos.y - nozzleSize.h / 2);
+ctx.lineTo(aperturePos.x, aperturePos.y + nozzleSize.h / 2);
+ctx.lineTo(ovenPos.x + ovenSize.w, aperturePos.y + nozzleSize.h / 2);
+ctx.lineTo(ovenPos.x + ovenSize.w, ovenPos.y + ovenSize.h);
+ctx.lineTo(ovenPos.x, ovenPos.y + ovenSize.h);
+ctx.closePath();
+ctx.stroke();
+ctx.fillText('oven', ovenPos.x + ovenSize.w / 2, aperturePos.y);
+
+// 2. Draw Beam (Dashed Lines)
+ctx.save();
+ctx.beginPath();
+ctx.setLineDash([10, 8]);
+ctx.moveTo(aperturePos.x, aperturePos.y);
+ctx.lineTo(screenX, beamSpread.y_top);
+ctx.moveTo(aperturePos.x, aperturePos.y);
+ctx.lineTo(screenX, beamSpread.y_bottom);
+ctx.stroke();
+ctx.restore();
+
+// 3. Draw Screen
+ctx.beginPath();
+ctx.moveTo(screenX, screenSize.y1);
+ctx.lineTo(screenX, screenSize.y2);
+ctx.stroke();
+
+// 4. Draw Dimension L
+const L_y = 370;
+ctx.beginPath();
+// Horizontal line for L
+ctx.moveTo(aperturePos.x, L_y);
+ctx.lineTo(screenX, L_y);
+// Ticks for L
+ctx.moveTo(aperturePos.x, L_y - 5);
+ctx.lineTo(aperturePos.x, L_y + 5);
+ctx.moveTo(screenX, L_y - 5);
+ctx.lineTo(screenX, L_y + 5);
+ctx.stroke();
+// Label L
+ctx.fillText('L', (aperturePos.x + screenX) / 2, L_y + 20);
+
+// 5. Draw Dimension D
+const D_x = screenX + 30;
+ctx.beginPath();
+drawArrow(ctx, D_x, beamSpread.y_bottom, D_x, beamSpread.y_top);
+drawArrow(ctx, D_x, beamSpread.y_top, D_x, beamSpread.y_bottom);
+ctx.stroke();
+// Label D
+ctx.fillText('D', D_x + 20, aperturePos.y);
+
+// 6. Draw Angle θ
+const angleRadius = 60;
+const startAngle = Math.atan2(beamSpread.y_bottom - aperturePos.y, screenX - aperturePos.x);
+const endAngle = Math.atan2(beamSpread.y_top - aperturePos.y, screenX - aperturePos.x);
+ctx.beginPath();
+ctx.arc(aperturePos.x, aperturePos.y, angleRadius, startAngle, endAngle);
+ctx.stroke();
+// Label θ
+ctx.fillText('\u03B8', aperturePos.x + angleRadius + 20, aperturePos.y);
+
+// 7. Draw Figure Label
+ctx.fillText('Fig. 2.33.', canvas.width / 2, canvas.height - 25);
+
+</script>
+</body>
+</html>

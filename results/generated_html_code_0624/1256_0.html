@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ratchet and Pawl System</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="550" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Helper Functions ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '18px Arial';
+        ctx.fillStyle = 'black';
+
+        function drawArrow(x1, y1, x2, y2, size = 8) {
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 6), y2 - size * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 6), y2 - size * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        function drawDimensionLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            const arrowSize = 6;
+            const angle1 = Math.atan2(y1 - y2, x1 - x2);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + arrowSize * Math.cos(angle1 - Math.PI / 6), y1 + arrowSize * Math.sin(angle1 - Math.PI / 6));
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + arrowSize * Math.cos(angle1 + Math.PI / 6), y1 + arrowSize * Math.sin(angle1 + Math.PI / 6));
+            
+            const angle2 = Math.atan2(y2 - y1, x2 - x1);
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 + arrowSize * Math.cos(angle2 - Math.PI / 6), y2 + arrowSize * Math.sin(angle2 - Math.PI / 6));
+             ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 + arrowSize * Math.cos(angle2 + Math.PI / 6), y2 + arrowSize * Math.sin(angle2 + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function drawDashLine(x1, y1, x2, y2, dashLen = 5) {
+            ctx.beginPath();
+            ctx.setLineDash([dashLen, dashLen]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawDashDotLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.setLineDash([15, 4, 4, 4]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // --- Parameters and Coordinates ---
+        const scale = 0.85;
+        const d1_val = 420;
+        const d2_val = 240;
+        const a_val = 120;
+        const h_val = 50;
+        
+        const r1 = d1_val / 2 * scale;
+        const d2 = d2_val * scale;
+        const a = a_val * scale;
+        const h = h_val * scale;
+
+        const O = { x: 320, y: 280 };
+        const B = { x: O.x - a, y: O.y - h };
+        const A = { x: O.x + r1, y: O.y }; // Contact point on horizontal centerline
+        const pivotRadius = 8;
+        
+        // --- Drawing ---
+        
+        // 1. Fixed Wall
+        const wallWidth = 60;
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, wallWidth, canvas.height);
+        ctx.strokeRect(0, 0, wallWidth, canvas.height);
+        ctx.beginPath();
+        for (let i = -canvas.height; i < canvas.height; i += 10) {
+            ctx.moveTo(0, i);
+            ctx.lineTo(wallWidth, i + wallWidth);
+        }
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.lineWidth = 2;
+        ctx.fillStyle = 'black';
+        
+        // 2. Bracket
+        ctx.beginPath();
+        ctx.moveTo(wallWidth, B.y - 80);
+        ctx.lineTo(B.x, B.y - 40);
+        ctx.arc(B.x, B.y, 28, -Math.PI/1.5, Math.PI/1.5);
+        ctx.lineTo(wallWidth, B.y + 80);
+        ctx.closePath();
+        ctx.stroke();
+        // Lower part of bracket
+        ctx.beginPath();
+        ctx.moveTo(B.x - 20, B.y + 18);
+        ctx.quadraticCurveTo(O.x - 80, O.y + 30, O.x - 50, O.y + 90);
+        ctx.lineTo(wallWidth, O.y + 100);
+        ctx.stroke();
+        // Cutout
+        ctx.beginPath();
+        ctx.moveTo(B.x - 10, B.y + 30);
+        ctx.quadraticCurveTo(O.x - 80, O.y, O.x - 50, O.y - 40);
+        ctx.stroke();
+
+
+        // 3. Ratchet Wheel and Drum
+        // Center crosshair for O
+        ctx.beginPath();
+        ctx.moveTo(O.x - pivotRadius, O.y);
+        ctx.lineTo(O.x + pivotRadius, O.y);
+        ctx.moveTo(O.x, O.y - pivotRadius);
+        ctx.lineTo(O.x, O.y + pivotRadius);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(O.x, O.y, pivotRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Drum
+        ctx.beginPath();
+        ctx.arc(O.x, O.y, 80 * scale, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(O.x, O.y, 50 * scale, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Ratchet Teeth
+        const numTeeth = 42;
+        const toothDepth = 25 * scale;
+        const r_root = r1 - toothDepth;
+        ctx.beginPath();
+        for (let i = 0; i <= numTeeth; i++) {
+            const angle1 = (i - 0.7) * 2 * Math.PI / numTeeth; // Root point
+            const angle2 = i * 2 * Math.PI / numTeeth;       // Tip point
+
+            const x_root = O.x + r_root * Math.cos(angle1);
+            const y_root = O.y + r_root * Math.sin(angle1);
+            
+            const x_tip = O.x + r1 * Math.cos(angle2);
+            const y_tip = O.y + r1 * Math.sin(angle2);
+            
+            if (i === 0) {
+                 ctx.moveTo(x_tip, y_tip);
+            } else {
+                 ctx.lineTo(x_root, y_root);
+                 ctx.lineTo(x_tip, y_tip);
+            }
+        }
+        ctx.stroke();
+
+        // 4. Pawl
+        ctx.beginPath();
+        ctx.arc(B.x, B.y, pivotRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Crosshair for B
+        ctx.beginPath();
+        ctx.moveTo(B.x - pivotRadius, B.y);
+        ctx.lineTo(B.x + pivotRadius, B.y);
+        ctx.moveTo(B.x, B.y - pivotRadius);
+        ctx.lineTo(B.x, B.y + pivotRadius);
+        ctx.stroke();
+        
+        // Pawl Body
+        ctx.save();
+        ctx.lineWidth = 10;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(B.x, B.y);
+        // Tip of pawl engaging tooth A
+        const pawlTip = {x: A.x-2, y: A.y+3};
+        ctx.lineTo(pawlTip.x, pawlTip.y);
+        ctx.stroke();
+        ctx.restore();
+        
+        // 5. Rope and Weight Q
+        const ropeX = O.x - d2;
+        const drumRadiusVisual = 100 * scale; // The rope appears to come from this radius
+        const ropeStartY = O.y + Math.sqrt(Math.max(0, drumRadiusVisual*drumRadiusVisual - (ropeX - O.x)*(ropeX - O.x)));
+        
+        ctx.beginPath();
+        ctx.moveTo(ropeX, ropeStartY);
+        ctx.lineTo(ropeX, O.y + 190);
+        ctx.stroke();
+
+        const weightSize = 40;
+        ctx.strokeRect(ropeX - weightSize / 2, O.y + 190, weightSize, weightSize);
+        ctx.fillText('Q', ropeX - 8, O.y + 218);
+
+        // 6. Centerlines
+        ctx.lineWidth = 1;
+        drawDashDotLine(O.x - r1 - 40, O.y, O.x + r1 + 40, O.y);
+        drawDashDotLine(O.x, O.y - r1 - 20, O.x, O.y + r1 + 20);
+
+        // 7. Dimensions and Labels
+        ctx.lineWidth = 1;
+
+        // Dimension 'a'
+        drawDashLine(B.x, B.y, B.x, B.y - 30);
+        drawDashLine(O.x, O.y, O.x, B.y - 30);
+        drawDimensionLine(B.x, B.y - 20, O.x, B.y - 20);
+        ctx.fillText('a', (B.x + O.x) / 2 - 5, B.y - 25);
+        
+        // Dimension 'h'
+        drawDashLine(B.x, B.y, A.x + 20, B.y);
+        drawDashLine(A.x, A.y, A.x + 20, A.y);
+        drawDimensionLine(A.x + 10, B.y, A.x + 10, A.y);
+        ctx.fillText('h', A.x + 15, (A.y + B.y) / 2 + 5);
+        
+        // Dimension 'd1'
+        drawDashLine(O.x, O.y - r1, O.x + r1 + 50, O.y - r1);
+        drawDashLine(O.x, O.y + r1, O.x + r1 + 50, O.y + r1);
+        drawDimensionLine(O.x + r1 + 40, O.y - r1, O.x + r1 + 40, O.y + r1);
+        ctx.fillText('d', O.x + r1 + 45, O.y - 5);
+        ctx.font = '14px Arial';
+        ctx.fillText('1', O.x + r1 + 53, O.y);
+        ctx.font = '18px Arial';
+        
+        // Dimension 'd2'
+        const d2_y = O.y + r1 + 50;
+        drawDashLine(O.x, O.y, O.x, d2_y + 10);
+        drawDashLine(ropeX, ropeStartY, ropeX, d2_y + 10);
+        drawDimensionLine(O.x, d2_y, ropeX, d2_y);
+        ctx.fillText('d', (O.x + ropeX) / 2 - 5, d2_y - 5);
+        ctx.font = '14px Arial';
+        ctx.fillText('2', (O.x + ropeX) / 2 + 3, d2_y - 5);
+        ctx.font = '18px Arial';
+
+
+        // Labels
+        ctx.fillText('B', B.x - 25, B.y + 5);
+        ctx.fillText('O', O.x - 20, O.y + 5);
+        ctx.fillText('A', A.x - 25, A.y - 10);
+
+
+    </script>
+</body>
+</html>

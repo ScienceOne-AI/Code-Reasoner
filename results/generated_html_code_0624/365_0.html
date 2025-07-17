@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fig 2.13 - Single-particle energies near 208Pb</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="650"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Canvas setup
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'black';
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.2;
+    ctx.font = "16px 'Times New Roman'";
+
+    // --- Layout and Coordinate System ---
+    const topMargin = 50;
+    const bottomMargin = 100;
+    const leftMargin = 100;
+    const rightMargin = 100;
+
+    const plotHeight = canvas.height - topMargin - bottomMargin;
+    const plotWidth = canvas.width - leftMargin - rightMargin;
+
+    // Energy range on the plot (Binding Energy in MeV)
+    const E_min_axis = 1;
+    const E_max_axis = 12;
+
+    function y(E) {
+        return topMargin + (E - E_min_axis) / (E_max_axis - E_min_axis) * plotHeight;
+    }
+
+    // X coordinates for the columns
+    const x_n_calc = leftMargin + 100;
+    const x_n_obs = leftMargin + 200;
+    const x_p_calc = leftMargin + plotWidth - 200;
+    const x_p_obs = leftMargin + plotWidth - 100;
+    const center_x = leftMargin + plotWidth / 2;
+
+    // --- Helper Functions ---
+    function drawStateLabel(ctx, label, x, y) {
+        const parts = label.split('_');
+        const base = parts[0];
+        const sub = parts[1];
+        
+        ctx.font = "16px 'Times New Roman'";
+        ctx.textBaseline = 'middle';
+        
+        const baseWidth = ctx.measureText(base).width;
+        if (ctx.textAlign === 'right') {
+            ctx.fillText(base, x - 5, y);
+            ctx.font = "12px 'Times New Roman'";
+            ctx.fillText(sub, x - 5 + baseWidth, y + 4);
+        } else { // textAlign is left
+            ctx.fillText(base, x + 5, y);
+            ctx.font = "12px 'Times New Roman'";
+            ctx.fillText(sub, x + 5 + baseWidth, y + 4);
+        }
+    }
+
+    function drawEnergyLevel(ctx, E_calc, E_obs, x_calc, x_obs) {
+        const level_width = 40;
+        const join_dist = 10;
+        const y_calc_pos = y(E_calc);
+        const y_obs_pos = y(E_obs);
+
+        const x_calc_start = x_calc - level_width / 2;
+        const x_calc_end = x_calc + level_width / 2;
+        const x_obs_start = x_obs - level_width / 2;
+        const x_obs_end = x_obs + level_width / 2;
+
+        ctx.beginPath();
+        // calc level
+        ctx.moveTo(x_calc_start, y_calc_pos);
+        ctx.lineTo(x_calc_end, y_calc_pos);
+        // obs level
+        ctx.moveTo(x_obs_start, y_obs_pos);
+        ctx.lineTo(x_obs_end, y_obs_pos);
+        // connecting line
+        ctx.moveTo(x_calc_end, y_calc_pos);
+        ctx.lineTo(x_calc_end + join_dist, y_calc_pos);
+        ctx.lineTo(x_obs_start - join_dist, y_obs_pos);
+        ctx.lineTo(x_obs_start, y_obs_pos);
+        ctx.stroke();
+    }
+    
+    // --- Data (estimated from image) ---
+    const neutron_states = [
+        // Unoccupied
+        { label: 'd_3/2', calc: 1.6, obs: 1.4 },
+        { label: 'g_7/2', calc: 1.7, obs: 0.9 },
+        { label: 's_1/2', calc: 1.9, obs: 1.9 },
+        { label: 'j_15/2', calc: 2.3, obs: 1.4 },
+        { label: 'd_5/2', calc: 2.4, obs: 2.5 },
+        { label: 'i_11/2', calc: 3.2, obs: 2.5 },
+        { label: 'g_9/2', calc: 3.9, obs: 3.4 },
+        // Occupied
+        { label: 'p_1/2', calc: 7.2, obs: 7.4 },
+        { label: 'f_5/2', calc: 7.8, obs: 8.0 },
+        { label: 'p_3/2', calc: 8.1, obs: 8.3 },
+        { label: 'i_13/2', calc: 8.8, obs: 9.0 },
+        { label: 'f_7/2', calc: 10.0, obs: 9.7 },
+        { label: 'h_9/2', calc: 10.8, obs: 10.8 },
+    ];
+
+    const proton_states = [
+        // Unoccupied
+        { label: 'i_13/2', calc: 2.0, obs: 1.6 },
+        { label: 'f_7/2', calc: 2.8, obs: 2.9 },
+        { label: 'h_9/2', calc: 3.8, obs: 3.5 },
+        // Occupied
+        { label: 's_1/2', calc: 7.9, obs: 8.0 },
+        { label: 'd_3/2', calc: 8.2, obs: 8.4 },
+        { label: 'h_11/2', calc: 9.2, obs: 9.3 },
+        { label: 'd_5/2', calc: 9.8, obs: 9.7 },
+        { label: 'g_7/2', calc: 11.2, obs: 11.5 },
+    ];
+
+
+    // --- Drawing ---
+
+    // 1. Y-Axis
+    ctx.beginPath();
+    ctx.moveTo(leftMargin, topMargin);
+    ctx.lineTo(leftMargin, topMargin + plotHeight);
+    ctx.stroke();
+
+    ctx.font = "14px 'Times New Roman'";
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let E = 2; E <= 10; E += 2) {
+        const y_pos = y(E);
+        ctx.beginPath();
+        ctx.moveTo(leftMargin, y_pos);
+        ctx.lineTo(leftMargin - 10, y_pos);
+        ctx.stroke();
+        ctx.fillText(E, leftMargin - 15, y_pos);
+    }
+
+    // Y-Axis Label
+    ctx.save();
+    ctx.translate(leftMargin - 60, topMargin + plotHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.font = "16px 'Times New Roman'";
+    ctx.fillText("Binding Energy (MeV)", 0, 0);
+    ctx.restore();
+    
+    // 2. Fermi Level
+    const fermi_E = 5.8;
+    const y_fermi = y(fermi_E);
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.moveTo(x_n_calc - 60, y_fermi);
+    ctx.lineTo(x_p_obs + 60, y_fermi);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 208Pb Label
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.font = "12px 'Times New Roman'";
+    ctx.fillText("208", x_p_obs + 70, y_fermi - 5);
+    ctx.font = "16px 'Times New Roman'";
+    ctx.fillText("Pb", x_p_obs + 88, y_fermi);
+
+    // 3. Center Labels (Unoccupied/Occupied)
+    ctx.save();
+    ctx.translate(center_x, topMargin + plotHeight * 0.25);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.font = "16px 'Times New Roman'";
+    ctx.fillText("Unoccupied", 0, 0);
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(center_x, topMargin + plotHeight * 0.75);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.font = "16px 'Times New Roman'";
+    ctx.fillText("Occupied", 0, 0);
+    ctx.restore();
+
+    // 4. Draw Neutron States
+    neutron_states.forEach(state => {
+        drawEnergyLevel(ctx, state.calc, state.obs, x_n_calc, x_n_obs);
+    });
+
+    // Draw Neutron Labels
+    ctx.textAlign = 'right';
+    const neutron_label_x = x_n_calc - 50;
+    // Unoccupied group (stacked labels for readability, as in original)
+    const y_group1_start = y(1.6);
+    drawStateLabel(ctx, 'd_3/2', neutron_label_x, y_group1_start);
+    drawStateLabel(ctx, 'g_7/2', neutron_label_x, y_group1_start + 15);
+    drawStateLabel(ctx, 's_1/2', neutron_label_x, y_group1_start + 30);
+    drawStateLabel(ctx, 'j_15/2', neutron_label_x, y_group1_start + 45);
+    drawStateLabel(ctx, 'd_5/2', neutron_label_x, y_group1_start + 60);
+    
+    // Other neutron labels aligned with their 'calc' level
+    drawStateLabel(ctx, 'i_11/2', neutron_label_x, y(3.2));
+    drawStateLabel(ctx, 'g_9/2', neutron_label_x, y(3.9));
+    drawStateLabel(ctx, 'p_1/2', neutron_label_x, y(7.2));
+    drawStateLabel(ctx, 'f_5/2', neutron_label_x, y(7.8));
+    drawStateLabel(ctx, 'p_3/2', neutron_label_x, y(8.1));
+    drawStateLabel(ctx, 'i_13/2', neutron_label_x, y(8.8));
+    drawStateLabel(ctx, 'f_7/2', neutron_label_x, y(10.0));
+    drawStateLabel(ctx, 'h_9/2', neutron_label_x, y(10.8));
+
+    // 5. Draw Proton States
+    ctx.textAlign = 'left';
+    const proton_label_x = x_p_obs + 25;
+    proton_states.forEach(state => {
+        drawEnergyLevel(ctx, state.calc, state.obs, x_p_calc, x_p_obs);
+        if(state.label === 'g_7/2') {
+            // Special position for this label
+            drawStateLabel(ctx, state.label, x_p_calc - 30, y(state.obs) + 20);
+        } else {
+            drawStateLabel(ctx, state.label, proton_label_x, y(state.calc));
+        }
+    });
+
+    // 6. Bottom Labels
+    ctx.textAlign = 'center';
+    ctx.font = "14px 'Times New Roman'";
+    const bottom_y1 = canvas.height - bottomMargin + 30;
+    const bottom_y2 = bottom_y1 + 20;
+
+    ctx.fillText("calc.", x_n_calc, bottom_y1);
+    ctx.fillText("obs.", x_n_obs, bottom_y1);
+    ctx.fillText("NEUTRON STATE", (x_n_calc + x_n_obs) / 2, bottom_y2);
+
+    ctx.fillText("calc.", x_p_calc, bottom_y1);
+    ctx.fillText("obs.", x_p_obs, bottom_y1);
+    ctx.fillText("PROTON STATE", (x_p_calc + x_p_obs) / 2, bottom_y2);
+
+    // 7. Figure Caption
+    ctx.fillText("Fig. 2.13", center_x, canvas.height - 20);
+
+</script>
+</body>
+</html>

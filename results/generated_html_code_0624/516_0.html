@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Binary Star System Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="650" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const s1_x = 150;
+    const s1_y = 200;
+    const s1_r = 60;
+
+    const s2_x = 520;
+    const s2_y = 200;
+    const s2_r = 25;
+
+    // Based on the image, P is closer to S1.
+    // Let's place P such that the ratio of distances is visually similar to the diagram.
+    const x_dist = 123;
+    const p_x = s1_x + x_dist;
+    const p_y = 200;
+
+    // --- Drawing Functions ---
+
+    // Helper to draw an arrowhead for dimension lines
+    function drawDimArrow(ctx, x1, y1, x2, y2) {
+        const headLength = 10; // length of head in pixels
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const angle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 8), y2 - headLength * Math.sin(angle - Math.PI / 8));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 8), y2 - headLength * Math.sin(angle + Math.PI / 8));
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // --- Main Drawing ---
+
+    // Clear canvas
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Global style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    
+    // 1. Draw Stars and Point P
+    ctx.lineWidth = 2;
+    // Star S1
+    ctx.beginPath();
+    ctx.arc(s1_x, s1_y, s1_r, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // Star S2
+    ctx.beginPath();
+    ctx.arc(s2_x, s2_y, s2_r, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // Point P
+    ctx.beginPath();
+    ctx.arc(p_x, p_y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 2. Draw Dashed Lines
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.5;
+
+    // Horizontal axis
+    ctx.beginPath();
+    ctx.moveTo(s1_x - s1_r, s1_y);
+    ctx.lineTo(s2_x + s2_r + 20, s2_y);
+    ctx.stroke();
+
+    // Vertical line through S1
+    ctx.beginPath();
+    ctx.moveTo(s1_x, 50);
+    ctx.lineTo(s1_x, 310);
+    ctx.stroke();
+
+    // Vertical line through P
+    ctx.beginPath();
+    ctx.moveTo(p_x, 140);
+    ctx.lineTo(p_x, 310);
+    ctx.stroke();
+
+    // Vertical line through S2
+    ctx.beginPath();
+    ctx.moveTo(s2_x, 50);
+    ctx.lineTo(s2_x, 240);
+    ctx.stroke();
+    ctx.restore();
+
+    // 3. Draw Dimension Lines
+    ctx.lineWidth = 1.5;
+
+    // Dimension 'd'
+    const d_y = 70;
+    ctx.beginPath();
+    ctx.moveTo(s1_x, d_y);
+    ctx.lineTo(s2_x, d_y);
+    ctx.stroke();
+    drawDimArrow(ctx, s2_x, d_y, s1_x, d_y);
+    drawDimArrow(ctx, s1_x, d_y, s2_x, d_y);
+
+    // Dimension 'x'
+    const x_y = 290;
+    ctx.beginPath();
+    ctx.moveTo(s1_x, x_y);
+    ctx.lineTo(p_x, x_y);
+    ctx.stroke();
+    drawDimArrow(ctx, p_x, x_y, s1_x, x_y);
+    drawDimArrow(ctx, s1_x, x_y, p_x, x_y);
+    
+    // 4. Draw Rotation Arrows
+    ctx.lineWidth = 2;
+    const rot_radius = 50;
+    
+    // Top arc (CCW)
+    let startAngleTop = 1.75 * Math.PI;
+    let endAngleTop = 1.25 * Math.PI;
+    ctx.beginPath();
+    ctx.arc(p_x, p_y, rot_radius, startAngleTop, endAngleTop, true);
+    ctx.stroke();
+    let endX_top = p_x + rot_radius * Math.cos(endAngleTop);
+    let endY_top = p_y + rot_radius * Math.sin(endAngleTop);
+    drawDimArrow(ctx, endX_top + 1, endY_top, endX_top, endY_top);
+
+    // Bottom arc (CCW)
+    let startAngleBot = 0.75 * Math.PI;
+    let endAngleBot = 0.25 * Math.PI;
+    ctx.beginPath();
+    ctx.arc(p_x, p_y, rot_radius, startAngleBot, endAngleBot, true);
+    ctx.stroke();
+    let endX_bot = p_x + rot_radius * Math.cos(endAngleBot);
+    let endY_bot = p_y + rot_radius * Math.sin(endAngleBot);
+    drawDimArrow(ctx, endX_bot - 1, endY_bot, endX_bot, endY_bot);
+
+    // 5. Draw Labels
+    ctx.font = '24px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // S1 label
+    ctx.fillText('S', s1_x - s1_r - 25, s1_y);
+    ctx.font = '16px Arial';
+    ctx.fillText('1', s1_x - s1_r - 15, s1_y + 8);
+    
+    // S2 label
+    ctx.font = '24px Arial';
+    ctx.fillText('S', s2_x + s2_r + 20, s2_y);
+    ctx.font = '16px Arial';
+    ctx.fillText('2', s2_x + s2_r + 30, s2_y + 8);
+    
+    // P label
+    ctx.font = '24px Arial';
+    ctx.fillText('P', p_x, p_y - 20);
+
+    // d label
+    ctx.fillText('d', (s1_x + s2_x) / 2, d_y - 20);
+    
+    // x label
+    ctx.fillText('x', (s1_x + p_x) / 2, x_y + 20);
+
+    // 6. Draw Caption
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText('Fig. 1.2', canvas.width / 2 - 25, 380);
+    ctx.font = '20px Arial';
+    ctx.fillText('(not to scale)', canvas.width / 2 + 70, 380);
+
+</script>
+</body>
+</html>

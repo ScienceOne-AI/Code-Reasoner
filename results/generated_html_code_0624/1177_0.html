@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Diffraction through a Circular Aperture</title>
+</head>
+<body>
+<canvas id="diffraction_canvas" width="600" height="350"></canvas>
+<script>
+    const canvas = document.getElementById('diffraction_canvas');
+    const ctx = canvas.getContext('2d');
+
+    /**
+     * Draws a line with an arrowhead at the end.
+     * @param {CanvasRenderingContext2D} ctx The canvas context.
+     * @param {number} fromx The starting x-coordinate.
+     * @param {number} fromy The starting y-coordinate.
+     * @param {number} tox The ending x-coordinate.
+     * @param {number} toy The ending y-coordinate.
+     */
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 10;
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // --- Parameters for Drawing ---
+    const y_center = 175;
+    const x_start = 50;
+    const x_aperture = 200;
+    const x_end = 550;
+    const aperture_half_width = 80;
+    const y_top = y_center - aperture_half_width;
+    const y_bot = y_center + aperture_half_width;
+    
+    // Angle for visualization, not calculated value
+    const angle_deg = 10;
+    const angle_rad = angle_deg * Math.PI / 180;
+
+    // --- General Style Settings ---
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // --- Drawing Elements on Canvas ---
+
+    // 1. Incoming Rays
+    drawArrow(ctx, x_start, y_top, x_aperture, y_top);
+    drawArrow(ctx, x_start, y_bot, x_aperture, y_bot);
+
+    // 2. Aperture Screen
+    ctx.beginPath();
+    ctx.lineWidth = 4; // Make the screen thicker
+    ctx.moveTo(x_aperture, y_top - 60);
+    ctx.lineTo(x_aperture, y_top);
+    ctx.moveTo(x_aperture, y_bot);
+    ctx.lineTo(x_aperture, y_bot + 60);
+    ctx.stroke();
+    ctx.lineWidth = 2; // Reset line width for other elements
+
+    // 3. Label 'D' for Diameter
+    ctx.font = "italic bold 24px 'Times New Roman'";
+    ctx.fillText("D", x_aperture - 35, y_top + 30);
+
+    // 4. Outgoing Rays
+    const dx = x_end - x_aperture;
+    const dy = dx * Math.tan(angle_rad);
+
+    // Top set of rays (straight and diverging)
+    drawArrow(ctx, x_aperture, y_top, x_end, y_top); // Straight ray
+    drawArrow(ctx, x_aperture, y_top, x_end, y_top - dy); // Diverging ray (upwards, so y decreases)
+    
+    // Bottom set of rays (straight and diverging)
+    drawArrow(ctx, x_aperture, y_bot, x_end, y_bot); // Straight ray
+    drawArrow(ctx, x_aperture, y_bot, x_end, y_bot + dy); // Diverging ray (downwards, so y increases)
+    
+    // 5. Angle Arcs and Labels (α)
+    ctx.font = "italic 24px 'Times New Roman'";
+    const arc_radius = 45;
+    const arc_center_x = x_end - 150;
+
+    // Top Angle Arc
+    const arc_cy_top = y_top;
+    ctx.beginPath();
+    // Angle sweeps from the horizontal ray (angle 0) to the diverging ray (angle -angle_rad).
+    // In canvas, this is a counter-clockwise sweep.
+    ctx.arc(arc_center_x, arc_cy_top, arc_radius, 0, -angle_rad, true);
+    ctx.stroke();
+    const top_label_angle = -angle_rad / 2;
+    ctx.fillText("α", arc_center_x + (arc_radius + 18) * Math.cos(top_label_angle), arc_center_x + (arc_radius + 18) * Math.sin(top_label_angle));
+
+    // Bottom Angle Arc
+    const arc_cy_bot = y_bot;
+    ctx.beginPath();
+    // Angle sweeps from the horizontal ray (angle 0) to the diverging ray (angle +angle_rad).
+    // In canvas, this is a clockwise sweep.
+    ctx.arc(arc_center_x, arc_cy_bot, arc_radius, 0, angle_rad, false);
+    ctx.stroke();
+    const bot_label_angle = angle_rad / 2;
+    ctx.fillText("α", arc_center_x + (arc_radius + 18) * Math.cos(bot_label_angle), arc_cy_bot + (arc_radius + 18) * Math.sin(bot_label_angle));
+</script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electromagnetic Field Diagram</title>
+<style>
+  body { background-color: #f0f0f0; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+  canvas { background-color: white; border: 1px solid #ccc; }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="600"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Parameters ---
+  const cx = 280; // Center X of the large circle
+  const cy = 300; // Center Y of the large circle
+  const R = 200;  // Radius of the large circle
+  const r = R / 2; // Radius of the small circle
+
+  const o_prime_x = cx + r;
+  const o_prime_y = cy;
+  
+  const N_x = cx + R;
+  const N_y = cy;
+
+  const theta_deg = 30;
+  const theta_rad = theta_deg * Math.PI / 180;
+
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.font = "italic 22px Times New Roman";
+
+  // --- Helper function for arrows ---
+  function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.stroke(); // Draw the line part
+    // Draw the filled arrowhead
+    ctx.beginPath();
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+  }
+  
+  // --- Helper function for dots ---
+  function drawDot(x, y) {
+      ctx.beginPath();
+      ctx.arc(x, y, 2.5, 0, 2 * Math.PI);
+      ctx.fill();
+  }
+
+  // --- Draw Magnetic Field Dots (approximating image) ---
+  // These coordinates are placed manually to match the visual layout of the original image.
+  drawDot(cx - 160, cy);
+  drawDot(cx - 120, cy - 120);
+  drawDot(cx, cy - 160);
+  drawDot(cx + 120, cy - 110);
+  drawDot(cx + 170, cy + 20); 
+  drawDot(cx + 110, cy + 130);
+  drawDot(cx, cy + 170);
+  drawDot(cx - 140, cy + 90);
+  drawDot(cx - 80, cy + 20);
+  drawDot(cx, cy - 50);
+  drawDot(o_prime_x - 30, cy + 80);
+  drawDot(o_prime_x + 40, cy - 70);
+  drawDot(o_prime_x + 60, cy + 50);
+  
+  // --- Draw Large Circle ---
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  // --- Draw Small Circle ---
+  ctx.beginPath();
+  ctx.arc(o_prime_x, o_prime_y, r, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  // --- Draw Dashed Line O-O'-N ---
+  ctx.save();
+  ctx.beginPath();
+  ctx.setLineDash([5, 5]);
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(N_x, N_y);
+  ctx.stroke();
+  ctx.restore();
+
+  // --- Draw Radius R line and arrow ---
+  const R_angle = 1.35 * Math.PI; // Angle for the line (down and to the left)
+  const R_end_x = cx + R * Math.cos(R_angle);
+  const R_end_y = cy + R * Math.sin(R_angle);
+  // Draw the line segment
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(R_end_x, R_end_y);
+  ctx.stroke();
+  // Draw the arrowhead pointing inwards
+  const arrow_head_len = 12;
+  const arrow_angle = Math.atan2(cy - R_end_y, cx - R_end_x);
+  ctx.beginPath();
+  ctx.moveTo(R_end_x, R_end_y);
+  ctx.lineTo(R_end_x + arrow_head_len * Math.cos(arrow_angle - Math.PI / 6), R_end_y + arrow_head_len * Math.sin(arrow_angle - Math.PI / 6));
+  ctx.moveTo(R_end_x, R_end_y);
+  ctx.lineTo(R_end_x + arrow_head_len * Math.cos(arrow_angle + Math.PI / 6), R_end_y + arrow_head_len * Math.sin(arrow_angle + Math.PI / 6));
+  ctx.stroke();
+
+  // --- Draw Velocity Vector v0 ---
+  const v0_length = 90;
+  const v0_end_x = cx + v0_length * Math.cos(-theta_rad);
+  const v0_end_y = cy + v0_length * Math.sin(-theta_rad); // -theta_rad because canvas y-axis is inverted
+  drawArrow(ctx, cx, cy, v0_end_x, v0_end_y, 12);
+  
+  // --- Draw Angle Arc ---
+  ctx.beginPath();
+  ctx.arc(cx, cy, 35, 0, -theta_rad, true); // startAngle 0, endAngle -theta, counter-clockwise for inverted y
+  ctx.stroke();
+
+  // --- Draw Center Points ---
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, 2 * Math.PI); // Point O/P
+  ctx.fill();
+  
+  ctx.beginPath();
+  ctx.arc(o_prime_x, o_prime_y, 3, 0, 2 * Math.PI); // Point O'
+  ctx.fill();
+
+  // --- Add Labels ---
+  ctx.fillStyle = 'black';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  // Label: B ~ t
+  ctx.fillText("B", cx - 5, cy - R - 30);
+  ctx.font = "22px Times New Roman";
+  ctx.fillText("~ t", cx + 25, cy - R - 30);
+  ctx.font = "italic 22px Times New Roman";
+
+  // Label: R
+  const R_label_x = cx + (R/1.8) * Math.cos(R_angle);
+  const R_label_y = cy + (R/1.8) * Math.sin(R_angle);
+  ctx.save();
+  ctx.translate(R_label_x, R_label_y);
+  ctx.rotate(R_angle - Math.PI); 
+  ctx.fillText("R", 0, -12); // Offset from line
+  ctx.restore();
+
+  // Label: O
+  ctx.fillText("O", cx - 18, cy - 5);
+  
+  // Label: P
+  ctx.fillText("P", cx + 15, cy + 15);
+
+  // Label: O'
+  ctx.fillText("O'", o_prime_x, o_prime_y + 20);
+
+  // Label: N
+  ctx.fillText("N", N_x + 15, N_y);
+  
+  // Label: M
+  ctx.fillText("M", o_prime_x - r * 0.7, o_prime_y - r * 0.9);
+
+  // Label: v0
+  ctx.fillText("v", v0_end_x + 5, v0_end_y - 18);
+  ctx.font = "italic 16px Times New Roman";
+  ctx.fillText("0", v0_end_x + 13, v0_end_y - 13);
+  ctx.font = "italic 22px Times New Roman";
+
+  // Label: theta
+  ctx.fillText("θ", cx + 45, cy - 18);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Capacitor Network Diagram</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="950" height="400"></canvas>
+
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Dimension Constants ---
+    const yTop = 150;
+    const yBot = 250;
+    const yCenter = (yTop + yBot) / 2;
+    const xStart = 80;
+    const segWidth = 150;
+    const capPlateGap = 12;
+    const capPlateLength = 30;
+    const terminalLead = 40;
+    const normalFont = "24px 'Times New Roman'";
+    const italicFont = "italic 24px 'Times New Roman'";
+    const labelOffsetY = 30;
+    const labelOffsetX = 30;
+    const captionFont = "24px 'KaiTi', 'SimSun'";
+
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'butt';
+    
+    // Helper function to draw a horizontal capacitor
+    function drawHCap(xCenter, y, label) {
+        ctx.save();
+        // Clear the area behind the capacitor symbol to make the wire appear broken
+        ctx.clearRect(xCenter - capPlateGap / 2 - 1, y - capPlateLength / 2, capPlateGap + 2, capPlateLength);
+        
+        // Draw the capacitor plates
+        ctx.beginPath();
+        ctx.moveTo(xCenter - capPlateGap / 2, y - capPlateLength / 2);
+        ctx.lineTo(xCenter - capPlateGap / 2, y + capPlateLength / 2);
+        ctx.moveTo(xCenter + capPlateGap / 2, y - capPlateLength / 2);
+        ctx.lineTo(xCenter + capPlateGap / 2, y + capPlateLength / 2);
+        ctx.stroke();
+
+        // Draw the label with mixed normal and italic fonts
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        const value = label.slice(0, -1);
+        const symbol = label.slice(-1);
+        ctx.font = normalFont;
+        const valueWidth = ctx.measureText(value).width;
+        
+        ctx.fillText(value, xCenter - 3, y - labelOffsetY + 10);
+        ctx.font = italicFont;
+        ctx.fillText(symbol, xCenter + valueWidth / 2 + 1, y - labelOffsetY + 10);
+        ctx.restore();
+    }
+
+    // Helper function to draw a vertical capacitor
+    function drawVCap(x, yCenter, label) {
+        ctx.save();
+        // Clear the area behind the capacitor symbol
+        ctx.clearRect(x - capPlateLength / 2, yCenter - capPlateGap / 2 - 1, capPlateLength, capPlateGap + 2);
+        
+        // Draw the capacitor plates
+        ctx.beginPath();
+        ctx.moveTo(x - capPlateLength / 2, yCenter - capPlateGap / 2);
+        ctx.lineTo(x + capPlateLength / 2, yCenter - capPlateGap / 2);
+        ctx.moveTo(x - capPlateLength / 2, yCenter + capPlateGap / 2);
+        ctx.lineTo(x + capPlateLength / 2, yCenter + capPlateGap / 2);
+        ctx.stroke();
+
+        // Draw the label with mixed normal and italic fonts
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        const value = label.slice(0, -1);
+        const symbol = label.slice(-1);
+
+        ctx.font = normalFont;
+        ctx.fillText(value, x - labelOffsetX + 12, yCenter);
+        ctx.font = italicFont;
+        ctx.fillText(symbol, x - labelOffsetX + 20, yCenter);
+        ctx.restore();
+    }
+
+    // Helper function to draw one L-section of the ladder network
+    function drawLSection(x) {
+        const nextX = x + segWidth;
+        // Draw horizontal wires first
+        ctx.beginPath();
+        ctx.moveTo(x, yTop);
+        ctx.lineTo(nextX, yTop);
+        ctx.moveTo(x, yBot);
+        ctx.lineTo(nextX, yBot);
+        ctx.stroke();
+        
+        // Draw horizontal capacitors on top of the wires
+        drawHCap(x + segWidth / 2, yTop, '3C');
+        drawHCap(x + segWidth / 2, yBot, '3C');
+
+        // Draw vertical wire
+        ctx.beginPath();
+        ctx.moveTo(nextX, yTop);
+        ctx.lineTo(nextX, yBot);
+        ctx.stroke();
+
+        // Draw vertical capacitor on top of the wire
+        drawVCap(nextX, yCenter, '2C');
+
+        return nextX;
+    }
+
+    // --- Main Drawing Logic ---
+    let currentX = xStart;
+
+    // Draw input terminals 'a' and 'b'
+    ctx.font = italicFont;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('a', currentX - terminalLead / 2 - 10, yTop);
+    ctx.fillText('b', currentX - terminalLead / 2 - 10, yBot);
+    ctx.beginPath();
+    ctx.moveTo(currentX - terminalLead, yTop);
+    ctx.lineTo(currentX, yTop);
+    ctx.moveTo(currentX - terminalLead, yBot);
+    ctx.lineTo(currentX, yBot);
+    ctx.stroke();
+
+    // Draw the sections left of the ellipsis, as shown in the original image
+    currentX = drawLSection(currentX);
+    currentX = drawLSection(currentX);
+    currentX = drawLSection(currentX);
+
+    // Draw the ellipsis (...) segment
+    const ellipsisWidth = 100;
+    const ellipsisX = currentX + ellipsisWidth / 2;
+    const stubLength = 20;
+
+    ctx.beginPath();
+    ctx.moveTo(currentX, yTop);
+    ctx.lineTo(currentX + stubLength, yTop);
+    ctx.moveTo(currentX, yBot);
+    ctx.lineTo(currentX + stubLength, yBot);
+    ctx.moveTo(currentX + ellipsisWidth - stubLength, yTop);
+    ctx.lineTo(currentX + ellipsisWidth, yTop);
+    ctx.moveTo(currentX + ellipsisWidth - stubLength, yBot);
+    ctx.lineTo(currentX + ellipsisWidth, yBot);
+    ctx.stroke();
+
+    ctx.font = normalFont;
+    ctx.textAlign = 'center';
+    ctx.fillText('...', ellipsisX, yTop);
+    ctx.fillText('...', ellipsisX, yBot);
+
+    currentX += ellipsisWidth;
+    
+    // Draw the section right of the ellipsis, as shown in the original image
+    currentX = drawLSection(currentX);
+
+    // Draw output terminals 'a'' and 'b''
+    ctx.font = italicFont;
+    ctx.textAlign = 'center';
+    ctx.fillText("a'", currentX + terminalLead / 2 + 10, yTop);
+    ctx.fillText("b'", currentX + terminalLead / 2 + 10, yBot);
+    ctx.beginPath();
+    ctx.moveTo(currentX, yTop);
+    ctx.lineTo(currentX + terminalLead, yTop);
+    ctx.moveTo(currentX, yBot);
+    ctx.lineTo(currentX + terminalLead, yBot);
+    ctx.stroke();
+    
+    // Draw the figure caption
+    ctx.font = captionFont;
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.fillText('电图 4.34.1', canvas.width / 2, canvas.height - 30);
+
+</script>
+</body>
+</html>

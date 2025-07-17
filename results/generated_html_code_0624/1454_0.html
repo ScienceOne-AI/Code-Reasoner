@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Helmholtz Coils Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Drawing Parameters ---
+        const centerX = 300;
+        const axisY = 280;
+        const coilSeparation = 240; // This represents R in pixels
+        const o1_x = centerX - coilSeparation / 2;
+        const o_x = centerX;
+        const o2_x = centerX + coilSeparation / 2;
+        
+        const ellipseRy = 120; // Vertical radius of ellipse
+        const ellipseRx = 40;  // Horizontal radius for perspective
+
+        // --- Helper Function to Draw an Arrow ---
+        function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        }
+        
+        // --- Drawing Functions ---
+
+        // 1. Draw the base plane (parallelogram)
+        function drawPlane() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(40, 210);
+            ctx.lineTo(560, 170);
+            ctx.lineTo(560, 370);
+            ctx.lineTo(40, 410);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Draw the double line on the right edge
+            ctx.beginPath();
+            ctx.moveTo(555, 172.5);
+            ctx.lineTo(555, 372.5);
+            ctx.stroke();
+        }
+
+        // 2. Draw a single coil
+        function drawCoil(x, y, rx, ry) {
+            ctx.lineWidth = 2;
+            
+            // Dashed back part
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.ellipse(x, y, rx, ry, 0, Math.PI / 2, 3 * Math.PI / 2);
+            ctx.stroke();
+
+            // Solid front part
+            ctx.beginPath();
+            ctx.setLineDash([]);
+            ctx.ellipse(x, y, rx, ry, 0, -Math.PI / 2, Math.PI / 2);
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Logic ---
+        
+        drawPlane();
+
+        // Draw the two coils
+        drawCoil(o1_x, axisY, ellipseRx, ellipseRy);
+        drawCoil(o2_x, axisY, ellipseRx, ellipseRy);
+
+        // 3. Draw the central axis and points
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        ctx.beginPath();
+        ctx.moveTo(o1_x, axisY);
+        ctx.lineTo(o2_x, axisY);
+        ctx.stroke();
+
+        [o1_x, o_x, o2_x].forEach(x => {
+            ctx.beginPath();
+            ctx.arc(x, axisY, 4, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+
+        // 4. Add labels for points O₁, O, O₂
+        ctx.textBaseline = 'top';
+        // O₁
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.textAlign = 'right';
+        ctx.fillText('O', o1_x - 5, axisY + 8);
+        ctx.font = 'italic 14px Times New Roman';
+        ctx.fillText('1', o1_x, axisY + 16);
+        // O
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.fillText('O', o_x, axisY + 8);
+        // O₂
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.textAlign = 'left';
+        ctx.fillText('O', o2_x + 5, axisY + 8);
+        ctx.font = 'italic 14px Times New Roman';
+        ctx.fillText('2', o2_x + 18, axisY + 16);
+
+        // 5. Add current arrows and labels 'I'
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+
+        // Left coil arrow and label
+        const angleL = -2.15; // approx -2*PI/3
+        const pLx = o1_x + ellipseRx * Math.cos(angleL);
+        const pLy = axisY + ellipseRy * Math.sin(angleL);
+        const tLx = -ellipseRx * Math.sin(angleL);
+        const tLy = ellipseRy * Math.cos(angleL);
+        const normL = Math.sqrt(tLx * tLx + tLy * tLy);
+        const arrowLength = 20;
+        const baseLx = pLx - (tLx / normL) * arrowLength / 2;
+        const baseLy = pLy - (tLy / normL) * arrowLength / 2;
+        const tipLx = pLx + (tLx / normL) * arrowLength / 2;
+        const tipLy = pLy + (tLy / normL) * arrowLength / 2;
+        
+        ctx.beginPath();
+        drawArrow(baseLx, baseLy, tipLx, tipLy, 8);
+        ctx.stroke();
+        
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('I', baseLx - 8, baseLy);
+
+        // Right coil arrow and label
+        const angleR = -0.95; // approx -PI/3
+        const pRx = o2_x + ellipseRx * Math.cos(angleR);
+        const pRy = axisY + ellipseRy * Math.sin(angleR);
+        const tRx = -ellipseRx * Math.sin(angleR);
+        const tRy = ellipseRy * Math.cos(angleR);
+        const normR = Math.sqrt(tRx * tRx + tRy * tRy);
+        const baseRx = pRx - (tRx / normR) * arrowLength / 2;
+        const baseRy = pRy - (tRy / normR) * arrowLength / 2;
+        const tipRx = pRx + (tRx / normR) * arrowLength / 2;
+        const tipRy = pRy + (tRy / normR) * arrowLength / 2;
+
+        ctx.beginPath();
+        drawArrow(baseRx, baseRy, tipRx, tipRy, 8);
+        ctx.stroke();
+        
+        ctx.textAlign = 'left';
+        ctx.fillText('I', tipRx + 8, tipRy);
+        
+        // 6. Draw dimension line for R
+        const dimY = axisY - ellipseRy - 30;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(o1_x, dimY);
+        ctx.lineTo(o2_x, dimY);
+        // Left arrowhead
+        ctx.moveTo(o1_x, dimY);
+        ctx.lineTo(o1_x + 10, dimY - 5);
+        ctx.moveTo(o1_x, dimY);
+        ctx.lineTo(o1_x + 10, dimY + 5);
+        // Right arrowhead
+        ctx.moveTo(o2_x, dimY);
+        ctx.lineTo(o2_x - 10, dimY - 5);
+        ctx.moveTo(o2_x, dimY);
+        ctx.lineTo(o2_x - 10, dimY + 5);
+        ctx.stroke();
+        
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('R', o_x, dimY - 5);
+
+        // 7. Add caption
+        ctx.fillStyle = 'black';
+        ctx.font = '20px "SimSun", "Songti SC"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('题 1 图', centerX, 450);
+
+    </script>
+</body>
+</html>

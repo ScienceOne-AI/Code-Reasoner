@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+    <canvas id="myCanvas" width="750" height="400" style="border:1px solid #d3d3d3;"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // --- Parameters and Coordinates ---
+        const scale = 80;
+        const y_beam = 200;
+        const x_start = 60;
+
+        const x_A = x_start;
+        const x_M = x_A + 3 * scale;
+        const x_BC = x_A + 4 * scale; // Junction point B/C
+        const x_D = x_BC + 3 * scale;
+        const x_E = x_D - 2 * scale;
+        const x_N = x_D - 1 * scale;
+
+        // --- Drawing Helper Functions ---
+
+        /**
+         * Draws a dimension line with arrows, ticks, and a text label.
+         * @param {CanvasRenderingContext2D} ctx The canvas context.
+         * @param {number} x1 The starting x-coordinate.
+         * @param {number} x2 The ending x-coordinate.
+         * @param {number} y The y-coordinate of the dimension line.
+         * @param {string} text The label for the dimension.
+         * @param {string} position 'above' or 'below' the line for text placement.
+         */
+        function drawDimension(ctx, x1, x2, y, text, position) {
+            const tick_height = 10;
+            const arrow_size = 8;
+            const text_y_offset = position === 'above' ? -8 : 18;
+
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            // Main line
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            // Left tick
+            ctx.moveTo(x1, y - tick_height / 2);
+            ctx.lineTo(x1, y + tick_height / 2);
+            // Right tick
+            ctx.moveTo(x2, y - tick_height / 2);
+            ctx.lineTo(x2, y + tick_height / 2);
+            ctx.stroke();
+
+            // Arrows
+            ctx.beginPath();
+            ctx.moveTo(x1 + arrow_size, y - arrow_size / 2.5);
+            ctx.lineTo(x1, y);
+            ctx.lineTo(x1 + arrow_size, y + arrow_size / 2.5);
+            ctx.moveTo(x2 - arrow_size, y - arrow_size / 2.5);
+            ctx.lineTo(x2, y);
+            ctx.lineTo(x2 - arrow_size, y + arrow_size / 2.5);
+            ctx.stroke();
+            ctx.restore();
+            
+            // Text
+            ctx.font = '18px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, (x1 + x2) / 2, y + text_y_offset);
+        }
+
+        /**
+         * Draws a hatched wall symbol.
+         */
+        function drawWall(ctx, x, y_center, height) {
+            const hatch_spacing = 8;
+            const wall_width = 15;
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x, y_center - height / 2);
+            ctx.lineTo(x, y_center + height / 2);
+            // Hatching
+            for (let y = y_center - height / 2; y <= y_center + height / 2; y += hatch_spacing) {
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - wall_width, y + wall_width*0.8);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        /**
+         * Draws a pin support attached to a wall.
+         */
+        function drawPinOnWallSupport(ctx, x, y, side) {
+            const pin_radius = 10;
+            const wall_x = side === 'left' ? x - pin_radius : x + pin_radius;
+            drawWall(ctx, wall_x, y, 80);
+            
+            ctx.beginPath();
+            ctx.arc(x, y, pin_radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        
+        /**
+         * Draws the specific pin bracket support at point D.
+         */
+        function drawSupportD(ctx, x, y) {
+            const wall_x = x + 25;
+            drawWall(ctx, wall_x, y, 80);
+
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, 2 * Math.PI);
+            ctx.moveTo(x + 8, y);
+            ctx.lineTo(x + 15, y - 15);
+            ctx.lineTo(x + 25, y - 15);
+            ctx.moveTo(x + 15, y - 15);
+            ctx.lineTo(x + 15, y + 15);
+            ctx.lineTo(x + 8, y);
+            ctx.lineTo(x + 15, y + 15);
+            ctx.lineTo(x + 25, y + 15);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        /**
+         * Draws a hatched knife-edge support.
+         */
+        function drawKnifeEdgeSupport(ctx, x, y, size) {
+            const height = size * 1.2;
+            const path = new Path2D();
+            path.moveTo(x, y);
+            path.lineTo(x - size, y + height);
+            path.lineTo(x + size, y + height);
+            path.closePath();
+            
+            ctx.save();
+            ctx.clip(path);
+            ctx.lineWidth = 1;
+            const hatch_spacing = 6;
+            for (let i = -height; i < size * 2; i += hatch_spacing) {
+                ctx.beginPath();
+                ctx.moveTo(x - size + i, y + height);
+                ctx.lineTo(x - size + i - height, y);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            ctx.stroke(path);
+        }
+
+        /**
+         * Draws a roller load on the beam.
+         */
+        function drawLoadRoller(ctx, x, y, radius) {
+            ctx.beginPath();
+            ctx.arc(x, y - radius, radius, 0, 2 * Math.PI);
+            ctx.moveTo(x, y - 2 * radius);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Logic ---
+        
+        // 1. Draw the main beam
+        ctx.beginPath();
+        ctx.moveTo(x_A, y_beam);
+        ctx.lineTo(x_D, y_beam);
+        ctx.stroke();
+
+        // 2. Draw supports
+        drawPinOnWallSupport(ctx, x_A, y_beam, 'left');
+        drawSupportD(ctx, x_D, y_beam);
+        drawKnifeEdgeSupport(ctx, x_E, y_beam, 15);
+
+        // 3. Draw loads
+        const load_radius = 16;
+        drawLoadRoller(ctx, x_M, y_beam, load_radius);
+        drawLoadRoller(ctx, x_N, y_beam, load_radius);
+
+        // 4. Draw dimensions
+        const dim_y_above = y_beam - 70;
+        const dim_y_below = y_beam + 60;
+        drawDimension(ctx, x_A, x_M, dim_y_above, '3 m', 'above');
+        drawDimension(ctx, x_A, x_BC, dim_y_below, '4 m', 'below');
+        drawDimension(ctx, x_BC, x_D, dim_y_above + 20, '3 m', 'above');
+        drawDimension(ctx, x_N, x_D, dim_y_above, '1 m', 'above');
+        drawDimension(ctx, x_E, x_D, dim_y_below, '2 m', 'below');
+
+        // 5. Draw labels
+        ctx.font = 'bold 20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('A', x_A, y_beam - 30);
+        ctx.fillText('M', x_M, y_beam + 25);
+        ctx.fillText('B', x_BC, y_beam - 25);
+        ctx.fillText('C', x_BC, y_beam + 25);
+        ctx.fillText('E', x_E - 25, y_beam + 35);
+        ctx.fillText('N', x_N, y_beam + 25);
+        ctx.fillText('D', x_D - 25, y_beam + 25);
+
+    </script>
+</body>
+</html>

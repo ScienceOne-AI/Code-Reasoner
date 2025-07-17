@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Waveform Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Coordinate system parameters
+        const originX = 100;
+        const originY = 220;
+        const scale = 8; // pixels per cm
+
+        // Helper function to convert physics coordinates to canvas coordinates
+        function toX(x_cm) {
+            return originX + x_cm * scale;
+        }
+
+        function toY(y_cm) {
+            return originY - y_cm * scale;
+        }
+
+        // Helper function to draw an arrow
+        function drawArrow(x1, y1, x2, y2) {
+            const headlen = 8; // length of head in pixels
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        // 1. Draw coordinate axes
+        ctx.beginPath();
+        // X-axis
+        drawArrow(toX(-10), toY(0), toX(52), toY(0));
+        ctx.fillText('x/cm', toX(53), toY(0) + 20);
+        // Y-axis
+        drawArrow(toX(0), toY(-15), toX(0), toY(15));
+        ctx.fillText('y/cm', toX(0) - 40, toY(15));
+
+        // 2. Draw the wave
+        // From problem analysis, the wave at t=1/3s is y(x) = 10*sin(pi*x/20 - pi/6)
+        ctx.beginPath();
+        const startX_cm = -5;
+        const endX_cm = 50;
+        const step = 0.1;
+        
+        let y_start = 10 * Math.sin(Math.PI * startX_cm / 20 - Math.PI / 6);
+        ctx.moveTo(toX(startX_cm), toY(y_start));
+
+        for (let x_cm = startX_cm + step; x_cm <= endX_cm; x_cm += step) {
+            let y_cm = 10 * Math.sin(Math.PI * x_cm / 20 - Math.PI / 6);
+            ctx.lineTo(toX(x_cm), toY(y_cm));
+        }
+        ctx.stroke();
+
+        // 3. Add labels and annotations
+        ctx.font = '18px sans-serif';
+
+        // Origin '0'
+        ctx.fillText('0', toX(0) - 10, toY(0) + 15);
+
+        // Amplitude '10' and dashed line
+        const peakX = 40 / 3; // x where sin is 1
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.moveTo(toX(0), toY(10));
+        ctx.lineTo(toX(peakX), toY(10));
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillText('10', toX(0) - 25, toY(10));
+        
+        // y=-5 label
+        ctx.fillText('-5', toX(0) - 25, toY(-5));
+
+        // Point P
+        const x_P = 70/3; // Node with negative slope
+        ctx.fillText('P', toX(x_P) + 15, toY(0) - 15);
+
+        // '20' distance indicator
+        const x_node1 = 10/3;
+        const x_node2 = 70/3;
+        const indicatorY = -4; // y-level for the indicator line
+        
+        // Vertical ticks from axis to indicator line
+        ctx.beginPath();
+        ctx.moveTo(toX(x_node1), toY(0));
+        ctx.lineTo(toX(x_node1), toY(indicatorY) + 10);
+        ctx.moveTo(toX(x_node2), toY(0));
+        ctx.lineTo(toX(x_node2), toY(indicatorY) + 10);
+        ctx.stroke();
+
+        // Horizontal double arrow line
+        const arrowY = toY(indicatorY);
+        ctx.beginPath();
+        ctx.moveTo(toX(x_node1), arrowY);
+        ctx.lineTo(toX(x_node2), arrowY);
+        // Left arrowhead
+        ctx.moveTo(toX(x_node1) + 6, arrowY - 4);
+        ctx.lineTo(toX(x_node1), arrowY);
+        ctx.lineTo(toX(x_node1) + 6, arrowY + 4);
+        // Right arrowhead
+        ctx.moveTo(toX(x_node2) - 6, arrowY - 4);
+        ctx.lineTo(toX(x_node2), arrowY);
+        ctx.lineTo(toX(x_node2) - 6, arrowY + 4);
+        ctx.stroke();
+        
+        // '20' label
+        ctx.fillText('20', toX((x_node1 + x_node2) / 2), arrowY - 15);
+
+        // Propagation velocity 'u' arrows
+        ctx.lineWidth = 1;
+        // The image shows two arrows, one short above a longer one. 'u' is above the short one.
+        drawArrow(toX(10), toY(11), toX(20), toY(11));  // long bottom arrow
+        drawArrow(toX(12), toY(12.5), toX(18), toY(12.5)); // short top arrow
+        ctx.fillText('u', toX(14.5), toY(14));
+        ctx.lineWidth = 1.5;
+
+        // Caption text
+        ctx.font = '22px KaiTi'; // A font that supports Chinese characters
+        ctx.fillText('习题 11-5 图', canvas.width / 2, 420);
+
+    </script>
+</body>
+</html>

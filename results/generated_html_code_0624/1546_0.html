@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-canvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow head
+        function drawArrowHead(ctx, x, y, angle, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Helper function to draw a filled dimension arrow head
+        function drawDimArrow(ctx, x, y, size, up) {
+            ctx.beginPath();
+            const sign = up ? -1 : 1;
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - size / 2, y + sign * size);
+            ctx.lineTo(x + size / 2, y + sign * size);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // --- Main Drawing Logic ---
+        ctx.strokeStyle = "black";
+        ctx.fillStyle = "black";
+        ctx.lineWidth = 1.5;
+        ctx.font = "18px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        // --- Define Geometry ---
+        const pulleyX = 460;
+        const pulleyY = 80;
+        const pulleyR = 12;
+        const groundY = 320;
+        const blockH = 50;
+        const blockW = 90;
+
+        const attachY = groundY - blockH;
+        const h_triangle = attachY - pulleyY;
+
+        const angle1_rad = 30 * Math.PI / 180;
+        const angle2_rad = 37 * Math.PI / 180;
+
+        const x_dist1 = h_triangle / Math.tan(angle1_rad);
+        const x_dist2 = h_triangle / Math.tan(angle2_rad);
+
+        const attachX1 = pulleyX - x_dist1; // Initial position (left)
+        const attachX2 = pulleyX - x_dist2; // Final position (right)
+
+        // --- Draw Ground ---
+        ctx.beginPath();
+        ctx.moveTo(20, groundY);
+        ctx.lineTo(580, groundY);
+        ctx.stroke();
+        for (let i = 25; i < 580; i += 20) {
+            ctx.moveTo(i, groundY);
+            ctx.lineTo(i - 10, groundY + 10);
+        }
+        ctx.stroke();
+
+        // --- Draw Ceiling Support ---
+        ctx.beginPath();
+        ctx.moveTo(pulleyX - 40, pulleyY - 20);
+        ctx.lineTo(pulleyX + 40, pulleyY - 20);
+        ctx.stroke();
+        for (let i = pulleyX - 35; i < pulleyX + 40; i += 15) {
+            ctx.moveTo(i, pulleyY - 20);
+            ctx.lineTo(i + 10, pulleyY - 30);
+        }
+        ctx.stroke();
+
+        // --- Draw Pulley ---
+        ctx.beginPath();
+        ctx.arc(pulleyX, pulleyY, pulleyR, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath(); // Axle
+        ctx.moveTo(pulleyX, pulleyY - 20);
+        ctx.lineTo(pulleyX, pulleyY - pulleyR);
+        ctx.stroke();
+
+        // --- Draw Initial State (dashed) ---
+        ctx.save();
+        ctx.setLineDash([5, 4]);
+        // L-shape indicator
+        ctx.beginPath();
+        ctx.moveTo(attachX1 - blockW - 20, groundY);
+        ctx.lineTo(attachX1 - blockW - 20, attachY);
+        ctx.lineTo(attachX1 - 20, attachY);
+        ctx.stroke();
+        // Block
+        ctx.strokeRect(attachX1 - blockW, attachY, blockW, blockH);
+        // Diagonal inside block
+        ctx.beginPath();
+        ctx.moveTo(attachX1 - blockW, attachY + blockH);
+        ctx.lineTo(attachX1, attachY);
+        ctx.stroke();
+        // Rope
+        ctx.beginPath();
+        ctx.moveTo(attachX1, attachY);
+        ctx.lineTo(pulleyX, pulleyY);
+        ctx.stroke();
+        // Horizontal line for angle
+        ctx.beginPath();
+        ctx.moveTo(attachX1, attachY);
+        ctx.lineTo(attachX1 - 40, attachY);
+        ctx.stroke();
+        ctx.restore();
+
+        // --- Draw Final State (solid) ---
+        // Block
+        ctx.strokeRect(attachX2 - blockW, attachY, blockW, blockH);
+        // Diagonal inside block
+        ctx.beginPath();
+        ctx.moveTo(attachX2 - blockW, attachY + blockH);
+        ctx.lineTo(attachX2, attachY);
+        ctx.stroke();
+        // Rope
+        ctx.beginPath();
+        ctx.moveTo(attachX2, attachY);
+        ctx.lineTo(pulleyX, pulleyY);
+        ctx.stroke();
+        // Horizontal line for angle
+        ctx.beginPath();
+        ctx.moveTo(attachX2, attachY);
+        ctx.lineTo(attachX2 + 50, attachY);
+        ctx.stroke();
+
+        // --- Draw Angles ---
+        // 30 degrees angle
+        ctx.beginPath(); // Arc
+        ctx.arc(attachX1, attachY, 25, -angle1_rad, 0);
+        ctx.stroke();
+        ctx.beginPath(); // Tick mark
+        ctx.moveTo(attachX1, attachY);
+        ctx.lineTo(attachX1, attachY - 8);
+        ctx.stroke();
+        ctx.textAlign = 'left';
+        ctx.fillText("30°", attachX1 - 50, attachY - 10);
+
+        // 37 degrees angle
+        ctx.beginPath(); // Arc
+        ctx.arc(attachX2, attachY, 25, -angle2_rad, 0);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.fillText("37°", attachX2 + 25, attachY - 12);
+
+
+        // --- Draw Force Vector ---
+        const forceEndY = pulleyY + 80;
+        ctx.beginPath();
+        ctx.moveTo(pulleyX, pulleyY + pulleyR);
+        ctx.lineTo(pulleyX, forceEndY);
+        ctx.stroke();
+        drawArrowHead(ctx, pulleyX, forceEndY, -Math.PI / 2, 10);
+        ctx.textAlign = 'right';
+        ctx.fillText("5N", pulleyX - 15, (pulleyY + pulleyR + forceEndY) / 2);
+
+        // --- Draw Dimension Line for 1m ---
+        const dimX = pulleyX + 70;
+        const arrowSize = 8;
+        ctx.beginPath();
+        ctx.moveTo(dimX, pulleyY + arrowSize);
+        ctx.lineTo(dimX, groundY - arrowSize);
+        ctx.stroke();
+        // Arrows
+        drawDimArrow(ctx, dimX, pulleyY, arrowSize, false);
+        drawDimArrow(ctx, dimX, groundY, arrowSize, true);
+        // Helper lines
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pulleyX + pulleyR, pulleyY);
+        ctx.lineTo(dimX, pulleyY);
+        ctx.stroke();
+        ctx.restore();
+        // Text
+        ctx.textAlign = 'left';
+        ctx.fillText("1m", dimX + 10, (pulleyY + groundY) / 2);
+        
+        // --- Final Label ---
+        ctx.textAlign = "center";
+        ctx.font = "20px sans-serif";
+        ctx.fillText("题 1 图", canvas.width / 2, groundY + 45);
+
+    </script>
+</body>
+</html>

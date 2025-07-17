@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hall Probe Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, label = '', labelPos = 'end') {
+            const headlen = 10; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            
+            // Draw line
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+
+            // Draw arrowhead
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw label
+            if (label) {
+                ctx.font = 'italic 16px Times New Roman';
+                ctx.fillStyle = 'black';
+                let labelX, labelY;
+                if (labelPos === 'end') {
+                    labelX = tox + 15 * Math.cos(angle);
+                    labelY = toy + 15 * Math.sin(angle) + 5;
+                } else if (labelPos === 'mid') {
+                    labelX = fromx + dx / 2 + 5;
+                    labelY = fromy + dy / 2 - 5;
+                }
+                 ctx.fillText(label, labelX, labelY);
+            }
+        }
+        
+        // --- Main Drawing ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // Define the geometry of the cuboid and axes
+        const origin = { x: 200, y: 320 };
+        const v_h = { x: 0, y: -100 }; // Vector for height h (along x-axis)
+        const v_w = { x: -80, y: 40 }; // Vector for width w (along y-axis)
+        const v_l = { x: 200, y: 0 };  // Vector for length l (along z-axis)
+
+        // Calculate the 8 vertices of the cuboid
+        const V = [
+            origin, // V0: Back-bottom-left (hidden corner)
+            { x: origin.x + v_h.x, y: origin.y + v_h.y }, // V1: Back-top-left
+            { x: origin.x + v_w.x, y: origin.y + v_w.y }, // V2: Front-bottom-left
+            { x: origin.x + v_l.x, y: origin.y + v_l.y }, // V3: Back-bottom-right
+            { x: origin.x + v_h.x + v_w.x, y: origin.y + v_h.y + v_w.y }, // V4: Front-top-left
+            { x: origin.x + v_h.x + v_l.x, y: origin.y + v_h.y + v_l.y }, // V5: Back-top-right
+            { x: origin.x + v_w.x + v_l.x, y: origin.y + v_w.y + v_l.y }, // V6: Front-bottom-right
+            { x: origin.x + v_h.x + v_w.x + v_l.x, y: origin.y + v_h.y + v_l.y } // V7: Front-top-right
+        ];
+
+        // Draw Axes
+        ctx.lineWidth = 1.5;
+        drawArrow(ctx, V[0].x, V[0].y, V[0].x, V[0].y - 120, 'x'); // x-axis
+        drawArrow(ctx, V[0].x, V[0].y, V[0].x - 110, V[0].y + 55, 'y'); // y-axis
+        drawArrow(ctx, V[0].x, V[0].y, V[0].x + 240, V[0].y, 'z'); // z-axis
+
+        // Draw the cuboid
+        ctx.lineWidth = 2;
+
+        // Dashed lines (hidden edges from origin)
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(V[0].x, V[0].y); ctx.lineTo(V[1].x, V[1].y); // O to top-back
+        ctx.moveTo(V[0].x, V[0].y); ctx.lineTo(V[2].x, V[2].y); // O to front-bottom
+        ctx.moveTo(V[0].x, V[0].y); ctx.lineTo(V[3].x, V[3].y); // O to side-bottom
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Solid lines (visible edges)
+        ctx.beginPath();
+        // Top face
+        ctx.moveTo(V[1].x, V[1].y); ctx.lineTo(V[4].x, V[4].y);
+        ctx.lineTo(V[7].x, V[7].y);
+        ctx.lineTo(V[5].x, V[5].y);
+        ctx.closePath();
+        // Right face
+        ctx.moveTo(V[3].x, V[3].y); ctx.lineTo(V[6].x, V[6].y);
+        ctx.lineTo(V[7].x, V[7].y);
+        ctx.moveTo(V[5].x, V[5].y); ctx.lineTo(V[3].x, V[3].y);
+        // Front face
+        ctx.moveTo(V[2].x, V[2].y); ctx.lineTo(V[6].x, V[6].y);
+        ctx.moveTo(V[4].x, V[4].y); ctx.lineTo(V[2].x, V[2].y);
+        ctx.stroke();
+
+        // Draw Dimension Lines and Labels
+        ctx.font = 'italic 16px Times New Roman';
+        
+        // Dimension 'l'
+        const l_y = V[1].y - 20;
+        ctx.beginPath();
+        ctx.moveTo(V[1].x, l_y); ctx.lineTo(V[5].x, l_y);
+        ctx.moveTo(V[1].x, l_y - 5); ctx.lineTo(V[1].x, l_y + 5);
+        ctx.moveTo(V[5].x, l_y - 5); ctx.lineTo(V[5].x, l_y + 5);
+        ctx.stroke();
+        ctx.fillText('l', (V[1].x + V[5].x) / 2, l_y - 10);
+        
+        // Dimension 'h'
+        const h_x = V[5].x + 20;
+        ctx.beginPath();
+        ctx.moveTo(h_x, V[5].y); ctx.lineTo(h_x, V[3].y);
+        ctx.moveTo(h_x - 5, V[5].y); ctx.lineTo(h_x + 5, V[5].y);
+        ctx.moveTo(h_x - 5, V[3].y); ctx.lineTo(h_x + 5, V[3].y);
+        ctx.stroke();
+        ctx.fillText('h', h_x + 10, (V[5].y + V[3].y) / 2 + 5);
+
+        // Dimension 'w'
+        const w_offset = {x: -15, y: 15};
+        const w_start = {x: V[3].x + w_offset.x, y: V[3].y + w_offset.y};
+        const w_end = {x: V[6].x + w_offset.x, y: V[6].y + w_offset.y};
+        ctx.beginPath();
+        ctx.moveTo(w_start.x, w_start.y); ctx.lineTo(w_end.x, w_end.y);
+        ctx.moveTo(w_start.x - 3, w_start.y - 6); ctx.lineTo(w_start.x + 3, w_start.y + 6); // Tick
+        ctx.moveTo(w_end.x - 3, w_end.y - 6); ctx.lineTo(w_end.x + 3, w_end.y + 6); // Tick
+        ctx.stroke();
+        ctx.fillText('w', (w_start.x + w_end.x) / 2 - 20, (w_start.y + w_end.y) / 2 + 15);
+
+        // Draw Magnetic Field Vector B
+        const B_start = {x: V[0].x + 0.2 * v_w.x, y: V[0].y + 0.2 * v_w.y};
+        const B_end = {x: V[0].x + 0.8 * v_w.x, y: V[0].y + 0.8 * v_w.y};
+        const B_width = 4;
+        const B_angle = Math.atan2(v_w.y, v_w.x);
+        
+        // Draw the thick body of the arrow
+        ctx.save();
+        ctx.lineWidth = B_width;
+        ctx.beginPath();
+        ctx.moveTo(B_start.x, B_start.y);
+        ctx.lineTo(B_end.x, B_end.y);
+        ctx.stroke();
+        
+        // Draw hatching on the arrow body
+        ctx.lineWidth = 0.5;
+        const num_hatch = 6;
+        for (let i = 1; i < num_hatch; i++) {
+            const p = i / num_hatch;
+            const px = B_start.x + p * (B_end.x - B_start.x);
+            const py = B_start.y + p * (B_end.y - B_start.y);
+            ctx.moveTo(px - B_width * Math.sin(B_angle), py + B_width * Math.cos(B_angle));
+            ctx.lineTo(px + B_width * Math.sin(B_angle), py - B_width * Math.cos(B_angle));
+        }
+        ctx.stroke();
+        ctx.restore();
+        
+        // Draw arrowhead for B
+        ctx.lineWidth = 2;
+        const B_headlen = 12;
+        ctx.beginPath();
+        ctx.moveTo(B_end.x, B_end.y);
+        ctx.lineTo(B_end.x - B_headlen * Math.cos(B_angle - Math.PI / 6), B_end.y - B_headlen * Math.sin(B_angle - Math.PI / 6));
+        ctx.lineTo(B_end.x - B_headlen * Math.cos(B_angle + Math.PI / 6), B_end.y - B_headlen * Math.sin(B_angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+
+        // Label 'B'
+        ctx.font = 'bold 16px Times New Roman';
+        ctx.fillText('B', B_start.x, B_start.y + 25);
+        
+        // Draw Caption
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 2.81', canvas.width / 2, 420);
+
+    </script>
+</body>
+</html>

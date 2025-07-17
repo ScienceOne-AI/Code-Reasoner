@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spring System Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="550"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    /**
+     * Draws a spring with coils on one side between two points.
+     * This function simulates the appearance of a helical spring viewed from the side.
+     * @param {CanvasRenderingContext2D} ctx The canvas rendering context.
+     * @param {number} x1 The x-coordinate of the start point.
+     * @param {number} y1 The y-coordinate of the start point.
+     * @param {number} x2 The x-coordinate of the end point.
+     * @param {number} y2 The y-coordinate of the end point.
+     * @param {number} coils The number of coils in the spring.
+     */
+    function drawSpring(ctx, x1, y1, x2, y2, coils) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
+        const coilWidth = len / coils;
+
+        ctx.save();
+        ctx.translate(x1, y1);
+        ctx.rotate(angle);
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        for (let i = 0; i < coils; i++) {
+            const centerX = (i + 0.5) * coilWidth;
+            // Draw a semicircle for each coil
+            ctx.arc(centerX, 0, coilWidth / 2, Math.PI, 0, false);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    /**
+     * Draws a line with an arrowhead at the end.
+     * @param {CanvasRenderingContext2D} ctx The canvas rendering context.
+     * @param {number} fromx Start x-coordinate.
+     * @param {number} fromy Start y-coordinate.
+     * @param {number} tox End x-coordinate.
+     * @param {number} toy End y-coordinate.
+     * @param {number} lineWidth The width of the line.
+     * @param {boolean} isFilled If true, the arrowhead is a filled triangle; otherwise, it's two strokes.
+     */
+    function drawArrow(ctx, fromx, fromy, tox, toy, lineWidth, isFilled) {
+        const headlen = 12;
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+
+        ctx.save();
+        ctx.lineWidth = lineWidth;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // Line shaft
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+
+        // Arrowhead
+        if (isFilled) {
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * 1.3 * Math.cos(angle - Math.PI / 6), toy - headlen * 1.3 * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tox - headlen * 1.3 * Math.cos(angle + Math.PI / 6), toy - headlen * 1.3 * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        } else {
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+
+    // Define geometry and constants
+    const cx = 250;
+    const cy = 250;
+    const l = 120; // Distance from center to equilibrium position
+    const axisExtension = 60; // How far the axis line extends past the vertex
+    const springCoils = 18; // Number of coils for the springs
+
+    // Calculate vertex positions based on 120-degree separation
+    const p1 = { x: cx - l, y: cy }; // Left vertex
+    const p3 = { x: cx + l * Math.cos(Math.PI / 3), y: cy - l * Math.sin(Math.PI / 3) }; // Top-right vertex
+    const p2 = { x: cx + l * Math.cos(-Math.PI / 3), y: cy - l * Math.sin(-Math.PI / 3) }; // Bottom-right vertex
+
+    // Set default drawing styles
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    
+    // Draw the three springs connecting the vertices
+    drawSpring(ctx, p1.x, p1.y, p3.x, p3.y, springCoils);
+    drawSpring(ctx, p3.x, p3.y, p2.x, p2.y, springCoils);
+    drawSpring(ctx, p2.x, p2.y, p1.x, p1.y, springCoils);
+
+    // Draw internal lines from the center to each vertex
+    ctx.beginPath();
+    ctx.moveTo(cx, cy); ctx.lineTo(p1.x, p1.y);
+    ctx.moveTo(cx, cy); ctx.lineTo(p2.x, p2.y);
+    ctx.moveTo(cx, cy); ctx.lineTo(p3.x, p3.y);
+    ctx.stroke();
+
+    // Draw the axes extending outwards from each vertex
+    // Axis 1 (left) - drawn with a thicker, filled arrow as in the original image
+    const angle1 = Math.atan2(p1.y - cy, p1.x - cx);
+    const a1_end = { x: p1.x + axisExtension * Math.cos(angle1), y: p1.y + axisExtension * Math.sin(angle1) };
+    drawArrow(ctx, p1.x, p1.y, a1_end.x, a1_end.y, 3, true);
+
+    // Axis 2 (bottom-right) - standard arrow
+    const angle2 = Math.atan2(p2.y - cy, p2.x - cx);
+    const a2_end = { x: p2.x + axisExtension * Math.cos(angle2), y: p2.y + axisExtension * Math.sin(angle2) };
+    drawArrow(ctx, p2.x, p2.y, a2_end.x, a2_end.y, 2, false);
+
+    // Axis 3 (top-right) - standard arrow
+    const angle3 = Math.atan2(p3.y - cy, p3.x - cx);
+    const a3_end = { x: p3.x + axisExtension * Math.cos(angle3), y: p3.y + axisExtension * Math.sin(angle3) };
+    drawArrow(ctx, p3.x, p3.y, a3_end.x, a3_end.y, 2, false);
+
+    // Draw labels
+    ctx.fillStyle = 'black';
+    
+    // Label 'l'
+    ctx.font = 'italic 22px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('l', (cx + p1.x) / 2 + 10, p1.y - 5);
+    
+    // Label 'x₁'
+    ctx.font = 'italic 22px serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('x', p1.x - 15, p1.y + 10);
+    ctx.font = 'italic 16px serif';
+    ctx.fillText('1', p1.x - 10, p1.y + 18);
+
+    // Label 'x₂'
+    ctx.font = 'italic 22px serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('x', p2.x + 10, p2.y + 5);
+    ctx.font = 'italic 16px serif';
+    ctx.fillText('2', p2.x + 22, p2.y + 13);
+    
+    // Label 'x₃'
+    ctx.font = 'italic 22px serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('x', p3.x + 10, p3.y - 5);
+    ctx.font = 'italic 16px serif';
+    ctx.fillText('3', p3.x + 22, p3.y + 3);
+
+    // Draw figure caption
+    ctx.font = '20px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Fig. 1.94.', cx, canvas.height - 10);
+
+</script>
+</body>
+</html>

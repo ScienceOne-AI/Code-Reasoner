@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Two-Slit Diffraction Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="diffractionCanvas" width="800" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('diffractionCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw a dashed line
+        function drawDashedLine(ctx, x1, y1, x2, y2, dashArray) {
+            ctx.beginPath();
+            ctx.setLineDash(dashArray);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset to solid
+        }
+
+        // Helper function to draw horizontal dimension lines with ticks
+        function drawDimensionH(ctx, x1, y1, x2, y2, label) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // Ticks
+            ctx.beginPath();
+            ctx.moveTo(x1, y1 - 8);
+            ctx.lineTo(x1, y1 + 8);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x2, y2 - 8);
+            ctx.lineTo(x2, y2 + 8);
+            ctx.stroke();
+
+            // Label
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.fillText(label, (x1 + x2) / 2, y1 + 8);
+            ctx.restore();
+        }
+        
+        // Helper function to draw vertical dimension lines with ticks
+        function drawDimensionV(ctx, x, y1, y2, label, align = 'left') {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, y2);
+            ctx.stroke();
+
+            // Ticks
+            ctx.beginPath();
+            ctx.moveTo(x - 8, y1);
+            ctx.lineTo(x + 8, y1);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x - 8, y2);
+            ctx.lineTo(x + 8, y2);
+            ctx.stroke();
+            
+            // Label
+            ctx.textBaseline = 'middle';
+            ctx.font = 'italic 20px Times New Roman';
+            if (align === 'left') {
+                ctx.textAlign = 'left';
+                ctx.fillText(label, x + 12, (y1 + y2) / 2);
+            } else {
+                ctx.textAlign = 'right';
+                ctx.fillText(label, x - 12, (y1 + y2) / 2);
+            }
+            ctx.restore();
+        }
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // --- Main Coordinates ---
+        const cy = 250;
+        const x_tube = 90;
+        const x_slit1 = 170;
+        const x_slit2 = 350;
+        const x_screen = 720;
+
+        const D = 100; // distance between slit centers
+        const w_offset = 30;  // The distance for the 'w' label in the diagram
+        const l = 100;  // height of P from center
+        const slit_opening_half = 5;
+
+        const y_slit_top_center = cy - D / 2;
+        const y_slit_bottom_center = cy + D / 2;
+        
+        // The vertices of the main light path triangle on the slit plane
+        const y_vertex_top = y_slit_top_center - w_offset;
+        const y_vertex_bottom = y_slit_bottom_center + w_offset;
+        
+        const y_P = cy - l;
+
+        // --- Central Axis ---
+        drawDashedLine(ctx, x_slit1 - 50, cy, x_screen + 50, cy, [8, 4]);
+
+        // --- Discharge Tube ---
+        ctx.beginPath();
+        ctx.arc(x_tube, cy, 25, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.font = '20px sans-serif';
+        ctx.fillText('Discharge', x_tube, cy - 45);
+        ctx.fillText('tube', x_tube, cy - 25);
+        
+        // --- Screens ---
+        // Screen 1 (with source slit)
+        ctx.beginPath();
+        ctx.moveTo(x_slit1, cy - 100);
+        ctx.lineTo(x_slit1, cy - 10);
+        ctx.moveTo(x_slit1, cy + 10);
+        ctx.lineTo(x_slit1, cy + 100);
+        ctx.stroke();
+
+        // Screen 2 (double slit)
+        ctx.beginPath();
+        ctx.moveTo(x_slit2, cy - 180);
+        ctx.lineTo(x_slit2, y_slit_top_center - slit_opening_half);
+        ctx.moveTo(x_slit2, y_slit_top_center + slit_opening_half);
+        ctx.lineTo(x_slit2, y_slit_bottom_center - slit_opening_half);
+        ctx.moveTo(x_slit2, y_slit_bottom_center + slit_opening_half);
+        ctx.lineTo(x_slit2, cy + 180);
+        ctx.stroke();
+
+        // Screen 3 (observation screen)
+        ctx.beginPath();
+        ctx.moveTo(x_screen, 50);
+        ctx.lineTo(x_screen, 450);
+        ctx.stroke();
+
+        // --- Path Lines ---
+        // The diagram combines two concepts: a geometric beam spread and interference paths.
+        // The solid outline represents this combined view.
+        const pS = { x: x_slit1, y: cy };
+        const pT_vertex = { x: x_slit2, y: y_vertex_top };
+        const pB_vertex = { x: x_slit2, y: y_vertex_bottom };
+        const pP = { x: x_screen, y: y_P };
+        
+        // This shape is a composite. The first triangle's base is at the double-slit plane.
+        // The second triangle originates from the same base and converges at P.
+        ctx.beginPath();
+        ctx.moveTo(pS.x, pS.y);
+        ctx.lineTo(pT_vertex.x, pT_vertex.y); // Path from source to top vertex
+        ctx.lineTo(pP.x, pP.y);               // Path from top vertex to P
+        ctx.moveTo(pS.x, pS.y);
+        ctx.lineTo(pB_vertex.x, pB_vertex.y); // Path from source to bottom vertex
+        ctx.lineTo(pP.x, pP.y);               // Path from bottom vertex to P
+        ctx.stroke();
+
+        // Dashed line from midpoint of slits to P
+        const pMid = { x: x_slit2, y: cy };
+        drawDashedLine(ctx, pMid.x, pMid.y, pP.x, pP.y, [8, 4]);
+
+        // --- Labels and Dimensions ---
+        ctx.font = 'italic 20px Times New Roman';
+
+        // Label P
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.font = 'italic bold 20px Times New Roman';
+        ctx.fillText('P', pP.x + 8, pP.y);
+
+        // Dimension y
+        drawDimensionV(ctx, x_slit1 - 20, cy - 10, cy + 10, 'y', 'right');
+
+        // Dimension D
+        drawDimensionV(ctx, x_slit2 + 25, y_slit_top_center, y_slit_bottom_center, 'D', 'left');
+
+        // Dimension w
+        // Top w
+        drawDimensionV(ctx, x_slit2 - 30, y_vertex_top, y_slit_top_center, 'w', 'right');
+        // Bottom w
+        drawDimensionV(ctx, x_slit2 - 30, y_slit_bottom_center, y_vertex_bottom, 'w', 'right');
+
+        // Dimension x
+        drawDimensionH(ctx, x_slit1, cy + 180, x_slit2, cy + 180, 'x');
+
+        // Dimension L
+        drawDimensionH(ctx, x_slit2, cy + 180, x_screen, cy + 180, 'L');
+
+        // Dimension l
+        drawDimensionV(ctx, x_screen + 20, y_P, cy, 'l', 'left');
+
+        // Angle θ
+        const angle_radius = 50;
+        const startAngle = Math.atan2(pP.y - pMid.y, pP.x - pMid.x);
+        const endAngle = 0; // Horizontal line
+        ctx.beginPath();
+        ctx.arc(pMid.x, pMid.y, angle_radius, startAngle, endAngle);
+        ctx.stroke();
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText('θ', pMid.x + angle_radius * 0.8, pMid.y - angle_radius * 0.4);
+        
+        // Figure caption
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillText('Fig. 2.9', canvas.width / 2, canvas.height - 10);
+    </script>
+</body>
+</html>

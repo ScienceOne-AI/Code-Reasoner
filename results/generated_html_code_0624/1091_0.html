@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Physics Diagram Recreation</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f8f9fa;
+    }
+    canvas {
+      border: 1px solid #dee2e6;
+      background-color: white;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="physicsCanvas" width="500" height="550"></canvas>
+  <script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Configuration ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Define coordinates and dimensions ---
+    const centerX = canvas.width / 2;
+    const pathCenterY = 320;
+    const pathRadius = 130;
+
+    const gY = 100;
+    const gRadius = 25;
+    const coilWidth = 120;
+    const rectLeftX = centerX - coilWidth / 2 - 40;
+    const rectRightX = centerX + coilWidth / 2 + 40;
+    const coilY = gY + 60;
+
+    // --- Draw Galvanometer ---
+    ctx.beginPath();
+    ctx.arc(centerX, gY, gRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.font = 'bold 30px Arial';
+    ctx.fillText('G', centerX, gY);
+
+    // --- Draw Connecting Wires ---
+    ctx.beginPath();
+    // Left side
+    ctx.moveTo(centerX - gRadius, gY);
+    ctx.lineTo(rectLeftX, gY);
+    ctx.lineTo(rectLeftX, coilY);
+    // Right side
+    ctx.moveTo(centerX + gRadius, gY);
+    ctx.lineTo(rectRightX, gY);
+    ctx.lineTo(rectRightX, coilY);
+    ctx.stroke();
+
+    // --- Draw the Coil (Solenoid) ---
+    const coilStartX = centerX - coilWidth / 2;
+    const coilEndX = centerX + coilWidth / 2;
+    const numWindings = 7;
+    const windingRadius = 10;
+    const step = coilWidth / numWindings;
+    
+    // Connect wire to coil
+    ctx.beginPath();
+    ctx.moveTo(rectLeftX, coilY);
+    ctx.lineTo(coilStartX, coilY);
+    ctx.stroke();
+    
+    // Draw windings
+    ctx.beginPath();
+    for (let i = 0; i < numWindings; i++) {
+      ctx.arc(coilStartX + i * step + step / 2, coilY, windingRadius, Math.PI, 0, false);
+    }
+    ctx.stroke();
+    
+    // Connect coil to wire
+    ctx.beginPath();
+    ctx.moveTo(coilEndX, coilY);
+    ctx.lineTo(rectRightX, coilY);
+    ctx.stroke();
+
+    // --- Draw Coil Label ---
+    ctx.font = '24px "KaiTi", "SimSun", serif';
+    ctx.fillText('n匝', centerX, coilY + windingRadius + 25);
+
+    // --- Draw the Dashed Circular Path ---
+    // The path has a gap at the top where the particle passes through the coil
+    const gapAngleWidth = 0.9;
+    const topAngle = 1.5 * Math.PI; // Angle for the top of the circle in canvas coordinates
+    const startAngle = topAngle + gapAngleWidth / 2;
+    const endAngle = topAngle - gapAngleWidth / 2;
+    
+    ctx.beginPath();
+    ctx.setLineDash([8, 6]);
+    // Note: Canvas arc angles increase clockwise
+    ctx.arc(centerX, pathCenterY, pathRadius, startAngle, endAngle, false);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line
+
+    // --- Draw the Particle (q_m) and its Motion Arrow ---
+    // Particle position in the bottom-left quadrant (in canvas coordinates, y-axis is down)
+    const particleAngle = 0.85 * Math.PI; 
+    const particleX = centerX + pathRadius * Math.cos(particleAngle);
+    const particleY = pathCenterY + pathRadius * Math.sin(particleAngle);
+
+    // Draw particle as a filled circle
+    ctx.beginPath();
+    ctx.arc(particleX, particleY, 5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Draw particle label 'q_m' with subscript
+    ctx.font = '24px Arial';
+    ctx.textAlign = 'left';
+    const labelX = particleX + 15;
+    const labelY = particleY - 5;
+    ctx.fillText('q', labelX, labelY);
+    ctx.font = '18px Arial';
+    ctx.fillText('m', labelX + 12, labelY + 8);
+    ctx.textAlign = 'center'; // Reset alignment for other text
+
+    // Draw motion arrow
+    const arrowLength = 25;
+    const arrowheadLength = 8;
+    // The tangent vector for counter-clockwise motion in canvas coordinates is (-sin(a), cos(a))
+    // relative to the radius vector (cos(a), sin(a))
+    const tangentAngle = Math.atan2(Math.cos(particleAngle), -Math.sin(particleAngle));
+    
+    // Position the arrow slightly behind the particle, pointing forward
+    const arrowStartX = particleX + 10 * Math.cos(tangentAngle);
+    const arrowStartY = particleY + 10 * Math.sin(tangentAngle);
+    const arrowEndX = arrowStartX - arrowLength * Math.cos(tangentAngle);
+    const arrowEndY = arrowStartY - arrowLength * Math.sin(tangentAngle);
+    
+    ctx.beginPath();
+    ctx.moveTo(arrowStartX, arrowStartY);
+    ctx.lineTo(arrowEndX, arrowEndY);
+    
+    // Draw arrowhead
+    const headAngle = Math.atan2(arrowEndY - arrowStartY, arrowEndX - arrowStartX);
+    ctx.moveTo(arrowEndX, arrowEndY);
+    ctx.lineTo(arrowEndX - arrowheadLength * Math.cos(headAngle - Math.PI / 6), arrowEndY - arrowheadLength * Math.sin(headAngle - Math.PI / 6));
+    ctx.moveTo(arrowEndX, arrowEndY);
+    ctx.lineTo(arrowEndX - arrowheadLength * Math.cos(headAngle + Math.PI / 6), arrowEndY - arrowheadLength * Math.sin(headAngle + Math.PI / 6));
+    ctx.stroke();
+
+    // --- Draw the Bottom Label ---
+    ctx.font = '24px "KaiTi", "SimSun", serif';
+    ctx.fillText('电图 5.19.1', centerX, canvas.height - 30);
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Four-bar Linkage Static Force Analysis</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f8f9fa;
+  }
+  canvas {
+    border: 1px solid #dee2e6;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="myCanvas" width="550" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws an arrow from (fromx, fromy) to (tox, toy).
+     */
+    function drawArrow(ctx, fromx, fromy, tox, toy, arrowWidth, lineWidth) {
+        const headlen = arrowWidth;
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+
+        ctx.save();
+        ctx.strokeStyle = "black";
+        ctx.fillStyle = "black";
+        ctx.lineWidth = lineWidth;
+
+        // Line
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+
+        // Arrowhead
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 7), toy - headlen * Math.sin(angle - Math.PI / 7));
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 7), toy - headlen * Math.sin(angle + Math.PI / 7));
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.restore();
+    }
+
+    /**
+     * Draws hatching lines below a horizontal line segment.
+     */
+    function drawHatching(ctx, x1, y, x2, hatchHeight, hatchSpacing) {
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = x1; i <= x2 + hatchSpacing; i += hatchSpacing) {
+            ctx.moveTo(i, y);
+            ctx.lineTo(i - 8, y + hatchHeight);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    /**
+     * Draws a pin joint.
+     */
+    function drawPin(ctx, x, y, radius, lineWidth) {
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.save();
+        ctx.lineWidth = lineWidth;
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // --- Main Drawing ---
+    
+    // Style settings for the main structure
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Define coordinates based on proportions from the problem
+    const xA = 100;
+    const yA = 300;
+    const h = 150; // length of AB
+    const lenBC = 220;
+    const lenAD = 320;
+
+    const xB = xA;
+    const yB = yA - h;
+    const xC = xB + lenBC;
+    const yC = yB;
+    const xD = xA + lenAD;
+    const yD = yA;
+
+    // Draw bars
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = 'black';
+    ctx.beginPath();
+    ctx.moveTo(xA, yA); // Start at A
+    ctx.lineTo(xB, yB); // AB
+    ctx.lineTo(xC, yC); // BC
+    ctx.lineTo(xD, yD); // CD
+    ctx.stroke();
+    
+    // Draw fixed base AD
+    ctx.beginPath();
+    ctx.moveTo(xA, yA);
+    ctx.lineTo(xD, yD);
+    ctx.stroke();
+
+    // Draw hatching for the fixed base
+    drawHatching(ctx, xA - 10, yA, xD + 10, 20, 12);
+
+    // Draw pin joints
+    const pinRadius = 7;
+    const pinLineWidth = 3;
+    drawPin(ctx, xA, yA, pinRadius, pinLineWidth);
+    drawPin(ctx, xB, yB, pinRadius, pinLineWidth);
+    drawPin(ctx, xC, yC, pinRadius, pinLineWidth);
+    drawPin(ctx, xD, yD, pinRadius, pinLineWidth);
+
+    // Draw forces
+    // Force P at midpoint of AB
+    const midAB_y = (yA + yB) / 2;
+    const p_len = 50;
+    drawArrow(ctx, xA - p_len, midAB_y, xA, midAB_y, 14, 5);
+
+    // Force Q at point E on CD, where CE = CD/4
+    const xE = xC + 0.25 * (xD - xC);
+    const yE = yC + 0.25 * (yD - yC);
+    const q_len = 50;
+    const q_startX = xE + q_len;
+    drawArrow(ctx, q_startX, yE, xE, yE, 14, 5);
+    // Add vertical tail for Q
+    ctx.save();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'black';
+    ctx.beginPath();
+    const tailHeight = 15;
+    ctx.moveTo(q_startX, yE - tailHeight / 2);
+    ctx.lineTo(q_startX, yE + tailHeight / 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // Draw labels
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic bold 28px "Times New Roman", serif';
+    
+    ctx.fillText('A', xA - 30, yA + 5);
+    ctx.fillText('B', xB - 30, yB - 10);
+    ctx.fillText('C', xC + 15, yC - 10);
+    ctx.fillText('D', xD + 15, yD + 5);
+    
+    ctx.font = 'bold 28px "Times New Roman", serif';
+    ctx.fillText('E', xC + 40, yC + 60);
+
+    ctx.font = 'italic bold 32px "Times New Roman", serif';
+    ctx.fillText('P', xA - p_len - 35, midAB_y + 10);
+    ctx.fillText('Q', q_startX + 10, yE + 10);
+
+</script>
+</body>
+</html>

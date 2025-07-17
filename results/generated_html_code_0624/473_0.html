@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Simple Harmonic Motion Graph</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #e0e0e0;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="physics-graph" width="800" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('physics-graph');
+  const ctx = canvas.getContext('2d');
+
+  // --- Configuration ---
+  const margin = { top: 40, right: 40, bottom: 80, left: 80 };
+  const graphWidth = canvas.width - margin.left - margin.right;
+  const graphHeight = canvas.height - margin.top - margin.bottom;
+
+  // Data ranges for the axes
+  const tMin = 0;
+  const tMax = 8;
+  const hMin = 2;
+  const hMax = 18;
+
+  // Scaling functions to convert data coordinates to canvas coordinates
+  const toCanvasX = t => margin.left + (t - tMin) * (graphWidth / (tMax - tMin));
+  const toCanvasY = h => (margin.top + graphHeight) - (h - hMin) * (graphHeight / (hMax - hMin));
+
+  // --- Drawing ---
+
+  // 1. Grid
+  ctx.strokeStyle = '#cccccc'; // Light gray for grid lines
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  // Vertical grid lines (every 0.2s)
+  const tStepSmall = 0.2;
+  for (let t = tMin; t <= tMax + 1e-9; t += tStepSmall) {
+    const x = toCanvasX(t);
+    ctx.moveTo(x, toCanvasY(hMin));
+    ctx.lineTo(x, toCanvasY(hMax));
+  }
+  // Horizontal grid lines (every 1 cm)
+  const hStepSmall = 1;
+  for (let h = hMin; h <= hMax; h += hStepSmall) {
+    const y = toCanvasY(h);
+    ctx.moveTo(toCanvasX(tMin), y);
+    ctx.lineTo(toCanvasX(tMax), y);
+  }
+  ctx.stroke();
+
+  // 2. Axes Box (drawn over the grid to appear bolder)
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(toCanvasX(tMin), toCanvasY(hMax), graphWidth, graphHeight);
+
+  // 3. Ticks and Labels
+  ctx.fillStyle = 'black';
+  ctx.font = '24px Arial';
+  
+  // X-axis ticks and labels
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  [0, 2, 4, 6, 8].forEach(t => {
+    const x = toCanvasX(t);
+    const y = toCanvasY(hMin);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y + 6);
+    ctx.stroke();
+    if (t === 0) {
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ctx.fillText('0', x - 4, y + 4);
+    } else {
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(t, x, y + 8);
+    }
+  });
+
+  // Y-axis ticks and labels
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  [2, 10, 18].forEach(h => {
+    const x = toCanvasX(tMin);
+    const y = toCanvasY(h);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 6, y);
+    ctx.stroke();
+    ctx.fillText(h, x - 10, y);
+  });
+  
+  // 4. Axis Titles
+  ctx.font = 'italic 26px Arial';
+  // h / cm
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('h / cm', toCanvasX(tMin) - 45, toCanvasY(12));
+  
+  // t / s
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('t / s', toCanvasX(7.5), toCanvasY(hMin) + 8);
+
+  // 5. Figure Caption
+  ctx.font = 'bold 24px Arial';
+  ctx.fillText('Fig. 4.1', canvas.width / 2, canvas.height - 30);
+
+  // 6. The Curve
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  
+  const amplitude = 8;
+  const verticalShift = 10;
+  const period = 4;
+  const angularFrequency = 2 * Math.PI / period;
+  
+  const dt = 0.01; // Step for plotting
+
+  for (let t = tMin; t <= tMax + dt/2; t += dt) {
+    const h = amplitude * Math.cos(angularFrequency * t) + verticalShift;
+    const x = toCanvasX(t);
+    const y = toCanvasY(h);
+    if (t === tMin) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+  ctx.stroke();
+
+</script>
+</body>
+</html>

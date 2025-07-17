@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Mass on a Bump</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Drawing Parameters ---
+    ctx.lineWidth = 1.5;
+    ctx.font = 'italic 20px serif';
+    ctx.fillStyle = 'black';
+    ctx.strokeStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const originX = 100;
+    const originY = 400;
+    const l_param = 180; // Represents 'l' in the problem
+    const A_param = 35;  // Represents 'A', amplitude of the bump curve
+
+    const springHeight = 65;
+    const massWidth = 28;
+    const massHeight = 16;
+    const springSegments = 10;
+    const springZigZagWidth = 12;
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws an arrow from (fromx, fromy) to (tox, toy).
+     */
+    function drawArrow(fromx, fromy, tox, toy) {
+        const headlen = 8; // length of head in pixels
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    /**
+     * Draws a vertical spring and a mass on top.
+     * (x_base, y_base) is the coordinate of the bottom of the spring.
+     */
+    function drawSpringAndMass(x_base, y_base) {
+        const y_top = y_base - springHeight;
+
+        // Small circle at the spring base
+        ctx.beginPath();
+        ctx.arc(x_base, y_base, 3.5, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'black';
+
+        // Spring body (zigzag)
+        ctx.beginPath();
+        ctx.moveTo(x_base, y_base);
+        const segmentLength = springHeight / (springSegments + 1);
+        for (let i = 0; i < springSegments; i++) {
+            const y_seg = y_base - (i + 0.5) * segmentLength;
+            const x_offset = (i % 2 === 0) ? -springZigZagWidth / 2 : springZigZagWidth / 2;
+            ctx.lineTo(x_base + x_offset, y_seg);
+        }
+        ctx.lineTo(x_base, y_top);
+        ctx.stroke();
+
+        // Mass block on top
+        ctx.fillRect(x_base - massWidth / 2, y_top - massHeight, massWidth, massHeight);
+
+        // Label 'm'
+        ctx.fillText('m', x_base, y_top - massHeight - 12);
+    }
+
+    // --- Main Drawing Logic ---
+
+    // 1. Draw Coordinate Axes
+    // Y-axis
+    drawArrow(originX, originY + 20, originX, originY - 280);
+    ctx.fillText('y', originX - 25, originY - 270);
+    // X-axis
+    drawArrow(originX - 50, originY, originX + 2 * l_param + 60, originY);
+    ctx.fillText('x', originX + 2 * l_param + 70, originY);
+
+    // 2. Draw the Bump Profile
+    // Dashed line for the flat part (y=0 level)
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash([6, 4]);
+    ctx.moveTo(originX, originY);
+    ctx.lineTo(originX + 2 * l_param, originY);
+    ctx.stroke();
+    ctx.restore();
+
+    // Solid curve for the bump
+    ctx.beginPath();
+    ctx.moveTo(originX, originY);
+    for (let x_pixel = 0; x_pixel <= 2 * l_param; x_pixel += 1) {
+        const y_offset = A_param * (1 - Math.cos(Math.PI * x_pixel / l_param));
+        ctx.lineTo(originX + x_pixel, originY - y_offset);
+    }
+    ctx.stroke();
+
+    // 3. Draw the First Mass-Spring System (at x=0)
+    const x1_base = originX;
+    const y1_base = originY;
+    drawSpringAndMass(x1_base, y1_base);
+
+    // Velocity indicator for the first system
+    const y1_mass_top = y1_base - springHeight - massHeight;
+    const v1_y = y1_mass_top + massHeight/2 + 25; // position below the mass
+    ctx.fillText('v', x1_base - 30, v1_y);
+    drawArrow(x1_base - 18, v1_y, x1_base + 18, v1_y);
+
+
+    // 4. Draw the Second Mass-Spring System (on the bump)
+    const x2_rel = l_param * 0.7; // Relative x position on the bump
+    const x2_base = originX + x2_rel;
+    const y2_bump_offset = A_param * (1 - Math.cos(Math.PI * x2_rel / l_param));
+    const y2_base = originY - y2_bump_offset;
+    drawSpringAndMass(x2_base, y2_base);
+
+    // Velocity indicator for the second system
+    const y2_mass_top = y2_base - springHeight - massHeight;
+    const v2_y = y2_mass_top + massHeight/2 + 25; // position below the mass
+    const v2_arrow_start_x = x2_base - 50;
+    const v2_arrow_end_x = x2_base - 10;
+    ctx.fillText('v', (v2_arrow_start_x + v2_arrow_end_x) / 2, v2_y - 18);
+    drawArrow(v2_arrow_start_x, v2_y, v2_arrow_end_x, v2_y);
+
+    // 5. Add Remaining Labels
+    ctx.fillText('O', originX - 15, originY + 15);
+    ctx.fillText('2l', originX + 2 * l_param, originY + 25);
+    
+    // Figure Caption
+    ctx.font = '18px sans-serif';
+    ctx.fillText('Fig. 1.54.', canvas.width / 2, originY + 70);
+
+</script>
+</body>
+</html>

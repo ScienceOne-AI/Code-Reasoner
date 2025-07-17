@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Speed-Time Graph</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="myCanvas" width="550" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('myCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Graph dimensions and scales
+  const margin = { top: 30, right: 30, bottom: 60, left: 70 };
+  const graphWidth = canvas.width - margin.left - margin.right;
+  const graphHeight = canvas.height - margin.top - margin.bottom;
+  const timeMax = 40;
+  const speedMax = 20;
+
+  // Coordinate transformation functions
+  function mapX(t) {
+    return margin.left + (t / timeMax) * graphWidth;
+  }
+  function mapY(v) {
+    return canvas.height - margin.bottom - (v / speedMax) * graphHeight;
+  }
+
+  // Clear canvas
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // --- Draw Grid ---
+  // The original grid has major divisions every 10s and 5m/s,
+  // with 10 minor divisions in between each major one.
+  // This means minor lines are every 1s and 0.5m/s.
+
+  // Minor grid lines
+  ctx.strokeStyle = '#e0e0e0'; // Light grey for minor lines
+  ctx.lineWidth = 1;
+  // Vertical minor lines (every 1s, but skip major lines)
+  for (let t = 1; t < timeMax; t++) {
+    if (t % 10 !== 0) {
+      ctx.beginPath();
+      ctx.moveTo(mapX(t), mapY(0));
+      ctx.lineTo(mapX(t), mapY(speedMax));
+      ctx.stroke();
+    }
+  }
+  // Horizontal minor lines (every 0.5m/s, but skip major lines)
+  for (let v = 0.5; v < speedMax; v += 0.5) {
+    if (v % 5 !== 0) {
+      ctx.beginPath();
+      ctx.moveTo(mapX(0), mapY(v));
+      ctx.lineTo(mapX(timeMax), mapY(v));
+      ctx.stroke();
+    }
+  }
+
+  // Major grid lines
+  ctx.strokeStyle = '#b0b0b0'; // Darker grey for major lines
+  ctx.lineWidth = 1;
+  // Vertical major lines
+  for (let t = 10; t <= timeMax; t += 10) {
+    ctx.beginPath();
+    ctx.moveTo(mapX(t), mapY(0));
+    ctx.lineTo(mapX(t), mapY(speedMax));
+    ctx.stroke();
+  }
+  // Horizontal major lines
+  for (let v = 5; v <= speedMax; v += 5) {
+    ctx.beginPath();
+    ctx.moveTo(mapX(0), mapY(v));
+    ctx.lineTo(mapX(timeMax), mapY(v));
+    ctx.stroke();
+  }
+
+
+  // --- Draw Axes ---
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 1.5;
+  // X-axis
+  ctx.beginPath();
+  ctx.moveTo(mapX(0), mapY(0));
+  ctx.lineTo(mapX(timeMax), mapY(0));
+  ctx.stroke();
+  // Y-axis
+  ctx.beginPath();
+  ctx.moveTo(mapX(0), mapY(0));
+  ctx.lineTo(mapX(0), mapY(speedMax));
+  ctx.stroke();
+
+  // --- Draw Labels and Ticks ---
+  ctx.fillStyle = 'black';
+  ctx.font = '16px Arial';
+
+  // X-axis labels
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let t = 0; t <= timeMax; t += 10) {
+    ctx.fillText(t, mapX(t), mapY(0) + 8);
+  }
+  ctx.fillText('time / s', mapX(timeMax / 2), mapY(0) + 32);
+  
+  // Y-axis labels
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for (let v = 0; v <= speedMax; v += 5) {
+      if (v > 0) { // Avoid drawing 0 twice
+          ctx.fillText(v, mapX(0) - 8, mapY(v));
+      }
+  }
+  
+  // Y-axis title
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.font = '16px Arial';
+  const yAxisTitleX = margin.left - 45;
+  const yAxisTitleY = mapY(speedMax / 2);
+  
+  ctx.translate(yAxisTitleX, yAxisTitleY);
+  ctx.rotate(-Math.PI / 2);
+  
+  // Draw the text and the fraction line relative to the new (0,0)
+  ctx.fillText('speed', 0, -12);
+  ctx.beginPath();
+  ctx.lineWidth = 1;
+  ctx.moveTo(-25, -2);
+  ctx.lineTo(25, -2);
+  ctx.stroke();
+  ctx.fillText('m / s', 0, 12);
+  ctx.restore();
+
+  // --- Draw Graph Line ---
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  // Start point
+  ctx.moveTo(mapX(0), mapY(0));
+  // Straight line part to (20, 15)
+  ctx.lineTo(mapX(20), mapY(15));
+  // Curved part from (20, 15) to (40, 20)
+  // Control points determined by analysis for a smooth transition and shape.
+  const cp1 = {x: 25, y: 18.75}; // Maintains slope from first part
+  const cp2 = {x: 32, y: 20};    // Pulls curve to horizontal
+  
+  ctx.bezierCurveTo(mapX(cp1.x), mapY(cp1.y), mapX(cp2.x), mapY(cp2.y), mapX(40), mapY(20));
+  ctx.stroke();
+
+  // Figure Caption
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.font = '16px Arial';
+  ctx.fillText('Fig. 1.1', canvas.width / 2, canvas.height - 10);
+
+</script>
+</body>
+</html>

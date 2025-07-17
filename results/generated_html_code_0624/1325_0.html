@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Prism in Laser Beam Diagram</title>
+</head>
+<body>
+<canvas id="canvas" width="550" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = 'italic 20px Times New Roman';
+    const labelFont = '24px SimSun';
+    const axisLabelFont = 'italic 20px Times New Roman';
+
+    // Helper function to draw a line
+    function drawLine(x1, y1, x2, y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    // Helper function to draw an arrow
+    function drawArrow(x1, y1, x2, y2) {
+        drawLine(x1, y1, x2, y2);
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        const size = 10;
+        ctx.save();
+        ctx.beginPath();
+        ctx.translate(x2, y2);
+        ctx.rotate(angle);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+
+    // 1. Prism coordinates (chosen to visually match the image)
+    const Vtf = { x: 400, y: 170 }; // Top-front
+    const Vbf = { x: 400, y: 330 }; // Bottom-front
+    const Vv = { x: 280, y: 240 };  // Vertex (front)
+    const d = { x: -100, y: -40 };  // Depth vector for perspective
+    const Vtb = { x: Vtf.x + d.x, y: Vtf.y + d.y }; // Top-back
+    const Vbb = { x: Vbf.x + d.x, y: Vbf.y + d.y }; // Bottom-back
+    const Vvb = { x: Vv.x + d.x, y: Vv.y + d.y };   // Vertex-back
+
+    // 2. Draw Prism
+    // Solid lines
+    drawLine(Vv.x, Vv.y, Vtf.x, Vtf.y);
+    drawLine(Vv.x, Vv.y, Vbf.x, Vbf.y);
+    drawLine(Vtf.x, Vtf.y, Vtb.x, Vtb.y);
+    drawLine(Vbf.x, Vbf.y, Vbb.x, Vbb.y);
+    drawLine(Vvb.x, Vvb.y, Vtb.x, Vtb.y);
+    drawLine(Vtb.x, Vtb.y, Vbb.x, Vbb.y);
+
+    // Dashed line (as seen in the image, a vertical hidden line)
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    const dash_end_y = Vvb.y + (Vbb.y - Vtb.y) * 0.4;
+    drawLine(Vvb.x, Vvb.y, Vvb.x, dash_end_y);
+    ctx.restore();
+
+    // 3. Draw Axes
+    const O = { x: 180, y: 280 };
+    ctx.font = axisLabelFont;
+    // y-axis
+    drawArrow(O.x, O.y + 120, O.x, O.y - 180);
+    ctx.fillText('y', O.x + 10, O.y - 180);
+    // x-axis
+    drawArrow(O.x, O.y, O.x + 280, O.y - 100);
+    ctx.fillText('x', O.x + 285, O.y - 100);
+    // z-axis
+    drawArrow(O.x, O.y, O.x + 230, O.y + 100);
+    ctx.fillText('z', O.x + 235, O.y + 105);
+
+    // 4. Dimensions and Labels
+    ctx.font = 'italic 20px Times New Roman';
+    // 2h
+    const h_dim_x = Vtf.x + 40;
+    drawLine(h_dim_x, Vtf.y, h_dim_x, Vbf.y);
+    drawLine(h_dim_x - 5, Vtf.y, h_dim_x + 5, Vtf.y);
+    drawLine(h_dim_x - 5, Vbf.y, h_dim_x + 5, Vbf.y);
+    ctx.fillText('2h', h_dim_x + 10, (Vtf.y + Vbf.y) / 2 + 8);
+
+    // w
+    const w_dim_y = Vbf.y + 40;
+    drawLine(Vbb.x, w_dim_y, Vbf.x, w_dim_y);
+    drawLine(Vbb.x, w_dim_y - 5, Vbb.x, w_dim_y + 5);
+    drawLine(Vbf.x, w_dim_y - 5, Vbf.x, w_dim_y + 5);
+    ctx.fillText('w', (Vbb.x + Vbf.x) / 2 - 10, w_dim_y + 25);
+
+    // Angle A
+    const angle_Vv_Vtf = Math.atan2(Vtf.y - Vv.y, Vtf.x - Vv.x);
+    const angle_Vv_Vbf = Math.atan2(Vbf.y - Vv.y, Vbf.x - Vv.x);
+    ctx.beginPath();
+    ctx.arc(Vv.x, Vv.y, 28, angle_Vv_Vtf, angle_Vv_Vbf);
+    ctx.stroke();
+    ctx.fillText('A', Vv.x + 18, Vv.y + 8);
+
+    // Angles alpha
+    // Top alpha
+    const angle_Vtf_Vv = Math.atan2(Vv.y - Vtf.y, Vv.x - Vtf.x);
+    const angle_Vtf_Vbf = Math.atan2(Vbf.y - Vtf.y, Vbf.x - Vtf.x); // This is PI/2
+    ctx.beginPath();
+    ctx.arc(Vtf.x, Vtf.y, 25, angle_Vtf_Vbf, angle_Vtf_Vv, false);
+    ctx.stroke();
+    ctx.fillText('α', Vtf.x - 30, Vtf.y + 30);
+    
+    // Bottom alpha
+    const angle_Vbf_Vv = Math.atan2(Vv.y - Vbf.y, Vv.x - Vbf.x);
+    const angle_Vbf_Vtf = Math.atan2(Vtf.y - Vbf.y, Vtf.x - Vbf.x); // This is -PI/2
+    ctx.beginPath();
+    ctx.arc(Vbf.x, Vbf.y, 25, angle_Vbf_Vtf, angle_Vbf_Vv, false);
+    ctx.stroke();
+    ctx.fillText('α', Vbf.x - 30, Vbf.y - 20);
+
+    // 5. Caption
+    ctx.font = labelFont;
+    ctx.fillText('图 1', 280, 450);
+
+</script>
+</body>
+</html>

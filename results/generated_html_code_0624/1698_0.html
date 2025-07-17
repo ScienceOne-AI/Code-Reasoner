@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Particle Collision Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas"></canvas>
+    <script>
+        // Get canvas and context
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Canvas dimensions
+        canvas.width = 500;
+        canvas.height = 350;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Global drawing styles
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 24px serif';
+
+        /**
+         * Draws a line from (x1, y1) to (x2, y2) with a stylized diamond-shaped arrow in the middle.
+         * The line is broken to accommodate the arrow.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x1 - The x-coordinate of the starting point.
+         * @param {number} y1 - The y-coordinate of the starting point.
+         * @param {number} x2 - The x-coordinate of the ending point.
+         * @param {number} y2 - The y-coordinate of the ending point.
+         */
+        function drawLineWithArrow(ctx, x1, y1, x2, y2) {
+            const arrowLength = 14;
+            const arrowWidth = 7;
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            
+            // Calculate gap for the arrow
+            const gap = arrowLength;
+            const p1x = midX - (gap / 2) * Math.cos(angle);
+            const p1y = midY - (gap / 2) * Math.sin(angle);
+            const p2x = midX + (gap / 2) * Math.cos(angle);
+            const p2y = midY + (gap / 2) * Math.sin(angle);
+
+            // Draw the first line segment
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(p1x, p1y);
+            ctx.stroke();
+
+            // Draw the second line segment
+            ctx.beginPath();
+            ctx.moveTo(p2x, p2y);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // Draw the arrow head (diamond shape) in the gap
+            ctx.save();
+            ctx.translate(midX, midY);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(arrowLength / 2, 0);
+            ctx.lineTo(0, arrowWidth / 2);
+            ctx.lineTo(-arrowLength / 2, 0);
+            ctx.lineTo(0, -arrowWidth / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Parameters for the diagram elements
+        const cx = 250;
+        const cy = 150;
+        const rhoRadius = 30;
+        const incomingX = 100;
+        const incomingPionRadius = 8;
+        const outgoingPionX = 420;
+        const outgoingPionY = 70;
+        const outgoingPionRadius = 10;
+        const outgoingProtonX = 390;
+        const outgoingProtonY = 250;
+        const outgoingProtonRadius = 20;
+
+        // --- Drawing Sequence ---
+
+        // 1. Central vertex (ρ)
+        ctx.beginPath();
+        ctx.arc(cx, cy, rhoRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('ρ', cx, cy - rhoRadius - 5);
+
+        // 2. Incoming pion (π)
+        const startX_in = incomingX + incomingPionRadius;
+        const connectX_in = cx - rhoRadius;
+        drawLineWithArrow(ctx, startX_in, cy, connectX_in, cy);
+        
+        // Draw the hollow circle for the incoming pion
+        ctx.beginPath();
+        ctx.arc(incomingX, cy, incomingPionRadius, 0, 2 * Math.PI);
+        ctx.save();
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.restore();
+        ctx.stroke();
+        
+        // Label for the incoming pion
+        ctx.fillText('π', incomingX, cy - incomingPionRadius - 5);
+
+        // 3. Outgoing pion (π)
+        const angle_pi_out = Math.atan2(outgoingPionY - cy, outgoingPionX - cx);
+        const connectX_pi_out = cx + rhoRadius * Math.cos(angle_pi_out);
+        const connectY_pi_out = cy + rhoRadius * Math.sin(angle_pi_out);
+        const endX_pi_out = outgoingPionX - (outgoingPionRadius + ctx.lineWidth / 2) * Math.cos(angle_pi_out);
+        const endY_pi_out = outgoingPionY - (outgoingPionRadius + ctx.lineWidth / 2) * Math.sin(angle_pi_out);
+        drawLineWithArrow(ctx, connectX_pi_out, connectY_pi_out, endX_pi_out, endY_pi_out);
+        
+        // Draw the filled circle for the outgoing pion
+        ctx.beginPath();
+        ctx.arc(outgoingPionX, outgoingPionY, outgoingPionRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Label for the outgoing pion
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('π', outgoingPionX + outgoingPionRadius + 10, outgoingPionY);
+
+        // 4. Outgoing proton (p)
+        const angle_p_out = Math.atan2(outgoingProtonY - cy, outgoingProtonX - cx);
+        const connectX_p_out = cx + rhoRadius * Math.cos(angle_p_out);
+        const connectY_p_out = cy + rhoRadius * Math.sin(angle_p_out);
+        const endX_p_out = outgoingProtonX - (outgoingProtonRadius + ctx.lineWidth / 2) * Math.cos(angle_p_out);
+        const endY_p_out = outgoingProtonY - (outgoingProtonRadius + ctx.lineWidth / 2) * Math.sin(angle_p_out);
+        drawLineWithArrow(ctx, connectX_p_out, connectY_p_out, endX_p_out, endY_p_out);
+
+        // Draw the filled circle for the outgoing proton
+        ctx.beginPath();
+        ctx.arc(outgoingProtonX, outgoingProtonY, outgoingProtonRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Label for the outgoing proton
+        ctx.fillText('p', outgoingProtonX + outgoingProtonRadius + 10, outgoingProtonY);
+
+        // 5. Figure Caption
+        ctx.font = '20px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText('Fig. 3.20.', canvas.width / 2, canvas.height - 20);
+    </script>
+</body>
+</html>

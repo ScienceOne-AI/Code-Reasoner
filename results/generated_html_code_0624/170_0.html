@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Proton Form Factor Plot</title>
+</head>
+<body>
+    <canvas id="myCanvas" width="550" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Plot dimensions and margins
+        const margin = { top: 40, right: 30, bottom: 80, left: 70 };
+        const plotWidth = canvas.width - margin.left - margin.right;
+        const plotHeight = canvas.height - margin.top - margin.bottom;
+
+        // Data ranges
+        const xMin = 0, xMax = 18;
+        const yMin = 0, yMax = 1.2;
+
+        // Coordinate transformation functions
+        function toX(x) {
+            return margin.left + (x - xMin) / (xMax - xMin) * plotWidth;
+        }
+
+        function toY(y) {
+            return margin.top + plotHeight - (y - yMin) / (yMax - yMin) * plotHeight;
+        }
+
+        // Draw axes frame
+        ctx.beginPath();
+        ctx.moveTo(toX(xMin), toY(yMin));
+        ctx.lineTo(toX(xMax), toY(yMin));
+        ctx.lineTo(toX(xMax), toY(yMax));
+        ctx.lineTo(toX(xMin), toY(yMax));
+        ctx.closePath();
+        ctx.stroke();
+
+        // Draw X-axis ticks and labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let i = 0; i <= 18; i += 2) {
+            const x = toX(i);
+            ctx.beginPath();
+            ctx.moveTo(x, toY(yMin));
+            ctx.lineTo(x, toY(yMin) - 5);
+            ctx.moveTo(x, toY(yMax));
+            ctx.lineTo(x, toY(yMax) + 5);
+            ctx.stroke();
+            ctx.fillText(i, x, toY(yMin) + 8);
+        }
+
+        // Draw Y-axis ticks and labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let i = 0.2; i <= 1.01; i += 0.2) {
+            const val = Math.round(i * 10) / 10;
+            const y = toY(val);
+            ctx.beginPath();
+            ctx.moveTo(toX(xMin), y);
+            ctx.lineTo(toX(xMin) + 5, y);
+            ctx.moveTo(toX(xMax), y);
+            ctx.lineTo(toX(xMax) - 5, y);
+            ctx.stroke();
+            ctx.fillText(val.toFixed(1), toX(xMin) - 8, y);
+        }
+        // Draw the 1.2 tick without a label
+        const y12 = toY(1.2);
+        ctx.beginPath();
+        ctx.moveTo(toX(xMin), y12);
+        ctx.lineTo(toX(xMin) + 5, y12);
+        ctx.moveTo(toX(xMax), y12);
+        ctx.lineTo(toX(xMax) - 5, y12);
+        ctx.stroke();
+
+        // Draw axis labels
+        // Y-axis label: F(q²)
+        ctx.save();
+        ctx.font = 'italic 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        const yLabelX = margin.left - 50;
+        const yLabelY = margin.top + plotHeight / 2;
+        ctx.translate(yLabelX, yLabelY);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('F (q  )', 0, 0);
+        ctx.save();
+        ctx.font = 'italic 14px Arial';
+        ctx.fillText('2', 15, -15);
+        ctx.restore();
+        ctx.restore();
+
+        // X-axis label: (q/ħ)² (10²⁶ cm⁻²)
+        ctx.font = '20px Arial';
+        ctx.textBaseline = 'top';
+        const xLabelY = canvas.height - margin.bottom + 30;
+        const xLabelXCenter = margin.left + plotWidth / 2;
+        
+        const labelText = "(q/ħ)² (10²⁶ cm⁻²)";
+        const textWidth = ctx.measureText(labelText.replace('ħ','h').replace('²','2').replace('⁻','-')).width;
+        let currentX = xLabelXCenter - textWidth/2 - 20; // manual adjustment for better centering
+        
+        ctx.textAlign = 'left';
+        ctx.fillText('(q /', currentX, xLabelY);
+        currentX += ctx.measureText('(q /').width;
+        ctx.save();
+        ctx.font = 'italic 20px Arial';
+        ctx.fillText('h', currentX, xLabelY);
+        ctx.beginPath();
+        ctx.moveTo(currentX, xLabelY - 7);
+        ctx.lineTo(currentX + ctx.measureText('h').width, xLabelY - 7);
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        currentX += ctx.measureText('h').width;
+        ctx.restore();
+        ctx.lineWidth = 1;
+        ctx.fillText(') ', currentX, xLabelY);
+        currentX += ctx.measureText(') ').width;
+
+        ctx.save();
+        ctx.font = '14px Arial';
+        ctx.fillText('2', currentX, xLabelY - 8);
+        ctx.restore();
+        currentX += ctx.measureText('2').width + 10;
+
+        ctx.fillText('(10', currentX, xLabelY);
+        currentX += ctx.measureText('(10').width;
+        ctx.save();
+        ctx.font = '14px Arial';
+        ctx.fillText('26', currentX, xLabelY - 8);
+        ctx.restore();
+        currentX += ctx.measureText('26').width;
+        ctx.fillText(' cm', currentX, xLabelY);
+        currentX += ctx.measureText(' cm').width;
+
+        ctx.save();
+        ctx.font = '14px Arial';
+        ctx.fillText('-2', currentX, xLabelY - 8);
+        ctx.restore();
+        currentX += ctx.measureText('-2').width;
+        ctx.fillText(')', currentX, xLabelY);
+
+        // Caption
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 2.3', margin.left + plotWidth / 2, canvas.height - 15);
+
+        // Data points
+        const data = [
+            { x: 0.2, y: 0.98, err: 0.02 },
+            { x: 0.4, y: 0.95, err: 0.02 },
+            { x: 0.7, y: 0.88, err: 0.03 },
+            { x: 0.9, y: 0.85, err: 0.03 },
+            { x: 1.2, y: 0.86, err: 0.03 },
+            { x: 1.5, y: 0.79, err: 0.04 },
+            { x: 1.9, y: 0.83, err: 0.04 },
+            { x: 4.8, y: 0.62, err: 0.04 },
+            { x: 7.0, y: 0.48, err: 0.04 },
+            { x: 8.0, y: 0.44, err: 0.04 },
+            { x: 9.8, y: 0.38, err: 0.04 },
+            { x: 10.8, y: 0.35, err: 0.04 },
+            { x: 12.0, y: 0.33, err: 0.04 },
+            { x: 13.8, y: 0.30, err: 0.04 },
+            { x: 15.5, y: 0.28, err: 0.04 },
+            { x: 17.0, y: 0.25, err: 0.04 }
+        ];
+
+        // Function to draw diamond marker
+        function drawDiamond(x_canvas, y_canvas, size) {
+            ctx.beginPath();
+            ctx.moveTo(x_canvas, y_canvas - size);
+            ctx.lineTo(x_canvas + size, y_canvas);
+            ctx.lineTo(x_canvas, y_canvas + size);
+            ctx.lineTo(x_canvas - size, y_canvas);
+            ctx.closePath();
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        // Function to draw error bar
+        function drawErrorBar(x_data, y_data, y_err) {
+            const x_c = toX(x_data);
+            const y_c = toY(y_data);
+            const y_err_p = y_err / (yMax - yMin) * plotHeight;
+            const capWidth = 3;
+
+            ctx.beginPath();
+            ctx.moveTo(x_c, y_c - y_err_p);
+            ctx.lineTo(x_c, y_c + y_err_p);
+            ctx.moveTo(x_c - capWidth, y_c - y_err_p);
+            ctx.lineTo(x_c + capWidth, y_c - y_err_p);
+            ctx.moveTo(x_c - capWidth, y_c + y_err_p);
+            ctx.lineTo(x_c + capWidth, y_c + y_err_p);
+            ctx.stroke();
+        }
+
+        // Plot data
+        ctx.lineWidth = 1.2;
+        data.forEach(p => {
+            drawErrorBar(p.x, p.y, p.err);
+            drawDiamond(toX(p.x), toY(p.y), 4);
+        });
+    </script>
+</body>
+</html>

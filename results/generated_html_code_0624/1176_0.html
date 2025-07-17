@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fabry-Pérot Interferometer</title>
+</head>
+<body>
+<canvas id="fabryPerotCanvas" width="800" height="400" style="border:1px solid #000;"></canvas>
+
+<script>
+    const canvas = document.getElementById('fabryPerotCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // --- Helper Functions ---
+    function drawArrowhead(x, y, angle, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawRay(x1, y1, x2, y2, arrowData) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        if (arrowData) {
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            for (const pos of arrowData.positions) {
+                const x = x1 + (x2 - x1) * pos;
+                const y = y1 + (y2 - y1) * pos;
+                drawArrowhead(x, y, angle, arrowData.size);
+            }
+        }
+    }
+
+    function drawDoubleArrow(x1, y1, x2, y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        // Arrowheads
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        drawArrowhead(x1, y1, angle + Math.PI, 8);
+        drawArrowhead(x2, y2, angle, 8);
+        ctx.stroke();
+    }
+
+    // --- Drawing Parameters ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.font = 'italic 18px Times New Roman';
+
+    const yCenter = 200;
+    const xScatterer = 150;
+    const xPlate1 = 180;
+    const xPlate2 = 210;
+    const xLens = 420;
+    const xScreen = 700;
+    const f = xScreen - xLens;
+
+    const yFocusTop = 140; // R_m = yCenter - yFocusTop = 60
+    const slope = (yFocusTop - yCenter) / f; // Should be negative
+
+    // --- Draw Components ---
+
+    // 1. Central Axis
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = '#888888';
+    drawRay(0, yCenter, canvas.width, yCenter, null);
+    ctx.restore();
+
+    // 2. Incoming Rays
+    const incomingRaysY = [140, 200, 260];
+    const incomingArrow = { positions: [0.5], size: 8 };
+    for (const y of incomingRaysY) {
+        drawRay(20, y, xScatterer, y, incomingArrow);
+    }
+    
+    // 3. Scatterer
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(xScatterer - 10, 110, 10, 180);
+    ctx.strokeRect(xScatterer - 10, 110, 10, 180);
+    ctx.beginPath();
+    ctx.moveTo(xScatterer, 110);
+    for (let y = 110; y < 290; y += 10) {
+        ctx.lineTo(xScatterer + 3 * ((y / 10) % 2 === 0 ? 1 : -1), y + 5);
+    }
+    ctx.lineTo(xScatterer, 290);
+    ctx.stroke();
+    ctx.fillText('Scatterer', xScatterer - 40, 100);
+
+    // 4. Interferometer Plates
+    ctx.fillStyle = '#cccccc';
+    ctx.fillRect(xPlate1, 110, 15, 180);
+    ctx.strokeRect(xPlate1, 110, 15, 180);
+    ctx.fillRect(xPlate2, 110, 15, 180);
+    ctx.strokeRect(xPlate2, 110, 15, 180);
+
+    // 'h' dimension
+    ctx.beginPath();
+    ctx.moveTo(xPlate1 + 7.5, 105);
+    ctx.lineTo(xPlate1 + 7.5, 95);
+    ctx.moveTo(xPlate2 + 7.5, 105);
+    ctx.lineTo(xPlate2 + 7.5, 95);
+    ctx.stroke();
+    drawDoubleArrow(xPlate1 + 7.5, 100, xPlate2 + 7.5, 100);
+    ctx.fillText('h', (xPlate1 + xPlate2) / 2 - 5, 90);
+
+    // 5. Rays from Interferometer to Lens
+    const rayArrowMulti = { positions: [0.3, 0.4, 0.5], size: 5 };
+    const dx = xLens - (xPlate2 + 15);
+    const dy = slope * dx;
+
+    // Top bundle
+    const topRaysY_start = [135, 150, 165];
+    for (const y_start of topRaysY_start) {
+        drawRay(xPlate2 + 15, y_start, xLens, y_start + dy, rayArrowMulti);
+    }
+    // Middle Ray
+    drawRay(xPlate2 + 15, yCenter, xLens, yCenter, rayArrowMulti);
+    // Bottom bundle
+    const botRaysY_start = [235, 250, 265];
+     for (const y_start of botRaysY_start) {
+        drawRay(xPlate2 + 15, y_start, xLens, y_start - dy, rayArrowMulti);
+    }
+
+    // 6. Lens L
+    ctx.lineWidth = 2.5;
+    drawDoubleArrow(xLens, 50, xLens, 350);
+    ctx.lineWidth = 1;
+    ctx.fillText('L', xLens + 15, 60);
+
+    // 7. Rays from Lens to Screen
+    // Top bundle converging
+    for (const y_start of topRaysY_start) {
+         drawRay(xLens, y_start + dy, xScreen, yFocusTop, null);
+    }
+    // Middle ray
+    drawRay(xLens, yCenter, xScreen, yCenter, null);
+    // Bottom bundle converging
+    const yFocusBottom = yCenter + (yCenter - yFocusTop);
+    for (const y_start of botRaysY_start) {
+         drawRay(xLens, y_start - dy, xScreen, yFocusBottom, null);
+    }
+
+    // 8. Screen
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(xScreen, 100);
+    ctx.lineTo(xScreen, 300);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+
+    // 9. 'f' dimension
+    drawDoubleArrow(xLens, 360, xScreen, 360);
+    ctx.fillText('f', (xLens + xScreen) / 2 - 5, 385);
+
+    // 10. 'R_m' dimension
+    drawDoubleArrow(xScreen + 10, yCenter, xScreen + 10, yFocusTop);
+    ctx.fillText('R', xScreen + 20, (yCenter + yFocusTop) / 2 + 8);
+    ctx.font = 'italic 14px Times New Roman';
+    ctx.fillText('m', xScreen + 30, (yCenter + yFocusTop) / 2 + 12);
+
+</script>
+</body>
+</html>

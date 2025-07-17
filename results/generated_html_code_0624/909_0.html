@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Device Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="550" height="350"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 8; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        // Helper function for double-headed arrow
+        function drawDoubleArrow(ctx, x1, y1, x2, y2) {
+            ctx.beginPath();
+            // line
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            // heads
+            const headlen = 8;
+            const angle1 = Math.atan2(y2 - y1, x2 - x1);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + headlen * Math.cos(angle1 + Math.PI / 6), y1 + headlen * Math.sin(angle1 + Math.PI / 6));
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + headlen * Math.cos(angle1 - Math.PI / 6), y1 + headlen * Math.sin(angle1 - Math.PI / 6));
+
+            const angle2 = Math.atan2(y1 - y2, x1 - x2);
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 + headlen * Math.cos(angle2 + Math.PI / 6), y2 + headlen * Math.sin(angle2 + Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 + headlen * Math.cos(angle2 - Math.PI / 6), y2 + headlen * Math.sin(angle2 - Math.PI / 6));
+
+            ctx.stroke();
+        }
+
+        // Parameters
+        const cy = 170;
+        const r = 65;
+        const d = 24;
+        const gh = d / 2; // gap half
+        
+        const cx_l = 100;
+        const cx_r = 450;
+        
+        const cyl_back_shift = 100;
+
+        // --- Draw Right Cylinder ---
+        const gap_x_r = cx_r - Math.sqrt(r * r - gh * gh);
+        const angle_r_top = Math.atan2(-gh, gap_x_r - cx_r);
+        const angle_r_bot = Math.atan2(gh, gap_x_r - cx_r);
+
+        ctx.beginPath();
+        // Front arc
+        ctx.arc(cx_r, cy, r, angle_r_bot, angle_r_top);
+        // Top line
+        ctx.moveTo(cx_r, cy - r);
+        ctx.lineTo(cx_r - cyl_back_shift, cy - r);
+        // Bottom line
+        ctx.moveTo(cx_r, cy + r);
+        ctx.lineTo(cx_r - cyl_back_shift, cy + r);
+        // Back arc
+        ctx.arc(cx_r - cyl_back_shift, cy, r, -Math.PI / 2, Math.PI / 2);
+        ctx.stroke();
+
+        // Right cylinder center and radius line
+        ctx.beginPath();
+        ctx.arc(cx_r, cy, 2.5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(cx_r, cy);
+        ctx.lineTo(cx_r - 35, cy - 35);
+        ctx.stroke();
+        ctx.font = 'italic 20px "Times New Roman"';
+        ctx.fillText('o', cx_r + 5, cy + 8);
+
+
+        // --- Draw Left Cylinder ---
+        const gap_x_l = cx_l + Math.sqrt(r * r - gh * gh);
+        const angle_l_top = Math.atan2(-gh, gap_x_l - cx_l);
+        const angle_l_bot = Math.atan2(gh, gap_x_l - cx_l);
+
+        ctx.beginPath();
+        // Front arc
+        ctx.arc(cx_l, cy, r, angle_l_top, angle_l_bot, true);
+        // Top line
+        ctx.moveTo(cx_l, cy - r);
+        ctx.lineTo(cx_l - cyl_back_shift, cy - r);
+        // Bottom line
+        ctx.moveTo(cx_l, cy + r);
+        ctx.lineTo(cx_l - cyl_back_shift, cy + r);
+        // Back arc
+        ctx.arc(cx_l - cyl_back_shift, cy, r, -Math.PI / 2, Math.PI / 2);
+        ctx.stroke();
+
+        // Left cylinder center and radius line
+        ctx.beginPath();
+        ctx.arc(cx_l, cy, 2.5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(cx_l, cy);
+        ctx.lineTo(cx_l - 35, cy - 35);
+        ctx.stroke();
+
+        // --- Draw Connecting Plates ---
+        ctx.beginPath();
+        ctx.moveTo(gap_x_l, cy - gh);
+        ctx.lineTo(gap_x_r, cy - gh);
+        ctx.moveTo(gap_x_l, cy + gh);
+        ctx.lineTo(gap_x_r, cy + gh);
+        ctx.stroke();
+        
+        // --- Draw Labels and Arrows ---
+        ctx.font = 'italic 22px "Times New Roman"';
+        
+        // Label 'd'
+        const d_arrow_x = (gap_x_l + gap_x_r) / 2 + 20;
+        drawDoubleArrow(ctx, d_arrow_x, cy - gh, d_arrow_x, cy + gh);
+        ctx.fillText('d', d_arrow_x + 8, cy + 8);
+
+        // Label 'l'
+        const l_arrow_start_x = 180;
+        const l_arrow_start_y = cy - gh + 5;
+        const l_arrow_end_x = 350;
+        const l_arrow_end_y = cy - gh - 35;
+        drawDoubleArrow(ctx, l_arrow_start_x, l_arrow_start_y, l_arrow_end_x, l_arrow_end_y);
+        ctx.fillText('l', (l_arrow_start_x + l_arrow_end_x) / 2 - 25, (l_arrow_start_y + l_arrow_end_y) / 2 + 15);
+
+        // Label 'I'
+        const i_arrow_y = cy - gh - 20;
+        const i_arrow_start = 320;
+        const i_arrow_end = 260;
+        drawArrow(ctx, i_arrow_start, i_arrow_y, i_arrow_end, i_arrow_y);
+        ctx.fillText('I', i_arrow_start + 10, i_arrow_y + 8);
+
+        // --- Draw bottom text ---
+        ctx.font = '22px "SimSun", "Songti SC", serif'; // Use fonts that support Chinese characters
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 9-22 图', canvas.width / 2, 320);
+
+    </script>
+</body>
+</html>

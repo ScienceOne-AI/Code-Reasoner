@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set drawing styles
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Constants and Coordinates ---
+        const angleDeg = 37;
+        const angleRad = angleDeg * Math.PI / 180;
+        const groundY = 350;
+
+        // Pulley properties
+        const pulleyCenter = { x: 200, y: 130 };
+        const pulleyRadius = 40;
+
+        // Incline and Support Structure coordinates derived from pulley and angle
+        const inclineTop = { x: pulleyCenter.x, y: pulleyCenter.y };
+        const inclineHeight = groundY - inclineTop.y;
+        const inclineBase = inclineHeight / Math.tan(angleRad);
+        const inclineBottomRight = { x: inclineTop.x + inclineBase, y: groundY };
+
+        // --- Drawing Functions ---
+
+        // Draw Ground
+        ctx.beginPath();
+        ctx.moveTo(50, groundY);
+        ctx.lineTo(550, groundY);
+        ctx.stroke();
+        
+        // Draw Incline shape and vertical support
+        ctx.beginPath();
+        ctx.moveTo(inclineTop.x, groundY);
+        ctx.lineTo(inclineTop.x, inclineTop.y);
+        ctx.lineTo(inclineBottomRight.x, groundY);
+        ctx.lineTo(inclineTop.x, groundY);
+        ctx.stroke();
+
+        // Draw Pulley
+        ctx.beginPath();
+        ctx.arc(pulleyCenter.x, pulleyCenter.y, pulleyRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.font = '20px sans-serif';
+        ctx.fillText('J', pulleyCenter.x, pulleyCenter.y + 5);
+
+        // Draw Spring and its rope
+        const springRopeX = pulleyCenter.x - pulleyRadius;
+        const springTopY = pulleyCenter.y;
+        const springStartY = 200;
+        
+        ctx.beginPath();
+        ctx.moveTo(springRopeX, springTopY);
+        ctx.lineTo(springRopeX, springStartY);
+        ctx.stroke();
+
+        // Helper function to draw the spring
+        function drawSpring(x, y1, y2, width, turns) {
+            ctx.beginPath();
+            ctx.moveTo(x, y1);
+            const h = y2 - y1;
+            const segmentH = h / turns;
+            for (let i = 0; i < turns; i++) {
+                ctx.lineTo(x + width * (i % 2 === 0 ? 1 : -1), y1 + (i + 0.5) * segmentH);
+            }
+            ctx.lineTo(x, y2);
+            ctx.stroke();
+        }
+        drawSpring(springRopeX, springStartY, groundY, 10, 10);
+        ctx.font = '20px sans-serif';
+        ctx.fillText('k', springRopeX - 25, 275);
+
+        // Draw Block
+        const blockW = 60;
+        const blockH = 50;
+        const distFromTop = 180; // Distance of block's center from the top of the incline
+        const blockCenterX = inclineTop.x + distFromTop * Math.cos(angleRad);
+        const blockCenterY = inclineTop.y + distFromTop * Math.sin(angleRad);
+
+        ctx.save();
+        ctx.translate(blockCenterX, blockCenterY);
+        ctx.rotate(angleRad);
+        ctx.strokeRect(-blockW / 2, -blockH / 2, blockW, blockH);
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('m', 0, 0);
+        ctx.restore();
+        
+        // Draw Main Rope (from block to pulley)
+        const tangentAngle = angleRad - Math.PI / 2; // Angle of radius perpendicular to incline rope
+        const tangentX = pulleyCenter.x + pulleyRadius * Math.cos(tangentAngle);
+        const tangentY = pulleyCenter.y + pulleyRadius * Math.sin(tangentAngle);
+        
+        // Find attachment point on the front face of the block
+        const attachLocalX = -blockW / 2;
+        const attachWorldX = blockCenterX + attachLocalX * Math.cos(angleRad);
+        const attachWorldY = blockCenterY + attachLocalX * Math.sin(angleRad);
+
+        ctx.beginPath();
+        ctx.moveTo(attachWorldX, attachWorldY);
+        ctx.lineTo(tangentX, tangentY);
+        ctx.stroke();
+
+        // Draw the "wedge" inside the pulley to indicate the radius 'r'
+        ctx.beginPath();
+        ctx.moveTo(pulleyCenter.x, pulleyCenter.y);
+        ctx.lineTo(tangentX, tangentY);
+        const wedgeAngle = 25 * Math.PI / 180; // Angle for the other side of the wedge
+        const wedgePtX = pulleyCenter.x + pulleyRadius * Math.cos(tangentAngle + wedgeAngle);
+        const wedgePtY = pulleyCenter.y + pulleyRadius * Math.sin(tangentAngle + wedgeAngle);
+        ctx.lineTo(wedgePtX, wedgePtY);
+        ctx.closePath();
+        ctx.stroke();
+        
+        ctx.font = '20px sans-serif';
+        ctx.fillText('r', pulleyCenter.x + 15, pulleyCenter.y - 25);
+        
+        // Draw Angle label '37°'
+        ctx.beginPath();
+        ctx.arc(inclineBottomRight.x, inclineBottomRight.y, 50, Math.PI, Math.PI - angleRad, true);
+        ctx.stroke();
+        ctx.fillText('37°', inclineBottomRight.x - 60, inclineBottomRight.y - 20);
+
+        // Draw Caption
+        ctx.font = '24px SimHei'; // Use a font that supports Chinese characters
+        ctx.fillText('习题 3-13 图', 300, 420);
+
+    </script>
+</body>
+</html>

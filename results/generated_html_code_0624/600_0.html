@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Op-Amp Circuit Diagram</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    canvas {
+        border: 1px solid #ccc;
+        background-color: white;
+    }
+</style>
+</head>
+<body>
+<canvas id="circuitCanvas" width="620" height="420"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Helper functions
+    function drawTerminal(x, y, label, labelPos) {
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.restore();
+
+        let labelX = x;
+        if (labelPos === 'left') {
+            labelX = x - 15;
+            ctx.textAlign = 'right';
+        } else if (labelPos === 'right') {
+            labelX = x + 15;
+            ctx.textAlign = 'left';
+        }
+        ctx.fillText(label, labelX, y);
+        ctx.textAlign = 'center'; // reset
+    }
+
+    function drawNode(x, y) {
+        ctx.beginPath();
+        ctx.arc(x, y, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+
+    function drawResistor(x, y, width, height, label) {
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x, y - height / 2, width, height);
+        ctx.restore();
+        ctx.fillText(label, x + width / 2, y - height / 2 - 12);
+    }
+    
+    // --- Define coordinates ---
+    const opAmpBaseX = 320;
+    const opAmpTipX = 420;
+    const opAmpMidY = 200;
+    const opAmpHeight = 120;
+    const invertingY = 170;
+    const nonInvertingY = 230;
+    const inputNodeX = 270;
+    const outputNodeX = 470;
+    const feedbackY = 100;
+    const groundY = 320;
+    const leftMargin = 60;
+    const rightMargin = 560;
+
+
+    // --- Draw the circuit ---
+
+    // Op-Amp Body (Triangle)
+    ctx.beginPath();
+    ctx.moveTo(opAmpBaseX, opAmpMidY - opAmpHeight / 2); // top-left
+    ctx.lineTo(opAmpTipX, opAmpMidY);                    // right tip
+    ctx.lineTo(opAmpBaseX, opAmpMidY + opAmpHeight / 2); // bottom-left
+    ctx.closePath();
+    ctx.stroke();
+
+    // Op-Amp Symbols
+    ctx.font = '24px sans-serif';
+    ctx.fillText('−', opAmpBaseX + 15, invertingY + 2);
+    ctx.font = '20px sans-serif';
+    ctx.fillText('+', opAmpBaseX + 15, nonInvertingY + 2);
+    ctx.font = '16px sans-serif'; // reset font
+
+    // Op-Amp Power Supply
+    const pwrSupplyX = 370;
+    ctx.beginPath();
+    ctx.moveTo(pwrSupplyX, opAmpMidY - opAmpHeight / 2 + 5);
+    ctx.lineTo(pwrSupplyX, opAmpMidY - opAmpHeight / 2 - 20);
+    ctx.stroke();
+    ctx.fillText('+8.0 V', pwrSupplyX, opAmpMidY - opAmpHeight / 2 - 30);
+    
+    ctx.beginPath();
+    ctx.moveTo(pwrSupplyX, opAmpMidY + opAmpHeight / 2 - 5);
+    ctx.lineTo(pwrSupplyX, opAmpMidY + opAmpHeight / 2 + 20);
+    ctx.stroke();
+    ctx.fillText('−8.0 V', pwrSupplyX, opAmpMidY + opAmpHeight / 2 + 30);
+    
+    // Input Path (Vin and Rin)
+    drawTerminal(leftMargin, invertingY, 'V_IN', 'left');
+    ctx.beginPath();
+    ctx.moveTo(leftMargin + 4, invertingY);
+    ctx.lineTo(140, invertingY);
+    ctx.stroke();
+    drawResistor(140, invertingY, 80, 20, '480 Ω');
+    ctx.beginPath();
+    ctx.moveTo(220, invertingY);
+    ctx.lineTo(inputNodeX, invertingY);
+    ctx.stroke();
+
+    // Feedback Path (Rf)
+    ctx.beginPath();
+    ctx.moveTo(inputNodeX, invertingY);
+    ctx.lineTo(inputNodeX, feedbackY);
+    ctx.lineTo(300, feedbackY);
+    ctx.stroke();
+    drawResistor(300, feedbackY, 120, 20, '1.2 kΩ');
+    ctx.beginPath();
+    ctx.moveTo(420, feedbackY);
+    ctx.lineTo(outputNodeX, feedbackY);
+    ctx.lineTo(outputNodeX, opAmpMidY);
+    ctx.stroke();
+
+    // Connection to Inverting Input
+    ctx.beginPath();
+    ctx.moveTo(inputNodeX, invertingY);
+    ctx.lineTo(opAmpBaseX, invertingY);
+    ctx.stroke();
+
+    // Output Path (Vout)
+    ctx.beginPath();
+    ctx.moveTo(opAmpTipX, opAmpMidY);
+    ctx.lineTo(outputNodeX, opAmpMidY);
+    ctx.stroke();
+    drawTerminal(rightMargin, opAmpMidY, 'V_OUT', 'right');
+    ctx.beginPath();
+    ctx.moveTo(outputNodeX, opAmpMidY);
+    ctx.lineTo(rightMargin - 4, opAmpMidY);
+    ctx.stroke();
+    
+    // Ground Path
+    // From non-inverting input to ground line
+    ctx.beginPath();
+    ctx.moveTo(opAmpBaseX, nonInvertingY);
+    ctx.lineTo(opAmpBaseX, groundY);
+    ctx.stroke();
+    
+    // Main ground line
+    ctx.beginPath();
+    ctx.moveTo(leftMargin, groundY);
+    ctx.lineTo(rightMargin, groundY);
+    ctx.stroke();
+
+    // Ground Terminals
+    drawTerminal(leftMargin, groundY, '0 V', 'left');
+    drawTerminal(rightMargin, groundY, '0 V', 'right');
+
+    // Junction Nodes (filled circles)
+    drawNode(inputNodeX, invertingY);
+    drawNode(outputNodeX, opAmpMidY);
+    drawNode(opAmpBaseX, groundY);
+
+    // Figure Caption
+    ctx.fillText('Fig. 7.1', canvas.width / 2, canvas.height - 20);
+
+</script>
+</body>
+</html>

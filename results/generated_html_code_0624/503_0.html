@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Graph of Charge vs. Potential Difference</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-family: sans-serif;
+            background-color: #f0f0f0;
+            margin: 20px;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="physicsGraphCanvas" width="700" height="550"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsGraphCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Graph Parameters ---
+    const margin = { top: 30, right: 30, bottom: 80, left: 80 };
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const graphWidth = canvasWidth - margin.left - margin.right;
+    const graphHeight = canvasHeight - margin.top - margin.bottom;
+
+    const xMin = 0;
+    const xMax = 12;
+    const yMin = 0;
+    const yMax = 1.8;
+
+    // --- Coordinate Transformation Functions ---
+    // Maps a value from the graph's x-axis to a pixel coordinate on the canvas
+    function mapX(v) {
+        return margin.left + (v - xMin) / (xMax - xMin) * graphWidth;
+    }
+
+    // Maps a value from the graph's y-axis to a pixel coordinate on the canvas
+    function mapY(q) {
+        // Y-axis is inverted in canvas coordinates (0 is at the top)
+        return margin.top + graphHeight - (q - yMin) / (yMax - yMin) * graphHeight;
+    }
+
+    // --- Drawing Functions ---
+
+    function drawGridAndAxes() {
+        ctx.save();
+        ctx.strokeStyle = '#b0b0b0'; // Light gray for grid lines
+        ctx.lineWidth = 0.75;
+
+        // Draw vertical grid lines for every 0.2 units on the x-axis
+        const xStep = 0.2;
+        for (let i = 1; i * xStep <= xMax; i++) {
+            const v = i * xStep;
+            ctx.beginPath();
+            ctx.moveTo(mapX(v), mapY(yMin));
+            ctx.lineTo(mapX(v), mapY(yMax));
+            ctx.stroke();
+        }
+
+        // Draw horizontal grid lines for every 0.02 units on the y-axis
+        const yStep = 0.02;
+        for (let i = 1; i * yStep <= yMax; i++) {
+            const q = i * yStep;
+            ctx.beginPath();
+            ctx.moveTo(mapX(xMin), mapY(q));
+            ctx.lineTo(mapX(xMax), mapY(q));
+            ctx.stroke();
+        }
+
+        // Draw the main X and Y axes on top of the grid
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        // Y-axis
+        ctx.moveTo(mapX(0), margin.top);
+        ctx.lineTo(mapX(0), margin.top + graphHeight);
+        // X-axis
+        ctx.moveTo(margin.left, mapY(0));
+        ctx.lineTo(margin.left + graphWidth, mapY(0));
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawLabels() {
+        ctx.fillStyle = 'black';
+        ctx.font = '14px Arial';
+        
+        // --- X-axis Tick Labels ---
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const xStepMajor = 2;
+        for (let v = xMin; v <= xMax; v += xStepMajor) {
+            ctx.fillText(v, mapX(v), mapY(yMin) + 8);
+        }
+
+        // --- Y-axis Tick Labels ---
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        const yStepMajor = 0.2;
+        // Use a loop that avoids floating point inaccuracies
+        for (let i = 0; i * yStepMajor <= yMax; i++) {
+            const q = i * yStepMajor;
+            // Special case for 0 to match the image, otherwise use one decimal place
+            const label = q === 0 ? '0' : q.toFixed(1);
+            ctx.fillText(label, mapX(xMin) - 8, mapY(q));
+        }
+
+        // --- Axis Titles ---
+
+        // X-axis title: V / V
+        const xTitleY = mapY(yMin) + 40;
+        const xTitleX = margin.left + graphWidth / 2;
+        const part1_x = 'V';
+        const part2_x = ' / V';
+        // Measure parts to center the composite label correctly
+        ctx.font = 'italic 16px Arial';
+        const w1_x = ctx.measureText(part1_x).width;
+        ctx.font = '16px Arial';
+        const w2_x = ctx.measureText(part2_x).width;
+        const totalWidthX = w1_x + w2_x;
+        const startX = xTitleX - totalWidthX / 2;
+        // Draw the parts sequentially
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.font = 'italic 16px Arial';
+        ctx.fillText(part1_x, startX, xTitleY);
+        ctx.font = '16px Arial';
+        ctx.fillText(part2_x, startX + w1_x, xTitleY);
+
+        // Y-axis title: Q / 10⁻⁴ C
+        const yTitleX = margin.left - 60;
+        const yTitleY = margin.top + graphHeight / 2;
+        ctx.save();
+        ctx.translate(yTitleX, yTitleY); // Move to position
+        ctx.rotate(-Math.PI / 2); // Rotate context for vertical text
+        
+        const p1_y = 'Q';
+        const p2_y = ' / 10';
+        const p3_y = '–4'; // Superscript character (en-dash for better look)
+        const p4_y = ' C';
+        
+        // Measure each part of the label to center it perfectly
+        ctx.font = 'italic 16px Arial'; const w1_y = ctx.measureText(p1_y).width;
+        ctx.font = '16px Arial';        const w2_y = ctx.measureText(p2_y).width;
+        ctx.font = '11px Arial';        const w3_y = ctx.measureText(p3_y).width;
+        ctx.font = '16px Arial';        const w4_y = ctx.measureText(p4_y).width;
+        const totalWidthY = w1_y + w2_y + w3_y + w4_y;
+        
+        let currentX_y = -totalWidthY / 2; // Starting X for centered text
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        
+        // Draw each part with its specific font and position
+        ctx.font = 'italic 16px Arial';
+        ctx.fillText(p1_y, currentX_y, 0);
+        currentX_y += w1_y;
+
+        ctx.font = '16px Arial';
+        ctx.fillText(p2_y, currentX_y, 0);
+        currentX_y += w2_y;
+        
+        // Draw superscript with smaller font and raised position
+        ctx.font = '11px Arial';
+        ctx.fillText(p3_y, currentX_y, -12);
+        currentX_y += w3_y;
+
+        ctx.font = '16px Arial';
+        ctx.fillText(p4_y, currentX_y, 0);
+        
+        ctx.restore(); // Restore context to pre-rotated state
+
+        // --- Figure Caption ---
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('Fig. 5.1', canvasWidth / 2, canvasHeight - 30);
+    }
+    
+    function drawDataLine() {
+        ctx.beginPath();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.8;
+        // The line goes from origin (0,0) to (12, 1.8)
+        ctx.moveTo(mapX(0), mapY(0));
+        ctx.lineTo(mapX(12), mapY(1.8));
+        ctx.stroke();
+    }
+    
+    // --- Main Drawing Execution ---
+    // Clear canvas for redraws
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    
+    // Order of drawing matters for layering (grid -> axes -> labels -> data)
+    drawGridAndAxes();
+    drawLabels();
+    drawDataLine();
+
+</script>
+
+</body>
+</html>

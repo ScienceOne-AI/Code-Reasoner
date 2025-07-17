@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Infinite Resistor Ladder Network</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="850" height="300"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General styling
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper functions to draw components ---
+
+        /**
+         * Draws a vertical shunt resistor 'R'.
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} x - The center x-coordinate.
+         * @param {number} y_top - The y-coordinate of the top rail.
+         * @param {number} y_bottom - The y-coordinate of the bottom rail.
+         * @param {number} R_width - The width of the resistor symbol.
+         * @param {number} R_height - The height of the resistor symbol.
+         */
+        function drawShuntResistor(ctx, x, y_top, y_bottom, R_width, R_height) {
+            const y_center = y_top + (y_bottom - y_top) / 2;
+            const wire_gap = (y_bottom - y_top - R_height) / 2;
+
+            // Connecting wires
+            ctx.beginPath();
+            ctx.moveTo(x, y_top);
+            ctx.lineTo(x, y_top + wire_gap);
+            ctx.moveTo(x, y_bottom - wire_gap);
+            ctx.lineTo(x, y_bottom);
+            ctx.stroke();
+
+            // Resistor rectangle
+            ctx.strokeRect(x - R_width / 2, y_top + wire_gap, R_width, R_height);
+
+            // Label 'R'
+            ctx.textAlign = 'right';
+            ctx.fillText("R", x - R_width / 2 - 8, y_center);
+        }
+
+        /**
+         * Draws a horizontal series resistor 'r'.
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} x1 - The x-coordinate of the start node.
+         * @param {number} x2 - The x-coordinate of the end node.
+         * @param {number} y - The y-coordinate of the top rail.
+         * @param {number} r_width - The width of the resistor symbol.
+         * @param {number} r_height - The height of the resistor symbol.
+         */
+        function drawSeriesResistor(ctx, x1, x2, y, r_width, r_height) {
+            const x_center = x1 + (x2 - x1) / 2;
+            const wire_gap = (x2 - x1 - r_width) / 2;
+
+            // Connecting wires
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x1 + wire_gap, y);
+            ctx.moveTo(x2 - wire_gap, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+
+            // Resistor rectangle
+            ctx.strokeRect(x1 + wire_gap, y - r_height / 2, r_width, r_height);
+
+            // Label 'r'
+            ctx.textAlign = 'center';
+            ctx.fillText("r", x_center, y - r_height / 2 - 15);
+        }
+
+        // --- Main Drawing Logic ---
+
+        // Dimensions and layout parameters
+        const y_top = 110;
+        const y_bottom = 210;
+        const x_start = 110;
+        const node_spacing = 120;
+        const num_series_resistors = 5; // Number of 'r' resistors
+        
+        const r_width = 80;
+        const r_height = 25;
+        const R_width = 25;
+        const R_height = 60;
+
+        // Calculate x-coordinates of all vertical nodes
+        const node_x_coords = [];
+        for (let i = 0; i <= num_series_resistors; i++) {
+            node_x_coords.push(x_start + i * node_spacing);
+        }
+        const x_end = node_x_coords[node_x_coords.length - 1];
+
+        // Draw the solid bottom rail
+        ctx.beginPath();
+        ctx.moveTo(x_start, y_bottom);
+        ctx.lineTo(x_end, y_bottom);
+        ctx.stroke();
+
+        // Draw all the vertical shunt resistors 'R'
+        node_x_coords.forEach(x => {
+            drawShuntResistor(ctx, x, y_top, y_bottom, R_width, R_height);
+        });
+
+        // Draw all the horizontal series resistors 'r'
+        for (let i = 0; i < num_series_resistors; i++) {
+            drawSeriesResistor(ctx, node_x_coords[i], node_x_coords[i+1], y_top, r_width, r_height);
+        }
+
+        // Draw the dashed lines to indicate an infinite network
+        const dash_length = 60;
+        ctx.beginPath();
+        ctx.setLineDash([8, 6]);
+        
+        // Left side
+        ctx.moveTo(x_start, y_top);
+        ctx.lineTo(x_start - dash_length, y_top);
+        ctx.moveTo(x_start, y_bottom);
+        ctx.lineTo(x_start - dash_length, y_bottom);
+
+        // Right side
+        ctx.moveTo(x_end, y_top);
+        ctx.lineTo(x_end + dash_length, y_top);
+        ctx.moveTo(x_end, y_bottom);
+        ctx.lineTo(x_end + dash_length, y_bottom);
+        
+        ctx.stroke();
+
+    </script>
+</body>
+</html>

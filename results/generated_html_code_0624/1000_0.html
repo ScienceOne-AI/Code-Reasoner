@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Magnetic Force on an Electron</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="450" style="border:1px solid #d3d3d3;"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set background to white
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws an arrow on the canvas.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} fromx - The starting x-coordinate.
+         * @param {number} fromy - The starting y-coordinate.
+         * @param {number} tox - The ending x-coordinate.
+         * @param {number} toy - The ending y-coordinate.
+         * @param {number} headlen - The length of the arrowhead lines.
+         */
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen) {
+            ctx.beginPath();
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a jagged line to simulate a shadow or texture.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x - The starting x-coordinate.
+         * @param {number} y - The baseline y-coordinate.
+         * @param {number} length - The total length of the line.
+         * @param {number} segmentLength - The length of each segment.
+         * @param {number} amplitude - The height of the jags.
+         */
+        function drawJaggedLine(ctx, x, y, length, segmentLength, amplitude) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            let currentX = x;
+            while (currentX < x + length) {
+                ctx.lineTo(currentX + segmentLength / 2, y + amplitude);
+                ctx.lineTo(currentX + segmentLength, y);
+                currentX += segmentLength;
+            }
+            ctx.lineWidth = 0.8;
+            ctx.strokeStyle = '#666666';
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        // --- Drawing Main Components ---
+
+        // 1. The Wire
+        const wireY1 = 350;
+        const wireY2 = 390;
+        const wireXStart = 40;
+        const wireXEnd = 760;
+        const wireLength = wireXEnd - wireXStart;
+        
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        
+        ctx.beginPath();
+        ctx.moveTo(wireXStart, wireY1);
+        ctx.lineTo(wireXEnd, wireY1);
+        ctx.stroke();
+        drawJaggedLine(ctx, wireXStart, wireY1 + 1.5, wireLength, 7, 2);
+
+        ctx.beginPath();
+        ctx.moveTo(wireXStart, wireY2);
+        ctx.lineTo(wireXEnd, wireY2);
+        ctx.stroke();
+        drawJaggedLine(ctx, wireXStart, wireY2 + 1.5, wireLength, 7, 2);
+
+        // 2. The Current (I)
+        const currentArrowY = 370;
+        const currentArrowXStart = 400;
+        const currentArrowXEnd = 650;
+        const currentArrowLength = currentArrowXEnd - currentArrowXStart;
+
+        ctx.lineWidth = 2.5;
+        drawArrow(ctx, currentArrowXStart, currentArrowY, currentArrowXEnd, currentArrowY, 20);
+        drawJaggedLine(ctx, currentArrowXStart, currentArrowY + 1.5, currentArrowLength, 7, 2); 
+
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic bold 45px serif';
+        ctx.fillText('I', 670, 385);
+
+        // 3. The Electron (e⁻)
+        const electronX = 350;
+        const electronY = 180;
+        const electronRadius = 20;
+
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(electronX, electronY, electronRadius, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Jagged shadow for electron on the bottom-left quadrant
+        ctx.save();
+        ctx.beginPath();
+        ctx.lineWidth = 1.0;
+        ctx.strokeStyle = '#808080';
+        const shadowOffsetY = 1;
+        const shadowAmplitude = 3;
+        const shadowSegments = 12;
+        const angleStart = 0.5 * Math.PI;
+        const angleEnd = Math.PI;
+        const angleStep = (angleEnd - angleStart) / shadowSegments;
+        let sx_start = electronX + electronRadius * Math.cos(angleStart);
+        let sy_start = electronY + electronRadius * Math.sin(angleStart) + shadowOffsetY;
+        ctx.moveTo(sx_start, sy_start);
+        for (let i=1; i <= shadowSegments; i++) {
+            let currentAngle = angleStart + i * angleStep;
+            let sx = electronX + electronRadius * Math.cos(currentAngle);
+            let sy = electronY + electronRadius * Math.sin(currentAngle) + shadowOffsetY;
+            if (i % 2 !== 0) {
+                sy += shadowAmplitude;
+            }
+            ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 45px serif';
+        ctx.fillText('e', electronX + 30, electronY + 15);
+        ctx.font = 'bold 30px serif';
+        ctx.fillText('⁻', electronX + 55, electronY - 10);
+
+        // 4. The Velocity (v)
+        const velocityY = 130;
+        const velocityXStart = 450;
+        const velocityXEnd = 200;
+        const velocityLength = velocityXStart - velocityXEnd;
+
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2.5;
+        drawArrow(ctx, velocityXStart, velocityY, velocityXEnd, velocityY, 20);
+        drawJaggedLine(ctx, velocityXEnd, velocityY + 1.5, velocityLength, 7, 2);
+
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic bold 45px serif';
+        ctx.fillText('v', 315, 115);
+
+    </script>
+</body>
+</html>

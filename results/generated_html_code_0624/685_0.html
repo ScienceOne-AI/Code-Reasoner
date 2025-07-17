@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Diffraction through a Circular Aperture</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style and parameters
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        const mainFontSize = 'italic 22px Arial';
+        const subFontSize = 'italic 16px Arial';
+
+        // Coordinates and dimensions
+        const yCenter = canvas.height / 2;
+        const xStart = 50;
+        const xAperture = 250;
+        const xEnd = 750;
+        
+        const D_half = 50; // Aperture half-diameter
+        const dz_half = 90; // Diffracted beam half-diameter at distance z
+        const inner_y_offset = D_half / 2;
+        const inner_divergence = (dz_half - D_half) / 2;
+        const dz_inner_half = inner_y_offset + inner_divergence;
+        
+        const arrowLength = 8;
+        const arrowAngle = Math.PI / 7;
+        const arrow_x_incident = 150;
+        const arrow_x_diffracted = xAperture + (xEnd - xAperture) / 2;
+
+        // Helper function to draw an arrowhead at a specific point with a given angle
+        function drawArrowhead(x, y, angle) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - arrowLength * Math.cos(angle - arrowAngle), y - arrowLength * Math.sin(angle - arrowAngle));
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - arrowLength * Math.cos(angle + arrowAngle), y - arrowLength * Math.sin(angle + arrowAngle));
+            ctx.stroke();
+        }
+
+        // 1. Draw the central optical axis
+        ctx.beginPath();
+        ctx.moveTo(0, yCenter);
+        ctx.lineTo(canvas.width, yCenter);
+        ctx.stroke();
+
+        // 2. Draw the aperture screen
+        ctx.save();
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        // Top part of the screen
+        ctx.moveTo(xAperture, yCenter - D_half - 50);
+        ctx.lineTo(xAperture, yCenter - D_half);
+        // Bottom part of the screen
+        ctx.moveTo(xAperture, yCenter + D_half);
+        ctx.lineTo(xAperture, yCenter + D_half + 50);
+        ctx.stroke();
+        
+        // Ticks for the screen ends
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(xAperture - 5, yCenter - D_half - 50);
+        ctx.lineTo(xAperture + 5, yCenter - D_half - 50);
+        ctx.moveTo(xAperture - 5, yCenter + D_half + 50);
+        ctx.lineTo(xAperture + 5, yCenter + D_half + 50);
+        ctx.stroke();
+        ctx.restore();
+
+        // Label for aperture diameter 'D'
+        ctx.font = mainFontSize;
+        ctx.textAlign = 'left';
+        ctx.fillText('D', xAperture + 15, yCenter - 25);
+
+        // 3. Draw the light rays
+        // Top outer ray
+        ctx.beginPath();
+        ctx.moveTo(xStart, yCenter - D_half);
+        ctx.lineTo(xAperture, yCenter - D_half);
+        ctx.lineTo(xEnd, yCenter - dz_half);
+        ctx.stroke();
+        const top_outer_angle = Math.atan2((yCenter - dz_half) - (yCenter - D_half), xEnd - xAperture);
+        drawArrowhead(arrow_x_incident, yCenter - D_half, 0);
+        drawArrowhead(arrow_x_diffracted, (yCenter - D_half) + (arrow_x_diffracted - xAperture) * Math.tan(top_outer_angle), top_outer_angle);
+
+        // Bottom outer ray
+        ctx.beginPath();
+        ctx.moveTo(xStart, yCenter + D_half);
+        ctx.lineTo(xAperture, yCenter + D_half);
+        ctx.lineTo(xEnd, yCenter + dz_half);
+        ctx.stroke();
+        const bottom_outer_angle = Math.atan2((yCenter + dz_half) - (yCenter + D_half), xEnd - xAperture);
+        drawArrowhead(arrow_x_incident, yCenter + D_half, 0);
+        drawArrowhead(arrow_x_diffracted, (yCenter + D_half) + (arrow_x_diffracted - xAperture) * Math.tan(bottom_outer_angle), bottom_outer_angle);
+
+        // Top inner ray
+        ctx.beginPath();
+        ctx.moveTo(xStart, yCenter - inner_y_offset);
+        ctx.lineTo(xAperture, yCenter - inner_y_offset);
+        ctx.lineTo(xEnd, yCenter - dz_inner_half);
+        ctx.stroke();
+        const top_inner_angle = Math.atan2((yCenter - dz_inner_half) - (yCenter - inner_y_offset), xEnd - xAperture);
+        drawArrowhead(arrow_x_incident, yCenter - inner_y_offset, 0);
+        drawArrowhead(arrow_x_diffracted, (yCenter - inner_y_offset) + (arrow_x_diffracted - xAperture) * Math.tan(top_inner_angle), top_inner_angle);
+
+        // Bottom inner ray
+        ctx.beginPath();
+        ctx.moveTo(xStart, yCenter + inner_y_offset);
+        ctx.lineTo(xAperture, yCenter + inner_y_offset);
+        ctx.lineTo(xEnd, yCenter + dz_inner_half);
+        ctx.stroke();
+        const bottom_inner_angle = Math.atan2((yCenter + dz_inner_half) - (yCenter + inner_y_offset), xEnd - xAperture);
+        drawArrowhead(arrow_x_incident, yCenter + inner_y_offset, 0);
+        drawArrowhead(arrow_x_diffracted, (yCenter + inner_y_offset) + (arrow_x_diffracted - xAperture) * Math.tan(bottom_inner_angle), bottom_inner_angle);
+
+        // 4. Draw annotations 'z' and 'dz'
+        // Annotation for distance 'z'
+        const z_y_pos = yCenter + 150;
+        ctx.beginPath();
+        // Left arrow
+        ctx.moveTo(xAperture + 10, z_y_pos - 4);
+        ctx.lineTo(xAperture, z_y_pos);
+        ctx.lineTo(xAperture + 10, z_y_pos + 4);
+        // Line
+        ctx.moveTo(xAperture, z_y_pos);
+        ctx.lineTo(xEnd, z_y_pos);
+        // Right arrow
+        ctx.moveTo(xEnd - 10, z_y_pos - 4);
+        ctx.lineTo(xEnd, z_y_pos);
+        ctx.lineTo(xEnd - 10, z_y_pos + 4);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.fillText('z', (xAperture + xEnd) / 2, z_y_pos - 10);
+        
+        // Dashed line for 'dz' measurement
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([6, 4]);
+        ctx.moveTo(xEnd, yCenter - dz_half - 30);
+        ctx.lineTo(xEnd, yCenter + dz_half + 30);
+        ctx.stroke();
+        ctx.restore();
+
+        // Label for beam diameter 'dz'
+        ctx.textAlign = 'center';
+        ctx.font = mainFontSize;
+        ctx.fillText('d', xEnd - 25, yCenter - dz_half - 10);
+        ctx.font = subFontSize;
+        ctx.fillText('z', xEnd - 17, yCenter - dz_half - 5);
+
+    </script>
+</body>
+</html>

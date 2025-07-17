@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Physics Diagram</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    canvas {
+      border: 1px solid #d3d3d3;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="physicsCanvas" width="650" height="450"></canvas>
+  <script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Drawing parameters
+    const cx = 300;
+    const cy = 200;
+    const r_large = 110;
+    const l_dist = 100;
+    const rod_r = 6;
+    
+    // Helper function to draw an arrow from a point to another point.
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        // Draw the line
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        
+        // Draw the arrowhead
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = 'italic 22px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // 1. Draw Ground and Hatches
+    const y_ground = cy + r_large + rod_r; // 200 + 110 + 6 = 316
+    ctx.beginPath();
+    ctx.moveTo(40, y_ground);
+    ctx.lineTo(610, y_ground);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.lineWidth = 1;
+    for (let x = 40; x < 610; x += 20) {
+        ctx.beginPath();
+        ctx.moveTo(x, y_ground);
+        ctx.lineTo(x - 12, y_ground + 12);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 2. Draw Rods (栅栏)
+    const x_rod_center1 = cx - l_dist / 2; // 300 - 50 = 250
+    const x_rod_center2 = cx + l_dist / 2; // 300 + 50 = 350
+    const rod_x_positions = [x_rod_center1 - l_dist, x_rod_center1, x_rod_center2, x_rod_center2 + l_dist]; // 150, 250, 350, 450
+    
+    rod_x_positions.forEach(x => {
+        ctx.beginPath();
+        ctx.arc(x, y_ground, rod_r, 0, 2 * Math.PI);
+        ctx.stroke();
+    });
+
+    // 3. Draw Large Circular Plate (圆板)
+    ctx.beginPath();
+    ctx.arc(cx, cy, r_large, 0, 2 * Math.PI);
+    ctx.stroke();
+    
+    // 4. Draw Center C
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('C', cx, cy + 22);
+
+    // 5. Draw Radius 'r'
+    const r_angle = -3 * Math.PI / 4; // up and left
+    const r_tip_x = cx + r_large * Math.cos(r_angle);
+    const r_tip_y = cy + r_large * Math.sin(r_angle);
+    drawArrow(ctx, cx, cy, r_tip_x, r_tip_y);
+    ctx.fillText('r', cx + r_large * 0.5 * Math.cos(r_angle) - 5, cy + r_large * 0.5 * Math.sin(r_angle) - 5);
+
+    // 6. Draw Force Line and Labels
+    const p_x = cx + r_large * 1.1; // 300 + 121 = 421
+    const force_line_end_x = cx + r_large * 2.0; // 300 + 220 = 520
+
+    // Draw the line with arrow
+    drawArrow(ctx, cx, cy, force_line_end_x, cy, 12);
+
+    // Draw point P on the line
+    ctx.beginPath();
+    ctx.arc(p_x, cy, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Add labels P and T
+    ctx.fillText('P', p_x, cy - 22);
+    ctx.fillText('T', p_x + (force_line_end_x - p_x) / 2, cy + 22);
+
+    // 7. Draw Dimension 'l'
+    const y_l_level = y_ground + 40; // 316 + 40 = 356
+    
+    // Vertical ticks
+    ctx.beginPath();
+    ctx.moveTo(x_rod_center1, y_l_level - 10);
+    ctx.lineTo(x_rod_center1, y_l_level + 10);
+    ctx.moveTo(x_rod_center2, y_l_level - 10);
+    ctx.lineTo(x_rod_center2, y_l_level + 10);
+    ctx.stroke();
+    
+    // Horizontal line with outward pointing arrows
+    ctx.beginPath();
+    ctx.moveTo(x_rod_center1, y_l_level);
+    ctx.lineTo(x_rod_center2, y_l_level);
+    ctx.stroke();
+    // Left arrowhead
+    const headlen_l = 10;
+    ctx.beginPath();
+    ctx.moveTo(x_rod_center1 + headlen_l, y_l_level - 5);
+    ctx.lineTo(x_rod_center1, y_l_level);
+    ctx.lineTo(x_rod_center1 + headlen_l, y_l_level + 5);
+    ctx.stroke();
+    // Right arrowhead
+    ctx.beginPath();
+    ctx.moveTo(x_rod_center2 - headlen_l, y_l_level - 5);
+    ctx.lineTo(x_rod_center2, y_l_level);
+    ctx.lineTo(x_rod_center2 - headlen_l, y_l_level + 5);
+    ctx.stroke();
+    
+    // Label 'l'
+    ctx.fillText('l', cx, y_l_level);
+
+  </script>
+</body>
+</html>

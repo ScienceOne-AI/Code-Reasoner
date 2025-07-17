@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cable Crane Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="400" style="border:1px solid #000;"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const scale = 5; // pixels per meter
+        const mx = 100; // x-margin
+        const my = 80;  // y-margin
+
+        // --- Geometric Calculations (from problem statement) ---
+        // Given: AB = 100 m, Cable length ACB = 102 m, AC = 20 m
+        // Therefore, CB = 102 - 20 = 82 m.
+        // Let A = (0, 0) and B = (100, 0) in a temporary coordinate system.
+        // Let C = (x, -h) where h is the sag.
+        // x^2 + h^2 = AC^2 = 20^2 = 400
+        // (100 - x)^2 + h^2 = CB^2 = 82^2 = 6724
+        // Substitute h^2 = 400 - x^2 into the second equation:
+        // (100 - x)^2 + 400 - x^2 = 6724
+        // 10000 - 200x + x^2 + 400 - x^2 = 6724
+        // 10400 - 200x = 6724
+        // 200x = 10400 - 6724 = 3676
+        // x = 18.38 m
+        // h = sqrt(400 - 18.38^2) = sqrt(62.1756) = 7.885 m
+        const cx_m = 18.38;
+        const sag_m = 7.885;
+        const ab_dist_m = 100;
+
+        // --- Tower dimensions (in meters, for visual representation) ---
+        const towerHeight_m = 30;
+        const towerTopWidth_m = 4;
+        const towerBaseWidth_m = 10;
+        const foundationHeight_m = 3;
+        const foundationWidth_m = 12;
+
+        // --- Canvas Coordinates ---
+        const Ax = mx;
+        const Ay = my;
+        const Bx = mx + ab_dist_m * scale;
+        const By = my;
+        const Cx = mx + cx_m * scale;
+        const Cy = my + sag_m * scale;
+
+        // --- Helper Functions ---
+        function drawTower(baseX, topY) {
+            const h = towerHeight_m * scale;
+            const tw = towerTopWidth_m * scale;
+            const bw = towerBaseWidth_m * scale;
+
+            const topL = baseX - tw / 2;
+            const topR = baseX + tw / 2;
+            const botL = baseX - bw / 2;
+            const botR = baseX + bw / 2;
+            const botY = topY + h;
+
+            ctx.beginPath();
+            ctx.moveTo(topL, topY);
+            ctx.lineTo(botL, botY);
+            ctx.moveTo(topR, topY);
+            ctx.lineTo(botR, botY);
+            ctx.stroke();
+
+            const numBays = 4;
+            for (let i = 0; i < numBays; i++) {
+                const y1 = topY + (i / numBays) * h;
+                const y2 = topY + ((i + 1) / numBays) * h;
+                const x1L = topL + (botL - topL) * (i / numBays);
+                const x1R = topR + (botR - topR) * (i / numBays);
+                const x2L = topL + (botL - topL) * ((i + 1) / numBays);
+                const x2R = topR + (botR - topR) * ((i + 1) / numBays);
+
+                ctx.beginPath();
+                ctx.moveTo(x1L, y1);
+                ctx.lineTo(x2R, y2);
+                ctx.moveTo(x1R, y1);
+                ctx.lineTo(x2L, y2);
+                ctx.stroke();
+            }
+        }
+
+        function drawHatchedRect(x, y, w, h) {
+            ctx.beginPath();
+            ctx.rect(x, y, w, h);
+            ctx.stroke();
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(x, y, w, h);
+            ctx.clip();
+            const originalLineWidth = ctx.lineWidth;
+            ctx.lineWidth = 1;
+            for (let i = -h; i < w; i += 8) {
+                ctx.beginPath();
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x + i + h, y + h);
+                ctx.stroke();
+            }
+            ctx.lineWidth = originalLineWidth;
+            ctx.restore();
+        }
+        
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headlen = 10;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 18px Arial';
+        
+        // 1. Towers and Foundations
+        const towerBaseY = Ay + towerHeight_m * scale;
+        // Left Tower
+        drawTower(Ax, Ay);
+        drawHatchedRect(Ax - (foundationWidth_m / 2) * scale, towerBaseY, foundationWidth_m * scale, foundationHeight_m * scale);
+        // Right Tower
+        drawTower(Bx, By);
+        drawHatchedRect(Bx - (foundationWidth_m / 2) * scale, towerBaseY, foundationWidth_m * scale, foundationHeight_m * scale);
+
+        // 2. Ground/Water
+        const groundY = towerBaseY + foundationHeight_m * scale;
+        const waterTopY = groundY + 10;
+        ctx.beginPath();
+        ctx.moveTo(Ax - (foundationWidth_m / 2) * scale, groundY);
+        ctx.lineTo(Bx + (foundationWidth_m / 2) * scale, groundY);
+        ctx.stroke();
+
+        ctx.save();
+        ctx.lineWidth = 1;
+        for (let y = waterTopY; y < waterTopY + 20; y += 6) {
+            ctx.beginPath();
+            let startX = Ax - (foundationWidth_m / 2) * scale + 20;
+            let endX = Bx + (foundationWidth_m / 2) * scale - 20;
+            for(let x = startX; x < endX; x+=20){
+                 ctx.moveTo(x, y);
+                 ctx.lineTo(x+10, y);
+            }
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // 3. Dashed line (reference)
+        ctx.save();
+        ctx.setLineDash([6, 6]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.quadraticCurveTo((Ax + Bx) / 2, Ay + 1.5 * sag_m * scale, Bx, By);
+        ctx.stroke();
+        ctx.restore();
+
+        // 4. Pulling Rope CAD and Winch D
+        // Winch D
+        const towerLegSlopeX = ((-towerBaseWidth_m / 2) - (-towerTopWidth_m / 2)) / towerHeight_m;
+        const winchHeightRatio = 0.55;
+        const winchY = Ay + towerHeight_m * scale * winchHeightRatio;
+        const winchX_rel = (-towerTopWidth_m / 2) + towerLegSlopeX * (towerHeight_m * winchHeightRatio);
+        const Dx = Ax + winchX_rel * scale;
+        const Dy = winchY;
+        ctx.beginPath();
+        ctx.arc(Dx, Dy, 6, 0, 2*Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(Dx, Dy);
+        ctx.lineTo(Dx - 8, Dy - 8);
+        ctx.stroke();
+        // Pulley at A
+        ctx.beginPath();
+        ctx.arc(Ax, Ay, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Rope CAD
+        ctx.beginPath();
+        ctx.moveTo(Cx, Cy);
+        ctx.lineTo(Ax, Ay);
+        ctx.lineTo(Dx, Dy);
+        ctx.stroke();
+
+        // 5. Main Cable ACB
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(Cx, Cy);
+        ctx.lineTo(Bx, By);
+        ctx.stroke();
+        
+        // 6. Trolley C and Load L
+        ctx.beginPath();
+        ctx.arc(Cx, Cy, 6, 0, 2 * Math.PI);
+        ctx.fill();
+        // Suspension mechanism
+        const suspensionLength = 15 * scale;
+        const suspensionBarWidth = 8 * scale;
+        const loadPlatformHeight = 3 * scale;
+        const suspensionY = Cy + suspensionLength;
+        const v_junctionY = Cy + suspensionLength * 0.4;
+        ctx.beginPath();
+        ctx.moveTo(Cx, Cy);
+        ctx.lineTo(Cx, v_junctionY);
+        ctx.moveTo(Cx - suspensionBarWidth / 2, suspensionY);
+        ctx.lineTo(Cx, v_junctionY);
+        ctx.lineTo(Cx + suspensionBarWidth / 2, suspensionY);
+        ctx.stroke();
+        // Circles at connections
+        ctx.beginPath();
+        ctx.arc(Cx - suspensionBarWidth / 2, suspensionY, 4, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(Cx + suspensionBarWidth / 2, suspensionY, 4, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Horizontal Bar
+        ctx.beginPath();
+        ctx.moveTo(Cx - suspensionBarWidth / 2, suspensionY);
+        ctx.lineTo(Cx + suspensionBarWidth / 2, suspensionY);
+        ctx.stroke();
+        // Load Platform
+        const platformWidth = 10 * scale;
+        ctx.beginPath();
+        ctx.rect(Cx - platformWidth / 2, suspensionY + 3, platformWidth, loadPlatformHeight);
+        ctx.stroke();
+        // Lines on platform
+        ctx.save();
+        ctx.lineWidth=0.5;
+        for(let i=1; i<5; i++){
+            ctx.beginPath();
+            ctx.moveTo(Cx - platformWidth/2 + i*platformWidth/5, suspensionY + 3);
+            ctx.lineTo(Cx - platformWidth/2 + i*platformWidth/5, suspensionY + 3 + loadPlatformHeight);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+
+        // 7. Labels and Dimensions
+        // Dimension Line
+        const dimY = my - 30;
+        ctx.beginPath();
+        ctx.moveTo(Ax, dimY);
+        ctx.lineTo(Bx, dimY);
+        ctx.stroke();
+        drawArrow(Ax + 15, dimY, Ax, dimY);
+        drawArrow(Bx - 15, dimY, Bx, dimY);
+        ctx.beginPath();
+        ctx.moveTo(Ax, dimY-5);
+        ctx.lineTo(Ax, my);
+        ctx.moveTo(Bx, dimY-5);
+        ctx.lineTo(By, my);
+        ctx.stroke();
+        // Text
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('100 m', (Ax + Bx) / 2, dimY - 5);
+
+        // Point Labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText('A', Ax - 10, Ay - 8);
+        ctx.fillText('B', Bx + 10, By - 8);
+        ctx.fillText('C', Cx + 15, Cy - 5);
+        ctx.fillText('D', Dx - 18, Dy + 6);
+        ctx.fillText('L', Cx + platformWidth/2 + 10, suspensionY + loadPlatformHeight + 5);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coaxial Cable Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="coaxialCanvas" width="700" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('coaxialCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Parameters for the drawing
+        const cx = 200;
+        const cy = 250;
+        const persp = 0.4; // Perspective factor for ellipses (vertical radius / horizontal radius)
+        const rA = 40;
+        const rB = 80;
+        const rC = 95;
+        const length = 400;
+
+        // Colors for different parts
+        const bodyColor = '#EAEAEA';
+        const outerConductorColor = '#E0E0E0';
+        const mediumColor = '#F5F5F5';
+        const coreColor = '#D0D0D0';
+        const lineColor = '#000000';
+        const hatchColor = '#A0A0A0';
+
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // --- 1. Draw 3D Body of the Cable ---
+        ctx.fillStyle = bodyColor;
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 2;
+
+        // Outer surface of the cylinder
+        ctx.beginPath();
+        const topY = cy - rC * persp;
+        const botY = cy + rC * persp;
+        ctx.moveTo(cx, topY);
+        ctx.lineTo(cx + length, topY);
+        // Jagged "break" line at the far end to indicate continuation
+        ctx.lineTo(cx + length - 15, topY + (botY - topY) * 0.4);
+        ctx.lineTo(cx + length, botY - (botY - topY) * 0.3);
+        ctx.lineTo(cx + length - 10, botY);
+        ctx.lineTo(cx, botY);
+        ctx.ellipse(cx, cy, rC, rC * persp, 0, Math.PI / 2, -Math.PI / 2, true);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Dashed lines indicating the inner conductor's boundary
+        ctx.save();
+        ctx.setLineDash([8, 6]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - rA * persp);
+        ctx.lineTo(cx + length - 20, cy - rA * persp);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + rA * persp);
+        ctx.lineTo(cx + length - 20, cy + rA * persp);
+        ctx.stroke();
+        ctx.restore();
+
+        // --- 2. Draw Cross-Section View ---
+        ctx.lineWidth = 2;
+
+        // Region b-c (Outer Conductor cross-section)
+        ctx.fillStyle = outerConductorColor;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rC, rC * persp, 0, 0, 2 * Math.PI);
+        ctx.ellipse(cx, cy, rB, rB * persp, 0, 0, 2 * Math.PI, true); // Create a hole
+        ctx.fill();
+        // Stroke the outlines
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rC, rC * persp, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rB, rB * persp, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Rim hatching for the outer edge
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#666';
+        for (let angle = 0; angle < 2 * Math.PI; angle += Math.PI / 24) {
+            const x1 = cx + rC * Math.cos(angle);
+            const y1 = cy + rC * persp * Math.sin(angle);
+            const x2 = cx + (rC - 6) * Math.cos(angle + 0.1);
+            const y2 = cy + (rC - 6) * persp * Math.sin(angle + 0.1);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+        ctx.restore();
+        
+        // Region a-b (Magnetic Medium)
+        ctx.fillStyle = mediumColor;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rB, rB * persp, 0, 0, 2 * Math.PI);
+        ctx.ellipse(cx, cy, rA, rA * persp, 0, 0, 2 * Math.PI, true); // Create a hole
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rA, rA * persp, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Region 0-a (Inner Conductor Core)
+        ctx.fillStyle = coreColor;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rA, rA * persp, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        // Diagonal hatching for the inner core
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rA, rA * persp, 0, 0, 2 * Math.PI);
+        ctx.clip(); // Restrict drawing to the core area
+        ctx.strokeStyle = hatchColor;
+        ctx.lineWidth = 1.5;
+        ctx.translate(cx, cy);
+        ctx.rotate(Math.PI / 4); // Rotate for diagonal lines
+        for (let i = -rA * 1.5; i < rA * 1.5; i += 7) {
+            ctx.beginPath();
+            ctx.moveTo(-rA * 1.5, i);
+            ctx.lineTo(rA * 1.5, i);
+            ctx.stroke();
+        }
+        ctx.restore();
+        // Stroke the outline of the core
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rA, rA * persp, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // --- 3. Draw Labels (radii, permeability) ---
+        ctx.fillStyle = lineColor;
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 1;
+        ctx.font = 'italic 18px Times New Roman';
+
+        // Radius 'a'
+        const a_angle = -Math.PI / 3;
+        const ax = cx + rA * Math.cos(a_angle);
+        const ay = cy + rA * persp * Math.sin(a_angle);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(ax, ay);
+        ctx.stroke();
+        ctx.fillText('a', ax + 5, ay);
+
+        // Radius 'b'
+        const b_angle = Math.PI * 0.8;
+        const bx = cx + rB * Math.cos(b_angle);
+        const by = cy + rB * persp * Math.sin(b_angle);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(bx, by);
+        ctx.stroke();
+        ctx.fillText('b', bx - 20, by - 5);
+
+        // Radius 'c'
+        const c_angle = Math.PI * 1.25;
+        const cx_end = cx + rC * Math.cos(c_angle);
+        const cy_end = cy + rC * persp * Math.sin(c_angle);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx_end, cy_end);
+        ctx.stroke();
+        ctx.fillText('c', cx_end - 25, cy_end + 5);
+        
+        // Mu_r label for relative permeability
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('μ', cx - 15, cy + 50);
+        ctx.font = 'italic 14px Times New Roman';
+        ctx.fillText('r', cx - 5, cy + 55);
+
+        // --- 4. Draw Current Arrows and Labels ---
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.lineWidth = 2;
+
+        // Central current I (flowing right)
+        const c_arrow_y = cy;
+        const c_arrow_x1 = cx + 90;
+        const c_arrow_x2 = cx + 220;
+        ctx.beginPath();
+        ctx.moveTo(c_arrow_x1, c_arrow_y);
+        ctx.lineTo(c_arrow_x2, c_arrow_y);
+        ctx.stroke();
+        // arrowhead
+        ctx.beginPath();
+        ctx.moveTo(c_arrow_x2, c_arrow_y);
+        ctx.lineTo(c_arrow_x2 - 12, c_arrow_y - 6);
+        ctx.lineTo(c_arrow_x2 - 12, c_arrow_y + 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillText('I', (c_arrow_x1 + c_arrow_x2) / 2, c_arrow_y - 10);
+
+        // Outer currents I (flowing left)
+        const o_arrow_x1 = cx + length * 0.75;
+        const o_arrow_x2 = o_arrow_x1 - 120;
+        // Top arrow
+        ctx.beginPath();
+        ctx.moveTo(o_arrow_x1, topY);
+        ctx.lineTo(o_arrow_x2, topY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(o_arrow_x2, topY);
+        ctx.lineTo(o_arrow_x2 + 12, topY - 6);
+        ctx.lineTo(o_arrow_x2 + 12, topY + 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillText('I', o_arrow_x1 + 10, topY);
+        // Bottom arrow
+        ctx.beginPath();
+        ctx.moveTo(o_arrow_x1, botY);
+        ctx.lineTo(o_arrow_x2, botY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(o_arrow_x2, botY);
+        ctx.lineTo(o_arrow_x2 + 12, botY - 6);
+        ctx.lineTo(o_arrow_x2 + 12, botY + 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillText('I', o_arrow_x1 + 10, botY + 8);
+
+        // --- 5. Draw Caption ---
+        ctx.fillStyle = '#000';
+        ctx.font = '22px KaiTi, SimSun'; // Use a font that supports Chinese characters
+        ctx.fillText('习题 9-29 图', cx + 100, cy + 180);
+
+    </script>
+</body>
+</html>

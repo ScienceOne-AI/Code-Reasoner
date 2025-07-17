@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        /**
+         * Draws an arrowhead on the canvas context.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} fromX - The starting x-coordinate of the line.
+         * @param {number} fromY - The starting y-coordinate of the line.
+         * @param {number} toX - The ending x-coordinate of the line (where the arrowhead points).
+         * @param {number} toY - The ending y-coordinate of the line (where the arrowhead points).
+         * @param {number} angle - The angle of the arrowhead wings.
+         * @param {number} length - The length of the arrowhead wings.
+         */
+        function drawArrowhead(ctx, fromX, fromY, toX, toY, angle = Math.PI / 9, length = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const theta = Math.atan2(dy, dx);
+            const x1 = toX - length * Math.cos(theta - angle);
+            const y1 = toY - length * Math.sin(theta - angle);
+            const x2 = toX - length * Math.cos(theta + angle);
+            const y2 = toY - length * Math.sin(theta + angle);
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(x1, y1);
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws the table with wood grain texture.
+         */
+        function drawTable(ctx, cornerX, cornerY, thickness, length, legX, legTopW, legBottomW, legH) {
+            ctx.save();
+            ctx.lineWidth = 2;
+
+            // Define paths for clipping
+            const tablePath = new Path2D();
+            tablePath.rect(cornerX - length, cornerY - thickness, length, thickness);
+
+            const legPath = new Path2D();
+            legPath.moveTo(legX, cornerY);
+            legPath.lineTo(legX + legTopW, cornerY);
+            legPath.lineTo(legX + legTopW - (legTopW - legBottomW) / 2, cornerY + legH);
+            legPath.lineTo(legX + (legTopW - legBottomW) / 2, cornerY + legH);
+            legPath.closePath();
+
+            // Draw outlines
+            ctx.stroke(tablePath);
+            ctx.stroke(legPath);
+            ctx.restore();
+
+            // Draw Wood Grain
+            ctx.save();
+            ctx.lineWidth = 1;
+            
+            // Table top grain
+            ctx.clip(tablePath);
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                const y_offset = (Math.random() - 0.5) * 8;
+                ctx.moveTo(cornerX - length, cornerY - thickness + (i + 1) * thickness / 6 + y_offset);
+                ctx.bezierCurveTo(cornerX - length + length * 0.3, cornerY - thickness + (i + 0.5) * thickness / 6 - 4,
+                                  cornerX - length + length * 0.7, cornerY - thickness + (i + 1.5) * thickness / 6 + 4,
+                                  cornerX, cornerY - thickness + (i + 1) * thickness / 6);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Leg grain
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.clip(legPath);
+            for (let i = 0; i < 8; i++) {
+                ctx.beginPath();
+                const startX = legX + legTopW * Math.random();
+                const endX = legX + (legTopW - legBottomW) / 2 + legBottomW * Math.random();
+                ctx.moveTo(startX, cornerY);
+                ctx.bezierCurveTo(startX - 10, cornerY + legH * 0.4,
+                                  endX + 10, cornerY + legH * 0.6,
+                                  endX, cornerY + legH);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+        
+        /**
+         * Draws the chain and returns the coordinates of its ends.
+         */
+        function drawChain(ctx, cornerX, cornerY) {
+            let currentX = cornerX;
+            let currentY = cornerY;
+            const link_h_w = 30, link_h_h = 10, link_h_gap = 5;
+            const num_h_links = 4;
+
+            // Horizontal part
+            for (let i = 0; i < num_h_links; i++) {
+                ctx.strokeRect(currentX - link_h_w, currentY - link_h_h, link_h_w, link_h_h);
+                if (i < num_h_links - 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(currentX - link_h_w, currentY - link_h_h / 2);
+                    ctx.lineTo(currentX - link_h_w - link_h_gap, currentY - link_h_h / 2);
+                    ctx.stroke();
+                }
+                currentX -= (link_h_w + link_h_gap);
+            }
+            const chainStartX = currentX + link_h_gap;
+
+            // Vertical part
+            currentY = cornerY; // Reset Y
+            const link_v_w = 10, link_v_h = 28, link_v_gap = 4;
+            const num_v_links = 3;
+            for (let i = 0; i < num_v_links; i++) {
+                ctx.strokeRect(cornerX, currentY, link_v_w, link_v_h);
+                if (i < num_v_links - 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(cornerX + link_v_w / 2, currentY + link_v_h);
+                    ctx.lineTo(cornerX + link_v_w / 2, currentY + link_v_h + link_v_gap);
+                    ctx.stroke();
+                }
+                currentY += (link_v_h + link_v_gap);
+            }
+            const chainEndY = currentY - link_v_gap;
+
+            return { chainStartX: chainStartX, chainEndY: chainEndY };
+        }
+
+        /**
+         * Draws all annotations and labels.
+         */
+        function drawAnnotations(ctx, cornerX, cornerY, chainMetrics) {
+            ctx.save();
+            ctx.font = 'italic 18px "Times New Roman"';
+
+            // 'l-a' dimension
+            const y_l_a = cornerY - 50;
+            const x1_l_a = chainMetrics.chainStartX;
+            const x2_l_a = cornerX;
+            ctx.beginPath();
+            ctx.moveTo(x1_l_a, y_l_a - 10);
+            ctx.lineTo(x1_l_a, y_l_a + 10);
+            ctx.moveTo(x2_l_a, y_l_a - 10);
+            ctx.lineTo(x2_l_a, y_l_a + 10);
+            ctx.moveTo(x1_l_a, y_l_a);
+            ctx.lineTo(x2_l_a, y_l_a);
+            ctx.stroke();
+            drawArrowhead(ctx, x2_l_a, y_l_a, x1_l_a, y_l_a);
+            drawArrowhead(ctx, x1_l_a, y_l_a, x2_l_a, y_l_a);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('l-a', (x1_l_a + x2_l_a) / 2, y_l_a - 5);
+
+            // 'a' dimension
+            const x_a = cornerX + 40;
+            const y1_a = cornerY;
+            const y2_a = chainMetrics.chainEndY;
+            ctx.beginPath();
+            ctx.moveTo(x_a - 10, y1_a);
+            ctx.lineTo(x_a + 10, y1_a);
+            ctx.moveTo(x_a - 10, y2_a);
+            ctx.lineTo(x_a + 10, y2_a);
+            ctx.moveTo(x_a, y1_a);
+            ctx.lineTo(x_a, y2_a);
+            ctx.stroke();
+            drawArrowhead(ctx, x_a, y1_a, x_a, y2_a);
+            drawArrowhead(ctx, x_a, y2_a, x_a, y1_a);
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('a', x_a + 15, (y1_a + y2_a) / 2);
+
+            // Origin O and y-axis
+            const originX = x_a + 50;
+            const originY = cornerY;
+            
+            // O point
+            ctx.beginPath();
+            ctx.arc(originX, originY, 3, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('O', originX + 8, originY);
+
+            // y arrow
+            const arrowYStart = originY + 20;
+            const arrowYEnd = originY + 70;
+            ctx.beginPath();
+            ctx.moveTo(originX, arrowYStart);
+            ctx.lineTo(originX, arrowYEnd);
+            ctx.stroke();
+            drawArrowhead(ctx, originX, arrowYStart, originX, arrowYEnd);
+            ctx.fillText('y', originX + 8, arrowYEnd + 5);
+            
+            ctx.restore();
+        }
+
+        /**
+         * Draws the figure caption.
+         */
+        function drawCaption(ctx) {
+            ctx.save();
+            ctx.font = '22px "SimSun", "Song Ti"'; // Common Chinese fonts
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('习题 2-14 图', canvas.width / 2, canvas.height - 10);
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'black';
+            ctx.fillStyle = 'black';
+            ctx.lineWidth = 1.5;
+
+            // Define coordinates
+            const tableCornerX = 300;
+            const tableCornerY = 200;
+            const tableThickness = 20;
+            const tableLength = 250;
+            const legX = 220;
+            const legTopW = 25;
+            const legBottomW = 15;
+            const legH = 150;
+
+            // Draw components
+            drawTable(ctx, tableCornerX, tableCornerY, tableThickness, tableLength, legX, legTopW, legBottomW, legH);
+            const chainMetrics = drawChain(ctx, tableCornerX, tableCornerY);
+            drawAnnotations(ctx, tableCornerX, tableCornerY, chainMetrics);
+            drawCaption(ctx);
+        }
+
+        // Execute the drawing
+        draw();
+    </script>
+</body>
+</html>

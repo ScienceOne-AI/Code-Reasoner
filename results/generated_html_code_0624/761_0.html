@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Projectile Motion on Stairs</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-diagram" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-diagram');
+        const ctx = canvas.getContext('2d');
+        ctx.font = '16px "Times New Roman"';
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // Helper function to draw an arrow
+        function drawArrow(fromx, fromy, tox, toy, headlen = 8) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Helper function for dimension lines with arrows at both ends
+        function drawDimensionLine(x1, y1, x2, y2, label, labelPos = 'middle') {
+            const headlen = 6;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            const angle1 = Math.atan2(y2 - y1, x2 - x1);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + headlen * Math.cos(angle1 + Math.PI / 6), y1 + headlen * Math.sin(angle1 + Math.PI / 6));
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + headlen * Math.cos(angle1 - Math.PI / 6), y1 + headlen * Math.sin(angle1 - Math.PI / 6));
+            ctx.stroke();
+            
+            const angle2 = Math.atan2(y1 - y2, x1 - x2);
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 + headlen * Math.cos(angle2 + Math.PI / 6), y2 + headlen * Math.sin(angle2 + Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 + headlen * Math.cos(angle2 - Math.PI / 6), y2 + headlen * Math.sin(angle2 - Math.PI / 6));
+            ctx.stroke();
+
+            // Label
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            let labelX = (x1 + x2) / 2;
+            let labelY = (y1 + y2) / 2;
+            if (x1 === x2) { // Vertical line
+                labelX += 15;
+            } else { // Horizontal line
+                labelY -= 15;
+            }
+            ctx.fillText(label, labelX, labelY);
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+        
+        // Parameters
+        const l = 80;
+        const H = 60;
+        const startX = 80;
+        const startY = 280;
+
+        // 1. Draw Stairs
+        ctx.beginPath();
+        ctx.lineWidth = 2;
+        // Floor
+        ctx.moveTo(startX - 60, startY + l);
+        ctx.lineTo(startX, startY + l);
+        // First step (lowest)
+        ctx.lineTo(startX, startY);
+        ctx.lineTo(startX + l, startY);
+        // Second step (middle)
+        ctx.lineTo(startX + l, startY - l);
+        ctx.lineTo(startX + 2 * l, startY - l);
+        // Third step (highest)
+        ctx.lineTo(startX + 2 * l, startY - 2 * l);
+        ctx.lineTo(startX + 3 * l, startY - 2 * l);
+        // Top floor
+        ctx.lineTo(startX + 3 * l + 40, startY - 2 * l);
+        ctx.stroke();
+
+        // 2. Draw Trajectories (ball bounces from right to left, down the stairs)
+        // Physics constants for calculating a visually plausible parabola.
+        // These are not for solving the problem, just for drawing.
+        // t_up / t_down is what matters for the peak's horizontal position.
+        const g_sim = 9.8;
+        const t_up = Math.sqrt(2 * H / g_sim);
+        const t_down = Math.sqrt(2 * (H + l) / g_sim);
+
+        // Function to draw one bounce arc
+        function drawArc(startX, startY, endX, endY) {
+            // Control point calculation for a quadratic Bezier curve
+            // representing a parabolic trajectory.
+            const peakX = startX - l * (t_up / (t_up + t_down));
+            const peakY = startY - H;
+            
+            // The control point is derived from the property that it's the
+            // intersection of the tangents at the start and end points.
+            // Using a simpler method for robust drawing:
+            // Control Point = 2 * Vertex - (Start+End)/2
+            const cpX = 2 * peakX - (startX + endX) / 2;
+            const cpY = 2 * peakY - (startY + endY) / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.quadraticCurveTo(cpX, cpY, endX, endY);
+            ctx.stroke();
+
+            return {peakX, peakY};
+        }
+
+        // Bounce points are in the middle of each step
+        const bounce3_X = startX + 2.5 * l; // Highest
+        const bounce3_Y = startY - 2 * l;
+
+        const bounce2_X = startX + 1.5 * l; // Middle
+        const bounce2_Y = startY - l;
+
+        const bounce1_X = startX + 0.5 * l; // Lowest
+        const bounce1_Y = startY;
+
+        // Draw the arcs
+        const peak3 = drawArc(bounce3_X, bounce3_Y, bounce2_X, bounce2_Y);
+        const peak2 = drawArc(bounce2_X, bounce2_Y, bounce1_X, bounce1_Y);
+        
+        // Draw the beginning of the lowest arc
+        const pre_bounce_X = bounce1_X - l;
+        const pre_bounce_Y = bounce1_Y + l;
+        const peak1 = drawArc(bounce1_X, bounce1_Y, pre_bounce_X, pre_bounce_Y);
+
+
+        // 3. Draw Annotations
+        ctx.lineWidth = 1;
+        ctx.font = 'italic 20px "Times New Roman"';
+
+        // Origin O
+        const oX = startX + l;
+        const oY = startY - l;
+        ctx.fillText('O', oX - 15, oY - 5);
+
+        // Coordinate axes
+        ctx.save();
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        ctx.moveTo(oX, oY);
+        ctx.lineTo(oX, oY + 1.5*l);
+        ctx.stroke();
+        drawArrow(oX, oY + 1.5*l, oX, oY + 1.5*l + 15);
+        ctx.restore();
+        ctx.fillText('y', oX - 20, oY + 1.5*l + 10);
+        
+        const x_axis_y = bounce2_Y;
+        drawArrow(bounce2_X - 10, x_axis_y, bounce2_X - 50, x_axis_y);
+        ctx.fillText('x', bounce2_X - 70, x_axis_y + 5);
+
+        // Dimension lines
+        // l (width)
+        drawDimensionLine(startX, startY + 20, startX + l, startY + 20, 'l');
+        
+        // l (height)
+        drawDimensionLine(startX + 2 * l + 20, startY - l, startX + 2 * l + 20, startY - 2 * l, 'l');
+
+        // H
+        ctx.save();
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        ctx.moveTo(bounce2_X, bounce2_Y);
+        ctx.lineTo(peak2.peakX, bounce2_Y);
+        ctx.moveTo(peak2.peakX, peak2.peakY);
+        ctx.lineTo(peak2.peakX, bounce2_Y);
+        ctx.stroke();
+        ctx.restore();
+        drawDimensionLine(peak2.peakX + 10, peak2.peakY, peak2.peakX + 10, bounce2_Y, 'H');
+
+        // l (top)
+        ctx.save();
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        ctx.moveTo(peak3.peakX, peak3.peakY);
+        ctx.lineTo(peak2.peakX, peak3.peakY);
+        ctx.moveTo(peak2.peakX, peak2.peakY);
+        ctx.lineTo(peak2.peakX, peak3.peakY);
+        ctx.stroke();
+        ctx.restore();
+        drawDimensionLine(peak3.peakX - 10, peak3.peakY, peak3.peakX - 10, peak2.peakY, 'l');
+
+
+        // 4. Draw Caption
+        ctx.font = '16px "SimSun"';
+        ctx.textAlign = 'center';
+        ctx.fillText('力图 3.25.1', canvas.width / 2, canvas.height - 20);
+
+    </script>
+</body>
+</html>

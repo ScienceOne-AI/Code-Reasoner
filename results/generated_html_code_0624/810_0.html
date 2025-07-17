@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mechanical Manipulator Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="manipulatorCanvas" width="800" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('manipulatorCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration & Coordinates ---
+        const scale = 400; // pixels per meter
+        const l1 = 0.7 * scale;
+        const l2 = 0.5 * scale;
+        const angleDegrees = 30;
+        const angleRadians = angleDegrees * Math.PI / 180;
+
+        const pA = { x: 120, y: 350 };
+        const pB = { x: pA.x + l1, y: pA.y };
+        const pC = {
+            x: pB.x + l2 * Math.cos(angleRadians),
+            y: pB.y - l2 * Math.sin(angleRadians) // y decreases upwards
+        };
+
+        // --- Style Settings ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 3.5;
+        const mainFont = '24px "Times New Roman"';
+        const subscriptFont = '18px "Times New Roman"';
+
+        // --- Drawing Functions ---
+
+        function drawSupport(x, y) {
+            ctx.save();
+            ctx.lineWidth = 3;
+            // Triangle part
+            ctx.beginPath();
+            ctx.moveTo(x - 30, y + 15);
+            ctx.lineTo(x + 30, y + 15);
+            ctx.lineTo(x, y - 10);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Ground base line
+            ctx.beginPath();
+            ctx.moveTo(x - 40, y + 20);
+            ctx.lineTo(x + 40, y + 20);
+            ctx.stroke();
+
+            // Hatching lines
+            ctx.lineWidth = 2;
+            for (let i = -35; i <= 35; i += 8) {
+                ctx.beginPath();
+                ctx.moveTo(x + i, y + 20);
+                ctx.lineTo(x + i - 8, y + 28);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawLinksAndJoints() {
+            // Link AB
+            ctx.beginPath();
+            ctx.moveTo(pA.x, pA.y);
+            ctx.lineTo(pB.x, pB.y);
+            ctx.stroke();
+
+            // Link BC
+            ctx.beginPath();
+            ctx.moveTo(pB.x, pB.y);
+            ctx.lineTo(pC.x, pC.y);
+            ctx.stroke();
+            
+            // Joint circles
+            [pA, pB].forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+                ctx.stroke();
+            });
+            ctx.fillStyle = 'black';
+        }
+
+        function drawGripper(x, y, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(-angle); // Align with link BC
+            ctx.lineWidth = 3;
+
+            // Draw the gripper shape relative to C
+            ctx.beginPath();
+            // Body (diamond-like)
+            ctx.moveTo(0, 0); // C is the connection point
+            ctx.lineTo(10, 8);
+            ctx.lineTo(22, 0);
+            ctx.lineTo(10, -8);
+            ctx.closePath();
+            
+            // Jaws
+            ctx.moveTo(22, 0);
+            ctx.lineTo(28, -5);
+            ctx.lineTo(40, -5);
+            ctx.lineTo(40, -10);
+
+            ctx.moveTo(22, 0);
+            ctx.lineTo(28, 5);
+            ctx.lineTo(40, 5);
+            ctx.lineTo(40, 10);
+
+            // Detail line
+            ctx.moveTo(22, 0);
+            ctx.lineTo(18,0);
+
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawAngleMarker() {
+            // Dashed line from B
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([8, 6]);
+            ctx.lineWidth = 2.5;
+            ctx.moveTo(pB.x, pB.y);
+            ctx.lineTo(pB.x + 220, pB.y);
+            ctx.stroke();
+            ctx.restore();
+
+            // Angle indicator
+            const indicatorX = pC.x - 50;
+            const indicatorY_base = pB.y;
+            
+            ctx.save();
+            ctx.lineWidth = 2;
+            // T-bar on horizontal line
+            ctx.beginPath();
+            ctx.moveTo(indicatorX, indicatorY_base);
+            ctx.lineTo(indicatorX, indicatorY_base - 30);
+            ctx.moveTo(indicatorX - 6, indicatorY_base);
+            ctx.lineTo(indicatorX + 6, indicatorY_base);
+            ctx.stroke();
+
+            // Arrow pointing to link BC
+            const arrowStartX = indicatorX;
+            const arrowStartY = indicatorY_base - 30;
+            // Endpoint visually estimated to be perpendicular to BC
+            const arrowEndX = pC.x - 20;
+            const arrowEndY = pC.y + 12;
+
+            ctx.beginPath();
+            ctx.moveTo(arrowStartX, arrowStartY);
+            ctx.lineTo(arrowEndX, arrowEndY);
+            
+            // Arrowhead
+            ctx.save();
+            ctx.translate(arrowEndX, arrowEndY);
+            ctx.rotate(-angleRadians + Math.PI / 2); // Perpendicular to link BC
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-5, -7);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(5, -7);
+            ctx.stroke();
+            ctx.restore();
+            
+            ctx.stroke(); // Draw the arrow line
+            ctx.restore();
+        }
+
+        function drawLabels() {
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            
+            // Point labels A, B, C
+            ctx.font = mainFont;
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('A', pA.x, pA.y - 15);
+            ctx.fillText('B', pB.x, pB.y - 15);
+            ctx.textBaseline = 'middle';
+            ctx.fillText('C', pC.x + 50, pC.y);
+
+            // Length labels l1, l2
+            ctx.textBaseline = 'bottom';
+            // l1
+            ctx.font = `italic ${mainFont}`;
+            const l1_x = (pA.x + pB.x) / 2;
+            const l1_y = pA.y - 15;
+            ctx.fillText('l', l1_x - 4, l1_y);
+            ctx.font = `italic ${subscriptFont}`;
+            ctx.fillText('1', l1_x + 6, l1_y + 2);
+            
+            // l2
+            ctx.save();
+            const l2_x = (pB.x + pC.x) / 2;
+            const l2_y = (pB.y + pC.y) / 2;
+            ctx.translate(l2_x, l2_y);
+            ctx.rotate(-angleRadians);
+            ctx.font = `italic ${mainFont}`;
+            ctx.fillText('l', 0, -15);
+            ctx.font = `italic ${subscriptFont}`;
+            ctx.fillText('2', 10, -13);
+            ctx.restore();
+            
+            // Angle label 30°
+            ctx.font = mainFont;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('30°', pC.x - 40, pC.y + 40);
+        }
+
+
+        // --- Main Drawing Execution ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawSupport(pA.x, pA.y);
+        drawLinksAndJoints();
+        drawGripper(pC.x, pC.y, angleRadians);
+        drawAngleMarker();
+        drawLabels();
+
+    </script>
+</body>
+</html>

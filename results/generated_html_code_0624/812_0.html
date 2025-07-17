@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stacked Blocks</title>
+</head>
+<body>
+    <canvas id="myCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const l_val = 120;
+        const L = 2 * l_val; // Block length
+        const h = 35;         // Block height
+        const d = 40;         // Overhang per block
+        const N = 7;          // Number of blocks
+        const mainLineWidth = 2.5; // Stroke width for blocks
+
+        // Calculate start position of the TOP block to center the drawing
+        const totalDrawingWidth = L + (N - 1) * d;
+        const x_offset = (canvas.width - totalDrawingWidth) / 2;
+        const y_offset = 110;
+
+        const x_top_start = x_offset + (N - 1) * d;
+        const y_top_start = y_offset;
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws an arrowhead at a given point and angle.
+         * The arrowhead is composed of two stroked lines.
+         * @param {CanvasRenderingContext2D} context The canvas context.
+         * @param {number} x The x-coordinate of the arrowhead's tip.
+         * @param {number} y The y-coordinate of the arrowhead's tip.
+         * @param {number} angle The angle in radians for the arrowhead's direction.
+         */
+        function drawArrowhead(context, x, y, angle) {
+            const headlen = 12;
+            const headAngle = Math.PI / 8; // Angle of the arrowhead wings
+            context.save();
+            context.translate(x, y);
+            context.rotate(angle);
+            context.beginPath();
+            context.moveTo(0, 0);
+            context.lineTo(-headlen, headAngle * 5);
+            context.moveTo(0, 0);
+            context.lineTo(-headlen, -headAngle * 5);
+            context.stroke();
+            context.restore();
+        }
+
+        /**
+         * Creates a diagonal hatch pattern.
+         * @param {CanvasRenderingContext2D} context The main canvas context.
+         * @returns {CanvasPattern} The created pattern.
+         */
+        function createHatchPattern(context) {
+            const patternCanvas = document.createElement('canvas');
+            const pctx = patternCanvas.getContext('2d');
+            const size = 10;
+            const lineWidth = 2.0; 
+            patternCanvas.width = size;
+            patternCanvas.height = size;
+
+            pctx.strokeStyle = 'black';
+            pctx.lineWidth = lineWidth;
+            pctx.beginPath();
+            // Diagonal lines from top-left to bottom-right
+            pctx.moveTo(-size, size);
+            pctx.lineTo(size, -size);
+            pctx.moveTo(0, size * 2);
+            pctx.lineTo(size * 2, 0);
+            pctx.stroke();
+            
+            return context.createPattern(patternCanvas, 'repeat');
+        }
+
+        // --- Main Drawing ---
+
+        // Set global styles for blocks
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = mainLineWidth;
+        ctx.lineCap = 'butt'; // To match the sharp corners
+
+        const hatchPattern = createHatchPattern(ctx);
+
+        // Draw the blocks (iterating from top to bottom)
+        for (let i = 0; i < N; i++) {
+            const x = x_top_start - i * d;
+            const y = y_top_start + i * h;
+
+            // Block number from bottom is (N - i). Odd numbered blocks are hatched.
+            if ((N - i) % 2 !== 0) {
+                // Hatched block
+                ctx.fillStyle = hatchPattern;
+                ctx.fillRect(x, y, L, h);
+                ctx.strokeRect(x, y, L, h); // Draw border over the fill
+            } else {
+                // White block
+                ctx.fillStyle = 'white';
+                ctx.fillRect(x, y, L, h); // Fill white to cover underlying strokes
+                ctx.strokeRect(x, y, L, h);
+            }
+        }
+
+        // --- Draw Dimension Line for the top block ---
+        const y_dim_line = y_top_start - 30;
+        const x_L = x_top_start;
+        const x_R = x_top_start + L;
+
+        ctx.lineWidth = 2.0; // Dimension lines are often slightly thinner
+
+        // Draw the main horizontal dimension line
+        ctx.beginPath();
+        ctx.moveTo(x_L, y_dim_line);
+        ctx.lineTo(x_R, y_dim_line);
+        ctx.stroke();
+
+        // Draw the arrowheads pointing outwards
+        drawArrowhead(ctx, x_L, y_dim_line, Math.PI); // Left-pointing arrow
+        drawArrowhead(ctx, x_R, y_dim_line, 0);       // Right-pointing arrow
+
+        // Draw the vertical terminator ticks
+        const tickHeight = 10;
+        ctx.beginPath();
+        ctx.moveTo(x_L, y_dim_line - tickHeight / 2);
+        ctx.lineTo(x_L, y_dim_line + tickHeight / 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x_R, y_dim_line - tickHeight / 2);
+        ctx.lineTo(x_R, y_dim_line + tickHeight / 2);
+        ctx.stroke();
+
+        // Draw the label "2l"
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('2l', x_L + L / 2, y_dim_line - 5);
+
+    </script>
+</body>
+</html>

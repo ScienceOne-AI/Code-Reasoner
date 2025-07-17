@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="550" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        const baseFont = '20px Times New Roman';
+        const subFont = '14px Times New Roman';
+        const italicFont = 'italic 20px Times New Roman';
+        const italicSubFont = 'italic 14px Times New Roman';
+
+        // --- Helper functions ---
+
+        function drawLabel(label, sub, x, y, options = {}) {
+            ctx.save();
+            ctx.font = options.italic ? italicFont : baseFont;
+            ctx.textAlign = options.align || 'center';
+            ctx.textBaseline = options.baseline || 'middle';
+            ctx.fillText(label, x, y);
+            if (sub) {
+                ctx.font = options.italic ? italicSubFont : subFont;
+                // Adjust subscript position based on main character width
+                const labelWidth = ctx.measureText(label).width;
+                ctx.fillText(sub, x + labelWidth * 0.4, y + 5);
+            }
+            ctx.restore();
+        }
+
+        function drawResistorH(x, y, w, h, label, sub) {
+            ctx.strokeRect(x - w / 2, y - h / 2, w, h);
+            drawLabel(label, sub, x, y - h / 2 - 15);
+        }
+
+        function drawResistorV(x, y, w, h, label, sub) {
+            ctx.strokeRect(x - w / 2, y - h / 2, w, h);
+            drawLabel(label, sub, x + w / 2 + 15, y);
+        }
+
+        function drawCapacitor(x, y, w, gap, label) {
+            ctx.beginPath();
+            ctx.moveTo(x - w / 2, y - gap / 2);
+            ctx.lineTo(x + w / 2, y - gap / 2);
+            ctx.moveTo(x - w / 2, y + gap / 2);
+            ctx.lineTo(x + w / 2, y + gap / 2);
+            ctx.stroke();
+            drawLabel(label, null, x + w / 2 + 15, y);
+        }
+
+        function drawBattery(x, y, h, label) {
+            const plate_h = h / 2;
+            const long_w = 40;
+            const short_w = 20;
+            ctx.beginPath();
+            ctx.moveTo(x - long_w / 2, y - plate_h);
+            ctx.lineTo(x + long_w / 2, y - plate_h);
+            ctx.moveTo(x - short_w / 2, y + plate_h);
+            ctx.lineTo(x + short_w / 2, y + plate_h);
+            ctx.stroke();
+            drawLabel(label, null, x - 35, y);
+        }
+        
+        function drawSwitch(x, y, len, label) {
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI); // top connection point
+            ctx.fill();
+
+            const angle = -135 * Math.PI / 180; // 45 degrees up and left
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + len * Math.cos(angle), y + len * Math.sin(angle));
+            ctx.stroke();
+
+            drawLabel(label, null, x + len*0.7, y + len*0.7, {align: 'left'});
+        }
+        
+        function drawCurrentArrow(x, y, len, angle_deg, label, sub) {
+            const angle_rad = angle_deg * Math.PI / 180;
+            const x1 = x, y1 = y;
+            const x2 = x + len * Math.cos(angle_rad);
+            const y2 = y + len * Math.sin(angle_rad);
+
+            ctx.save();
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            
+            // Arrowhead
+            const headlen = 10;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+            ctx.restore();
+
+            // Label Position
+            let lx = x1 + (x2 - x1) / 2;
+            let ly = y1 + (y2 - y1) / 2;
+            if (angle_deg === 0 || angle_deg === 180) { // Horizontal
+                ly -= 20;
+            } else { // Vertical or other
+                lx -= 20;
+            }
+            drawLabel(label, sub, lx, ly, {italic: true});
+        }
+
+        function drawNode(x, y, label) {
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.fill();
+            drawLabel(label, null, x + 15, y);
+        }
+
+        // --- Main Drawing ---
+
+        // Define coordinates
+        const x_batt = 100;
+        const y_top = 80;
+        const y_bottom = 340;
+        const x_r1_center = 250;
+        const x_junction = 400;
+
+        const x_r2_branch = 280;
+        const x_c_branch = 360;
+        const x_r3_branch = 440;
+        
+        const y_bus_top = 120;
+        const y_bus_bottom = 340;
+        
+        // Draw wires
+        ctx.beginPath();
+        // Left wire with battery
+        ctx.moveTo(x_batt, y_bus_bottom);
+        ctx.lineTo(x_batt, 240); // wire to battery bottom
+        ctx.moveTo(x_batt, 180); // wire from battery top
+        ctx.lineTo(x_batt, y_top);
+        // Top wire with R1
+        ctx.lineTo(x_r1_center - 40, y_top); // to R1
+        ctx.moveTo(x_r1_center + 40, y_top); // from R1
+        ctx.lineTo(x_junction, y_top);
+        ctx.lineTo(x_junction, y_bus_top);
+        
+        // Top and bottom buses for parallel branches
+        ctx.moveTo(x_r2_branch, y_bus_top);
+        ctx.lineTo(x_r3_branch, y_bus_top);
+        ctx.moveTo(x_r2_branch, y_bus_bottom);
+        ctx.lineTo(x_r3_branch, y_bus_bottom);
+        
+        // Vertical wires for branches
+        // R2 branch
+        ctx.moveTo(x_r2_branch, y_bus_top);
+        ctx.lineTo(x_r2_branch, y_bus_bottom);
+        // C branch
+        ctx.moveTo(x_c_branch, y_bus_top);
+        ctx.lineTo(x_c_branch, y_bus_bottom);
+        // R3 branch (with switch)
+        ctx.moveTo(x_r3_branch, y_bus_top);
+        ctx.lineTo(x_r3_branch, y_bus_top + 30); // wire to switch
+        ctx.moveTo(x_r3_branch, y_bus_top + 70); // wire from switch
+        ctx.lineTo(x_r3_branch, y_bus_bottom);
+        
+        // Return wire
+        ctx.moveTo(x_c_branch, y_bus_bottom);
+        ctx.lineTo(x_batt, y_bus_bottom);
+        ctx.stroke();
+
+        // Draw components
+        drawBattery(x_batt, 210, 30, 'ε');
+        drawResistorH(x_r1_center, y_top, 80, 30, 'R', '1');
+        drawResistorV(x_r2_branch, 230, 30, 80, 'R', '2');
+        drawCapacitor(x_c_branch, 230, 40, 10, 'C');
+        drawResistorV(x_r3_branch, 260, 30, 80, 'R', '3');
+        drawSwitch(x_r3_branch, y_bus_top + 50, 28, 'K');
+        
+        // Draw Nodes
+        drawNode(x_junction, y_bus_top, 'A');
+        drawNode(x_c_branch, y_bus_bottom, 'B');
+
+        // Draw current arrows and labels
+        drawCurrentArrow(x_r1_center + 50, y_top - 20, 50, 180, 'I', '1');
+        drawCurrentArrow(x_r2_branch, y_bus_top + 30, 50, 90, 'I', '2');
+        drawCurrentArrow(x_c_branch, y_bus_top + 30, 50, 90, 'I', 'C');
+        drawCurrentArrow(x_r3_branch, y_bus_top + 90, 50, 90, 'I', '3');
+
+    </script>
+</body>
+</html>

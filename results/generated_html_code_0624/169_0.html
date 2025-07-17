@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings to mimic the hand-drawn look
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        // Define a font that looks somewhat like handwriting
+        const mainFont = '24px "Comic Sans MS", cursive, sans-serif';
+        const captionFont = '20px serif';
+
+        // Center of the coordinate system
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2 - 20;
+
+        // Helper function to draw a filled arrowhead
+        function drawFilledArrowhead(ctx, x, y, angle) {
+            const headLength = 12;
+            ctx.save();
+            ctx.beginPath();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headLength, headLength / 2.5);
+            ctx.lineTo(-headLength, -headLength / 2.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        // -- Draw Coordinate Axes --
+        const axisLen = 120;
+        const diagOffset = 60;
+
+        // X-axis
+        ctx.beginPath();
+        ctx.moveTo(cx - diagOffset, cy);
+        ctx.lineTo(cx + axisLen, cy);
+        ctx.stroke();
+        drawFilledArrowhead(ctx, cx + axisLen, cy, 0);
+        ctx.font = mainFont;
+        ctx.fillText('x', cx + axisLen + 15, cy + 8);
+
+        // Y-axis
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + diagOffset);
+        ctx.lineTo(cx, cy - axisLen, cy);
+        ctx.stroke();
+        drawFilledArrowhead(ctx, cx, cy - axisLen, -Math.PI / 2);
+        ctx.fillText('Y', cx - 30, cy - axisLen + 5);
+
+        // Diagonal axis (unlabeled)
+        ctx.beginPath();
+        ctx.moveTo(cx - diagOffset, cy + diagOffset);
+        ctx.lineTo(cx + diagOffset, cy - diagOffset);
+        ctx.stroke();
+
+        // -- Draw the Rod and Charges --
+        const rodLength = 200;
+        const theta_deg = 28;
+        const theta_rad = theta_deg * Math.PI / 180;
+
+        // Calculate end points of the rod
+        const x_pos = cx + (rodLength / 2) * Math.cos(theta_rad);
+        const y_pos = cy - (rodLength / 2) * Math.sin(theta_rad); // Canvas y-coord is inverted
+        const x_neg = cx - (rodLength / 2) * Math.cos(theta_rad);
+        const y_neg = cy + (rodLength / 2) * Math.sin(theta_rad);
+
+        // Draw the rod
+        ctx.beginPath();
+        ctx.moveTo(x_pos, y_pos);
+        ctx.lineTo(x_neg, y_neg);
+        ctx.stroke();
+
+        // Draw charges and labels
+        // +Q
+        ctx.beginPath();
+        ctx.arc(x_pos, y_pos, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('Q', x_pos + 10, y_pos);
+
+        // -Q
+        ctx.fillText('-Q', x_neg - 40, y_neg + 10);
+
+        // -- Draw Angle Label (θ) --
+        const arcRadius = 40;
+        ctx.beginPath();
+        ctx.arc(cx, cy, arcRadius, 0, -theta_rad, true); // True for counter-clockwise
+        ctx.stroke();
+        
+        // Position and draw the theta symbol
+        const thetaLabelRadius = arcRadius * 1.4;
+        const thetaLabelAngle = -theta_rad / 2;
+        ctx.fillText('θ', cx + thetaLabelRadius * Math.cos(thetaLabelAngle), cy + thetaLabelRadius * Math.sin(thetaLabelAngle) + 5);
+
+        // -- Draw Rotation Arrows --
+        // Both arrows indicate counter-clockwise rotation
+        const rotArrowRadius = rodLength / 2 + 25;
+        const arcSpan = 0.9;
+        const arcOffset = 0.1;
+
+        // Arrow near +Q
+        const angle_pos_end = -theta_rad;
+        const startAnglePos = angle_pos_end + arcSpan/2 + arcOffset;
+        const endAnglePos = angle_pos_end - arcSpan/2 + arcOffset;
+        ctx.beginPath();
+        ctx.arc(cx, cy, rotArrowRadius, startAnglePos, endAnglePos, true); // CCW
+        ctx.stroke();
+        const tipX_pos = cx + rotArrowRadius * Math.cos(endAnglePos);
+        const tipY_pos = cy + rotArrowRadius * Math.sin(endAnglePos);
+        drawFilledArrowhead(ctx, tipX_pos, tipY_pos, endAnglePos - Math.PI/2);
+        
+        // Arrow near -Q
+        const angle_neg_end = -theta_rad + Math.PI;
+        const startAngleNeg = angle_neg_end + arcSpan/2 + arcOffset;
+        const endAngleNeg = angle_neg_end - arcSpan/2 + arcOffset;
+        ctx.beginPath();
+        ctx.arc(cx, cy, rotArrowRadius, startAngleNeg, endAngleNeg, true); // CCW
+        ctx.stroke();
+        const tipX_neg = cx + rotArrowRadius * Math.cos(endAngleNeg);
+        const tipY_neg = cy + rotArrowRadius * Math.sin(endAngleNeg);
+        drawFilledArrowhead(ctx, tipX_neg, tipY_neg, endAngleNeg - Math.PI/2);
+
+
+        // -- Draw Figure Caption --
+        ctx.font = captionFont;
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 5.11', cx, canvas.height - 20);
+
+    </script>
+</body>
+</html>

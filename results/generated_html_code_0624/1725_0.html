@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-diagram" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-diagram');
+        const ctx = canvas.getContext('2d');
+
+        // Style and Font settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 24px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Parameters and Coordinates ---
+        const y_pulley = 120;
+        const x_A = 100;
+        const x_B = 500;
+        const l_pixels = x_B - x_A;
+        const x_dist = 120; // Vertical distance 'x' in pixels
+
+        const x_E = x_A + l_pixels / 2;
+        const y_E = y_pulley + x_dist;
+
+        const pulleyRadius = 10;
+        const supportSize = 25;
+        const wallOffset = 5;
+        const wall_x_left = x_A - supportSize;
+        const wall_x_right = x_B + supportSize;
+        
+        const weightSize = 35;
+        const y_top_C = y_pulley + 150;
+        const y_top_D = y_pulley + 150;
+        const y_top_E_weight = y_E + 120;
+
+
+        // --- Drawing Functions ---
+
+        function drawWall(x, y_min, y_max) {
+            ctx.beginPath();
+            ctx.moveTo(x, y_min);
+            ctx.lineTo(x, y_max);
+            
+            const hatchLength = 12;
+            const hatchSpacing = 10;
+            const hatchDir = (x < canvas.width / 2) ? -1 : 1;
+
+            for (let y = y_min; y <= y_max; y += hatchSpacing) {
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + hatchDir * hatchLength, y - hatchLength * 0.5);
+            }
+            ctx.stroke();
+        }
+
+        function drawPulleyAndSupport(x, y, wall_x) {
+            // Support Bracket
+            ctx.beginPath();
+            ctx.moveTo(wall_x, y - supportSize / 2);
+            ctx.lineTo(x, y);
+            ctx.lineTo(wall_x, y + supportSize / 2);
+            ctx.stroke();
+            
+            // Pulley Circle
+            ctx.beginPath();
+            ctx.arc(x, y, pulleyRadius, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Pulley Axle
+            ctx.beginPath();
+            ctx.arc(x, y, 2, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        function drawWeight(x, y_top, size, label) {
+            // Rope
+            ctx.beginPath();
+            ctx.moveTo(x, y_top);
+            ctx.lineTo(x, y_top + size);
+            ctx.stroke();
+            // Weight Box
+            ctx.strokeRect(x - size / 2, y_top, size, size);
+            // Label
+            ctx.fillText(label, x - size, y_top + size/2);
+        }
+
+        function drawDimensionArrow(x1, y1, x2, y2) {
+            const headlen = 10; // length of head in pixels
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        }
+
+        // --- Main Drawing ---
+
+        // 1. Draw Walls
+        drawWall(wall_x_left, y_pulley - 60, y_pulley + 60);
+        drawWall(wall_x_right, y_pulley - 60, y_pulley + 60);
+
+        // 2. Draw Ropes (behind pulleys)
+        ctx.beginPath();
+        // Rope segment from C up to A
+        ctx.moveTo(x_A, y_top_C);
+        ctx.lineTo(x_A, y_pulley);
+        // Rope segment AEB
+        ctx.lineTo(x_E, y_E);
+        ctx.lineTo(x_B, y_pulley);
+        // Rope segment from B down to D
+        ctx.lineTo(x_B, y_top_D);
+        ctx.stroke();
+        // Rope from E to central weight
+        ctx.beginPath();
+        ctx.moveTo(x_E, y_E);
+        ctx.lineTo(x_E, y_top_E_weight);
+        ctx.stroke();
+
+        // 3. Draw Pulleys and Supports
+        drawPulleyAndSupport(x_A, y_pulley, wall_x_left);
+        drawPulleyAndSupport(x_B, y_pulley, wall_x_right);
+
+        // 4. Draw Weights and their labels
+        ctx.strokeRect(x_A - weightSize/2, y_top_C, weightSize, weightSize);
+        ctx.fillText('C', x_A + 30, y_top_C + weightSize / 2);
+
+        ctx.strokeRect(x_B - weightSize/2, y_top_D, weightSize, weightSize);
+        ctx.fillText('D', x_B + 30, y_top_D + weightSize / 2);
+        
+        ctx.strokeRect(x_E - weightSize/2, y_top_E_weight, weightSize, weightSize);
+        
+        // 5. Draw dashed line and dimensions
+        // Dashed line AB
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(x_A, y_pulley);
+        ctx.lineTo(x_B, y_pulley);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset line dash
+
+        // Dimension 'l'
+        const y_dim_l = 40;
+        ctx.beginPath();
+        ctx.moveTo(x_A, y_dim_l);
+        ctx.lineTo(x_B, y_dim_l);
+        ctx.moveTo(x_A, y_dim_l);
+        ctx.lineTo(x_A, y_pulley);
+        ctx.moveTo(x_B, y_dim_l);
+        ctx.lineTo(x_B, y_pulley);
+        drawDimensionArrow(x_B, y_dim_l, x_A, y_dim_l);
+        drawDimensionArrow(x_A, y_dim_l, x_B, y_dim_l);
+        ctx.stroke();
+        ctx.fillText('l', x_E, y_dim_l - 15);
+
+        // Dimension 'x'
+        ctx.beginPath();
+        ctx.moveTo(x_E, y_pulley);
+        ctx.lineTo(x_E, y_E);
+        drawDimensionArrow(x_E, y_E, x_E, y_pulley); // Top arrow
+        drawDimensionArrow(x_E, y_pulley, x_E, y_E); // Bottom arrow
+        ctx.stroke();
+        ctx.fillText('x', x_E + 25, y_E - x_dist / 2);
+
+        // 6. Draw point labels
+        ctx.fillText('A', x_A - 30, y_pulley);
+        ctx.fillText('B', x_B + 30, y_pulley);
+        ctx.fillText('E', x_E, y_E + 25);
+
+    </script>
+</body>
+</html>

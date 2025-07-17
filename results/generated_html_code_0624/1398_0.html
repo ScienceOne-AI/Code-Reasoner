@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Fill background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // --- Configuration ---
+        const origin = { x: 80, y: 200 };
+        const scale = { x: 80, y: 80 };
+        const pipeThickness = 12; // Visual thickness of the pipe in pixels
+
+        // --- Helper Function to Draw Arrows ---
+        function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- 1. Draw Coordinate System ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Axes
+        drawArrow(origin.x, origin.y, canvas.width - 20, origin.y); // x-axis
+        drawArrow(origin.x, origin.y, origin.x, 20); // y-axis
+
+        // Axis Labels
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('x', canvas.width - 20, origin.y + 20);
+        ctx.fillText('y', origin.x + 20, 20);
+        ctx.font = '18px Times New Roman';
+        ctx.fillText('O', origin.x - 20, origin.y + 15);
+
+        // --- 2. Draw Ticks and Labels on X-axis ---
+        ctx.font = '16px Times New Roman';
+        ctx.textBaseline = 'top';
+
+        // Ticks
+        const ticks = [Math.PI / 2, Math.PI, 3 * Math.PI / 2, 2 * Math.PI];
+        ticks.forEach(tickValue => {
+            const xPos = origin.x + tickValue * scale.x;
+            ctx.beginPath();
+            ctx.moveTo(xPos, origin.y - 5);
+            ctx.lineTo(xPos, origin.y + 5);
+            ctx.stroke();
+        });
+        
+        // Labels (handle fractions specially)
+        const labelY = origin.y + 10;
+        
+        // π/2
+        let xPosPiOver2 = origin.x + (Math.PI / 2) * scale.x;
+        ctx.fillText('π', xPosPiOver2, labelY);
+        ctx.beginPath();
+        ctx.lineWidth = 1;
+        ctx.moveTo(xPosPiOver2 - 8, labelY + 18);
+        ctx.lineTo(xPosPiOver2 + 8, labelY + 18);
+        ctx.stroke();
+        ctx.fillText('2', xPosPiOver2, labelY + 22);
+
+        // π
+        let xPosPi = origin.x + Math.PI * scale.x;
+        ctx.fillText('π', xPosPi, labelY);
+
+        // 3π/2
+        let xPos3PiOver2 = origin.x + (3 * Math.PI / 2) * scale.x;
+        ctx.fillText('3π', xPos3PiOver2, labelY);
+        ctx.beginPath();
+        ctx.moveTo(xPos3PiOver2 - 12, labelY + 18);
+        ctx.lineTo(xPos3PiOver2 + 12, labelY + 18);
+        ctx.stroke();
+        ctx.fillText('2', xPos3PiOver2, labelY + 22);
+
+        // 2π
+        let xPos2Pi = origin.x + 2 * Math.PI * scale.x;
+        ctx.fillText('2π', xPos2Pi, labelY);
+
+        // --- 3. Draw the Cosine Pipe ---
+        ctx.lineWidth = 2.5;
+        const startRad = -0.5;
+        const endRad = 2.2 * Math.PI;
+        const steps = 200;
+
+        function drawCurve(yOffset) {
+            ctx.beginPath();
+            for (let i = 0; i <= steps; i++) {
+                const rad = startRad + i * (endRad - startRad) / steps;
+                const canvasX = origin.x + rad * scale.x;
+                const canvasY = origin.y - Math.cos(rad) * scale.y + yOffset;
+                if (i === 0) {
+                    ctx.moveTo(canvasX, canvasY);
+                } else {
+                    ctx.lineTo(canvasX, canvasY);
+                }
+            }
+            ctx.stroke();
+        }
+        
+        // Draw the two curves to represent the pipe
+        drawCurve(0); // Top curve
+        drawCurve(pipeThickness); // Bottom curve (visually offset)
+
+        // --- 4. Draw the Particle ---
+        const particleRadX = 0;
+        const particleCanvasX = origin.x + particleRadX * scale.x;
+        const particleCanvasY = origin.y - Math.cos(particleRadX) * scale.y;
+        ctx.beginPath();
+        ctx.arc(particleCanvasX, particleCanvasY, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+
+        // --- 5. Draw the Initial Velocity Vector ---
+        ctx.lineWidth = 1.5;
+        const vLength = 70;
+        const vStart = { x: particleCanvasX, y: particleCanvasY };
+        const vEnd = { x: vStart.x + vLength, y: vStart.y };
+        drawArrow(vStart.x, vStart.y, vEnd.x, vEnd.y);
+        
+        // Velocity Label (v₀)
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('v', vEnd.x + 5, vEnd.y);
+        ctx.font = 'italic 14px Times New Roman';
+        ctx.fillText('0', vEnd.x + 15, vEnd.y + 7);
+
+    </script>
+</body>
+</html>

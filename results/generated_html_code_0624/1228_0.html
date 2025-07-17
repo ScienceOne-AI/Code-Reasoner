@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crane Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="craneCanvas" width="700" height="580"></canvas>
+    <script>
+        const canvas = document.getElementById('craneCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper function to draw an arrow ---
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 12;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Main drawing function ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'black';
+            ctx.fillStyle = 'black';
+            ctx.lineWidth = 2.5;
+
+            // --- 1. Draw the Base (E-F) ---
+            const baseX = 40, baseY = 440, baseW = 400, baseH = 80;
+            
+            // Hatching fill
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(baseX, baseY, baseW, baseH);
+            ctx.clip();
+            ctx.lineWidth = 1.5;
+            const step = 15;
+            for (let i = -baseH; i < baseW; i += step) {
+                ctx.moveTo(baseX + i, baseY);
+                ctx.lineTo(baseX + i + baseH, baseY + baseH);
+            }
+            ctx.stroke();
+            ctx.restore();
+
+            // Base outline
+            ctx.strokeRect(baseX, baseY, baseW, baseH);
+
+            // Supports (Wheels)
+            ctx.fillRect(baseX + 20, baseY + baseH, 40, 15);
+            ctx.fillRect(baseX + baseW - 60, baseY + baseH, 40, 15);
+            
+            // Labels E and F
+            ctx.font = 'italic bold 28px serif';
+            ctx.fillText('E', baseX - 10, baseY + baseH + 30);
+            ctx.fillText('F', baseX + baseW + 25, baseY + baseH + 30);
+
+
+            // --- 2. Draw the Tower (B) ---
+            const towerAxisX = 240;
+
+            // Rotating plate
+            ctx.beginPath();
+            ctx.moveTo(140, 430);
+            ctx.lineTo(340, 430);
+            ctx.stroke();
+            ctx.fillStyle = 'white';
+            ctx.fillRect(140, 431, 200, 10);
+            ctx.strokeRect(140, 431, 200, 10);
+            ctx.fillStyle = 'black';
+
+
+            // Tower base structure
+            ctx.beginPath();
+            ctx.moveTo(180, 431);
+            ctx.lineTo(190, 400);
+            ctx.lineTo(290, 400);
+            ctx.lineTo(300, 431);
+            ctx.stroke();
+            
+            // Tower main body (Trapezoid)
+            ctx.beginPath();
+            ctx.moveTo(190, 400);
+            ctx.lineTo(215, 190);
+            ctx.lineTo(265, 190);
+            ctx.lineTo(290, 400);
+            ctx.stroke();
+            
+            // Tower top mechanism
+            ctx.strokeRect(210, 170, 60, 20);
+            
+            // Internal tower lines
+            ctx.beginPath();
+            ctx.moveTo(272.5, 315);
+            ctx.lineTo(207.5, 315);
+            ctx.moveTo(272.5, 315);
+            ctx.lineTo(282, 360);
+            ctx.moveTo(207.5, 315);
+            ctx.lineTo(198, 360);
+            ctx.stroke();
+
+            // Tower axis (dash-dot line)
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([10, 4, 2, 4]);
+            ctx.beginPath();
+            ctx.moveTo(towerAxisX, 440);
+            ctx.lineTo(towerAxisX, 120);
+            ctx.stroke();
+            ctx.restore();
+
+            // Label B
+            ctx.fillText('B', 160, 280);
+
+
+            // --- 3. Draw the Jib and Mechanism A ---
+            const pointC = { x: 560, y: 160 };
+            const upperJibStart = { x: 180, y: 220 };
+            const lowerJibStart = { x: 280, y: 400 };
+
+            // Jib members
+            ctx.beginPath();
+            ctx.moveTo(upperJibStart.x, upperJibStart.y);
+            ctx.lineTo(pointC.x, pointC.y);
+            ctx.moveTo(lowerJibStart.x, lowerJibStart.y);
+            ctx.lineTo(pointC.x, pointC.y);
+            ctx.stroke();
+
+            // Mechanism A
+            ctx.beginPath();
+            ctx.moveTo(265, 300); // Attach to tower
+            ctx.lineTo(300, 300);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(300, 300);
+            ctx.lineTo(300, 330);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(300, 290, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Label A
+            ctx.fillText('A', 330, 280);
+
+
+            // --- 4. Draw the Load ---
+            ctx.beginPath();
+            ctx.moveTo(pointC.x, pointC.y);
+            ctx.lineTo(pointC.x, 280); // Cable
+            ctx.stroke();
+
+            // Hook
+            ctx.beginPath();
+            ctx.arc(pointC.x, 285, 5, 0, Math.PI, false);
+            ctx.stroke();
+
+            // Load block
+            ctx.strokeRect(pointC.x - 40, 290, 80, 50);
+
+            // Label C
+            ctx.fillText('C', pointC.x + 15, pointC.y - 5);
+
+
+            // --- 5. Draw Dimensions and Labels ---
+            // 4 m dimension
+            const dimLineY1 = 110;
+            ctx.beginPath();
+            ctx.moveTo(towerAxisX, 170); // vertical line from tower
+            ctx.lineTo(towerAxisX, dimLineY1);
+            ctx.moveTo(pointC.x, pointC.y); // vertical line from C
+            ctx.lineTo(pointC.x, dimLineY1);
+            ctx.stroke();
+            drawArrow(ctx, towerAxisX, dimLineY1, pointC.x, dimLineY1);
+
+            ctx.font = '24px serif';
+            ctx.fillText('4 m', towerAxisX + (pointC.x - towerAxisX) / 2, dimLineY1 - 10);
+
+            // 0.8 m dimension
+            const dimLineY2 = 220;
+            ctx.beginPath();
+            ctx.moveTo(upperJibStart.x, dimLineY2-30); // vertical helper
+            ctx.lineTo(upperJibStart.x, dimLineY2);
+            ctx.stroke();
+            drawArrow(ctx, upperJibStart.x, dimLineY2, towerAxisX, dimLineY2);
+
+            ctx.fillText('0.8 m', (upperJibStart.x + towerAxisX) / 2, dimLineY2 - 10);
+            
+            // Label D
+            ctx.font = 'italic bold 28px serif';
+            ctx.fillText('D', 180, 140);
+        }
+
+        // Execute the drawing
+        draw();
+    </script>
+</body>
+</html>

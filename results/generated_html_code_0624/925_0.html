@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gravitational Potential Graph</title>
+</head>
+<body>
+<canvas id="physics-graph" width="770" height="950"></canvas>
+<script>
+    const canvas = document.getElementById('physics-graph');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const config = {
+        padding: { top: 50, right: 50, bottom: 100, left: 80 },
+        graphRange: { xMin: 0, xMax: 3.2, yMin: -4.0, yMax: 0 },
+        style: {
+            gridColor: '#dcdcdc',
+            axisColor: '#000000',
+            curveColor: '#000000',
+            textColor: '#000000',
+            font: '17px Arial',
+            lineWidth: {
+                minorGrid: 0.5,
+                majorGrid: 1,
+                axis: 2,
+                curve: 2
+            }
+        },
+        // Data points read from the original image to reconstruct the curve
+        curvePoints: [
+            {x: 0.48, y: -3.5},
+            {x: 0.5, y: -3.4},
+            {x: 0.6, y: -2.9},
+            {x: 0.7, y: -2.5},
+            {x: 0.8, y: -2.2},
+            {x: 0.9, y: -1.95},
+            {x: 1.0, y: -1.75},
+            {x: 1.2, y: -1.45},
+            {x: 1.5, y: -1.15},
+            {x: 2.0, y: -0.85},
+            {x: 2.5, y: -0.7},
+            {x: 3.0, y: -0.58},
+            {x: 3.2, y: -0.55}
+        ]
+    };
+
+    // --- Setup Canvas and Coordinate System ---
+    const graphWidth = canvas.width - config.padding.left - config.padding.right;
+    const graphHeight = canvas.height - config.padding.top - config.padding.bottom;
+    
+    // Calculate scaling factors for mapping graph units to pixels
+    const xScale = graphWidth / (config.graphRange.xMax - config.graphRange.xMin);
+    const yScale = graphHeight / (config.graphRange.yMax - config.graphRange.yMin); // This will be a negative value
+
+    // Functions to map graph coordinates to canvas pixel coordinates
+    function mapX(graphX) {
+        return config.padding.left + (graphX - config.graphRange.xMin) * xScale;
+    }
+
+    function mapY(graphY) {
+        // The y-axis is inverted in canvas coordinates (0 is at the top)
+        return config.padding.top + (graphY - config.graphRange.yMax) * yScale;
+    }
+
+    // --- Main Drawing Function ---
+    function draw() {
+        // Clear canvas and set a white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // --- Draw Grid ---
+        
+        // Minor grid lines
+        ctx.strokeStyle = config.style.gridColor;
+        ctx.lineWidth = config.style.lineWidth.minorGrid;
+        
+        const xStepMinor = 0.1;
+        for (let x = config.graphRange.xMin + xStepMinor; x < config.graphRange.xMax; x += xStepMinor) {
+            ctx.beginPath();
+            ctx.moveTo(mapX(x), mapY(config.graphRange.yMax));
+            ctx.lineTo(mapX(x), mapY(config.graphRange.yMin));
+            ctx.stroke();
+        }
+        
+        const yStepMinor = 0.05;
+        for (let y = config.graphRange.yMin; y < config.graphRange.yMax; y += yStepMinor) {
+             // Use a small epsilon to handle floating point inaccuracies
+            if (y > config.graphRange.yMax - 1e-9) continue;
+            ctx.beginPath();
+            ctx.moveTo(mapX(config.graphRange.xMin), mapY(y));
+            ctx.lineTo(mapX(config.graphRange.xMax), mapY(y));
+            ctx.stroke();
+        }
+        
+        // Major grid lines
+        ctx.strokeStyle = config.style.axisColor;
+        ctx.lineWidth = config.style.lineWidth.majorGrid;
+
+        const xStepMajor = 1.0;
+        for (let x = config.graphRange.xMin + xStepMajor; x < config.graphRange.xMax; x += xStepMajor) {
+            ctx.beginPath();
+            ctx.moveTo(mapX(x), mapY(config.graphRange.yMax));
+            ctx.lineTo(mapX(x), mapY(config.graphRange.yMin));
+            ctx.stroke();
+        }
+        
+        const yStepMajor = 0.5;
+        for (let y = config.graphRange.yMin + yStepMajor; y < config.graphRange.yMax; y += yStepMajor) {
+            ctx.beginPath();
+            ctx.moveTo(mapX(config.graphRange.xMin), mapY(y));
+            ctx.lineTo(mapX(config.graphRange.xMax), mapY(y));
+            ctx.stroke();
+        }
+        
+        // --- Draw Axes ---
+        ctx.lineWidth = config.style.lineWidth.axis;
+        // Y-axis (at x=0)
+        ctx.beginPath();
+        ctx.moveTo(mapX(0), mapY(config.graphRange.yMax));
+        ctx.lineTo(mapX(0), mapY(config.graphRange.yMin));
+        ctx.stroke();
+        // X-axis (at y=0)
+        ctx.beginPath();
+        ctx.moveTo(mapX(config.graphRange.xMin), mapY(0));
+        ctx.lineTo(mapX(config.graphRange.xMax), mapY(0));
+        ctx.stroke();
+        
+        // --- Draw Labels ---
+        ctx.fillStyle = config.style.textColor;
+        ctx.font = config.style.font;
+
+        // X-axis tick labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let i = 0; i <= 3; i++) {
+            ctx.fillText(i, mapX(i), mapY(0) + 8);
+        }
+        
+        // Y-axis tick labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let i = -4; i < 0; i += 0.5) {
+            ctx.fillText(i.toFixed(1), mapX(0) - 8, mapY(i));
+        }
+        ctx.fillText('0', mapX(0) - 8, mapY(0) - 10); // Special offset for origin '0'
+
+        // Axis titles
+        ctx.textAlign = 'center';
+        ctx.fillText(`x / 10\u2077 m`, mapX((config.graphRange.xMax - 0.2) / 2), mapY(0) + 35);
+        ctx.fillText('\u03C6 / 10\u2077 J kg\u207B\u00B9', config.padding.left - 50, mapY(-3.0));
+        
+        // Figure caption
+        ctx.fillText('Fig. 1.1', canvas.width / 2, canvas.height - config.padding.bottom / 2 - 10);
+
+        // --- Draw the Curve ---
+        const points = config.curvePoints;
+        ctx.strokeStyle = config.style.curveColor;
+        ctx.lineWidth = config.style.lineWidth.curve;
+        ctx.beginPath();
+        ctx.moveTo(mapX(points[0].x), mapY(points[0].y));
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(mapX(points[i].x), mapY(points[i].y));
+        }
+        ctx.stroke();
+    }
+
+    // Execute the drawing function
+    draw();
+</script>
+</body>
+</html>

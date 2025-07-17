@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Buoyancy Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const beakerWidth = 220;
+        const beakerHeight = 300;
+        const beakerTopY = 80;
+        const beakerBottomRadius = 25;
+        
+        const blockWidth = 120;
+        const blockHeight = 60;
+
+        const liquidLineSpacing = 8;
+        const liquidDash = [12, 6];
+
+        const labelFont = '36px KaiTi'; // Using a font that supports Chinese characters
+        const blockLabelFont = '30px Times New Roman';
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a beaker at a given center x-coordinate.
+         * @param {number} centerX - The center x-coordinate of the beaker.
+         */
+        function drawBeaker(centerX) {
+            const leftX = centerX - beakerWidth / 2;
+            const rightX = centerX + beakerWidth / 2;
+            const bottomY = beakerTopY + beakerHeight;
+
+            ctx.save();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(leftX, beakerTopY);
+            ctx.lineTo(leftX, bottomY - beakerBottomRadius);
+            ctx.arcTo(leftX, bottomY, leftX + beakerBottomRadius, bottomY, beakerBottomRadius);
+            ctx.lineTo(rightX - beakerBottomRadius, bottomY);
+            ctx.arcTo(rightX, bottomY, rightX, bottomY - beakerBottomRadius, beakerBottomRadius);
+            ctx.lineTo(rightX, beakerTopY);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        /**
+         * Draws dashed liquid within the beaker up to a certain level.
+         * @param {number} centerX - The center x-coordinate of the beaker.
+         * @param {number} waterY - The y-coordinate of the water surface.
+         */
+        function drawLiquid(centerX, waterY) {
+            const leftX = centerX - beakerWidth / 2;
+            const rightX = centerX + beakerWidth / 2;
+            const bottomY = beakerTopY + beakerHeight;
+
+            ctx.save();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1;
+            ctx.setLineDash(liquidDash);
+
+            for (let y = waterY + liquidLineSpacing / 2; y < bottomY - 1; y += liquidLineSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(leftX + 1, y);
+                ctx.lineTo(rightX - 1, y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        /**
+         * Draws a labeled rectangular block.
+         * @param {number} x - The top-left x-coordinate of the block.
+         * @param {number} y - The top-left y-coordinate of the block.
+         * @param {string} label - The text label for the block.
+         * @param {string} fillColor - The fill color of the block.
+         */
+        function drawBlock(x, y, label, fillColor) {
+            ctx.save();
+            // Block
+            ctx.fillStyle = fillColor;
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.fillRect(x, y, blockWidth, blockHeight);
+            ctx.strokeRect(x, y, blockWidth, blockHeight);
+
+            // Label
+            ctx.fillStyle = 'black';
+            ctx.font = blockLabelFont;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, x + blockWidth / 2, y + blockHeight / 2);
+            ctx.restore();
+        }
+
+        // --- Drawing Scene 甲 (Jia) ---
+        const centerX1 = 185;
+
+        // In scene 甲, block A is half submerged.
+        const waterLevelY1 = beakerTopY + 150;
+        const blockA_X1 = centerX1 - blockWidth / 2;
+        const blockA_Y1 = waterLevelY1 - blockHeight / 2;
+
+        // Draw liquid first, then beaker outline, then block.
+        drawLiquid(centerX1, waterLevelY1);
+        drawBeaker(centerX1);
+        drawBlock(blockA_X1, blockA_Y1, 'A', 'white');
+        
+        // Draw label "甲"
+        ctx.fillStyle = 'black';
+        ctx.font = labelFont;
+        ctx.textAlign = 'center';
+        ctx.fillText('甲', centerX1, beakerTopY + beakerHeight + 50);
+
+
+        // --- Drawing Scene 乙 (Yi) ---
+        const centerX2 = 515;
+
+        // In scene 乙, both blocks are submerged, and the water level is at the top of block B.
+        // The water level is higher than in scene 甲 due to more displaced volume.
+        const waterLevelY2 = beakerTopY + 100; 
+
+        // Block B is on top, its top surface is at the water level.
+        const blockB_X2 = centerX2 - blockWidth / 2;
+        const blockB_Y2 = waterLevelY2;
+        
+        // Block A is directly below block B.
+        const blockA_X2 = blockB_X2;
+        const blockA_Y2 = blockB_Y2 + blockHeight;
+
+        // Draw liquid first, then beaker outline, then blocks.
+        drawLiquid(centerX2, waterLevelY2);
+        drawBeaker(centerX2);
+        drawBlock(blockA_X2, blockA_Y2, 'A', 'white');
+        drawBlock(blockB_X2, blockB_Y2, 'B', '#cccccc'); // Gray fill for B
+
+        // Draw label "乙"
+        ctx.fillText('乙', centerX2, beakerTopY + beakerHeight + 50);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Induction</title>
+</head>
+<body>
+<canvas id="canvas" width="650" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.fillStyle = 'black';
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'center';
+    
+    // --- Helper function for arrows ---
+    function drawArrow(ctx, x1, y1, x2, y2, headLength = 8) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke(); // Draw line first
+        ctx.beginPath(); // Start new path for the head
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    // --- Main Drawing ---
+    
+    // Component dimensions and positions
+    const bar_y = 150;
+    const bar_height = 40;
+    const bar_x = 50;
+    const bar_width = 550;
+    
+    const coil_centerY = bar_y + bar_height / 2;
+    const coil_radiusX = 15;
+    const coil_radiusY = 30;
+    const loop_width = 25;
+    const num_loops = 5;
+
+    // --- Draw Coils ---
+    ctx.beginPath();
+    // Coil 1
+    const coil1_start_x = 120;
+    for (let i = 0; i < num_loops; i++) {
+        const cx = coil1_start_x + loop_width / 2 + i * loop_width;
+        ctx.ellipse(cx, coil_centerY, coil_radiusX, coil_radiusY, 0, 0, 2 * Math.PI);
+    }
+    
+    // Coil 2
+    const coil2_start_x = 400;
+    for (let i = 0; i < num_loops; i++) {
+        const cx = coil2_start_x + loop_width / 2 + i * loop_width;
+        ctx.ellipse(cx, coil_centerY, coil_radiusX, coil_radiusY, 0, 0, 2 * Math.PI);
+    }
+    ctx.stroke();
+    
+    // --- Draw Iron Bar (over coils to create occlusion) ---
+    ctx.fillStyle = 'white';
+    ctx.fillRect(bar_x, bar_y, bar_width, bar_height);
+    ctx.beginPath();
+    ctx.rect(bar_x, bar_y, bar_width, bar_height);
+    ctx.stroke();
+
+    // --- Draw Circuit 1 (Left) ---
+    const circuit1_y = 260;
+    const coil1_end_x = coil1_start_x + num_loops * loop_width;
+    const coil_bottom_connect_y = coil_centerY + coil_radiusY - 5;
+    
+    ctx.beginPath();
+    // Left wire
+    ctx.moveTo(coil1_start_x, coil_bottom_connect_y);
+    ctx.lineTo(coil1_start_x, circuit1_y);
+    // Right wire
+    ctx.moveTo(coil1_end_x, coil_bottom_connect_y);
+    ctx.lineTo(coil1_end_x, circuit1_y);
+    ctx.stroke();
+    
+    // AC Source
+    const ac_source_x1 = 155;
+    const ac_source_x2 = 190;
+    const ac_source_y = circuit1_y;
+    ctx.beginPath();
+    ctx.moveTo(coil1_start_x, ac_source_y);
+    ctx.lineTo(ac_source_x1, ac_source_y);
+    ctx.moveTo(coil1_end_x, ac_source_y);
+    ctx.lineTo(ac_source_x2, ac_source_y);
+    ctx.stroke();
+    
+    // Terminals
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(ac_source_x1, ac_source_y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(ac_source_x2, ac_source_y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+    
+    // Sine wave symbol
+    ctx.font = '24px "Times New Roman"';
+    ctx.fillStyle = 'black';
+    ctx.fillText("~", (ac_source_x1 + ac_source_x2) / 2, ac_source_y + 8);
+    
+    // --- Draw Circuit 2 (Right) ---
+    const circuit2_y = 260;
+    const coil2_end_x = coil2_start_x + num_loops * loop_width;
+    
+    ctx.beginPath();
+    // Left wire
+    ctx.moveTo(coil2_start_x, coil_bottom_connect_y);
+    ctx.lineTo(coil2_start_x, circuit2_y);
+    // Right wire
+    ctx.moveTo(coil2_end_x, coil_bottom_connect_y);
+    ctx.lineTo(coil2_end_x, circuit2_y);
+    ctx.stroke();
+    
+    // Voltmeter
+    const voltmeter_x = (coil2_start_x + coil2_end_x) / 2;
+    const voltmeter_y = circuit2_y;
+    const voltmeter_radius = 22;
+    
+    ctx.beginPath();
+    ctx.moveTo(coil2_start_x, voltmeter_y);
+    ctx.lineTo(voltmeter_x - voltmeter_radius, voltmeter_y);
+    ctx.moveTo(coil2_end_x, voltmeter_y);
+    ctx.lineTo(voltmeter_x + voltmeter_radius, voltmeter_y);
+    ctx.stroke();
+    
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(voltmeter_x, voltmeter_y, voltmeter_radius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.fillStyle = 'black';
+    ctx.font = '30px Arial';
+    ctx.fillText("V", voltmeter_x, voltmeter_y + 10);
+
+    // --- Draw Labels and Arrows ---
+    ctx.fillStyle = 'black';
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'center';
+    
+    // coil 1
+    ctx.fillText("coil 1", coil1_start_x + (coil1_end_x - coil1_start_x) / 2, bar_y - 20);
+    
+    // coil 2
+    ctx.fillText("coil 2", coil2_start_x + (coil2_end_x - coil2_start_x) / 2, bar_y - 20);
+    
+    // Fig. 8.1
+    ctx.fillText("Fig. 8.1", 325, 380);
+    
+    // iron bar
+    ctx.textAlign = 'left';
+    ctx.fillText("iron bar", 550, 135);
+    ctx.beginPath();
+    ctx.moveTo(560, 140);
+    ctx.lineTo(550, bar_y);
+    ctx.stroke();
+    
+    // I_1 label
+    ctx.textAlign = 'right';
+    ctx.font = 'italic 20px Arial';
+    ctx.fillText("I", 105, 240);
+    ctx.font = 'italic 14px Arial';
+    ctx.fillText("1", 110, 245);
+    // I_1 arrow
+    drawArrow(ctx, 108, 255, 108, 220);
+    
+    // V_2 label
+    ctx.textAlign = 'center';
+    ctx.font = 'italic 20px Arial';
+    ctx.fillText("V", voltmeter_x, 315);
+    ctx.font = 'italic 14px Arial';
+    ctx.fillText("2", voltmeter_x + 10, 320);
+    // V_2 double arrow
+    const v2_arrow_y = 295;
+    const v2_arrow_x_start = voltmeter_x - 60;
+    const v2_arrow_x_end = voltmeter_x + 60;
+    ctx.beginPath();
+    ctx.moveTo(v2_arrow_x_start, v2_arrow_y);
+    ctx.lineTo(v2_arrow_x_end, v2_arrow_y);
+    ctx.stroke();
+    drawArrow(ctx, v2_arrow_x_end, v2_arrow_y, v2_arrow_x_start, v2_arrow_y, 8);
+    drawArrow(ctx, v2_arrow_x_start, v2_arrow_y, v2_arrow_x_end, v2_arrow_y, 8);
+    
+</script>
+</body>
+</html>

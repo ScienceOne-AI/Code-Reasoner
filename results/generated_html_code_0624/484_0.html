@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #d3d3d3;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="400" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw a filled arrowhead arrow
+        function drawFilledArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.save();
+            ctx.strokeStyle = ctx.fillStyle;
+            // line
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            // head
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Helper function for dimension line arrowhead (filled triangle)
+        function drawDimArrowhead(ctx, x, y, direction) { // direction: 1 for down, -1 for up
+            const h = 10; // height of the arrowhead
+            const w = 5; // half-width of the arrowhead
+            ctx.save();
+            ctx.strokeStyle = ctx.fillStyle;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - w, y - direction * h);
+            ctx.lineTo(x + w, y - direction * h);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        
+        const cx = canvas.width / 2; // 200
+        const cy = 80;
+        const rodLength = 320;
+        const rodWidth = 20;
+        const gap = 5; // Gap for extension lines
+
+        // 1. Ceiling
+        const ceilingY = cy - 40;
+        ctx.beginPath();
+        ctx.moveTo(cx - 150, ceilingY);
+        ctx.lineTo(cx + 150, ceilingY);
+        ctx.stroke();
+        // Hatching
+        ctx.save();
+        ctx.lineWidth = 1;
+        for (let i = -140; i <= 140; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(cx + i, ceilingY);
+            ctx.lineTo(cx + i - 15, ceilingY - 15);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // 2. Pivot
+        ctx.beginPath();
+        ctx.moveTo(cx - 20, ceilingY);
+        ctx.lineTo(cx, cy - 10);
+        ctx.lineTo(cx + 20, ceilingY);
+        ctx.stroke();
+
+        // 3. Rod
+        ctx.beginPath();
+        ctx.rect(cx - rodWidth / 2, cy, rodWidth, rodLength);
+        ctx.stroke();
+        
+        // Pivot Ring
+        ctx.beginPath();
+        ctx.arc(cx, cy, 6, 0, 2 * Math.PI, false);
+        ctx.stroke();
+        
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('O', cx + 15, cy + 10);
+
+        // --- Dimensions and Labels ---
+        
+        // Dimension for 'l'
+        const dimL_x = cx + 90;
+        ctx.save();
+        ctx.lineWidth = 1;
+        // Extension lines
+        ctx.beginPath();
+        ctx.moveTo(cx + rodWidth/2 + gap, cy);
+        ctx.lineTo(dimL_x, cy);
+        ctx.moveTo(cx + rodWidth/2 + gap, cy + rodLength);
+        ctx.lineTo(dimL_x, cy + rodLength);
+        ctx.stroke();
+        // Dimension line
+        ctx.beginPath();
+        ctx.moveTo(dimL_x, cy);
+        ctx.lineTo(dimL_x, cy + rodLength);
+        ctx.stroke();
+        ctx.restore();
+        // Arrowheads
+        drawDimArrowhead(ctx, dimL_x, cy, -1); // Up
+        drawDimArrowhead(ctx, dimL_x, cy + rodLength, 1); // Down
+        
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.fillText('l', dimL_x + 25, cy + rodLength / 2 + 8);
+
+        // Dimension for '3l/4'
+        const pointAY = cy + (3/4) * rodLength;
+        const dim34_x = cx - 90;
+        ctx.save();
+        ctx.lineWidth = 1;
+        // Extension lines
+        ctx.beginPath();
+        ctx.moveTo(cx - rodWidth / 2 - gap, cy);
+        ctx.lineTo(dim34_x, cy);
+        ctx.moveTo(cx - rodWidth / 2 - gap, pointAY);
+        ctx.lineTo(dim34_x, pointAY);
+        ctx.stroke();
+        // Dimension line
+        ctx.beginPath();
+        ctx.moveTo(dim34_x, cy);
+        ctx.lineTo(dim34_x, pointAY);
+        ctx.stroke();
+        // Top T-bar
+        ctx.beginPath();
+        ctx.moveTo(dim34_x-5, cy);
+        ctx.lineTo(dim34_x+5, cy);
+        ctx.stroke();
+        ctx.restore();
+        // Bottom Arrowhead
+        drawDimArrowhead(ctx, dim34_x, pointAY, 1); // Down
+
+        // Fraction label '3l/4'
+        const frac_x = cx - 120;
+        const frac_y_mid = cy + (3/8) * rodLength;
+        ctx.textAlign = 'center';
+        ctx.font = '24px "Times New Roman"';
+        ctx.fillText('3', frac_x, frac_y_mid - 5);
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(frac_x - 12, frac_y_mid + 5);
+        ctx.lineTo(frac_x + 12, frac_y_mid + 5);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillText('4', frac_x, frac_y_mid + 25);
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('l', frac_x + 25, frac_y_mid + 15);
+        
+        // 5. Impact Arrow and 'A'
+        const arrow_x_start = cx - 70;
+        const arrow_x_end = cx - rodWidth / 2 - 2;
+        ctx.lineWidth = 2;
+        drawFilledArrow(ctx, arrow_x_start, pointAY, arrow_x_end, pointAY, 12);
+        
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.textAlign = 'start';
+        ctx.fillText('A', arrow_x_start - 25, pointAY + 8);
+
+        // 6. Bottom Text
+        ctx.font = '24px "SimSun", "Songti SC"';
+        ctx.textAlign = 'center';
+        ctx.fillText('题 7 图', cx, cy + rodLength + 80);
+
+    </script>
+</body>
+</html>

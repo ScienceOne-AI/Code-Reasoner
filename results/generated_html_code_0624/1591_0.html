@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pendulum with Nail</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Geometric Parameters ---
+        const O = { x: 300, y: 70 };
+        const L = 230; // Length of the string OA
+        const P_y_offset = 100; // P is below O
+        const P = { x: O.x, y: O.y + P_y_offset };
+        const L_prime = L - P_y_offset; // New radius after hitting P
+
+        const pointRadius = 5;
+
+        // --- Calculate Positions of Key Points ---
+
+        // Point 1 (Lowest point)
+        const p1 = { x: O.x, y: O.y + L };
+
+        // Point A (Start point)
+        const angleA_deg = 45;
+        const angleA_rad = angleA_deg * Math.PI / 180;
+        const pA = {
+            x: O.x - L * Math.sin(angleA_rad),
+            y: O.y + L * Math.cos(angleA_rad)
+        };
+
+        // Point 3 (Same height as A on the right side)
+        // From energy conservation: yA = y3
+        // yO + L*cos(angleA) = yP + L_prime*cos(angle3)
+        // cos(angle3) = (yO - yP + L*cos(angleA)) / L_prime
+        const cos_angle3 = (-P_y_offset + L * Math.cos(angleA_rad)) / L_prime;
+        const angle3_rad = Math.acos(cos_angle3);
+        const p3 = {
+            x: P.x + L_prime * Math.sin(angle3_rad),
+            y: P.y + L_prime * Math.cos(angle3_rad)
+        };
+
+        // Illustrative points
+        const angle_O_dashed_deg = 30; // Angle for the dashed line from O
+        const angle_O_dashed_rad = angle_O_dashed_deg * Math.PI / 180;
+        const p_O_dashed_end = {
+            x: O.x - L * Math.sin(angle_O_dashed_rad),
+            y: O.y + L * Math.cos(angle_O_dashed_rad)
+        };
+
+        const angle5_deg = 18;
+        const angle5_rad = angle5_deg * Math.PI / 180;
+        const p5 = {
+            x: O.x - L * Math.sin(angle5_rad),
+            y: O.y + L * Math.cos(angle5_rad)
+        };
+        
+        const angle2_rad = angle3_rad * 0.45; // Place point 2 along the right arc
+        const p2 = {
+            x: P.x + L_prime * Math.sin(angle2_rad),
+            y: P.y + L_prime * Math.cos(angle2_rad)
+        };
+        
+        const angle4_rad = angle3_rad * 1.2; // Place point 4 higher than 3
+        const p4 = {
+            x: P.x + L_prime * Math.sin(angle4_rad),
+            y: P.y + L_prime * Math.cos(angle4_rad)
+        };
+
+        // --- Drawing Functions ---
+        function drawPoint(p) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, pointRadius, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        // --- Draw Scene ---
+
+        // 1. Draw Ceiling
+        const ceilingTop = O.y - 20;
+        const ceilingBottom = O.y;
+        ctx.beginPath();
+        ctx.moveTo(O.x - 220, ceilingBottom);
+        ctx.lineTo(O.x + 220, ceilingBottom);
+        ctx.stroke();
+
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        for (let i = O.x - 210; i < O.x + 220; i += 15) {
+            ctx.moveTo(i, ceilingBottom);
+            ctx.lineTo(i - 15, ceilingTop);
+        }
+        ctx.stroke();
+        ctx.restore();
+        
+        // 2. Draw Dashed Lines and Arcs
+        ctx.save();
+        ctx.setLineDash([6, 6]);
+
+        // Vertical axis line
+        ctx.beginPath();
+        ctx.moveTo(O.x, O.y);
+        ctx.lineTo(O.x, p1.y + 30);
+        ctx.stroke();
+
+        // Horizontal axis line
+        ctx.beginPath();
+        ctx.moveTo(pA.x - 30, pA.y);
+        ctx.lineTo(p4.x + 60, pA.y);
+        ctx.stroke();
+
+        // Left swing path (Arc A-1)
+        ctx.beginPath();
+        ctx.arc(O.x, O.y, L, Math.PI / 2 - angleA_rad, Math.PI / 2, false);
+        ctx.stroke();
+
+        // Right swing path (Arc 1-4...)
+        ctx.beginPath();
+        const endAngle_rad = angle4_rad * 1.2;
+        ctx.arc(P.x, P.y, L_prime, Math.PI / 2, Math.PI / 2 + endAngle_rad, false);
+        ctx.stroke();
+
+        // Dashed line from O to an intermediate point
+        ctx.beginPath();
+        ctx.moveTo(O.x, O.y);
+        ctx.lineTo(p_O_dashed_end.x, p_O_dashed_end.y);
+        ctx.stroke();
+        
+        // Dashed lines from P
+        ctx.beginPath();
+        ctx.moveTo(P.x, P.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(P.x, P.y);
+        ctx.lineTo(p3.x, p3.y);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(P.x, P.y);
+        const p4_extended = {
+             x: P.x + (L_prime + 25) * Math.sin(angle4_rad),
+             y: P.y + (L_prime + 25) * Math.cos(angle4_rad)
+        };
+        ctx.lineTo(p4_extended.x, p4_extended.y);
+        ctx.stroke();
+        
+        ctx.restore();
+
+        // 3. Draw Solid Lines
+        // String OA
+        ctx.beginPath();
+        ctx.moveTo(O.x, O.y);
+        ctx.lineTo(pA.x, pA.y);
+        ctx.stroke();
+
+        // 4. Draw Points
+        drawPoint(P);
+        drawPoint(pA);
+        drawPoint(p1);
+        drawPoint(p2);
+        drawPoint(p3);
+        drawPoint(p4);
+        drawPoint(p5);
+
+        // 5. Draw Labels
+        ctx.fillText('O', O.x, O.y - 15);
+        ctx.fillText('P', P.x + 15, P.y);
+        ctx.fillText('A', pA.x - 20, pA.y);
+        ctx.fillText('1', p1.x, p1.y + 20);
+        ctx.fillText('2', p2.x + 15, p2.y + 10);
+        ctx.fillText('3', p3.x + 15, p3.y + 10);
+        ctx.fillText('4', p4.x + 15, p4.y + 5);
+        ctx.fillText('5', p5.x - 15, p5.y + 10);
+
+    </script>
+</body>
+</html>

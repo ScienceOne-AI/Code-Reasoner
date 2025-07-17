@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram: Concave Mirror</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw a line with an arrowhead
+    function drawArrow(context, fromX, fromY, toX, toY, headLength = 10) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        
+        context.beginPath();
+        context.moveTo(fromX, fromY);
+        context.lineTo(toX, toY);
+        
+        // Arrowhead
+        context.moveTo(toX, toY);
+        context.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        context.moveTo(toX, toY);
+        context.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        context.stroke();
+    }
+
+    // Set drawing styles
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2.5;
+
+    // Define coordinates
+    const centerX = canvas.width / 2; // 250
+    const containerWidth = 300;
+    const containerLeft = centerX - containerWidth / 2; // 100
+    const containerRight = centerX + containerWidth / 2; // 400
+    const containerTop = 80;
+    const containerBottomY = 460;
+
+    // 1. Draw the container walls
+    ctx.beginPath();
+    ctx.moveTo(containerLeft, containerTop);
+    ctx.lineTo(containerLeft, containerBottomY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(containerRight, containerTop);
+    ctx.lineTo(containerRight, containerBottomY);
+    ctx.stroke();
+
+    // The image has an optional bottom line for the container
+    ctx.beginPath();
+    ctx.moveTo(containerLeft, containerBottomY);
+    ctx.lineTo(containerRight, containerBottomY);
+    ctx.stroke();
+
+    // 2. Draw the concave mirror
+    const mirrorMargin = 20;
+    const mirrorLeftX = containerLeft + mirrorMargin; // 120
+    const mirrorRightX = containerRight - mirrorMargin; // 380
+    const mirrorEdgeY = 380;
+    const mirrorCenterY = 440;
+
+    ctx.beginPath();
+    ctx.moveTo(mirrorLeftX, mirrorEdgeY);
+    ctx.quadraticCurveTo(centerX, mirrorCenterY, mirrorRightX, mirrorEdgeY);
+    ctx.stroke();
+
+    // 3. Draw the hatching on the back of the mirror
+    ctx.lineWidth = 1.5;
+    const numHatches = 15;
+    for (let i = 1; i < numHatches; i++) {
+        const t = i / numHatches;
+        // Use the quadratic Bezier formula to find points along the curve
+        const x = Math.pow(1 - t, 2) * mirrorLeftX + 2 * (1 - t) * t * centerX + Math.pow(t, 2) * mirrorRightX;
+        const y = Math.pow(1 - t, 2) * mirrorEdgeY + 2 * (1 - t) * t * mirrorCenterY + Math.pow(t, 2) * mirrorEdgeY;
+        
+        ctx.beginPath();
+        ctx.moveTo(x, y + 1); // Start just below the curve
+        ctx.lineTo(x - 8, y + 9); // Draw a short diagonal line
+        ctx.stroke();
+    }
+    ctx.lineWidth = 2.5; // Reset to main line width
+
+    // 4. Draw the light rays
+    // Find reflection points by calculating where vertical rays intersect the curve
+    function getYOnCurve(x_pos) {
+        // Solve x(t) = x_pos for t
+        // x(t) = (x0-2x1+x2)t^2 + (2x1-2x0)t + x0
+        // with x0=120, x1=250, x2=380, we have: (120-500+380)t^2 + (500-240)t + 120 = x_pos
+        // 0*t^2 + 260t + 120 = x_pos  => t = (x_pos - 120) / 260
+        const t = (x_pos - mirrorLeftX) / (mirrorRightX - mirrorLeftX);
+
+        // Find y(t)
+        // y(t) = (y0-2y1+y2)t^2 + (2y1-2y0)t + y0
+        const y = Math.pow(1 - t, 2) * mirrorEdgeY + 2 * (1 - t) * t * mirrorCenterY + Math.pow(t, 2) * mirrorEdgeY;
+        return y;
+    }
+
+    const rayOffset = 80;
+    const rayLeftX = centerX - rayOffset; // 170
+    const rayRightX = centerX + rayOffset; // 330
+    const rayTopY = 100;
+    const reflectionYLeft = getYOnCurve(rayLeftX);
+    const reflectionYRight = getYOnCurve(rayRightX);
+    
+    // Convergence point A
+    const focusX = centerX;
+    const focusY = 250;
+
+    // Draw incoming rays
+    drawArrow(ctx, rayLeftX, rayTopY, rayLeftX, reflectionYLeft);
+    drawArrow(ctx, rayRightX, rayTopY, rayRightX, reflectionYRight);
+    
+    // Draw reflected rays
+    drawArrow(ctx, rayLeftX, reflectionYLeft, focusX, focusY);
+    drawArrow(ctx, rayRightX, reflectionYRight, focusX, focusY);
+
+    // 5. Draw the label 'A'
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 28px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('A', focusX, focusY - 5);
+
+</script>
+</body>
+</html>

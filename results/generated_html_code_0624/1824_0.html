@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Parallel Plate Capacitor Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="capacitorCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('capacitorCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Clear canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // --- Drawing Parameters ---
+        const p = {
+            x0: 80,          // Start x-coordinate
+            y0: 150,         // Start y-coordinate (top of capacitor)
+            b: 400,          // Total length of plates (pixels)
+            d: 80,           // Distance between plates (pixels)
+            x: 250,          // Length of dielectric inside (pixels)
+            lineWidth: 2.5,  // Line thickness
+            font: '24px Times New Roman',
+            labelFont: 'bold 24px Times New Roman'
+        };
+
+        ctx.strokeStyle = 'black';
+        ctx.lineCap = 'butt'; // Use 'butt' for sharp corners on lines
+
+        // --- 1. Draw Capacitor Plates (as the space outline) ---
+        ctx.lineWidth = p.lineWidth;
+        ctx.strokeRect(p.x0, p.y0, p.b, p.d);
+
+        // --- 2. Draw Dielectric Divider ---
+        ctx.beginPath();
+        ctx.moveTo(p.x0 + p.x, p.y0);
+        ctx.lineTo(p.x0 + p.x, p.y0 + p.d);
+        ctx.stroke();
+
+        // --- 3. Draw Hatching for Dielectric ---
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(p.x0, p.y0, p.x, p.d);
+        ctx.clip(); // Restrict drawing to the dielectric area
+
+        ctx.lineWidth = 1.8;
+        const hatchSpacing = 15;
+        ctx.beginPath();
+        // Draw diagonal lines from top-left to bottom-right
+        for (let i = 0; i < p.x + p.d; i += hatchSpacing) {
+            ctx.moveTo(p.x0 + i, p.y0);
+            ctx.lineTo(p.x0 + i - p.d, p.y0 + p.d);
+        }
+        ctx.stroke();
+        ctx.restore(); // Remove the clipping mask
+
+        // --- 4. Draw Dimension Lines and Labels ---
+        ctx.lineWidth = p.lineWidth;
+        ctx.font = p.font;
+
+        // Helper function to draw an arrowhead
+        function drawArrowhead(x, y, angle) {
+            const size = 12;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size * 0.4);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size * 0.4);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Helper function for horizontal dimension lines (for x and b)
+        function drawHorizontalDimension(x_start, x_end, y_dim, y_ref, label) {
+            ctx.beginPath();
+            // Extension lines (vertical)
+            ctx.moveTo(x_start, y_ref);
+            ctx.lineTo(x_start, y_dim);
+            ctx.moveTo(x_end, y_ref);
+            ctx.lineTo(x_end, y_dim);
+            // Dimension line (horizontal)
+            ctx.moveTo(x_start, y_dim);
+            ctx.lineTo(x_end, y_dim);
+            ctx.stroke();
+
+            // Arrowheads pointing to extension lines
+            drawArrowhead(x_start, y_dim, Math.PI); // Points left
+            drawArrowhead(x_end, y_dim, 0);       // Points right
+
+            // Label
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(label, x_start + (x_end - x_start) / 2, y_dim - 5);
+        }
+        
+        // --- Dimension 'd' ---
+        const d_line_x = p.x0 + p.b + 40;
+        const d_arrow_size = 10;
+        ctx.beginPath();
+        // Extension lines (horizontal)
+        ctx.moveTo(p.x0 + p.b, p.y0);
+        ctx.lineTo(d_line_x, p.y0);
+        ctx.moveTo(p.x0 + p.b, p.y0 + p.d);
+        ctx.lineTo(d_line_x, p.y0 + p.d);
+        // Dimension line (vertical)
+        ctx.moveTo(d_line_x, p.y0);
+        ctx.lineTo(d_line_x, p.y0 + p.d);
+        // Arrowheads for vertical line
+        ctx.moveTo(d_line_x - d_arrow_size * 0.4, p.y0 + d_arrow_size);
+        ctx.lineTo(d_line_x, p.y0);
+        ctx.lineTo(d_line_x + d_arrow_size * 0.4, p.y0 + d_arrow_size);
+        ctx.moveTo(d_line_x - d_arrow_size * 0.4, p.y0 + p.d - d_arrow_size);
+        ctx.lineTo(d_line_x, p.y0 + p.d);
+        ctx.lineTo(d_line_x + d_arrow_size * 0.4, p.y0 + p.d - d_arrow_size);
+        ctx.stroke();
+        // Label 'd'
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('d', d_line_x + 15, p.y0 + p.d / 2);
+
+
+        // --- Dimension 'x' ---
+        const y_ref_bottom = p.y0 + p.d;
+        drawHorizontalDimension(p.x0, p.x0 + p.x, y_ref_bottom + 35, y_ref_bottom, 'x');
+
+        // --- Dimension 'b' ---
+        drawHorizontalDimension(p.x0, p.x0 + p.b, y_ref_bottom + 70, y_ref_bottom, 'b');
+
+        // --- 5. Draw Figure Caption ---
+        ctx.font = p.labelFont;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('Fig. 1.23', canvas.width / 2, y_ref_bottom + 110);
+
+    </script>
+</body>
+</html>

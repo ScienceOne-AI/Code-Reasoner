@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Film Reel Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="filmReelCanvas" width="600" height="550"></canvas>
+
+    <script>
+        const canvas = document.getElementById('filmReelCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Define drawing parameters
+        const cx = canvas.width / 2;
+        const cy = 250; // Y-center adjusted for annotations
+        const D = 360; // Outer diameter of film
+        const d = 120; // Inner diameter of film
+        const R_film = D / 2;
+        const r_film = d / 2;
+
+        /**
+         * Draws the wound film on the reel.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         */
+        function drawFilm(ctx) {
+            // Create a subtle radial gradient for film sheen
+            const filmGradient = ctx.createRadialGradient(cx, cy, r_film, cx, cy, R_film);
+            filmGradient.addColorStop(0, '#3a3a3a');
+            filmGradient.addColorStop(0.8, '#222222');
+            filmGradient.addColorStop(1, '#1a1a1a');
+
+            ctx.beginPath();
+            // Create the annulus path (outer circle, then inner circle counter-clockwise for cutout)
+            ctx.arc(cx, cy, R_film, 0, 2 * Math.PI, false);
+            ctx.arc(cx, cy, r_film, 0, 2 * Math.PI, true);
+            ctx.fillStyle = filmGradient;
+            ctx.fill();
+        }
+
+        /**
+         * Draws the reel's mechanical structure (hub, spokes).
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         */
+        function drawReelStructure(ctx) {
+            const R_reel_outer = R_film + 2; // Reel is slightly larger than film
+            const r_hub_outer = r_film - 2;  // Hub is slightly smaller than film hole
+            const numSpokes = 6;
+            const spokeAngleAtHub = 30 * Math.PI / 180;
+            const spokeAngleAtRim = 12 * Math.PI / 180;
+
+            // Gradient for the metallic reel
+            const reelGradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, R_reel_outer);
+            reelGradient.addColorStop(0, '#e0e0e0');
+            reelGradient.addColorStop(0.7, '#cccccc');
+            reelGradient.addColorStop(1, '#b0b0b0');
+            ctx.fillStyle = reelGradient;
+
+            // Draw Spokes
+            ctx.save();
+            ctx.translate(cx, cy);
+            for (let i = 0; i < numSpokes; i++) {
+                ctx.beginPath();
+                ctx.arc(0, 0, r_hub_outer, -spokeAngleAtHub / 2, spokeAngleAtHub / 2, false);
+                ctx.arc(0, 0, R_reel_outer, spokeAngleAtRim / 2, -spokeAngleAtRim / 2, true);
+                ctx.closePath();
+                ctx.fill();
+                ctx.rotate(2 * Math.PI / numSpokes);
+            }
+            ctx.restore();
+
+            // Draw central hub disk over the base of the spokes
+            ctx.beginPath();
+            ctx.arc(cx, cy, r_hub_outer, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Draw the 4 blurred holes in the hub
+            const holeRadius = 18;
+            const holeDist = 28;
+            ctx.save();
+            ctx.fillStyle = 'white';
+            ctx.filter = 'blur(2px)'; // Apply blur effect
+            const holePositions = [
+                { x: cx, y: cy - holeDist },
+                { x: cx, y: cy + holeDist },
+                { x: cx - holeDist, y: cy },
+                { x: cx + holeDist, y: cy }
+            ];
+            holePositions.forEach(pos => {
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, holeRadius, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+            ctx.restore(); // Reset filter
+        }
+
+        /**
+         * Draws all annotations (dimensions and title).
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         */
+        function drawAnnotations(ctx) {
+            ctx.strokeStyle = '#000000';
+            ctx.fillStyle = '#000000';
+            ctx.lineWidth = 2;
+
+            // Helper to draw a dimension line with arrows and text
+            function drawDimensionLine(x1, x2, y, text) {
+                ctx.beginPath();
+                // Horizontal line
+                ctx.moveTo(x1, y);
+                ctx.lineTo(x2, y);
+                // Left arrow
+                ctx.moveTo(x1 + 12, y - 6);
+                ctx.lineTo(x1, y);
+                ctx.lineTo(x1 + 12, y + 6);
+                // Right arrow
+                ctx.moveTo(x2 - 12, y - 6);
+                ctx.lineTo(x2, y);
+                ctx.lineTo(x2 - 12, y + 6);
+                ctx.stroke();
+
+                // Text label
+                ctx.font = 'italic 24px "Times New Roman", serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(text, cx, y - 8);
+            }
+
+            // Draw dimension 'd'
+            const y_top_line = cy - R_film - 40;
+            ctx.beginPath();
+            ctx.moveTo(cx - r_film, cy);
+            ctx.lineTo(cx - r_film, y_top_line);
+            ctx.moveTo(cx + r_film, cy);
+            ctx.lineTo(cx + r_film, y_top_line);
+            ctx.stroke();
+            drawDimensionLine(cx - r_film, cx + r_film, y_top_line, 'd=120mm');
+
+            // Draw dimension 'D'
+            const y_bottom_line = cy + R_film + 40;
+            ctx.beginPath();
+            ctx.moveTo(cx - R_film, cy);
+            ctx.lineTo(cx - R_film, y_bottom_line);
+            ctx.moveTo(cx + R_film, cy);
+            ctx.lineTo(cx + R_film, y_bottom_line);
+            ctx.stroke();
+            drawDimensionLine(cx - R_film, cx + R_film, y_bottom_line, 'D=360mm');
+            
+            // Draw the Chinese title at the bottom
+            ctx.font = 'bold 36px "SimHei", "Microsoft YaHei", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('电影胶片夹', cx, y_bottom_line + 20);
+        }
+
+        // --- Main Drawing Execution ---
+        // Clear canvas with white background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        drawFilm(ctx);
+        drawReelStructure(ctx);
+        drawAnnotations(ctx);
+
+    </script>
+</body>
+</html>

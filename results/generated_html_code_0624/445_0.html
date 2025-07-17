@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Pile Driver</title>
+</head>
+<body>
+    <canvas id="pileDriverCanvas" width="450" height="550" style="border:1px solid #000;"></canvas>
+    <script>
+        const canvas = document.getElementById('pileDriverCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style and parameters
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Wheel parameters
+        const cx = 200;
+        const cy = 250;
+        const R = 100;
+        const toothHeight = 15;
+        const toothCount = 6;
+        const angleStep = 360 / toothCount;
+
+        // Hammer parameters
+        const hammerWidth = 15;
+        // Calculate contact point to position the hammer
+        const contactAngleDeg = 330;
+        const contactAngleRad = contactAngleDeg * Math.PI / 180;
+        const toothTipX = cx + (R + toothHeight) * Math.cos(contactAngleRad);
+        const toothTipY = cy + (R + toothHeight) * Math.sin(contactAngleRad);
+        
+        const hammerX = toothTipX + 8;
+        const notchTipX = hammerX - 12;
+        const notchY = toothTipY;
+        const hammerTop = 40;
+        const hammerBottom = 480;
+
+        // --- Drawing functions ---
+
+        function drawWheel() {
+            // Main circle
+            ctx.beginPath();
+            ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Draw teeth
+            const toothAngles = [30, 90, 150, 210, 330]; // Skip the bottom one for the keyway
+            for (const angleDeg of toothAngles) {
+                drawTooth(angleDeg);
+            }
+
+            // Draw bottom keyway
+            const keywayWidth = 20;
+            const keywayHeight = 10;
+            ctx.fillStyle = 'white';
+            ctx.fillRect(cx - keywayWidth / 2, cy + R -1, keywayWidth, 5); // Erase part of the circle line
+            ctx.beginPath();
+            ctx.moveTo(cx - keywayWidth / 2, cy + R);
+            ctx.lineTo(cx - keywayWidth / 2, cy + R + keywayHeight);
+            ctx.lineTo(cx + keywayWidth / 2, cy + R + keywayHeight);
+            ctx.lineTo(cx + keywayWidth / 2, cy + R);
+            ctx.stroke();
+        }
+
+        function drawTooth(angleDeg) {
+            const angleRad = angleDeg * Math.PI / 180;
+            const baseAngleOffset = 0.1; // rad
+            const tipAngleOffset = 0.07; // rad
+
+            const p1x = cx + R * Math.cos(angleRad - baseAngleOffset);
+            const p1y = cy + R * Math.sin(angleRad - baseAngleOffset);
+            const p2x = cx + (R + toothHeight) * Math.cos(angleRad - tipAngleOffset);
+            const p2y = cy + (R + toothHeight) * Math.sin(angleRad - tipAngleOffset);
+            const p3x = cx + (R + toothHeight) * Math.cos(angleRad + tipAngleOffset);
+            const p3y = cy + (R + toothHeight) * Math.sin(angleRad + tipAngleOffset);
+            const p4x = cx + R * Math.cos(angleRad + baseAngleOffset);
+            const p4y = cy + R * Math.sin(angleRad + baseAngleOffset);
+
+            ctx.beginPath();
+            ctx.moveTo(p1x, p1y);
+            ctx.lineTo(p2x, p2y);
+            ctx.lineTo(p3x, p3y);
+            ctx.lineTo(p4x, p4y);
+            ctx.fillStyle = 'white'; // To cover the circle line underneath
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function drawHammerAndGuides() {
+            // Ground
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(hammerX-50, hammerBottom+15, 120, 15);
+            ctx.beginPath();
+            ctx.moveTo(hammerX-50, hammerBottom+15);
+            ctx.lineTo(hammerX+70, hammerBottom+15);
+            ctx.stroke();
+
+            // Hammer T-base
+            ctx.beginPath();
+            ctx.rect(hammerX - 22, hammerBottom, 60, 15);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.stroke();
+
+            // Hammer body with notch
+            ctx.beginPath();
+            ctx.moveTo(hammerX, hammerTop);
+            ctx.lineTo(hammerX + hammerWidth, hammerTop);
+            ctx.lineTo(hammerX + hammerWidth, hammerBottom);
+            ctx.lineTo(hammerX, hammerBottom);
+            ctx.lineTo(hammerX, notchY + 10);
+            ctx.lineTo(notchTipX, notchY);
+            ctx.lineTo(hammerX, notchY - 10);
+            ctx.closePath();
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.stroke();
+            
+            // Guides
+            const guideWidth = 20;
+            const guideHeight = 40;
+            // Upper guide
+            ctx.strokeRect(hammerX - guideWidth, 180, guideWidth, guideHeight);
+            ctx.strokeRect(hammerX + hammerWidth, 180, guideWidth, guideHeight);
+            // Lower guide
+            ctx.strokeRect(hammerX - guideWidth, 350, guideWidth, guideHeight);
+            ctx.strokeRect(hammerX + hammerWidth, 350, guideWidth, guideHeight);
+        }
+
+        function drawLabels() {
+            // Label R
+            const rAngle = 145 * Math.PI / 180;
+            const rEndX = cx + R * Math.cos(rAngle);
+            const rEndY = cy + R * Math.sin(rAngle);
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(rEndX, rEndY);
+            ctx.stroke();
+            ctx.fillText('R', cx - 60, cy + 40);
+
+            // Label J
+            ctx.fillText('J', cx, cy + R/2 + 10);
+
+            // Label ω₀ and arrow
+            const omegaRadius = R * 0.6;
+            const startAngle = 160 * Math.PI / 180;
+            const endAngle = 20 * Math.PI / 180;
+            ctx.beginPath();
+            ctx.arc(cx, cy, omegaRadius, startAngle, endAngle, true); // true for counter-clockwise
+            ctx.stroke();
+            // Arrowhead
+            const arrowHeadAngle = endAngle;
+            const arrowX = cx + omegaRadius * Math.cos(arrowHeadAngle);
+            const arrowY = cy + omegaRadius * Math.sin(arrowHeadAngle);
+            const tangent = arrowHeadAngle - Math.PI / 2; // tangent for CCW is angle - 90 deg
+            const headlen = 10;
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX - headlen * Math.cos(tangent - Math.PI / 6), arrowY - headlen * Math.sin(tangent - Math.PI / 6));
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX - headlen * Math.cos(tangent + Math.PI / 6), arrowY - headlen * Math.sin(tangent + Math.PI / 6));
+            ctx.stroke();
+            ctx.fillText('ω₀', cx, cy - omegaRadius - 20);
+
+            // Axis line
+            ctx.beginPath();
+            ctx.setLineDash([10, 4, 3, 4]);
+            ctx.moveTo(cx, cy - R - 30);
+            ctx.lineTo(cx, cy + R + keywayHeight + 10);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Base for wheel
+            ctx.beginPath();
+            ctx.moveTo(cx - 50, cy + R + keywayHeight + 10);
+            ctx.lineTo(cx + 50, cy + R + keywayHeight + 10);
+            ctx.lineTo(cx + 80, cy + R + 90);
+            ctx.lineTo(cx - 80, cy + R + 90);
+            ctx.closePath();
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        // --- Main drawing execution ---
+        
+        // Draw components
+        drawHammerAndGuides();
+        drawLabels(); // Draws base and labels, but wheel is on top
+        drawWheel(); // Draw wheel last so it's on top of the base
+
+        // Final text
+        ctx.fillStyle = 'black';
+        ctx.font = '22px KaiTi'; // A common Chinese font
+        ctx.fillText('习题 3-18 图', canvas.width / 2, 530);
+
+    </script>
+</body>
+</html>

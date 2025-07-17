@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Graph of X-ray Attenuation</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsGraph" width="800" height="700"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsGraph');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const margin = { top: 40, right: 40, bottom: 80, left: 80 };
+        const graphWidth = canvas.width - margin.left - margin.right;
+        const graphHeight = canvas.height - margin.top - margin.bottom;
+
+        // Data range
+        const xMin = 0;
+        const xMax = 11;
+        const yMin = -2.4;
+        const yMax = 0;
+
+        // --- Mapping functions ---
+        function mapX(x) {
+            return margin.left + (x - xMin) / (xMax - xMin) * graphWidth;
+        }
+
+        function mapY(y) {
+            return margin.top + (yMax - y) / (yMax - yMin) * graphHeight;
+        }
+
+        // --- Drawing functions ---
+
+        // 1. Draw Grid
+        function drawGrid() {
+            ctx.strokeStyle = '#e0e0e0'; // Light grey for minor grid
+            ctx.lineWidth = 0.5;
+
+            // Minor vertical grid lines (every 0.1)
+            for (let x = xMin; x <= xMax; x += 0.1) {
+                ctx.beginPath();
+                ctx.moveTo(mapX(x), mapY(yMin));
+                ctx.lineTo(mapX(x), mapY(yMax));
+                ctx.stroke();
+            }
+
+            // Minor horizontal grid lines (every 0.02)
+            for (let y = yMin; y <= yMax; y += 0.02) {
+                ctx.beginPath();
+                ctx.moveTo(mapX(xMin), mapY(y));
+                ctx.lineTo(mapX(xMax), mapY(y));
+                ctx.stroke();
+            }
+            
+            ctx.strokeStyle = '#a0a0a0'; // Darker grey for major grid
+            ctx.lineWidth = 1;
+
+            // Major vertical grid lines (every 1)
+            for (let x = xMin; x <= xMax; x += 1) {
+                ctx.beginPath();
+                ctx.moveTo(mapX(x), mapY(yMin));
+                ctx.lineTo(mapX(x), mapY(yMax));
+                ctx.stroke();
+            }
+
+            // Major horizontal grid lines (every 0.2)
+            for (let y = yMin; y <= yMax; y += 0.2) {
+                ctx.beginPath();
+                ctx.moveTo(mapX(xMin), mapY(y));
+                ctx.lineTo(mapX(xMax), mapY(y));
+                ctx.stroke();
+            }
+        }
+
+        // 2. Draw Axes
+        function drawAxes() {
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(mapX(0), mapY(yMin));
+            ctx.lineTo(mapX(0), mapY(yMax));
+            ctx.stroke();
+
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(mapX(xMin), mapY(0));
+            ctx.lineTo(mapX(xMax), mapY(0));
+            ctx.stroke();
+        }
+
+        // 3. Draw Labels and Ticks
+        function drawLabels() {
+            ctx.fillStyle = '#000000';
+            ctx.font = '16px Arial';
+
+            // X-axis ticks and labels
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let i = 0; i <= 11; i++) {
+                ctx.fillText(i, mapX(i), mapY(0) + 8);
+            }
+            ctx.fillText('x / cm', mapX((xMax - xMin) / 2), mapY(0) + 35);
+            
+            // Y-axis ticks and labels
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let i = 0; i >= -2.4; i -= 0.2) {
+                // To avoid floating point inaccuracies like -0.4000000000000001
+                const label = Number(i.toFixed(1));
+                ctx.fillText(label, mapX(0) - 8, mapY(i));
+            }
+
+            // Y-axis title
+            ctx.save();
+            ctx.translate(margin.left - 50, margin.top + graphHeight / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.font = '18px Arial';
+            // Using Unicode for subscript zero
+            ctx.fillText('ln (I/I\u2080)', 0, 0);
+            ctx.restore();
+
+            // Figure caption
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.font = '16px Arial';
+            ctx.fillText('Fig. 11.1', canvas.width / 2, canvas.height - 30);
+        }
+
+        // 4. Draw the Data Line
+        function drawDataLine() {
+            // The line represents ln(I/I₀) = -μx
+            // From the graph, we can determine the slope μ.
+            // It passes through (0, 0) and (10, -2.2).
+            // Slope = (-2.2 - 0) / (10 - 0) = -0.22
+            const slope = -0.22;
+
+            const startX = 0;
+            const startY = slope * startX;
+            // Draw the line across the full visible x-range of the graph
+            const endX = 11.0;
+            const endY = slope * endX;
+
+            ctx.beginPath();
+            ctx.moveTo(mapX(startX), mapY(startY));
+            ctx.lineTo(mapX(endX), mapY(endY));
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Call ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+        drawAxes();
+        drawDataLine();
+        drawLabels();
+    </script>
+</body>
+</html>

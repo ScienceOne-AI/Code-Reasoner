@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical System Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="optical-canvas" width="900" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('optical-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Drawing parameters and coordinates
+        const y_axis = canvas.height / 2;
+        const x_start = 40;
+        const x_L1 = 150;
+        const x_f1 = 270; // Focal point of L1
+        const x_L2 = 510;
+        const x_P = 630;  // Focal point of L2
+        const x_end = 850;
+
+        const h_L2_half = 70; // Half-diameter of L2 aperture
+        // From similar triangles, calculate the incoming beam height at L1
+        const h_L1_beam_half = h_L2_half * (x_f1 - x_L1) / (x_L2 - x_f1);
+        const h_L1_lens_half = 50; // Visual height of L1 lens
+
+        const lens_thickness_L1 = 20;
+        const lens_thickness_L2 = 30;
+
+        // Helper function to draw a biconvex lens
+        function drawLens(x, y, height, thickness, color) {
+            const r = height / 2;
+            const lensCurveRadius = (r * r + (thickness / 2) * (thickness / 2)) / thickness;
+            
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x - lensCurveRadius + thickness / 2, y, lensCurveRadius, -Math.asin(r / lensCurveRadius), Math.asin(r / lensCurveRadius));
+            ctx.arc(x + lensCurveRadius - thickness / 2, y, lensCurveRadius, Math.PI - Math.asin(r / lensCurveRadius), Math.PI + Math.asin(r / lensCurveRadius));
+            ctx.closePath();
+            
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Helper function to draw an arrowhead
+        function drawArrowhead(x, y, angle) {
+            const size = 6;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2.5);
+            ctx.lineTo(-size, size / 2.5);
+            ctx.closePath();
+            ctx.fillStyle = 'black';
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Helper function to draw a line with an arrowhead in the middle
+        function drawRay(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            drawArrowhead(midX, midY, angle);
+        }
+
+        // Helper function for dimension lines
+        function drawDimensionLine(x1, x2, y, label) {
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'black';
+
+            // Vertical ticks
+            ctx.beginPath();
+            ctx.moveTo(x1, y - 5);
+            ctx.lineTo(x1, y + 5);
+            ctx.moveTo(x2, y - 5);
+            ctx.lineTo(x2, y + 5);
+            ctx.stroke();
+
+            // Horizontal line with arrows
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+            drawArrowhead(x1 + 5, y, Math.PI);
+            drawArrowhead(x2 - 5, y, 0);
+            
+            // Label
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            if (label === "z'₂") {
+                ctx.font = 'italic 20px Times New Roman';
+                const prime_width = ctx.measureText("z'").width;
+                ctx.fillText("z'", (x1 + x2) / 2 - 2, y + 20);
+                ctx.font = 'italic 14px Times New Roman';
+                ctx.fillText("2", (x1 + x2) / 2 + prime_width - 2, y + 25);
+            } else if (label === "z₂") {
+                ctx.font = 'italic 20px Times New Roman';
+                const z_width = ctx.measureText("z").width;
+                ctx.fillText("z", (x1 + x2) / 2 - 2, y + 20);
+                ctx.font = 'italic 14px Times New Roman';
+                ctx.fillText("2", (x1 + x2) / 2 + z_width - 2, y + 25);
+            } else if (label === "D₂") {
+                ctx.font = 'italic 20px Times New Roman';
+                const D_width = ctx.measureText("D").width;
+                ctx.fillText("D", x2 + 10, y);
+                ctx.font = 'italic 14px Times New Roman';
+                ctx.fillText("2", x2 + 10 + D_width, y + 5);
+            } else {
+                 ctx.font = 'italic 20px Times New Roman';
+                 ctx.fillText(label, (x1 + x2) / 2, y + 20);
+            }
+            
+            ctx.restore();
+        }
+        
+        // --- Main Drawing ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 1. Draw Optical Axis
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, y_axis);
+        ctx.lineTo(canvas.width, y_axis);
+        ctx.stroke();
+        
+        // 2. Draw Rays
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Points for top ray path
+        const p1_top = { x: x_start, y: y_axis - h_L1_beam_half };
+        const p2_top = { x: x_L1, y: y_axis - h_L1_beam_half };
+        const p3_top = { x: x_f1, y: y_axis };
+        const p4_top = { x: x_L2, y: y_axis - h_L2_half };
+        const p5_top = { x: x_P, y: y_axis };
+        // Calculate the end point of the final diverging ray
+        const slope_final_top = (p5_top.y - p4_top.y) / (p5_top.x - p4_top.x);
+        const p6_top = { x: x_end, y: p5_top.y + slope_final_top * (x_end - p5_top.x) };
+
+        // Points for bottom ray path
+        const p1_bot = { x: x_start, y: y_axis + h_L1_beam_half };
+        const p2_bot = { x: x_L1, y: y_axis + h_L1_beam_half };
+        const p6_bot = { x: x_end, y: y_axis - (p6_top.y - y_axis) };
+
+        // Draw top, middle, and bottom rays
+        [p1_top, {x: x_start, y:y_axis}, p1_bot].forEach((start_point, i) => {
+            const p2 = i === 0 ? p2_top : (i === 1 ? {x: x_L1, y: y_axis} : p2_bot);
+            const p3 = {x: x_f1, y: y_axis};
+            const p4 = i === 0 ? p4_top : (i === 1 ? {x: x_L2, y: y_axis} : {x: x_L2, y: y_axis + h_L2_half});
+            const p5 = {x: x_P, y: y_axis};
+            const p6 = i === 0 ? p6_top : (i === 1 ? {x: x_end, y: y_axis} : p6_bot);
+            
+            drawRay(start_point.x, start_point.y, p2.x, p2.y);
+            drawRay(p2.x, p2.y, p3.x, p3.y);
+            drawRay(p3.x, p3.y, p4.x, p4.y);
+            drawRay(p4.x, p4.y, p5.x, p5.y);
+            drawRay(p5.x, p5.y, p6.x, p6.y);
+        });
+
+        // 3. Draw Lenses and Apertures
+        drawLens(x_L1, y_axis, h_L1_lens_half * 2, lens_thickness_L1, '#e0e0e0');
+        drawLens(x_L2, y_axis, h_L2_half * 2 + 20, lens_thickness_L2, '#cccccc');
+        
+        // Draw Aperture clamps on L2
+        ctx.fillStyle = 'black';
+        // Top clamp
+        ctx.fillRect(x_L2 - 15, y_axis - h_L2_half - 4, 30, 4);
+        ctx.fillRect(x_L2 - 15, y_axis - h_L2_half - 4, 4, 10);
+        // Bottom clamp
+        ctx.fillRect(x_L2 - 15, y_axis + h_L2_half, 30, 4);
+        ctx.fillRect(x_L2 - 15, y_axis + h_L2_half - 6, 4, 10);
+
+        // 4. Draw vertical guide lines and labels
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#555';
+        // Line at focus of L1
+        ctx.beginPath();
+        ctx.moveTo(x_f1, y_axis - 100);
+        ctx.lineTo(x_f1, y_axis + 100);
+        ctx.stroke();
+        // Line at L2 position
+        ctx.beginPath();
+        ctx.moveTo(x_L2, y_axis - 100);
+        ctx.lineTo(x_L2, y_axis + 100);
+        ctx.stroke();
+        // Line at final focus P
+        ctx.beginPath();
+        ctx.moveTo(x_P, y_axis - 100);
+        ctx.lineTo(x_P, y_axis + 100);
+        ctx.stroke();
+        ctx.restore();
+
+        // Labels for lenses and points
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        // L₁
+        ctx.font = '22px Times New Roman';
+        ctx.fillText('L', x_L1 - 5, y_axis - h_L1_lens_half - 10);
+        ctx.font = '16px Times New Roman';
+        ctx.fillText('1', x_L1 + 8, y_axis - h_L1_lens_half - 5);
+        // L₂
+        ctx.font = '22px Times New Roman';
+        ctx.fillText('L', x_L2 - 5, y_axis - h_L2_half - 20);
+        ctx.font = '16px Times New Roman';
+        ctx.fillText('2', x_L2 + 8, y_axis - h_L2_half - 15);
+        // P
+        ctx.font = '22px Times New Roman';
+        ctx.fillText('P', x_P, y_axis - 105);
+
+        // Dimension lines
+        drawDimensionLine(x_f1, x_L2, y_axis + 120, 'z₂');
+        drawDimensionLine(x_L2, x_P, y_axis + 120, "z'₂");
+
+        // D₂ dimension
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'black';
+        const d2_y = y_axis - h_L2_half;
+        const d2_x_start = x_L2 + 20;
+        const d2_x_end = x_L2 + 60;
+        ctx.beginPath();
+        ctx.moveTo(d2_x_start, d2_y);
+        ctx.lineTo(d2_x_end, d2_y);
+        ctx.stroke();
+        drawArrowhead(d2_x_end, d2_y - 5, -Math.PI/2);
+        drawDimensionLine(0, 0, d2_y, 'D₂'); // Using the helper for text only
+        
+        ctx.beginPath();
+        ctx.moveTo(d2_x_start, y_axis + h_L2_half);
+        ctx.lineTo(d2_x_end, y_axis + h_L2_half);
+        ctx.stroke();
+        drawArrowhead(d2_x_end, y_axis + h_L2_half + 5, Math.PI/2);
+        ctx.restore();
+
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamic Container Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            background-color: white;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="thermoCanvas" width="550" height="300"></canvas>
+    <script>
+        const canvas = document.getElementById('thermoCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const boxX = 75;
+        const boxY = 60;
+        const boxWidth = 400;
+        const boxHeight = 120;
+        const partitionWidth = 10;
+        const stippleDensity = 0.15; // dots per square pixel
+
+        // --- Drawing Functions ---
+
+        /**
+         * Draws a stippled pattern inside a rectangle to represent gas.
+         * The pattern consists of small, randomly rotated ellipses to mimic the texture.
+         * @param {number} x - The x-coordinate of the top-left corner of the area.
+         * @param {number} y - The y-coordinate of the top-left corner of the area.
+         * @param {number} w - The width of the area.
+         * @param {number} h - The height of the area.
+         */
+        function drawStippling(x, y, w, h) {
+            ctx.save();
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.rect(x, y, w, h);
+            ctx.clip(); // Clip subsequent drawing to this rectangular area
+
+            const numDots = Math.floor(w * h * stippleDensity);
+            for (let i = 0; i < numDots; i++) {
+                const dotX = x + Math.random() * w;
+                const dotY = y + Math.random() * h;
+                ctx.beginPath();
+                ctx.ellipse(dotX, dotY, 0.6, 1.1, Math.random() * Math.PI, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // --- Main Drawing Logic ---
+
+        // Calculate dimensions for regions A, B, and the partition
+        const partitionCenterX = boxX + boxWidth / 2;
+        const partitionLeftX = partitionCenterX - partitionWidth / 2;
+        const partitionRightX = partitionCenterX + partitionWidth / 2;
+        const regionWidth = (boxWidth - partitionWidth) / 2;
+
+        // Draw stippling for region A
+        drawStippling(boxX, boxY, regionWidth, boxHeight);
+
+        // Draw stippling for region B
+        drawStippling(partitionRightX, boxY, regionWidth, boxHeight);
+
+        // Draw the main container outline
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+        
+        // Draw the partition
+        // First, clear the area under the partition by filling with white to hide the stippling
+        ctx.fillStyle = 'white';
+        ctx.fillRect(partitionLeftX, boxY, partitionWidth, boxHeight);
+
+        // Then, draw the partition's outline and hatches
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+
+        // Partition vertical lines
+        ctx.beginPath();
+        ctx.moveTo(partitionLeftX, boxY);
+        ctx.lineTo(partitionLeftX, boxY + boxHeight);
+        ctx.moveTo(partitionRightX, boxY);
+        ctx.lineTo(partitionRightX, boxY + boxHeight);
+        ctx.stroke();
+
+        // Partition hatches (slanted lines)
+        ctx.beginPath();
+        const numHatches = 7;
+        const hatchStepY = boxHeight / (numHatches + 1);
+        for (let i = 1; i <= numHatches; i++) {
+            const y = boxY + i * hatchStepY;
+            // Draw a line slanted downwards to the right
+            ctx.moveTo(partitionLeftX, y - 5);
+            ctx.lineTo(partitionRightX, y + 5);
+        }
+        ctx.stroke();
+
+        // Draw labels 'A' and 'B'
+        ctx.fillStyle = 'black';
+        ctx.font = '24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('A', boxX + regionWidth / 2, boxY + boxHeight / 2);
+        ctx.fillText('B', partitionRightX + regionWidth / 2, boxY + boxHeight / 2);
+
+        // Draw the caption below the diagram
+        ctx.font = '22px "SimSun", "Song Ti", serif';
+        ctx.fillText('习题 5-9 图', boxX + boxWidth / 2, boxY + boxHeight + 40);
+
+    </script>
+</body>
+</html>

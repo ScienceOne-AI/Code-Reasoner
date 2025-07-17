@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resistor Network Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="400" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.scale(1.2, 1.2);
+        ctx.translate(20, -10);
+
+        // --- Define vertices of the large tetrahedron ---
+        const vA = { x: 50, y: 250, label: 'A' };
+        const vB = { x: 280, y: 230, label: 'B' };
+        const vL = { x: 120, y: 80 }; // Top-left vertex
+        const vT = { x: 250, y: 50 }; // Top-right vertex
+
+        // --- Calculate midpoints ---
+        const vC = { x: (vA.x + vB.x) / 2, y: (vA.y + vB.y) / 2, label: 'C' };
+        const vD = { x: (vL.x + vA.x)/2 + 20, y: (vL.y + vA.y)/2 + 20, label: 'D' }; // Visual adjustment for label D
+        const m_AL = { x: (vA.x + vL.x) / 2, y: (vA.y + vL.y) / 2 };
+        const m_AT = { x: (vA.x + vT.x) / 2, y: (vA.y + vT.y) / 2 };
+        const m_BL = { x: (vB.x + vL.x) / 2, y: (vB.y + vL.y) / 2 };
+        const m_BT = { x: (vB.x + vT.x) / 2, y: (vB.y + vT.y) / 2 };
+        const m_LT = { x: (vL.x + vT.x) / 2, y: (vL.y + vT.y) / 2 };
+        const centerVertex = { x: (vA.x + vB.x + vL.x + vT.x) / 4 + 10, y: (vA.y + vB.y + vL.y + vT.y) / 4 };
+
+
+        // --- Drawing functions ---
+        function drawLine(p1, p2) {
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+        }
+
+        function drawDashedLine(p1, p2) {
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawLabel(p, text) {
+            ctx.font = '20px Times New Roman';
+            ctx.fillStyle = 'black';
+            ctx.fillText(text, p.x, p.y);
+        }
+
+        // --- Draw the network ---
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+
+        // Dashed lines (background)
+        drawDashedLine(vA, vT);
+        drawDashedLine(vL, vB);
+        drawDashedLine(m_AL, m_BT);
+        drawDashedLine(m_AT, m_BL);
+        
+        const centerOfOctahedron = {
+            x: (m_AT.x + m_BL.x)/2,
+            y: (m_AT.y + m_BL.y)/2
+        };
+
+        // Re-interpreting the image as an octahedron for drawing simplicity,
+        // which is the core of the problem.
+        const top = { x: 250, y: 50 };
+        const topLeft = { x: 120, y: 80 };
+        const midLeft = { x: 80, y: 170 }; // Labeled D region
+        const botLeft = { x: 40, y: 255 }; // Labeled A
+        const botMid = { x: 155, y: 275 }; // Labeled C
+        const botRight = { x: 280, y: 230 }; // Labeled B
+        const center = { x: 170, y: 180 };
+        
+        // Let's draw the lines from the provided image directly
+        // Solid lines
+        drawLine(topLeft, top);
+        drawLine(top, botRight);
+        drawLine(botRight, botMid);
+        drawLine(botMid, botLeft);
+        drawLine(botLeft, midLeft);
+        drawLine(midLeft, topLeft);
+        
+        drawLine(botLeft, center);
+        drawLine(botRight, center);
+        drawLine(botMid, center);
+        drawLine(midLeft, center);
+        drawLine(topLeft, center);
+        drawLine(top, center);
+        
+        // Dashed lines
+        drawDashedLine(botLeft, botRight);
+        drawDashedLine(botLeft, top);
+        drawDashedLine(botRight, topLeft);
+        drawDashedLine(botMid, midLeft);
+        
+        // Add dot markers for vertices
+        ctx.fillStyle = 'black';
+        [top, topLeft, midLeft, botLeft, botMid, botRight, center].forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 2, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+
+
+        // --- Add labels ---
+        drawLabel({ x: botLeft.x - 25, y: botLeft.y + 15 }, 'A');
+        drawLabel({ x: botRight.x + 10, y: botRight.y + 10 }, 'B');
+        drawLabel({ x: botMid.x - 5, y: botMid.y + 20 }, 'C');
+        drawLabel({ x: midLeft.x - 25, y: midLeft.y - 10}, 'D');
+
+        // Label for R
+        drawLabel({ x: 275, y: 75 }, 'R');
+        ctx.beginPath();
+        ctx.moveTo(255, 65);
+        ctx.lineTo(265, 65);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(290, 85);
+        ctx.lineTo(300, 85);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(260, 65);
+        ctx.lineTo(260, 50);
+        ctx.lineTo(275, 50);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(295, 85);
+        ctx.lineTo(295, 100);
+        ctx.lineTo(280, 100);
+        ctx.stroke();
+
+
+        // --- Add caption ---
+        ctx.font = '24px KaiTi';
+        ctx.fillText('电图 4.9.1', 110, 330);
+    </script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Optical Path Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="850" height="400" style="border:1px solid #000;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = 'bold 22px serif';
+
+    // --- Helper function to draw an arrowhead ---
+    // Draws an arrowhead at (x, y) pointing in the direction of the angle 'dir'.
+    function drawArrowhead(x, y, dir, length = 10, angle = Math.PI / 8) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - length * Math.cos(dir - angle), y - length * Math.sin(dir - angle));
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - length * Math.cos(dir + angle), y - length * Math.sin(dir + angle));
+        ctx.stroke();
+    }
+
+    // --- Main Drawing ---
+
+    // Define key coordinates
+    const x_start = 50;
+    const x_slit = 400;
+    const x_plane = 750;
+    
+    // The rays are drawn as two bundles of parallel lines, crossing at the slit.
+    // This represents light from two different points of a distant source.
+    const ray_paths = [
+        // Bundle 1 (downward slope)
+        { start: { x: x_start, y: 178 }, end: { x: x_plane, y: 213 } },
+        { start: { x: x_start, y: 188 }, end: { x: x_plane, y: 223 } },
+        // Bundle 2 (upward slope)
+        { start: { x: x_start, y: 222 }, end: { x: x_plane, y: 187 } },
+        { start: { x: x_start, y: 212 }, end: { x: x_plane, y: 177 } }
+    ];
+
+    // Draw rays and their arrowheads
+    ray_paths.forEach(ray => {
+        // Draw the main line for the ray
+        ctx.beginPath();
+        ctx.moveTo(ray.start.x, ray.start.y);
+        ctx.lineTo(ray.end.x, ray.end.y);
+        ctx.stroke();
+
+        // Calculate direction for arrowheads
+        const dir = Math.atan2(ray.end.y - ray.start.y, ray.end.x - ray.start.x);
+
+        // Add an arrowhead before the slit
+        const t1 = 0.4;
+        const arrow1_x = ray.start.x * (1 - t1) + ray.end.x * t1;
+        const arrow1_y = ray.start.y * (1 - t1) + ray.end.y * t1;
+        drawArrowhead(arrow1_x, arrow1_y, dir);
+
+        // Add an arrowhead after the slit
+        const t2 = 0.8;
+        const arrow2_x = ray.start.x * (1 - t2) + ray.end.x * t2;
+        const arrow2_y = ray.start.y * (1 - t2) + ray.end.y * t2;
+        drawArrowhead(arrow2_x, arrow2_y, dir);
+    });
+
+    // --- Draw Slit S ---
+    const slitYtop = 160;
+    const slitYbottom = 240;
+    ctx.beginPath();
+    ctx.moveTo(x_slit, slitYtop);
+    ctx.lineTo(x_slit, slitYbottom);
+    ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText("S", x_slit, slitYtop - 5);
+    
+    // --- Draw Plane x,y ---
+    const planeYtop = 160;
+    const planeYbottom = 240;
+    ctx.beginPath();
+    ctx.moveTo(x_plane, planeYbottom);
+    ctx.lineTo(x_plane, planeYtop);
+    ctx.stroke();
+    // Arrow for y-axis
+    drawArrowhead(x_plane, planeYtop, -Math.PI / 2);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("x, y", x_plane + 10, planeYtop);
+
+    // --- Draw distance z ---
+    const z_y_pos = 280;
+    ctx.beginPath();
+    // Horizontal line for z
+    ctx.moveTo(x_slit, z_y_pos);
+    ctx.lineTo(x_plane, z_y_pos);
+    // Vertical tick marks connecting to S and the plane
+    ctx.moveTo(x_slit, slitYbottom);
+    ctx.lineTo(x_slit, z_y_pos);
+    ctx.moveTo(x_plane, planeYbottom);
+    ctx.lineTo(x_plane, z_y_pos);
+    ctx.stroke();
+    
+    // Arrowheads for the double-headed arrow 'z'
+    drawArrowhead(x_slit, z_y_pos, Math.PI); // Left-pointing
+    drawArrowhead(x_plane, z_y_pos, 0); // Right-pointing
+
+    // Label for z
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText("z", (x_slit + x_plane) / 2, z_y_pos - 5);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a vector arrow.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} fromx - Starting x-coordinate.
+         * @param {number} fromy - Starting y-coordinate.
+         * @param {number} tox - Ending x-coordinate.
+         * @param {number} toy - Ending y-coordinate.
+         */
+        function drawForceArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 10;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.lineWidth = 1.5;
+
+            // Line
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        /**
+         * Draws a cross symbol.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x - Center x-coordinate.
+         * @param {number} y - Center y-coordinate.
+         * @param {number} size - Half the length of the lines.
+         */
+        function drawCross(ctx, x, y, size) {
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(x - size, y - size);
+            ctx.lineTo(x + size, y + size);
+            ctx.moveTo(x + size, y - size);
+            ctx.lineTo(x - size, y + size);
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+
+        // 1. Text Description
+        ctx.fillStyle = 'black';
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText('Fig. 3.1 shows a boat that has been lifted out of a river. The boat is suspended by two ropes.', 10, 30);
+        ctx.fillText('It is stationary.', 10, 55);
+
+        // 2. Define Coordinates and Scale
+        const scale = 125; // pixels per meter
+        const dist1 = 1.20 * scale; // 150 px
+        const dist2 = 0.40 * scale; // 50 px
+
+        const yTop = 200;
+        const yBottom = 240;
+        const yMid = yTop + 20;
+
+        const xC = 350; // X-coordinate of Center of Mass C
+        const xT1 = xC - dist1; // X-coordinate for Tension 1
+        const xP = xC + dist2;  // X-coordinate for Point P / Tension 2
+
+        const xStern = xP + 50;
+        const xBowTip = xT1 - 80;
+
+        // 3. Draw the Boat
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(xStern, yTop); // Stern top-right
+        ctx.lineTo(xT1, yTop); // Main deck top
+        // Curved bow
+        ctx.quadraticCurveTo(xBowTip, yTop, xBowTip, (yTop + yBottom) / 2);
+        ctx.quadraticCurveTo(xBowTip, yBottom, xT1, yBottom);
+        ctx.lineTo(xStern, yBottom); // Main deck bottom
+        ctx.lineTo(xStern, yTop); // Stern vertical line
+        ctx.stroke();
+
+        // 4. Draw Forces
+        // Tension T1
+        drawForceArrow(ctx, xT1, yTop, xT1, yTop - 100);
+        ctx.font = '20px Arial';
+        ctx.fillText('T', xT1 - 28, yTop - 45);
+        ctx.font = '15px Arial';
+        ctx.fillText('1', xT1 - 18, yTop - 40);
+
+        // Tension T2
+        drawForceArrow(ctx, xP, yTop, xP, yTop - 100);
+        ctx.font = '20px Arial';
+        ctx.fillText('T', xP + 12, yTop - 45);
+        ctx.font = '15px Arial';
+        ctx.fillText('2', xP + 22, yTop - 40);
+
+        // Weight
+        drawForceArrow(ctx, xC, yMid, xC, yMid + 80);
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText('24 kN', xC + 10, yMid + 95);
+
+        // 5. Draw Points C and P
+        ctx.fillStyle = 'black';
+        // Point C
+        ctx.beginPath();
+        ctx.arc(xC, yMid, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.font = '20px Arial';
+        ctx.fillText('C', xC + 8, yMid + 7);
+
+        // Point P (as a cross)
+        drawCross(ctx, xP, yMid, 5);
+        ctx.fillText('P', xP + 12, yMid + 7);
+
+        // 6. Draw Dimension Lines
+        const yDim = yBottom + 40;
+        ctx.lineWidth = 1;
+
+        // Dashed projection lines
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(xT1, yTop);
+        ctx.lineTo(xT1, yDim);
+        ctx.moveTo(xC, yMid);
+        ctx.lineTo(xC, yDim);
+        ctx.moveTo(xP, yTop);
+        ctx.lineTo(xP, yDim);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Horizontal dimension lines with arrows
+        function drawDimensionSegment(ctx, x1, x2, y, label) {
+            // Line
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+
+            // Arrowheads
+            const headlen = 8;
+            // Left arrow
+            ctx.beginPath();
+            ctx.moveTo(x1 + headlen, y - headlen / 2);
+            ctx.lineTo(x1, y);
+            ctx.lineTo(x1 + headlen, y + headlen / 2);
+            ctx.stroke();
+            // Right arrow
+            ctx.beginPath();
+            ctx.moveTo(x2 - headlen, y - headlen / 2);
+            ctx.lineTo(x2, y);
+            ctx.lineTo(x2 - headlen, y + headlen / 2);
+            ctx.stroke();
+            
+            // Label
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, (x1 + x2) / 2, y + 20);
+        }
+
+        drawDimensionSegment(ctx, xT1, xC, yDim, '1.20 m');
+        drawDimensionSegment(ctx, xC, xP, yDim, '0.40 m');
+
+        // 7. Figure Caption
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 3.1 (not to scale)', canvas.width / 2, 400);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="450" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Utility to draw an arrowhead
+    function drawArrowhead(ctx, x, y, angle, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2.5);
+        ctx.lineTo(-size, -size / 2.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Physics Calculation ---
+    // From equilibrium analysis: tan(alpha) = sqrt(3)/5
+    const alpha = Math.atan(Math.sqrt(3) / 5); // approx 19.1066 degrees
+
+    // --- Drawing Parameters ---
+    const L = 180; // Length of BC in pixels
+    const L_BC = L;
+    const L_AB = L_BC / 2;
+
+    const B = { x: 280, y: 300 };
+
+    // Angles in radians, CCW from positive x-axis
+    const bc_angle = Math.PI + alpha; // Vector B->C
+    const ab_angle = (2 * Math.PI / 3) + alpha; // Vector B->A
+
+    const C = {
+        x: B.x + L_BC * Math.cos(bc_angle),
+        y: B.y + L_BC * Math.sin(bc_angle)
+    };
+
+    const A = {
+        x: B.x + L_AB * Math.cos(ab_angle),
+        y: B.y + L_AB * Math.sin(ab_angle)
+    };
+
+    const D = { x: A.x, y: 100 };
+    const ceiling_y = 80;
+
+    // --- Drawing ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // 1. Draw Ceiling
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(D.x - 90, ceiling_y);
+    ctx.lineTo(D.x + 90, ceiling_y);
+    ctx.stroke();
+
+    // Hatching for ceiling
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 18; i++) {
+        ctx.beginPath();
+        ctx.moveTo(D.x - 90 + i * 10, ceiling_y);
+        ctx.lineTo(D.x - 80 + i * 10, ceiling_y - 12);
+        ctx.stroke();
+    }
+
+    // 2. Draw rod AD (rope)
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y);
+    ctx.lineTo(D.x, D.y);
+    ctx.stroke();
+
+    // 3. Draw pivots at A and D
+    ctx.lineWidth = 2;
+    ctx.fillStyle = 'white';
+    
+    ctx.beginPath();
+    ctx.arc(A.x, A.y, 6, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(D.x, D.y, 6, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+
+    // 4. Draw bent rod ABC
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'miter'; 
+    ctx.strokeStyle = 'black';
+    ctx.beginPath();
+    ctx.moveTo(C.x, C.y);
+    ctx.lineTo(B.x, B.y);
+    ctx.lineTo(A.x, A.y);
+    ctx.stroke();
+
+    // 5. Draw angle alpha
+    // Pick a point on BC for annotation
+    const p_on_bc = {x: C.x*0.6 + B.x*0.4, y: C.y*0.6 + B.y*0.4};
+    
+    // Horizontal dashed line
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.moveTo(p_on_bc.x - 80, p_on_bc.y);
+    ctx.lineTo(p_on_bc.x + 20, p_on_bc.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // Vertical line for angle symbol
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    const x_vert_marker = p_on_bc.x - 12;
+    ctx.moveTo(x_vert_marker, p_on_bc.y);
+    ctx.lineTo(x_vert_marker, p_on_bc.y - 12 * Math.tan(alpha));
+    ctx.stroke();
+
+    // Angle arc for alpha
+    const alpha_arc_radius = 35;
+    ctx.beginPath();
+    ctx.arc(p_on_bc.x, p_on_bc.y, alpha_arc_radius, Math.PI, Math.PI + alpha);
+    ctx.stroke();
+    
+    // Text for alpha
+    ctx.font = 'italic bold 28px serif';
+    ctx.fillText('α', p_on_bc.x - 45, p_on_bc.y + 15);
+
+    // 6. Draw angle 60 degrees
+    ctx.lineWidth = 1.5;
+    const angle_60_radius = 45;
+    ctx.beginPath();
+    // Arc from BA (ab_angle) to BC (bc_angle)
+    ctx.arc(B.x, B.y, angle_60_radius, ab_angle, bc_angle);
+    ctx.stroke();
+
+    // Arrowhead for 60 deg angle
+    ctx.fillStyle = 'black';
+    const arrow_60_angle_end = bc_angle; // End of arc is on BC
+    const arrow_60_x = B.x + angle_60_radius * Math.cos(arrow_60_angle_end);
+    const arrow_60_y = B.y + angle_60_radius * Math.sin(arrow_60_angle_end);
+    // Tangent direction is angle + 90 deg
+    drawArrowhead(ctx, arrow_60_x, arrow_60_y, arrow_60_angle_end + Math.PI / 2, 10);
+    
+    // Text for 60
+    ctx.font = '24px sans-serif';
+    const text_60_angle_mid = (ab_angle + bc_angle) / 2;
+    const text_60_x = B.x + (angle_60_radius - 15) * Math.cos(text_60_angle_mid);
+    const text_60_y = B.y + (angle_60_radius - 15) * Math.sin(text_60_angle_mid);
+    ctx.fillText('60°', text_60_x - 15, text_60_y + 8);
+
+    // 7. Draw point labels
+    ctx.font = 'bold 30px serif';
+    ctx.fillText('A', A.x - 35, A.y + 10);
+    ctx.fillText('B', B.x + 15, B.y + 10);
+    ctx.fillText('C', C.x - 20, C.y + 20);
+    ctx.fillText('D', D.x - 10, D.y - 15);
+
+</script>
+</body>
+</html>

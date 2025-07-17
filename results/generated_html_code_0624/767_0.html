@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mechanical Manipulator Diagram</title>
+</head>
+<body>
+    <canvas id="myCanvas" width="650" height="300" style="border:1px solid #d3d3d3;"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Parameter Setup ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Geometric parameters based on canvas size
+        const l1_ratio = 0.7;
+        const l2_ratio = 0.5;
+        const total_ratio = l1_ratio + l2_ratio;
+        const scale = 420; // pixels per unit length
+
+        const x_start = 60;
+        const y_center = 150;
+
+        // Calculate coordinates of key points
+        const xA = x_start;
+        const yA = y_center;
+        const xB = xA + l1_ratio * scale;
+        const yB = y_center;
+        const xC_joint = xB + l2_ratio * scale; // The point where the rod meets the gripper
+        const yC_joint = y_center;
+
+        // --- Drawing Functions ---
+
+        function drawSupport(ctx, x, y) {
+            const supportHeight = 25;
+            const supportWidth = 40;
+            const base_y = y + supportHeight;
+            
+            ctx.save();
+            ctx.lineWidth = 3.5;
+            // Draw triangle
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - supportWidth / 2, base_y);
+            ctx.lineTo(x + supportWidth / 2, base_y);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Draw hatching for the ground
+            const hatchLength = 15;
+            const hatchSpacing = 8;
+            ctx.lineWidth = 1.5;
+            for (let i = x - supportWidth / 2; i <= x + supportWidth / 2; i += hatchSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(i, base_y);
+                ctx.lineTo(i - hatchLength, base_y + hatchLength);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawPin(ctx, x, y, radius) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawGripper(ctx, cx, cy) {
+            // Gripper geometry relative to its connection point (cx, cy)
+            const p1 = { x: cx, y: cy };
+            const p2 = { x: cx + 12, y: cy - 12 };
+            const p3 = { x: cx + 28, y: cy - 5 };
+            const p4 = { x: cx + 35, y: cy - 5 }; // prong end
+            const p5 = { x: cx + 35, y: cy + 5 }; // other prong end
+            const p6 = { x: cx + 28, y: cy + 5 };
+            const p7 = { x: cx + 12, y: cy + 12 };
+            
+            ctx.save();
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            // Draw the continuous outline of the gripper
+            ctx.moveTo(p4.x, p4.y);
+            ctx.lineTo(p3.x, p3.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.lineTo(p1.x, p1.y);
+            ctx.lineTo(p7.x, p7.y);
+            ctx.lineTo(p6.x, p6.y);
+            ctx.lineTo(p5.x, p5.y);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawLabels(ctx) {
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+
+            // Labels A, B, C
+            ctx.font = 'bold 24px Times New Roman';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('A', xA, yA - 15);
+            ctx.fillText('B', xB, yB - 15);
+            // Position C label over the gripper
+            ctx.fillText('C', xC_joint + 20, yC_joint - 20);
+
+            // Labels for lengths l1 and l2
+            const label_y = y_center + 45;
+            const x_l1 = (xA + xB) / 2;
+            const x_l2 = (xB + xC_joint) / 2;
+            
+            ctx.textBaseline = 'middle';
+            
+            // Draw l1
+            ctx.font = 'italic bold 22px Times New Roman';
+            ctx.fillText('l', x_l1 - 5, label_y);
+            ctx.font = 'bold 16px Times New Roman';
+            ctx.fillText('1', x_l1 + 6, label_y + 6);
+
+            // Draw l2
+            ctx.font = 'italic bold 22px Times New Roman';
+            ctx.fillText('l', x_l2 - 5, label_y);
+            ctx.font = 'bold 16px Times New Roman';
+            ctx.fillText('2', x_l2 + 6, label_y + 6);
+        }
+
+        // --- Main Drawing Execution ---
+        
+        // 1. Draw fixed support at A
+        drawSupport(ctx, xA, yA);
+
+        // 2. Draw the manipulator links
+        ctx.beginPath();
+        ctx.moveTo(xA, yA);
+        ctx.lineTo(xB, yB);
+        ctx.moveTo(xB, yB);
+        ctx.lineTo(xC_joint, yC_joint);
+        ctx.stroke();
+
+        // 3. Draw the gripper at C
+        drawGripper(ctx, xC_joint, yC_joint);
+
+        // 4. Draw pin joints on top
+        const pinRadius = 6;
+        drawPin(ctx, xA, yA, pinRadius);
+        drawPin(ctx, xB, yB, pinRadius);
+
+        // 5. Add all text labels
+        drawLabels(ctx);
+
+    </script>
+</body>
+</html>

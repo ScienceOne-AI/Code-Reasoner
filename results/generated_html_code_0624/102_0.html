@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electron Lens Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Style Settings ---
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 2;
+  const baseFont = '22px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // --- Dimensions ---
+  const canvasWidth = 800;
+  const canvasHeight = 500;
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
+
+  const centerY = canvasHeight / 2 - 20; // Shift diagram up for caption
+  const centerX = canvasWidth / 2; // This is z=0
+
+  const l0 = 250;
+  const l1 = 200;
+  const b = 50;
+
+  const objectX = centerX - l0;
+  const imageX = centerX + l1;
+
+  const axisStartX = 50;
+  const axisEndX = canvasWidth - 50;
+  
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  ctx.fillStyle = 'black';
+
+  // --- 1. Draw z-axis ---
+  ctx.beginPath();
+  ctx.moveTo(axisStartX, centerY);
+  ctx.lineTo(axisEndX, centerY);
+  ctx.stroke();
+
+  // Arrowhead for z-axis
+  ctx.beginPath();
+  ctx.moveTo(axisEndX, centerY);
+  ctx.lineTo(axisEndX - 15, centerY - 7);
+  ctx.moveTo(axisEndX, centerY);
+  ctx.lineTo(axisEndX - 15, centerY + 7);
+  ctx.stroke();
+
+  // 'z' label
+  ctx.font = 'italic ' + baseFont;
+  ctx.fillText('z', axisEndX + 20, centerY);
+
+  // --- 2. Draw the loop (as an ellipse) ---
+  const loopRadiusY = 100;
+  const loopRadiusX = 30;
+  ctx.beginPath();
+  ctx.ellipse(centerX, centerY, loopRadiusX, loopRadiusY, 0, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  // --- 3. Draw current I and its arrow ---
+  // The arrow shows a clockwise current, moving left across the top.
+  const arcStart = -Math.PI / 4;
+  const arcEnd = -3 * Math.PI / 4;
+  
+  // Arc Path
+  ctx.save();
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  // Use ellipse with anticlockwise=false to draw CW arc segment on top
+  ctx.ellipse(centerX, centerY, loopRadiusX, loopRadiusY, 0, arcStart, arcEnd, true);
+  ctx.stroke();
+  
+  // Arrowhead at the end of the arc
+  const arrowAngle = arcEnd;
+  const arrowX = centerX + loopRadiusX * Math.cos(arrowAngle);
+  const arrowY = centerY + loopRadiusY * Math.sin(arrowAngle);
+  
+  // The tangent for the CCW-parameterized ellipse path points left-and-down (on canvas) in this quadrant.
+  const tangentAngle = Math.atan2(loopRadiusY * Math.cos(arrowAngle), -loopRadiusX * Math.sin(arrowAngle));
+  ctx.translate(arrowX, arrowY);
+  ctx.rotate(tangentAngle);
+  ctx.beginPath();
+  ctx.moveTo(2, 0); // small offset to not overlap arc
+  ctx.lineTo(-10, 6);
+  ctx.moveTo(2, 0);
+  ctx.lineTo(-10, -6);
+  ctx.stroke();
+  ctx.restore();
+
+  // 'I' label
+  ctx.font = 'italic bold ' + baseFont;
+  ctx.fillText('I', centerX + loopRadiusX + 30, centerY - loopRadiusY * 0.6);
+
+  // --- 4. Draw ray path ---
+  ctx.beginPath();
+  ctx.moveTo(objectX, centerY);
+  ctx.lineTo(centerX, centerY - b);
+  ctx.lineTo(imageX, centerY);
+  ctx.stroke();
+
+  // --- 5. Draw labels 'object' and 'image' ---
+  ctx.font = 'bold ' + baseFont;
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('object', objectX, centerY - 10);
+  ctx.fillText('image', imageX, centerY - 10);
+  ctx.textBaseline = 'middle';
+
+  // --- 6. Draw dimension 'b' ---
+  ctx.beginPath();
+  ctx.moveTo(centerX + 5, centerY);
+  ctx.lineTo(centerX + 5, centerY - b);
+  ctx.stroke();
+  // Label 'b'
+  ctx.font = 'italic ' + baseFont;
+  ctx.textAlign = 'left';
+  ctx.fillText('b', centerX + 12, centerY - b / 2);
+  ctx.textAlign = 'center';
+
+  // --- 7. Draw dimension lines for l_0 and l_1 ---
+  const dimLineY = centerY + 80;
+  const tickSize = 10;
+
+  // Horizontal line connecting all points
+  ctx.beginPath();
+  ctx.moveTo(objectX, dimLineY);
+  ctx.lineTo(imageX, dimLineY);
+  ctx.stroke();
+
+  // Left tick (vertical bar)
+  ctx.beginPath();
+  ctx.moveTo(objectX, dimLineY - tickSize / 2);
+  ctx.lineTo(objectX, dimLineY + tickSize / 2);
+  ctx.stroke();
+  
+  // Right tick (vertical bar)
+  ctx.beginPath();
+  ctx.moveTo(imageX, dimLineY - tickSize / 2);
+  ctx.lineTo(imageX, dimLineY + tickSize / 2);
+  ctx.stroke();
+
+  // Center '+' marker
+  ctx.beginPath();
+  ctx.moveTo(centerX, dimLineY - tickSize / 2);
+  ctx.lineTo(centerX, dimLineY + tickSize / 2);
+  ctx.moveTo(centerX - tickSize / 2, dimLineY);
+  ctx.lineTo(centerX + tickSize / 2, dimLineY);
+  ctx.stroke();
+
+  // l_0 label
+  const labelY = dimLineY + 25;
+  ctx.font = 'italic ' + baseFont;
+  ctx.fillText('l', (objectX + centerX) / 2 - 5, labelY);
+  ctx.font = '16px serif';
+  ctx.fillText('0', (objectX + centerX) / 2 + 5, labelY + 4);
+
+  // l_1 label
+  ctx.font = 'italic ' + baseFont;
+  ctx.fillText('l', (centerX + imageX) / 2 - 5, labelY);
+  ctx.font = '16px serif';
+  ctx.fillText('1', (centerX + imageX) / 2 + 5, labelY + 4);
+
+  // --- 8. Draw Figure caption ---
+  ctx.font = baseFont;
+  ctx.fillText('Fig. 2.67', centerX, canvasHeight - 30);
+
+</script>
+</body>
+</html>

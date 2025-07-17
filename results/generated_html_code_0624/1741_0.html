@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electromagnetic Field Diagram</title>
+</head>
+<body>
+
+<canvas id="myCanvas" width="600" height="500" style="border:1px solid #d3d3d3;"></canvas>
+
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Clear canvas with a white background
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // --- Drawing parameters ---
+    const origin = { x: 180, y: 320 };
+    const style = {
+        lineWidth: 3,
+        lineColor: 'black',
+        textColor: 'black',
+        font: 'bold 24px sans-serif',
+        figFont: '24px sans-serif',
+        lambdaFont: 'italic bold 28px sans-serif',
+        arrowHeadLength: 15
+    };
+
+    // --- Style settings ---
+    ctx.strokeStyle = style.lineColor;
+    ctx.fillStyle = style.textColor;
+    ctx.lineWidth = style.lineWidth;
+    ctx.textBaseline = 'middle';
+
+    // --- Helper functions ---
+
+    // Function to draw arrows for the coordinate axes (with a filled triangular head)
+    function drawAxisArrow(fromX, fromY, toX, toY) {
+        const headLength = style.arrowHeadLength;
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+
+        // Draw the line
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+
+        // Draw the filled arrowhead
+        ctx.save();
+        ctx.translate(toX, toY);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headLength, headLength / 2.5);
+        ctx.lineTo(-headLength, -headLength / 2.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Function to draw arrows representing the current (with a V-shaped head)
+    function drawCurrentArrow(fromX, fromY, toX, toY) {
+        const headLength = style.arrowHeadLength + 5;
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.moveTo(toX - headLength * Math.cos(angle - Math.PI / 9), toY - headLength * Math.sin(angle - Math.PI / 9));
+        ctx.lineTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 9), toY - headLength * Math.sin(angle + Math.PI / 9));
+        ctx.stroke();
+    }
+
+    // --- Draw Diagram Elements ---
+
+    // 1. Draw Coordinate Axes and Labels
+    ctx.font = style.font;
+
+    // Z-axis (UP)
+    const zAxisEnd = { x: origin.x, y: 100 };
+    drawAxisArrow(origin.x, origin.y, zAxisEnd.x, zAxisEnd.y);
+    ctx.textAlign = 'center';
+    ctx.fillText('UP (z)', zAxisEnd.x, zAxisEnd.y - 25);
+
+    // X-axis (East)
+    const xAxisEnd = { x: 480, y: origin.y };
+    drawAxisArrow(origin.x, origin.y, xAxisEnd.x, xAxisEnd.y);
+    ctx.textAlign = 'left';
+    ctx.fillText('East (x)', xAxisEnd.x + 10, xAxisEnd.y);
+
+    // Y-axis (North)
+    const yAxisEnd = { x: origin.x + 220, y: origin.y - 110 };
+    drawAxisArrow(origin.x, origin.y, yAxisEnd.x, yAxisEnd.y);
+    ctx.fillText('North (y)', yAxisEnd.x + 5, yAxisEnd.y - 15);
+
+    // Origin Label '0'
+    ctx.textAlign = 'right';
+    ctx.fillText('0', origin.x - 15, origin.y);
+
+    // 2. Draw Current Sheet Arrows
+    const yVec = { x: yAxisEnd.x - origin.x, y: yAxisEnd.y - origin.y };
+    const currentArrowLength = 140;
+    const tValues = [-0.3, -0.15, 0, 0.25, 0.5, 0.75];
+
+    tValues.forEach(t => {
+        const startX = origin.x + t * yVec.x;
+        const startY = origin.y + t * yVec.y;
+        drawCurrentArrow(startX, startY, startX + currentArrowLength, startY);
+    });
+
+    // 3. Draw Additional Labels
+    // Lambda (λ) symbol
+    ctx.textAlign = 'center';
+    ctx.font = style.lambdaFont;
+    ctx.fillText('\u03BB', origin.x + 240, origin.y - 50);
+
+    // Figure caption
+    ctx.font = style.figFont;
+    ctx.fillText('Fig. 2.50', canvas.width / 2, canvas.height - 30);
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="myCanvas" width="800" height="600" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'black';
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // Helper function to draw a single-headed arrow
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 10;
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // Helper function to draw a double-headed arrow
+    function drawDoubleArrow(ctx, fromx, fromy, tox, toy) {
+        drawArrow(ctx, fromx, fromy, tox, toy);
+        drawArrow(ctx, tox, toy, fromx, fromy);
+    }
+
+    // Helper function to draw a block on the slope
+    function drawBlock(ctx, cx_on_slope, cy_on_slope, width, height, angle_rad, isDashed) {
+        ctx.save();
+        ctx.translate(cx_on_slope, cy_on_slope);
+        ctx.rotate(-angle_rad);
+        
+        if (isDashed) {
+            ctx.setLineDash([6, 4]);
+        }
+        
+        ctx.beginPath();
+        ctx.rect(-width / 2, -height, width, height); // Draw with center-bottom on the translated origin
+        ctx.stroke();
+        
+        ctx.restore();
+        ctx.setLineDash([]);
+    }
+
+    // --- Parameters ---
+    const angle_deg = 30;
+    const angle_rad = angle_deg * Math.PI / 180;
+    const cos_a = Math.cos(angle_rad);
+    const sin_a = Math.sin(angle_rad);
+
+    const base_x = 680;
+    const base_y = 520;
+    const slope_len = 650;
+    const ground_x_start = 80;
+
+    const block_w = 70;
+    const block_h = 50;
+    const block1_dist = 200; // Distance of initial block's center from base
+    const block2_dist = 450; // Distance of final block's center from base
+
+    // --- Drawing ---
+
+    // 1. Ground and Inclined Plane
+    ctx.beginPath();
+    ctx.moveTo(ground_x_start, base_y);
+    ctx.lineTo(base_x + 20, base_y); // Ground line
+    ctx.moveTo(base_x, base_y);
+    ctx.lineTo(base_x - slope_len * cos_a, base_y - slope_len * sin_a); // Slope
+    ctx.stroke();
+
+    // 2. Angle `θ`
+    ctx.beginPath();
+    ctx.arc(base_x, base_y, 50, -angle_rad, 0);
+    ctx.stroke();
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.fillText('θ', base_x - 75, base_y - 20);
+
+    // 3. Blocks
+    const block1_cx = base_x - block1_dist * cos_a;
+    const block1_cy = base_y - block1_dist * sin_a;
+    drawBlock(ctx, block1_cx, block1_cy, block_w, block_h, angle_rad, false);
+
+    const block2_cx = base_x - block2_dist * cos_a;
+    const block2_cy = base_y - block2_dist * sin_a;
+    drawBlock(ctx, block2_cx, block2_cy, block_w, block_h, angle_rad, true);
+
+    // 4. Velocity Vectors & `μ` label
+    ctx.font = 'italic bold 24px Times New Roman';
+    const v_len = 80;
+    // v₀
+    const v0_start_x = block1_cx;
+    const v0_start_y = block1_cy - block_h / 2;
+    const v0_end_x = v0_start_x - v_len * cos_a;
+    const v0_end_y = v0_start_y - v_len * sin_a;
+    drawArrow(ctx, v0_start_x, v0_start_y, v0_end_x, v0_end_y);
+    ctx.fillText('v', v0_end_x - 30 * cos_a - 15, v0_end_y - 30 * sin_a + 5);
+    ctx.font = 'italic 18px Times New Roman';
+    ctx.fillText('0', v0_end_x - 30 * cos_a, v0_end_y - 30 * sin_a + 12);
+    
+    // v
+    ctx.font = 'italic bold 24px Times New Roman';
+    const v_start_x = block2_cx;
+    const v_start_y = block2_cy - block_h / 2;
+    const v_end_x = v_start_x - (v_len - 10) * cos_a;
+    const v_end_y = v_start_y - (v_len - 10) * sin_a;
+    drawArrow(ctx, v_start_x, v_start_y, v_end_x, v_end_y);
+    ctx.fillText('v', v_end_x - 30 * cos_a, v_end_y - 30 * sin_a);
+    
+    // μ
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('μ', block2_cx + block_w/2, block2_cy - block_h - 10);
+
+    // 5. Dimension lines `h` and `l`
+    // Define reference points on the slope for indicators, corresponding to where the dimension ticks are.
+    const p_lower_x = block1_cx + (block_w/2)*cos_a;
+    const p_lower_y = block1_cy + (block_w/2)*sin_a;
+    const p_upper_x = block2_cx - (block_w/2)*cos_a;
+    const p_upper_y = block2_cy - (block_w/2)*sin_a;
+
+    // Draw `l` indicator
+    const l_offset = 25;
+    const l_tick_start_x = p_lower_x - l_offset * sin_a;
+    const l_tick_start_y = p_lower_y + l_offset * cos_a;
+    const l_tick_end_x = p_upper_x - l_offset * sin_a;
+    const l_tick_end_y = p_upper_y + l_offset * cos_a;
+    
+    ctx.beginPath(); // Tick from slope to l-line (lower)
+    ctx.moveTo(p_lower_x, p_lower_y);
+    ctx.lineTo(l_tick_start_x, l_tick_start_y);
+    ctx.stroke();
+    ctx.beginPath(); // Tick from slope to l-line (upper)
+    ctx.moveTo(p_upper_x, p_upper_y);
+    ctx.lineTo(l_tick_end_x, l_tick_end_y);
+    ctx.stroke();
+    
+    drawDoubleArrow(ctx, l_tick_start_x, l_tick_start_y, l_tick_end_x, l_tick_end_y);
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.fillText('l', (l_tick_start_x + l_tick_end_x) / 2 + 20, (l_tick_start_y + l_tick_end_y) / 2);
+
+    // Draw `h` indicator
+    const h_line_x = p_upper_x - 80;
+    
+    ctx.setLineDash([5, 5]); // Dashed lines
+    ctx.beginPath(); // Top dashed line
+    ctx.moveTo(p_upper_x, p_upper_y);
+    ctx.lineTo(h_line_x, p_upper_y);
+    ctx.stroke();
+    ctx.beginPath(); // Bottom dashed line
+    ctx.moveTo(h_line_x, p_lower_y);
+    ctx.lineTo(h_line_x + (p_upper_x - h_line_x), p_lower_y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    drawDoubleArrow(ctx, h_line_x, p_lower_y, h_line_x, p_upper_y);
+    ctx.fillText('h', h_line_x - 25, (p_lower_y + p_upper_y) / 2);
+
+    // 6. Caption
+    ctx.font = '24px "SimSun", "STSong"';
+    ctx.textAlign = 'center';
+    ctx.fillText('力图 3.3.1', canvas.width / 2, base_y + 60);
+
+</script>
+</body>
+</html>

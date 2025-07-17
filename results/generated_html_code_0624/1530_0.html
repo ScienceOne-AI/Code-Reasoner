@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prism Refraction Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = 'italic 24px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Geometric Parameters ---
+    // Let's define the prism based on the apex angle 2α.
+    // We'll choose α = 30 degrees for a visually similar representation (equilateral prism).
+    const alpha_rad = Math.PI / 6; // 30 degrees
+
+    // Prism dimensions and position
+    const apex = { x: 300, y: 80 };
+    const height = 200;
+    const baseY = apex.y + height;
+    const halfBaseWidth = height * Math.tan(alpha_rad);
+
+    const vertexA = apex; // Top vertex
+    const vertexB = { x: apex.x - halfBaseWidth, y: baseY }; // Bottom-left vertex
+    const vertexC = { x: apex.x + halfBaseWidth, y: baseY }; // Bottom-right vertex
+
+    // Ray position (horizontal path inside the prism)
+    const rayY = apex.y + height / 2;
+
+    // Calculate ray intersection points with prism faces
+    const entryPoint = {
+        x: apex.x - (rayY - apex.y) / Math.tan(Math.PI / 2 - alpha_rad),
+        y: rayY
+    };
+    const exitPoint = {
+        x: apex.x + (rayY - apex.y) / Math.tan(Math.PI / 2 - alpha_rad),
+        y: rayY
+    };
+
+    // Define the external ray segments for a visually plausible diagram
+    const incidentStart = { x: entryPoint.x - 100, y: entryPoint.y - 50 };
+    const emergentEnd = { x: exitPoint.x + 100, y: exitPoint.y + 50 };
+
+    // --- Drawing Functions ---
+
+    // Helper function to draw an arrow
+    function drawArrow(fromX, fromY, toX, toY) {
+        const headlen = 10; // length of head in pixels
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+    }
+
+    // --- Main Drawing Logic ---
+
+    // 1. Draw the prism
+    ctx.beginPath();
+    ctx.moveTo(vertexA.x, vertexA.y);
+    ctx.lineTo(vertexB.x, vertexB.y);
+    ctx.lineTo(vertexC.x, vertexC.y);
+    ctx.closePath();
+    ctx.stroke();
+
+    // 2. Draw the light ray
+    ctx.beginPath();
+    // Incident ray
+    ctx.moveTo(incidentStart.x, incidentStart.y);
+    ctx.lineTo(entryPoint.x, entryPoint.y);
+    // Ray inside prism
+    ctx.lineTo(exitPoint.x, exitPoint.y);
+    // Emergent ray
+    ctx.lineTo(emergentEnd.x, emergentEnd.y);
+    ctx.stroke();
+    
+    // 3. Draw arrows on the ray
+    ctx.beginPath();
+    // Arrow on incident ray (approaching the prism)
+    const midIncidentX = (incidentStart.x + entryPoint.x) / 2;
+    const midIncidentY = (incidentStart.y + entryPoint.y) / 2;
+    const incidentDx = entryPoint.x - incidentStart.x;
+    const incidentDy = entryPoint.y - incidentStart.y;
+    drawArrow(midIncidentX - incidentDx*0.1, midIncidentY - incidentDy*0.1, midIncidentX, midIncidentY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    // Arrow inside prism
+    drawArrow(entryPoint.x, entryPoint.y, exitPoint.x, exitPoint.y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    // Arrow on emergent ray (leaving the prism)
+    const midEmergentX = (exitPoint.x + emergentEnd.x) / 2;
+    const midEmergentY = (exitPoint.y + emergentEnd.y) / 2;
+    const emergentDx = emergentEnd.x - exitPoint.x;
+    const emergentDy = emergentEnd.y - exitPoint.y;
+    drawArrow(midEmergentX - emergentDx*0.1, midEmergentY - emergentDy*0.1, midEmergentX, midEmergentY);
+    ctx.stroke();
+
+    // 4. Draw angles and labels
+    // Apex angle 2α
+    ctx.fillText('2α', vertexA.x, vertexA.y + 45);
+
+    // Entrance angle α
+    // Angle between incident ray and left face
+    ctx.beginPath();
+    const angleRadius = 30;
+    const leftFaceAngle = Math.atan2(vertexA.y - vertexB.y, vertexA.x - vertexB.x);
+    const incidentRayAngle = Math.atan2(entryPoint.y - incidentStart.y, entryPoint.x - incidentStart.x);
+    ctx.arc(entryPoint.x, entryPoint.y, angleRadius, incidentRayAngle, leftFaceAngle);
+    ctx.stroke();
+    ctx.fillText('α', entryPoint.x - 45, entryPoint.y + 20);
+
+    // Exit angle α
+    // Angle between right face and emergent ray
+    ctx.beginPath();
+    const rightFaceAngle = Math.atan2(vertexC.y - vertexA.y, vertexC.x - vertexA.x);
+    const emergentRayAngle = Math.atan2(emergentEnd.y - exitPoint.y, emergentEnd.x - exitPoint.x);
+    ctx.arc(exitPoint.x, exitPoint.y, angleRadius, rightFaceAngle, emergentRayAngle);
+    ctx.stroke();
+    ctx.fillText('α', exitPoint.x + 45, exitPoint.y + 20);
+
+</script>
+</body>
+</html>

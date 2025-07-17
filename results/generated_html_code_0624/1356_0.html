@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="1050" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Configuration ---
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        const mainFont = "24px 'Times New Roman'";
+        const subFont = "16px 'Times New Roman'";
+        const resistorWidth = 60;
+        const resistorHeight = 25;
+
+        // --- Drawing Helper Functions ---
+
+        // Draws text with a subscript
+        function drawTextWithSub(base, sub, x, y) {
+            ctx.font = mainFont;
+            const baseMetrics = ctx.measureText(base);
+            ctx.fillText(base, x, y);
+            
+            ctx.font = subFont;
+            ctx.fillText(sub, x + baseMetrics.width - 4, y + 6);
+        }
+
+        // Draws a horizontal resistor
+        function drawResistorH(x1, x2, y, label, subLabel) {
+            const centerX = (x1 + x2) / 2;
+            const startX = centerX - resistorWidth / 2;
+            const endX = centerX + resistorWidth / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(startX, y);
+            ctx.rect(startX, y - resistorHeight / 2, resistorWidth, resistorHeight);
+            ctx.moveTo(endX, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+            
+            if (label) {
+                drawTextWithSub(label, subLabel, centerX - 12, y - 25);
+            }
+        }
+
+        // Draws a vertical resistor
+        function drawResistorV(x, y1, y2, label, subLabel) {
+            const centerY = (y1 + y2) / 2;
+            const startY = centerY - resistorWidth / 2;
+            const endY = centerY + resistorWidth / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, startY);
+            ctx.rect(x - resistorHeight / 2, startY, resistorHeight, resistorWidth);
+            ctx.moveTo(x, endY);
+            ctx.lineTo(x, y2);
+            ctx.stroke();
+
+            if (label) {
+                drawTextWithSub(label, subLabel, x + 20, centerY + 5);
+            }
+        }
+
+        // Draws a node (small filled circle)
+        function drawNode(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        // --- Main Drawing Logic ---
+
+        const yTop = 150;
+        const yBottom = 300;
+
+        // Coordinates for nodes
+        const x_coords = {
+            start: 50,
+            v1: 180,
+            v2: 310,
+            vn: 490,
+            vn1: 620,
+            vN1: 800,
+            vN: 930
+        };
+        
+        // Draw Voltage Source V₀
+        const x_v0 = x_coords.start;
+        ctx.beginPath();
+        ctx.moveTo(x_v0, yTop);
+        ctx.lineTo(x_v0, yTop + 50);
+        ctx.moveTo(x_v0 - 20, yTop + 50); // Positive terminal
+        ctx.lineTo(x_v0 + 20, yTop + 50);
+        ctx.moveTo(x_v0 - 12, yTop + 65); // Negative terminal
+        ctx.lineTo(x_v0 + 12, yTop + 65);
+        ctx.moveTo(x_v0, yTop + 65);
+        ctx.lineTo(x_v0, yBottom);
+        ctx.stroke();
+        drawTextWithSub('V', '0', x_v0 - 45, (yTop + yBottom) / 2 + 8);
+        
+        // Draw bottom common wire
+        ctx.beginPath();
+        ctx.moveTo(x_v0, yBottom);
+        ctx.lineTo(x_coords.vN, yBottom);
+        ctx.stroke();
+        
+        // --- Draw Ladder Network from Left to Right ---
+
+        // Section 1: V₀ to V₁
+        drawResistorH(x_coords.start, x_coords.v1, yTop, 'R', 'A');
+        drawNode(x_coords.v1, yTop);
+        drawResistorV(x_coords.v1, yTop, yBottom, 'R', 'B');
+        drawTextWithSub('V', '1', x_coords.v1 - 10, yTop - 25);
+        
+        // Section 2: V₁ to V₂
+        drawResistorH(x_coords.v1, x_coords.v2, yTop, 'R', 'A');
+        drawNode(x_coords.v2, yTop);
+        drawResistorV(x_coords.v2, yTop, yBottom, 'R', 'B');
+        drawTextWithSub('V', '2', x_coords.v2 - 10, yTop - 25);
+
+        // Ellipsis 1: V₂ to Vₙ
+        const ellipsis1_x_start = x_coords.v2 + 30;
+        const ellipsis1_x_end = x_coords.vn - 30;
+        ctx.beginPath();
+        ctx.moveTo(x_coords.v2, yTop);
+        ctx.lineTo(ellipsis1_x_start, yTop);
+        ctx.moveTo(x_coords.v2, yBottom); // bottom wire segment
+        ctx.lineTo(ellipsis1_x_start, yBottom);
+        ctx.stroke();
+        ctx.font = mainFont;
+        ctx.textAlign = 'center';
+        ctx.fillText('...', (ellipsis1_x_start + ellipsis1_x_end) / 2, yTop + 8);
+        ctx.fillText('...', (ellipsis1_x_start + ellipsis1_x_end) / 2, yBottom + 8);
+        ctx.textAlign = 'start';
+        ctx.beginPath();
+        ctx.moveTo(ellipsis1_x_end, yTop);
+        ctx.lineTo(x_coords.vn, yTop);
+        ctx.moveTo(ellipsis1_x_end, yBottom);
+        ctx.lineTo(x_coords.vn, yBottom);
+        ctx.stroke();
+
+        // Section n: At Vₙ
+        drawNode(x_coords.vn, yTop);
+        drawResistorV(x_coords.vn, yTop, yBottom, 'R', 'B');
+        drawTextWithSub('V', 'n', x_coords.vn - 10, yTop - 25);
+
+        // Section n+1: Vₙ to V_{n+1}
+        drawResistorH(x_coords.vn, x_coords.vn1, yTop, 'R', 'A');
+        drawNode(x_coords.vn1, yTop);
+        drawResistorV(x_coords.vn1, yTop, yBottom, 'R', 'B');
+        drawTextWithSub('V', 'n+1', x_coords.vn1 - 10, yTop - 25);
+        
+        // Ellipsis 2: V_{n+1} to V_{N-1}
+        const ellipsis2_x_start = x_coords.vn1 + 30;
+        const ellipsis2_x_end = x_coords.vN1 - 30;
+        ctx.beginPath();
+        ctx.moveTo(x_coords.vn1, yTop);
+        ctx.lineTo(ellipsis2_x_start, yTop);
+        ctx.moveTo(x_coords.vn1, yBottom);
+        ctx.lineTo(ellipsis2_x_start, yBottom);
+        ctx.stroke();
+        ctx.font = mainFont;
+        ctx.textAlign = 'center';
+        ctx.fillText('...', (ellipsis2_x_start + ellipsis2_x_end) / 2, yTop + 8);
+        ctx.fillText('...', (ellipsis2_x_start + ellipsis2_x_end) / 2, yBottom + 8);
+        ctx.textAlign = 'start';
+        ctx.beginPath();
+        ctx.moveTo(ellipsis2_x_end, yTop);
+        ctx.lineTo(x_coords.vN1, yTop);
+        ctx.moveTo(ellipsis2_x_end, yBottom);
+        ctx.lineTo(x_coords.vN1, yBottom);
+        ctx.stroke();
+
+        // Section N-1: At V_{N-1}
+        drawNode(x_coords.vN1, yTop);
+        drawResistorV(x_coords.vN1, yTop, yBottom, 'R', 'B');
+        drawTextWithSub('V', 'N-1', x_coords.vN1 - 10, yTop - 25);
+        
+        // Section N: V_{N-1} to V_N
+        drawResistorH(x_coords.vN1, x_coords.vN, yTop, 'R', 'A');
+        drawNode(x_coords.vN, yTop);
+        drawResistorV(x_coords.vN, yTop, yBottom, 'R', 'B');
+        drawTextWithSub('V', 'N', x_coords.vN - 10, yTop - 25);
+        
+        // Draw Caption
+        ctx.font = "24px 'KaiTi'";
+        ctx.textAlign = 'center';
+        ctx.fillText('图 1', canvas.width / 2, yBottom + 50);
+
+    </script>
+</body>
+</html>

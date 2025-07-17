@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 10; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Set styles
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Draw the main components ---
+
+        // 1. Rails and Circuit
+        const topRailStart = { x: 180, y: 180 };
+        const topRailEnd = { x: 580, y: 340 };
+        const bottomRailStart = { x: 180, y: 240 };
+        const bottomRailEnd = { x: 580, y: 400 };
+
+        ctx.beginPath();
+        // Top rail
+        ctx.moveTo(topRailStart.x, topRailStart.y);
+        ctx.lineTo(topRailEnd.x, topRailEnd.y);
+        // Bottom rail
+        ctx.moveTo(bottomRailStart.x, bottomRailStart.y);
+        ctx.lineTo(bottomRailEnd.x, bottomRailEnd.y);
+
+        // Connecting circuit on the left
+        const circuitLeftX = 100;
+        ctx.moveTo(topRailStart.x, topRailStart.y);
+        ctx.lineTo(circuitLeftX, topRailStart.y);
+        ctx.moveTo(bottomRailStart.x, bottomRailStart.y);
+        ctx.lineTo(circuitLeftX, bottomRailStart.y);
+        ctx.moveTo(circuitLeftX, topRailStart.y);
+        ctx.lineTo(circuitLeftX, bottomRailStart.y);
+        ctx.stroke();
+
+        // 2. Inductor (L)
+        const coilStartX = 110;
+        const coilEndX = 170;
+        const coilY = topRailStart.y;
+        const numLoops = 8;
+        const loopWidth = (coilEndX - coilStartX) / numLoops;
+        const loopRadius = 6;
+        
+        // Erase the line segment where the coil will be
+        ctx.clearRect(coilStartX - 1, coilY - loopRadius -1, (coilEndX - coilStartX) + 2, 2*loopRadius + 2);
+        
+        // Redraw the connecting wires around the cleared area
+        ctx.beginPath();
+        ctx.moveTo(circuitLeftX, coilY);
+        ctx.lineTo(coilStartX, coilY);
+        ctx.moveTo(coilEndX, coilY);
+        ctx.lineTo(topRailStart.x, coilY);
+        ctx.stroke();
+        
+        // Draw the coil
+        for (let i = 0; i < numLoops; i++) {
+            ctx.beginPath();
+            ctx.arc(coilStartX + loopWidth * (i + 0.5), coilY, loopRadius, Math.PI, 0, true);
+            ctx.stroke();
+        }
+        ctx.fillText('L', (coilStartX + coilEndX) / 2, coilY - 25);
+
+        // 3. Rod (m)
+        const rodX = 280;
+        const railSlope = (topRailEnd.y - topRailStart.y) / (topRailEnd.x - topRailStart.x);
+        const rodTopY = topRailStart.y + railSlope * (rodX - topRailStart.x);
+        const rodBottomY = bottomRailStart.y + railSlope * (rodX - bottomRailStart.x);
+        
+        ctx.save();
+        ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.moveTo(rodX, rodTopY);
+        ctx.lineTo(rodX, rodBottomY);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillText('m', rodX - 25, (rodTopY + rodBottomY) / 2);
+
+        // 4. Magnetic Field (B)
+        ctx.fillText('B', 400, 260);
+        const arrowVector = { dx: -15, dy: 40 };
+        const arrowStartsX = [360, 410, 460, 510, 560];
+
+        arrowStartsX.forEach(startX => {
+            let startY = topRailStart.y + railSlope * (startX - topRailStart.x);
+            let endX = startX + arrowVector.dx;
+            let endY = startY + arrowVector.dy;
+            drawArrow(ctx, startX, startY, endX, endY);
+        });
+        
+        // 5. Inclination Angle (α)
+        const angleOrigin = { x: 350, y: 450 };
+        const angleRailLength = 200;
+        const angleRailEnd = { 
+            x: angleOrigin.x + angleRailLength, 
+            y: angleOrigin.y - angleRailLength * railSlope 
+        };
+
+        ctx.beginPath();
+        // Horizontal line
+        ctx.moveTo(angleOrigin.x - 100, angleOrigin.y);
+        ctx.lineTo(angleOrigin.x + angleRailLength + 50, angleOrigin.y);
+        // Sloped line
+        // ctx.moveTo(angleOrigin.x, angleOrigin.y);
+        // ctx.lineTo(angleRailEnd.x, angleRailEnd.y);
+        ctx.stroke();
+        
+        // Angle arc
+        const angle = Math.atan(railSlope);
+        ctx.beginPath();
+        ctx.arc(angleOrigin.x, angleOrigin.y, 50, 0, -angle, true);
+        ctx.stroke();
+        ctx.fillText('α', angleOrigin.x + 60, angleOrigin.y - 15);
+
+        // 6. Label for rail distance (l)
+        ctx.fillText('l', topRailEnd.x + 15, (topRailEnd.y + bottomRailEnd.y) / 2);
+        
+        // 7. Caption
+        ctx.font = '22px "SimSun"'; // Use a font that supports Chinese characters
+        ctx.fillText('习题 9-36 图', canvas.width / 2, 520);
+
+    </script>
+</body>
+</html>

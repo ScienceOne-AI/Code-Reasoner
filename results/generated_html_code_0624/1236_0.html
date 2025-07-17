@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="500" height="450" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = '20px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Helper function for hatching
+    function drawHatching(x, y, width, height, isVertical) {
+        ctx.save();
+        ctx.beginPath();
+        if (isVertical) {
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + height);
+        } else {
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + width, y);
+        }
+        ctx.stroke();
+
+        const step = 8;
+        ctx.lineWidth = 1;
+        for (let i = step; i < (isVertical ? height : width); i += step) {
+            ctx.beginPath();
+            if (isVertical) {
+                ctx.moveTo(x, y + i);
+                ctx.lineTo(x - step, y + i - step);
+            } else {
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x + i - step, y - step);
+            }
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+    
+    // Base coordinates and parameters
+    const Ax = 320;
+    const Ay = 120;
+    const beamLengthL = 200;
+    const angleAB_rad = 45 * Math.PI / 180;
+    const angleBC_rad = 30 * Math.PI / 180;
+
+    // Point B
+    const Bx = Ax - beamLengthL * Math.sin(angleAB_rad);
+    const By = Ay + beamLengthL * Math.cos(angleAB_rad);
+
+    // Point D (BD = 1/4 AB -> AD = 3/4 AB)
+    const Dx = Ax - (0.75 * beamLengthL) * Math.sin(angleAB_rad);
+    const Dy = Ay + (0.75 * beamLengthL) * Math.cos(angleAB_rad);
+
+    // Point C (Pulley center)
+    const ropeBC_length = 150;
+    const Cx = Bx - ropeBC_length * Math.sin(angleBC_rad);
+    const Cy = By - ropeBC_length * Math.cos(angleBC_rad);
+    
+    const pulleyRadius = 15;
+
+    // Draw Ceiling
+    const ceilingY = Cy - 40;
+    drawHatching(Cx - 60, ceilingY, 130, 0, false); 
+
+    // Draw Pulley support
+    ctx.beginPath();
+    ctx.moveTo(Cx, ceilingY);
+    ctx.lineTo(Cx - 15, Cy - 15);
+    ctx.lineTo(Cx + 15, Cy - 15);
+    ctx.closePath();
+    ctx.stroke();
+    
+    // Draw Pulley C
+    ctx.beginPath();
+    ctx.arc(Cx, Cy, pulleyRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(Cx, Cy, 4, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Draw Wall
+    const wallX = Ax + 20;
+    drawHatching(wallX, Ay - 50, 0, 100, true);
+    
+    // Draw Hinge A support
+    ctx.beginPath();
+    ctx.moveTo(wallX, Ay - 20);
+    ctx.lineTo(Ax, Ay);
+    ctx.lineTo(wallX, Ay + 20);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Draw Hinge A pin
+    ctx.beginPath();
+    ctx.arc(Ax, Ay, 8, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+
+    // Draw Beam AB
+    ctx.save();
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay);
+    ctx.lineTo(Bx, By);
+    ctx.stroke();
+    ctx.restore();
+
+    // Draw rope from B to pulley C
+    const angle_BC_vec = Math.atan2(Cy - By, Cx - Bx);
+    ctx.beginPath();
+    ctx.moveTo(Bx, By);
+    ctx.lineTo(Cx + pulleyRadius * Math.cos(angle_BC_vec), Cy + pulleyRadius * Math.sin(angle_BC_vec));
+    ctx.stroke();
+
+    // Draw rope from pulley C to G
+    const ropeStartGx = Cx - pulleyRadius;
+    ctx.beginPath();
+    ctx.moveTo(ropeStartGx, Cy);
+    ctx.lineTo(ropeStartGx, Cy + 120);
+    ctx.stroke();
+    
+    // Draw Weight G
+    const G_size = 40;
+    ctx.strokeRect(ropeStartGx - G_size/2, Cy + 120, G_size, G_size);
+    ctx.fillText('G', ropeStartGx, Cy + 120 + G_size/2);
+    
+    // Draw rope from D to Q
+    const ropeDQ_len = 80;
+    ctx.beginPath();
+    ctx.moveTo(Dx, Dy);
+    ctx.lineTo(Dx, Dy + ropeDQ_len);
+    ctx.stroke();
+    
+    // Draw Weight Q
+    const Q_size = 40;
+    ctx.strokeRect(Dx - Q_size/2, Dy + ropeDQ_len, Q_size, Q_size);
+    ctx.fillText('Q', Dx, Dy + ropeDQ_len + Q_size/2);
+
+    // Draw axes
+    ctx.save();
+    ctx.lineWidth = 1;
+    // Y-axis
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay - 50);
+    ctx.lineTo(Ax, Ay + 50);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay - 50);
+    ctx.lineTo(Ax - 5, Ay - 45);
+    ctx.moveTo(Ax, Ay - 50);
+    ctx.lineTo(Ax + 5, Ay - 45);
+    ctx.stroke();
+    ctx.fillText('y', Ax + 15, Ay - 50);
+    // X-axis
+    ctx.beginPath();
+    ctx.moveTo(Ax - 50, Ay);
+    ctx.lineTo(Ax + 50, Ay);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(Ax + 50, Ay);
+    ctx.lineTo(Ax + 45, Ay - 5);
+    ctx.moveTo(Ax + 50, Ay);
+    ctx.lineTo(Ax + 45, Ay + 5);
+    ctx.stroke();
+    ctx.fillText('x', Ax + 55, Ay + 10);
+    ctx.restore();
+    
+    // Draw angle 45 degrees
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay);
+    ctx.lineTo(Ax, Ay + 60); // Vertical dashed line DOWN
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(Ax, Ay, 40, Math.PI / 2, Math.PI / 2 - angleAB_rad, true);
+    ctx.stroke();
+    ctx.fillText('45°', Ax - 48, Ay + 35);
+    ctx.restore();
+    
+    // Draw angle 30 degrees
+    ctx.save();
+    ctx.lineWidth = 1;
+    // Dashed helper lines to indicate angle reference
+    const helper_y = By-20;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath();
+    ctx.moveTo(Bx + 20, helper_y);
+    ctx.lineTo(Bx, helper_y);
+    ctx.lineTo(Bx, By);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(Bx,helper_y);
+    ctx.lineTo(Bx+5,helper_y+5);
+    ctx.moveTo(Bx,helper_y);
+    ctx.lineTo(Bx-5,helper_y+5);
+    ctx.stroke();
+
+    // Arc for 30 deg angle. Showed with respect to upward vertical for clarity.
+    ctx.beginPath();
+    ctx.arc(Bx, By, 40, -Math.PI / 2, -Math.PI / 2 - angleBC_rad, true);
+    ctx.stroke();
+    const mid_angle_30 = -Math.PI / 2 - angleBC_rad / 2;
+    ctx.fillText('30°', Bx + 45 * Math.cos(mid_angle_30), By + 45 * Math.sin(mid_angle_30));
+    ctx.restore();
+    
+    // Labels for points
+    ctx.fillText('A', Ax + 15, Ay - 15);
+    ctx.fillText('B', Bx - 20, By + 10);
+    ctx.fillText('C', Cx + 25, Cy);
+    ctx.fillText('D', Dx + 10, Dy - 10);
+</script>
+</body>
+</html>

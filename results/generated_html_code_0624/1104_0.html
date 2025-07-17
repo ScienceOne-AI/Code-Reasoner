@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mass-Spring System with Friction</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-diagram" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-diagram');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Function for Dimension Lines ---
+        function drawDimensionLine(ctx, x1, x2, y, label, sub) {
+            const tickHeight = 5;
+            const labelY = y + 25;
+            const subOffset = { x: 7, y: 5 };
+
+            ctx.save();
+            ctx.lineWidth = 1;
+
+            // Vertical Ticks
+            ctx.beginPath();
+            ctx.moveTo(x1, y - tickHeight);
+            ctx.lineTo(x1, y + tickHeight);
+            ctx.moveTo(x2, y - tickHeight);
+            ctx.lineTo(x2, y + tickHeight);
+            ctx.stroke();
+
+            // Horizontal Line
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+
+            // Arrowheads
+            drawArrowhead(ctx, x1, y, Math.PI); // Left arrow
+            drawArrowhead(ctx, x2, y, 0);       // Right arrow
+
+            // Label with Subscript
+            const labelX = (x1 + x2) / 2;
+            const originalFont = ctx.font;
+            const originalAlign = ctx.textAlign;
+            
+            ctx.textAlign = 'center';
+            ctx.font = 'italic 20px Times New Roman';
+            const labelMetrics = ctx.measureText(label);
+            ctx.fillText(label, labelX - subOffset.x/2, labelY);
+            
+            ctx.font = '14px Times New Roman';
+            ctx.fillText(sub, labelX + labelMetrics.width/2 , labelY + subOffset.y);
+            
+            ctx.font = originalFont;
+            ctx.textAlign = originalAlign;
+            ctx.restore();
+        }
+
+        function drawArrowhead(ctx, x, y, angle) {
+            const headlen = 8;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headlen, -headlen / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headlen, headlen / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Main Drawing Logic ---
+        
+        // Style and Constants
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const baseY = 220; // Y-coordinate of the horizontal surface
+        const wallX = 100;
+        const ballRadius = 40;
+
+        // X-coordinates for points B, O, A
+        const posA = 650;
+        const posO = 500;
+        const posB = 380;
+
+        // 1. Draw Wall
+        ctx.beginPath();
+        ctx.moveTo(wallX, baseY - 100);
+        ctx.lineTo(wallX, baseY + 100);
+        ctx.stroke();
+        // Hatching for the wall
+        ctx.lineWidth = 1;
+        for (let i = -90; i <= 90; i += 15) {
+            ctx.beginPath();
+            ctx.moveTo(wallX, baseY + i);
+            ctx.lineTo(wallX - 15, baseY + i + 15);
+            ctx.stroke();
+        }
+        ctx.lineWidth = 2;
+
+
+        // 2. Draw Horizontal Surface Line
+        ctx.beginPath();
+        ctx.moveTo(wallX, baseY);
+        ctx.lineTo(canvas.width - 50, baseY);
+        ctx.stroke();
+
+        // 3. Draw Spring
+        const springStartX = wallX;
+        const springCoilEndX = posB;
+        const springTotalEndX = posA - ballRadius; // Connects to the edge of the ball
+        const numCoils = 8;
+
+        ctx.beginPath();
+        // Initial straight part of the spring
+        ctx.moveTo(springStartX, baseY);
+        const initialStraightLength = 20;
+        ctx.lineTo(springStartX + initialStraightLength, baseY);
+        
+        // Coiled part of the spring
+        let currentCoilX = springStartX + initialStraightLength;
+        const coilSectionLength = springCoilEndX - currentCoilX;
+        const coilRadius = coilSectionLength / (numCoils * 2);
+
+        for (let i = 0; i < numCoils; i++) {
+            ctx.arc(currentCoilX + coilRadius, baseY, coilRadius, Math.PI, 0);
+            currentCoilX += 2 * coilRadius;
+        }
+        
+        // Final straight part to the ball
+        ctx.moveTo(springCoilEndX, baseY);
+        ctx.lineTo(springTotalEndX, baseY);
+        ctx.stroke();
+
+        // 4. Draw Ball (Mass m)
+        ctx.beginPath();
+        ctx.arc(posA, baseY - ballRadius, ballRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 5. Draw Position Labels (B, O, A)
+        ctx.font = '22px Times New Roman';
+        ctx.fillText('B', posB, baseY + 30);
+        ctx.fillText('O', posO, baseY + 30);
+        ctx.fillText('A', posA, baseY + 30);
+
+        // 6. Draw Physics Parameter Labels (k, m, μ)
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText('k', posB - 100, baseY - 50);
+        ctx.fillText('m', posA, baseY - ballRadius * 2 + 5);
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('μ', posA + ballRadius + 25, baseY - 15);
+
+        // 7. Draw Dimension Lines for l₀ and l₁
+        const dimY = baseY + 80;
+        drawDimensionLine(ctx, posO, posA, dimY, 'l', '0');
+        drawDimensionLine(ctx, posB, posO, dimY, 'l', '1');
+
+        // 8. Draw Caption
+        ctx.font = '20px "SimSun", "STSong"'; // Common Chinese fonts
+        ctx.fillText('力图 3.2.1', canvas.width / 2, baseY + 170);
+
+    </script>
+</body>
+</html>

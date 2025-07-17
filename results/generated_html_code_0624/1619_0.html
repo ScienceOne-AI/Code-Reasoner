@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram: Skier on a Slope</title>
+</head>
+<body>
+<canvas id="myCanvas" width="800" height="500" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById("myCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // --- Style setup ---
+    ctx.lineWidth = 2;
+    ctx.font = "20px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // --- Draw the slope ---
+    const x_start_slope = 50, y_start_slope = 80;
+    const x_end_straight = 650, y_end_straight = 400;
+    const x_end_curve = 800, y_end_curve = 440;
+    const x_control = 725, y_control = 440;
+
+    ctx.beginPath();
+    ctx.moveTo(x_start_slope, y_start_slope);
+    ctx.lineTo(x_end_straight, y_end_straight);
+    ctx.quadraticCurveTo(x_control, y_control, x_end_curve, y_end_curve);
+    ctx.stroke();
+
+    // --- Slope angle calculation ---
+    const slopeAngle = Math.atan2(y_end_straight - y_start_slope, x_end_straight - x_start_slope);
+
+    // --- Helper function to draw perpendicular ticks ---
+    function drawTick(x_on_slope, y_on_slope, length) {
+        const dx = length * Math.sin(slopeAngle);
+        const dy = length * Math.cos(slopeAngle);
+        ctx.beginPath();
+        ctx.moveTo(x_on_slope + dx, y_on_slope - dy);
+        ctx.lineTo(x_on_slope - dx, y_on_slope + dy);
+        ctx.stroke();
+    }
+
+    // --- Draw the "start" mark and label ---
+    const startX = 120;
+    const startY = y_start_slope + (startX - x_start_slope) * Math.tan(slopeAngle);
+    drawTick(startX, startY, 12);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    ctx.fillText("start", startX, startY - 20);
+
+    // --- Draw the skier ---
+    const skierX_base = 320;
+    const skierY_base = y_start_slope + (skierX_base - x_start_slope) * Math.tan(slopeAngle);
+
+    // Skier label
+    ctx.beginPath();
+    ctx.moveTo(skierX_base + 30, skierY_base - 35);
+    ctx.lineTo(skierX_base + 60, skierY_base - 50);
+    ctx.stroke();
+    ctx.textAlign = "left";
+    ctx.textBaseline = "bottom";
+    ctx.fillText("skier", skierX_base + 65, skierY_base - 50);
+
+    // Skier figure
+    ctx.save();
+    ctx.translate(skierX_base, skierY_base);
+    ctx.rotate(slopeAngle);
+    ctx.lineWidth = 1.5;
+
+    // Skis
+    ctx.beginPath();
+    ctx.moveTo(-30, 15); ctx.lineTo(20, 15);
+    ctx.stroke();
+    
+    // Body and head
+    ctx.beginPath();
+    ctx.arc(0, -20, 5, 0, Math.PI * 2); // Head
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(0, -15); // Neck
+    ctx.lineTo(-5, -5); // Torso
+    ctx.moveTo(-5, -5); // Hips to back leg
+    ctx.lineTo(-10, 8);
+    ctx.moveTo(-5, -5); // Hips to front leg
+    ctx.lineTo(5, 8);
+    ctx.moveTo(0, -12); // Arm
+    ctx.lineTo(15, -8);
+    ctx.stroke();
+    
+    ctx.restore();
+    ctx.lineWidth = 2; // Reset line width
+
+    // --- Draw the 100 m section ---
+    const mark1X = 480;
+    const mark1Y = y_start_slope + (mark1X - x_start_slope) * Math.tan(slopeAngle);
+    drawTick(mark1X, mark1Y, 12);
+
+    const sectionPixelLength = 130;
+    const mark2X = mark1X + sectionPixelLength * Math.cos(slopeAngle);
+    const mark2Y = mark1Y + sectionPixelLength * Math.sin(slopeAngle);
+    drawTick(mark2X, mark2Y, 12);
+
+    // Arrow and label for 100 m
+    const arrowOffset = 30;
+    const arrowStartX = mark1X + arrowOffset * Math.sin(slopeAngle);
+    const arrowStartY = mark1Y - arrowOffset * Math.cos(slopeAngle);
+    const arrowEndX = mark2X + arrowOffset * Math.sin(slopeAngle);
+    const arrowEndY = mark2Y - arrowOffset * Math.cos(slopeAngle);
+    
+    // Arrow line
+    ctx.beginPath();
+    ctx.moveTo(arrowStartX, arrowStartY);
+    ctx.lineTo(arrowEndX, arrowEndY);
+    ctx.stroke();
+
+    // Arrowheads
+    const headlen = 8;
+    // Head at end
+    let angle_arrow = Math.atan2(arrowEndY - arrowStartY, arrowEndX - arrowStartX);
+    ctx.beginPath();
+    ctx.moveTo(arrowEndX, arrowEndY);
+    ctx.lineTo(arrowEndX - headlen * Math.cos(angle_arrow - Math.PI / 6), arrowEndY - headlen * Math.sin(angle_arrow - Math.PI / 6));
+    ctx.moveTo(arrowEndX, arrowEndY);
+    ctx.lineTo(arrowEndX - headlen * Math.cos(angle_arrow + Math.PI / 6), arrowEndY - headlen * Math.sin(angle_arrow + Math.PI / 6));
+    ctx.stroke();
+    // Head at start
+    angle_arrow = Math.atan2(arrowStartY - arrowEndY, arrowStartX - arrowEndX);
+    ctx.beginPath();
+    ctx.moveTo(arrowStartX, arrowStartY);
+    ctx.lineTo(arrowStartX - headlen * Math.cos(angle_arrow - Math.PI / 6), arrowStartY - headlen * Math.sin(angle_arrow - Math.PI / 6));
+    ctx.moveTo(arrowStartX, arrowStartY);
+    ctx.lineTo(arrowStartX - headlen * Math.cos(angle_arrow + Math.PI / 6), arrowStartY - headlen * Math.sin(angle_arrow + Math.PI / 6));
+    ctx.stroke();
+
+    // Label for 100 m
+    const labelX = (arrowStartX + arrowEndX) / 2;
+    const labelY = (arrowStartY + arrowEndY) / 2;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText("100 m", labelX, labelY + 5);
+
+    // --- Draw the figure label ---
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    ctx.fillText("Fig. 1.1", canvas.width / 2, canvas.height - 10);
+
+</script>
+</body>
+</html>

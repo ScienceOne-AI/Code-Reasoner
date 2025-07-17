@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Solenoid and Coil Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="900" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Helper Functions ---
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 10;
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    function drawVerticalDoubleArrow(ctx, x, y1, y2) {
+        const headlen = 8;
+        ctx.beginPath();
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, y2);
+        // Arrowhead at top (y1, pointing up)
+        ctx.moveTo(x - headlen / 1.5, y1 + headlen);
+        ctx.lineTo(x, y1);
+        ctx.lineTo(x + headlen / 1.5, y1 + headlen);
+        // Arrowhead at bottom (y2, pointing down)
+        ctx.moveTo(x - headlen / 1.5, y2 - headlen);
+        ctx.lineTo(x, y2);
+        ctx.lineTo(x + headlen / 1.5, y2 - headlen);
+        ctx.stroke();
+    }
+
+    // --- Main Drawing ---
+    
+    // 1. Solenoid S
+    const x_start_S = 150, x_end_S = 550;
+    const y_top_S = 180, y_bottom_S = 280;
+    const num_turns_S = 22;
+    const dx_S = (x_end_S - x_start_S) / num_turns_S;
+    const amp_S = 15;
+
+    ctx.beginPath();
+    ctx.moveTo(x_start_S, y_top_S);
+    ctx.lineTo(x_end_S, y_top_S);
+    ctx.moveTo(x_start_S, y_bottom_S);
+    ctx.lineTo(x_end_S, y_bottom_S);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x_start_S, y_top_S);
+    for (let i = 0; i < num_turns_S; i++) {
+        const x = x_start_S + i * dx_S;
+        ctx.quadraticCurveTo(x + dx_S / 2, y_top_S - amp_S, x + dx_S, y_top_S);
+    }
+    ctx.moveTo(x_start_S, y_bottom_S);
+    for (let i = 0; i < num_turns_S; i++) {
+        const x = x_start_S + i * dx_S;
+        ctx.quadraticCurveTo(x + dx_S / 2, y_bottom_S + amp_S, x + dx_S, y_bottom_S);
+    }
+    ctx.stroke();
+    
+    // 2. Solenoid S Terminals
+    const term_S_y1 = 100;
+    const term_S_x1 = 250, term_S_x2 = 450;
+    const term_S_connect_x1 = 200, term_S_connect_x2 = 500;
+    
+    ctx.beginPath();
+    ctx.moveTo(term_S_connect_x1, y_top_S);
+    ctx.lineTo(term_S_connect_x1, term_S_y1);
+    ctx.lineTo(term_S_x1, term_S_y1);
+    ctx.moveTo(term_S_connect_x2, y_top_S);
+    ctx.lineTo(term_S_connect_x2, term_S_y1);
+    ctx.lineTo(term_S_x2, term_S_y1);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.arc(term_S_x1, term_S_y1, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.arc(term_S_x2, term_S_y1, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+
+    // 3. Coil C
+    const x_start_C = 600, x_end_C = 650;
+    const y_top_C = 200, y_bottom_C = 260;
+    
+    ctx.beginPath();
+    ctx.moveTo(x_start_C, y_top_C);
+    ctx.lineTo(x_end_C, y_top_C);
+    ctx.moveTo(x_start_C, y_bottom_C);
+    ctx.lineTo(x_end_C, y_bottom_C);
+    ctx.stroke();
+
+    const num_turns_C = 8;
+    const dx_C = (x_end_C - x_start_C) / num_turns_C;
+    const amp_C = 8;
+
+    ctx.beginPath();
+    ctx.moveTo(x_start_C, y_top_C);
+    for (let i = 0; i < num_turns_C; i++) {
+        const x = x_start_C + i * dx_C;
+        ctx.quadraticCurveTo(x + dx_C / 2, y_top_C - amp_C, x + dx_C, y_top_C);
+    }
+    ctx.moveTo(x_start_C, y_bottom_C);
+    for (let i = 0; i < num_turns_C; i++) {
+        const x = x_start_C + i * dx_C;
+        ctx.quadraticCurveTo(x + dx_C / 2, y_bottom_C + amp_C, x + dx_C, y_bottom_C);
+    }
+    for(let i=0; i < num_turns_C + 1; i++) {
+        let x = x_start_C + i * dx_C;
+        ctx.moveTo(x, y_top_C);
+        ctx.lineTo(x, y_bottom_C);
+    }
+    ctx.stroke();
+
+    // 4. Coil C Terminals
+    const term_C_y1 = 140;
+    const term_C_x1 = 680, term_C_x2 = 730;
+    const term_C_connect_x1 = 610, term_C_connect_x2 = 640;
+    
+    ctx.beginPath();
+    ctx.moveTo(term_C_connect_x1, y_top_C);
+    ctx.lineTo(term_C_connect_x1, term_C_y1);
+    ctx.lineTo(term_C_x1, term_C_y1);
+    ctx.moveTo(term_C_connect_x2, y_top_C);
+    ctx.lineTo(term_C_connect_x2, term_C_y1);
+    ctx.lineTo(term_C_x2, term_C_y1);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.arc(term_C_x1, term_C_y1, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.arc(term_C_x2, term_C_y1, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+
+
+    // 5. Annotations
+    ctx.font = '22px Arial';
+    ctx.textAlign = 'left';
+    // Solenoid S label
+    ctx.fillText('solenoid S', 50, 150);
+    drawArrow(ctx, 150, 155, 180, 180);
+
+    // Coil C label
+    ctx.fillText('coil C', 700, 310);
+    ctx.fillText('63 turns', 700, 340);
+    drawArrow(ctx, 700, 300, 640, 265);
+
+    // Dimension for Coil C
+    const dim_arrow_x = 680;
+    
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.moveTo(x_end_C, y_top_C);
+    ctx.lineTo(dim_arrow_x, y_top_C);
+    ctx.moveTo(x_end_C, y_bottom_C);
+    ctx.lineTo(dim_arrow_x, y_bottom_C);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    drawVerticalDoubleArrow(ctx, dim_arrow_x, y_top_C, y_bottom_C);
+    
+    // Dimension Text
+    ctx.textAlign = 'left';
+    const text_x = dim_arrow_x + 15;
+    const text_y = (y_top_C + y_bottom_C) / 2 + 5;
+    ctx.font = '22px Arial';
+    const text_part1 = '3.6 \u00D7 10';
+    ctx.fillText(text_part1, text_x, text_y);
+    const textWidth = ctx.measureText(text_part1).width;
+    ctx.font = '16px Arial';
+    ctx.fillText('-2', text_x + textWidth, text_y - 12);
+    ctx.font = '22px Arial';
+    ctx.fillText('m', text_x + textWidth + 18, text_y);
+    
+    // 6. Figure Caption
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 11.1', canvas.width / 2, 450);
+
+</script>
+</body>
+</html>

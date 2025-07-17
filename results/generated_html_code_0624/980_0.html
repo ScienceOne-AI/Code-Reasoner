@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>P-V Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="pvDiagram" width="700" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('pvDiagram');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const padding = { top: 40, right: 40, bottom: 80, left: 90 };
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        const gridWidth = canvasWidth - padding.left - padding.right;
+        const gridHeight = canvasHeight - padding.top - padding.bottom;
+
+        const vMin = 0, vMax = 0.28;
+        const pMin = 0, pMax = 4.0;
+
+        const origin = {
+            x: padding.left,
+            y: canvasHeight - padding.bottom
+        };
+
+        const scale = {
+            x: gridWidth / (vMax - vMin),
+            y: gridHeight / (pMax - pMin)
+        };
+
+        // --- Utility Functions ---
+        function mapPoint(v, p) {
+            const x = origin.x + v * scale.x;
+            const y = origin.y - p * scale.y;
+            return { x, y };
+        }
+
+        function drawArrowhead(ctx, fromX, fromY, toX, toY, size) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            const headX = (fromX + toX) / 2;
+            const headY = (fromY + toY) / 2;
+
+            ctx.save();
+            ctx.translate(headX, headY);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.lineTo(-size, size / 2);
+            ctx.closePath();
+            ctx.fillStyle = '#000';
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        function drawArrowheadOnCurve(ctx, point, tangentAngle, size) {
+            ctx.save();
+            ctx.translate(point.x, point.y);
+            ctx.rotate(tangentAngle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.lineTo(-size, size / 2);
+            ctx.closePath();
+            ctx.fillStyle = '#000';
+            ctx.fill();
+            ctx.restore();
+        }
+
+
+        // --- Drawing Functions ---
+        function drawGrid() {
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+
+            // Minor vertical lines
+            for (let v = vMin + 0.004; v < vMax; v += 0.004) {
+                const p = mapPoint(v, pMin);
+                ctx.beginPath();
+                ctx.moveTo(p.x, origin.y);
+                ctx.lineTo(p.x, padding.top);
+                ctx.stroke();
+            }
+
+            // Minor horizontal lines
+            for (let p = pMin + 0.1; p < pMax; p += 0.1) {
+                const pt = mapPoint(vMin, p);
+                ctx.beginPath();
+                ctx.moveTo(origin.x, pt.y);
+                ctx.lineTo(origin.x + gridWidth, pt.y);
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = '#c0c0c0';
+            // Major vertical lines
+            for (let v = vMin + 0.04; v < vMax; v += 0.04) {
+                const p = mapPoint(v, pMin);
+                ctx.beginPath();
+                ctx.moveTo(p.x, origin.y);
+                ctx.lineTo(p.x, padding.top);
+                ctx.stroke();
+            }
+
+            // Major horizontal lines
+            for (let p = pMin + 1.0; p < pMax; p += 1.0) {
+                const pt = mapPoint(vMin, p);
+                ctx.beginPath();
+                ctx.moveTo(origin.x, pt.y);
+                ctx.lineTo(origin.x + gridWidth, pt.y);
+                ctx.stroke();
+            }
+        }
+
+        function drawAxes() {
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.fillStyle = '#000';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(origin.x, origin.y);
+            ctx.lineTo(origin.x, padding.top);
+            ctx.stroke();
+
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(origin.x, origin.y);
+            ctx.lineTo(origin.x + gridWidth, origin.y);
+            ctx.stroke();
+
+            // Y-axis labels and ticks
+            ctx.textAlign = 'right';
+            for (let p = 0; p <= pMax; p += 1.0) {
+                const pt = mapPoint(vMin, p);
+                ctx.fillText(p.toFixed(1), pt.x - 10, pt.y);
+                ctx.beginPath();
+                ctx.moveTo(pt.x, pt.y);
+                ctx.lineTo(pt.x - 5, pt.y);
+                ctx.stroke();
+            }
+             
+            // Y-axis title
+            ctx.save();
+            ctx.translate(padding.left - 65, canvasHeight / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText('pressure / 10', 0, 0);
+            const metrics = ctx.measureText('pressure / 10');
+            ctx.font = '12px Arial';
+            ctx.fillText('5', metrics.width/2 + 3, -6);
+            ctx.font = '16px Arial';
+            ctx.fillText(' Pa', metrics.width/2 + 18, 0);
+            ctx.restore();
+
+
+            // X-axis labels and ticks
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let v = 0.04; v <= vMax + 0.001; v += 0.04) {
+                const pt = mapPoint(v, pMin);
+                ctx.fillText(v.toFixed(2), pt.x, pt.y + 10);
+                ctx.beginPath();
+                ctx.moveTo(pt.x, pt.y);
+                ctx.lineTo(pt.x, pt.y + 5);
+                ctx.stroke();
+            }
+            // Origin Label
+            ctx.fillText('0', origin.x, origin.y + 10);
+            
+            // X-axis title
+            ctx.fillText('volume / m³', origin.x + gridWidth / 2, origin.y + 40);
+
+        }
+
+        function drawCycle() {
+            // Points in (volume, pressure) coordinates
+            const A_data = { v: 0.24, p: 1.0 };
+            const B_data = { v: 0.08, p: 1.0 };
+            const C_data = { v: 0.08, p: 3.5 };
+
+            // Mapped canvas points
+            const A = mapPoint(A_data.v, A_data.p);
+            const B = mapPoint(B_data.v, B_data.p);
+            const C = mapPoint(C_data.v, C_data.p);
+            
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2.5;
+
+            // Path A -> B (Isobaric)
+            ctx.beginPath();
+            ctx.moveTo(A.x, A.y);
+            ctx.lineTo(B.x, B.y);
+            ctx.stroke();
+            drawArrowhead(ctx, A.x, A.y, B.x, B.y, 10);
+            
+            // Path B -> C (Isochoric)
+            ctx.beginPath();
+            ctx.moveTo(B.x, B.y);
+            ctx.lineTo(C.x, C.y);
+            ctx.stroke();
+            drawArrowhead(ctx, B.x, B.y, C.x, C.y, 10);
+
+            // Path C -> A (Isothermal-like curve)
+            // Using several points to draw the curve smoothly as in the image
+            const curvePoints_data = [
+                {v: 0.10, p: 2.8},
+                {v: 0.12, p: 2.35},
+                {v: 0.14, p: 1.95},
+                {v: 0.16, p: 1.7},
+                {v: 0.20, p: 1.3}
+            ];
+
+            ctx.beginPath();
+            ctx.moveTo(C.x, C.y);
+            curvePoints_data.forEach(p_data => {
+                const p_canvas = mapPoint(p_data.v, p_data.p);
+                ctx.lineTo(p_canvas.x, p_canvas.y);
+            });
+            ctx.lineTo(A.x, A.y);
+            ctx.stroke();
+            
+            // Arrow on curve C->A
+            const arrowPoint1_canvas = mapPoint(0.12, 2.35);
+            const arrowPoint2_canvas = mapPoint(0.14, 1.95);
+            const arrowMidPoint_canvas = {
+                x: (arrowPoint1_canvas.x + arrowPoint2_canvas.x) / 2,
+                y: (arrowPoint1_canvas.y + arrowPoint2_canvas.y) / 2
+            };
+            const tangentAngle = Math.atan2(arrowPoint2_canvas.y - arrowPoint1_canvas.y, arrowPoint2_canvas.x - arrowPoint1_canvas.x);
+            drawArrowheadOnCurve(ctx, arrowMidPoint_canvas, tangentAngle, 10);
+
+            // Labels A, B, C
+            ctx.font = 'bold 18px Arial';
+            ctx.fillStyle = '#000';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText('A', A.x + 5, A.y + 5);
+
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('B', B.x - 8, B.y);
+            
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('C', C.x - 5, C.y - 5);
+        }
+
+        function drawCaption() {
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#000';
+            ctx.textAlign = 'center';
+            ctx.fillText('Fig. 3.1', canvasWidth / 2, canvasHeight - 20);
+        }
+
+        // --- Main Drawing ---
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        drawGrid();
+        drawAxes();
+        drawCycle();
+        drawCaption();
+
+    </script>
+</body>
+</html>

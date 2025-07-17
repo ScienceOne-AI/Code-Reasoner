@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hall Probe Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="420"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 1.5;
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Define vertex coordinates ---
+        const P = { x: 120, y: 185 };
+        const Q = { x: 280, y: 125 };
+        const S = { x: 330, y: 220 };
+        const R = { x: 490, y: 160 };
+        const W = { x: 120, y: 255 };
+        const X = { x: 280, y: 195 };
+        const Z = { x: 330, y: 290 };
+        const Y = { x: 490, y: 230 };
+        
+        // --- Drawing functions ---
+        function drawLine(p1, p2, dashed = false) {
+            ctx.beginPath();
+            if (dashed) {
+                ctx.setLineDash([5, 5]);
+            } else {
+                ctx.setLineDash([]);
+            }
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+        }
+
+        function drawLabel(text, point, dx, dy) {
+            ctx.fillText(text, point.x + dx, point.y + dy);
+        }
+
+        // --- Draw the cuboid ---
+        // Solid lines (visible edges)
+        drawLine(P, Q); // Top face
+        drawLine(Q, R);
+        drawLine(R, S);
+        drawLine(S, P);
+        drawLine(P, W); // Vertical edges
+        drawLine(S, Z);
+        drawLine(R, Y);
+        drawLine(W, Z); // Bottom face edge
+        // The edge YZ is occluded by the top face but is drawn solid in the source.
+        // Let's check the source image again. YZ is not drawn at all.
+        // It seems the bottom face is WXYZ and the line YZ is hidden.
+        // Let's redraw the source more faithfully. In the source, WZ is solid, SZ is solid, RY is solid.
+        // The bottom face edges seem to be WZ, ZY, YX, XW.
+        // In the source: WZ is solid. YZ is not shown. YX is dashed. XW is dashed.
+        // ZS and RY are solid vertical lines.
+        // This means YZ is also a hidden edge.
+        // Let's re-evaluate the dashed lines from the source: WX, XY, QX
+        // Let's draw YZ as dashed as well.
+        
+        // Solid lines from the source image
+        drawLine(P, Q);
+        drawLine(Q, R);
+        drawLine(R, S); // In source, this is solid
+        drawLine(S, P);
+        drawLine(P, W);
+        drawLine(W, Z);
+        drawLine(S, Z); // In source, this is S-Z, not S-Y. Correcting my point Z.
+        // Let's re-examine vertices from image.
+        // Top: PQRS. Bottom: WXYZ. Verticals: PW, QX, RY, SZ.
+        // Z is below S. So Z = S + vertical_vector.
+        // Y is below R.
+        // X is below Q.
+        // W is below P.
+        // This is what my coordinate calculations reflect.
+        // Okay, back to drawing based on the source's solid/dashed lines.
+        // Solid: PQ, QR, RS, SP, PW, WZ, ZS, RY.
+        // Let's re-draw my S->Z as solid.
+        drawLine(S,Z);
+        drawLine(R,Y);
+
+        // Dashed lines (hidden edges)
+        drawLine(W, X, true);
+        drawLine(X, Y, true);
+        drawLine(Q, X, true);
+
+        // --- Draw vertex labels ---
+        drawLabel('P', P, -15, 0);
+        drawLabel('Q', Q, 0, -15);
+        drawLabel('R', R, 15, 0);
+        drawLabel('S', S, 15, 10);
+        drawLabel('W', W, -15, 0);
+        drawLabel('X', X, 0, 15);
+        drawLabel('Y', Y, 15, 10);
+        drawLabel('Z', Z, 0, 15);
+
+        // --- Draw the current line and arrow ---
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        const currentStart = { x: 80, y: 290 };
+        const currentEnd = { x: 530, y: 140 };
+        
+        // Line for current
+        ctx.beginPath();
+        ctx.moveTo(currentStart.x, currentStart.y);
+        ctx.lineTo(currentEnd.x, currentEnd.y);
+        ctx.stroke();
+
+        // Arrowhead for current
+        const angle = Math.atan2(currentEnd.y - currentStart.y, currentEnd.x - currentStart.x);
+        const arrowLength = 10;
+        ctx.beginPath();
+        ctx.moveTo(currentEnd.x, currentEnd.y);
+        ctx.lineTo(currentEnd.x - arrowLength * Math.cos(angle - Math.PI / 6), currentEnd.y - arrowLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(currentEnd.x, currentEnd.y);
+        ctx.lineTo(currentEnd.x - arrowLength * Math.cos(angle + Math.PI / 6), currentEnd.y - arrowLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+
+        // Label for current
+        ctx.font = 'italic 18px Arial';
+        drawLabel('I', currentEnd, 15, -15);
+        ctx.restore();
+
+        // --- Draw the figure caption ---
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 6.1', canvas.width / 2, 380);
+        ctx.font = '16px Arial';
+        ctx.fillText('(not to scale)', canvas.width / 2, 400);
+
+    </script>
+</body>
+</html>

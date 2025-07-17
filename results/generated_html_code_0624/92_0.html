@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ray Optics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Helper Functions ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = "italic 22px 'Times New Roman'";
+
+        function drawArrow(fromx, fromy, tox, toy) {
+            const headlen = 10;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        }
+        
+        function drawAngleArc(x, y, radius, startAngle, endAngle, counterClockwise = false) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, startAngle, endAngle, counterClockwise);
+            ctx.stroke();
+        }
+
+        // --- Drawing Parameters ---
+        const cx = 220;
+        const cy = 220;
+        const r = 90;
+
+        // Key points for the top ray, chosen to visually match the diagram
+        const p1x = 142;
+        const p1y = 175;
+        const p2x = 300;
+        const p2y = 190;
+        
+        // Key points for the bottom ray (symmetric)
+        const p1_b_x = p1x;
+        const p1_b_y = cy + (cy - p1y);
+        const p2_b_x = p2x;
+        const p2_b_y = cy + (cy - p2y);
+
+        // Focal point
+        const Fx = 480;
+        const Fy = cy;
+
+        // --- Main Drawing Logic ---
+
+        // 1. Draw the circle (lens)
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 2. Draw the central axis
+        ctx.beginPath();
+        ctx.setLineDash([12, 4, 3, 4]);
+        ctx.moveTo(0, cy);
+        ctx.lineTo(580, cy);
+        ctx.stroke();
+        
+        ctx.setLineDash([]); // Reset line dash
+
+        // 3. Draw Top Ray Path
+        // Incoming ray
+        ctx.beginPath();
+        drawArrow(50, p1y, p1x, p1y);
+        ctx.stroke();
+        // Internal ray (dashed)
+        ctx.beginPath();
+        ctx.setLineDash([6, 6]);
+        ctx.moveTo(p1x, p1y);
+        ctx.lineTo(p2x, p2y);
+        ctx.stroke();
+        // Outgoing ray (dashed)
+        ctx.moveTo(p2x, p2y);
+        ctx.lineTo(Fx, Fy);
+        ctx.stroke();
+
+        // 4. Draw Bottom Ray Path
+        // Incoming ray
+        ctx.beginPath();
+        ctx.setLineDash([]);
+        drawArrow(50, p1_b_y, p1_b_x, p1_b_y);
+        ctx.stroke();
+        // Internal ray (dashed)
+        ctx.beginPath();
+        ctx.setLineDash([6, 6]);
+        ctx.moveTo(p1_b_x, p1_b_y);
+        ctx.lineTo(p2_b_x, p2_b_y);
+        ctx.stroke();
+        // Outgoing ray (dashed)
+        ctx.moveTo(p2_b_x, p2_b_y);
+        ctx.lineTo(Fx, Fy);
+        ctx.stroke();
+
+        // 5. Draw Normals and Angles
+        // Normal at top incidence point
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(p1x, p1y);
+        ctx.stroke();
+        
+        ctx.setLineDash([]); // Reset for labels
+
+        // Angle phi (φ)
+        const angle_normal1 = Math.atan2(p1y - cy, p1x - cx);
+        drawAngleArc(p1x, p1y, 25, angle_normal1, Math.PI);
+        ctx.fillText("φ", p1x - 35, p1y - 5);
+
+        // Angle gamma (γ)
+        const angle_ray_internal = Math.atan2(p2y - p1y, p2x - p1x);
+        drawAngleArc(p1x, p1y, 18, angle_normal1, angle_ray_internal, true);
+        ctx.fillText("γ", p1x + 10, p1y - 20);
+
+        // Angle alpha (α) - placed illustratively
+        const X_alpha = cx + 30; 
+        const Y_alpha = cy;
+        const angle_axis = Math.PI;
+        drawAngleArc(X_alpha, Y_alpha, 30, angle_ray_internal, angle_axis, true);
+        ctx.fillText("α", X_alpha + 28, Y_alpha - 5);
+
+        // Angle delta (δ) at the focal point
+        const angle_ray_out = Math.atan2(Fy - p2y, Fx - p2x);
+        drawAngleArc(Fx, Fy, 30, angle_ray_out, 0);
+        ctx.fillText("δ", Fx + 5, Fy + 35);
+        
+        // 6. Draw Eye Symbol
+        ctx.beginPath();
+        ctx.arc(Fx + 5, Fy - 1, 15, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(Fx + 5, Fy - 1, 15, Math.PI * 0.1, Math.PI * 0.9);
+        ctx.stroke();
+
+        // 7. Add Figure Caption
+        ctx.font = "bold 24px 'Times New Roman'";
+        ctx.fillText("Fig. 1.21", 250, 420);
+    </script>
+</body>
+</html>

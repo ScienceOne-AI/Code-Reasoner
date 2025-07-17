@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spring-Mass System</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="400" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const centerX = canvas.width / 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '24px "Times New Roman"';
+
+        // --- Drawing Functions ---
+
+        /**
+         * Draws a fixed ceiling surface.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} y - The y-coordinate of the ceiling line.
+         * @param {number} width - The total width of the ceiling representation.
+         * @param {number} hatchLength - The length of the diagonal hatch lines.
+         */
+        function drawCeiling(ctx, y, width, hatchLength) {
+            const startX = centerX - width / 2;
+            const endX = centerX + width / 2;
+
+            // Draw horizontal line
+            ctx.beginPath();
+            ctx.moveTo(startX, y);
+            ctx.lineTo(endX, y);
+            ctx.stroke();
+
+            // Draw hatching
+            const hatchSpacing = 10;
+            for (let x = startX; x <= endX; x += hatchSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - hatchLength, y - hatchLength);
+                ctx.stroke();
+            }
+        }
+
+        /**
+         * Draws a vertical spring with hooks.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x - The x-coordinate of the spring's central axis.
+         * @param {number} yStart - The y-coordinate where the top hook starts.
+         * @param {number} numCoils - The number of coils.
+         * @param {number} coilHeight - The height of a single coil loop.
+         * @param {number} radius - The radius of the coils.
+         * @param {number} hookLength - The length of the straight sections (hooks) at top and bottom.
+         * @returns {number} The final y-coordinate at the end of the bottom hook.
+         */
+        function drawSpring(ctx, x, yStart, numCoils, coilHeight, radius, hookLength) {
+            let currentY = yStart;
+
+            // Top hook
+            ctx.beginPath();
+            ctx.moveTo(x, currentY);
+            currentY += hookLength;
+            ctx.lineTo(x, currentY);
+            ctx.stroke();
+
+            // Coils
+            ctx.beginPath();
+            ctx.moveTo(x, currentY);
+            const pitch = coilHeight / 2;
+            for (let i = 0; i < numCoils; i++) {
+                ctx.arc(x - radius, currentY + pitch, pitch, -Math.PI / 2, Math.PI / 2, false);
+                currentY += pitch;
+                ctx.arc(x + radius, currentY + pitch, pitch, Math.PI / 2, 3 * Math.PI / 2, false);
+                currentY += pitch;
+            }
+            ctx.stroke();
+            
+            // Bottom hook
+            ctx.beginPath();
+            ctx.moveTo(x, currentY);
+            currentY += hookLength;
+            ctx.lineTo(x, currentY);
+            ctx.stroke();
+
+            return currentY;
+        }
+
+        /**
+         * Draws a hatched circular mass.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} cx - The center x-coordinate of the mass.
+         * @param {number} cy - The center y-coordinate of the mass.
+         * @param {number} radius - The radius of the mass.
+         */
+        function drawMass(ctx, cx, cy, radius) {
+            // Draw circle outline
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Draw hatching
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+            ctx.clip(); // Clip the drawing region to the circle
+
+            const hatchSpacing = 6;
+            ctx.lineWidth = 1.5;
+            for (let i = -2 * radius; i < 2 * radius; i += hatchSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(cx + i - radius, cy - radius);
+                ctx.lineTo(cx + i + radius, cy + radius);
+                ctx.stroke();
+            }
+            ctx.restore(); // Restore the full canvas drawing region
+        }
+        
+        /**
+         * Draws a downward pointing arrow.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x - The x-coordinate of the arrow shaft.
+         * @param {number} yStart - The starting y-coordinate of the arrow shaft.
+         * @param {number} length - The length of the arrow shaft.
+         * @param {number} headSize - The size of the arrowhead.
+         */
+        function drawArrow(ctx, x, yStart, length, headSize) {
+            const yEnd = yStart + length;
+            // Shaft
+            ctx.beginPath();
+            ctx.moveTo(x, yStart);
+            ctx.lineTo(x, yEnd);
+            ctx.stroke();
+            // Head
+            ctx.beginPath();
+            ctx.moveTo(x, yEnd);
+            ctx.lineTo(x - headSize, yEnd - headSize);
+            ctx.moveTo(x, yEnd);
+            ctx.lineTo(x + headSize, yEnd - headSize);
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Logic ---
+        
+        // Reset canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.lineWidth = 2;
+
+        // 1. Draw Ceiling
+        const ceilingY = 50;
+        drawCeiling(ctx, ceilingY, 200, 15);
+
+        // 2. Draw top connector
+        ctx.beginPath();
+        ctx.moveTo(centerX, ceilingY);
+        ctx.lineTo(centerX, ceilingY + 20);
+        ctx.stroke();
+        let currentY = ceilingY + 20;
+        
+        // 3. Draw Spring 1
+        const springRadius = 20;
+        const springCoils = 4;
+        const springCoilHeight = 20;
+        const springHookLength = 10;
+        const spring1YStart = currentY;
+        const spring1YMid = spring1YStart + springHookLength + (springCoils * springCoilHeight) / 2;
+        currentY = drawSpring(ctx, centerX, currentY, springCoils, springCoilHeight, springRadius, springHookLength);
+
+        // 4. Draw Mass m
+        const massRadius = 25;
+        const massCenterY = currentY + massRadius;
+        drawMass(ctx, centerX, massCenterY, massRadius);
+        currentY = massCenterY + massRadius;
+        
+        // 5. Draw Spring 2
+        const spring2YStart = currentY;
+        const spring2YMid = spring2YStart + springHookLength + (springCoils * springCoilHeight) / 2;
+        currentY = drawSpring(ctx, centerX, currentY, springCoils, springCoilHeight, springRadius, springHookLength);
+
+        // 6. Draw Force F(t)
+        const arrowStartY = currentY;
+        const arrowLength = 50;
+        const arrowMidY = arrowStartY + arrowLength / 2;
+        drawArrow(ctx, centerX, arrowStartY, arrowLength, 12);
+
+        // 7. Add Labels
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'left';
+        
+        // Spring 1 labels
+        ctx.fillText('1', centerX - 55, spring1YMid + 8);
+        ctx.fillText('k', centerX + 40, spring1YMid + 8);
+
+        // Mass label
+        ctx.fillText('m', centerX + massRadius + 10, massCenterY + 8);
+
+        // Spring 2 labels
+        ctx.fillText('2', centerX - 55, spring2YMid + 8);
+        ctx.fillText('k', centerX + 40, spring2YMid + 8);
+        
+        // Force label
+        ctx.fillText('F(t)', centerX + 20, arrowMidY + 8);
+
+        // Caption
+        ctx.font = '24px "SimSun", "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.fillText('力图 2.14.1', centerX, canvas.height - 30);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Photoelectric Effect Graph</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #999;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsGraph" width="700" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsGraph');
+    const ctx = canvas.getContext('2d');
+
+    // Graph parameters
+    const margin = { top: 40, right: 30, bottom: 80, left: 70 };
+    const graphWidth = canvas.width - margin.left - margin.right;
+    const graphHeight = canvas.height - margin.top - margin.bottom;
+
+    const xMinData = 1.9;
+    const xMaxData = 2.4;
+    const yMinData = 0.0;
+    const yMaxData = 0.6;
+
+    // --- Coordinate Transformation Functions ---
+    function toCanvasX(x) {
+        return margin.left + ((x - xMinData) / (xMaxData - xMinData)) * graphWidth;
+    }
+
+    function toCanvasY(y) {
+        return canvas.height - margin.bottom - ((y - yMinData) / (yMaxData - yMinData)) * graphHeight;
+    }
+
+    // --- Drawing Functions ---
+
+    function drawGrid() {
+        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = '#cccccc';
+
+        // Minor vertical grid lines (every 0.01)
+        const xStepMinor = 0.01;
+        for (let i = 1; i < (xMaxData - xMinData) / xStepMinor; i++) {
+            const x = xMinData + i * xStepMinor;
+             if (Math.round(x*10) % 1 !== 0) { // Don't draw over major lines
+                const cx = toCanvasX(x);
+                ctx.beginPath();
+                ctx.moveTo(cx, toCanvasY(yMinData));
+                ctx.lineTo(cx, toCanvasY(yMaxData));
+                ctx.stroke();
+            }
+        }
+
+        // Minor horizontal grid lines (every 0.02)
+        const yStepMinor = 0.02;
+         for (let i = 1; i < (yMaxData - yMinData) / yStepMinor; i++) {
+            const y = yMinData + i * yStepMinor;
+            if (Math.round(y*10) % 2 !== 0) { // Don't draw over major lines
+                const cy = toCanvasY(y);
+                ctx.beginPath();
+                ctx.moveTo(toCanvasX(xMinData), cy);
+                ctx.lineTo(toCanvasX(xMaxData), cy);
+                ctx.stroke();
+            }
+        }
+        
+        // Major grid lines
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#999999';
+
+        // Major vertical grid lines (every 0.1)
+        const xStepMajor = 0.1;
+        for (let i = 0; i <= Math.round((xMaxData - xMinData) / xStepMajor); i++) {
+            const x = xMinData + i * xStepMajor;
+            const cx = toCanvasX(x);
+            ctx.beginPath();
+            ctx.moveTo(cx, toCanvasY(yMinData));
+            ctx.lineTo(cx, toCanvasY(yMaxData));
+            ctx.stroke();
+        }
+
+        // Major horizontal grid lines (every 0.2)
+        const yStepMajor = 0.2;
+        for (let i = 0; i <= (yMaxData - yMinData) / yStepMajor; i++) {
+            const y = yMinData + i * yStepMajor;
+            const cy = toCanvasY(y);
+            ctx.beginPath();
+            ctx.moveTo(toCanvasX(xMinData), cy);
+            ctx.lineTo(toCanvasX(xMaxData), cy);
+            ctx.stroke();
+        }
+    }
+
+    function drawAxes() {
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        
+        // X-Axis
+        ctx.beginPath();
+        ctx.moveTo(toCanvasX(xMinData), toCanvasY(yMinData));
+        ctx.lineTo(toCanvasX(xMaxData), toCanvasY(yMinData));
+        ctx.stroke();
+
+        // Y-Axis
+        ctx.beginPath();
+        ctx.moveTo(toCanvasX(xMinData), toCanvasY(yMinData));
+        ctx.lineTo(toCanvasX(xMinData), toCanvasY(yMaxData));
+        ctx.stroke();
+    }
+    
+    function drawLabels() {
+        ctx.fillStyle = 'black';
+        
+        // X-axis labels and ticks
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const xStepMajor = 0.1;
+        for (let i = 0; i <= Math.round((xMaxData - xMinData) / xStepMajor); i++) {
+            const x = xMinData + i * xStepMajor;
+            ctx.fillText(x.toFixed(1), toCanvasX(x), toCanvasY(yMinData) + 8);
+        }
+
+        // Y-axis labels and ticks
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        const yStepMajor = 0.2;
+        for (let i = 0; i <= (yMaxData - yMinData) / yStepMajor; i++) {
+            const y = yMinData + i * yStepMajor;
+            ctx.fillText(y.toFixed(1), toCanvasX(xMinData) - 8, toCanvasY(y));
+        }
+
+        // X-axis Title
+        const xLabelY = canvas.height - margin.bottom + 35;
+        const xLabelCenter = toCanvasX(xMinData + (xMaxData - xMinData) / 2);
+        
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // "1/λ" part
+        ctx.font = 'italic 20px Arial';
+        ctx.fillText('1', xLabelCenter - 45, xLabelY - 8);
+        ctx.beginPath();
+        ctx.moveTo(xLabelCenter - 53, xLabelY);
+        ctx.lineTo(xLabelCenter - 37, xLabelY);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+        ctx.fillText('λ', xLabelCenter - 45, xLabelY + 10);
+        
+        // " / 10^6 m^-1" part
+        ctx.font = '18px Arial';
+        ctx.fillText('/ 10', xLabelCenter - 10, xLabelY + 2);
+        ctx.font = '12px Arial';
+        ctx.fillText('6', xLabelCenter + 15, xLabelY - 4);
+        ctx.font = '18px Arial';
+        ctx.fillText('m', xLabelCenter + 28, xLabelY + 2);
+        ctx.font = '12px Arial';
+        ctx.fillText('-1', xLabelCenter + 37, xLabelY - 4);
+
+        // Y-axis Title
+        ctx.save();
+        ctx.translate(margin.left - 50, margin.top + graphHeight / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        
+        ctx.font = 'italic 20px Arial';
+        ctx.fillText('E', -40, 0);
+        ctx.font = 'italic 13px Arial';
+        ctx.fillText('MAX', -25, 2);
+        ctx.font = '18px Arial';
+        ctx.fillText('/ eV', 5, 0);
+        
+        ctx.restore();
+        
+        // Figure Caption
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 11.1', canvas.width / 2, canvas.height - 15);
+    }
+    
+    function drawDataLine() {
+        const p1 = { x: 2.05, y: 0.14 };
+        const p2 = { x: 2.35, y: 0.55 };
+
+        ctx.beginPath();
+        ctx.moveTo(toCanvasX(p1.x), toCanvasY(p1.y));
+        ctx.lineTo(toCanvasX(p2.x), toCanvasY(p2.y));
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    // --- Main Drawing Execution ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
+    drawAxes();
+    drawLabels();
+    drawDataLine();
+
+</script>
+</body>
+</html>

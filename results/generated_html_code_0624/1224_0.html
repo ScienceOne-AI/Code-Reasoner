@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="beamCanvas" width="550" height="350"></canvas>
+    <script>
+        const canvas = document.getElementById('beamCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a vertical arrow with a filled head.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x - The x-coordinate of the arrow.
+         * @param {number} y1 - The starting y-coordinate (top).
+         * @param {number} y2 - The ending y-coordinate (bottom, where the head is).
+         * @param {number} headSize - The height of the arrowhead.
+         */
+        function drawLoadArrow(ctx, x, y1, y2, headSize) {
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            // Shaft
+            ctx.beginPath();
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, y2);
+            ctx.stroke();
+
+            // Head
+            ctx.beginPath();
+            ctx.moveTo(x, y2);
+            ctx.lineTo(x - headSize / 2, y2 - headSize);
+            ctx.lineTo(x + headSize / 2, y2 - headSize);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        /**
+         * Draws a filled arrowhead for dimension lines.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} fromX - Starting x of the direction vector.
+         * @param {number} fromY - Starting y of the direction vector.
+         * @param {number} toX - The x-coordinate of the arrow's tip.
+         * @param {number} toY - The y-coordinate of the arrow's tip.
+         * @param {number} size - The length of the arrowhead sides.
+         */
+        function drawDimArrowhead(ctx, fromX, fromY, toX, toY, size) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - size * Math.cos(angle - Math.PI / 8), toY - size * Math.sin(angle - Math.PI / 8));
+            ctx.lineTo(toX - size * Math.cos(angle + Math.PI / 8), toY - size * Math.sin(angle + Math.PI / 8));
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        /**
+         * Draws a hatched ground pattern.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x - Starting x-coordinate of the ground line.
+         * @param {number} y - The y-coordinate of the ground line.
+         * @param {number} width - The width of the ground section.
+         * @param {number} height - The height of the hatching lines.
+         */
+        function drawHatching(ctx, x, y, width, height) {
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + width, y);
+            ctx.stroke();
+
+            const step = 8;
+            for (let i = 0; i < width; i += step) {
+                ctx.beginPath();
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x + i - height, y + height);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+
+        // --- Parameters ---
+        const xA = 60;
+        const yBeam = 180;
+        const length_a = 160;
+        const length_b = 220;
+        const loadHeight_q = 80;
+
+        const xB = xA + length_a;
+        const xC = xB + length_b;
+
+        const yLoadTop = yBeam - loadHeight_q;
+
+        // --- Global Styles ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // 1. Draw Beam
+        ctx.save();
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(xA, yBeam);
+        ctx.lineTo(xC, yBeam);
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Draw Distributed Load
+        ctx.lineWidth = 1.5;
+        // Load outline
+        ctx.beginPath();
+        ctx.moveTo(xA, yBeam);
+        ctx.lineTo(xB, yLoadTop);
+        ctx.lineTo(xC, yLoadTop);
+        ctx.stroke();
+        // Vertical lines at B and C
+        ctx.beginPath();
+        ctx.moveTo(xB, yLoadTop);
+        ctx.lineTo(xB, yBeam);
+        ctx.moveTo(xC, yLoadTop);
+        ctx.lineTo(xC, yBeam);
+        ctx.stroke();
+
+        // Load arrows
+        const numArrows = 14;
+        const totalLength = length_a + length_b;
+        const arrowheadSize = 10;
+        for (let i = 1; i <= numArrows; i++) {
+            const x = xA + i * (totalLength / (numArrows + 1));
+            let yTop;
+            if (x <= xB) {
+                // Linearly increasing load in section AB
+                yTop = yBeam - ((x - xA) / length_a) * loadHeight_q;
+            } else {
+                // Uniform load in section BC
+                yTop = yLoadTop;
+            }
+            drawLoadArrow(ctx, x, yTop, yBeam, arrowheadSize);
+        }
+
+        // 3. Draw Supports
+        // 3.1 Support B (Roller Support)
+        const ySupportB_pin = yBeam;
+        const ySupportB_triangleTop = ySupportB_pin + 4;
+        const ySupportB_triangleBottom = ySupportB_triangleTop + 15;
+        const ySupportB_baseBottom = ySupportB_triangleBottom + 7;
+        const ySupportB_rollerCenter = ySupportB_baseBottom + 4;
+        const ySupportB_ground = ySupportB_rollerCenter + 4;
+
+        ctx.save();
+        ctx.lineWidth = 2;
+        // Pin
+        ctx.beginPath();
+        ctx.arc(xB, ySupportB_pin, 4, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Triangle
+        ctx.beginPath();
+        ctx.moveTo(xB, ySupportB_triangleTop);
+        ctx.lineTo(xB - 10, ySupportB_triangleBottom);
+        ctx.lineTo(xB + 10, ySupportB_triangleBottom);
+        ctx.closePath();
+        ctx.stroke();
+        // Base plate
+        ctx.beginPath();
+        ctx.rect(xB - 16, ySupportB_triangleBottom, 32, ySupportB_baseBottom - ySupportB_triangleBottom);
+        ctx.stroke();
+        // Rollers
+        ctx.beginPath();
+        ctx.arc(xB - 8, ySupportB_rollerCenter, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(xB + 8, ySupportB_rollerCenter, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        // Ground
+        drawHatching(ctx, xB - 30, ySupportB_ground, 60, 15);
+        ctx.restore();
+
+        // 3.2 Support C (Roller Support)
+        const ySupportC_pin = yBeam;
+        const ySupportC_ground = ySupportC_pin + 20;
+
+        ctx.save();
+        ctx.lineWidth = 2;
+        // Pin
+        ctx.beginPath();
+        ctx.arc(xC, ySupportC_pin, 4, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Triangle
+        ctx.beginPath();
+        ctx.moveTo(xC, ySupportC_pin + 3);
+        ctx.lineTo(xC - 12, ySupportC_ground);
+        ctx.lineTo(xC + 12, ySupportC_ground);
+        ctx.closePath();
+        ctx.stroke();
+        // Ground
+        drawHatching(ctx, xC - 25, ySupportC_ground, 50, 15);
+        ctx.restore();
+
+        // 4. Draw Dimensions
+        const yDim = 290;
+        const dimArrowSize = 8;
+        ctx.lineWidth = 1;
+
+        // Ticks
+        ctx.beginPath();
+        ctx.moveTo(xA, yBeam);
+        ctx.lineTo(xA, yDim + 5);
+        ctx.moveTo(xB, ySupportB_ground);
+        ctx.lineTo(xB, yDim + 5);
+        ctx.moveTo(xC, ySupportC_ground);
+        ctx.lineTo(xC, yDim + 5);
+        ctx.stroke();
+
+        // Dimension lines for 'a' and 'b'
+        ctx.beginPath();
+        ctx.moveTo(xA, yDim);
+        ctx.lineTo(xB, yDim);
+        ctx.moveTo(xB, yDim);
+        ctx.lineTo(xC, yDim);
+        ctx.stroke();
+        drawDimArrowhead(ctx, xB, yDim, xA, yDim, dimArrowSize);
+        drawDimArrowhead(ctx, xA, yDim, xB, yDim, dimArrowSize);
+        drawDimArrowhead(ctx, xC, yDim, xB, yDim, dimArrowSize);
+        drawDimArrowhead(ctx, xB, yDim, xC, yDim, dimArrowSize);
+
+        // Dimension for 'q'
+        const xDimQ = xC + 40;
+        ctx.beginPath();
+        ctx.moveTo(xC, yLoadTop);
+        ctx.lineTo(xDimQ, yLoadTop);
+        ctx.moveTo(xC, yBeam);
+        ctx.lineTo(xDimQ, yBeam);
+        ctx.moveTo(xDimQ, yLoadTop);
+        ctx.lineTo(xDimQ, yBeam);
+        ctx.stroke();
+        drawDimArrowhead(ctx, xDimQ, yBeam, xDimQ, yLoadTop, dimArrowSize);
+        drawDimArrowhead(ctx, xDimQ, yLoadTop, xDimQ, yBeam, dimArrowSize);
+
+
+        // 5. Draw Labels
+        // Point labels
+        ctx.font = "italic bold 24px 'Times New Roman'";
+        ctx.fillText("A", xA - 30, yBeam + 8);
+        ctx.fillText("B", xB - 8, ySupportB_ground + 25);
+        ctx.fillText("C", xC + 15, yBeam + 8);
+
+        // Dimension labels
+        ctx.font = "italic 20px 'Times New Roman'";
+        ctx.fillText("a", xA + length_a / 2 - 5, yDim - 8);
+        ctx.fillText("b", xB + length_b / 2 - 5, yDim - 8);
+        ctx.fillText("q", xDimQ + 10, yBeam - loadHeight_q / 2 + 6);
+    </script>
+</body>
+</html>

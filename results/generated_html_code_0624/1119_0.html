@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="650" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        const colors = {
+            structure: '#000',
+            sphere: '#000',
+            force: '#000',
+            dashed: '#555',
+            text: '#000'
+        };
+        const lineWidth = 2;
+        const sphereFill = 'rgba(255, 255, 255, 1)';
+
+        // Geometric parameters
+        const corner = { x: 120, y: 80 };
+        const W = 450; // Horizontal length of the triangle
+        const angle_h = 30 * Math.PI / 180; // Angle with horizontal
+        const H = W * Math.tan(angle_h); // Vertical height
+
+        const R_px = 45; // Sphere radius in pixels
+
+        // Key points of the structure
+        const A = { x: corner.x, y: corner.y + H }; // Hinge
+        const B = { x: corner.x + W, y: corner.y }; // Top end of the board
+        const wallTop = { x: corner.x, y: corner.y };
+
+        // --- Calculate sphere positions ---
+        // The line of the board AB
+        // (y - B.y) / (x - B.x) = (A.y - B.y) / (A.x - B.x) = H / -W = -tan(angle_h)
+        // (y - B.y) * -W = (x - B.x) * H  => Hx + Wy - HB.x - WB.y = 0
+        // (tan(angle_h))x + y - B.x*tan(angle_h) - B.y = 0
+
+        // Center of the first sphere (C1)
+        const c1 = {};
+        c1.x = corner.x + R_px;
+        // Distance from a point (x0, y0) to line Ax+By+C=0 is |Ax0+By0+C|/sqrt(A^2+B^2)
+        // Here, line is tan(angle_h)x + y - (B.x*tan(angle_h) + B.y) = 0
+        // A=tan(angle_h), B=1, C=-(...)
+        // sqrt(A^2+B^2) = sqrt(tan^2+1) = sec(angle_h)
+        // |c1.x*tan(angle_h) + c1.y - (B.x*tan(angle_h) + B.y)| / sec(angle_h) = R_px
+        // Since the center is "below" the line, the expression is negative.
+        // -(c1.x*tan(angle_h) + c1.y - (B.x*tan(angle_h) + B.y)) = R_px * sec(angle_h)
+        // B.x*tan(angle_h) + B.y - c1.x*tan(angle_h) - c1.y = R_px / cos(angle_h)
+        // c1.y = B.y + (B.x - c1.x)*tan(angle_h) - R_px / cos(angle_h)
+        c1.y = B.y + (B.x - c1.x) * Math.tan(angle_h) - R_px / Math.cos(angle_h);
+
+        // Center of the second sphere (C2, labeled C in diagram)
+        const c2 = {};
+        const angle_board_rad = -angle_h;
+        c2.x = c1.x + 2 * R_px * Math.cos(angle_board_rad);
+        c2.y = c1.y + 2 * R_px * Math.sin(angle_board_rad);
+
+        // Center of the third sphere (C3)
+        const c3 = {};
+        c3.x = c2.x + 2 * R_px * Math.cos(angle_board_rad);
+        c3.y = c2.y + 2 * R_px * Math.sin(angle_board_rad);
+        
+        // Contact points
+        const angle_normal_rad = angle_board_rad - Math.PI / 2; // Normal pointing into the board
+        const E = { // Contact point of C1
+            x: c1.x + R_px * Math.cos(angle_normal_rad),
+            y: c1.y + R_px * Math.sin(angle_normal_rad)
+        };
+        const D = { // Contact point of C2
+            x: c2.x + R_px * Math.cos(angle_normal_rad),
+            y: c2.y + R_px * Math.sin(angle_normal_rad)
+        };
+
+        // --- Drawing functions ---
+        function drawArrow(fromX, fromY, toX, toY, headLen = 10) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLen * Math.cos(angle - Math.PI / 6), toY - headLen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headLen * Math.cos(angle + Math.PI / 6), toY - headLen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawHatching(x, y1, y2, spacing = 8, angle = -Math.PI/4) {
+            ctx.save();
+            ctx.strokeStyle = colors.structure;
+            ctx.lineWidth = 1;
+            const length = 15;
+            for (let y = y1; y < y2; y += spacing) {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - length*Math.cos(angle), y - length*Math.sin(angle));
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // --- Start Drawing ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 1. Draw Structure
+        ctx.strokeStyle = colors.structure;
+        ctx.lineWidth = lineWidth;
+
+        // Vertical wall
+        ctx.beginPath();
+        ctx.moveTo(corner.x, corner.y - 20);
+        ctx.lineTo(corner.x, A.y + 20);
+        ctx.stroke();
+        drawHatching(corner.x, corner.y - 20, A.y + 20);
+
+        // Top horizontal line
+        ctx.beginPath();
+        ctx.moveTo(corner.x, corner.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+
+        // Right angle symbol
+        ctx.strokeRect(corner.x, corner.y, 10, 10);
+
+        // Inclined board AB
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+
+        // Hinge at A
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, 6, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fillStyle = sphereFill;
+        ctx.fill();
+
+        // 60 degree angle
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, 30, -Math.PI / 2, -Math.PI/2 + (60 * Math.PI / 180));
+        ctx.stroke();
+        ctx.font = '16px Arial';
+        ctx.fillStyle = colors.text;
+        ctx.fillText('60°', A.x + 25, A.y - 25);
+        
+        // 2. Draw Spheres
+        ctx.lineWidth = lineWidth;
+        ctx.strokeStyle = colors.sphere;
+        [c1, c2, c3].forEach(center => {
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, R_px, 0, 2 * Math.PI);
+            ctx.fillStyle = sphereFill;
+            ctx.fill();
+            ctx.stroke();
+        });
+
+        // 3. Dashed lines
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = colors.dashed;
+        ctx.lineWidth = 1;
+
+        // Line connecting centers
+        ctx.beginPath();
+        ctx.moveTo(c1.x, c1.y);
+        ctx.lineTo(c3.x, c3.y);
+        ctx.stroke();
+
+        // Line for N1
+        ctx.beginPath();
+        ctx.moveTo(c1.x - R_px, c1.y);
+        ctx.lineTo(c1.x, c1.y);
+        ctx.stroke();
+
+        // Line from C to D
+        ctx.beginPath();
+        ctx.moveTo(c2.x, c2.y);
+        ctx.lineTo(D.x, D.y);
+        ctx.stroke();
+        
+        ctx.restore();
+
+        // 4. Forces and Labels
+        ctx.fillStyle = colors.force;
+        ctx.strokeStyle = colors.force;
+        ctx.lineWidth = 2;
+
+        // Force 3G
+        const gForceStart = { x: c2.x, y: c2.y };
+        const gForceEnd = { x: c2.x, y: c2.y + 100 };
+        drawArrow(gForceStart.x, gForceStart.y, gForceEnd.x, gForceEnd.y);
+        ctx.font = 'bold 20px Times New Roman';
+        ctx.fillText('3G', gForceEnd.x + 10, gForceEnd.y - 40);
+
+        // Force N1
+        const n1Start = { x: c1.x, y: c1.y };
+        const n1End = { x: c1.x - 70, y: c1.y };
+        drawArrow(n1Start.x, n1Start.y, n1End.x, n1End.y);
+        ctx.fillText('N', n1End.x - 20, n1End.y - 8);
+        ctx.font = 'bold 14px Times New Roman';
+        ctx.fillText('1', n1End.x - 10, n1End.y - 2);
+
+        // Force N2
+        const n2Start = { x: c1.x, y: c1.y };
+        const n2End = {
+            x: c1.x + 70 * Math.cos(angle_board_rad),
+            y: c1.y + 70 * Math.sin(angle_board_rad)
+        };
+        drawArrow(n2Start.x, n2Start.y, n2End.x, n2End.y);
+        ctx.font = 'bold 20px Times New Roman';
+        ctx.fillText('N', n2End.x + 5, n2End.y - 12);
+        ctx.font = 'bold 14px Times New Roman';
+        ctx.fillText('2', n2End.x + 18, n2End.y - 5);
+
+        // Brace for 'x'
+        const braceP1 = {x: D.x, y: c2.y};
+        const braceP2 = {x: c2.x, y: c2.y};
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(braceP1.x, braceP1.y - 3);
+        ctx.lineTo(braceP1.x, braceP1.y + 3);
+        ctx.moveTo(braceP1.x, braceP1.y);
+        ctx.lineTo(braceP2.x, braceP2.y);
+        ctx.moveTo(braceP2.x, braceP2.y - 3);
+        ctx.lineTo(braceP2.x, braceP2.y + 3);
+        ctx.stroke();
+        
+        // Text labels
+        ctx.font = 'bold 20px Times New Roman';
+        ctx.fillStyle = colors.text;
+        ctx.fillText('A', A.x - 25, A.y + 10);
+        ctx.fillText('B', B.x + 10, B.y + 5);
+        ctx.fillText('C', c2.x + 5, c2.y - 5);
+        ctx.fillText('D', D.x + 10, D.y + 10);
+        ctx.fillText('E', E.x - 20, E.y + 5);
+        ctx.font = 'italic bold 18px Times New Roman';
+        ctx.fillText('x', (braceP1.x + braceP2.x)/2 - 5, braceP1.y - 8);
+        
+        // Caption
+        ctx.font = '20px "SimSun", "Songti SC"';
+        ctx.fillStyle = colors.text;
+        ctx.fillText('力图 5.6.1', canvas.width / 2 - 50, canvas.height - 20);
+
+    </script>
+</body>
+</html>

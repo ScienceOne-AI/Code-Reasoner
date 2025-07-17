@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physics-diagram" width="500" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physics-diagram');
+    const ctx = canvas.getContext('2d');
+
+    // Style and settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Helper function to draw a vector (line with an arrowhead)
+    function drawArrow(x1, y1, x2, y2) {
+        const headlen = 10;
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const angle = Math.atan2(dy, dx);
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    // Origin and dimensions
+    const O = { x: 250, y: 250 };
+    
+    // --- Draw Axes ---
+    const axisLen = 160;
+    const xAxisAngle = 210 * Math.PI / 180; // 30 degrees below negative horizontal
+
+    // Draw the full line for the x-axis that passes through the origin
+    const xLineStart = {
+        x: O.x + axisLen * 0.9 * Math.cos(xAxisAngle - Math.PI),
+        y: O.y + axisLen * 0.9 * Math.sin(xAxisAngle - Math.PI)
+    };
+    const xLineEnd = {
+        x: O.x + axisLen * Math.cos(xAxisAngle),
+        y: O.y + axisLen * Math.sin(xAxisAngle)
+    };
+    ctx.beginPath();
+    ctx.moveTo(xLineStart.x, xLineStart.y);
+    ctx.lineTo(xLineEnd.x, xLineEnd.y);
+    ctx.stroke();
+    
+    // Add arrowheads to the positive ends of the axes
+    drawArrow(O.x, O.y, O.x + axisLen, O.y); // y-axis
+    drawArrow(O.x, O.y, O.x, O.y - axisLen); // z-axis
+    drawArrow(O.x, O.y, xLineEnd.x, xLineEnd.y); // x-axis
+    
+    // Axis labels
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('y', O.x + axisLen + 15, O.y);
+    ctx.fillText('z', O.x, O.y - axisLen - 15);
+    ctx.fillText('x', xLineEnd.x - 15, xLineEnd.y + 10);
+
+    // --- Draw Particle ---
+    ctx.beginPath();
+    ctx.arc(O.x, O.y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // --- Draw Vectors and Annotations from Case 1 ---
+    
+    // Vector v1
+    const v1Len = 120;
+    const v1Angle = -45 * Math.PI / 180;
+    const v1End = { x: O.x + v1Len * Math.cos(v1Angle), y: O.y + v1Len * Math.sin(v1Angle) };
+    drawArrow(O.x, O.y, v1End.x, v1End.y);
+    ctx.fillText('v\u2081', v1End.x + 5, v1End.y - 18); // v₁
+
+    // 45 degree angle arc
+    const arcRadius = 45;
+    ctx.beginPath();
+    ctx.arc(O.x, O.y, arcRadius, 0, v1Angle, true);
+    ctx.stroke();
+    
+    ctx.font = '18px Times New Roman';
+    ctx.fillText('45°', O.x + arcRadius * 0.7, O.y - arcRadius * 0.5);
+    ctx.font = 'italic 20px Times New Roman'; // Reset font
+
+    // Force F1 (along negative x-axis, pointing towards origin as shown in diagram)
+    const negXAngle = xAxisAngle - Math.PI;
+    const F1_start_dist = 60;
+    const F1_end_dist = 20;
+    const F1_start = {x: O.x + F1_start_dist * Math.cos(negXAngle), y: O.y + F1_start_dist * Math.sin(negXAngle)};
+    const F1_end = {x: O.x + F1_end_dist * Math.cos(negXAngle), y: O.y + F1_end_dist * Math.sin(negXAngle)};
+    drawArrow(F1_start.x, F1_start.y, F1_end.x, F1_end.y);
+    ctx.fillText('F\u2081', F1_start.x, F1_start.y + 20); // F₁
+
+
+    // --- Draw Vectors and Annotations from Case 2 ---
+    
+    // Force F2
+    const F2Len = 100;
+    drawArrow(O.x, O.y, O.x + F2Len, O.y);
+    ctx.fillText('F\u2082', O.x + F2Len / 2, O.y + 25); // F₂
+
+    // Velocity v2 (along negative x-axis, pointing towards origin as shown in diagram)
+    const v2_start_dist = 120;
+    const v2_end_dist = 80;
+    const v2_start = {x: O.x + v2_start_dist * Math.cos(negXAngle), y: O.y + v2_start_dist * Math.sin(negXAngle)};
+    const v2_end = {x: O.x + v2_end_dist * Math.cos(negXAngle), y: O.y + v2_end_dist * Math.sin(negXAngle)};
+    drawArrow(v2_start.x, v2_start.y, v2_end.x, v2_end.y);
+    ctx.fillText('v\u2082', v2_start.x - 10, v2_start.y + 20); // v₂
+
+    // --- Draw Bottom Label ---
+    ctx.font = '20px "KaiTi", "SimSun", sans-serif'; // Use common Chinese fonts
+    ctx.fillStyle = 'black';
+    ctx.fillText('习题 8-29 图', canvas.width / 2, canvas.height - 30);
+</script>
+</body>
+</html>

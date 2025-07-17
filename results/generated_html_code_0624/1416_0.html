@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Physics Diagram - Falling Rod</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    canvas {
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="450" height="350"></canvas>
+
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Configuration ---
+  const config = {
+    // Style
+    lineColor: 'black',
+    textColor: 'black',
+    lineWidth: 2,
+    fontFamily: 'Arial',
+    fontChinese: '"KaiTi", "SimSun", serif',
+
+    // Geometry
+    A: { x: 150, y: 160 },
+    h0_pixels: 120,
+    l_pixels: 160,
+    angle_deg: 60,
+  };
+
+  // --- Calculated Parameters ---
+  const yGround = config.A.y + config.h0_pixels;
+  const angle_rad = config.angle_deg * Math.PI / 180;
+  const B = {
+    x: config.A.x + config.l_pixels * Math.cos(angle_rad),
+    y: config.A.y - config.l_pixels * Math.sin(angle_rad)
+  };
+
+  /**
+   * Draws a vertical arrow head (filled triangle).
+   * @param {CanvasRenderingContext2D} ctx - The canvas context.
+   * @param {number} x - The x-coordinate of the arrow's tip.
+   * @param {number} y - The y-coordinate of the arrow's tip.
+   * @param {number} size - The size of the arrowhead.
+   * @param {boolean} isPointingUp - True if the arrow points up, false if it points down.
+   */
+  function drawVerticalArrowHead(ctx, x, y, size, isPointingUp) {
+    ctx.fillStyle = config.lineColor;
+    ctx.beginPath();
+    if (isPointingUp) {
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - size, y + size);
+      ctx.lineTo(x + size, y + size);
+    } else { // isPointingDown
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - size, y - size);
+      ctx.lineTo(x + size, y - size);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // --- Main Drawing Logic ---
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Set default styles
+    ctx.strokeStyle = config.lineColor;
+    ctx.fillStyle = config.textColor;
+    ctx.lineWidth = config.lineWidth;
+
+    // 1. Draw Ground
+    ctx.beginPath();
+    ctx.moveTo(20, yGround);
+    ctx.lineTo(canvas.width - 20, yGround);
+    ctx.stroke();
+    
+    // Draw ground hatching
+    ctx.save();
+    ctx.lineWidth = 1;
+    for (let i = 25; i < canvas.width - 20; i += 10) {
+      ctx.beginPath();
+      ctx.moveTo(i, yGround + 2);
+      ctx.lineTo(i - 10, yGround + 12);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // 2. Draw Horizontal Dashed Line and its Label
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash([6, 6]);
+    ctx.moveTo(config.A.x - 70, config.A.y);
+    ctx.lineTo(config.A.x + 230, config.A.y);
+    ctx.stroke();
+    ctx.restore();
+    
+    ctx.font = `24px ${config.fontChinese}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('水平方位线', config.A.x + 80, config.A.y + 10);
+
+    // 3. Draw Rod AB
+    ctx.beginPath();
+    ctx.moveTo(config.A.x, config.A.y);
+    ctx.lineTo(B.x, B.y);
+    ctx.stroke();
+
+    // 4. Draw Labels and Annotations
+
+    // Labels A and B
+    ctx.font = `22px ${config.fontFamily}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('A', config.A.x - 18, config.A.y + 3);
+    ctx.fillText('B', B.x + 10, B.y - 10);
+
+    // Label l (italic)
+    ctx.save();
+    ctx.translate((config.A.x + B.x) / 2, (config.A.y + B.y) / 2);
+    ctx.rotate(-angle_rad);
+    ctx.font = `italic 22px ${config.fontFamily}`;
+    ctx.fillText('l', -20, -8);
+    ctx.restore();
+
+    // Angle Arc and Label
+    const arcRadius = 35;
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    // In canvas, angles are clockwise from the positive x-axis. The rod goes up, so its angle is negative.
+    ctx.arc(config.A.x, config.A.y, arcRadius, 0, -angle_rad, false);
+    ctx.stroke();
+    ctx.restore();
+    
+    ctx.font = `20px ${config.fontFamily}`;
+    ctx.fillText('60°', config.A.x + arcRadius + 20, config.A.y - 15);
+
+    // Height h₀ Dimension Line and Label
+    const h0_line_x = config.A.x - 50;
+    ctx.beginPath();
+    ctx.moveTo(h0_line_x, config.A.y);
+    ctx.lineTo(h0_line_x, yGround);
+    ctx.stroke();
+    
+    // Arrowheads for h₀
+    drawVerticalArrowHead(ctx, h0_line_x, config.A.y, 5, true); // Top arrow
+    drawVerticalArrowHead(ctx, h0_line_x, yGround, 5, false); // Bottom arrow
+    
+    // Label h₀ (with subscript)
+    const h0_label_x = h0_line_x - 20;
+    const h0_label_y = (config.A.y + yGround) / 2;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `italic 22px ${config.fontFamily}`;
+    ctx.fillText('h', h0_label_x, h0_label_y);
+    ctx.font = `italic 16px ${config.fontFamily}`;
+    ctx.fillText('0', h0_label_x + 8, h0_label_y + 8);
+  }
+
+  draw();
+</script>
+
+</body>
+</html>

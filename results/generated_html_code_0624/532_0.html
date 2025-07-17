@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="circuitCanvas" width="650" height="480"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    function drawResistor(x_center, y_center, width, height, label, label_pos) {
+        ctx.save();
+        ctx.fillStyle = 'white';
+        // Draw the rectangle and clear its inside
+        ctx.strokeRect(x_center - width / 2, y_center - height / 2, width, height);
+        ctx.fillRect(x_center - width / 2, y_center - height / 2, width, height);
+        
+        ctx.fillStyle = 'black';
+        ctx.font = '20px Arial';
+        const mainText = label.main;
+        const subText = label.sub;
+        const mainMetrics = ctx.measureText(mainText);
+
+        let tx, ty;
+        if (label_pos === 'above') {
+            tx = x_center - (mainMetrics.width / 2);
+            ty = y_center - height / 2 - 8;
+        } else { // right
+            tx = x_center + width / 2 + 8;
+            ty = y_center + 7;
+        }
+        
+        ctx.fillText(mainText, tx, ty);
+        ctx.font = '15px Arial';
+        ctx.fillText(subText, tx + mainMetrics.width, ty + 4);
+        ctx.restore();
+    }
+
+    function drawVoltageArrow(x, y_start, y_end, label, label_pos) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x, y_start);
+        ctx.lineTo(x, y_end + 15);
+        // Arrowhead
+        ctx.moveTo(x, y_end);
+        ctx.lineTo(x - 5, y_end + 10);
+        ctx.moveTo(x, y_end);
+        ctx.lineTo(x + 5, y_end + 10);
+        ctx.stroke();
+
+        ctx.font = '20px Arial';
+        const mainText = label.main;
+        const subText = label.sub;
+        const mainMetrics = ctx.measureText(mainText);
+        
+        let tx, ty;
+        ty = (y_start + y_end) / 2 + 10;
+        if (label_pos === 'left') {
+            tx = x - mainMetrics.width - 20;
+        } else { // right
+            tx = x + 15;
+        }
+        
+        ctx.fillText(mainText, tx, ty);
+        ctx.font = '15px Arial';
+        ctx.fillText(subText, tx + mainMetrics.width - 2, ty + 4);
+        ctx.restore();
+    }
+
+    // --- Component Coordinates ---
+    const groundY = 400;
+    const opampBaseX = 280;
+    const opampTipX = 430;
+    const opampTopY = 150;
+    const opampBottomY = 250;
+    const opampCenterY = (opampTopY + opampBottomY) / 2;
+    const nonInvInputY = 175;
+    const invInputY = 225;
+    const feedbackX = 200;
+    const feedbackTopY = 80;
+    
+    // --- Drawing ---
+
+    // Op-amp
+    ctx.beginPath();
+    ctx.moveTo(opampBaseX, opampTopY);
+    ctx.lineTo(opampBaseX, opampBottomY);
+    ctx.lineTo(opampTipX, opampCenterY);
+    ctx.closePath();
+    ctx.stroke();
+    
+    // Op-amp Labels and Connections
+    ctx.font = '24px sans-serif';
+    ctx.fillText('+', opampBaseX + 10, nonInvInputY + 8);
+    ctx.fillText('-', opampBaseX + 10, invInputY + 8);
+
+    // Non-inverting input line
+    ctx.beginPath();
+    ctx.moveTo(opampBaseX, nonInvInputY);
+    ctx.lineTo(250, nonInvInputY);
+    ctx.stroke();
+
+    // Inverting input line
+    ctx.beginPath();
+    ctx.moveTo(opampBaseX, invInputY);
+    ctx.lineTo(feedbackX, invInputY);
+    ctx.stroke();
+    
+    // Output line
+    const outputNodeX = 500;
+    ctx.beginPath();
+    ctx.moveTo(opampTipX, opampCenterY);
+    ctx.lineTo(outputNodeX, opampCenterY);
+    ctx.stroke();
+    
+    // Power Supplies
+    ctx.font = '18px Arial';
+    ctx.beginPath();
+    ctx.moveTo(355, opampTopY);
+    ctx.lineTo(355, opampTopY - 25);
+    ctx.stroke();
+    ctx.fillText('+9 V', 335, opampTopY - 35);
+    
+    ctx.beginPath();
+    ctx.moveTo(355, opampBottomY);
+    ctx.lineTo(355, opampBottomY + 25);
+    ctx.stroke();
+    ctx.fillText('-9 V', 335, opampBottomY + 45);
+
+    // Ground Line
+    ctx.beginPath();
+    ctx.moveTo(100, groundY);
+    ctx.lineTo(outputNodeX + 100, groundY);
+    ctx.stroke();
+
+    // Ground Symbol
+    const groundSymbolX = 520;
+    ctx.beginPath();
+    ctx.moveTo(groundSymbolX, groundY);
+    ctx.lineTo(groundSymbolX, groundY + 15);
+    ctx.moveTo(groundSymbolX - 20, groundY + 15);
+    ctx.lineTo(groundSymbolX + 20, groundY + 15);
+    ctx.moveTo(groundSymbolX - 12, groundY + 22);
+    ctx.lineTo(groundSymbolX + 12, groundY + 22);
+    ctx.moveTo(groundSymbolX - 6, groundY + 29);
+    ctx.lineTo(groundSymbolX + 6, groundY + 29);
+    ctx.stroke();
+
+    // Feedback Loop (R1 and R2)
+    // R2
+    ctx.beginPath();
+    ctx.moveTo(feedbackX, invInputY);
+    ctx.lineTo(feedbackX, 280);
+    ctx.stroke();
+    drawResistor(feedbackX, 315, 25, 70, {main: 'R', sub: '2'}, 'right');
+    ctx.beginPath();
+    ctx.moveTo(feedbackX, 350);
+    ctx.lineTo(feedbackX, groundY);
+    ctx.stroke();
+
+    // R1
+    ctx.beginPath();
+    ctx.moveTo(feedbackX, invInputY); // from inv. input junction
+    ctx.lineTo(feedbackX, feedbackTopY); // up
+    ctx.lineTo(340, feedbackTopY); // right
+    ctx.stroke();
+    drawResistor(380, feedbackTopY, 80, 28, {main: 'R', sub: '1'}, 'above');
+    ctx.beginPath();
+    ctx.moveTo(420, feedbackTopY); // right
+    ctx.lineTo(outputNodeX, feedbackTopY); // more right
+    ctx.lineTo(outputNodeX, opampCenterY); // down to output
+    ctx.stroke();
+
+    // Junctions
+    ctx.beginPath();
+    ctx.arc(feedbackX, invInputY, 3.5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(outputNodeX, opampCenterY, 3.5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(feedbackX, groundY, 3.5, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Input Terminal (Vin)
+    const vinX = 140;
+    const vinY = 175;
+    ctx.beginPath();
+    ctx.arc(vinX, vinY, 5, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(vinX, vinY);
+    ctx.lineTo(vinX - 40, vinY);
+    ctx.stroke();
+    drawVoltageArrow(vinX, groundY, vinY, {main: 'V', sub: 'IN'}, 'left');
+    
+    // Output Terminal (Vout)
+    const voutX = 580;
+    ctx.beginPath();
+    ctx.arc(voutX, opampCenterY, 5, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(outputNodeX, opampCenterY);
+    ctx.lineTo(voutX, opampCenterY);
+    ctx.stroke();
+    drawVoltageArrow(voutX, groundY, opampCenterY, {main: 'V', sub: 'OUT'}, 'right');
+    
+    // Figure Label
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText('Fig. 7.1', 300, 450);
+
+</script>
+</body>
+</html>

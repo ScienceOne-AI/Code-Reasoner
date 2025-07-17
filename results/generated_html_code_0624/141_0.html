@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Rolling Sphere on a Wedge</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450" style="border:1px solid #000;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Origin and scaling
+    const origin = { x: 80, y: 350 };
+    ctx.translate(origin.x, origin.y);
+
+    // --- Helper function to draw arrows ---
+    function drawArrow(fromX, fromY, toX, toY) {
+        const headlen = 10;
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    // --- System parameters ---
+    const wedgeX = 100; // horizontal position of the wedge's left vertical side
+    const wedgeAnglePhi = 25 * Math.PI / 180; // Angle of the incline in radians
+    const wedgeBase = 350; // Horizontal length of the incline
+    const wedgeHeight = wedgeBase * Math.tan(wedgeAnglePhi);
+    const sphereRadius = 40;
+    const xi = 160; // distance down the incline to the point of contact
+
+    // --- Coordinates ---
+    // Wedge vertices
+    const wedgeTop = { x: wedgeX, y: -wedgeHeight };
+    const wedgeBottomLeft = { x: wedgeX, y: 0 };
+    const wedgeBottomRight = { x: wedgeX + wedgeBase, y: 0 };
+
+    // Sphere contact point (P)
+    const contactP = {
+        x: wedgeTop.x + xi * Math.cos(wedgeAnglePhi),
+        y: wedgeTop.y + xi * Math.sin(wedgeAnglePhi)
+    };
+    
+    // Sphere center (O)
+    const sphereCenter = {
+        x: contactP.x - sphereRadius * Math.sin(wedgeAnglePhi),
+        y: contactP.y - sphereRadius * Math.cos(wedgeAnglePhi)
+    };
+
+    // --- Drawing ---
+
+    // 1. Coordinate Axes
+    drawArrow(-60, 0, 450, 0); // x-axis
+    ctx.fillText('x', 460, 0);
+    drawArrow(0, 50, 0, -280); // y-axis
+    ctx.fillText('y', 0, -290);
+
+    // 2. Wedge
+    ctx.beginPath();
+    ctx.moveTo(wedgeTop.x, wedgeTop.y);
+    ctx.lineTo(wedgeBottomRight.x, wedgeBottomRight.y);
+    ctx.lineTo(wedgeBottomLeft.x, wedgeBottomLeft.y);
+    ctx.lineTo(wedgeTop.x, wedgeTop.y - 40); // Small vertical line at the top
+    drawArrow(wedgeTop.x, wedgeTop.y-40, wedgeTop.x, wedgeTop.y); // Arrow for the small vertical line
+    ctx.stroke();
+
+    // 3. Sphere
+    ctx.beginPath();
+    ctx.arc(sphereCenter.x, sphereCenter.y, sphereRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 4. Labels and Markings
+    
+    // Label 'x' for wedge position
+    ctx.beginPath();
+    ctx.moveTo(0, 20);
+    ctx.lineTo(wedgeBottomLeft.x, 20);
+    ctx.moveTo(0, 15);
+    ctx.lineTo(0, 25);
+    ctx.moveTo(wedgeBottomLeft.x, 15);
+    ctx.lineTo(wedgeBottomLeft.x, 25);
+    ctx.stroke();
+    ctx.fillText('x', wedgeBottomLeft.x / 2, 20);
+
+    // Label 'φ' for incline angle
+    ctx.beginPath();
+    ctx.arc(wedgeBottomRight.x, wedgeBottomRight.y, 40, Math.PI, Math.PI + wedgeAnglePhi);
+    ctx.stroke();
+    ctx.fillText('φ', wedgeBottomRight.x - 50, -15);
+    
+    // Label 'ξ' for distance on incline
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(wedgeTop.x, wedgeTop.y);
+    ctx.lineTo(contactP.x, contactP.y);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillText('ξ', wedgeTop.x + 30, wedgeTop.y + 20);
+
+    // Label 'y' for vertical position of contact point
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(contactP.x, contactP.y);
+    ctx.lineTo(contactP.x, 0);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillText('y', contactP.x - 20, contactP.y / 2);
+
+
+    // Markings for angle 'θ' inside the sphere
+    ctx.save();
+    // Dashed vertical line
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(sphereCenter.x, sphereCenter.y - sphereRadius);
+    ctx.lineTo(sphereCenter.x, contactP.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // Radius to contact point
+    ctx.beginPath();
+    ctx.moveTo(sphereCenter.x, sphereCenter.y);
+    ctx.lineTo(contactP.x, contactP.y);
+    ctx.stroke();
+    
+    // Arc for θ
+    const angleToVertical = Math.PI / 2;
+    const angleToContact = Math.atan2(contactP.y - sphereCenter.y, contactP.x - sphereCenter.x);
+    ctx.beginPath();
+    ctx.arc(sphereCenter.x, sphereCenter.y, sphereRadius * 0.4, angleToVertical, angleToContact);
+    ctx.stroke();
+    ctx.fillText('θ', sphereCenter.x + 12, sphereCenter.y - 12);
+    
+    // Angular velocity 'θ dot'
+    const rotArrowRadius = sphereRadius + 15;
+    ctx.beginPath();
+    ctx.arc(sphereCenter.x, sphereCenter.y, rotArrowRadius, -Math.PI * 0.8, -Math.PI * 0.2);
+    ctx.stroke();
+    // Arrowhead for rotation
+    const arrowAngle = -Math.PI * 0.2;
+    const headlen_rot = 8;
+    ctx.beginPath();
+    const arrowX = sphereCenter.x + rotArrowRadius * Math.cos(arrowAngle);
+    const arrowY = sphereCenter.y + rotArrowRadius * Math.sin(arrowAngle);
+    ctx.moveTo(arrowX, arrowY);
+    ctx.lineTo(arrowX - headlen_rot * Math.cos(arrowAngle - Math.PI / 6), arrowY - headlen_rot * Math.sin(arrowAngle - Math.PI / 6));
+    ctx.moveTo(arrowX, arrowY);
+    ctx.lineTo(arrowX - headlen_rot * Math.cos(arrowAngle + Math.PI / 6), arrowY - headlen_rot * Math.sin(arrowAngle + Math.PI / 6));
+    ctx.stroke();
+    ctx.font = '22px Times New Roman';
+    ctx.fillText('θ̇', sphereCenter.x, sphereCenter.y - rotArrowRadius - 10);
+    
+
+    // 5. Figure Caption
+    ctx.font = '16px Times New Roman';
+    ctx.fillText('Fig. 2.18.', 220, 80);
+
+</script>
+</body>
+</html>

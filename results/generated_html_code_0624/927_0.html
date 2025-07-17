@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="450" height="480"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '16px Arial';
+        ctx.fillStyle = 'black';
+
+        // 1. Draw the support structure
+        const supportY = 40;
+        const supportX1 = 125;
+        const supportX2 = 325;
+        ctx.beginPath();
+        ctx.moveTo(supportX1, supportY);
+        ctx.lineTo(supportX2, supportY);
+        ctx.stroke();
+
+        // Hatching for the support
+        ctx.lineWidth = 1;
+        for (let i = 0; i < (supportX2 - supportX1); i += 8) {
+            ctx.beginPath();
+            ctx.moveTo(supportX1 + i, supportY);
+            ctx.lineTo(supportX1 + i - 10, supportY + 10);
+            ctx.stroke();
+        }
+        ctx.lineWidth = 1.5; // Reset line width
+
+        // 2. Draw the spring
+        const springCenterX = 225;
+        const springTopY = 40;
+        const springBottomY = 170;
+        const springConnectTopY = 55;
+        const springConnectBottomY = 155;
+        
+        // Connectors
+        ctx.beginPath();
+        ctx.moveTo(springCenterX, springTopY);
+        ctx.lineTo(springCenterX, springConnectTopY);
+        ctx.stroke();
+        
+        // Spring coils using Bezier curves for a smooth look
+        ctx.beginPath();
+        ctx.moveTo(springCenterX, springConnectTopY);
+        const turns = 10;
+        const radius = 15;
+        const springHeight = springConnectBottomY - springConnectTopY;
+        const step = springHeight / turns;
+
+        for (let i = 0; i < turns; i++) {
+            const y1 = springConnectTopY + i * step;
+            const y2 = springConnectTopY + (i + 0.5) * step;
+            const y3 = springConnectTopY + (i + 1) * step;
+            // A curve to the left, then a curve to the right to form one coil
+            ctx.bezierCurveTo(springCenterX - radius * 1.8, y2, springCenterX + radius * 1.8, y2, springCenterX, y3);
+        }
+        ctx.lineTo(springCenterX, springBottomY);
+        ctx.stroke();
+
+        // 3. Draw the coil
+        const coilCenterX = 225;
+        const coilTopY = 220;
+        const numLoops = 8;
+        const loopHeight = 11;
+        const loopWidth = 70;
+        
+        ctx.lineWidth = 1.2;
+        for (let i = 0; i < numLoops; i++) {
+            const loopCenterY = coilTopY + loopHeight / 2 + i * loopHeight;
+            ctx.beginPath();
+            ctx.ellipse(coilCenterX, loopCenterY, loopWidth / 2, loopHeight / 2, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+        }
+        ctx.lineWidth = 1.5;
+
+
+        // 4. Draw the magnet
+        const magnetWidth = 20;
+        const magnetHeight = 110;
+        const magnetX = springCenterX - magnetWidth / 2;
+        const magnetTopY = 180;
+        
+        // Connector from spring to magnet
+        ctx.beginPath();
+        ctx.moveTo(springCenterX, springBottomY);
+        ctx.lineTo(springCenterX, magnetTopY);
+        ctx.stroke();
+        
+        // Magnet body
+        ctx.fillStyle = '#cccccc'; // Grey fill
+        ctx.fillRect(magnetX, magnetTopY, magnetWidth, magnetHeight);
+        ctx.strokeRect(magnetX, magnetTopY, magnetWidth, magnetHeight);
+        ctx.fillStyle = 'black'; // Reset fill color
+
+
+        // 5. Draw the circuit
+        const circuitRightX = 350;
+        const coilSideX = coilCenterX + loopWidth / 2;
+        const circuitTopY = coilTopY + loopHeight / 2;
+        const circuitBottomY = coilTopY + (numLoops - 1) * loopHeight + loopHeight / 2;
+        
+        // Wires from coil to circuit components
+        ctx.beginPath();
+        ctx.moveTo(coilSideX, circuitTopY);
+        ctx.lineTo(circuitRightX, circuitTopY);
+        ctx.moveTo(coilSideX, circuitBottomY);
+        ctx.lineTo(circuitRightX, circuitBottomY);
+
+        // Switch
+        const switchY_mid = (circuitTopY + circuitBottomY) / 2 - 20;
+        const switchArmLength = 25;
+        const switchAngle = Math.PI / 5;
+        ctx.moveTo(circuitRightX, circuitTopY);
+        ctx.lineTo(circuitRightX, switchY_mid - 20); // wire to switch
+        ctx.moveTo(circuitRightX, switchY_mid - 20);
+        ctx.lineTo(circuitRightX + switchArmLength * Math.cos(switchAngle), switchY_mid - 20 - switchArmLength * Math.sin(switchAngle));
+        ctx.stroke();
+
+        // Resistor
+        const resistorY_mid = (circuitTopY + circuitBottomY) / 2 + 20;
+        const resistorWidth = 24;
+        const resistorHeight = 12;
+        ctx.beginPath();
+        ctx.moveTo(circuitRightX, resistorY_mid + 20);
+        ctx.lineTo(circuitRightX, circuitBottomY);
+        ctx.stroke();
+        ctx.strokeRect(circuitRightX - resistorWidth / 2, resistorY_mid - resistorHeight / 2, resistorWidth, resistorHeight);
+        
+        // connecting wire between switch and resistor
+        ctx.beginPath();
+        ctx.moveTo(circuitRightX, switchY_mid + 20);
+        ctx.lineTo(circuitRightX, resistorY_mid - 20);
+        ctx.stroke();
+        
+        // 6. Add labels and leader lines
+        ctx.textAlign = 'left';
+        // Spring label
+        ctx.fillText('spring', 100, 100);
+        ctx.beginPath();
+        ctx.moveTo(150, 100);
+        ctx.lineTo(210, 100);
+        ctx.stroke();
+        
+        // Magnet label
+        ctx.fillText('magnet', 100, 220);
+        ctx.beginPath();
+        ctx.moveTo(155, 220);
+        ctx.lineTo(215, 220);
+        ctx.stroke();
+
+        // Coil label
+        ctx.fillText('coil', 120, 300);
+        ctx.beginPath();
+        ctx.moveTo(150, 300);
+        ctx.lineTo(190, 275);
+        ctx.stroke();
+        
+        // 7. Add figure caption
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 16px Arial';
+        ctx.fillText('Fig. 3.1', canvas.width / 2, 400);
+
+    </script>
+</body>
+</html>

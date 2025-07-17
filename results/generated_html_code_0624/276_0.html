@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coupled Mass-Spring System</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="400" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws a zigzag spring.
+     * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+     * @param {number} x - The center x-coordinate of the spring.
+     * @param {number} y_start - The starting y-coordinate.
+     * @param {number} length - The total vertical length of the spring.
+     * @param {number} segments - The number of zigzags.
+     * @param {number} amplitude - The horizontal width of the zigzag.
+     */
+    function drawSpring(ctx, x, y_start, length, segments, amplitude) {
+        ctx.beginPath();
+        ctx.moveTo(x, y_start);
+        const dy = length / segments;
+
+        for (let i = 0; i < segments; i++) {
+            const x_offset = (i % 2 === 0) ? amplitude : -amplitude;
+            ctx.lineTo(x + x_offset, y_start + dy * (i + 0.5));
+        }
+        ctx.lineTo(x, y_start + length);
+        ctx.stroke();
+    }
+    
+    /**
+     * Draws a vertical dimension line with end caps and a label.
+     * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+     * @param {number} x - The x-coordinate of the dimension line.
+     * @param {number} y1 - The starting y-coordinate.
+     * @param {number} y2 - The ending y-coordinate.
+     * @param {string} label - The text label for the dimension.
+     */
+    function drawDimensionLine(ctx, x, y1, y2, label) {
+        const capLength = 10;
+        
+        const origLineWidth = ctx.lineWidth;
+        ctx.lineWidth = 1.5;
+
+        // Vertical line
+        ctx.beginPath();
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, y2);
+        ctx.stroke();
+
+        // Top cap
+        ctx.beginPath();
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x + 50, y1); // Line points to system
+        ctx.moveTo(x - capLength, y1); // End cap tick
+        ctx.lineTo(x, y1);
+        ctx.stroke();
+        
+        // Bottom cap
+        ctx.beginPath();
+        ctx.moveTo(x, y2);
+        ctx.lineTo(x + 80, y2); // Line points to system
+        ctx.moveTo(x - capLength, y2); // End cap tick
+        ctx.lineTo(x, y2);
+        ctx.stroke();
+        
+        // Use a different style for the dimension line itself to match the image
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        const dimLineX = x - 20;
+        ctx.moveTo(dimLineX, y1);
+        ctx.lineTo(dimLineX, y2);
+        
+        // End T-caps for dimension line
+        ctx.moveTo(dimLineX - 5, y1);
+        ctx.lineTo(dimLineX + 5, y1);
+        ctx.moveTo(dimLineX - 5, y2);
+        ctx.lineTo(dimLineX + 5, y2);
+        ctx.stroke();
+        
+        // Label
+        ctx.font = 'italic 20px serif';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'black';
+        ctx.fillText(label, dimLineX - 8, (y1 + y2) / 2);
+        
+        ctx.lineWidth = origLineWidth;
+    }
+
+
+    // --- Main Drawing ---
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Set drawing parameters
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+
+    // Define coordinates and sizes
+    const xCenter = 250;
+    const yCeiling = 60;
+    const ceilingWidth = 180;
+    const springLength = 90;
+    const springSegments = 16;
+    const springAmplitude = 12;
+    const massWidth = 60;
+    const massHeight = 30;
+
+    // 1. Draw the fixed support (ceiling)
+    ctx.beginPath();
+    ctx.moveTo(xCenter - ceilingWidth / 2, yCeiling);
+    ctx.lineTo(xCenter + ceilingWidth / 2, yCeiling);
+    ctx.stroke();
+    
+    // Hatch marks for ceiling
+    const hatchLength = 15;
+    const hatchAngle = Math.PI / 4;
+    ctx.lineWidth = 1.5;
+    for (let i = xCenter - ceilingWidth / 2; i < xCenter + ceilingWidth / 2; i += 15) {
+        ctx.beginPath();
+        ctx.moveTo(i, yCeiling);
+        ctx.lineTo(i - hatchLength * Math.cos(hatchAngle), yCeiling - hatchLength * Math.sin(hatchAngle));
+        ctx.stroke();
+    }
+    ctx.lineWidth = 2.5;
+
+
+    // 2. Define vertical positions
+    const spring1_y_start = yCeiling;
+    const spring1_y_end = spring1_y_start + springLength;
+    const mass1_y_top = spring1_y_end;
+    const mass1_y_center = mass1_y_top + massHeight / 2;
+    const mass1_y_bottom = mass1_y_top + massHeight;
+    
+    const spring2_y_start = mass1_y_bottom;
+    const spring2_y_end = spring2_y_start + springLength;
+    const mass2_y_top = spring2_y_end;
+    const mass2_y_center = mass2_y_top + massHeight / 2;
+    
+    // 3. Draw the first spring and its label 'k'
+    drawSpring(ctx, xCenter, spring1_y_start, springLength, springSegments, springAmplitude);
+    ctx.font = 'italic 22px serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('k', xCenter - 45, spring1_y_start + springLength / 2);
+
+    // 4. Draw the first mass (2m) and its label
+    ctx.fillRect(xCenter - massWidth / 2, mass1_y_top, massWidth, massHeight);
+    ctx.font = '22px serif';
+    ctx.fillText('2m', xCenter + massWidth / 2 + 10, mass1_y_center);
+    
+    // 5. Draw the second spring and its label 'k'
+    drawSpring(ctx, xCenter, spring2_y_start, springLength, springSegments, springAmplitude);
+    ctx.font = 'italic 22px serif';
+    ctx.fillText('k', xCenter - 45, spring2_y_start + springLength / 2);
+    
+    // 6. Draw the second mass (m) and its label
+    ctx.fillRect(xCenter - massWidth / 2, mass2_y_top, massWidth, massHeight);
+    ctx.font = '22px serif';
+    ctx.fillText('m', xCenter + massWidth / 2 + 10, mass2_y_center);
+    
+    // 7. Draw dimension lines y1 and y2
+    // Re-implementing dimension lines to match the image style more closely
+    function drawDim(ctx, x, y_start, y_end, label){
+        ctx.lineWidth = 1.5;
+        const capWidth = 12;
+        ctx.beginPath();
+        ctx.moveTo(x, y_start);
+        ctx.lineTo(x, y_end);
+        
+        ctx.moveTo(x - capWidth/2, y_start);
+        ctx.lineTo(x + capWidth/2, y_start);
+        
+        ctx.moveTo(x - capWidth/2, y_end);
+        ctx.lineTo(x + capWidth/2, y_end);
+        ctx.stroke();
+        
+        ctx.font = 'italic 20px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'black';
+        ctx.fillText(label, x - 15, (y_start + y_end) / 2);
+    }
+    
+    const thinLineOrigWidth = ctx.lineWidth;
+    ctx.lineWidth = 1;
+    // Guide lines from ceiling
+    ctx.beginPath();
+    ctx.moveTo(xCenter - massWidth / 2 - 10, yCeiling);
+    ctx.lineTo(100, yCeiling);
+    ctx.stroke();
+
+    // Guide lines for y1
+    ctx.beginPath();
+    ctx.moveTo(xCenter - massWidth / 2, mass1_y_center);
+    ctx.lineTo(150, mass1_y_center);
+    ctx.stroke();
+    
+    // Guide lines for y2
+    ctx.beginPath();
+    ctx.moveTo(xCenter - massWidth / 2, mass2_y_center);
+    ctx.lineTo(100, mass2_y_center);
+    ctx.stroke();
+    
+    ctx.lineWidth = thinLineOrigWidth;
+    
+    drawDim(ctx, 150, yCeiling, mass1_y_center, 'y₁');
+    drawDim(ctx, 100, yCeiling, mass2_y_center, 'y₂');
+
+    // 8. Draw the figure caption
+    ctx.font = 'bold 20px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Fig. 2.52.', canvas.width / 2, canvas.height - 50);
+
+</script>
+</body>
+</html>

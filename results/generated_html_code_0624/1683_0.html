@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Pulley System</title>
+</head>
+<body>
+<canvas id="physicsCanvas"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style
+ctx.strokeStyle = 'black';
+ctx.lineWidth = 2;
+ctx.font = '24px serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// --- Dimensions and Positions ---
+const canvasWidth = 800;
+const canvasHeight = 400;
+canvas.width = canvasWidth;
+canvas.height = canvasHeight;
+
+const groundY = 350;
+const wallX = 80;
+
+// Block A
+const block = { x: 600, y: 250, w: 150, h: 100 };
+
+// Pulleys
+const p1 = { x: 250, y: 200, r: 60 }; // Fixed pulley
+const p2 = { x: 480, y: 200, r: 60 }; // Movable pulley
+const axle = { w: 120, h: 18 };
+
+// --- Drawing Functions ---
+
+function drawHatching(x1, y1, x2, y2, isVertical) {
+    ctx.save();
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 1.5;
+    const step = 12;
+    ctx.beginPath();
+    if (isVertical) {
+        for (let y = y1; y < y2; y += step) {
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x1 - 20, y - 20);
+        }
+    } else {
+        for (let x = x1; x < x2; x += step) {
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x - 20, y1 + 20);
+        }
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawPulley(cx, cy, r, axleW, axleH) {
+    // Pulley wheel
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+    ctx.stroke();
+    // Axle
+    ctx.strokeRect(cx - axleW / 2, cy - axleH / 2, axleW, axleH);
+}
+
+// --- Draw Scene ---
+
+// 1. Draw Ground and Wall
+ctx.beginPath();
+ctx.moveTo(0, groundY);
+ctx.lineTo(canvasWidth, groundY);
+ctx.stroke();
+drawHatching(0, groundY, canvasWidth, groundY, false);
+
+ctx.beginPath();
+ctx.moveTo(wallX, 0);
+ctx.lineTo(wallX, groundY);
+ctx.stroke();
+drawHatching(wallX, 0, wallX, groundY, true);
+
+
+// 2. Draw Block A
+ctx.strokeRect(block.x, block.y, block.w, block.h);
+ctx.save();
+ctx.font = 'italic 30px serif';
+ctx.fillText('A', block.x + block.w / 2, block.y + block.h / 2);
+ctx.restore();
+
+// 3. Draw Pulleys
+drawPulley(p1.x, p1.y, p1.r, axle.w, axle.h);
+drawPulley(p2.x, p2.y, p2.r, axle.w, axle.h);
+
+// 4. Draw Hooks
+// Fixed pulley hook to wall
+const p1_hook_x = p1.x - axle.w / 2;
+ctx.beginPath();
+ctx.moveTo(wallX, p1.y);
+ctx.lineTo(p1_hook_x - 10, p1.y);
+ctx.arc(p1_hook_x - 10, p1.y + 10, 10, -Math.PI / 2, Math.PI, false);
+ctx.stroke();
+
+// Movable pulley hook to block
+const p2_hook_x = p2.x + axle.w / 2;
+ctx.beginPath();
+ctx.moveTo(block.x, p2.y);
+ctx.lineTo(p2_hook_x + 10, p2.y);
+ctx.arc(p2_hook_x + 10, p2.y + 10, 10, -Math.PI / 2, Math.PI, true);
+ctx.stroke();
+
+// Rope attachment points on axles
+const p1_axle_rope_pt = { x: p1.x + axle.w / 2 - 10, y: p1.y };
+const p2_axle_rope_pt = { x: p2.x - axle.w / 2 + 10, y: p2.y };
+
+// 5. Draw the Rope System (Faithful to the schematic)
+// This system implies two ropes, one loop and one pull rope, to match the visual.
+
+// Rope 1 (Bottom loop from fixed pulley, under movable pulley, back to fixed pulley)
+ctx.beginPath();
+ctx.moveTo(p1_axle_rope_pt.x, p1_axle_rope_pt.y);
+ctx.lineTo(p2.x - 25, p2.y + p2.r - 5);
+ctx.arc(p2.x, p2.y, p2.r, Math.PI/2 + 0.4, -Math.PI/2 - 0.4, true);
+ctx.lineTo(p1_axle_rope_pt.x, p1_axle_rope_pt.y);
+ctx.stroke();
+
+// Rope 2 (Top rope from movable pulley, over fixed pulley)
+ctx.beginPath();
+ctx.moveTo(p2_axle_rope_pt.x, p2_axle_rope_pt.y);
+ctx.lineTo(p1.x, p1.y - p1.r);
+ctx.arc(p1.x, p1.y, p1.r, -Math.PI / 2, Math.PI, true);
+ctx.lineTo(p1.x - p1.r - 80, p1.y);
+ctx.stroke();
+
+
+// 6. Labels and Arrows
+// Force F
+ctx.save();
+ctx.font = 'italic bold 30px serif';
+ctx.fillText('F', 320, 110);
+ctx.restore();
+
+ctx.beginPath();
+const arrow_y = p1.y;
+const arrow_x_start = p1.x - p1.r - 10;
+const arrow_x_end = p1.x - p1.r - 60;
+ctx.moveTo(arrow_x_start, arrow_y);
+ctx.lineTo(arrow_x_end, arrow_y);
+ctx.moveTo(arrow_x_end + 12, arrow_y - 8);
+ctx.lineTo(arrow_x_end, arrow_y);
+ctx.lineTo(arrow_x_end + 12, arrow_y + 8);
+ctx.stroke();
+
+</script>
+</body>
+</html>

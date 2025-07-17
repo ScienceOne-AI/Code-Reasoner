@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram - Coil and Newton Meter</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #999;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="500" height="600"></canvas>
+
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Style settings
+  ctx.lineWidth = 1.5;
+  ctx.font = '16px sans-serif';
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+
+  // Helper function for drawing a line with arrows at both ends
+  function drawDoubleArrowLine(ctx, x1, y1, x2, y2, headLength = 8) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const angle = Math.atan2(dy, dx);
+    
+    ctx.beginPath();
+    // Main line
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+
+    // Arrow head at (x2, y2)
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+    
+    // Arrow head at (x1, y1)
+    const angle2 = Math.atan2(y1 - y2, x1 - x2);
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - headLength * Math.cos(angle2 - Math.PI / 6), y1 - headLength * Math.sin(angle2 - Math.PI / 6));
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - headLength * Math.cos(angle2 + Math.PI / 6), y1 - headLength * Math.sin(angle2 + Math.PI / 6));
+
+    ctx.stroke();
+  }
+
+  // Helper function for drawing a dashed line
+  function drawDashedLine(ctx, x1, y1, x2, y2, dashLen = 5) {
+    ctx.beginPath();
+    ctx.setLineDash([dashLen, dashLen]);
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line
+  }
+  
+  // -- Main Drawing --
+
+  const meterCenterX = canvas.width / 2; // 250
+
+  // 1. Newton Meter
+  // Top ring
+  ctx.beginPath();
+  ctx.arc(meterCenterX, 60, 10, 0, 2 * Math.PI);
+  ctx.stroke();
+  // Body
+  ctx.beginPath();
+  ctx.rect(meterCenterX - 15, 70, 30, 100);
+  ctx.stroke();
+  // Scale inside
+  ctx.beginPath();
+  ctx.moveTo(meterCenterX, 80);
+  ctx.lineTo(meterCenterX, 150);
+  ctx.moveTo(meterCenterX - 10, 120);
+  ctx.lineTo(meterCenterX + 10, 120);
+  ctx.stroke();
+  // Hook
+  ctx.beginPath();
+  ctx.moveTo(meterCenterX, 170);
+  ctx.lineTo(meterCenterX, 178);
+  ctx.arc(meterCenterX, 178, 8, Math.PI, 2 * Math.PI);
+  ctx.stroke();
+  const hookAttachY = 178;
+
+
+  // 2. Coil
+  const coilW = 150;
+  const coilH = (5.00 / 3.00) * coilW; // 250
+  const coilX = (canvas.width - coilW) / 2; // 175
+  const coilY = 240;
+  ctx.beginPath();
+  ctx.rect(coilX, coilY, coilW, coilH);
+  ctx.stroke();
+
+
+  // 3. Cradle
+  const cradleAttachL = coilX + 40;
+  const cradleAttachR = coilX + coilW - 40;
+  const cradleAttachY = coilY;
+  ctx.beginPath();
+  ctx.moveTo(meterCenterX, hookAttachY); // Start from hook
+  ctx.lineTo(cradleAttachL, cradleAttachY);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(meterCenterX, hookAttachY);
+  ctx.lineTo(cradleAttachR, cradleAttachY);
+  ctx.stroke();
+  
+  // Cradle suspension point arrows (filled triangles)
+  function drawDownArrow(ctx, x, y) {
+      const arrowH = 8;
+      const arrowW = 5;
+      ctx.beginPath();
+      ctx.moveTo(x, y + arrowH); // Tip
+      ctx.lineTo(x - arrowW, y);   // Base-left
+      ctx.lineTo(x + arrowW, y);   // Base-right
+      ctx.closePath();
+      ctx.fill();
+  }
+  drawDownArrow(ctx, cradleAttachL, cradleAttachY);
+  drawDownArrow(ctx, cradleAttachR, cradleAttachY);
+
+
+  // 4. Dimension Lines
+  ctx.textBaseline = 'middle';
+  // Vertical dimension (5.00 cm)
+  const vDimX = coilX - 55;
+  drawDashedLine(ctx, coilX, coilY, vDimX, coilY);
+  drawDashedLine(ctx, coilX, coilY + coilH, vDimX, coilY + coilH);
+  drawDoubleArrowLine(ctx, vDimX, coilY, vDimX, coilY + coilH);
+  ctx.textAlign = 'right';
+  ctx.fillText('5.00 cm', vDimX - 10, coilY + coilH / 2);
+
+  // Horizontal dimension (3.00 cm)
+  const hDimY = coilY + coilH + 25;
+  drawDashedLine(ctx, coilX, coilY + coilH, coilX, hDimY);
+  drawDashedLine(ctx, coilX + coilW, coilY + coilH, coilX + coilW, hDimY);
+  drawDoubleArrowLine(ctx, coilX, hDimY, coilX + coilW, hDimY);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('3.00 cm', coilX + coilW / 2, hDimY - 5);
+
+  // 5. Labels
+  ctx.textBaseline = 'middle';
+  // Newton Meter label
+  ctx.textAlign = 'left';
+  const nmLabelY = 130;
+  ctx.beginPath();
+  ctx.moveTo(meterCenterX + 15, nmLabelY);
+  ctx.lineTo(meterCenterX + 60, nmLabelY);
+  ctx.stroke();
+  ctx.fillText('newton meter', meterCenterX + 65, nmLabelY);
+
+  // Cradle label
+  const cradleLabelX = 110;
+  const cradleLabelY = 220;
+  ctx.textAlign = 'left';
+  ctx.beginPath();
+  ctx.moveTo(cradleLabelX + 50, cradleLabelY);
+  ctx.lineTo(205, 230); // points to left cradle line
+  ctx.stroke();
+  ctx.fillText('cradle', cradleLabelX, cradleLabelY);
+
+  // Coil label
+  const coilLabelY = coilY + 60;
+  ctx.beginPath();
+  ctx.moveTo(coilX + coilW, coilLabelY);
+  ctx.lineTo(coilX + coilW + 30, coilLabelY);
+  ctx.stroke();
+  ctx.fillText('coil', coilX + coilW + 35, coilLabelY);
+  ctx.fillText('40 turns', coilX + coilW + 35, coilLabelY + 20);
+
+  // 6. Figure Caption
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('Fig. 7.1', canvas.width / 2, canvas.height - 10);
+
+</script>
+
+</body>
+</html>

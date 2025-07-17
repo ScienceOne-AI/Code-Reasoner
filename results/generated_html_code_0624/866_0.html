@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Steam Pile Driver Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="800"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '16px "KaiTi", "SimSun", sans-serif';
+
+        // --- Helper Functions ---
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        function drawText(text, x, y) {
+            ctx.fillText(text, x, y);
+        }
+
+        // --- Main Drawing ---
+
+        // 1. Draw the Main Tower (Derrick)
+        const towerTopY = 80;
+        const towerBaseY = 650;
+        const towerHeight = towerBaseY - towerTopY;
+        const towerBaseWidth = 180;
+        const towerTopWidth = 60;
+        const towerCenterX = 250;
+
+        const towerLeftBaseX = towerCenterX - towerBaseWidth / 2;
+        const towerRightBaseX = towerCenterX + towerBaseWidth / 2;
+        const towerLeftTopX = towerCenterX - towerTopWidth / 2;
+        const towerRightTopX = towerCenterX + towerTopWidth / 2;
+
+        // Main vertical beams
+        drawLine(towerLeftBaseX, towerBaseY, towerLeftTopX, towerTopY);
+        drawLine(towerRightBaseX, towerBaseY, towerRightTopX, towerTopY);
+
+        // Horizontal and diagonal braces
+        const numSections = 11;
+        for (let i = 0; i < numSections; i++) {
+            const t = (i + 1) / (numSections + 1); // parameter along the height
+            const y = towerBaseY - t * towerHeight;
+            const currentWidth = towerBaseWidth - t * (towerBaseWidth - towerTopWidth);
+            const xLeft = towerCenterX - currentWidth / 2;
+            const xRight = towerCenterX + currentWidth / 2;
+            drawLine(xLeft, y, xRight, y);
+
+            const t_prev = i / (numSections + 1);
+            const y_prev = towerBaseY - t_prev * towerHeight;
+            const prevWidth = towerBaseWidth - t_prev * (towerBaseWidth - towerTopWidth);
+            const xLeft_prev = towerCenterX - prevWidth / 2;
+            const xRight_prev = towerCenterX + prevWidth / 2;
+
+            if (i < numSections) {
+                drawLine(xLeft, y, xRight_prev, y_prev);
+                drawLine(xRight, y, xLeft_prev, y_prev);
+            }
+        }
+
+        // Tower top structure
+        ctx.strokeRect(towerLeftTopX - 5, towerTopY - 20, towerTopWidth + 10, 20);
+        drawLine(towerCenterX, towerTopY - 20, towerCenterX, towerTopY - 35);
+        drawLine(towerCenterX - 10, towerTopY - 35, towerCenterX + 10, towerTopY - 35);
+
+
+        // 2. Draw Ground and Tracks
+        const groundY = 660;
+        
+        // Main track
+        drawLine(50, groundY + 10, 350, groundY + 10);
+        drawLine(50, groundY + 20, 350, groundY + 20);
+        for(let x = 50; x < 350; x += 20) {
+            drawLine(x, groundY + 5, x+5, groundY + 25);
+        }
+
+        // Side track
+        drawLine(380, groundY + 30, 520, groundY + 50);
+        drawLine(370, groundY + 45, 510, groundY + 65);
+        for(let i = 0; i < 8; i++) {
+            const x1 = 385 + i * 15;
+            const y1 = groundY + 30 + i * 2.8;
+            const x2 = x1 - 15;
+            const y2 = y1 + 15;
+            drawLine(x1, y1, x2, y2);
+        }
+        // Draw some ground details/gravel
+        for(let i=0; i<100; i++) {
+            const x = 50 + Math.random() * 500;
+            const y = groundY + Math.random() * 50;
+            if (y > groundY + 10) { // Don't draw over tracks too much
+                 ctx.fillRect(x, y, 2, 2);
+            }
+        }
+
+
+        // 3. Tower Base Equipment
+        ctx.strokeRect(150, 610, 40, 40);
+        for(let y = 610; y < 650; y+=10) { drawLine(150, y, 190, y); }
+        
+        ctx.beginPath();
+        ctx.moveTo(190, 630);
+        ctx.quadraticCurveTo(200, 600, 215, 590);
+        ctx.stroke();
+
+        // Gears at the bottom
+        function drawGear(cx, cy, radius, numTeeth) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            for (let i = 0; i < numTeeth; i++) {
+                const angle = (i / numTeeth) * 2 * Math.PI;
+                const tx = cx + (radius + 4) * Math.cos(angle);
+                const ty = cy + (radius + 4) * Math.sin(angle);
+                ctx.beginPath();
+                ctx.arc(tx, ty, 3, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+        drawGear(225, 635, 8, 6);
+        drawGear(250, 635, 8, 6);
+
+
+        // 4. Guy Wires
+        ctx.beginPath();
+        ctx.moveTo(towerLeftTopX, towerTopY);
+        ctx.quadraticCurveTo(100, 150, 40, 250);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(towerLeftTopX, towerTopY + 10);
+        ctx.quadraticCurveTo(80, 200, 20, 320);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(towerLeftTopX, towerTopY + 20);
+        ctx.quadraticCurveTo(60, 250, 0, 400);
+        ctx.stroke();
+
+        // 5. Tree/Bush
+        ctx.beginPath();
+        ctx.moveTo(310, 250);
+        ctx.bezierCurveTo(310, 230, 340, 230, 340, 250);
+        ctx.bezierCurveTo(350, 250, 350, 270, 340, 270);
+        ctx.bezierCurveTo(340, 280, 325, 285, 320, 275);
+        ctx.bezierCurveTo(315, 280, 310, 270, 310, 250);
+        ctx.stroke();
+        
+        
+        // 6. Inset Box
+        const insetX = 350, insetY = 120, insetW = 200, insetH = 400;
+        ctx.strokeRect(insetX, insetY, insetW, insetH);
+
+        // Connection lines to inset
+        drawLine(towerCenterX + 60, 240, insetX, insetY + 50);
+        drawLine(towerCenterX + 60, 280, insetX, insetY + 150);
+
+
+        // 7. Inset Content
+        const insetCenterX = insetX + insetW / 2;
+
+        // Pile
+        const pileY = insetY + 300;
+        const pileTopY = pileY + 25;
+        ctx.strokeRect(insetCenterX - 25, pileTopY, 50, 70);
+        drawLine(insetCenterX - 25, pileTopY + 20, insetCenterX + 25, pileTopY + 20);
+        drawText("桩", insetCenterX + 35, pileTopY + 55); // Pile label
+        // Pile texture
+        for(let i=0; i<5; i++) {
+            drawLine(insetCenterX - 20 + Math.random()*10, pileTopY + 25 + Math.random()*40, insetCenterX - 15 + Math.random()*10, pileTopY + 25 + Math.random()*40);
+        }
+
+
+        // Pile Cap
+        ctx.beginPath();
+        ctx.moveTo(insetCenterX - 30, pileY);
+        ctx.lineTo(insetCenterX + 30, pileY);
+        ctx.quadraticCurveTo(insetCenterX + 35, pileY + 12.5, insetCenterX + 30, pileY + 25);
+        ctx.lineTo(insetCenterX - 30, pileY + 25);
+        ctx.quadraticCurveTo(insetCenterX - 35, pileY + 12.5, insetCenterX - 30, pileY);
+        ctx.stroke();
+        for (let y = pileY + 5; y < pileY + 25; y += 5) {
+             drawLine(insetCenterX - 30, y, insetCenterX + 30, y);
+        }
+        drawText("桩帽", insetCenterX + 40, pileY + 20); // Pile Cap label
+
+        // Hammer
+        const hammerY = insetY + 180;
+        const hammerH = 110;
+        ctx.strokeRect(insetCenterX - 20, hammerY, 40, hammerH);
+        drawText("锤", insetCenterX + 50, hammerY + hammerH / 2); // Hammer label
+        // Hammer scale markings
+        for(let y=hammerY + 5; y < hammerY + hammerH; y+=5) {
+            drawLine(insetCenterX - 20, y, insetCenterX - 15, y);
+        }
+        
+        // Piston Rod
+        drawLine(insetCenterX, hammerY, insetCenterX, insetY + 140);
+
+        // Top Valve Mechanism
+        const valveY = insetY + 140;
+        ctx.strokeRect(insetCenterX - 30, valveY - 10, 60, 10);
+        drawLine(insetCenterX, valveY - 10, insetCenterX, valveY - 25);
+        drawLine(insetCenterX - 10, valveY - 25, insetCenterX + 10, valveY - 25);
+        drawText("气阀", insetCenterX + 40, valveY - 10); // Valve label
+        ctx.strokeRect(insetCenterX + 20, valveY, 10, 15);
+
+        // Steam Inlet
+        ctx.beginPath();
+        ctx.moveTo(insetX + 40, insetY + 250);
+        ctx.quadraticCurveTo(insetX + 10, insetY + 200, insetCenterX-30, insetY + 160);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(insetX + 45, insetY + 255);
+        ctx.quadraticCurveTo(insetX + 20, insetY + 210, insetCenterX-25, insetY + 165);
+        ctx.stroke();
+        drawText("蒸汽", insetX + 15, insetY + 250); // Steam label
+
+        // Motion Arrows
+        const arrowX = insetCenterX + 40;
+        drawLine(arrowX, hammerY + 10, arrowX, hammerY + hammerH - 10);
+        // Up arrow
+        drawLine(arrowX, hammerY + 10, arrowX - 5, hammerY + 15);
+        drawLine(arrowX, hammerY + 10, arrowX + 5, hammerY + 15);
+        // Down arrow
+        drawLine(arrowX, hammerY + hammerH - 10, arrowX - 5, hammerY + hammerH - 15);
+        drawLine(arrowX, hammerY + hammerH - 10, arrowX + 5, hammerY + hammerH - 15);
+
+
+        // 8. Other elements on the right
+        // Tripods with flags
+        drawLine(450, groundY + 20, 460, groundY - 10);
+        drawLine(470, groundY + 20, 460, groundY - 10);
+        drawLine(455, groundY + 15, 465, groundY + 15);
+        drawLine(460, groundY - 10, 460, groundY - 25);
+        ctx.beginPath();
+        ctx.moveTo(460, groundY - 25);
+        ctx.lineTo(475, groundY - 20);
+        ctx.lineTo(460, groundY - 15);
+        ctx.fill();
+
+        drawLine(490, groundY + 20, 500, groundY - 10);
+        drawLine(510, groundY + 20, 500, groundY - 10);
+        drawLine(495, groundY + 15, 505, groundY + 15);
+        drawLine(500, groundY - 10, 500, groundY - 25);
+        ctx.beginPath();
+        ctx.moveTo(500, groundY - 25);
+        ctx.lineTo(515, groundY - 20);
+        ctx.lineTo(500, groundY - 15);
+        ctx.fill();
+
+        // Small figure
+        const figX = 530, figY = groundY + 20;
+        ctx.beginPath();
+        ctx.arc(figX, figY - 15, 5, 0, 2 * Math.PI); // Head
+        ctx.moveTo(figX, figY - 10); // Body
+        ctx.lineTo(figX, figY);
+        ctx.lineTo(figX - 5, figY + 10); // Left leg
+        ctx.moveTo(figX, figY); // Right leg
+        ctx.lineTo(figX + 5, figY + 10);
+        ctx.stroke();
+
+        
+        // 9. Bottom Label
+        ctx.font = '20px "KaiTi", "SimSun", sans-serif';
+        ctx.textAlign = 'center';
+        drawText("习题 2-31 图", canvas.width / 2, 750);
+
+    </script>
+</body>
+</html>

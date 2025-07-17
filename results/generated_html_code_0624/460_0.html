@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Amplitude Modulation Spectrum</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Define graph parameters
+        const margin = { top: 40, right: 30, bottom: 60, left: 50 };
+        const graphWidth = canvas.width - margin.left - margin.right;
+        const graphHeight = canvas.height - margin.top - margin.bottom;
+
+        // Frequency and Amplitude scales
+        const f_min = 1488;
+        const f_max = 1512;
+        const A_max_carrier = 10; // An arbitrary unit for scaling
+        const A_sideband = 2.5;
+
+        // Coordinate transformation functions
+        function x_coord(f) {
+            return margin.left + ((f - f_min) / (f_max - f_min)) * graphWidth;
+        }
+
+        function y_coord(A) {
+            // Y-axis is inverted in canvas coordinates
+            return canvas.height - margin.bottom - (A / A_max_carrier) * graphHeight;
+        }
+
+        // Set common styles
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.font = '16px Arial';
+
+        // Draw Axes
+        const xAxisY = canvas.height - margin.bottom;
+        const yAxisX = margin.left;
+
+        ctx.beginPath();
+        // Y-axis
+        ctx.moveTo(yAxisX, margin.top - 10);
+        ctx.lineTo(yAxisX, xAxisY);
+        // X-axis
+        ctx.lineTo(canvas.width - margin.right, xAxisY);
+        ctx.stroke();
+
+        // Y-axis arrowhead
+        ctx.beginPath();
+        ctx.moveTo(yAxisX, margin.top - 10);
+        ctx.lineTo(yAxisX - 5, margin.top);
+        ctx.moveTo(yAxisX, margin.top - 10);
+        ctx.lineTo(yAxisX + 5, margin.top);
+        ctx.stroke();
+
+        // Draw Ticks and Labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+
+        // X-axis ticks and labels
+        const ticks_f = [1490, 1500, 1510];
+        ticks_f.forEach(f => {
+            const x = x_coord(f);
+            ctx.beginPath();
+            ctx.moveTo(x, xAxisY);
+            ctx.lineTo(x, xAxisY + 5);
+            ctx.stroke();
+            ctx.fillText(f.toString(), x, xAxisY + 8);
+        });
+
+        // X-axis label
+        ctx.fillText('f / kHz', x_coord(1505), xAxisY + 30);
+
+        // Y-axis label
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('A', yAxisX - 10, margin.top + 20);
+
+        // Origin label
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('0', yAxisX - 10, xAxisY + 2);
+        
+        // Draw Carrier Wave
+        ctx.beginPath();
+        const x_carrier = x_coord(1500);
+        ctx.moveTo(x_carrier, xAxisY);
+        ctx.lineTo(x_carrier, y_coord(A_max_carrier * 0.9)); // Make it tall but not touching the top
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        // Draw Sidebands
+        ctx.lineWidth = 1.8;
+
+        // Lower Sideband (LSB)
+        ctx.beginPath();
+        ctx.moveTo(x_coord(1490), y_coord(0));
+        ctx.bezierCurveTo(x_coord(1491), y_coord(A_sideband * 0.9), x_coord(1492), y_coord(A_sideband), x_coord(1492.5), y_coord(A_sideband));
+        // Wobbly top
+        ctx.lineTo(x_coord(1493.5), y_coord(A_sideband * 0.95));
+        ctx.lineTo(x_coord(1494.5), y_coord(A_sideband * 1.05));
+        ctx.lineTo(x_coord(1495.5), y_coord(A_sideband * 1.0));
+        ctx.lineTo(x_coord(1496.5), y_coord(A_sideband * 1.02));
+        ctx.lineTo(x_coord(1497.5), y_coord(A_sideband * 0.9));
+        // Fall off
+        ctx.bezierCurveTo(x_coord(1498.5), y_coord(A_sideband), x_coord(1499.5), y_coord(A_sideband * 0.3), x_coord(1499.8), y_coord(0));
+        ctx.stroke();
+
+        // Upper Sideband (USB)
+        ctx.beginPath();
+        ctx.moveTo(x_coord(1500.2), y_coord(0));
+        ctx.bezierCurveTo(x_coord(1500.5), y_coord(A_sideband * 0.3), x_coord(1501.5), y_coord(A_sideband), x_coord(1502.5), y_coord(A_sideband));
+        // Wobbly top
+        ctx.lineTo(x_coord(1503.5), y_coord(A_sideband * 1.05));
+        ctx.lineTo(x_coord(1504.5), y_coord(A_sideband * 0.95));
+        ctx.lineTo(x_coord(1505.5), y_coord(A_sideband * 1.0));
+        ctx.lineTo(x_coord(1506.5), y_coord(A_sideband * 0.98));
+        ctx.lineTo(x_coord(1507.5), y_coord(A_sideband * 1.02));
+        // Fall off
+        ctx.bezierCurveTo(x_coord(1508.0), y_coord(A_sideband), x_coord(1509), y_coord(A_sideband * 0.9), x_coord(1510), y_coord(0));
+        ctx.stroke();
+
+        // Figure Caption
+        ctx.lineWidth = 1;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.font = '16px Arial';
+        ctx.fillText('Fig. 5.1', canvas.width / 2, canvas.height - 5);
+
+    </script>
+</body>
+</html>

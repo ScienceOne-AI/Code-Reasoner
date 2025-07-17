@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamic Cycle p-V Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="550" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Coordinates configuration
+        const originX = 80;
+        const originY = 470;
+        const axisLenX = 420;
+        const axisLenY = 420;
+
+        // Points in the diagram (canvas coordinates)
+        const p1 = { x: originX + 100, y: originY - 300 };
+        const p3 = { x: originX + 350, y: originY - 300 };
+        const p2 = { x: originX + 350, y: originY - 150 };
+        // In the original diagram, point 4 appears to be on the same vertical line as point 1.
+        // However, the physics description (1->4 is adiabatic, 4->2 is isobaric) implies 
+        // V4 > V1. The drawing seems to be a schematic where this detail is not precise.
+        // We will follow the visual representation from the image.
+        const p4 = { x: originX + 100, y: originY - 100 }; // Adjusted to match the visual representation
+        
+        // V labels coordinates
+        const v1_pos = { x: p1.x, y: originY + 20 };
+        const v2_pos = { x: p2.x, y: originY + 20 };
+
+        // Helper function to draw an arrow
+        function drawArrow(fromX, fromY, toX, toY, angleOffset = 0) {
+            const headlen = 10;
+            const angle = Math.atan2(toY - fromY, toX - fromX) + angleOffset;
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Helper function to draw a line with an arrow at the midpoint
+        function drawLineWithArrow(fromX, fromY, toX, toY) {
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            const midX = (fromX + toX) / 2;
+            const midY = (fromY + toY) / 2;
+            drawArrow(fromX, fromY, midX, midY);
+        }
+
+        // Helper to get point and tangent on a quadratic Bezier curve
+        function getQuadraticBezierPointAndTangent(t, p0, p1, p2) {
+            const x = (1 - t) * (1 - t) * p0.x + 2 * (1 - t) * t * p1.x + t * t * p2.x;
+            const y = (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * p1.y + t * t * p2.y;
+            
+            const dx = 2 * (1 - t) * (p1.x - p0.x) + 2 * t * (p2.x - p1.x);
+            const dy = 2 * (1 - t) * (p1.y - p0.y) + 2 * t * (p2.y - p1.y);
+            const angle = Math.atan2(dy, dx);
+
+            return { x, y, angle };
+        }
+        
+        // Helper function to draw a curve with an arrow
+        function drawCurveWithArrow(p0, cp, p2, t_arrow) {
+            ctx.beginPath();
+            ctx.moveTo(p0.x, p0.y);
+            ctx.quadraticCurveTo(cp.x, cp.y, p2.x, p2.y);
+            ctx.stroke();
+
+            const arrowPos = getQuadraticBezierPointAndTangent(t_arrow, p0, cp, p2);
+            const headlen = 10;
+            ctx.beginPath();
+            ctx.moveTo(arrowPos.x, arrowPos.y);
+            ctx.lineTo(arrowPos.x - headlen * Math.cos(arrowPos.angle - Math.PI / 6), arrowPos.y - headlen * Math.sin(arrowPos.angle - Math.PI / 6));
+            ctx.lineTo(arrowPos.x - headlen * Math.cos(arrowPos.angle + Math.PI / 6), arrowPos.y - headlen * Math.sin(arrowPos.angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+
+        // 1. Draw Axes
+        ctx.beginPath();
+        // p-axis
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(originX, originY - axisLenY);
+        drawArrow(originX, originY, originX, originY - axisLenY);
+        // V-axis
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(originX + axisLenX, originY);
+        drawArrow(originX, originY, originX + axisLenX, originY);
+        ctx.stroke();
+
+        // 2. Draw Labels
+        ctx.fillText('p', originX, originY - axisLenY - 15);
+        ctx.fillText('V', originX + axisLenX + 20, originY);
+        ctx.fillText('O', originX - 20, originY + 15);
+        
+        ctx.fillText('V₁', v1_pos.x, v1_pos.y);
+        ctx.fillText('V₂', v2_pos.x, v2_pos.y);
+
+        ctx.fillText('1', p1.x - 15, p1.y - 15);
+        ctx.fillText('2', p2.x + 15, p2.y + 15);
+        ctx.fillText('3', p3.x + 15, p3.y - 15);
+        ctx.fillText('4', p4.x - 15, p4.y + 15);
+
+        // 3. Draw dashed line from point 1 to V-axis
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p1.x, originY);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid line
+
+        // 4. Draw the thermodynamic cycle paths
+        // Path 1 -> 3 (Isobaric)
+        drawLineWithArrow(p1.x, p1.y, p3.x, p3.y);
+        
+        // Path 3 -> 2 (Isochoric)
+        drawLineWithArrow(p3.x, p3.y, p2.x, p2.y);
+        
+        // Let's adjust point 4 to connect to point 2 via a horizontal line (isobaric) as shown.
+        // This makes point 4's pressure equal to point 2's pressure.
+        const p4_isobaric_to_2 = {x: p4.x, y:p2.y};
+        ctx.fillText('4', p4_isobaric_to_2.x - 15, p4_isobaric_to_2.y + 15);
+
+        // The original image has two curves from 1. 
+        // 1->2 is Isothermal, 1->4 is Adiabatic. Adiabatic is steeper.
+        // The path 4->2 is horizontal (isobaric).
+        // Let's find the true intersection point for the adiabat 1->4 to connect with the isobar 4->2.
+        // For visual representation that is close to the original but more consistent:
+        const p4_final = {x: (p1.x + p2.x)/2 - 20, y:p2.y};
+        ctx.fillText('4', p4_final.x, p4_final.y + 20);
+        
+        // Path 4 -> 2 (Isobaric)
+        // Let's redraw a more accurate version based on the original's intent
+        // Path 1 -> 2 (Isothermal) - less steep curve
+        const cp_1_2 = {x: p1.x + 120, y: p1.y + 100};
+        drawCurveWithArrow(p1, cp_1_2, p2, 0.6);
+
+        // Path 1 -> 4 (Adiabatic) -> Path 4 -> 2 (Isobaric)
+        // Point 4 is where adiabat from 1 meets isobar from 2
+        // We will approximate this graphically to make the adiabat steeper.
+        const p4_approx = { x: p1.x + 90, y: p2.y };
+        ctx.fillText('4', p4_approx.x - 15, p4_approx.y - 15);
+
+        // Curve 1 -> 4 (Adiabatic)
+        const cp_1_4 = {x: p1.x + 30, y: p1.y + 120};
+        drawCurveWithArrow(p1, cp_1_4, p4_approx, 0.6);
+        
+        // Line 4 -> 2 (Isobaric)
+        drawLineWithArrow(p4_approx.x, p4_approx.y, p2.x, p2.y);
+        
+        // Remove the extra '4' labels. The final one is 'p4_approx'
+        ctx.clearRect(p4.x - 25, p4.y, 20, 30);
+        ctx.clearRect(p4_isobaric_to_2.x - 25, p4_isobaric_to_2.y, 20, 30);
+        ctx.clearRect(p4_final.x - 10, p4_final.y + 10, 20, 20);
+
+        // 5. Draw Title
+        ctx.font = '22px KaiTi'; // A common Chinese font
+        ctx.fillText('习题 6-25 图', canvas.width / 2, originY + 50);
+
+    </script>
+</body>
+</html>

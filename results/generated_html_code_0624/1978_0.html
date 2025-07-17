@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram Fig. 3.48</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="550" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings to mimic a hand-drawn look
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 20px serif';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // --- Component Coordinates ---
+        const centerX = 340;
+        const centerY = 150;
+        const h = 90;
+        const radiusX_a = 90;
+        const radiusY_a = 35;
+        const radiusX_b = 65;
+        const radiusY_b = 25;
+
+        // --- 1. Draw the Cylindrical Component ---
+        
+        // Bottom plate/rim
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY + h, radiusX_a, radiusY_a, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Cylindrical body
+        ctx.beginPath();
+        ctx.moveTo(centerX - radiusX_a, centerY);
+        ctx.lineTo(centerX - radiusX_a, centerY + h);
+        ctx.moveTo(centerX + radiusX_a, centerY);
+        ctx.lineTo(centerX + radiusX_a, centerY + h);
+        ctx.stroke();
+
+        // Top plate with a cut-out wedge
+        const wedgeStartAngle = 1.15 * Math.PI;
+        const wedgeEndAngle = 1.65 * Math.PI;
+        
+        // Main part of the top plate (arc)
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY, radiusX_a, radiusY_a, 0, wedgeEndAngle, wedgeStartAngle, true);
+        ctx.stroke();
+
+        // Radial lines for the wedge
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX + radiusX_a * Math.cos(wedgeStartAngle), centerY + radiusY_a * Math.sin(wedgeStartAngle));
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX + radiusX_a * Math.cos(wedgeEndAngle), centerY + radiusY_a * Math.sin(wedgeEndAngle));
+        ctx.stroke();
+
+        // Dashed inner circle inside the wedge
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.ellipse(centerX, centerY, radiusX_b, radiusY_b, 0, wedgeStartAngle, wedgeEndAngle);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset line dash
+
+        // Labels 'a' and 'b'
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(wedgeEndAngle - 0.2);
+        ctx.fillText('a', radiusX_b + 5, 0);
+        ctx.restore();
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(wedgeStartAngle + 0.2);
+        ctx.fillText('b', radiusX_b * 0.5, 0);
+        ctx.restore();
+
+
+        // --- 2. Draw Circuit Elements ---
+        
+        // Voltage Source V0
+        const v_x = 100;
+        const v_y = centerY + h / 2;
+        ctx.beginPath();
+        ctx.moveTo(v_x, v_y - 30);
+        ctx.lineTo(v_x, v_y - 10);
+        ctx.moveTo(v_x, v_y + 10);
+        ctx.lineTo(v_x, v_y + 30);
+        // Positive plate (longer)
+        ctx.moveTo(v_x - 20, v_y - 10);
+        ctx.lineTo(v_x + 20, v_y - 10);
+        // Negative plate (shorter)
+        ctx.moveTo(v_x - 12, v_y + 10);
+        ctx.lineTo(v_x + 12, v_y + 10);
+        ctx.stroke();
+        // Label V0
+        ctx.fillText('V', v_x + 25, v_y + 5);
+        ctx.font = 'italic 14px serif';
+        ctx.fillText('0', v_x + 35, v_y + 10);
+        ctx.font = 'italic 20px serif';
+        
+
+        // Switch
+        const switch_y = centerY - 60;
+        const switch_x1 = 200;
+        const switch_x2 = 250;
+        ctx.beginPath();
+        // Terminals
+        ctx.arc(switch_x1, switch_y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(switch_x2, switch_y, 4, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Arm
+        ctx.beginPath();
+        ctx.moveTo(switch_x1, switch_y);
+        ctx.lineTo(switch_x2 - 10, switch_y - 25);
+        ctx.stroke();
+
+        // --- 3. Draw Connecting Wires ---
+        ctx.beginPath();
+        // Top wire
+        ctx.moveTo(v_x, v_y - 30);
+        ctx.lineTo(v_x, switch_y);
+        ctx.lineTo(switch_x1, switch_y);
+        ctx.moveTo(switch_x2, switch_y);
+        ctx.lineTo(centerX, switch_y);
+        ctx.lineTo(centerX, centerY);
+        // Bottom wire
+        ctx.moveTo(v_x, v_y + 30);
+        ctx.lineTo(v_x, centerY + h + 40);
+        ctx.lineTo(centerX, centerY + h + 40);
+        // Wire connects to the bottom plate
+        ctx.lineTo(centerX, centerY + h + radiusY_a);
+        ctx.stroke();
+
+        // --- 4. Draw Annotations (h and z) ---
+        const h_x = centerX + radiusX_a + 40;
+        const h_y_top = centerY;
+        const h_y_bottom = centerY + h;
+        
+        ctx.beginPath();
+        // Vertical line for h
+        ctx.moveTo(h_x, h_y_top);
+        ctx.lineTo(h_x, h_y_bottom);
+        // Ticks
+        ctx.moveTo(h_x - 10, h_y_top);
+        ctx.lineTo(h_x + 10, h_y_top);
+        ctx.moveTo(h_x - 10, h_y_bottom);
+        ctx.lineTo(h_x + 10, h_y_bottom);
+        ctx.stroke();
+        // Label 'h'
+        ctx.fillText('h', h_x + 15, (h_y_top + h_y_bottom) / 2 + 5);
+
+        // z-axis arrow
+        const z_x = h_x + 35;
+        ctx.beginPath();
+        ctx.moveTo(z_x, h_y_bottom - 20);
+        ctx.lineTo(z_x, h_y_bottom + 10); // Shaft
+        // Arrowhead
+        ctx.lineTo(z_x - 5, h_y_bottom);
+        ctx.moveTo(z_x, h_y_bottom + 10);
+        ctx.lineTo(z_x + 5, h_y_bottom);
+        ctx.stroke();
+        // Label 'z'
+        ctx.fillText('z', z_x + 10, h_y_bottom);
+
+        // --- 5. Draw Figure Caption ---
+        ctx.font = '20px serif';
+        ctx.fillText('Fig. 3.48', 250, 370);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram of Mercury Drop</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #cccccc;
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="300"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper function to draw an arrow ---
+        function drawArrow(fromx, fromy, tox, toy) {
+            const headlen = 8; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            
+            // Main line
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Define Geometry and Parameters ---
+        const y_base = 200; // Y-coordinate of the horizontal surface
+        const h = 80;       // Height of the mercury drop
+        const radius = h / 2;
+        const x_center = 250;
+        const width_straight = 180; // Length of the straight part of the drop
+
+        const x_left_straight = x_center - width_straight / 2;
+        const x_right_straight = x_center + width_straight / 2;
+
+        const y_top = y_base - h;
+        const y_center_arc = y_base - radius;
+        
+        const x_min_bound = x_left_straight - radius;
+        const x_max_bound = x_right_straight + radius;
+
+        // --- Draw Horizontal Line (Glass Plate) ---
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.beginPath();
+        ctx.moveTo(40, y_base);
+        ctx.lineTo(510, y_base);
+        ctx.stroke();
+
+        // --- Draw Chinese Text "水平" ---
+        ctx.font = '24px "KaiTi", "SimSun", sans-serif';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('水平', 440, y_base);
+
+        // --- Draw Mercury Drop ---
+
+        // 1. Define the path for the drop shape
+        ctx.beginPath();
+        ctx.moveTo(x_left_straight, y_base); // Start at bottom-left
+        ctx.lineTo(x_right_straight, y_base); // Flat bottom
+        ctx.arc(x_right_straight, y_center_arc, radius, Math.PI / 2, -Math.PI / 2, true); // Right rounded corner
+        ctx.lineTo(x_left_straight, y_top); // Flat top
+        ctx.arc(x_left_straight, y_center_arc, radius, -Math.PI / 2, Math.PI / 2, true); // Left rounded corner
+        ctx.closePath();
+
+        // 2. Add hatching lines inside by clipping
+        ctx.save();
+        ctx.clip(); // Use the defined path as a clipping region
+        
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        // Draw diagonal lines (////) that cover the entire clipped area
+        const hatchStep = 15;
+        const hatchSlope = 1.0; 
+        for (let i = x_min_bound - (h / hatchSlope); i < x_max_bound; i += hatchStep) {
+             ctx.moveTo(i, y_top);
+             ctx.lineTo(i + (h / hatchSlope), y_base);
+        }
+        ctx.stroke();
+        
+        ctx.restore(); // Remove clipping region
+
+        // 3. Stroke the outline of the drop
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // --- Draw Labels and Arrows ---
+
+        // Draw 'h' label
+        ctx.font = 'italic 28px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('h', x_center, y_center_arc);
+
+        // Draw dimension arrows for 'h', slightly offset as in the image
+        ctx.lineWidth = 1.5;
+        // Top arrow
+        drawArrow(x_center + 10, y_top - 25, x_center + 10, y_top);
+        // Bottom arrow
+        drawArrow(x_center - 10, y_base + 25, x_center - 10, y_base);
+
+    </script>
+</body>
+</html>

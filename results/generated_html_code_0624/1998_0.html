@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mass-Spring System</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      background-color: #fff;
+    }
+  </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="300"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  /**
+   * Draws a spring (coiled part).
+   * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+   * @param {number} x1 - The starting x-coordinate.
+   * @param {number} y - The central y-coordinate.
+   * @param {number} x2 - The ending x-coordinate.
+   * @param {number} coils - The number of coils.
+   * @param {number} amplitude - The amplitude (height) of the coils.
+   */
+  function drawSpring(ctx, x1, y, x2, coils, amplitude) {
+    ctx.beginPath();
+    const dx = (x2 - x1) / coils;
+    
+    ctx.moveTo(x1, y);
+    for (let i = 0; i < coils; i++) {
+      const p1x = x1 + i * dx + dx / 4;
+      const p1y = y - amplitude;
+      const p2x = x1 + i * dx + dx / 2;
+      const p2y = y;
+      ctx.quadraticCurveTo(p1x, p1y, p2x, p2y);
+
+      const p3x = x1 + i * dx + dx * 3 / 4;
+      const p3y = y + amplitude;
+      const p4x = x1 + (i + 1) * dx;
+      const p4y = y;
+      ctx.quadraticCurveTo(p3x, p3y, p4x, p4y);
+    }
+    ctx.stroke();
+  }
+
+  // --- Drawing Parameters ---
+  const lineWidth = 2;
+  const wallX = 50;
+  const surfaceY = 220;
+  const massRadius = 40;
+  const massCenterX = 400;
+  const massCenterY = surfaceY - massRadius;
+  const springY = massCenterY;
+
+  // Spring segments
+  const springStartConnectX = wallX;
+  const coilStartX = wallX + 20;
+  const coilEndX = massCenterX - massRadius - 20;
+  const springEndConnectX = massCenterX - massRadius;
+
+  // --- Start Drawing ---
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.lineWidth = lineWidth;
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+
+  // 1. Draw Surface
+  ctx.beginPath();
+  ctx.moveTo(20, surfaceY);
+  ctx.lineTo(480, surfaceY);
+  ctx.stroke();
+
+  // 2. Draw Wall
+  ctx.beginPath();
+  ctx.moveTo(wallX, 80);
+  ctx.lineTo(wallX, surfaceY);
+  ctx.stroke();
+
+  // 3. Draw Mass (M)
+  ctx.beginPath();
+  ctx.arc(massCenterX, massCenterY, massRadius, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  // 4. Draw Spring (m, k)
+  // Straight segment from wall
+  ctx.beginPath();
+  ctx.moveTo(springStartConnectX, springY);
+  ctx.lineTo(coilStartX, springY);
+  ctx.stroke();
+  
+  // Coiled part
+  drawSpring(ctx, coilStartX, springY, coilEndX, 7, 20);
+  
+  // Straight segment to mass
+  ctx.beginPath();
+  ctx.moveTo(coilEndX, springY);
+  ctx.lineTo(springEndConnectX, springY);
+  ctx.stroke();
+
+  // 5. Draw Labels
+  // Label "M"
+  ctx.font = 'italic 24px "Times New Roman"';
+  ctx.fillText('M', massCenterX - 10, massCenterY - massRadius - 15);
+  
+  // Label "m, k"
+  const springLabelX = (coilStartX + coilEndX) / 2 - 25;
+  ctx.fillText('m, k', springLabelX, massCenterY - massRadius - 15);
+  
+  // Label "力图 7.7.1"
+  ctx.font = '24px "SimSun", "STSong"';
+  const captionText = '力图 7.7.1';
+  const textMetrics = ctx.measureText(captionText);
+  const captionX = (canvas.width - textMetrics.width) / 2;
+  ctx.fillText(captionText, captionX, surfaceY + 45);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow with a filled head
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Helper function to draw a double-headed arrow
+        function drawDoubleArrow(ctx, fromx, fromy, tox, toy) {
+            ctx.beginPath();
+            // Main line
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            
+            const headlen = 8;
+            
+            // Arrowhead at (tox, toy)
+            let angle1 = Math.atan2(toy - fromy, tox - fromx);
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle1 - Math.PI / 6), toy - headlen * Math.sin(angle1 - Math.PI / 6));
+            ctx.lineTo(tox - headlen * Math.cos(angle1 + Math.PI / 6), toy - headlen * Math.sin(angle1 + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+
+            // Arrowhead at (fromx, fromy)
+            let angle2 = Math.atan2(fromy - toy, fromx - tox);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(fromx - headlen * Math.cos(angle2 - Math.PI / 6), fromy - headlen * Math.sin(angle2 - Math.PI / 6));
+            ctx.lineTo(fromx - headlen * Math.cos(angle2 + Math.PI / 6), fromy - headlen * Math.sin(angle2 + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // --- Main Drawing ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '18px Arial';
+        
+        // Define coordinates and dimensions based on the pivot point
+        const pivotX = 250;
+        const pivotY = 280; // Inner corner of the L-shape
+        const w = 20;       // Thickness of the object
+        const h = 100;      // Perpendicular distance for 20 cm
+        const l = 60;       // Perpendicular distance for 12 cm
+
+        // 1. Draw the L-shaped object
+        ctx.fillStyle = '#D3D3D3'; // Light grey
+        ctx.beginPath();
+        ctx.moveTo(pivotX - l, pivotY);           // Outer corner of horizontal arm
+        ctx.lineTo(pivotX - l, pivotY - w);       // Top-left of horizontal arm
+        ctx.lineTo(pivotX, pivotY - w);           // Inner corner, bottom edge
+        ctx.lineTo(pivotX, pivotY - h - w);       // Top-left of vertical arm
+        ctx.lineTo(pivotX + w, pivotY - h - w);   // Top-right of vertical arm
+        ctx.lineTo(pivotX + w, pivotY);           // Bottom-right of vertical arm
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        
+        // Reset styles for other elements
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // 2. Draw the pulley and rope
+        const ropeY = pivotY - h - w; // Rope is on the top surface
+        const pulleyX = 400;
+        const pulleyR = 15;
+        const ropeAttachX = pivotX + w / 2;
+        const massTopY = 320;
+
+        // Rope
+        ctx.beginPath();
+        ctx.moveTo(ropeAttachX, ropeY);
+        ctx.lineTo(pulleyX, ropeY);
+        ctx.lineTo(pulleyX, massTopY);
+        ctx.stroke();
+
+        // Pulley
+        ctx.beginPath();
+        ctx.arc(pulleyX, ropeY, pulleyR, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 3. Draw the hanging mass
+        const massWidth = 70;
+        const massHeight = 35;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(pulleyX - massWidth / 2, massTopY, massWidth, massHeight);
+        
+        // 4. Draw Force F
+        const forceX = pivotX - l;
+        const forceStartY = pivotY; // Applied from the bottom of the horizontal arm
+        const forceEndY = forceStartY + 80;
+        ctx.lineWidth = 1.5;
+        drawArrow(ctx, forceX, forceStartY, forceX, forceEndY);
+
+        // 5. Add Dimensions
+        ctx.lineWidth = 1;
+
+        // "20 cm" dimension
+        const dimX_20cm = 320;
+        const dimY_20cm_start = pivotY - h; // Rope line of action
+        const dimY_20cm_end = pivotY;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(pivotX + w, dimY_20cm_start);
+        ctx.lineTo(dimX_20cm, dimY_20cm_start);
+        ctx.moveTo(pivotX, dimY_20cm_end);
+        ctx.lineTo(dimX_20cm, dimY_20cm_end);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        drawDoubleArrow(ctx, dimX_20cm, dimY_20cm_start, dimX_20cm, dimY_20cm_end);
+        ctx.textAlign = 'left';
+        ctx.fillText('20 cm', dimX_20cm + 10, (dimY_20cm_start + dimY_20cm_end) / 2 + 6);
+
+        // "12 cm" dimension
+        const dimY_12cm = pivotY + 40;
+        const dimX_12cm_start = pivotX - l; // Force line of action
+        const dimX_12cm_end = pivotX;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(dimX_12cm_start, pivotY);
+        ctx.lineTo(dimX_12cm_start, dimY_12cm);
+        ctx.moveTo(dimX_12cm_end, pivotY);
+        ctx.lineTo(dimX_12cm_end, dimY_12cm);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        drawDoubleArrow(ctx, dimX_12cm_start, dimY_12cm, dimX_12cm_end, dimY_12cm);
+        ctx.textAlign = 'center';
+        ctx.fillText('12 cm', (dimX_12cm_start + dimX_12cm_end) / 2, dimY_12cm + 20);
+
+        // 6. Add Labels
+        ctx.lineWidth = 1.5;
+
+        // "object"
+        ctx.textAlign = 'left';
+        ctx.fillText('object', 100, 180);
+        drawArrow(ctx, 150, 185, pivotX - 20, pivotY - 50, 5);
+        
+        // "pivot P"
+        ctx.fillText('pivot P', 160, 310);
+        drawArrow(ctx, 210, 305, pivotX - 3, pivotY - 3, 5);
+
+        // "rope"
+        ctx.textAlign = 'center';
+        ctx.fillText('rope', 300, ropeY - 15);
+
+        // "pulley"
+        ctx.textAlign = 'left';
+        ctx.fillText('pulley', pulleyX + pulleyR + 10, pulleyY + 5);
+        drawArrow(ctx, pulleyX + pulleyR + 8, pulleyY + 8, pulleyX + pulleyR, pulleyY, 5);
+
+        // "50 kg mass"
+        ctx.fillText('50 kg', pulleyX + massWidth / 2 + 15, massTopY + massHeight / 2 - 5);
+        ctx.fillText('mass', pulleyX + massWidth / 2 + 15, massTopY + massHeight / 2 + 15);
+        ctx.beginPath();
+        ctx.moveTo(pulleyX + massWidth / 2, massTopY + massHeight / 2);
+        ctx.lineTo(pulleyX + massWidth / 2 + 10, massTopY + massHeight / 2);
+        ctx.stroke();
+        
+        // "force F"
+        ctx.textAlign = 'center';
+        ctx.fillText('force F', forceX - 20, forceEndY + 20);
+        
+        // "Fig. 2.1"
+        ctx.fillText('Fig. 2.1', canvas.width / 2, canvas.height - 20);
+    </script>
+</body>
+</html>

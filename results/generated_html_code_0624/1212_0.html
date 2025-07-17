@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crane Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="craneCanvas" width="550" height="520"></canvas>
+    <script>
+        const canvas = document.getElementById('craneCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Parameters
+        const cx = 230;
+        const cy = 430;
+        const h = 280; // Length of AC and BC
+        const phi = 42 * Math.PI / 180; // Angle in radians
+        const trussWidth = 22;
+        const numSegments = 8;
+
+        // Key Points
+        const C = { x: cx, y: cy };
+        const A = { x: cx, y: cy - h };
+        const B = { x: cx + h * Math.sin(phi), y: cy - h * Math.cos(phi) };
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.font = 'italic 24px serif';
+
+        // Helper function to draw a winch
+        function drawWinch(x, y, radius, handleAngle) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            const handleRadius = radius * 1.5;
+            const handleEndX = x + handleRadius * Math.cos(handleAngle);
+            const handleEndY = y + handleRadius * Math.sin(handleAngle);
+            
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(handleEndX, handleEndY);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(handleEndX, handleEndY, 5, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        
+        // Helper function for truss bracing
+        function drawTrussBracing(p1, p2, width, segments) {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const ux = dx / len; // Unit vector along the truss
+            const uy = dy / len;
+            const nx = -uy; // Normal vector
+            const ny = ux;
+
+            ctx.beginPath();
+            for (let i = 0; i < segments; i++) {
+                const p_curr_x = p1.x + (i / segments) * dx;
+                const p_curr_y = p1.y + (i / segments) * dy;
+                const p_next_x = p1.x + ((i + 1) / segments) * dx;
+                const p_next_y = p1.y + ((i + 1) / segments) * dy;
+
+                const r1_curr = { x: p_curr_x + nx * width / 2, y: p_curr_y + ny * width / 2 };
+                const r2_curr = { x: p_curr_x - nx * width / 2, y: p_curr_y - ny * width / 2 };
+                const r1_next = { x: p_next_x + nx * width / 2, y: p_next_y + ny * width / 2 };
+                const r2_next = { x: p_next_x - nx * width / 2, y: p_next_y - ny * width / 2 };
+
+                // Replicating the pattern: a horizontal and a diagonal bar per segment
+                ctx.moveTo(r1_next.x, r1_next.y);
+                ctx.lineTo(r2_next.x, r2_next.y);
+                ctx.moveTo(r1_curr.x, r1_curr.y);
+                ctx.lineTo(r2_next.x, r2_next.y);
+            }
+            ctx.stroke();
+        }
+
+        // 1. Draw Ground
+        ctx.beginPath();
+        ctx.moveTo(20, cy);
+        ctx.lineTo(cx + 20, cy);
+        ctx.stroke();
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 15; i++) {
+            const x_start = 20 + i * 15;
+            ctx.moveTo(x_start, cy + 20);
+            ctx.lineTo(x_start - 20, cy);
+        }
+        ctx.stroke();
+        ctx.lineWidth = 3;
+
+        // 2. Draw Tower AC
+        ctx.beginPath();
+        ctx.moveTo(A.x - trussWidth / 2, A.y);
+        ctx.lineTo(C.x - trussWidth / 2, C.y);
+        ctx.moveTo(A.x + trussWidth / 2, A.y);
+        ctx.lineTo(C.x + trussWidth / 2, C.y + 15); // Extend below ground
+        ctx.stroke();
+        drawTrussBracing({x: A.x, y: A.y}, {x: C.x, y: C.y}, trussWidth, numSegments);
+
+        // 3. Draw Boom BC
+        const boom_dx = B.x - C.x;
+        const boom_dy = B.y - C.y;
+        const boom_len = Math.sqrt(boom_dx * boom_dx + boom_dy * boom_dy);
+        const boom_nx = -boom_dy / boom_len;
+        const boom_ny = boom_dx / boom_len;
+
+        const C1 = { x: C.x + boom_nx * trussWidth / 2, y: C.y + boom_ny * trussWidth / 2 };
+        const B1 = { x: B.x + boom_nx * trussWidth / 2, y: B.y + boom_ny * trussWidth / 2 };
+        const C2 = { x: C.x - boom_nx * trussWidth / 2, y: C.y - boom_ny * trussWidth / 2 };
+        const B2 = { x: B.x - boom_nx * trussWidth / 2, y: B.y - boom_ny * trussWidth / 2 };
+
+        ctx.beginPath();
+        ctx.moveTo(C1.x, C1.y);
+        ctx.lineTo(B1.x, B1.y);
+        ctx.moveTo(C2.x, C2.y);
+        ctx.lineTo(B2.x, B2.y);
+        ctx.stroke();
+        drawTrussBracing(C, B, trussWidth, numSegments);
+        
+        // 4. Draw Back Stay
+        const anchor = {x: 80, y: cy};
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(anchor.x, anchor.y);
+        ctx.stroke();
+        ctx.fillRect(anchor.x - 20, anchor.y - 4, 40, 8);
+
+
+        // 5. Draw Cable AB
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+
+        // 6. Draw Weight Q and its cable
+        const weightRopeLength = 100;
+        const weightSize = 40;
+        const hookSize = 8;
+        ctx.beginPath();
+        // Cable over pulley at B
+        ctx.arc(B.x, B.y, 5, 0, 2*Math.PI);
+        ctx.stroke();
+        // Vertical cable to weight
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(B.x, B.y + weightRopeLength);
+        ctx.stroke();
+        // Hook
+        ctx.beginPath();
+        ctx.arc(B.x, B.y + weightRopeLength + hookSize, hookSize, Math.PI, 2*Math.PI);
+        ctx.stroke();
+        // Weight box
+        ctx.strokeRect(B.x - weightSize/2, B.y + weightRopeLength + 2*hookSize, weightSize, weightSize);
+        // Label Q
+        ctx.fillText('Q', B.x + weightSize, B.y + weightRopeLength + 40);
+        
+        // Cable from pulley along BC
+        const cable_end_x = B.x - boom_dx/boom_len * 60;
+        const cable_end_y = B.y - boom_dy/boom_len * 60;
+        ctx.beginPath();
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(cable_end_x, cable_end_y);
+        ctx.stroke();
+
+        // 7. Draw Winches
+        drawWinch(cx - trussWidth/2 - 15, cy - 100, 12, -Math.PI/3);
+        const boomWinchPos = { x: C.x + boom_dx * 0.15, y: C.y + boom_dy * 0.15};
+        const boomWinchCenter = { x: boomWinchPos.x + boom_nx * 20, y: boomWinchPos.y + boom_ny * 20 };
+        drawWinch(boomWinchCenter.x, boomWinchCenter.y, 12, phi - Math.PI/2);
+
+
+        // 8. Draw Angle φ
+        const angleRadius = 70;
+        const startAngle = -Math.PI / 2;
+        const endAngle = startAngle + phi;
+        ctx.beginPath();
+        ctx.arc(C.x, C.y, angleRadius, startAngle, endAngle);
+        ctx.stroke();
+
+        // Arrow for angle
+        const arrowSize = 10;
+        const arrowAngle = Math.PI / 6;
+        const arrowTipX = C.x + angleRadius * Math.cos(endAngle);
+        const arrowTipY = C.y + angleRadius * Math.sin(endAngle);
+        
+        ctx.beginPath();
+        const arrowPoint1X = arrowTipX - arrowSize * Math.cos(endAngle - arrowAngle);
+        const arrowPoint1Y = arrowTipY - arrowSize * Math.sin(endAngle - arrowAngle);
+        ctx.moveTo(arrowPoint1X, arrowPoint1Y);
+        ctx.lineTo(arrowTipX, arrowTipY);
+        const arrowPoint2X = arrowTipX - arrowSize * Math.cos(endAngle + arrowAngle);
+        const arrowPoint2Y = arrowTipY - arrowSize * Math.sin(endAngle + arrowAngle);
+        ctx.lineTo(arrowPoint2X, arrowPoint2Y);
+        ctx.stroke();
+
+        // Label φ
+        const labelAngle = startAngle + phi / 2.2;
+        const labelX = C.x + (angleRadius + 5) * Math.cos(labelAngle);
+        const labelY = C.y + (angleRadius + 20) * Math.sin(labelAngle);
+        ctx.fillText('φ', labelX, labelY);
+
+
+        // 9. Draw Pivots and Labels (draw on top)
+        // Pivots
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, 7, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(B.x, B.y, 7, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(C.x, C.y, 8, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Labels
+        ctx.fillStyle = 'black';
+        ctx.fillText('A', A.x - 30, A.y + 10);
+        ctx.fillText('B', B.x + 15, B.y + 5);
+        ctx.fillText('C', C.x - 25, C.y + 25);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 1.5;
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Helper function to draw a resistor
+        function drawResistor(x, y, width, height, label, labelPos) {
+            ctx.strokeRect(x - width / 2, y - height / 2, width, height);
+            if (labelPos === 'right') {
+                ctx.textAlign = 'left';
+                ctx.fillText(label, x + width / 2 + 5, y);
+            } else {
+                ctx.textAlign = 'right';
+                ctx.fillText(label, x - width / 2 - 5, y);
+            }
+            ctx.textAlign = 'center'; // Reset alignment
+        }
+
+        // Helper function to draw a thermistor
+        function drawThermistor(x, y, width, height, label, labelPos) {
+            // Draw resistor box
+            ctx.strokeRect(x - width / 2, y - height / 2, width, height);
+            // Draw diagonal line
+            ctx.beginPath();
+            ctx.moveTo(x - width / 2 - 4, y + height / 2 + 4);
+            ctx.lineTo(x + width / 2, y - height / 2);
+            ctx.stroke();
+            // Draw flat end of the line
+            ctx.beginPath();
+            ctx.moveTo(x - width / 2 - 4, y + height / 2 + 4);
+            ctx.lineTo(x - width / 2 - 10, y + height / 2 + 4);
+            ctx.stroke();
+            
+            if (labelPos === 'right') {
+                ctx.textAlign = 'left';
+                ctx.fillText(label, x + width / 2 + 5, y);
+            }
+            ctx.textAlign = 'center';
+        }
+
+        // Coordinates
+        const yTop = 50;
+        const yBottom = 350;
+        const xBranch1 = 120;
+        const xBranch2 = 250;
+        const opAmpX = 350;
+        const opAmpY = 200;
+        const opAmpWidth = 100;
+        const opAmpHeight = 120;
+        
+        // --- Draw Main Rails ---
+        // Top rail (+4 V)
+        ctx.beginPath();
+        ctx.moveTo(xBranch1, yTop);
+        ctx.lineTo(xBranch2, yTop);
+        ctx.stroke();
+        
+        // Bottom rail (Ground)
+        ctx.beginPath();
+        ctx.moveTo(xBranch1, yBottom);
+        ctx.lineTo(xBranch2, yBottom);
+        ctx.lineTo(550, yBottom);
+        ctx.stroke();
+
+        // --- Draw Left Branch (Thermistor) ---
+        const node1Y = 160;
+        const resWidth = 60;
+        const resHeight = 25;
+
+        // Top wire
+        ctx.beginPath();
+        ctx.moveTo(xBranch1, yTop);
+        ctx.lineTo(xBranch1, node1Y - resHeight/2 - 20);
+        ctx.stroke();
+
+        // Thermistor
+        drawThermistor(xBranch1, node1Y - resHeight/2 - 20 - resHeight/2, resWidth, resHeight, "T", 'right');
+
+        // Middle wire
+        ctx.beginPath();
+        ctx.moveTo(xBranch1, node1Y - resHeight - 20);
+        ctx.lineTo(xBranch1, node1Y);
+        ctx.stroke();
+
+        // 800 Ohm Resistor
+        const res1Y = (node1Y + yBottom) / 2;
+        ctx.beginPath();
+        ctx.moveTo(xBranch1, node1Y);
+        ctx.lineTo(xBranch1, res1Y - resHeight/2);
+        ctx.stroke();
+        drawResistor(xBranch1, res1Y, resWidth, resHeight, "800 \u03A9", "right");
+        
+        // Bottom wire
+        ctx.beginPath();
+        ctx.moveTo(xBranch1, res1Y + resHeight/2);
+        ctx.lineTo(xBranch1, yBottom);
+        ctx.stroke();
+        
+        // Connection point (dot) to op-amp
+        ctx.beginPath();
+        ctx.arc(xBranch1, node1Y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+
+
+        // --- Draw Right Branch (Fixed Resistors) ---
+        const node2Y = 240;
+        
+        // Top wire
+        ctx.beginPath();
+        ctx.moveTo(xBranch2, yTop);
+        ctx.lineTo(xBranch2, node2Y - 80 - resHeight/2);
+        ctx.stroke();
+        
+        // 1.8 kOhm Resistor
+        drawResistor(xBranch2, node2Y - 80, resWidth, resHeight, "1.8 k\u03A9", "right");
+
+        // Middle wire
+        ctx.beginPath();
+        ctx.moveTo(xBranch2, node2Y - 80 + resHeight/2);
+        ctx.lineTo(xBranch2, node2Y);
+        ctx.stroke();
+
+        // 1.2 kOhm Resistor
+        const res2Y = (node2Y + yBottom) / 2;
+        ctx.beginPath();
+        ctx.moveTo(xBranch2, node2Y);
+        ctx.lineTo(xBranch2, res2Y - resHeight/2);
+        ctx.stroke();
+        drawResistor(xBranch2, res2Y, resWidth, resHeight, "1.2 k\u03A9", "right");
+        
+        // Bottom wire
+        ctx.beginPath();
+        ctx.moveTo(xBranch2, res2Y + resHeight/2);
+        ctx.lineTo(xBranch2, yBottom);
+        ctx.stroke();
+
+        // Connection point (dot) to op-amp
+        ctx.beginPath();
+        ctx.arc(xBranch2, node2Y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // --- Draw Op-Amp ---
+        const opAmpInX = opAmpX;
+        const opAmpInYMinus = opAmpY - opAmpHeight / 4;
+        const opAmpInYPlus = opAmpY + opAmpHeight / 4;
+        const opAmpOutX = opAmpX + opAmpWidth;
+
+        // Op-amp body
+        ctx.beginPath();
+        ctx.moveTo(opAmpX, opAmpY - opAmpHeight / 2);
+        ctx.lineTo(opAmpX, opAmpY + opAmpHeight / 2);
+        ctx.lineTo(opAmpOutX, opAmpY);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Inputs
+        ctx.beginPath();
+        ctx.moveTo(xBranch1, node1Y);
+        ctx.lineTo(opAmpInX, node1Y);
+        ctx.moveTo(opAmpInX, node1Y);
+        ctx.lineTo(opAmpInX, opAmpInYMinus); // Connect to op-amp input line
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(opAmpInX, opAmpInYMinus);
+        ctx.lineTo(opAmpInX + 10, opAmpInYMinus); // short line into op-amp
+        ctx.stroke();
+        ctx.font = '20px Arial';
+        ctx.fillText('-', opAmpX + 15, opAmpInYMinus);
+        ctx.font = '16px Arial';
+
+        ctx.beginPath();
+        ctx.moveTo(xBranch2, node2Y);
+        ctx.lineTo(opAmpInX, node2Y);
+        ctx.moveTo(opAmpInX, node2Y);
+        ctx.lineTo(opAmpInX, opAmpInYPlus); // Connect to op-amp input line
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(opAmpInX, opAmpInYPlus);
+        ctx.lineTo(opAmpInX + 10, opAmpInYPlus); // short line into op-amp
+        ctx.stroke();
+        ctx.font = '20px Arial';
+        ctx.fillText('+', opAmpX + 15, opAmpInYPlus);
+        ctx.font = '16px Arial';
+
+        // Power supplies
+        ctx.beginPath();
+        ctx.moveTo(opAmpX + opAmpWidth / 2, opAmpY - opAmpHeight / 2);
+        ctx.lineTo(opAmpX + opAmpWidth / 2, opAmpY - opAmpHeight / 2 - 20);
+        ctx.stroke();
+        ctx.fillText('+9 V', opAmpX + opAmpWidth / 2, opAmpY - opAmpHeight / 2 - 30);
+        
+        ctx.beginPath();
+        ctx.moveTo(opAmpX + opAmpWidth / 2, opAmpY + opAmpHeight / 2);
+        ctx.lineTo(opAmpX + opAmpWidth / 2, opAmpY + opAmpHeight / 2 + 20);
+        ctx.stroke();
+        ctx.fillText('\u22129 V', opAmpX + opAmpWidth / 2, opAmpY + opAmpHeight / 2 + 30);
+
+
+        // --- Draw Output ---
+        const outTermX = 550;
+        ctx.beginPath();
+        ctx.moveTo(opAmpOutX, opAmpY);
+        ctx.lineTo(outTermX, opAmpY);
+        ctx.stroke();
+        
+        // Output terminal circle
+        ctx.beginPath();
+        ctx.arc(outTermX, opAmpY, 4, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // V_OUT label and arrow
+        ctx.beginPath();
+        ctx.moveTo(outTermX + 20, yBottom);
+        ctx.lineTo(outTermX + 20, opAmpY);
+        // Arrowhead
+        ctx.lineTo(outTermX + 20 - 5, opAmpY + 10);
+        ctx.moveTo(outTermX + 20, opAmpY);
+        ctx.lineTo(outTermX + 20 + 5, opAmpY + 10);
+        ctx.stroke();
+        ctx.textAlign = 'left';
+        ctx.fillText('V', outTermX + 28, opAmpY + (yBottom - opAmpY)/2 - 5);
+        ctx.font = '12px Arial';
+        ctx.fillText('OUT', outTermX + 37, opAmpY + (yBottom - opAmpY)/2);
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+
+        // --- Draw Input and Ground ---
+        // +4 V Input
+        ctx.beginPath();
+        ctx.moveTo(50, yTop);
+        ctx.lineTo(xBranch1, yTop);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(50, yTop, 4, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.textAlign = 'right';
+        ctx.fillText('+4 V', 45, yTop);
+        ctx.textAlign = 'center';
+
+        // Ground symbol
+        const groundX = (xBranch1 + xBranch2)/2;
+        ctx.beginPath();
+        ctx.moveTo(groundX, yBottom);
+        ctx.lineTo(groundX, yBottom + 15);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(groundX - 15, yBottom + 15);
+        ctx.lineTo(groundX + 15, yBottom + 15);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(groundX - 10, yBottom + 22);
+        ctx.lineTo(groundX + 10, yBottom + 22);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(groundX - 5, yBottom + 29);
+        ctx.lineTo(groundX + 5, yBottom + 29);
+        ctx.stroke();
+        // Connection dot to ground line
+        ctx.beginPath();
+        ctx.arc(groundX, yBottom, 3, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // --- Fig. 8.1 Label ---
+        ctx.fillText('Fig. 8.1', canvas.width / 2, 420);
+
+    </script>
+</body>
+</html>

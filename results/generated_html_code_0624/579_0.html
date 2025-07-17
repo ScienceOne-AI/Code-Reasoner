@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Diffraction Grating Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = "italic 24px 'Times New Roman'";
+
+    // Function to draw an arrowhead
+    function drawArrow(ctx, x, y, angle) {
+        const arrowSize = 8;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-arrowSize, -arrowSize / 2.5);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-arrowSize, arrowSize / 2.5);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Parameters
+    const xg = 150; // x-coordinate of the grating surface
+    const angleDeg = 28;
+    const angleRad = angleDeg * Math.PI / 180;
+    
+    // 1. Draw the reflection grating 'P'
+    ctx.beginPath();
+    ctx.moveTo(xg - 10, 60);
+    ctx.lineTo(xg - 10, 390);
+    ctx.stroke();
+    // Sawtooth surface
+    ctx.beginPath();
+    const grooveHeight = 7;
+    const grooveWidth = 8;
+    for (let y = 60; y < 390; y += grooveHeight) {
+        ctx.moveTo(xg, y);
+        ctx.lineTo(xg - grooveWidth, y + grooveHeight / 2);
+    }
+    ctx.stroke();
+    ctx.fillText('P', xg - 40, 90);
+
+    // Define key points for rays based on the visual layout
+    const inc_top_hit = {x: xg, y: 150};
+    const inc_bot_hit = {x: xg, y: 250};
+
+    const m1_top_exit = {x: xg, y: 200};
+    const m1_bot_exit = {x: xg, y: 220};
+
+    const m0_top_exit = {x: xg, y: 280};
+    const m0_bot_exit = {x: xg, y: 300};
+
+    // 2. Draw incident rays
+    const inc_len = 250;
+    const inc_top_start = {x: inc_top_hit.x + inc_len * Math.cos(angleRad), y: inc_top_hit.y - inc_len * Math.sin(angleRad)};
+    const inc_bot_start = {x: inc_bot_hit.x + inc_len * Math.cos(angleRad), y: inc_bot_hit.y - inc_len * Math.sin(angleRad)};
+
+    ctx.beginPath();
+    ctx.moveTo(inc_top_start.x, inc_top_start.y);
+    ctx.lineTo(inc_top_hit.x, inc_top_hit.y);
+    ctx.stroke();
+    drawArrow(ctx, (inc_top_start.x + inc_top_hit.x) / 2, (inc_top_start.y + inc_top_hit.y) / 2, Math.PI - angleRad);
+
+    ctx.beginPath();
+    ctx.moveTo(inc_bot_start.x, inc_bot_start.y);
+    ctx.lineTo(inc_bot_hit.x, inc_bot_hit.y);
+    ctx.stroke();
+    drawArrow(ctx, (inc_bot_start.x + inc_bot_hit.x) / 2, (inc_bot_start.y + inc_bot_hit.y) / 2, Math.PI - angleRad);
+
+    // 3. Draw diffracted rays and crossover connections
+    const out_len = 350;
+    // m=1 rays
+    ctx.beginPath();
+    ctx.moveTo(inc_bot_hit.x, inc_bot_hit.y);
+    ctx.lineTo(m1_top_exit.x, m1_top_exit.y);
+    ctx.lineTo(m1_top_exit.x + out_len, m1_top_exit.y);
+    ctx.stroke();
+    drawArrow(ctx, m1_top_exit.x + out_len / 2, m1_top_exit.y, 0);
+
+    ctx.beginPath();
+    ctx.moveTo(inc_top_hit.x, inc_top_hit.y);
+    ctx.lineTo(m1_bot_exit.x, m1_bot_exit.y);
+    ctx.lineTo(m1_bot_exit.x + out_len, m1_bot_exit.y);
+    ctx.stroke();
+    drawArrow(ctx, m1_bot_exit.x + out_len / 2, m1_bot_exit.y, 0);
+
+    // m=0 rays
+    const m0_out_len = 250;
+    // The image shows these rays originating from lower points, connected to the incident rays
+    ctx.beginPath();
+    ctx.moveTo(inc_top_hit.x, inc_top_hit.y); // Path from top incident
+    ctx.lineTo(m0_top_exit.x, m0_top_exit.y);
+    ctx.lineTo(m0_top_exit.x + m0_out_len * Math.cos(angleRad), m0_top_exit.y + m0_out_len * Math.sin(angleRad));
+    ctx.stroke();
+    drawArrow(ctx, m0_top_exit.x + m0_out_len/2 * Math.cos(angleRad), m0_top_exit.y + m0_out_len/2 * Math.sin(angleRad), angleRad);
+
+    ctx.beginPath();
+    ctx.moveTo(inc_bot_hit.x, inc_bot_hit.y); // Path from bottom incident
+    ctx.lineTo(m0_bot_exit.x, m0_bot_exit.y);
+    ctx.lineTo(m0_bot_exit.x + m0_out_len * Math.cos(angleRad), m0_bot_exit.y + m0_out_len * Math.sin(angleRad));
+    ctx.stroke();
+    drawArrow(ctx, m0_bot_exit.x + m0_out_len/2 * Math.cos(angleRad), m0_bot_exit.y + m0_out_len/2 * Math.sin(angleRad), angleRad);
+
+    // 4. Draw angle arc and label
+    // The angle α₀ is between an incident ray and the normal (horizontal line)
+    const angleCenter = m1_top_exit; // A convenient center for the arc as in the drawing
+    const angleRadius = 50;
+
+    // Draw the horizontal line (part of the m=1 ray) from the angle center
+    ctx.beginPath();
+    ctx.moveTo(angleCenter.x, angleCenter.y);
+    ctx.lineTo(angleCenter.x + angleRadius + 10, angleCenter.y);
+    ctx.stroke();
+    
+    // Draw the crossover line segment to which the arc attaches
+    ctx.beginPath();
+    ctx.moveTo(angleCenter.x, angleCenter.y);
+    ctx.lineTo(inc_bot_hit.x, inc_bot_hit.y);
+    ctx.stroke(); // Redrawing for clarity if needed, but it's already there
+
+    // Draw the arc
+    const crossover_angle = Math.atan2(angleCenter.y - inc_bot_hit.y, angleCenter.x - inc_bot_hit.x);
+    ctx.beginPath();
+    ctx.arc(angleCenter.x, angleCenter.y, angleRadius, crossover_angle, 0, false);
+    ctx.stroke();
+
+    // Angle Label
+    ctx.save();
+    ctx.font = "italic 22px 'Times New Roman'";
+    ctx.fillText('α', angleCenter.x + 30, angleCenter.y - 15);
+    ctx.font = "italic 16px 'Times New Roman'";
+    ctx.fillText('0', angleCenter.x + 42, angleCenter.y - 10);
+    ctx.restore();
+
+    // 5. Draw order labels
+    ctx.font = "24px 'Times New Roman'";
+    ctx.fillText('m = 1', m1_bot_exit.x + out_len - 100, m1_bot_exit.y + 30);
+    ctx.fillText('m = 0', m0_bot_exit.x + m0_out_len - 120, m0_bot_exit.y + m0_out_len * Math.sin(angleRad) + 20);
+
+</script>
+</body>
+</html>

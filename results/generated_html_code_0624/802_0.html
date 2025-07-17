@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Charge Distribution Diagram</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      background-color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="physicsCanvas" width="500" height="350"></canvas>
+  <script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Define coordinates and dimensions
+    const centerX = 250;
+    const centerY = 160;
+    const R = 100;
+    const r = 50;
+    const offset_c = 40;
+
+    const O = { x: centerX, y: centerY };
+    const O_prime = { x: centerX + offset_c, y: centerY };
+    const P = { x: O.x - 70, y: centerY };
+    const P_prime = { x: O.x - R - 40, y: centerY };
+
+    // Helper function to draw an arrowhead
+    function drawArrowhead(ctx, fromX, fromY, toX, toY, headLength = 10) {
+      const angle = Math.atan2(toY - fromY, toX - fromX);
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+    }
+
+    // 1. Draw the shaded charged area
+    ctx.fillStyle = 'rgba(224, 224, 224, 1)'; // Light gray fill
+    ctx.beginPath();
+    // Path for the large sphere
+    ctx.arc(O.x, O.y, R, 0, 2 * Math.PI, false);
+    // Path for the small cavity (drawn in reverse to create a hole with 'evenodd' rule)
+    ctx.arc(O_prime.x, O_prime.y, r, 0, 2 * Math.PI, true);
+    ctx.fill('evenodd');
+
+    // 2. Draw the outlines of the spheres
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(O.x, O.y, R, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(O_prime.x, O_prime.y, r, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 3. Draw the horizontal axis
+    ctx.beginPath();
+    ctx.moveTo(P_prime.x - 20, centerY);
+    ctx.lineTo(O_prime.x + r + 50, centerY);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // 4. Draw and label the points
+    const points = [
+      { p: P_prime, label: "P'", font: "italic 18px 'Times New Roman'" },
+      { p: P, label: 'P', font: "italic 18px 'Times New Roman'" },
+      { p: O, label: 'O', font: "18px 'Times New Roman'" },
+      { p: O_prime, label: "O'", font: "18px 'Times New Roman'" }
+    ];
+
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    points.forEach(item => {
+      // Draw point
+      ctx.beginPath();
+      ctx.arc(item.p.x, item.p.y, 3, 0, 2 * Math.PI);
+      ctx.fill();
+      // Draw label
+      ctx.font = item.font;
+      ctx.fillText(item.label, item.p.x, item.p.y - 8);
+    });
+
+    // 5. Draw radius R and its label
+    ctx.lineWidth = 1.5;
+    const R_angle = 220 * Math.PI / 180; // Angle for the radius line
+    const R_end = {
+      x: O.x + R * Math.cos(R_angle),
+      y: O.y + R * Math.sin(R_angle)
+    };
+    ctx.beginPath();
+    ctx.moveTo(O.x, O.y);
+    ctx.lineTo(R_end.x, R_end.y);
+    drawArrowhead(ctx, O.x, O.y, R_end.x, R_end.y);
+    ctx.stroke();
+
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText('R', (O.x + R_end.x) / 2 - 5, (O.y + R_end.y) / 2);
+
+    // 6. Draw radius r and its label
+    const r_angle = -45 * Math.PI / 180; // Angle for the radius line
+    const r_end = {
+      x: O_prime.x + r * Math.cos(r_angle),
+      y: O_prime.y + r * Math.sin(r_angle)
+    };
+    ctx.beginPath();
+    ctx.moveTo(O_prime.x, O_prime.y);
+    ctx.lineTo(r_end.x, r_end.y);
+    drawArrowhead(ctx, O_prime.x, O_prime.y, r_end.x, r_end.y);
+    ctx.stroke();
+
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('r', (O_prime.x + r_end.x) / 2 + 5, (O_prime.y + r_end.y) / 2 - 5);
+
+    // 7. Draw the figure caption
+    ctx.fillStyle = 'black';
+    ctx.font = "16px 'SimSun'"; // A common font for Chinese characters
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('习题 7-22 图', canvas.width / 2, canvas.height - 10);
+  </script>
+</body>
+</html>

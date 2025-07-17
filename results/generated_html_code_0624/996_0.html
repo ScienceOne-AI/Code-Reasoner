@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Velocity vs. Time Graph</title>
+</head>
+<body>
+    <canvas id="physics-graph" width="480" height="380"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-graph');
+        const ctx = canvas.getContext('2d');
+
+        // --- Drawing Parameters ---
+        // Origin point on canvas for the graph's (0,0)
+        const x_origin = 70;
+        const y_origin = 190;
+
+        // Scale factors: pixels per unit
+        const scaleX = 38; // pixels per second
+        const scaleY = 16; // pixels per m/s
+
+        // Graph data ranges
+        const t_max = 10;
+        const v_max = 10;
+        const v_min = -10;
+
+        // --- Helper Functions to convert graph coordinates to canvas coordinates ---
+        function toCanvasX(t) {
+            return x_origin + t * scaleX;
+        }
+
+        function toCanvasY(v) {
+            return y_origin - v * scaleY;
+        }
+
+        // --- Drawing ---
+
+        // 1. Draw Grid
+        ctx.beginPath();
+        ctx.strokeStyle = '#cccccc'; // Light gray for grid lines
+        ctx.lineWidth = 1;
+
+        // Vertical grid lines (for each second)
+        for (let t = 1; t <= t_max; t++) {
+            ctx.moveTo(toCanvasX(t), toCanvasY(v_max));
+            ctx.lineTo(toCanvasX(t), toCanvasY(v_min));
+        }
+
+        // Horizontal grid lines (for every 5 m/s)
+        for (let v = v_min + 5; v < v_max; v += 5) {
+            if (v === 0) continue; // Skip the axis line itself
+            ctx.moveTo(toCanvasX(0), toCanvasY(v));
+            ctx.lineTo(toCanvasX(t_max), toCanvasY(v));
+        }
+        ctx.stroke();
+
+
+        // 2. Draw Axes
+        ctx.beginPath();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // Y-axis
+        ctx.moveTo(x_origin, toCanvasY(v_max));
+        ctx.lineTo(x_origin, toCanvasY(v_min));
+        // X-axis
+        ctx.moveTo(x_origin, y_origin);
+        ctx.lineTo(toCanvasX(t_max), y_origin);
+        ctx.stroke();
+
+        // 3. Draw Labels and Ticks
+        ctx.fillStyle = 'black';
+        ctx.font = '18px serif';
+
+        // Y-axis labels and ticks
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let v = v_min; v <= v_max; v += 5) {
+            ctx.fillText(v, x_origin - 10, toCanvasY(v));
+            // Ticks
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.moveTo(x_origin - 4, toCanvasY(v));
+            ctx.lineTo(x_origin + 4, toCanvasY(v));
+            ctx.stroke();
+        }
+
+        // X-axis labels and ticks
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let t = 0; t <= t_max; t++) {
+            ctx.fillText(t, toCanvasX(t), y_origin + 8);
+            // Ticks
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.moveTo(toCanvasX(t), y_origin - 4);
+            ctx.lineTo(toCanvasX(t), y_origin + 4);
+            ctx.stroke();
+        }
+
+        // Axis Titles
+        // Y-axis Title
+        ctx.save();
+        ctx.translate(x_origin - 50, y_origin);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Velocity (m/s)', 0, 0);
+        ctx.restore();
+
+        // X-axis Title
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('Time (s)', toCanvasX(t_max / 2), y_origin + 30);
+
+
+        // 4. Draw the Data Line Plot
+        ctx.beginPath();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3.5;
+        // Segment 1: Constant velocity at 10 m/s
+        ctx.moveTo(toCanvasX(0), toCanvasY(10));
+        ctx.lineTo(toCanvasX(3), toCanvasY(10));
+        // Segment 2: Linear decrease in velocity
+        ctx.lineTo(toCanvasX(6), toCanvasY(-5));
+        // Segment 3: Constant velocity at -5 m/s
+        ctx.lineTo(toCanvasX(10), toCanvasY(-5));
+        ctx.stroke();
+
+    </script>
+</body>
+</html>

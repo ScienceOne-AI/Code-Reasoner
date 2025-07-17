@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Helper function to draw an arrow
+        function drawArrow(fromx, fromy, tox, toy) {
+            const headlen = 10; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        }
+
+        // Helper function to draw a double-headed arrow
+        function drawDoubleArrow(x, y1, y2) {
+            ctx.beginPath();
+            drawArrow(x, y2, x, y1); // Arrow pointing up
+            drawArrow(x, y1, x, y2); // Arrow pointing down
+            ctx.stroke();
+        }
+
+        // Coordinates
+        const yTop = 150;
+        const yBottom = 350;
+        const xInTerm = 100;
+        const xBoxStart = 180;
+        const xBoxEnd = 330;
+        const xCap = 430;
+        const xRes = 580;
+        const xEnd = 650;
+        const terminalRadius = 6;
+        const nodeRadius = 3;
+
+        // --- Draw V_IN ---
+        drawDoubleArrow(60, yTop, yBottom);
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText('V', 40, 242);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('IN', 52, 250);
+
+        // --- Draw Input Terminals ---
+        ctx.beginPath();
+        ctx.arc(xInTerm, yTop, terminalRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(xInTerm, yBottom, terminalRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // --- Draw main wires ---
+        // Bottom wire
+        ctx.beginPath();
+        ctx.moveTo(xInTerm, yBottom);
+        ctx.lineTo(xEnd, yBottom);
+        ctx.stroke();
+
+        // Top wire segments
+        ctx.beginPath();
+        ctx.moveTo(xInTerm, yTop);
+        ctx.lineTo(xBoxStart, yTop);
+        ctx.moveTo(xBoxEnd, yTop);
+        ctx.lineTo(xEnd, yTop);
+        ctx.stroke();
+
+        // --- Draw Missing Component ---
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([6, 4]);
+        ctx.rect(xBoxStart, yTop - 25, xBoxEnd - xBoxStart, 50);
+        ctx.stroke();
+        ctx.restore();
+
+        // Annotation for missing component
+        ctx.font = '20px Arial';
+        ctx.fillText('missing component', 255, 90);
+        ctx.beginPath();
+        ctx.moveTo(255, 105);
+        ctx.lineTo(255, 125);
+        ctx.stroke();
+
+        // --- Draw Junction Nodes ---
+        function drawNode(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, nodeRadius, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        drawNode(xCap, yTop);
+        drawNode(xCap, yBottom);
+        drawNode(xRes, yTop);
+        drawNode(xRes, yBottom);
+
+        // --- Draw Capacitor ---
+        const capY1 = yTop + 50;
+        const capY2 = capY1 + 30;
+        ctx.beginPath();
+        ctx.moveTo(xCap, yTop);
+        ctx.lineTo(xCap, capY1);
+        ctx.moveTo(xCap - 30, capY1);
+        ctx.lineTo(xCap + 30, capY1);
+        ctx.moveTo(xCap - 30, capY2);
+        ctx.lineTo(xCap + 30, capY2);
+        ctx.moveTo(xCap, capY2);
+        ctx.lineTo(xCap, yBottom);
+        ctx.stroke();
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText('C', xCap - 50, 250);
+
+
+        // --- Draw Resistor ---
+        const resHeight = 80;
+        const resWidth = 30;
+        const resY1 = yTop + (yBottom - yTop - resHeight) / 2;
+        const resY2 = resY1 + resHeight;
+        ctx.beginPath();
+        ctx.moveTo(xRes, yTop);
+        ctx.lineTo(xRes, resY1);
+        ctx.rect(xRes - resWidth / 2, resY1, resWidth, resHeight);
+        ctx.moveTo(xRes, resY2);
+        ctx.lineTo(xRes, yBottom);
+        ctx.stroke();
+        ctx.font = '20px Arial';
+        ctx.fillText('14 k\u03A9', xRes + 55, 250); // \u03A9 is Omega symbol
+
+        // --- Draw Output Terminals ---
+        ctx.beginPath();
+        ctx.arc(xRes, yTop, terminalRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(xRes, yBottom, terminalRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // --- Draw V_OUT ---
+        drawDoubleArrow(xRes + 70, yTop, yBottom);
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText('V', xRes + 95, 242);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('OUT', xRes + 107, 250);
+        
+        // --- Draw Figure Label ---
+        ctx.font = 'bold 20px Arial';
+        ctx.fillText('Fig. 5.1', canvas.width / 2, 400);
+
+    </script>
+</body>
+</html>

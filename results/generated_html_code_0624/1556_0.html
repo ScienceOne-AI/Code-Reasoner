@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wollaston Prism Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+<canvas id="myCanvas" width="550" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw a filled arrowhead
+    function drawArrowhead(ctx, x, y, angle, size, color) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2.5);
+        ctx.lineTo(-size * 0.8, 0);
+        ctx.lineTo(-size, -size / 2.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Main drawing function
+    function drawDiagram() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // General style
+        const baseColor = '#4a4a4a';
+        const grayColor = '#666666';
+        ctx.strokeStyle = baseColor;
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+
+        // Coordinates and dimensions
+        const cx = 250;
+        const cy = 210;
+        const s = 160; // Side length of the prism
+
+        // 1. Draw the Wollaston Prism
+        ctx.save();
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.rect(cx - s / 2, cy - s / 2, s, s);
+        ctx.moveTo(cx - s / 2, cy - s / 2);
+        ctx.lineTo(cx + s / 2, cy + s / 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Draw the Incident Ray
+        const startX = 60;
+        ctx.beginPath();
+        ctx.moveTo(startX, cy);
+        ctx.lineTo(cx, cy); // Ray stops at the center of the diagonal interface
+        ctx.stroke();
+        drawArrowhead(ctx, cx - 3, cy, 0, 12, grayColor);
+
+        // Unpolarized light markers
+        const markerXs = [startX + 30, startX + 55, startX + 80];
+        markerXs.forEach(x => {
+            ctx.save();
+            ctx.strokeStyle = grayColor;
+            ctx.fillStyle = grayColor;
+            ctx.lineWidth = 2;
+            // Vertical bar
+            ctx.beginPath();
+            ctx.moveTo(x, cy - 8);
+            ctx.lineTo(x, cy + 8);
+            ctx.stroke();
+            // "Hat" shape
+            ctx.beginPath();
+            ctx.arc(x - 2.5, cy, 4, 0.1 * Math.PI, 0.9 * Math.PI, true);
+            ctx.fill();
+            ctx.restore();
+        });
+
+        // 3. Draw Internal Markings
+        // Optical axis in the first prism (vertical double arrow)
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        const ax = cx - s / 3.5;
+        const ay_start = cy - s / 3;
+        const ay_end = cy + s / 3;
+        ctx.beginPath();
+        ctx.moveTo(ax, ay_start);
+        ctx.lineTo(ax, ay_end);
+        ctx.stroke();
+        drawArrowhead(ctx, ax, ay_start, -Math.PI / 2, 8, grayColor);
+        drawArrowhead(ctx, ax, ay_end, Math.PI / 2, 8, grayColor);
+        ctx.restore();
+        
+        // Optical axis in the second prism (dot)
+        ctx.save();
+        ctx.fillStyle = grayColor;
+        ctx.beginPath();
+        ctx.arc(cx + s / 2.8, cy + s / 2.8, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.restore();
+
+        // Dashed lines from center
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        // Normal to interface (dash-dot style)
+        ctx.setLineDash([4, 2, 1, 2]);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx - s / 5, cy + s / 5);
+        ctx.stroke();
+        // Downward dash-dot line
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx - s / 6, cy + s / 4);
+        ctx.stroke();
+        
+        // 'x' mark
+        ctx.fillStyle = baseColor;
+        ctx.font = 'bold 16px sans-serif';
+        ctx.fillText('x', cx + s / 7, cy + s / 10);
+        ctx.restore();
+
+        // 4. Draw Emergent Rays
+        const angleUp = 9 * Math.PI / 180;
+        const angleDown = 11 * Math.PI / 180;
+        const internalAngleUp = angleUp * 0.6;
+        const internalAngleDown = angleDown * 0.6;
+        const exitX = cx + s / 2;
+        const rayLength = 140;
+
+        // Upper ray
+        const exitYup = cy + (s / 2) * Math.tan(-internalAngleUp);
+        const endXup = exitX + rayLength * Math.cos(-angleUp);
+        const endYup = exitYup + rayLength * Math.sin(-angleUp);
+        
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(exitX, exitYup);
+        ctx.lineTo(endXup, endYup);
+        ctx.stroke();
+        drawArrowhead(ctx, exitX - 2, exitYup + 0.5, -internalAngleUp, 12, grayColor);
+        drawArrowhead(ctx, endXup, endYup, -angleUp, 12, grayColor);
+
+        // Lower ray
+        const exitYdown = cy + (s / 2) * Math.tan(internalAngleDown);
+        const endXdown = exitX + rayLength * Math.cos(angleDown);
+        const endYdown = exitYdown + rayLength * Math.sin(angleDown);
+        
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(exitX, exitYdown);
+        ctx.lineTo(endXdown, endYdown);
+        ctx.stroke();
+        drawArrowhead(ctx, exitX - 2, exitYdown - 0.5, internalAngleDown, 12, grayColor);
+        drawArrowhead(ctx, endXdown, endYdown, angleDown, 12, grayColor);
+
+        // Polarization markers near exit
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = baseColor;
+        
+        // Upper marker
+        ctx.beginPath();
+        ctx.moveTo(exitX + 15, exitYup);
+        ctx.lineTo(exitX + 25, exitYup);
+        ctx.stroke();
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(exitX + 28, exitYup);
+        ctx.lineTo(exitX + 43, exitYup);
+        ctx.stroke();
+
+        // Lower marker
+        ctx.setLineDash([]); // Reset to solid
+        ctx.beginPath();
+        ctx.moveTo(exitX + 15, exitYdown);
+        ctx.lineTo(exitX + 25, exitYdown);
+        ctx.stroke();
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(exitX + 28, exitYdown);
+        ctx.lineTo(exitX + 43, exitYdown);
+        ctx.stroke();
+        ctx.restore();
+
+        // 5. Draw Label
+        ctx.fillStyle = baseColor;
+        ctx.font = '24px "KaiTi", "SimSun", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 12-55 图', cx, cy + s / 2 + 60);
+    }
+
+    drawDiagram();
+</script>
+</body>
+</html>

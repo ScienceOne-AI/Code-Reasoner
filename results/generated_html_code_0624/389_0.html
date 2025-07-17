@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Three-Slit Interference with Phase Filter</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="650" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrowhead at a specific point and angle
+        function drawArrowhead(ctx, x, y, angle) {
+            const headLength = 8;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - headLength * Math.cos(angle - Math.PI / 6), y - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - headLength * Math.cos(angle + Math.PI / 6), y - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Parameters ---
+        const cy = 225; // y-coordinate of the central axis
+        const d = 60;   // Distance between slit centers
+        const a = 20;   // Slit width
+
+        const waveX = 80;
+        const apertureX = 120;
+        const filterPlaneX = 140;
+        const lensX = 350;
+        const screenX = 580;
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // --- Draw Incident Wave (wavy line) ---
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(waveX, cy - d - 50);
+        for (let y = cy - d - 50; y <= cy + d + 50; y++) {
+            const x = waveX - 6 * Math.sin((y - (cy - d - 50)) * 0.2);
+            ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // --- Draw Arrows for Incident Wave ---
+        ctx.lineWidth = 1.5;
+        const arrowY1 = cy - d / 2;
+        const arrowY2 = cy + d / 2;
+        ctx.beginPath();
+        ctx.moveTo(waveX - 10, arrowY1); ctx.lineTo(apertureX - 10, arrowY1);
+        ctx.moveTo(waveX - 10, arrowY2); ctx.lineTo(apertureX - 10, arrowY2);
+        ctx.stroke();
+        drawArrowhead(ctx, apertureX - 10, arrowY1, 0);
+        drawArrowhead(ctx, apertureX - 10, arrowY2, 0);
+
+        // --- Draw Aperture Screen (thick line with slits) ---
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(apertureX, cy - d - 70);
+        ctx.lineTo(apertureX, cy - d - a / 2);
+        ctx.moveTo(apertureX, cy - d + a / 2);
+        ctx.lineTo(apertureX, cy - a / 2);
+        ctx.moveTo(apertureX, cy + a / 2);
+        ctx.lineTo(apertureX, cy + d - a / 2);
+        ctx.moveTo(apertureX, cy + d + a / 2);
+        ctx.lineTo(apertureX, cy + d + 70);
+        ctx.stroke();
+
+        // --- Draw Filter/Labeling Plane (thin line) ---
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(filterPlaneX, cy - d - 70);
+        ctx.lineTo(filterPlaneX, cy - d - a / 2);
+        ctx.moveTo(filterPlaneX, cy - d + a / 2);
+        ctx.lineTo(filterPlaneX, cy - a / 2);
+        ctx.moveTo(filterPlaneX, cy + a / 2);
+        ctx.lineTo(filterPlaneX, cy + d - a / 2);
+        ctx.moveTo(filterPlaneX, cy + d + a / 2);
+        ctx.lineTo(filterPlaneX, cy + d + 70);
+        ctx.stroke();
+
+        // --- Draw Lens ---
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        const lensHeight = 120;
+        ctx.moveTo(lensX, cy - lensHeight);
+        ctx.quadraticCurveTo(lensX + 60, cy, lensX, cy + lensHeight);
+        ctx.quadraticCurveTo(lensX - 60, cy, lensX, cy - lensHeight);
+        ctx.stroke();
+
+        // --- Draw Screen ---
+        ctx.beginPath();
+        ctx.moveTo(screenX, 50);
+        ctx.lineTo(screenX, 400);
+        ctx.stroke();
+
+        // --- Draw Rays ---
+        ctx.lineWidth = 1.5;
+        const slope = -0.3; // Negative slope for rays going upwards
+        const x_start = apertureX;
+        const y_top_start = cy - d;
+        const y_mid_start = cy;
+        const y_bot_start = cy + d;
+
+        const y_top_lens = y_top_start + slope * (lensX - x_start);
+        const y_mid_lens = y_mid_start + slope * (lensX - x_start);
+        const y_bot_lens = y_bot_start + slope * (lensX - x_start);
+
+        const y_focus = cy + (slope * (lensX - screenX)); // Simplified focus point calculation
+
+        // Draw ray lines
+        ctx.beginPath();
+        ctx.moveTo(x_start, y_top_start); ctx.lineTo(lensX, y_top_lens); ctx.lineTo(screenX, y_focus);
+        ctx.moveTo(x_start, y_mid_start); ctx.lineTo(lensX, y_mid_lens); ctx.lineTo(screenX, y_focus);
+        ctx.moveTo(x_start, y_bot_start); ctx.lineTo(lensX, y_bot_lens); ctx.lineTo(screenX, y_focus);
+        ctx.stroke();
+
+        // Draw arrowheads on rays
+        const angle1 = Math.atan(slope);
+        drawArrowhead(ctx, (x_start + lensX) / 2, (y_top_start + y_top_lens) / 2, angle1);
+        drawArrowhead(ctx, (x_start + lensX) / 2, (y_mid_start + y_mid_lens) / 2, angle1);
+        drawArrowhead(ctx, (x_start + lensX) / 2, (y_bot_start + y_bot_lens) / 2, angle1);
+
+        const angle2_top = Math.atan2(y_focus - y_top_lens, screenX - lensX);
+        const angle2_mid = Math.atan2(y_focus - y_mid_lens, screenX - lensX);
+        const angle2_bot = Math.atan2(y_focus - y_bot_lens, screenX - lensX);
+        drawArrowhead(ctx, (lensX + screenX) / 2, (y_top_lens + y_focus) / 2, angle2_top);
+        drawArrowhead(ctx, (lensX + screenX) / 2, (y_mid_lens + y_focus) / 2, angle2_mid);
+        drawArrowhead(ctx, (lensX + screenX) / 2, (y_bot_lens + y_focus) / 2, angle2_bot);
+
+        // --- Labels and Annotations ---
+        ctx.font = 'italic 20px serif';
+        ctx.textAlign = 'center';
+        
+        // Label 'd'
+        const d_label_x = filterPlaneX - 35;
+        ctx.fillText('d', d_label_x + 5, cy - d / 2 + 5);
+        ctx.fillText('d', d_label_x + 5, cy + d / 2 + 5);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(filterPlaneX, cy - d); ctx.lineTo(d_label_x, cy - d);
+        ctx.moveTo(filterPlaneX, cy); ctx.lineTo(d_label_x, cy);
+        ctx.moveTo(d_label_x + 10, cy - d); ctx.lineTo(d_label_x + 10, cy);
+        ctx.moveTo(filterPlaneX, cy + d); ctx.lineTo(d_label_x, cy + d);
+        ctx.moveTo(d_label_x + 10, cy); ctx.lineTo(d_label_x + 10, cy + d);
+        ctx.stroke();
+
+        // Label 'a'
+        const a_label_x = filterPlaneX + 15;
+        ctx.fillText('a', a_label_x + 20, cy + d + 5);
+        ctx.beginPath();
+        ctx.moveTo(filterPlaneX, cy + d - a / 2); ctx.lineTo(a_label_x, cy + d - a / 2);
+        ctx.moveTo(filterPlaneX, cy + d + a / 2); ctx.lineTo(a_label_x, cy + d + a / 2);
+        ctx.moveTo(a_label_x - 5, cy + d - a / 2); ctx.lineTo(a_label_x - 5, cy + d + a / 2);
+        ctx.stroke();
+
+        // Label 'filter'
+        ctx.font = 'bold 20px serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('filter', filterPlaneX + 10, cy - 20);
+        ctx.beginPath();
+        const arrowTipX = filterPlaneX + 2; const arrowTipY = cy;
+        const arrowTailX = filterPlaneX + 20; const arrowTailY = cy - 15;
+        ctx.moveTo(arrowTailX, arrowTailY);
+        ctx.lineTo(arrowTipX, arrowTipY);
+        ctx.stroke();
+        drawArrowhead(ctx, arrowTipX, arrowTipY, Math.atan2(arrowTipY - arrowTailY, arrowTipX - arrowTailX));
+        
+        // Label 'θ'
+        ctx.font = 'italic 20px serif';
+        const theta_x = x_start;
+        const theta_y = y_mid_start;
+        ctx.textAlign = 'left';
+        ctx.fillText('θ', theta_x + 60, theta_y - 10);
+        // Angle arc
+        ctx.beginPath();
+        ctx.setLineDash([2, 3]);
+        ctx.moveTo(theta_x, theta_y);
+        ctx.lineTo(theta_x + 80, theta_y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        const angle = Math.atan(-slope);
+        ctx.beginPath();
+        ctx.arc(theta_x, theta_y, 50, 0, -angle, true); // counter-clockwise for negative end angle
+        ctx.stroke();
+
+        // --- Figure Caption ---
+        ctx.font = 'bold 22px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 2.53', canvas.width / 2, 430);
+
+    </script>
+</body>
+</html>

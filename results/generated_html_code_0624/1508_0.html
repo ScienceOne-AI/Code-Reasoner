@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Circuit and Graph</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="800" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = "italic 22px 'Times New Roman'";
+        
+        // --- Draw Circuit Diagram (甲) ---
+        function drawCircuit() {
+            // Component coordinates
+            const batX = 150, batY = 400;
+            const switchX = 250, switchY = 400;
+            const r1X = 280, r1Y = 150, r1W = 80, r1H = 25;
+            const r2X = 100, r2Y = 150, r2W = 120, r2H = 25;
+            const vmX = 320, vmY = 80, vmR = 25;
+
+            // Draw Resistor R1
+            ctx.strokeRect(r1X, r1Y, r1W, r1H);
+            ctx.fillText('R', r1X + r1W / 2 - 10, r1Y + r1H + 30);
+            ctx.font = "italic 16px 'Times New Roman'";
+            ctx.fillText('1', r1X + r1W / 2 + 4, r1Y + r1H + 32);
+            ctx.font = "italic 22px 'Times New Roman'";
+
+            // Draw Voltmeter V
+            ctx.beginPath();
+            ctx.arc(vmX, vmY, vmR, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.fillText('V', vmX - 8, vmY + 8);
+
+            // Connect Voltmeter to R1
+            ctx.beginPath();
+            ctx.moveTo(r1X, r1Y + r1H/2);
+            ctx.lineTo(r1X, vmY);
+            ctx.lineTo(vmX - vmR, vmY);
+            ctx.moveTo(r1X + r1W, r1Y + r1H/2);
+            ctx.lineTo(r1X + r1W, vmY);
+            ctx.lineTo(vmX + vmR, vmY);
+            ctx.stroke();
+            
+            // Draw Dots for connection points
+            ctx.beginPath();
+            ctx.arc(r1X, r1Y + r1H/2, 3, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(r1X + r1W, r1Y + r1H/2, 3, 0, 2*Math.PI);
+            ctx.fill();
+
+
+            // Draw Sliding Rheostat R2
+            ctx.strokeRect(r2X, r2Y, r2W, r2H);
+            ctx.fillText('R', r2X + r2W / 2 - 10, r2Y + r2H + 30);
+            ctx.font = "italic 16px 'Times New Roman'";
+            ctx.fillText('2', r2X + r2W / 2 + 4, r2Y + r2H + 32);
+            ctx.font = "italic 22px 'Times New Roman'";
+            // Labels a, b, P for R2
+            ctx.fillText('a', r2X - 25, r2Y + r2H/2 + 8);
+            ctx.fillText('b', r2X + r2W + 10, r2Y + r2H/2 + 8);
+            ctx.fillText('P', r2X + 45, r2Y - 30);
+            // Slider P
+            const sliderX = r2X + 50;
+            ctx.beginPath();
+            ctx.moveTo(sliderX, r2Y);
+            ctx.lineTo(sliderX, r2Y - 20);
+            ctx.lineTo(sliderX-5, r2Y-10);
+            ctx.moveTo(sliderX, r2Y-20);
+            ctx.lineTo(sliderX+5, r2Y-10);
+            ctx.stroke();
+            
+            // Draw Battery
+            ctx.beginPath();
+            ctx.moveTo(batX - 15, batY - 20);
+            ctx.lineTo(batX - 15, batY + 20);
+            ctx.moveTo(batX + 15, batY - 10);
+            ctx.lineTo(batX + 15, batY + 10);
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.lineWidth = 2;
+
+            // Draw Switch
+            ctx.beginPath();
+            ctx.arc(switchX, switchY, 4, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(switchX + 50, switchY, 4, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(switchX, switchY);
+            ctx.lineTo(switchX + 40, switchY - 15);
+            ctx.stroke();
+            
+            // Draw wires
+            ctx.beginPath();
+            // Bottom wire from battery
+            ctx.moveTo(batX - 15, batY);
+            ctx.lineTo(r2X, batY);
+            ctx.lineTo(r2X, r2Y + r2H);
+            // Connect to slider P
+            ctx.moveTo(sliderX, r2Y-20);
+            ctx.lineTo(sliderX, 100);
+            ctx.lineTo(r2X, 100);
+            ctx.lineTo(r2X, r2Y + r2H/2);
+            // Top wire
+            ctx.moveTo(r2X + r2W, r2Y + r2H/2);
+            ctx.lineTo(r1X, r1Y + r1H/2);
+            // Right side wire
+            ctx.moveTo(r1X+r1W, r1Y+r1H/2);
+            ctx.lineTo(r1X+r1W, switchY);
+            ctx.lineTo(switchX + 50, switchY);
+            ctx.lineTo(batX + 15, switchY);
+            ctx.lineTo(batX + 15, batY);
+            ctx.stroke();
+
+            // Draw label "甲"
+            ctx.fillText('甲', 220, 450);
+        }
+
+        // --- Draw Graph (乙) ---
+        function drawGraph() {
+            // Graph parameters
+            const originX = 480;
+            const originY = 400;
+            const graphWidth = 300;
+            const graphHeight = 300;
+            const xMax = 20;
+            const yMax = 6;
+            const xStep = 5;
+            const yStep = 1;
+            const xTickLabel = 5;
+            const yTickLabel = 1;
+            
+            const x_scale = graphWidth / 25; // 20 units fit in 240px, let's go to 25.
+            const y_scale = graphHeight / yMax;
+
+            ctx.lineWidth = 1.5;
+
+            // Draw axes
+            ctx.beginPath();
+            // Y axis
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(originX, originY - graphHeight - 20);
+            ctx.lineTo(originX - 5, originY - graphHeight - 10);
+            ctx.moveTo(originX, originY - graphHeight - 20);
+            ctx.lineTo(originX + 5, originY - graphHeight - 10);
+            // X axis
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(originX + graphWidth + 20, originY);
+            ctx.lineTo(originX + graphWidth + 10, originY - 5);
+            ctx.moveTo(originX + graphWidth + 20, originY);
+            ctx.lineTo(originX + graphWidth + 10, originY + 5);
+            ctx.stroke();
+            
+            // Axis labels
+            ctx.font = "italic 22px 'Times New Roman'";
+            ctx.fillText('U/V', originX - 50, originY - graphHeight - 5);
+            ctx.fillText('R', originX + graphWidth + 30, originY + 10);
+            ctx.font = "italic 16px 'Times New Roman'";
+            ctx.fillText('2', originX + graphWidth + 42, originY + 12);
+            ctx.font = "italic 22px 'Times New Roman'";
+            ctx.fillText('/Ω', originX + graphWidth + 50, originY + 10);
+
+
+            // Draw grid and ticks
+            ctx.font = "16px Arial";
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            // X-axis ticks and grid
+            for (let i = xTickLabel; i <= xMax; i += xTickLabel) {
+                const x = originX + i * x_scale;
+                ctx.moveTo(x, originY);
+                ctx.lineTo(x, originY - 5);
+                ctx.fillText(i, x, originY + 5);
+                // Dashed grid line
+                ctx.save();
+                ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = '#aaa';
+                ctx.beginPath();
+                ctx.moveTo(x, originY);
+                ctx.lineTo(x, originY - graphHeight);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Y-axis ticks and grid
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let i = yTickLabel; i <= yMax; i += yTickLabel) {
+                const y = originY - i * y_scale;
+                ctx.moveTo(originX, y);
+                ctx.lineTo(originX + 5, y);
+                ctx.fillText(i, originX - 10, y);
+                // Dashed grid line
+                ctx.save();
+                ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = '#aaa';
+                ctx.beginPath();
+                ctx.moveTo(originX, y);
+                ctx.lineTo(originX + graphWidth, y);
+                ctx.stroke();
+                ctx.restore();
+            }
+            ctx.fillText(0, originX - 10, originY);
+
+            // Draw the curve U = 60 / (10 + R2)
+            ctx.beginPath();
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = 'black';
+            
+            // The problem implies R2 varies. Let's start from a small non-zero value to match the image not touching the axis
+            let R2_start = 0;
+            let U_start = 60 / (10 + R2_start);
+            ctx.moveTo(originX + R2_start * x_scale, originY - U_start * y_scale);
+
+            for (let r2 = R2_start + 0.1; r2 <= 20; r2 += 0.1) {
+                const u = 60 / (10 + r2);
+                const plotX = originX + r2 * x_scale;
+                const plotY = originY - u * y_scale;
+                ctx.lineTo(plotX, plotY);
+            }
+            ctx.stroke();
+
+            // Draw label "乙"
+            ctx.font = "italic 22px 'Times New Roman'";
+            ctx.textAlign = 'center';
+            ctx.fillText('乙', originX + graphWidth/2, originY + 40);
+        }
+
+        drawCircuit();
+        drawGraph();
+    </script>
+</body>
+</html>

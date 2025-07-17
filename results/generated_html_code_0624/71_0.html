@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="800" height="380"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 10;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        }
+
+        function drawAngle(ctx, x, y, startAngle, endAngle, radius, counterClockwise = false) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, startAngle, endAngle, counterClockwise);
+            ctx.stroke();
+        }
+
+        function drawText(ctx, text, x, y, font = "italic 20px 'Times New Roman'", align = 'center', baseline = 'middle') {
+            ctx.font = font;
+            ctx.textAlign = align;
+            ctx.textBaseline = baseline;
+            ctx.fillText(text, x, y);
+        }
+
+        // --- Main Drawing ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+
+        // --- Figure 1.57 ---
+        
+        // Parameters
+        const q1_pos = { x: 80, y: 280 };
+        const r_len = 150;
+        const theta_deg = 30;
+        const R_len = 40;
+        const alpha_deg = 50;
+
+        const theta_rad = theta_deg * Math.PI / 180;
+        const alpha_rad = alpha_deg * Math.PI / 180;
+
+        // Positions
+        const center_pos = { 
+            x: q1_pos.x + r_len * Math.cos(theta_rad), 
+            y: q1_pos.y - r_len * Math.sin(theta_rad) 
+        };
+        
+        const dipole_axis_angle_rad = theta_rad + alpha_rad;
+
+        const p_plus_pos = {
+            x: center_pos.x + R_len * Math.cos(dipole_axis_angle_rad),
+            y: center_pos.y - R_len * Math.sin(dipole_axis_angle_rad)
+        };
+        const p_minus_pos = {
+            x: center_pos.x - R_len * Math.cos(dipole_axis_angle_rad),
+            y: center_pos.y + R_len * Math.sin(dipole_axis_angle_rad)
+        };
+
+        // Draw horizontal reference line
+        ctx.beginPath();
+        drawArrow(ctx, q1_pos.x - 20, q1_pos.y, q1_pos.x + 200, q1_pos.y);
+        ctx.stroke();
+
+        // Draw line r
+        ctx.beginPath();
+        ctx.moveTo(q1_pos.x, q1_pos.y);
+        ctx.lineTo(center_pos.x, center_pos.y);
+        ctx.stroke();
+
+        // Draw dipole
+        ctx.beginPath();
+        ctx.moveTo(p_minus_pos.x, p_minus_pos.y);
+        ctx.lineTo(p_plus_pos.x, p_plus_pos.y);
+        ctx.stroke();
+
+        // Draw charges
+        ctx.beginPath();
+        ctx.arc(p_plus_pos.x, p_plus_pos.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(p_minus_pos.x, p_minus_pos.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Draw dashed extension of r and alpha arc
+        const dashed_end_pos = {
+            x: center_pos.x + (R_len + 15) * Math.cos(theta_rad),
+            y: center_pos.y - (R_len + 15) * Math.sin(theta_rad)
+        };
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.moveTo(center_pos.x, center_pos.y);
+        ctx.lineTo(dashed_end_pos.x, dashed_end_pos.y);
+        ctx.stroke();
+        
+        // Canvas angles are CW from +x. We want an arc from radial to dipole axis.
+        drawAngle(ctx, center_pos.x, center_pos.y, -dipole_axis_angle_rad, -theta_rad, 25);
+
+        // Draw theta arc
+        drawAngle(ctx, q1_pos.x, q1_pos.y, -theta_rad, 0, 40);
+
+        // Draw the rectangle for R
+        const u_r = { x: Math.cos(theta_rad), y: -Math.sin(theta_rad) };
+        const vec_c_m = { x: p_minus_pos.x - center_pos.x, y: p_minus_pos.y - center_pos.y };
+        const proj_len = vec_c_m.x * u_r.x + vec_c_m.y * u_r.y;
+        const proj_point = { x: center_pos.x + proj_len * u_r.x, y: center_pos.y + proj_len * u_r.y };
+        const vec_perp = { x: p_minus_pos.x - proj_point.x, y: p_minus_pos.y - proj_point.y };
+        const p4_pos = { x: center_pos.x + vec_perp.x, y: center_pos.y + vec_perp.y };
+
+        ctx.beginPath();
+        ctx.moveTo(center_pos.x, center_pos.y); ctx.lineTo(p4_pos.x, p4_pos.y);
+        ctx.moveTo(p4_pos.x, p4_pos.y); ctx.lineTo(p_minus_pos.x, p_minus_pos.y);
+        ctx.moveTo(p_minus_pos.x, p_minus_pos.y); ctx.lineTo(proj_point.x, proj_point.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Labels for Fig 1.57
+        drawText(ctx, "Q", q1_pos.x - 15, q1_pos.y + 5);
+        drawText(ctx, "1", q1_pos.x - 10, q1_pos.y + 11, "italic 15px 'Times New Roman'");
+        drawText(ctx, "r", center_pos.x - 80 * Math.cos(theta_rad), center_pos.y + 80 * Math.sin(theta_rad) + 10, "italic 22px 'Times New Roman'");
+        drawText(ctx, "θ", q1_pos.x + 50 * Math.cos(theta_rad / 2), q1_pos.y - 50 * Math.sin(theta_rad / 2));
+        drawText(ctx, "+Q", p_plus_pos.x + 5, p_plus_pos.y - 18, "italic 20px 'Times New Roman'");
+        drawText(ctx, "2", p_plus_pos.x + 18, p_plus_pos.y - 12, "italic 15px 'Times New Roman'");
+        drawText(ctx, "-Q", p_minus_pos.x - 20, p_minus_pos.y + 10, "italic 20px 'Times New Roman'");
+        drawText(ctx, "2", p_minus_pos.x - 8, p_minus_pos.y + 16, "italic 15px 'Times New Roman'");
+        drawText(ctx, "α", center_pos.x + 35 * Math.cos(theta_rad + alpha_rad / 2), center_pos.y - 35 * Math.sin(theta_rad + alpha_rad / 2));
+        drawText(ctx, "R", (p_minus_pos.x + proj_point.x) / 2 + 15, (p_minus_pos.y + proj_point.y) / 2);
+        drawText(ctx, "Fig. 1.57", 180, 350, "bold 20px 'Times New Roman'", 'center', 'bottom');
+
+        // --- Figure 1.58 ---
+        
+        // Parameters and positions
+        const q1_pos2 = { x: 450, y: 280 };
+        const p_plus_pos2 = { x: 680, y: 80 };
+        const p_minus_pos2 = { x: 720, y: 230 };
+        const dipole_mid_pos2 = { x: (p_plus_pos2.x + p_minus_pos2.x) / 2, y: (p_plus_pos2.y + p_minus_pos2.y) / 2 };
+
+        // Draw horizontal reference line
+        ctx.beginPath();
+        drawArrow(ctx, q1_pos2.x, q1_pos2.y, q1_pos2.x + 320, q1_pos2.y);
+        ctx.stroke();
+
+        // Draw main triangle
+        ctx.beginPath();
+        ctx.moveTo(q1_pos2.x, q1_pos2.y); ctx.lineTo(p_plus_pos2.x, p_plus_pos2.y);
+        ctx.lineTo(p_minus_pos2.x, p_minus_pos2.y);
+        ctx.stroke();
+
+        // Draw line r
+        ctx.beginPath();
+        ctx.moveTo(q1_pos2.x, q1_pos2.y);
+        ctx.lineTo(dipole_mid_pos2.x, dipole_mid_pos2.y);
+        ctx.stroke();
+        
+        // Draw alpha angle arc
+        const vec_p_q1 = { x: q1_pos2.x - p_plus_pos2.x, y: q1_pos2.y - p_plus_pos2.y };
+        const vec_p_m = { x: p_minus_pos2.x - p_plus_pos2.x, y: p_minus_pos2.y - p_plus_pos2.y };
+        const angle_start_alpha2 = Math.atan2(vec_p_q1.y, vec_p_q1.x);
+        const angle_end_alpha2 = Math.atan2(vec_p_m.y, vec_p_m.x);
+        drawAngle(ctx, p_plus_pos2.x, p_plus_pos2.y, angle_start_alpha2, angle_end_alpha2, 30);
+        
+        // Draw ticks for 2R
+        const vec_2R = { x: p_minus_pos2.x - p_plus_pos2.x, y: p_minus_pos2.y - p_plus_pos2.y };
+        const len_2R = Math.hypot(vec_2R.x, vec_2R.y);
+        const u_perp_2R = { x: -vec_2R.y / len_2R, y: vec_2R.x / len_2R };
+        ctx.beginPath();
+        ctx.moveTo(p_plus_pos2.x - 8*u_perp_2R.x, p_plus_pos2.y - 8*u_perp_2R.y);
+        ctx.lineTo(p_plus_pos2.x + 8*u_perp_2R.x, p_plus_pos2.y + 8*u_perp_2R.y);
+        ctx.moveTo(p_minus_pos2.x - 8*u_perp_2R.x, p_minus_pos2.y - 8*u_perp_2R.y);
+        ctx.lineTo(p_minus_pos2.x + 8*u_perp_2R.x, p_minus_pos2.y + 8*u_perp_2R.y);
+        ctx.stroke();
+
+        // Labels for Fig 1.58
+        drawText(ctx, "r", (q1_pos2.x + p_plus_pos2.x)/2 - 20, (q1_pos2.y + p_plus_pos2.y)/2 - 5);
+        drawText(ctx, "+", (q1_pos2.x + p_plus_pos2.x)/2 - 13, (q1_pos2.y + p_plus_pos2.y)/2, "italic 15px 'Times New Roman'");
+        drawText(ctx, "r", (q1_pos2.x + p_minus_pos2.x)/2, (q1_pos2.y + p_minus_pos2.y)/2 + 18);
+        drawText(ctx, "–", (q1_pos2.x + p_minus_pos2.x)/2 + 7, (q1_pos2.y + p_minus_pos2.y)/2 + 22, "italic 15px 'Times New Roman'");
+        drawText(ctx, "r", (q1_pos2.x + dipole_mid_pos2.x)/2 - 5, (q1_pos2.y + dipole_mid_pos2.y)/2 + 15);
+        drawText(ctx, "2R", dipole_mid_pos2.x + 20, dipole_mid_pos2.y);
+        const angle_mid_alpha2 = (angle_start_alpha2 + angle_end_alpha2)/2;
+        drawText(ctx, "α", p_plus_pos2.x + 40 * Math.cos(angle_mid_alpha2), p_plus_pos2.y + 40 * Math.sin(angle_mid_alpha2));
+        drawText(ctx, "Fig. 1.58", 620, 350, "bold 20px 'Times New Roman'", 'center', 'bottom');
+    </script>
+</body>
+</html>

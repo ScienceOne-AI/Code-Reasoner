@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '16px sans-serif';
+
+        // --- Helper functions ---
+
+        function drawResistor(x, y, width, height, label, labelPosition = 'right') {
+            ctx.strokeRect(x, y, width, height);
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            let labelX = x + width + 5;
+            let labelY = y + height / 2;
+
+            if (labelPosition === 'above') {
+                ctx.textAlign = 'center';
+                labelX = x + width / 2;
+                labelY = y - 10;
+            } else if (labelPosition === 'below') {
+                ctx.textAlign = 'center';
+                labelX = x + width / 2;
+                labelY = y + height + 10;
+            } else if (labelPosition === 'left') {
+                ctx.textAlign = 'right';
+                labelX = x - 5;
+                labelY = y + height / 2;
+            }
+            ctx.fillText(label, labelX, labelY);
+        }
+
+        function drawNode(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        // --- Main Drawing ---
+
+        // Component Coordinates
+        const opAmpTipX = 450;
+        const opAmpY = 225;
+        const opAmpWidth = 120;
+        const opAmpHeight = 100;
+        const opAmpBaseX = opAmpTipX - opAmpWidth;
+
+        const gndY = 375;
+        const nonInvInputY = opAmpY + opAmpHeight/4; // + input
+        const invInputY = opAmpY - opAmpHeight/4;    // - input
+
+        const rInputX = 270;
+        const r2kX = 170;
+        const micX = 70;
+        
+        const feedbackResistorY = 100;
+        const outputX = 550;
+
+        // Ground line
+        ctx.beginPath();
+        ctx.moveTo(50, gndY);
+        ctx.lineTo(500, gndY);
+        ctx.stroke();
+
+        // Ground symbol
+        ctx.beginPath();
+        ctx.moveTo(400, gndY);
+        ctx.lineTo(400, gndY + 10);
+        ctx.moveTo(385, gndY + 10);
+        ctx.lineTo(415, gndY + 10);
+        ctx.moveTo(390, gndY + 18);
+        ctx.lineTo(410, gndY + 18);
+        ctx.moveTo(395, gndY + 26);
+        ctx.lineTo(405, gndY + 26);
+        ctx.stroke();
+
+        // Op-Amp
+        ctx.beginPath();
+        ctx.moveTo(opAmpBaseX, opAmpY - opAmpHeight / 2); // Top-left
+        ctx.lineTo(opAmpTipX, opAmpY);                   // Tip
+        ctx.lineTo(opAmpBaseX, opAmpY + opAmpHeight / 2); // Bottom-left
+        ctx.closePath();
+        ctx.stroke();
+        
+        // Op-Amp Inputs and connections
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('-', opAmpBaseX + 15, invInputY);
+        ctx.fillText('+', opAmpBaseX + 15, nonInvInputY);
+        ctx.font = '16px sans-serif';
+
+        ctx.beginPath();
+        ctx.moveTo(opAmpBaseX, invInputY);
+        ctx.lineTo(rInputX, invInputY); // to Resistor R node
+        ctx.moveTo(opAmpBaseX, nonInvInputY);
+        ctx.lineTo(r2kX, nonInvInputY); // to Point P
+        ctx.stroke();
+
+        // Op-Amp Power Supplies
+        ctx.beginPath();
+        ctx.moveTo(opAmpTipX - opAmpWidth/2, opAmpY - opAmpHeight/2);
+        ctx.lineTo(opAmpTipX - opAmpWidth/2, opAmpY - opAmpHeight/2 - 20);
+        ctx.moveTo(opAmpTipX - opAmpWidth/2, opAmpY + opAmpHeight/2);
+        ctx.lineTo(opAmpTipX - opAmpWidth/2, opAmpY + opAmpHeight/2 + 20);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.fillText('+5 V', opAmpTipX - opAmpWidth/2, opAmpY - opAmpHeight/2 - 30);
+        ctx.fillText('–5 V', opAmpTipX - opAmpWidth/2, opAmpY + opAmpHeight/2 + 30);
+        
+        // Input section (Microphone and 2.0 kOhm resistor)
+        // Top wire from point P
+        ctx.beginPath();
+        ctx.moveTo(micX, nonInvInputY);
+        ctx.lineTo(r2kX, nonInvInputY);
+        ctx.stroke();
+
+        // Microphone
+        ctx.beginPath();
+        ctx.arc(micX, (nonInvInputY + gndY) / 2, 30, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(micX, (nonInvInputY + gndY) / 2 - 15);
+        ctx.lineTo(micX, (nonInvInputY + gndY) / 2 + 15);
+        ctx.stroke();
+        // Mic connections
+        ctx.beginPath();
+        ctx.moveTo(micX, nonInvInputY);
+        ctx.lineTo(micX, (nonInvInputY + gndY) / 2 - 30);
+        ctx.moveTo(micX, gndY);
+        ctx.lineTo(micX, (nonInvInputY + gndY) / 2 + 30);
+        ctx.stroke();
+
+        // 2.0 kOhm resistor
+        ctx.beginPath();
+        ctx.moveTo(r2kX, nonInvInputY);
+        ctx.lineTo(r2kX, nonInvInputY + 50);
+        ctx.moveTo(r2kX, gndY);
+        ctx.lineTo(r2kX, gndY - 50);
+        ctx.stroke();
+        drawResistor(r2kX - 10, nonInvInputY + 50, 20, 50, '2.0 kΩ', 'right');
+        
+        // Point P
+        drawNode(r2kX, nonInvInputY);
+        ctx.fillText('P', r2kX, nonInvInputY - 15);
+
+        // Feedback loop
+        // Resistor R
+        ctx.beginPath();
+        ctx.moveTo(rInputX, invInputY);
+        ctx.lineTo(rInputX, invInputY + 50);
+        ctx.moveTo(rInputX, gndY);
+        ctx.lineTo(rInputX, gndY - 50);
+        ctx.stroke();
+        drawResistor(rInputX - 10, invInputY + 50, 20, 50, 'R', 'right');
+        
+        // 15 kOhm resistor
+        const feedbackNodeX = rInputX;
+        const feedbackNodeY = invInputY;
+        const feedbackTopY = feedbackResistorY;
+        const feedbackOutX = 500;
+        
+        ctx.beginPath();
+        ctx.moveTo(feedbackNodeX, feedbackNodeY);
+        ctx.lineTo(feedbackNodeX, feedbackTopY + 15);
+        ctx.moveTo(feedbackOutX, opAmpY);
+        ctx.lineTo(feedbackOutX, feedbackTopY + 15);
+        ctx.stroke();
+        drawResistor(feedbackNodeX, feedbackTopY, feedbackOutX - feedbackNodeX, 30, '15 kΩ', 'above');
+        
+        // Output
+        ctx.beginPath();
+        ctx.moveTo(opAmpTipX, opAmpY);
+        ctx.lineTo(outputX, opAmpY);
+        ctx.stroke();
+
+        // Nodes
+        drawNode(feedbackNodeX, feedbackNodeY); // Inverting input node
+        drawNode(micX, nonInvInputY);
+        drawNode(micX, gndY);
+        drawNode(r2kX, gndY);
+        drawNode(rInputX, gndY);
+        drawNode(feedbackOutX, opAmpY); // Output tap for feedback
+        
+        // V_OUT terminal
+        ctx.beginPath();
+        ctx.arc(outputX, opAmpY, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // V_OUT label with arrow
+        ctx.beginPath();
+        ctx.moveTo(outputX, gndY);
+        ctx.lineTo(outputX, opAmpY + 10);
+        // Arrowhead
+        ctx.moveTo(outputX, opAmpY + 10);
+        ctx.lineTo(outputX - 5, opAmpY + 20);
+        ctx.moveTo(outputX, opAmpY + 10);
+        ctx.lineTo(outputX + 5, opAmpY + 20);
+        ctx.stroke();
+        ctx.textAlign = 'left';
+        ctx.fillText('V', outputX + 15, (opAmpY + gndY) / 2 - 5);
+        ctx.font = '12px sans-serif';
+        ctx.fillText('OUT', outputX + 25, (opAmpY + gndY) / 2 + 1);
+        ctx.font = '16px sans-serif';
+        
+        // Figure label
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 7.1', 300, 430);
+    </script>
+</body>
+</html>

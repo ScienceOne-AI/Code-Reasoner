@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Clear canvas
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'black';
+
+        function drawArrow(fromx, fromy, tox, toy) {
+            const headlen = 10;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function drawDoubleArrow(x1, y1, x2, y2, text) {
+            const headlen = 8;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            // Arrow 1
+            const angle1 = Math.atan2(y1 - y2, x1 - x2);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + headlen * Math.cos(angle1 - Math.PI / 6), y1 + headlen * Math.sin(angle1 - Math.PI / 6));
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + headlen * Math.cos(angle1 + Math.PI / 6), y1 + headlen * Math.sin(angle1 + Math.PI / 6));
+            // Arrow 2
+            const angle2 = Math.atan2(y2 - y1, x2 - x1);
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 + headlen * Math.cos(angle2 - Math.PI / 6), y2 + headlen * Math.sin(angle2 - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 + headlen * Math.cos(angle2 + Math.PI / 6), y2 + headlen * Math.sin(angle2 + Math.PI / 6));
+            ctx.stroke();
+
+            if (text) {
+                ctx.fillText(text, (x1 + x2) / 2, y1 - 15);
+            }
+        }
+
+        // Axes
+        const Ox = 150, Oy = 350;
+        drawArrow(Ox, 450, Ox, 100); // y-axis
+        ctx.fillText('y', Ox - 20, 100);
+        drawArrow(Ox, Oy, 550, Oy); // x-axis
+        ctx.fillText('x', 560, Oy - 20);
+        drawArrow(Ox, Oy, 50, 400); // z-axis
+        ctx.fillText('z', 40, 410);
+        ctx.fillText('O', Ox - 15, Oy + 15);
+
+        // Cube parameters
+        const d_pixels = 120;
+        const gap = 100;
+        const z_vec = { x: -50, y: -25 };
+
+        // Cube vertices coordinates based on a perspective view
+        const v1 = { x: Ox + gap, y: Oy }; // front-left-bottom (d,0,0)
+        const v2 = { x: v1.x + d_pixels, y: v1.y }; // front-right-bottom (2d,0,0)
+        const v3 = { x: v2.x, y: v2.y - d_pixels }; // front-right-top (2d,d,0)
+        const v4 = { x: v1.x, y: v1.y - d_pixels }; // front-left-top (d,d,0)
+
+        const v5 = { x: v1.x + z_vec.x, y: v1.y + z_vec.y }; // back-left-bottom (d,0,d) - hidden
+        const v6 = { x: v2.x + z_vec.x, y: v2.y + z_vec.y }; // back-right-bottom (2d,0,d)
+        const v7 = { x: v3.x + z_vec.x, y: v3.y + z_vec.y }; // back-right-top (2d,d,d)
+        const v8 = { x: v4.x + z_vec.x, y: v4.y + z_vec.y }; // back-left-top (d,d,d)
+
+        // Draw solid lines of the cube
+        ctx.beginPath();
+        // Front face
+        ctx.moveTo(v1.x, v1.y);
+        ctx.lineTo(v2.x, v2.y);
+        ctx.lineTo(v3.x, v3.y);
+        ctx.lineTo(v4.x, v4.y);
+        ctx.closePath();
+        // Top face
+        ctx.moveTo(v4.x, v4.y);
+        ctx.lineTo(v8.x, v8.y);
+        ctx.lineTo(v7.x, v7.y);
+        ctx.lineTo(v3.x, v3.y);
+        // Right face and visible back edges
+        ctx.moveTo(v2.x, v2.y);
+        ctx.lineTo(v6.x, v6.y);
+        ctx.lineTo(v7.x, v7.y);
+        ctx.stroke();
+
+        // Draw dashed (hidden) lines of the cube
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(v5.x, v5.y);
+        ctx.lineTo(v1.x, v1.y);
+        ctx.moveTo(v5.x, v5.y);
+        ctx.lineTo(v6.x, v6.y);
+        ctx.moveTo(v5.x, v5.y);
+        ctx.lineTo(v8.x, v8.y);
+        ctx.stroke();
+        
+        // Annotations
+        // Horizontal dashed line representing the central x-axis
+        const y_center_line = (v1.y + v4.y)/2 + z_vec.y/2;
+        ctx.beginPath();
+        ctx.moveTo(Ox, y_center_line);
+        ctx.lineTo(v6.x, y_center_line);
+        ctx.stroke();
+
+        // Vertical dashed line at the center of the left face
+        const x_left_center = v1.x + z_vec.x/2;
+        ctx.beginPath();
+        ctx.moveTo(x_left_center, y_center_line - 15);
+        ctx.lineTo(x_left_center, y_center_line + 15);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Arrow for distance 'd'
+        drawDoubleArrow(Ox, y_center_line, x_left_center, y_center_line, 'd');
+        
+        // Labels 'd' for cube side lengths
+        ctx.fillText('d', (v1.x + v2.x) / 2, v1.y + 20); // Bottom front edge
+        ctx.fillText('d', v2.x + 20, (v2.y + v3.y) / 2); // Right front edge
+        ctx.fillText('d', (v2.x + v6.x) / 2 + 15, (v2.y + v6.y) / 2 + 10); // Bottom right z-edge
+
+        // Caption
+        ctx.font = '20px "SimSun", "STSong"';
+        ctx.fillText('习题 7-16 图', 300, 450);
+
+    </script>
+</body>
+</html>

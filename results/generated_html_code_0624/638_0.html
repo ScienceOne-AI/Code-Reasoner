@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Photoelectric Effect Graph</title>
+</head>
+<body>
+<canvas id="physicsGraph" width="700" height="500" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsGraph');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const config = {
+        margin: { top: 30, right: 30, bottom: 70, left: 90 },
+        xRange: { min: 5.0, max: 7.5 },
+        yRange: { min: 0, max: 1.4 },
+        xMajorTick: 0.5,
+        yMajorTick: 0.2,
+        xMinorTicksPerMajor: 10,
+        yMinorTicksPerMajor: 10,
+        gridColor: '#e0e0e0',
+        axisColor: '#000000',
+        lineColor: '#000000',
+        textColor: '#000000',
+        font: '14px Arial'
+    };
+
+    const graphWidth = canvas.width - config.margin.left - config.margin.right;
+    const graphHeight = canvas.height - config.margin.top - config.margin.bottom;
+
+    const xScale = graphWidth / (config.xRange.max - config.xRange.min);
+    const yScale = graphHeight / (config.yRange.max - config.yRange.min);
+
+    // --- Helper Functions ---
+    function xToPx(x) {
+        return config.margin.left + (x - config.xRange.min) * xScale;
+    }
+
+    function yToPx(y) {
+        return canvas.height - config.margin.bottom - (y - config.yRange.min) * yScale;
+    }
+
+    // --- Drawing Functions ---
+    function drawGrid() {
+        ctx.strokeStyle = config.gridColor;
+        ctx.lineWidth = 1;
+
+        // Vertical minor grid lines
+        const xMinorStep = config.xMajorTick / config.xMinorTicksPerMajor;
+        for (let x = config.xRange.min; x <= config.xRange.max; x += xMinorStep) {
+            ctx.beginPath();
+            ctx.moveTo(xToPx(x), yToPx(config.yRange.min));
+            ctx.lineTo(xToPx(x), yToPx(config.yRange.max));
+            ctx.stroke();
+        }
+
+        // Horizontal minor grid lines
+        const yMinorStep = config.yMajorTick / config.yMinorTicksPerMajor;
+        for (let y = config.yRange.min; y <= config.yRange.max; y += yMinorStep) {
+            ctx.beginPath();
+            ctx.moveTo(xToPx(config.xRange.min), yToPx(y));
+            ctx.lineTo(xToPx(config.xRange.max), yToPx(y));
+            ctx.stroke();
+        }
+
+        ctx.strokeStyle = config.axisColor;
+        ctx.lineWidth = 1.5;
+
+        // Vertical major grid lines
+        for (let x = config.xRange.min; x <= config.xRange.max; x += config.xMajorTick) {
+            ctx.beginPath();
+            ctx.moveTo(xToPx(x), yToPx(config.yRange.min));
+            ctx.lineTo(xToPx(x), yToPx(config.yRange.max));
+            ctx.stroke();
+        }
+
+        // Horizontal major grid lines
+        for (let y = config.yRange.min; y <= config.yRange.max; y += config.yMajorTick) {
+            ctx.beginPath();
+            ctx.moveTo(xToPx(config.xRange.min), yToPx(y));
+            ctx.lineTo(xToPx(config.xRange.max), yToPx(y));
+            ctx.stroke();
+        }
+    }
+
+    function drawAxes() {
+        ctx.strokeStyle = config.axisColor;
+        ctx.lineWidth = 2;
+
+        // Y-axis
+        ctx.beginPath();
+        ctx.moveTo(xToPx(config.xRange.min), yToPx(config.yRange.min));
+        ctx.lineTo(xToPx(config.xRange.min), yToPx(config.yRange.max));
+        ctx.stroke();
+
+        // X-axis
+        ctx.beginPath();
+        ctx.moveTo(xToPx(config.xRange.min), yToPx(config.yRange.min));
+        ctx.lineTo(xToPx(config.xRange.max), yToPx(config.yRange.min));
+        ctx.stroke();
+    }
+    
+    function drawLabels() {
+        ctx.fillStyle = config.textColor;
+        ctx.font = config.font;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // X-axis labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let x = config.xRange.min; x <= config.xRange.max; x += config.xMajorTick) {
+             if (x === 5.0 || x === 6.0 || x === 7.0 || x % 1 === 0.5) {
+                ctx.fillText(x.toFixed(1), xToPx(x), yToPx(config.yRange.min) + 8);
+            }
+        }
+        
+        // Y-axis labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let y = config.yRange.min; y <= config.yRange.max; y += config.yMajorTick) {
+             if (y > 0 || y === 0) { // To draw the 0 label
+                ctx.fillText(y.toFixed(1), xToPx(config.xRange.min) - 8, yToPx(y));
+            }
+        }
+
+        // Axis Titles
+        // Y-axis title: E_MAX / 10^-19 J
+        ctx.save();
+        const yLabelX = config.margin.left - 60;
+        const yLabelY = config.margin.top + graphHeight / 2;
+        ctx.translate(yLabelX, yLabelY);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        
+        // E_MAX part
+        ctx.font = 'italic 18px Times New Roman';
+        ctx.fillText('E', -10, -8);
+        ctx.font = '12px Times New Roman';
+        ctx.fillText('MAX', 8, -3);
+        
+        // 10^-19 J part
+        ctx.font = '16px Times New Roman';
+        ctx.fillText('10', -10, 15);
+        ctx.font = '11px Times New Roman';
+        ctx.fillText('-19', 4, 10);
+        ctx.font = '16px Times New Roman';
+        ctx.fillText('J', 18, 15);
+
+        // Separator line
+        ctx.beginPath();
+        ctx.moveTo(-30, 2);
+        ctx.lineTo(30, 2);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+
+
+        // X-axis title: f / 10^14 Hz
+        ctx.textAlign = 'center';
+        const xLabelX = config.margin.left + graphWidth / 2;
+        const xLabelY = canvas.height - config.margin.bottom + 40;
+        
+        // f part
+        ctx.font = 'italic 18px Times New Roman';
+        ctx.fillText('f', xLabelX - 25, xLabelY-5);
+
+        // 10^14 Hz part
+        ctx.font = '16px Times New Roman';
+        ctx.fillText('10', xLabelX + 10, xLabelY-5);
+        ctx.font = '11px Times New Roman';
+        ctx.fillText('14', xLabelX + 25, xLabelY - 10);
+        ctx.font = '16px Times New Roman';
+        ctx.fillText('Hz', xLabelX + 45, xLabelY-5);
+        
+        // Separator line
+        ctx.beginPath();
+        ctx.moveTo(xLabelX - 40, xLabelY - 2);
+        ctx.lineTo(xLabelX + 60, xLabelY - 2);
+        ctx.stroke();
+
+        // Figure Caption
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText('Fig. 10.1', xLabelX, canvas.height - 15);
+    }
+    
+    function drawDataLine() {
+        // Based on analysis, the line passes through (6.5, 0.6) and (7.0, 1.0).
+        // The equation is y = 0.8x - 4.6.
+        // The line in the figure appears to run from x=6.2 to x=7.4.
+        const x_start = 6.2;
+        const y_start = 0.8 * x_start - 4.6; // 0.36
+        const x_end = 7.4;
+        const y_end = 0.8 * x_end - 4.6; // 1.32
+        
+        ctx.beginPath();
+        ctx.moveTo(xToPx(x_start), yToPx(y_start));
+        ctx.lineTo(xToPx(x_end), yToPx(y_end));
+        ctx.strokeStyle = config.lineColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    // --- Main Drawing ---
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    drawGrid();
+    drawAxes();
+    drawLabels();
+    drawDataLine();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Position vs. Time Graph</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="550" height="450"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style parameters
+const gridColor = '#dcdcdc';
+const axisColor = '#000000';
+const plotColor = '#000000';
+const textColor = '#000000';
+
+// Graph dimensions and margins
+const margin = { top: 25, right: 25, bottom: 50, left: 60 };
+const graphWidth = canvas.width - margin.left - margin.right;
+const graphHeight = canvas.height - margin.top - margin.bottom;
+
+// Data range from the image
+const xMin = 0;
+const xMax = 10;
+const yMin = -10;
+const yMax = 10;
+
+// Scaling factors
+const xScale = graphWidth / (xMax - xMin);
+const yScale = graphHeight / (yMax - yMin);
+
+// Canvas coordinates of the graph's origin (0,0)
+const originX = margin.left;
+const originY = margin.top + graphHeight / 2;
+
+// Function to map graph data points to canvas coordinates
+function mapPoint(t, p) {
+    const x = originX + t * xScale;
+    const y = originY - p * yScale; // Invert y-axis for canvas
+    return { x, y };
+}
+
+// 1. Draw Grid
+ctx.strokeStyle = gridColor;
+ctx.lineWidth = 1;
+ctx.beginPath();
+
+// Vertical grid lines (every 1 second)
+for (let t = xMin + 1; t < xMax; t++) {
+    const p = mapPoint(t, 0);
+    ctx.moveTo(p.x, margin.top);
+    ctx.lineTo(p.x, canvas.height - margin.bottom);
+}
+
+// Horizontal grid lines (every 2 meters)
+for (let p = yMin + 2; p < yMax; p += 2) {
+    if (p !== 0) { // Avoid drawing over the main x-axis
+        const pt = mapPoint(0, p);
+        ctx.moveTo(margin.left, pt.y);
+        ctx.lineTo(canvas.width - margin.right, pt.y);
+    }
+}
+ctx.stroke();
+
+// 2. Draw Axes
+ctx.strokeStyle = axisColor;
+ctx.lineWidth = 1.5;
+ctx.beginPath();
+// Y-axis
+ctx.moveTo(originX, margin.top);
+ctx.lineTo(originX, canvas.height - margin.bottom);
+// X-axis
+ctx.moveTo(margin.left, originY);
+ctx.lineTo(canvas.width - margin.right, originY);
+ctx.stroke();
+
+// 3. Draw Labels and Ticks
+ctx.fillStyle = textColor;
+ctx.font = '16px Arial';
+
+// X-axis ticks and labels
+ctx.textAlign = 'center';
+ctx.textBaseline = 'top';
+for (let t = xMin; t <= xMax; t++) {
+    const pt = mapPoint(t, 0);
+    ctx.fillText(t, pt.x, pt.y + 5);
+}
+
+// X-axis Title
+ctx.fillText('Time (s)', canvas.width / 2, canvas.height - margin.bottom + 25);
+
+// Y-axis ticks and labels
+ctx.textAlign = 'right';
+ctx.textBaseline = 'middle';
+const yLabels = [yMin, 0, yMax];
+for (const p of yLabels) {
+    const pt = mapPoint(0, p);
+    ctx.fillText(p, pt.x - 8, pt.y);
+}
+
+// Y-axis Title
+ctx.save();
+ctx.translate(margin.left - 40, canvas.height / 2);
+ctx.rotate(-Math.PI / 2);
+ctx.textAlign = 'center';
+ctx.fillText('Position (m)', 0, 0);
+ctx.restore();
+
+// 4. Draw the Plot
+const points = [
+    { t: 0, p: 10 },
+    { t: 3, p: 10 },
+    { t: 5, p: 0 },
+    { t: 6, p: 0 },
+    { t: 8, p: -8 },
+    { t: 9, p: -8 },
+    { t: 10, p: 10 }
+];
+
+ctx.strokeStyle = plotColor;
+ctx.lineWidth = 2;
+ctx.beginPath();
+
+const startPoint = mapPoint(points[0].t, points[0].p);
+ctx.moveTo(startPoint.x, startPoint.y);
+
+for (let i = 1; i < points.length; i++) {
+    const nextPoint = mapPoint(points[i].t, points[i].p);
+    ctx.lineTo(nextPoint.x, nextPoint.y);
+}
+ctx.stroke();
+
+</script>
+</body>
+</html>

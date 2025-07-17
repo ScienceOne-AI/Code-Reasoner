@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Amplitude Modulated Wave</title>
+</head>
+<body>
+<canvas id="amWaveCanvas" width="800" height="400"></canvas>
+
+<script>
+const canvas = document.getElementById('amWaveCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Configuration ---
+const config = {
+    width: canvas.width,
+    height: canvas.height,
+    margin: { top: 40, right: 50, bottom: 60, left: 90 },
+    font: '16px Arial',
+    axisColor: '#000000',
+    waveColor: '#000000',
+    lineWidth: 1.5,
+};
+
+// Calculate plot dimensions and origin
+const plotWidth = config.width - config.margin.left - config.margin.right;
+const plotHeight = config.height - config.margin.top - config.margin.bottom;
+const origin = {
+    x: config.margin.left,
+    y: config.margin.top + plotHeight / 2
+};
+
+// Data points for the envelope (time in us, relative amplitude)
+// These points are estimated visually from the provided image to ensure
+// the reproduction is faithful to the visual representation.
+const envelopePoints = [
+    { t: 0,   amp: 1.00 },
+    { t: 10,  amp: 0.98 },
+    { t: 20,  amp: 0.95 },
+    { t: 30,  amp: 0.88 },
+    { t: 40,  amp: 0.78 },
+    { t: 50,  amp: 0.65 },
+    { t: 60,  amp: 0.52 },
+    { t: 68,  amp: 0.45 }, // Visually estimated minimum point
+    { t: 80,  amp: 0.55 },
+    { t: 90,  amp: 0.70 },
+    { t: 100, amp: 0.85 }
+];
+
+// --- Helper Functions ---
+
+// Map physics time coordinate (t in us) to canvas x-coordinate
+function mapX(t) {
+    const tMax = 100; // max time on x-axis is 100 us
+    return origin.x + (t / tMax) * plotWidth;
+}
+
+// Map physics displacement to canvas y-coordinate.
+// The max displacement is normalized to 1. The y-axis mapping scales this.
+// A factor of 0.9 is used to prevent the wave from touching the top/bottom margins.
+const yScale = (plotHeight / 2) * 0.9;
+function mapY(displacement) {
+    return origin.y - displacement * yScale;
+}
+
+// Linear interpolation function to get the envelope amplitude at any time t.
+function getEnvelopeAmplitude(t) {
+    if (t <= envelopePoints[0].t) {
+        return envelopePoints[0].amp;
+    }
+    if (t >= envelopePoints[envelopePoints.length - 1].t) {
+        return envelopePoints[envelopePoints.length - 1].amp;
+    }
+
+    for (let i = 0; i < envelopePoints.length - 1; i++) {
+        const p1 = envelopePoints[i];
+        const p2 = envelopePoints[i + 1];
+        if (t >= p1.t && t <= p2.t) {
+            const fraction = (t - p1.t) / (p2.t - p1.t);
+            return p1.amp + fraction * (p2.amp - p1.amp);
+        }
+    }
+    return 1.0; // Fallback, should not be reached
+}
+
+
+// --- Drawing Functions ---
+
+function drawAxesAndLabels() {
+    ctx.strokeStyle = config.axisColor;
+    ctx.fillStyle = config.axisColor;
+    ctx.lineWidth = 1;
+    ctx.font = config.font;
+
+    // Y-axis (Displacement)
+    ctx.beginPath();
+    ctx.moveTo(origin.x, config.margin.top - 10);
+    ctx.lineTo(origin.x, origin.y + plotHeight / 2 + config.margin.bottom - 20);
+    // Arrowhead for Y-axis
+    ctx.moveTo(origin.x, config.margin.top - 10);
+    ctx.lineTo(origin.x - 5, config.margin.top);
+    ctx.moveTo(origin.x, config.margin.top - 10);
+    ctx.lineTo(origin.x + 5, config.margin.top);
+    ctx.stroke();
+
+    // X-axis (Time)
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(origin.x + plotWidth + 10, origin.y);
+    ctx.stroke();
+
+    // X-axis ticks and labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let t = 0; t <= 100; t += 10) {
+        const x = mapX(t);
+        ctx.beginPath();
+        ctx.moveTo(x, origin.y - 4);
+        ctx.lineTo(x, origin.y + 4);
+        ctx.stroke();
+        if (t > 0) {
+            ctx.fillText(t, x, origin.y + 8);
+        }
+    }
+
+    // Y-axis "0" label
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('0', origin.x - 8, origin.y);
+
+    // Axis titles
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('signal', origin.x - 50, origin.y - 35);
+    ctx.fillText('displacement', origin.x - 50, origin.y - 15);
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('time / μs', mapX(100) + 5, origin.y + 8);
+    
+    // Figure label
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Fig. 6.1', origin.x + plotWidth / 2, config.height - 5);
+}
+
+function drawWave() {
+    // Carrier wave frequency is 250 kHz, so period T = 1/250kHz = 4 us.
+    const T_carrier = 4; // Carrier period in us
+    const omega_carrier = 2 * Math.PI / T_carrier; // Angular frequency in rad/us
+
+    ctx.strokeStyle = config.waveColor;
+    ctx.lineWidth = config.lineWidth;
+
+    ctx.beginPath();
+
+    // Calculate start point
+    const t_start = 0;
+    const envelope_start = getEnvelopeAmplitude(t_start);
+    // The carrier wave is a cosine, starting at a peak.
+    const displacement_start = envelope_start * Math.cos(omega_carrier * t_start);
+    ctx.moveTo(mapX(t_start), mapY(displacement_start));
+
+    // Draw the wave by iterating through time
+    const t_max = 100;
+    const dt = 0.1; // time step in us for smooth curve
+    for (let t = dt; t <= t_max; t += dt) {
+        const envelope = getEnvelopeAmplitude(t);
+        const displacement = envelope * Math.cos(omega_carrier * t);
+        ctx.lineTo(mapX(t), mapY(displacement));
+    }
+
+    ctx.stroke();
+}
+
+
+// --- Main Execution ---
+// Clear canvas before drawing
+ctx.clearRect(0, 0, config.width, config.height);
+drawAxesAndLabels();
+drawWave();
+
+</script>
+</body>
+</html>

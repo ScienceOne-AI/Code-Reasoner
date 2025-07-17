@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Spherical Pendulum</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #999;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Drawing parameters
+        const O = { x: 250, y: 350 };
+        const axisLength = 180;
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 20px Times New Roman';
+
+        // Helper function to draw an arrow
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headlen = 10;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            // Draw line
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            // Draw arrowhead
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Draw Coordinate System
+        // z-axis (up)
+        drawArrow(O.x, O.y, O.x, O.y - axisLength);
+        ctx.fillText('z', O.x - 20, O.y - axisLength - 5);
+
+        // y-axis (right)
+        drawArrow(O.x, O.y, O.x + axisLength, O.y);
+        ctx.fillText('y', O.x + axisLength + 5, O.y + 10);
+
+        // x-axis (perspective)
+        const xAngle = (5 / 4) * Math.PI; // -135 degrees from positive canvas x-axis
+        const xAxisEndX = O.x + axisLength * 0.9 * Math.cos(xAngle);
+        const xAxisEndY = O.y - axisLength * 0.9 * Math.sin(xAngle);
+        drawArrow(O.x, O.y, xAxisEndX, xAxisEndY);
+        ctx.fillText('x', xAxisEndX - 20, xAxisEndY + 5);
+
+        // Origin Label
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('O', O.x - 25, O.y + 20);
+
+        // Draw gravity vector g
+        ctx.save();
+        const g_start = { x: O.x - 120, y: O.y - 150 };
+        const g_end = { x: g_start.x, y: g_start.y + 60 };
+        ctx.lineWidth = 2.5;
+        drawArrow(g_start.x, g_start.y, g_end.x, g_end.y);
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText('g', g_start.x - 25, g_start.y + 35);
+        ctx.restore();
+
+        // Draw rod, mass, and angle
+        const l = 160;
+        const theta0_rad = 50 * Math.PI / 180; // 50 degrees
+        const mPos = {
+            x: O.x + l * Math.sin(theta0_rad),
+            y: O.y - l * Math.cos(theta0_rad)
+        };
+
+        // Rod
+        ctx.beginPath();
+        ctx.moveTo(O.x, O.y);
+        ctx.lineTo(mPos.x, mPos.y);
+        ctx.stroke();
+
+        // Mass m
+        ctx.beginPath();
+        ctx.arc(mPos.x, mPos.y, 6, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('m', mPos.x - 25, mPos.y + 5);
+
+        // Label l
+        const l_label_pos = {
+            x: O.x + (l / 2) * Math.sin(theta0_rad) + 15,
+            y: O.y - (l / 2) * Math.cos(theta0_rad)
+        };
+        ctx.fillText('l', l_label_pos.x, l_label_pos.y);
+
+        // Angle theta_0
+        const arcRadius = 40;
+        ctx.beginPath();
+        ctx.arc(O.x, O.y, arcRadius, -Math.PI / 2, -Math.PI / 2 + theta0_rad, false);
+        ctx.stroke();
+
+        // Arrow on arc
+        const arrowAngle = -Math.PI / 2 + theta0_rad;
+        const arrowX = O.x + arcRadius * Math.cos(arrowAngle);
+        const arrowY = O.y + arcRadius * Math.sin(arrowAngle);
+        ctx.save();
+        ctx.translate(arrowX, arrowY);
+        ctx.rotate(arrowAngle + Math.PI / 2); // Rotate to be tangent to the arc
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-4, -4);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(4, -4);
+        ctx.stroke();
+        ctx.restore();
+
+        // Label theta_0
+        const theta_label_angle = -Math.PI / 2 + theta0_rad / 2.2;
+        const theta_label_radius = 20;
+        const theta_label_x = O.x + theta_label_radius * Math.cos(theta_label_angle);
+        const theta_label_y = O.y + theta_label_radius * Math.sin(theta_label_angle);
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('θ', theta_label_x, theta_label_y + 8);
+        ctx.font = 'italic 14px Times New Roman';
+        ctx.fillText('0', theta_label_x + 11, theta_label_y + 11);
+
+        // Velocity vector v_0
+        const vPos = { x: mPos.x + 30, y: mPos.y - 15 };
+        const vRadius = 8;
+        ctx.beginPath();
+        ctx.arc(vPos.x, vPos.y, vRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Cross inside
+        const crossOffset = vRadius / Math.sqrt(2);
+        ctx.beginPath();
+        ctx.moveTo(vPos.x - crossOffset, vPos.y - crossOffset);
+        ctx.lineTo(vPos.x + crossOffset, vPos.y + crossOffset);
+        ctx.moveTo(vPos.x + crossOffset, vPos.y - crossOffset);
+        ctx.lineTo(vPos.x - crossOffset, vPos.y + crossOffset);
+        ctx.stroke();
+
+        // Label v_0
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('v', vPos.x + 18, vPos.y + 6);
+        ctx.font = 'italic 14px Times New Roman';
+        ctx.fillText('0', vPos.x + 27, vPos.y + 9);
+
+        // Caption
+        ctx.font = '20px SimHei';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.fillText('图 1', canvas.width / 2, canvas.height - 20);
+
+    </script>
+</body>
+</html>

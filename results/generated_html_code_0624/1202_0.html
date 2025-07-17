@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="500" height="450" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = '20px serif';
+    ctx.fillStyle = 'black';
+
+    // Helper function to draw text with subscript
+    function drawTextWithSubscript(text, sub, x, y) {
+        ctx.save();
+        ctx.font = '20px serif';
+        ctx.fillText(text, x, y);
+        ctx.font = '14px serif';
+        ctx.fillText(sub, x + ctx.measureText(text).width - 3, y + 5);
+        ctx.restore();
+    }
+
+    // Parameters chosen to visually approximate the source image
+    const cx = 250;
+    const O = { x: cx, y: 70 };
+    const O2 = { x: cx, y: 240 };
+    const R1 = 90;
+    const R2 = 45;
+    const beta_deg = 25;
+    const beta_rad = beta_deg * Math.PI / 180;
+
+    // Calculated positions based on parameters
+    const d_centers = R1 + R2;
+    const O1_left = {
+        x: O2.x - d_centers * Math.sin(beta_rad),
+        y: O2.y + d_centers * Math.cos(beta_rad)
+    };
+    const O1_right = {
+        x: O2.x + d_centers * Math.sin(beta_rad),
+        y: O2.y + d_centers * Math.cos(beta_rad)
+    };
+
+    // --- Drawing starts here ---
+
+    // 1. Draw the fixed support at the top
+    ctx.beginPath();
+    ctx.moveTo(cx - 50, 50);
+    ctx.lineTo(cx + 50, 50);
+    ctx.stroke();
+    // Hatching for the support
+    for (let i = -50; i <= 50; i += 10) {
+        ctx.moveTo(cx + i, 50);
+        ctx.lineTo(cx + i - 10, 40);
+    }
+    ctx.stroke();
+
+    // 2. Draw the suspension point 'O'
+    ctx.beginPath();
+    ctx.arc(O.x, O.y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('O', O.x - 20, O.y + 5);
+
+    // 3. Draw the three cylinders
+    // Cylinder II (middle)
+    ctx.beginPath();
+    ctx.arc(O2.x, O2.y, R2, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.fillText('II', O2.x - 8, O2.y - 15);
+
+    // Cylinder I (left)
+    ctx.beginPath();
+    ctx.arc(O1_left.x, O1_left.y, R1, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.fillText('I', O1_left.x - 5, O1_left.y + 8);
+
+    // Cylinder I (right)
+    ctx.beginPath();
+    ctx.arc(O1_right.x, O1_right.y, R1, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.fillText('I', O1_right.x - 5, O1_right.y + 8);
+
+    // 4. Draw the center points of the cylinders
+    [O1_left, O1_right, O2].forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+    });
+
+    // 5. Draw the suspension "ropes" as tangent lines from O
+    function drawTangent(center_pt) {
+        const dx = center_pt.x - O.x;
+        const dy = center_pt.y - O.y;
+        const d_OO1 = Math.sqrt(dx * dx + dy * dy);
+        const theta = Math.atan2(dy, dx);
+        const phi = Math.asin(R1 / d_OO1);
+
+        // Determine the angle of the outer tangent line
+        const line_angle = (dx < 0) ? (theta - phi) : (theta + phi);
+        
+        ctx.beginPath();
+        ctx.moveTo(O.x, O.y);
+        // The line extends to the cylinder's edge
+        ctx.lineTo(center_pt.x - R1 * Math.sin(line_angle), center_pt.y + R1 * Math.cos(line_angle));
+        ctx.stroke();
+
+        return line_angle;
+    }
+    
+    // Draw left tangent and get its angle
+    const left_line_angle = drawTangent(O1_left);
+    // Draw right tangent symmetrically
+    const right_line_angle = Math.PI - left_line_angle;
+    ctx.beginPath();
+    ctx.moveTo(O.x, O.y);
+    ctx.lineTo(O1_right.x - R1*Math.sin(right_line_angle), O1_right.y + R1*Math.cos(right_line_angle));
+    ctx.stroke();
+
+    // 6. Draw dashed lines for angle reference
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+
+    // Vertical line from O downwards
+    ctx.beginPath();
+    ctx.moveTo(O.x, O.y);
+    ctx.lineTo(O.x, O2.y);
+    ctx.stroke();
+
+    // Line connecting centers O1_left and O2
+    ctx.beginPath();
+    ctx.moveTo(O1_left.x, O1_left.y);
+    ctx.lineTo(O2.x, O2.y);
+    ctx.stroke();
+    
+    // Vertical line from O2 downwards
+    ctx.beginPath();
+    ctx.moveTo(O2.x, O2.y);
+    ctx.lineTo(O2.x, O1_left.y + 20);
+    ctx.stroke();
+    ctx.restore();
+
+    // 7. Draw angle arcs and their labels
+    // Angle α (alpha)
+    ctx.beginPath();
+    ctx.arc(O.x, O.y, 45, left_line_angle, Math.PI / 2);
+    ctx.stroke();
+    ctx.fillText('α', O.x - 28, O.y + 45);
+
+    // Angle β (beta)
+    const o2_o1_angle = Math.atan2(O1_left.y - O2.y, O1_left.x - O2.x);
+    ctx.beginPath();
+    ctx.arc(O2.x, O2.y, 60, Math.PI / 2, o2_o1_angle);
+    ctx.stroke();
+    ctx.fillText('β', O2.x - 35, O2.y + 45);
+
+    // 8. Draw labels for the center points
+    drawTextWithSubscript('O', 'I', O1_left.x - 35, O1_left.y);
+    drawTextWithSubscript('O', 'I', O1_right.x + 10, O1_right.y);
+    
+    // As in image, label for O2 is O_II
+    ctx.save();
+    ctx.font = '20px serif';
+    ctx.fillText('O', O2.x + 10, O2.y + 5);
+    ctx.font = '14px serif';
+    ctx.fillText('II', O2.x + 22, O2.y + 5);
+    ctx.restore();
+
+</script>
+</body>
+</html>

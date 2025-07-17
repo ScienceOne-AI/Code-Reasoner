@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Waveguide Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // Define drawing parameters
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const plateSeparation = 160; // Represents 'a'
+        const plateWidth = 320;
+        const plateYTop = centerY - plateSeparation / 2;
+        const plateYBottom = centerY + plateSeparation / 2;
+        const plateXStart = centerX - plateWidth / 2;
+        const plateXEnd = centerX + plateWidth / 2;
+
+        // Function to draw the sawtooth/hatched plates
+        function drawSawtoothPlate(y, direction) { // direction: -1 for top plate, +1 for bottom
+            ctx.lineWidth = 3;
+            const toothWidth = 15;
+            const toothHeight = 9;
+
+            ctx.beginPath();
+            ctx.moveTo(plateXStart, y);
+            for (let x = plateXStart; x < plateXEnd; x += toothWidth) {
+                // Draw one segment of the sawtooth
+                ctx.lineTo(x + toothWidth / 2, y + direction * toothHeight);
+                ctx.lineTo(x + toothWidth, y);
+            }
+            ctx.stroke();
+        }
+
+        // Draw the plates
+        drawSawtoothPlate(plateYTop, -1); // Top plate, teeth go up
+        drawSawtoothPlate(plateYBottom, 1); // Bottom plate, teeth go down
+
+        // --- Draw the dimension 'a' on the left ---
+        
+        // Arrowhead function for the dimension line
+        function drawDimensionArrow(x, y, angle) {
+            const headlen = 12;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headlen, -headlen / 2.5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headlen, headlen / 2.5);
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        const dimLineX = plateXStart - 40;
+        ctx.lineWidth = 1.5;
+        // Vertical line
+        ctx.beginPath();
+        ctx.moveTo(dimLineX, plateYTop);
+        ctx.lineTo(dimLineX, plateYBottom);
+        ctx.stroke();
+        
+        // Arrowheads
+        drawDimensionArrow(dimLineX, plateYTop, -Math.PI / 2); // Pointing up
+        drawDimensionArrow(dimLineX, plateYBottom, Math.PI / 2); // Pointing down
+
+        // Label 'a'
+        ctx.font = "italic 24px serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("a", dimLineX - 20, centerY);
+
+
+        // --- Draw the coordinate system ---
+        
+        // Arrowhead function for the axes
+        function drawAxisArrowhead(x, y, angle) {
+            const headlen = 12;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headlen, -headlen / 2);
+            ctx.lineTo(-headlen, headlen / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        const axisOrigin = { x: centerX, y: centerY };
+        const axisLength = 70;
+        ctx.lineWidth = 2.5;
+        ctx.font = "italic bold 24px serif";
+
+        // Z-axis (up)
+        ctx.beginPath();
+        ctx.moveTo(axisOrigin.x, axisOrigin.y);
+        ctx.lineTo(axisOrigin.x, axisOrigin.y - axisLength);
+        ctx.stroke();
+        drawAxisArrowhead(axisOrigin.x, axisOrigin.y - axisLength, -Math.PI / 2);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText("z", axisOrigin.x, axisOrigin.y - axisLength - 5);
+        
+        // X-axis (right)
+        ctx.beginPath();
+        ctx.moveTo(axisOrigin.x, axisOrigin.y);
+        ctx.lineTo(axisOrigin.x + axisLength, axisOrigin.y);
+        ctx.stroke();
+        drawAxisArrowhead(axisOrigin.x + axisLength, axisOrigin.y, 0);
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillText("x", axisOrigin.x + axisLength + 8, axisOrigin.y);
+
+        // Y-axis (diagonal)
+        const yAngle = -Math.PI / 4; // 45 degrees up and right
+        const yEndX = axisOrigin.x + axisLength * Math.cos(yAngle);
+        const yEndY = axisOrigin.y + axisLength * Math.sin(yAngle);
+        ctx.beginPath();
+        ctx.moveTo(axisOrigin.x, axisOrigin.y);
+        ctx.lineTo(yEndX, yEndY);
+        ctx.stroke();
+        drawAxisArrowhead(yEndX, yEndY, yAngle);
+        ctx.textAlign = "left";
+        ctx.textBaseline = "bottom";
+        ctx.fillText("y", yEndX + 5, yEndY - 5);
+
+        // --- Draw the figure caption ---
+        ctx.font = "bold 28px serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText("Fig. 5.14", centerX, plateYBottom + 50);
+
+    </script>
+</body>
+</html>

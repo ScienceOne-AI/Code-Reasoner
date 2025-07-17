@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Velocity vs. Time Graph</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="350"></canvas>
+
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style parameters ---
+const axisColor = '#000';
+const gridColor = '#cccccc';
+const curveColor = '#000';
+const labelFont = '16px Arial';
+const tickFont = '14px Arial';
+const axisWidth = 2;
+const gridWidth = 1;
+const curveWidth = 2.5;
+
+// --- Graph dimensions and mapping ---
+const margin = { top: 30, right: 20, bottom: 50, left: 70 };
+const graphWidth = canvas.width - margin.left - margin.right;
+const graphHeight = canvas.height - margin.top - margin.bottom;
+
+const tMin = 0;
+const tMax = 10;
+const vMin = -10;
+const vMax = 10;
+
+// Function to map time (t) and velocity (v) to canvas coordinates (x, y)
+function mapCoords(t, v) {
+    const x = margin.left + (t - tMin) / (tMax - tMin) * graphWidth;
+    const y = margin.top + graphHeight - (v - vMin) / (vMax - vMin) * graphHeight;
+    return { x, y };
+}
+
+// --- Drawing functions ---
+
+// Draw grid lines
+function drawGrid() {
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = gridWidth;
+
+    // Vertical grid lines (for time)
+    for (let t = tMin; t <= tMax; t++) {
+        const { x } = mapCoords(t, 0);
+        ctx.beginPath();
+        ctx.moveTo(x, margin.top);
+        ctx.lineTo(x, margin.top + graphHeight);
+        ctx.stroke();
+    }
+
+    // Horizontal grid lines (for velocity)
+    // The original image has grid lines every 2 m/s.
+    for (let v = vMin; v <= vMax; v += 2) {
+        const { y } = mapCoords(0, v);
+        ctx.beginPath();
+        ctx.moveTo(margin.left, y);
+        ctx.lineTo(margin.left + graphWidth, y);
+        ctx.stroke();
+    }
+}
+
+// Draw axes
+function drawAxes() {
+    ctx.strokeStyle = axisColor;
+    ctx.fillStyle = axisColor;
+    ctx.lineWidth = axisWidth;
+
+    // Y-axis (t=0)
+    const yAxis = mapCoords(tMin, 0);
+    ctx.beginPath();
+    ctx.moveTo(yAxis.x, margin.top);
+    ctx.lineTo(yAxis.x, margin.top + graphHeight);
+    ctx.stroke();
+
+    // X-axis (v=0)
+    const xAxis = mapCoords(0, 0);
+    ctx.beginPath();
+    ctx.moveTo(margin.left, xAxis.y);
+    ctx.lineTo(margin.left + graphWidth, xAxis.y);
+    ctx.stroke();
+
+    // Axis labels
+    ctx.font = labelFont;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Time (s)', margin.left + graphWidth / 2, margin.top + graphHeight + 25);
+
+    ctx.save();
+    ctx.translate(margin.left - 55, margin.top + graphHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Velocity (m/s)', 0, 0);
+    ctx.restore();
+
+    // Axis ticks
+    ctx.font = tickFont;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    // Time ticks
+    for (let t = tMin; t <= tMax; t++) {
+        const { x } = mapCoords(t, 0);
+        ctx.fillText(t, x, xAxis.y + 8);
+    }
+
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    // Velocity ticks
+    [10, -10].forEach(v => {
+        const { y } = mapCoords(0, v);
+        ctx.fillText(v, margin.left - 8, y);
+    });
+    // Add the 0 tick next to the origin
+    const { y: y_zero } = mapCoords(0, 0);
+    ctx.fillText(0, margin.left - 8, y_zero + 10); // Offset to avoid axis overlap
+}
+
+// Draw the velocity curve
+function drawCurve() {
+    ctx.strokeStyle = curveColor;
+    ctx.lineWidth = curveWidth;
+    ctx.beginPath();
+
+    // The curve is a sine wave.
+    // It completes half a cycle in 5 seconds (from t=0 to t=5).
+    // So, the full period T = 10 s.
+    // The function is of the form v(t) = A * sin(ωt), where ω = 2π/T = 2π/10 = π/5.
+    // The amplitude A is the maximum velocity. From the graph, the peak is at t=2.5s.
+    // The peak value is slightly below 10, at 4.5 grid units. Each unit is 2 m/s, so A = 4.5 * 2 = 9 m/s.
+    // The function is v(t) = 9 * sin((π/5) * t).
+    
+    const dt = 0.01; // Step for drawing
+    for (let t = tMin; t <= tMax; t += dt) {
+        const v = 9 * Math.sin(Math.PI / 5 * t);
+        const { x, y } = mapCoords(t, v);
+
+        if (t === tMin) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    }
+    ctx.stroke();
+}
+
+// --- Main execution ---
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+drawGrid();
+drawAxes();
+drawCurve();
+
+</script>
+</body>
+</html>

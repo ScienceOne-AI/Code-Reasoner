@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-diagram" width="500" height="480"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-diagram');
+        const ctx = canvas.getContext('2d');
+
+        // Define key coordinates based on visual proportions
+        const corner = { x: 100, y: 80 };
+        const pointA = { x: 387, y: 80 };
+        const pointB = { x: 280, y: 260 };
+        const pointC = { x: 100, y: 220 };
+
+        // Function to draw hatching lines
+        function drawHatching(x1, y1, x2, y2, isWall) {
+            ctx.save();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            const len = 15;
+            if (isWall) { // Wall hatching
+                for (let y = y1 + 10; y < y2; y += 15) {
+                    ctx.moveTo(x1, y);
+                    ctx.lineTo(x1 - len, y + len);
+                }
+            } else { // Ceiling hatching
+                for (let x = x1 + 10; x < x2; x += 15) {
+                    ctx.moveTo(x, y1);
+                    ctx.lineTo(x + len, y1 - len);
+                }
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Draw Walls and Hatching ---
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = 'black';
+        ctx.beginPath();
+        ctx.moveTo(pointA.x + 50, corner.y);
+        ctx.lineTo(corner.x, corner.y);
+        ctx.lineTo(corner.x, pointC.y + 200);
+        ctx.stroke();
+
+        drawHatching(corner.x, corner.y, pointA.x + 50, corner.y, false); // Ceiling
+        drawHatching(corner.x, corner.y, corner.x, pointC.y + 200, true);  // Wall
+
+        // --- Draw Ropes ---
+        ctx.beginPath();
+        ctx.moveTo(pointA.x, pointA.y);
+        ctx.lineTo(pointB.x, pointB.y);
+        ctx.lineTo(pointC.x, pointC.y);
+        ctx.stroke();
+
+        // --- Draw Connection Points ---
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(pointA.x, pointA.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(pointC.x, pointC.y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Point B has a ring joint
+        ctx.beginPath();
+        ctx.arc(pointB.x, pointB.y, 8, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(pointB.x, pointB.y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        
+
+        // --- Draw the Lamp ---
+        ctx.beginPath();
+        ctx.moveTo(pointB.x, pointB.y + 8);
+        ctx.lineTo(pointB.x, pointB.y + 30);
+        ctx.stroke();
+        // Socket
+        ctx.fillRect(pointB.x - 10, pointB.y + 30, 20, 10);
+        // Shade
+        ctx.beginPath();
+        ctx.moveTo(pointB.x - 35, pointB.y + 40);
+        ctx.arc(pointB.x, pointB.y + 40, 35, Math.PI, 0, false);
+        ctx.closePath();
+        ctx.stroke();
+        // Light rays (scribbles)
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(pointB.x - 15, pointB.y + 75);
+        ctx.lineTo(pointB.x - 25, pointB.y + 90);
+        ctx.moveTo(pointB.x - 5, pointB.y + 75);
+        ctx.lineTo(pointB.x - 5, pointB.y + 95);
+        ctx.moveTo(pointB.x + 5, pointB.y + 75);
+        ctx.lineTo(pointB.x + 10, pointB.y + 90);
+        ctx.moveTo(pointB.x + 15, pointB.y + 75);
+        ctx.lineTo(pointB.x + 25, pointB.y + 85);
+        ctx.stroke();
+
+
+        // --- Draw Angles and Labels ---
+        ctx.lineWidth = 1.5;
+
+        // Function to draw an arrowhead
+        function drawArrowhead(x, y, angle, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Angle α
+        const angleA_rad = Math.atan2(pointB.y - pointA.y, pointB.x - pointA.x);
+        ctx.beginPath();
+        ctx.arc(pointA.x, pointA.y, 40, angleA_rad, Math.PI, false);
+        ctx.stroke();
+        drawArrowhead(pointA.x - 40, pointA.y, Math.PI - 0.1, 10); // Arrow at the end of the arc on the ceiling
+
+        // Angle β
+        ctx.beginPath();
+        const betaStart = { x: pointC.x, y: pointC.y - 70 };
+        const betaEnd = { x: pointC.x + 65, y: pointC.y + 16 };
+        const betaCtrl = { x: pointC.x + 20, y: pointC.y - 85 };
+        ctx.moveTo(betaStart.x, betaStart.y);
+        ctx.quadraticCurveTo(betaCtrl.x, betaCtrl.y, betaEnd.x, betaEnd.y);
+        ctx.stroke();
+        // Arrowhead for beta (tangent at the end of quadratic curve)
+        const tangentAngleBeta = Math.atan2(betaEnd.y - betaCtrl.y, betaEnd.x - betaCtrl.x);
+        drawArrowhead(betaEnd.x, betaEnd.y, tangentAngleBeta, 10);
+
+        // --- Draw Text Labels ---
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 28px "Times New Roman"';
+        ctx.fillText('A', pointA.x + 10, pointA.y + 5);
+        ctx.fillText('B', pointB.x + 18, pointB.y + 8);
+        ctx.fillText('C', pointC.x - 30, pointC.y + 10);
+
+        ctx.font = 'italic bold 24px "Times New Roman"';
+        ctx.fillText('α', pointA.x - 20, pointA.y + 45);
+        ctx.fillText('β', pointC.x + 45, pointC.y - 45);
+
+    </script>
+</body>
+</html>

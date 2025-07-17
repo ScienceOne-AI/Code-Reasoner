@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cantilever Beam with Loads</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="beamCanvas" width="900" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('beamCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Drawing Configuration ---
+        const scale = 80; // pixels per meter
+        const startX = 100;
+        const beamY = 280;
+        const len1 = 4.5 * scale;
+        const len2 = 3 * scale;
+        const midX = startX + len1;
+        const endX = startX + len1 + len2;
+        
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper function to draw an arrow ---
+        function drawArrow(x1, y1, x2, y2, headLength = 10) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- 1. Draw the Beam ---
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(startX, beamY);
+        ctx.lineTo(endX, beamY);
+        ctx.stroke();
+        ctx.lineWidth = 2;
+
+        // --- 2. Draw the Fixed Support (Wall) ---
+        ctx.fillStyle = 'black';
+        ctx.fillRect(endX, beamY - 100, 20, 200);
+        
+        // Hatching lines for the wall
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 1.5;
+        for (let i = -95; i < 100; i += 12) {
+            ctx.beginPath();
+            ctx.moveTo(endX, beamY + i);
+            ctx.lineTo(endX + 20, beamY + i - 20);
+            ctx.stroke();
+        }
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // --- 3. Draw the Distributed Load ---
+        const loadMaxHeight = 80; // Corresponds to q = 2 kN/m
+        const loadTopY = beamY - ctx.lineWidth / 2;
+        
+        // Draw the top profile of the load
+        ctx.beginPath();
+        ctx.moveTo(startX, loadTopY);
+        ctx.lineTo(midX, loadTopY - loadMaxHeight);
+        ctx.lineTo(endX, loadTopY - loadMaxHeight);
+        ctx.stroke();
+
+        // Draw the vertical arrows for the load
+        const arrowSpacing = 30;
+        for (let x = startX + arrowSpacing; x < endX; x += arrowSpacing) {
+            let currentHeight;
+            if (x <= midX) {
+                // Triangular part
+                currentHeight = loadMaxHeight * (x - startX) / len1;
+            } else {
+                // Rectangular part
+                currentHeight = loadMaxHeight;
+            }
+            drawArrow(x, loadTopY - currentHeight, x, loadTopY - 5, 8);
+        }
+
+        // --- 4. Draw the Concentrated Force (5 kN) ---
+        const forceMag = 90; // Pixel length of the force vector
+        const angle = 30 * Math.PI / 180;
+        const forceEndX = startX - forceMag * Math.sin(angle);
+        const forceEndY = beamY + forceMag * Math.cos(angle);
+        
+        drawArrow(startX, beamY, forceEndX, forceEndY, 12);
+        
+        // Draw angle arc
+        ctx.beginPath();
+        ctx.arc(startX, beamY, 30, Math.PI / 2, Math.PI / 2 + angle);
+        ctx.stroke();
+        
+        // Force text labels
+        ctx.save();
+        ctx.translate(startX - 50, beamY + 50);
+        ctx.rotate(-angle);
+        ctx.fillText('5 kN', 0, 0);
+        ctx.restore();
+        ctx.fillText('30°', startX + 25, beamY + 25);
+
+        // --- 5. Draw the Concentrated Moment (4 kN·m) ---
+        const momentHeight = 60;
+        ctx.beginPath();
+        ctx.moveTo(midX, beamY);
+        ctx.lineTo(midX, beamY - momentHeight);
+        ctx.stroke();
+        drawArrow(midX + 20, beamY - momentHeight, midX - 30, beamY - momentHeight, 12);
+        ctx.fillText('4 kN·m', midX, beamY - momentHeight - 20);
+
+        // --- 6. Draw Dimension Lines and Texts ---
+        const dimY = beamY + 70;
+        
+        // Vertical ticks
+        ctx.beginPath();
+        ctx.moveTo(startX, dimY - 10);
+        ctx.lineTo(startX, dimY + 10);
+        ctx.moveTo(midX, dimY - 10);
+        ctx.lineTo(midX, dimY + 10);
+        ctx.moveTo(endX, dimY - 10);
+        ctx.lineTo(endX, dimY + 10);
+        ctx.stroke();
+
+        // Dimension lines with arrows
+        drawArrow(midX - 15, dimY, startX, dimY);
+        drawArrow(startX + 15, dimY, midX, dimY);
+        ctx.fillText('4.5 m', startX + len1 / 2, dimY);
+
+        drawArrow(endX - 15, dimY, midX, dimY);
+        drawArrow(midX + 15, dimY, endX, dimY);
+        ctx.fillText('3 m', midX + len2 / 2, dimY);
+
+        // --- 7. Draw Labels (q, x, y) ---
+        
+        // 'q' label
+        const qLabelX = endX + 50;
+        ctx.beginPath();
+        ctx.moveTo(qLabelX, loadTopY - loadMaxHeight);
+        ctx.lineTo(qLabelX + 10, loadTopY - loadMaxHeight);
+        ctx.moveTo(qLabelX, loadTopY);
+        ctx.lineTo(qLabelX + 10, loadTopY);
+        ctx.moveTo(qLabelX + 5, loadTopY - loadMaxHeight);
+        ctx.lineTo(qLabelX + 5, loadTopY);
+        ctx.stroke();
+        ctx.fillText('q', qLabelX - 10, loadTopY - loadMaxHeight / 2);
+        ctx.textAlign = 'left';
+        ctx.fillText('q = 2 kN/m', qLabelX + 25, loadTopY - loadMaxHeight / 2);
+        ctx.textAlign = 'center';
+
+        // 'x' and 'y' axes
+        ctx.font = 'italic bold 22px sans-serif';
+        drawArrow(startX, beamY, startX - 80, beamY);
+        ctx.fillText('y', startX - 95, beamY);
+        
+        drawArrow(endX, beamY, endX, beamY - 80);
+        ctx.fillText('x', endX + 15, beamY - 80);
+
+    </script>
+</body>
+</html>

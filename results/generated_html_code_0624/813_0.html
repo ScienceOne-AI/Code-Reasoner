@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="500" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = '24px "Times New Roman"';
+
+    // --- Helper function to draw an arrow ---
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 8) {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    }
+
+    // --- Define key points and geometry ---
+    // Although the problem is physically inconsistent, we will draw it with a plausible angle
+    // to match the visual representation. An angle of ~75 degrees looks similar.
+    const alpha_deg = 75; 
+    const alpha = alpha_deg * Math.PI / 180;
+
+    const A = { x: 100, y: 320 };
+    const rodLength = 250;
+    const AD_length = rodLength;
+
+    const B = {
+        x: A.x + rodLength * Math.cos(alpha),
+        y: A.y - rodLength * Math.sin(alpha)
+    };
+    const D = { x: A.x + AD_length, y: A.y };
+
+    // --- Draw the fixed surface and hinge A ---
+    // Draw base
+    ctx.beginPath();
+    ctx.moveTo(A.x - 50, A.y);
+    ctx.lineTo(D.x + 50, D.y);
+    ctx.stroke();
+
+    // Draw hatching
+    ctx.lineWidth = 1.5;
+    for (let i = A.x - 45; i < D.x + 50; i += 10) {
+        ctx.moveTo(i, A.y + 2);
+        ctx.lineTo(i - 10, A.y + 12);
+    }
+    ctx.stroke();
+
+    // Draw hinge bracket at A
+    ctx.beginPath();
+    ctx.lineWidth = 3;
+    ctx.moveTo(A.x, A.y - 15);
+    ctx.lineTo(A.x, A.y);
+    ctx.lineTo(A.x - 15, A.y);
+    ctx.stroke();
+    
+    // Draw hinge pin at A
+    ctx.beginPath();
+    ctx.arc(A.x, A.y, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    
+    // --- Draw the rod AB (as two parallel lines) ---
+    const rodThickness = 4;
+    const angleAB = Math.atan2(B.y - A.y, B.x - A.x);
+    const p = { // Perpendicular offsets
+        x: rodThickness * Math.cos(angleAB + Math.PI / 2),
+        y: rodThickness * Math.sin(angleAB + Math.PI / 2)
+    };
+
+    ctx.beginPath();
+    ctx.moveTo(A.x + p.x, A.y + p.y);
+    ctx.lineTo(B.x + p.x, B.y + p.y);
+    ctx.moveTo(A.x - p.x, A.y - p.y);
+    ctx.lineTo(B.x - p.x, B.y - p.y);
+    ctx.stroke();
+    
+    // Cap the end at B
+    ctx.beginPath();
+    ctx.moveTo(B.x+p.x, B.y+p.y);
+    ctx.lineTo(B.x-p.x, B.y-p.y);
+    ctx.stroke();
+    
+    // --- Draw Pulley at B ---
+    const pulleyBRadius = 12;
+    ctx.beginPath();
+    ctx.arc(B.x, B.y, pulleyBRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(B.x, B.y, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = 'black';
+    ctx.fill();
+
+    // --- Draw rope and weight C ---
+    const C_rope_end = { x: B.x, y: B.y + 180 };
+    ctx.beginPath();
+    ctx.moveTo(B.x, B.y + pulleyBRadius);
+    ctx.lineTo(C_rope_end.x, C_rope_end.y);
+    ctx.stroke();
+    
+    const weightC = { w: 50, h: 30 };
+    ctx.beginPath();
+    ctx.rect(C_rope_end.x - weightC.w / 2, C_rope_end.y + 5, weightC.w, weightC.h);
+    ctx.stroke();
+
+    // Hook for C
+    ctx.beginPath();
+    ctx.arc(C_rope_end.x, C_rope_end.y + 5, 6, Math.PI, 2 * Math.PI);
+    ctx.stroke();
+
+    // --- Draw Pulley at D ---
+    const pulleyDRadius = 12;
+    ctx.beginPath();
+    ctx.arc(D.x, D.y, pulleyDRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(D.x, D.y, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = 'black';
+    ctx.fill();
+
+    // --- Draw rope BD and the hanging weight ---
+    ctx.beginPath();
+    const angleBD = Math.atan2(D.y - B.y, D.x - B.x);
+    ctx.moveTo(B.x + pulleyBRadius * Math.cos(angleBD), B.y + pulleyBRadius * Math.sin(angleBD));
+    ctx.lineTo(D.x - pulleyDRadius * Math.cos(angleBD), D.y - pulleyDRadius * Math.sin(angleBD));
+    
+    const D_rope_end = { x: D.x, y: D.y + 100 };
+    ctx.lineTo(D.x, D.y + pulleyDRadius);
+    ctx.lineTo(D_rope_end.x, D_rope_end.y);
+    ctx.stroke();
+
+    const weightD = { w: 50, h: 30 };
+    ctx.beginPath();
+    ctx.rect(D_rope_end.x - weightD.w / 2, D_rope_end.y + 5, weightD.w, weightD.h);
+    ctx.stroke();
+    
+    // Hook for D
+    ctx.beginPath();
+    ctx.arc(D_rope_end.x, D_rope_end.y + 5, 6, Math.PI, 2 * Math.PI);
+    ctx.stroke();
+
+
+    // --- Draw angle alpha ---
+    ctx.beginPath();
+    ctx.lineWidth = 1.5;
+    const arcRadius = 50;
+    ctx.arc(A.x, A.y, arcRadius, -alpha, 0);
+    ctx.stroke();
+    
+    // Arrows on the arc
+    ctx.beginPath();
+    drawArrow(ctx, A.x + arcRadius, A.y, A.x + arcRadius, A.y, 8); // dummy call to use function
+    ctx.moveTo(A.x + arcRadius, A.y);
+    ctx.lineTo(A.x + arcRadius - 8, A.y - 4);
+    ctx.moveTo(A.x + arcRadius, A.y);
+    ctx.lineTo(A.x + arcRadius - 8, A.y + 4);
+
+    const arcEndX = A.x + arcRadius * Math.cos(-alpha);
+    const arcEndY = A.y + arcRadius * Math.sin(-alpha);
+    const arrowAngle = -alpha + Math.PI / 2;
+    ctx.moveTo(arcEndX, arcEndY);
+    ctx.lineTo(arcEndX - 8 * Math.cos(arrowAngle - Math.PI / 6), arcEndY - 8 * Math.sin(arrowAngle - Math.PI / 6));
+    ctx.moveTo(arcEndX, arcEndY);
+    ctx.lineTo(arcEndX - 8 * Math.cos(arrowAngle + Math.PI / 6), arcEndY - 8 * Math.sin(arrowAngle + Math.PI / 6));
+    ctx.stroke();
+
+
+    // --- Add labels ---
+    ctx.fillStyle = 'black';
+    ctx.fillText('A', A.x - 25, A.y + 5);
+    ctx.fillText('B', B.x - 30, B.y + 5);
+    ctx.fillText('C', C_rope_end.x - 50, C_rope_end.y + 30);
+    ctx.fillText('D', D.x + 15, D.y + 5);
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('α', A.x + arcRadius + 5, A.y - 20);
+
+</script>
+</body>
+</html>

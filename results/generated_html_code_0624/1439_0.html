@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>p-V Diagram for an Ideal Gas</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        canvas { border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="550" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Origin
+    const ox = 60;
+    const oy = 450;
+
+    // --- Draw Axes ---
+    ctx.beginPath();
+    ctx.font = 'italic 24px "Times New Roman"';
+    // Y-axis (p)
+    ctx.moveTo(ox, oy + 5);
+    ctx.lineTo(ox, 20);
+    // X-axis (V)
+    ctx.moveTo(ox - 5, oy);
+    ctx.lineTo(520, oy);
+    ctx.stroke();
+
+    // --- Axis Labels ---
+    ctx.fillText('p', ox - 30, 30);
+    ctx.fillText('V', 530, oy);
+    ctx.font = '24px "Times New Roman"';
+    ctx.fillText('O', ox - 20, oy + 20);
+
+    // --- Helper function to draw an arrow head ---
+    function drawArrowhead(x, y, angle, size = 12) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Helper for Bezier curve calculations ---
+    function getPointOnQuadraticCurve(p0, p1, p2, t) {
+        const x = Math.pow(1 - t, 2) * p0.x + 2 * (1 - t) * t * p1.x + Math.pow(t, 2) * p2.x;
+        const y = Math.pow(1 - t, 2) * p0.y + 2 * (1 - t) * t * p1.y + Math.pow(t, 2) * p2.y;
+        return { x, y };
+    }
+
+    function getTangentAngleOnQuadraticCurve(p0, p1, p2, t) {
+        const dx = 2 * (1 - t) * (p1.x - p0.x) + 2 * t * (p2.x - p1.x);
+        const dy = 2 * (1 - t) * (p1.y - p0.y) + 2 * t * (p2.y - p1.y);
+        return Math.atan2(dy, dx);
+    }
+
+    // --- Draw Curves (Isotherms) ---
+    // Lower curve (T₀)
+    const p0_low = { x: 130, y: 320 };
+    const p1_low = { x: 200, y: 200 };
+    const p2_low = { x: 400, y: 150 };
+    ctx.beginPath();
+    ctx.moveTo(p0_low.x, p0_low.y);
+    ctx.quadraticCurveTo(p1_low.x, p1_low.y, p2_low.x, p2_low.y);
+    ctx.stroke();
+
+    // Upper curve
+    const p0_up = { x: 180, y: 400 };
+    const p1_up = { x: 270, y: 270 };
+    const p2_up = { x: 500, y: 200 };
+    ctx.beginPath();
+    ctx.moveTo(p0_up.x, p0_up.y);
+    ctx.quadraticCurveTo(p1_up.x, p1_up.y, p2_up.x, p2_up.y);
+    ctx.stroke();
+
+    // --- Draw Arrows on curves ---
+    // Arrow on lower curve
+    let t_low_arrow = 0.45;
+    let arrow_point_low = getPointOnQuadraticCurve(p0_low, p1_low, p2_low, t_low_arrow);
+    let arrow_angle_low = getTangentAngleOnQuadraticCurve(p0_low, p1_low, p2_low, t_low_arrow);
+    drawArrowhead(arrow_point_low.x, arrow_point_low.y, arrow_angle_low);
+
+    // Arrow on upper curve
+    let t_up_arrow = 0.5;
+    let arrow_point_up = getPointOnQuadraticCurve(p0_up, p1_up, p2_up, t_up_arrow);
+    let arrow_angle_up = getTangentAngleOnQuadraticCurve(p0_up, p1_up, p2_up, t_up_arrow);
+    drawArrowhead(arrow_point_up.x, arrow_point_up.y, arrow_angle_up);
+
+    // --- Draw Dashed Lines and V₀ labels ---
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.5;
+
+    // Dashed line positions chosen to match the source image
+    const line_coords = [
+        { y: 350, x1: 115, x2: 195 },
+        { y: 280, x1: 155, x2: 270 },
+        { y: 220, x1: 210, x2: 460 }
+    ];
+
+    line_coords.forEach(line => {
+        ctx.beginPath();
+        ctx.moveTo(line.x1, line.y);
+        ctx.lineTo(line.x2, line.y);
+        ctx.stroke();
+    });
+    ctx.restore();
+
+    // Add V₀ Labels above the lines
+    function drawV0Label(midX, y) {
+        ctx.save();
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.fillText('V', midX, y - 15);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText('0', midX + 9, y - 10);
+        ctx.restore();
+    }
+
+    line_coords.forEach(line => {
+        drawV0Label((line.x1 + line.x2) / 2, line.y);
+    });
+
+    // --- Text Labels ---
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('T', 100, 350);
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText('0', 110, 358);
+
+    ctx.font = '24px "SimSun", "Times New Roman"';
+    ctx.fillText('x 过程', 370, 300);
+
+</script>
+</body>
+</html>

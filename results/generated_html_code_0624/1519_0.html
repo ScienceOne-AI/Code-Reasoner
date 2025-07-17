@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Elevator Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Draw Part 甲 (Elevator) ---
+        const jiaX = 130;
+        const jiaY = 200;
+
+        // Elevator box
+        ctx.strokeRect(jiaX - 60, jiaY - 120, 120, 200);
+
+        // Function to draw a person silhouette
+        function drawPerson(centerX, bottomY) {
+            ctx.beginPath();
+            // Start at bottom-left foot
+            ctx.moveTo(centerX - 20, bottomY);
+            // Left foot
+            ctx.lineTo(centerX - 25, bottomY - 5);
+            ctx.lineTo(centerX - 15, bottomY - 5);
+            ctx.lineTo(centerX - 10, bottomY);
+            // Left leg
+            ctx.lineTo(centerX - 10, bottomY - 40);
+            // Left arm
+            ctx.lineTo(centerX - 25, bottomY - 50);
+            ctx.lineTo(centerX - 15, bottomY - 60);
+            // Shoulder and neck
+            ctx.lineTo(centerX - 5, bottomY - 60);
+            // Head
+            ctx.arc(centerX, bottomY - 70, 8, Math.PI, 0, false);
+            // Right shoulder and neck
+            ctx.lineTo(centerX + 5, bottomY - 60);
+            // Right arm
+            ctx.lineTo(centerX + 15, bottomY - 60);
+            ctx.lineTo(centerX + 25, bottomY - 50);
+            // Right leg
+            ctx.lineTo(centerX + 10, bottomY - 40);
+            ctx.lineTo(centerX + 10, bottomY);
+            // Right foot
+            ctx.lineTo(centerX + 15, bottomY - 5);
+            ctx.lineTo(centerX + 25, bottomY - 5);
+            ctx.lineTo(centerX + 20, bottomY);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Draw two people
+        drawPerson(jiaX - 25, jiaY + 75);
+        drawPerson(jiaX + 25, jiaY + 75);
+
+        // Draw pulling force arrow F
+        ctx.beginPath();
+        ctx.moveTo(jiaX, jiaY - 120);
+        ctx.lineTo(jiaX, jiaY - 170);
+        ctx.moveTo(jiaX, jiaY - 170);
+        ctx.lineTo(jiaX - 5, jiaY - 160);
+        ctx.moveTo(jiaX, jiaY - 170);
+        ctx.lineTo(jiaX + 5, jiaY - 160);
+        ctx.stroke();
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('F', jiaX + 25, jiaY - 160);
+        ctx.font = '20px SimHei';
+        ctx.fillText('拉力', jiaX + 25, jiaY - 180);
+
+        // Label for Part 甲
+        ctx.font = '20px SimHei';
+        ctx.fillText('甲', jiaX, jiaY + 110);
+
+
+        // --- Draw Part 乙 (Graph) ---
+        const origin = { x: 350, y: 350 };
+        const xScale = 8;
+        const yScale = 80;
+
+        function toX(h) {
+            return origin.x + h * xScale;
+        }
+        function toY(F) {
+            return origin.y - F * yScale;
+        }
+
+        // Reset font
+        ctx.font = '16px Arial';
+
+        // Draw axes
+        ctx.beginPath();
+        // Y-axis
+        ctx.moveTo(origin.x, origin.y + 20);
+        ctx.lineTo(origin.x, toY(3));
+        ctx.lineTo(origin.x - 5, toY(3) + 10);
+        ctx.moveTo(origin.x, toY(3));
+        ctx.lineTo(origin.x + 5, toY(3) + 10);
+        // X-axis
+        ctx.moveTo(origin.x - 20, origin.y);
+        ctx.lineTo(toX(52), origin.y);
+        ctx.lineTo(toX(52) - 10, origin.y - 5);
+        ctx.moveTo(toX(52), origin.y);
+        ctx.lineTo(toX(52) - 10, origin.y + 5);
+        ctx.stroke();
+
+        // Draw axis labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('F', origin.x - 15, toY(2.8));
+        ctx.font = '16px Arial';
+        ctx.fillText('×10', origin.x - 15, toY(2.6));
+        ctx.font = '12px Arial';
+        ctx.fillText('4', origin.x - 15 + 23, toY(2.65));
+        ctx.font = '16px Arial';
+        ctx.fillText('/ N', origin.x - 15, toY(2.4));
+        
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('h', toX(50), origin.y + 10);
+        ctx.font = '16px Arial';
+        ctx.fillText('/ m', toX(51.5), origin.y + 10);
+        
+
+        // Draw ticks and labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        const yTicks = [1.5, 2.0, 2.5];
+        yTicks.forEach(val => {
+            const y = toY(val);
+            ctx.moveTo(origin.x, y);
+            ctx.lineTo(origin.x - 5, y);
+            ctx.fillText(val.toFixed(1), origin.x - 10, y);
+        });
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const xTicks = [4, 44, 48];
+        xTicks.forEach(val => {
+            const x = toX(val);
+            ctx.moveTo(x, origin.y);
+            ctx.lineTo(x, origin.y + 5);
+            ctx.fillText(val, x, origin.y + 10);
+        });
+        ctx.fillText('0', origin.x - 10, origin.y + 5);
+
+        // Draw the graph
+        ctx.lineWidth = 2;
+
+        // Solid lines
+        ctx.beginPath();
+        ctx.moveTo(toX(0), toY(2.5));
+        ctx.lineTo(toX(4), toY(2.5));
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(toX(4), toY(2.0));
+        ctx.lineTo(toX(44), toY(2.0));
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(toX(44), toY(1.5));
+        ctx.lineTo(toX(48), toY(1.5));
+        ctx.stroke();
+
+        // Vertical solid line at the end
+        ctx.beginPath();
+        ctx.moveTo(toX(48), toY(1.5));
+        ctx.lineTo(toX(48), toY(0));
+        ctx.stroke();
+        
+        // Vertical solid line connecting steps
+        ctx.beginPath();
+        ctx.moveTo(toX(44), toY(2.0));
+        ctx.lineTo(toX(44), toY(1.5));
+        ctx.stroke();
+
+        // Dashed lines
+        ctx.save();
+        ctx.setLineDash([5, 3]);
+        ctx.lineWidth = 1.5;
+
+        // Vertical dashed lines from graph to axis
+        ctx.beginPath();
+        ctx.moveTo(toX(4), toY(2.5));
+        ctx.lineTo(toX(4), toY(0));
+        ctx.stroke();
+
+        // Horizontal dashed guide lines from axis to graph
+        ctx.beginPath();
+        ctx.moveTo(toX(0), toY(2.0));
+        ctx.lineTo(toX(4), toY(2.0));
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(toX(0), toY(1.5));
+        ctx.lineTo(toX(44), toY(1.5));
+        ctx.stroke();
+
+        ctx.restore();
+
+        // Label for Part 乙
+        ctx.font = '20px SimHei';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('乙', (toX(0) + toX(48)) / 2, origin.y + 50);
+
+    </script>
+</body>
+</html>

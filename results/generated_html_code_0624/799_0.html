@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical Path Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper function to draw an arrow on a line segment ---
+        function drawArrow(ctx, x1, y1, x2, y2, headLength = 10) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+        }
+        
+        // --- Helper function for arrows in the middle of a line ---
+        function drawMidArrow(ctx, x1, y1, x2, y2, headLength = 8) {
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(midX, midY);
+            ctx.lineTo(midX - headLength * Math.cos(angle - Math.PI / 6), midY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(midX, midY);
+            ctx.lineTo(midX - headLength * Math.cos(angle + Math.PI / 6), midY - headLength * Math.sin(angle + Math.PI / 6));
+        }
+
+        // --- Main Drawing ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '20px "SimSun", "Songti SC"';
+
+        // 1. Light Source (S)
+        ctx.fillText('S', 50, 158);
+        ctx.beginPath();
+        drawArrow(ctx, 90, 180, 90, 120);
+        drawArrow(ctx, 90, 120, 90, 180);
+        ctx.stroke();
+
+        // 2. Horizontal Parallel Rays
+        const rayY = [130, 150, 170];
+        const mirrorXStart = 250;
+        const mirrorYEnd = 200;
+        const mirrorSlope = -1;
+        const mirrorIntercept = mirrorYEnd + mirrorXStart; // y = -x + c => c = y + x
+
+        ctx.beginPath();
+        rayY.forEach(y => {
+            const intersectX = mirrorIntercept - y;
+            ctx.moveTo(90, y);
+            ctx.lineTo(intersectX, y);
+            drawMidArrow(ctx, 150, y, 200, y);
+        });
+        ctx.stroke();
+
+        // 3. Beam Splitter (45-degree mirror)
+        ctx.save();
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(mirrorXStart, mirrorYEnd);
+        ctx.lineTo(420, 30);
+        ctx.stroke();
+        ctx.restore();
+
+        // 4. Glass Plate
+        const glassTopY = 400;
+        const glassHeight = 30;
+        const glassX1 = 180;
+        const glassX2 = 450;
+        ctx.beginPath();
+        ctx.rect(glassX1, glassTopY, glassX2 - glassX1, glassHeight);
+        // Hatching for glass
+        for (let i = glassX1 + 10; i < glassX2; i += 15) {
+            ctx.moveTo(i, glassTopY);
+            ctx.lineTo(i - 10, glassTopY + glassHeight);
+        }
+        ctx.stroke();
+
+        // 5. Oil Film
+        const filmCenter = { x: 315, y: 380 };
+        const filmBaseY = glassTopY;
+        const filmStartX = 215;
+        const filmEndX = 415;
+        ctx.beginPath();
+        ctx.moveTo(filmStartX, filmBaseY);
+        ctx.quadraticCurveTo(filmCenter.x, 370, filmEndX, filmBaseY);
+        ctx.stroke();
+
+        // Label for Oil Film
+        ctx.fillText('油膜', 220, 360);
+        ctx.beginPath();
+        ctx.moveTo(255, 365);
+        ctx.lineTo(290, 385);
+        ctx.stroke();
+
+        // 6. Vertical Rays (downward and upward)
+        const beamWidth = 8;
+        const waistWidth = 4;
+
+        rayY.forEach(y => {
+            const x = mirrorIntercept - y;
+            const filmY = 388 - 12 * Math.pow((x - filmCenter.x) / (filmCenter.x - filmStartX), 2); // Approximate intersection with curved surface
+            const midDownY = (y + filmY) / 2;
+            const midUpY = (y + filmY) / 2;
+
+            // Hourglass shape for the beam
+            ctx.beginPath();
+            // Downward beam
+            ctx.moveTo(x - beamWidth / 2, y);
+            ctx.lineTo(x - waistWidth / 2, midDownY);
+            ctx.lineTo(x - beamWidth / 2, filmY);
+            ctx.moveTo(x + beamWidth / 2, y);
+            ctx.lineTo(x + waistWidth / 2, midDownY);
+            ctx.lineTo(x + beamWidth / 2, filmY);
+            // Downward arrow
+            drawArrow(ctx, x, midDownY - 20, x, midDownY + 20);
+
+            // Upward beam
+            const upYEnd = 40;
+            ctx.moveTo(x - beamWidth / 2, filmY);
+            ctx.lineTo(x - waistWidth / 2, midUpY);
+            ctx.lineTo(x - beamWidth / 2, upYEnd);
+            ctx.moveTo(x + beamWidth / 2, filmY);
+            ctx.lineTo(x + waistWidth / 2, midUpY);
+            ctx.lineTo(x + beamWidth / 2, upYEnd);
+            // Upward arrow
+            drawArrow(ctx, x, midUpY + 20, x, midUpY - 20);
+            ctx.stroke();
+        });
+
+        // 7. Height 'h' annotation
+        const h_x_pos = 465;
+        ctx.beginPath();
+        ctx.moveTo(h_x_pos - 5, filmCenter.y);
+        ctx.lineTo(h_x_pos + 5, filmCenter.y);
+        ctx.moveTo(h_x_pos - 5, glassTopY);
+        ctx.lineTo(h_x_pos + 5, glassTopY);
+        drawArrow(ctx, h_x_pos, glassTopY, h_x_pos, filmCenter.y);
+        drawArrow(ctx, h_x_pos, filmCenter.y, h_x_pos, glassTopY);
+        ctx.stroke();
+        ctx.fillText('h', h_x_pos + 10, (filmCenter.y + glassTopY) / 2 + 5);
+
+
+        // 8. Figure Caption
+        ctx.textAlign = 'center';
+        ctx.font = '22px "SimSun", "Songti SC"';
+        ctx.fillText('习题 12-24 图', canvas.width / 2, 480);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Capacitive Sensor Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Helper function to draw a roller
+        function drawRoller(x, y, r = 8, len = 20) {
+            ctx.save();
+            ctx.fillStyle = '#E0E0E0';
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1.5;
+            
+            // Body
+            ctx.beginPath();
+            ctx.moveTo(x - len / 2, y - r);
+            ctx.lineTo(x + len / 2, y - r);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x - len / 2, y + r);
+            ctx.lineTo(x + len / 2, y + r);
+            ctx.stroke();
+            
+            // Front face (ellipse for 3D view)
+            ctx.beginPath();
+            ctx.ellipse(x + len / 2, y, r / 2, r, 0, -Math.PI / 2, Math.PI / 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+
+        // 1. Draw the main roll on the left
+        ctx.save();
+        ctx.fillStyle = '#EAEAEA';
+        ctx.lineWidth = 2;
+        // Front face
+        ctx.beginPath();
+        ctx.ellipse(120, 250, 40, 100, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        // Texture on the roll face
+        ctx.save();
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(120 + 15, 150 + 20); ctx.lineTo(120 - 15, 350 - 20);
+        ctx.moveTo(120 - 15, 150 + 20); ctx.lineTo(120 + 15, 350 - 20);
+        ctx.stroke();
+        ctx.restore();
+        // Body of the roll
+        ctx.beginPath();
+        ctx.moveTo(120, 150);
+        ctx.lineTo(70, 150);
+        ctx.arc(70, 250, 100, -Math.PI / 2, Math.PI / 2, false);
+        ctx.lineTo(120, 350);
+        ctx.stroke();
+        // Central hole
+        ctx.beginPath();
+        ctx.arc(120, 250, 8, 0, 2 * Math.PI);
+        ctx.fillStyle = '#666';
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Draw the sheet of material with perspective
+        const x_start_flat = 200, y_start_top = 220, thickness = 10;
+        const x_end_flat = 680, y_end_top = 210;
+        const y_start_bot = y_start_top + thickness;
+        const y_end_bot = y_end_top + thickness - 1;
+
+        // Top edge of the sheet
+        ctx.beginPath();
+        ctx.moveTo(120, 150);
+        ctx.quadraticCurveTo(160, 155, x_start_flat, y_start_top);
+        ctx.lineTo(x_end_flat, y_end_top);
+        ctx.stroke();
+        // Bottom edge of the sheet
+        ctx.beginPath();
+        ctx.moveTo(120, 152); // Small offset for thickness on roll
+        ctx.quadraticCurveTo(160, 157, x_start_flat, y_start_bot);
+        ctx.lineTo(x_end_flat, y_end_bot);
+        ctx.stroke();
+        
+        // 3. Draw the rollers under the flat part
+        drawRoller(240, 245, 6, 15);
+        drawRoller(340, 242, 6, 15);
+        drawRoller(580, 235, 6, 15);
+        drawRoller(640, 233, 6, 15);
+
+        // 4. Draw capacitor plates A and B
+        const x_plate_start = 400, x_plate_end = 530;
+        // Interpolate y positions for perspective
+        const y_plate_top_start = y_start_top + (y_end_top - y_start_top) * (x_plate_start - x_start_flat) / (x_end_flat - x_start_flat);
+        const y_plate_top_end = y_start_top + (y_end_top - y_start_top) * (x_plate_end - x_start_flat) / (x_end_flat - x_start_flat);
+        
+        // Plate A (top) - a parallelogram on the sheet
+        ctx.beginPath();
+        ctx.moveTo(x_plate_start, y_plate_top_start);
+        ctx.lineTo(x_plate_start - 5, y_plate_top_start - 20);
+        ctx.lineTo(x_plate_end + 5, y_plate_top_end - 22);
+        ctx.lineTo(x_plate_end, y_plate_top_end);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Plate B (bottom) and its support
+        const y_B_offset = 35;
+        const y_B_start = y_plate_top_start + y_B_offset;
+        const y_B_end = y_plate_top_end + y_B_offset;
+        ctx.beginPath();
+        ctx.moveTo(x_plate_start, y_B_start);
+        ctx.lineTo(x_plate_end, y_B_end);
+        ctx.stroke();
+        
+        // Support structure for Plate B
+        const support_dot1_x = 440, support_dot2_x = 500, support_y_offset = 12;
+        ctx.beginPath();
+        ctx.moveTo(x_plate_start, y_B_start); ctx.lineTo(support_dot1_x, y_B_start + support_y_offset);
+        ctx.moveTo(x_plate_end, y_B_end); ctx.lineTo(support_dot2_x, y_B_end + support_y_offset);
+        ctx.stroke();
+        ctx.beginPath(); ctx.arc(support_dot1_x, y_B_start + support_y_offset, 3, 0, 2 * Math.PI); ctx.fill();
+        ctx.beginPath(); ctx.arc(support_dot2_x, y_B_end + support_y_offset, 3, 0, 2 * Math.PI); ctx.fill();
+
+        // 5. Draw the end part of the sheet processing line
+        const x_bend_end = 740, y_bend_top_end = 170;
+        ctx.beginPath();
+        ctx.moveTo(x_end_flat, y_end_top);
+        ctx.quadraticCurveTo(x_end_flat + 30, y_end_top, x_bend_end, y_bend_top_end);
+        ctx.lineTo(780, 165);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x_end_flat, y_end_bot);
+        ctx.quadraticCurveTo(x_end_flat + 30, y_end_bot, x_bend_end, y_bend_top_end + thickness);
+        ctx.lineTo(780, 175);
+        ctx.stroke();
+        drawRoller(745, 185, 8, 15);
+        
+        // 6. Labels and Arrows
+        ctx.font = 'italic bold 22px "Times New Roman"';
+        ctx.fillText('S', 465, y_plate_top_start - 10);
+        ctx.fillText('A', 465, y_plate_top_start + 4);
+        ctx.fillText('B', 380, y_B_start + 18);
+        
+        // Arrow for thickness 'd'
+        const x_d = 280;
+        const y_d_top = y_start_top + (y_end_top - y_start_top) * (x_d - x_start_flat) / (x_end_flat - x_start_flat);
+        const y_d_bot = y_d_top + thickness + 1;
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(x_d, y_d_top); ctx.lineTo(x_d, y_d_bot); ctx.stroke();
+        // Arrowheads for 'd'
+        ctx.beginPath(); ctx.moveTo(x_d, y_d_top); ctx.lineTo(x_d - 4, y_d_top + 4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x_d, y_d_top); ctx.lineTo(x_d + 4, y_d_top + 4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x_d, y_d_bot); ctx.lineTo(x_d - 4, y_d_bot - 4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x_d, y_d_bot); ctx.lineTo(x_d + 4, y_d_bot - 4); ctx.stroke();
+        ctx.restore();
+        ctx.font = 'italic 20px "Times New Roman"';
+        ctx.fillText('d', x_d - 20, y_d_top + 8);
+
+        // Label 'd₀'
+        ctx.fillText('d', 600, 250);
+        ctx.font = 'italic 14px "Times New Roman"';
+        ctx.fillText('0', 608, 255);
+
+        // Small dot to the right
+        ctx.beginPath();
+        ctx.arc(710, 260, 2, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 7. Caption text
+        ctx.font = '22px "SimSun"';
+        ctx.fillText('习题 7-51 [图]', 400, 420);
+        
+        // 8. Top header text (approximated from image)
+        ctx.font = '16px "Times New Roman"';
+        ctx.fillStyle = '#A0A0A0';
+        ctx.fillText('— = T · > — T · > ·', 100, 20);
+
+    </script>
+</body>
+</html>

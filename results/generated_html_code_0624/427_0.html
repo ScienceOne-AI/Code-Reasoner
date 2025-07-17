@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Thermodynamics Diagram</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      background-color: #fff;
+    }
+  </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="650" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Drawing Parameters ---
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2 - 20; // Move up a bit for caption
+  const containerWidth = 400;
+  const containerHeight = 180;
+  const pistonWidth = 12;
+  const containerX = centerX - containerWidth / 2;
+  const containerY = centerY - containerHeight / 2;
+
+  // --- Helper Functions ---
+
+  /**
+   * Fills a rectangle with random dots to represent gas.
+   */
+  function drawDots(x, y, w, h, numDots) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    for (let i = 0; i < numDots; i++) {
+      const dotX = x + Math.random() * w;
+      const dotY = y + Math.random() * h;
+      ctx.beginPath();
+      ctx.arc(dotX, dotY, 0.6, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /**
+   * Draws hatching on the border of a rectangle to indicate insulation.
+   */
+  function drawHatching(x, y, w, h, spacing) {
+    ctx.save();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    const hatchLen = 8;
+    // Top wall
+    for (let i = x; i < x + w; i += spacing) {
+      ctx.moveTo(i, y);
+      ctx.lineTo(i - hatchLen, y - hatchLen);
+    }
+    // Bottom wall
+    for (let i = x; i < x + w; i += spacing) {
+      ctx.moveTo(i, y + h);
+      ctx.lineTo(i + hatchLen, y + h + hatchLen);
+    }
+    // Left wall
+    for (let i = y; i < y + h; i += spacing) {
+      ctx.moveTo(x, i);
+      ctx.lineTo(x - hatchLen, y + i - (y+hatchLen));
+    }
+    // Right wall
+    for (let i = y; i < y + h; i += spacing) {
+      ctx.moveTo(x + w, i);
+      ctx.lineTo(x + w + hatchLen, y + i - (y-hatchLen));
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // --- Main Drawing ---
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Define compartment dimensions
+  const compartmentA_w = (containerWidth - pistonWidth) / 2;
+  const compartmentB_w = compartmentA_w;
+  const compartmentA_x = containerX;
+  const pistonX = containerX + compartmentA_w;
+  const compartmentB_x = pistonX + pistonWidth;
+
+  // 1. Draw gas representation
+  // Light gray background
+  ctx.fillStyle = '#E8E8E8';
+  ctx.fillRect(containerX, containerY, containerWidth, containerHeight);
+  // Stippling
+  drawDots(compartmentA_x, containerY, compartmentA_w, containerHeight, 1800);
+  drawDots(compartmentB_x, containerY, compartmentB_w, containerHeight, 1800);
+
+  // 2. Draw Walls and Piston
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(containerX, containerY, containerWidth, containerHeight); // Outer container
+  ctx.fillRect(pistonX, containerY, pistonWidth, containerHeight); // Solid Piston
+  ctx.strokeRect(pistonX, containerY, pistonWidth, containerHeight); // Piston border
+
+  // 3. Draw Hatching for Insulation
+  drawHatching(containerX, containerY, containerWidth, containerHeight, 15);
+  // Hatching for the insulated piston
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(pistonX, containerY, pistonWidth, containerHeight);
+  ctx.clip();
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = pistonX + containerY - containerHeight; i < pistonX + pistonWidth + containerY + containerHeight; i += 10) {
+      ctx.moveTo(i, containerY);
+      ctx.lineTo(i - containerHeight * 1.5 , containerY + containerHeight * 1.5);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+
+  // 4. Draw Heater Label and Pointers
+  ctx.fillStyle = 'black';
+  ctx.font = '22px "SimSun", "STSong"';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const labelText = "加热器";
+  const labelX = containerX - 60;
+  const charHeight = 25;
+  const labelTotalHeight = (labelText.length - 1) * charHeight;
+  const labelStartY = centerY - labelTotalHeight / 2;
+  for (let i = 0; i < labelText.length; i++) {
+    ctx.fillText(labelText[i], labelX, labelStartY + i * charHeight);
+  }
+
+  const pointerY1 = labelStartY;
+  const pointerY2 = labelStartY + labelTotalHeight;
+  ctx.beginPath();
+  ctx.lineWidth = 1;
+  ctx.moveTo(labelX + 12, pointerY1);
+  ctx.lineTo(containerX, pointerY1);
+  ctx.moveTo(labelX + 12, pointerY2);
+  ctx.lineTo(containerX, pointerY2);
+  ctx.stroke();
+
+  // 5. Draw Heater Coil
+  const heaterDrawX = containerX + 8;
+  const heaterW = 12; // bulge width
+  let y_curr = pointerY1;
+  const totalHeight = pointerY2 - pointerY1;
+  const numLoops = 3;
+  const segment_h = totalHeight / numLoops;
+
+  ctx.beginPath();
+  ctx.lineWidth = 2;
+  ctx.moveTo(heaterDrawX, y_curr);
+  for(let i=0; i<numLoops; i++){
+    ctx.quadraticCurveTo(heaterDrawX + heaterW, y_curr + segment_h / 2, heaterDrawX, y_curr + segment_h);
+    y_curr += segment_h;
+  }
+  ctx.stroke();
+
+  // 6. Draw Compartment Labels (A, B)
+  ctx.fillStyle = 'black';
+  ctx.font = '30px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('A', compartmentA_x + compartmentA_w / 2, centerY);
+  ctx.fillText('B', compartmentB_x + compartmentB_w / 2, centerY);
+
+  // 7. Draw Caption
+  ctx.font = '24px "SimSun", "STSong"';
+  ctx.fillText('习题 6-12 图', centerX, containerY + containerHeight + 60);
+
+</script>
+</body>
+</html>

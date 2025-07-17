@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>X-ray Attenuation Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, x1, y1, x2, y2) {
+            const headlen = 8;
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Define dimensions and positions
+        const scale = 45; // pixels per cm
+        const tissueWidthCm = 5.6;
+        const boneWidthCm = 2.4;
+
+        const tissueWidthPx = tissueWidthCm * scale;
+        const boneWidthPx = boneWidthCm * scale;
+        const tissueHeightPx = 220;
+        const boneHeightPx = 130;
+
+        const structureX = (canvas.width - tissueWidthPx) / 2; // 174.5
+        const structureY = 100;
+        
+        const boneX = structureX + ((tissueWidthCm - boneWidthCm) / 2) * scale; // 246.5
+        const boneY = structureY;
+        
+        // 1. Draw the structure (soft tissue and bone)
+        // Bone (shaded rectangle)
+        ctx.fillStyle = '#D3D3D3';
+        ctx.fillRect(boneX, boneY, boneWidthPx, boneHeightPx);
+        ctx.strokeRect(boneX, boneY, boneWidthPx, boneHeightPx);
+
+        // Soft tissue (outer rectangle)
+        ctx.strokeRect(structureX, structureY, tissueWidthPx, tissueHeightPx);
+
+        // 2. Draw X-ray beams
+        const rayStartX = 30;
+        const rayEndX = canvas.width - 30;
+        const incidentEndX = structureX;
+        const detectedStartX = structureX + tissueWidthPx;
+
+        const rayY1 = structureY + 40;
+        const rayY2 = structureY + 170;
+        const rayY3 = structureY + 200;
+
+        // Draw incident rays
+        drawArrow(ctx, rayStartX, rayY1, incidentEndX, rayY1);
+        drawArrow(ctx, rayStartX, rayY2, incidentEndX, rayY2);
+        drawArrow(ctx, rayStartX, rayY3, incidentEndX, rayY3);
+        
+        // Draw detected rays
+        drawArrow(ctx, detectedStartX, rayY1, rayEndX, rayY1);
+        drawArrow(ctx, detectedStartX, rayY2, rayEndX, rayY2);
+        drawArrow(ctx, detectedStartX, rayY3, rayEndX, rayY3);
+
+        // 3. Add labels and text
+        // "incident X-rays"
+        ctx.textAlign = 'center';
+        ctx.fillText('incident', 70, 150);
+        ctx.fillText('X-rays', 70, 168);
+
+        // "detected X-rays"
+        ctx.fillText('detected', canvas.width - 70, 230);
+        ctx.fillText('X-rays', canvas.width - 70, 248);
+
+        // "soft tissue" label and line
+        ctx.textAlign = 'right';
+        ctx.fillText('soft tissue', structureX - 30, 95);
+        ctx.beginPath();
+        ctx.moveTo(structureX - 25, 100);
+        ctx.lineTo(structureX + 20, 120);
+        ctx.stroke();
+
+        // "bone" label and line
+        ctx.textAlign = 'left';
+        ctx.fillText('bone', boneX + boneWidthPx + 10, 130);
+        ctx.beginPath();
+        ctx.moveTo(boneX + boneWidthPx + 5, 135);
+        ctx.lineTo(boneX + boneWidthPx - 15, 150);
+        ctx.stroke();
+        
+        // "Fig. 9.1"
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 9.1', canvas.width / 2, canvas.height - 20);
+
+        // 4. Draw points P and Q
+        const rightEdgeX = structureX + tissueWidthPx;
+        
+        // Point Q
+        const qY = structureY + 80;
+        ctx.beginPath();
+        ctx.arc(rightEdgeX, qY, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.textAlign = 'left';
+        ctx.fillText('Q', rightEdgeX + 8, qY);
+
+        // Point P
+        const pY = structureY + tissueHeightPx - 30;
+        ctx.beginPath();
+        ctx.arc(rightEdgeX, pY, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('P', rightEdgeX + 8, pY);
+
+        // 5. Draw dimension lines
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+
+        // Top dimension line (2.4 cm)
+        const topDimY = structureY - 20;
+        const topDimTickSize = 5;
+        ctx.setLineDash([4, 4]);
+        // Vertical extension lines
+        ctx.beginPath();
+        ctx.moveTo(boneX, structureY);
+        ctx.lineTo(boneX, topDimY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(boneX + boneWidthPx, structureY);
+        ctx.lineTo(boneX + boneWidthPx, topDimY);
+        ctx.stroke();
+        // Horizontal dimension line
+        ctx.beginPath();
+        ctx.moveTo(boneX, topDimY);
+        ctx.lineTo(boneX + boneWidthPx, topDimY);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid line for ticks
+        // Ticks
+        ctx.beginPath();
+        ctx.moveTo(boneX, topDimY - topDimTickSize);
+        ctx.lineTo(boneX, topDimY + topDimTickSize);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(boneX + boneWidthPx, topDimY - topDimTickSize);
+        ctx.lineTo(boneX + boneWidthPx, topDimY + topDimTickSize);
+        ctx.stroke();
+        // Text
+        ctx.textAlign = 'center';
+        ctx.fillText('2.4 cm', boneX + boneWidthPx / 2, topDimY - 12);
+
+
+        // Bottom dimension line (5.6 cm)
+        const bottomDimY = structureY + tissueHeightPx + 20;
+        const bottomDimTickSize = 5;
+        ctx.setLineDash([4, 4]);
+        // Vertical extension lines
+        ctx.beginPath();
+        ctx.moveTo(structureX, structureY + tissueHeightPx);
+        ctx.lineTo(structureX, bottomDimY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(structureX + tissueWidthPx, structureY + tissueHeightPx);
+        ctx.lineTo(structureX + tissueWidthPx, bottomDimY);
+        ctx.stroke();
+        // Horizontal dimension line
+        ctx.beginPath();
+        ctx.moveTo(structureX, bottomDimY);
+        ctx.lineTo(structureX + tissueWidthPx, bottomDimY);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid line for ticks
+        // Ticks
+        ctx.beginPath();
+        ctx.moveTo(structureX, bottomDimY - bottomDimTickSize);
+        ctx.lineTo(structureX, bottomDimY + bottomDimTickSize);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(structureX + tissueWidthPx, bottomDimY - bottomDimTickSize);
+        ctx.lineTo(structureX + tissueWidthPx, bottomDimY + bottomDimTickSize);
+        ctx.stroke();
+        // Text
+        ctx.textAlign = 'center';
+        ctx.fillText('5.6 cm', structureX + tissueWidthPx / 2, bottomDimY + 12);
+    </script>
+</body>
+</html>

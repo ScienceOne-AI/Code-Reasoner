@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Capacitor with Dielectric</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="capacitorCanvas" width="500" height="350"></canvas>
+<script>
+    const canvas = document.getElementById('capacitorCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const x0 = 50;
+    const y0 = 60;
+    const b = 320; // total width of the capacitor
+    const d = 100; // height / plate separation
+    const x = 180; // width of the inserted dielectric
+
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    
+    // --- Helper function for drawing arrowheads ---
+    // Draws an arrowhead at (toX, toY) pointing from the direction of (fromX, fromY).
+    function drawArrowhead(ctx, toX, toY, fromX, fromY) {
+        const headlen = 10; // length of head in pixels
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    // --- 1. Draw Capacitor Plates ---
+    ctx.beginPath();
+    ctx.strokeRect(x0, y0, b, d);
+
+    // --- 2. Draw Dielectric Slab ---
+    // Vertical separator line
+    ctx.moveTo(x0 + x, y0);
+    ctx.lineTo(x0 + x, y0 + d);
+    ctx.stroke();
+
+    // Hatching for the dielectric part
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x0, y0, x, d);
+    ctx.clip(); // Restrict drawing to the dielectric's rectangle
+    ctx.beginPath();
+    const hatchSpacing = 15;
+    // Draw diagonal lines across the clipped area
+    for (let i = -d; i < x; i += hatchSpacing) {
+        ctx.moveTo(x0 + i, y0 + d);
+        ctx.lineTo(x0 + i + d, y0);
+    }
+    ctx.stroke();
+    ctx.restore(); // Remove the clipping region
+
+    // --- 3. Draw Dimensions ---
+    ctx.font = 'italic bold 18px Times New Roman';
+
+    // Dimension 'd' (vertical)
+    const x_dim_d = x0 + b + 30;
+    ctx.beginPath();
+    ctx.moveTo(x_dim_d, y0);
+    ctx.lineTo(x_dim_d, y0 + d);
+    ctx.stroke();
+    // Arrowheads for 'd'
+    drawArrowhead(ctx, x_dim_d, y0, x_dim_d, y0 + 10); // Points up
+    drawArrowhead(ctx, x_dim_d, y0 + d, x_dim_d, y0 + d - 10); // Points down
+    // Label
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('d', x_dim_d + 10, y0 + d / 2);
+
+    // Dimensions 'x' and 'b' (horizontal)
+    const y_dim_x = y0 + d + 30;
+    const y_dim_b = y0 + d + 60;
+    
+    ctx.beginPath();
+    // Vertical extension lines
+    ctx.moveTo(x0, y0 + d); ctx.lineTo(x0, y_dim_b); // Common baseline on the left
+    ctx.moveTo(x0 + x, y0 + d); ctx.lineTo(x0 + x, y_dim_x); // Right extension for 'x'
+    ctx.moveTo(x0 + b, y0 + d); ctx.lineTo(x0 + b, y_dim_b); // Right extension for 'b'
+
+    // Horizontal dimension lines
+    ctx.moveTo(x0, y_dim_x); ctx.lineTo(x0 + x, y_dim_x); // For 'x'
+    ctx.moveTo(x0, y_dim_b); ctx.lineTo(x0 + b, y_dim_b); // For 'b'
+    ctx.stroke();
+
+    // Arrowheads for 'x' and 'b'
+    drawArrowhead(ctx, x0 + x, y_dim_x, x0 + x - 10, y_dim_x);
+    drawArrowhead(ctx, x0 + b, y_dim_b, x0 + b - 10, y_dim_b);
+
+    // Labels for 'x' and 'b'
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('x', x0 + x / 2, y_dim_x - 5);
+    ctx.fillText('b', x0 + b / 2, y_dim_b - 5);
+
+    // --- 4. Draw Caption ---
+    ctx.font = 'bold 20px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Fig. 1.23', x0 + b/2, y_dim_b + 25);
+
+</script>
+</body>
+</html>

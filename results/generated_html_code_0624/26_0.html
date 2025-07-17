@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="500" height="350"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Configuration ---
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // --- Drawing Helper Functions ---
+
+        /**
+         * Draws an inductor (coil).
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x1 - The starting x-coordinate.
+         * @param {number} y1 - The starting y-coordinate.
+         * @param {number} x2 - The ending x-coordinate.
+         * @param {number} y2 - The ending y-coordinate.
+         */
+        function drawInductor(ctx, x1, y1, x2, y2) {
+            const isHorizontal = y1 === y2;
+            const len = isHorizontal ? x2 - x1 : y2 - y1;
+            const loops = 4;
+            const radius = len / (2 * loops);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            if (isHorizontal) {
+                for (let i = 0; i < loops; i++) {
+                    ctx.arc(x1 + (2 * i + 1) * radius, y1, radius, Math.PI, 2 * Math.PI, false);
+                }
+            } else { // Vertical
+                for (let i = 0; i < loops; i++) {
+                    ctx.arc(x1, y1 + (2 * i + 1) * radius, radius, -Math.PI / 2, Math.PI / 2, false);
+                }
+            }
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a resistor (zigzag line).
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x1 - The starting x-coordinate.
+         * @param {number} y1 - The starting y-coordinate.
+         * @param {number} x2 - The ending x-coordinate.
+         * @param {number} y2 - The ending y-coordinate.
+         */
+        function drawResistor(ctx, x1, y1, x2, y2) {
+            const len = x2 - x1;
+            const h = 10; // Height of the zig-zag teeth
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + len * 0.1, y1);
+            ctx.lineTo(x1 + len * 0.25, y1 + h);
+            ctx.lineTo(x1 + len * 0.5, y1 - h);
+            ctx.lineTo(x1 + len * 0.75, y1 + h);
+            ctx.lineTo(x1 + len * 0.9, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a capacitor (two parallel plates).
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x1 - The starting/center x-coordinate.
+         * @param {number} y1 - The starting y-coordinate.
+         * @param {number} x2 - The ending/center x-coordinate.
+         * @param {number} y2 - The ending y-coordinate.
+         */
+        function drawCapacitor(ctx, x1, y1, x2, y2) {
+            const isHorizontal = y1 === y2;
+            const plateLen = 20;
+            const gap = 8;
+
+            ctx.beginPath();
+            if (isHorizontal) {
+                const centerX = (x1 + x2) / 2;
+                // Lead-in wire
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(centerX - gap / 2, y1);
+                // First plate
+                ctx.moveTo(centerX - gap / 2, y1 - plateLen / 2);
+                ctx.lineTo(centerX - gap / 2, y1 + plateLen / 2);
+                // Second plate
+                ctx.moveTo(centerX + gap / 2, y1 - plateLen / 2);
+                ctx.lineTo(centerX + gap / 2, y1 + plateLen / 2);
+                // Lead-out wire
+                ctx.moveTo(centerX + gap / 2, y2);
+                ctx.lineTo(x2, y2);
+            } else { // Vertical
+                const centerY = (y1 + y2) / 2;
+                // Lead-in wire
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x1, centerY - gap / 2);
+                // First plate
+                ctx.moveTo(x1 - plateLen / 2, centerY - gap / 2);
+                ctx.lineTo(x1 + plateLen / 2, centerY - gap / 2);
+                // Second plate
+                ctx.moveTo(x1 - plateLen / 2, centerY + gap / 2);
+                ctx.lineTo(x1 + plateLen / 2, centerY + gap / 2);
+                // Lead-out wire
+                ctx.moveTo(x2, centerY + gap / 2);
+                ctx.lineTo(x2, y2);
+            }
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+
+        // Define coordinates
+        const yTop = 120;
+        const yBottom = 240;
+        const startX = 40;
+
+        // Draw Terminals (open circles)
+        ctx.beginPath();
+        ctx.arc(startX, yTop, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(startX, yBottom, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // --- Draw Series Components (L, R, C) ---
+        let currentX = startX;
+        ctx.beginPath();
+        ctx.moveTo(currentX, yTop);
+        currentX += 20;
+        ctx.lineTo(currentX, yTop);
+        ctx.stroke();
+
+        // Draw Inductor L
+        const l_start = currentX;
+        const l_len = 60;
+        currentX += l_len;
+        drawInductor(ctx, l_start, yTop, currentX, yTop);
+        ctx.font = 'italic 22px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('L', l_start + l_len / 2, yTop - 10);
+
+        // Connector wire
+        ctx.beginPath();
+        ctx.moveTo(currentX, yTop);
+        currentX += 20;
+        ctx.lineTo(currentX, yTop);
+        ctx.stroke();
+        
+        // Draw Resistor R
+        const r_start = currentX;
+        const r_len = 60;
+        currentX += r_len;
+        drawResistor(ctx, r_start, yTop, currentX, yTop);
+        ctx.fillText('R', r_start + r_len / 2, yTop - 15);
+
+        // Connector wire
+        ctx.beginPath();
+        ctx.moveTo(currentX, yTop);
+        currentX += 20;
+        ctx.lineTo(currentX, yTop);
+        ctx.stroke();
+
+        // Draw Capacitor C
+        const c_start = currentX;
+        const c_len = 40;
+        currentX += c_len;
+        drawCapacitor(ctx, c_start, yTop, currentX, yTop);
+        ctx.fillText('C', c_start + c_len / 2, yTop - 15);
+
+        // --- Draw Parallel Components (C1, L1) ---
+        const junction_top_left_X = currentX + 30;
+        ctx.beginPath();
+        ctx.moveTo(currentX, yTop);
+        ctx.lineTo(junction_top_left_X, yTop);
+        ctx.stroke();
+
+        // Draw Capacitor C1 branch
+        const c1_X = junction_top_left_X;
+        drawCapacitor(ctx, c1_X, yTop, c1_X, yBottom);
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('C₁', c1_X + 15, (yTop + yBottom) / 2);
+
+        // Draw Inductor L1 branch
+        const junction_top_right_X = c1_X + 80;
+        ctx.beginPath();
+        ctx.moveTo(junction_top_left_X, yTop);
+        ctx.lineTo(junction_top_right_X, yTop);
+        ctx.stroke();
+
+        const l1_X = junction_top_right_X;
+        drawInductor(ctx, l1_X, yTop, l1_X, yBottom);
+        ctx.fillText('L₁', l1_X + 15, (yTop + yBottom) / 2);
+
+        // --- Draw Bottom Wires ---
+        ctx.beginPath();
+        ctx.moveTo(startX, yBottom);
+        ctx.lineTo(junction_top_right_X, yBottom);
+        ctx.stroke();
+
+        // --- Draw Figure Label ---
+        ctx.font = '20px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText('Fig. 3.87', canvas.width / 2, 320);
+
+    </script>
+</body>
+</html>

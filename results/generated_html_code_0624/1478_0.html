@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Static Force Analysis of a Boat</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow with a simple head
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // Helper function for dimension lines with inward-pointing arrows
+    function drawDimensionLine(ctx, x1, y, x2, text) {
+        const headlen = 8;
+        ctx.beginPath();
+        // Main line
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x2, y);
+        // Arrowhead at x1
+        ctx.moveTo(x1 + headlen, y - 4);
+        ctx.lineTo(x1, y);
+        ctx.lineTo(x1 + headlen, y + 4);
+        // Arrowhead at x2
+        ctx.moveTo(x2 - headlen, y - 4);
+        ctx.lineTo(x2, y);
+        ctx.lineTo(x2 - headlen, y + 4);
+        ctx.stroke();
+        // Text
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.font = '16px Arial';
+        ctx.fillText(text, (x1 + x2) / 2, y + 8);
+    }
+
+    // --- Main Drawing ---
+
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = '18px Arial';
+
+    // --- Top Text ---
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Fig. 3.1 shows a boat that has been lifted out of a river. The boat is suspended by two ropes.', 10, 10);
+    ctx.fillText('It is stationary.', 10, 35);
+
+    // --- Define Coordinates ---
+    const y_top = 200;
+    const y_bottom = 240;
+
+    const x_C = 320;
+    const y_C = 215;
+
+    const scale = 100; // pixels per meter
+    const dist_T1_C = 1.20;
+    const dist_C_T2 = 0.40;
+
+    const x_T1 = x_C - dist_T1_C * scale; // 320 - 120 = 200
+    const x_T2 = x_C + dist_C_T2 * scale; // 320 + 40 = 360
+    const x_P = x_T2;
+    const y_P = 215;
+
+    // --- Draw Boat ---
+    const x_stern = x_T2 + 40;
+    const x_bow_tip = x_T1 - 60;
+    const x_bow_curve_start = x_T1;
+    
+    ctx.beginPath();
+    ctx.moveTo(x_stern, y_top); // Top right
+    ctx.lineTo(x_bow_tip, y_top); // Flat top
+    // Curved bow (bottom part)
+    ctx.quadraticCurveTo(x_bow_tip - 10, y_bottom, x_bow_curve_start, y_bottom);
+    ctx.lineTo(x_stern, y_bottom); // Flat bottom part
+    ctx.closePath(); // Connects bottom right to top right
+    ctx.stroke();
+
+    // --- Draw Forces ---
+    const arrow_len_up = 80;
+    const arrow_len_down = 80;
+
+    // Tension T1
+    drawArrow(ctx, x_T1, y_top, x_T1, y_top - arrow_len_up);
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.font = '18px Arial';
+    ctx.fillText('T₁', x_T1 - 10, y_top - arrow_len_up / 2);
+
+    // Tension T2
+    drawArrow(ctx, x_T2, y_top, x_T2, y_top - arrow_len_up);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('T₂', x_T2 + 10, y_top - arrow_len_up / 2);
+
+    // Weight W
+    drawArrow(ctx, x_C, y_C, x_C, y_C + arrow_len_down);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.font = '16px Arial';
+    ctx.fillText('24 kN', x_C + 10, y_C + arrow_len_down);
+
+    // --- Draw Points C and P ---
+    ctx.beginPath();
+    ctx.arc(x_C, y_C, 2.5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.font = '18px Arial';
+    ctx.fillText('C', x_C - 8, y_C + 2);
+
+    ctx.beginPath();
+    ctx.arc(x_P, y_P, 2.5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('P', x_P + 5, y_P + 2);
+
+    // --- Dimension Lines ---
+    const y_dim = y_bottom + 40;
+
+    // Dashed vertical lines for dimensions
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x_T1, y_top);
+    ctx.lineTo(x_T1, y_dim);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x_C, y_C);
+    ctx.lineTo(x_C, y_dim);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x_T2, y_top);
+    ctx.lineTo(x_T2, y_dim);
+    ctx.stroke();
+    ctx.restore();
+
+    // Horizontal dimension lines
+    ctx.lineWidth = 1;
+    drawDimensionLine(ctx, x_T1, y_dim, x_C, '1.20 m');
+    drawDimensionLine(ctx, x_C, y_dim, x_T2, '0.40 m');
+
+    // --- Bottom Text ---
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Fig. 3.1 (not to scale)', canvas.width / 2, canvas.height - 10);
+
+</script>
+</body>
+</html>

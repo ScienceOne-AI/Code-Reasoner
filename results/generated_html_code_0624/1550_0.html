@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="750"></canvas>
+
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration & Parameters ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        const x_center = canvas.width / 2;
+        const cylinder_width = 240;
+        const x_left = x_center - cylinder_width / 2;
+        const x_right = x_center + cylinder_width / 2;
+        
+        const unitL = 110;
+        const part_thickness = 10;
+
+        // Y-coordinates (from top to bottom)
+        const y_top_of_canvas = 50;
+        const y_piston_top = 150;
+        const y_piston_mid = y_piston_top + 15;
+        const y_piston_bottom = y_piston_mid + 15;
+        
+        const y_stop_top = y_piston_bottom + 4 * unitL - 0.5 * unitL - part_thickness;
+        const y_stop_bottom = y_stop_top + part_thickness;
+        
+        const y_partition_top = y_piston_bottom + 4 * unitL;
+        const y_partition_bottom = y_partition_top + part_thickness;
+
+        const y_ground = y_partition_top + unitL;
+
+        // --- Helper function for Hatching ---
+        function drawHatching(ctx, points, spacing = 6) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.closePath();
+            ctx.clip();
+
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            for (let i = -canvas.height; i < canvas.width + canvas.height; i += spacing) {
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i + canvas.height, canvas.height);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        function hatchAndStrokeRect(ctx, x, y, w, h) {
+             const points = [
+                { x: x, y: y },
+                { x: x + w, y: y },
+                { x: x + w, y: h + y },
+                { x: x, y: h + y }
+            ];
+            drawHatching(ctx, points);
+            ctx.strokeRect(x, y, w, h);
+        }
+
+        // --- Drawing Functions ---
+
+        function drawCylinderAndGround(ctx) {
+            // Cylinder walls
+            ctx.beginPath();
+            ctx.moveTo(x_left, y_piston_top - 20);
+            ctx.lineTo(x_left, y_ground);
+            ctx.moveTo(x_right, y_piston_top - 20);
+            ctx.lineTo(x_right, y_ground);
+            ctx.stroke();
+
+            // Ground
+            ctx.beginPath();
+            ctx.moveTo(x_left - 40, y_ground);
+            ctx.lineTo(x_right + 40, y_ground);
+            ctx.stroke();
+
+            // Ground hatches
+            ctx.lineWidth = 1.5;
+            for (let i = x_left - 35; i <= x_right + 30; i += 10) {
+                ctx.beginPath();
+                ctx.moveTo(i, y_ground);
+                ctx.lineTo(i-10, y_ground + 10);
+                ctx.stroke();
+            }
+            ctx.lineWidth = 2;
+        }
+
+        function drawPistonA(ctx) {
+            const valve_gap = 20;
+            const raised_width = 80;
+
+            // Main body parts
+            hatchAndStrokeRect(ctx, x_left, y_piston_mid, (x_center - valve_gap) - x_left, y_piston_bottom - y_piston_mid);
+            hatchAndStrokeRect(ctx, x_center + valve_gap, y_piston_mid, x_right - (x_center + valve_gap), y_piston_bottom - y_piston_mid);
+            
+            // Raised center part
+            hatchAndStrokeRect(ctx, x_center - raised_width / 2, y_piston_top, raised_width, y_piston_mid - y_piston_top);
+
+            // Labels
+            ctx.font = "italic 24px 'Times New Roman'";
+            ctx.fillText('A', x_center, y_piston_top - 20);
+            ctx.fillText('K₁', x_center, y_piston_bottom + 15);
+        }
+        
+        function drawInternalParts(ctx) {
+            const stop_width = 60;
+            const valve_gap = 20;
+
+            // Stop B (right) and counterpart (left)
+            hatchAndStrokeRect(ctx, x_right - stop_width, y_stop_top, stop_width, part_thickness);
+            hatchAndStrokeRect(ctx, x_left, y_stop_top, stop_width, part_thickness);
+
+            // Partition C
+            hatchAndStrokeRect(ctx, x_left, y_partition_top, (x_center - valve_gap) - x_left, part_thickness);
+            hatchAndStrokeRect(ctx, x_center + valve_gap, y_partition_top, x_right - (x_center + valve_gap), part_thickness);
+           
+            // Valve K2
+            ctx.beginPath();
+            ctx.moveTo(x_center - valve_gap, y_partition_bottom);
+            ctx.lineTo(x_center, y_partition_bottom + 10);
+            ctx.lineTo(x_center + valve_gap, y_partition_bottom);
+            ctx.stroke();
+            
+            // Labels
+            ctx.font = "italic 24px 'Times New Roman'";
+            ctx.fillText('B', x_right - stop_width / 2, y_stop_top - 15);
+            ctx.fillText('C', x_center + 60, y_partition_top - 15);
+            ctx.fillText('K₂', x_center, y_partition_bottom + 20);
+        }
+        
+        function drawDimensionLines(ctx) {
+            ctx.font = "italic 22px 'Times New Roman'";
+            const offset = 40;
+
+            function drawArrow(ctx, x1, y1, x2, y2) {
+                const angle = Math.atan2(y2 - y1, x2 - x1);
+                const size = 8;
+                ctx.save();
+                ctx.translate(x2, y2);
+                ctx.rotate(angle);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-size, -size/2);
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-size, size/2);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            function drawDimLine(x, y1, y2, label) {
+                // Vertical line
+                ctx.beginPath();
+                ctx.moveTo(x, y1);
+                ctx.lineTo(x, y2);
+                ctx.stroke();
+
+                // Arrows
+                drawArrow(ctx, x, y2, x, y1);
+                drawArrow(ctx, x, y1, x, y2);
+                
+                // Horizontal ticks
+                ctx.beginPath();
+                const tickLength = 10;
+                ctx.moveTo(x - tickLength / 2, y1);
+                ctx.lineTo(x + tickLength / 2, y1);
+                ctx.moveTo(x - tickLength / 2, y2);
+                ctx.lineTo(x + tickLength / 2, y2);
+                ctx.stroke();
+                
+                // Label
+                let labelX = x;
+                if (x < x_center) labelX -= 25;
+                else labelX += 25;
+                ctx.fillText(label, labelX, (y1 + y2) / 2);
+            }
+            
+            // Dimension L
+            drawDimLine(x_right + offset, y_partition_top, y_ground, 'L');
+            
+            // Dimension 4L
+            drawDimLine(x_right + offset, y_piston_bottom, y_partition_top, '4L');
+            
+            // Dimension L/2
+            ctx.beginPath();
+            ctx.moveTo(x_left, y_stop_bottom);
+            ctx.lineTo(x_left - offset, y_stop_bottom);
+            ctx.moveTo(x_left, y_partition_top);
+            ctx.lineTo(x_left - offset, y_partition_top);
+            ctx.stroke();
+            drawDimLine(x_left - offset, y_stop_bottom, y_partition_top, 'L/2');
+        }
+
+        // --- Main Drawing Execution ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawCylinderAndGround(ctx);
+        drawPistonA(ctx);
+        drawInternalParts(ctx);
+        drawDimensionLines(ctx);
+    </script>
+</body>
+</html>

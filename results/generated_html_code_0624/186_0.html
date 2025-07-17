@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>C-Magnet Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.font = 'bold 20px "Times New Roman", serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Parameters
+        const s = 14; // scale factor
+        const p = { x: 40, y: -35 }; // perspective offset for depth
+        const x0 = 100, y0 = 150; // top-left-front origin
+
+        // --- Core Drawing ---
+        // The core is drawn as two pieces (top and bottom) with a left leg connecting them,
+        // which makes drawing the coil section simpler and matches the visual structure.
+        
+        // Right arms of the C-core
+        ctx.beginPath();
+        // Top right arm (front face)
+        ctx.moveTo(x0 + 7 * s, y0);
+        ctx.lineTo(x0 + 20 * s, y0);
+        ctx.lineTo(x0 + 20 * s, y0 + 9 * s);
+        ctx.lineTo(x0 + 7 * s, y0 + 9 * s);
+        // Bottom right arm (front face)
+        ctx.moveTo(x0 + 7 * s, y0 + 11 * s);
+        ctx.lineTo(x0 + 20 * s, y0 + 11 * s);
+        ctx.lineTo(x0 + 20 * s, y0 + 20 * s);
+        ctx.lineTo(x0 + 7 * s, y0 + 20 * s);
+        ctx.stroke();
+
+        // Left leg and connections
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x0 + 7 * s, y0);
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x0, y0 + 20 * s);
+        ctx.lineTo(x0 + 7 * s, y0 + 20 * s);
+        ctx.moveTo(x0 + 7 * s, y0);
+        ctx.lineTo(x0 + 7 * s, y0 + 9 * s);
+        ctx.moveTo(x0 + 7 * s, y0 + 11 * s);
+        ctx.lineTo(x0 + 7 * s, y0 + 20 * s);
+        ctx.stroke();
+
+        // 3D Perspective Lines
+        ctx.beginPath();
+        ctx.moveTo(x0, y0); ctx.lineTo(x0 + p.x, y0 + p.y);
+        ctx.lineTo(x0 + 20 * s + p.x, y0 + p.y);
+        ctx.lineTo(x0 + 20 * s, y0);
+
+        ctx.moveTo(x0 + 20 * s + p.x, y0 + p.y);
+        ctx.lineTo(x0 + 20 * s + p.x, y0 + 9 * s + p.y);
+        ctx.lineTo(x0 + 20 * s, y0 + 9 * s);
+
+        ctx.moveTo(x0 + 20 * s + p.x, y0 + 11 * s + p.y);
+        ctx.lineTo(x0 + 20 * s, y0 + 11 * s);
+
+        ctx.moveTo(x0 + 20 * s + p.x, y0 + 11 * s + p.y);
+        ctx.lineTo(x0 + 20 * s + p.x, y0 + 20 * s + p.y);
+        ctx.lineTo(x0 + 20 * s, y0 + 20 * s);
+        ctx.stroke();
+
+        // --- Coil Section ---
+        // Hatched rectangle representing the coil cross-section
+        const hx = x0, hy = y0 + 9 * s;
+        const hw = 7 * s, hh = 9 * s; // In the image, the coil is in a recessed area.
+        const hx_img = x0 + 7*s, hy_img = y0 + 9*s;
+        const hw_img = -4*s, hh_img = 9*s;
+        
+        // This interpretation is a bit complex. Let's use the interpretation from the user prompt:
+        // A hatched section on a notched part of the bottom block.
+        // Let's draw what is visually present, a simpler C-core with hatching.
+        const hatch_x = x0 + 1*s;
+        const hatch_y = y0 + 9.5*s;
+        const hatch_w = 5*s;
+        const hatch_h = 8*s;
+        ctx.beginPath();
+        ctx.rect(hatch_x, hatch_y, hatch_w, hatch_h);
+        ctx.save();
+        ctx.clip();
+        for (let i = -hatch_h; i < hatch_w; i += 8) {
+            ctx.moveTo(hatch_x + i, hatch_y);
+            ctx.lineTo(hatch_x + i + hatch_h, hatch_y + hatch_h);
+        }
+        ctx.stroke();
+        ctx.restore();
+        
+        // --- Coil Windings ---
+        const wire_x_start = x0 - 40;
+        const wire_x_end = x0 + 7 * s;
+        for (let i = 0; i < 4; i++) {
+            const y_wire = y0 + (10 + i * 1.5) * s;
+            ctx.beginPath();
+            ctx.moveTo(wire_x_start, y_wire);
+            ctx.lineTo(wire_x_end, y_wire);
+            ctx.stroke();
+        }
+
+        // Current Arrows and Labels
+        ctx.beginPath();
+        const arrow_y_top = y0 + 10 * s;
+        const arrow_y_bottom = y0 + 14.5 * s;
+        ctx.moveTo(wire_x_start, arrow_y_top);
+        ctx.lineTo(wire_x_start + 20, arrow_y_top);
+        ctx.lineTo(wire_x_start + 12, arrow_y_top - 5);
+        ctx.moveTo(wire_x_start + 20, arrow_y_top);
+        ctx.lineTo(wire_x_start + 12, arrow_y_top + 5);
+        
+        ctx.moveTo(wire_x_start + 20, arrow_y_bottom);
+        ctx.lineTo(wire_x_start, arrow_y_bottom);
+        ctx.lineTo(wire_x_start + 8, arrow_y_bottom - 5);
+        ctx.moveTo(wire_x_start, arrow_y_bottom);
+        ctx.lineTo(wire_x_start + 8, arrow_y_bottom + 5);
+        ctx.stroke();
+
+        ctx.fillText('I', wire_x_start - 15, arrow_y_top);
+        ctx.fillText('I', wire_x_start - 15, arrow_y_bottom);
+        
+        // --- Dimensions ---
+        const dh = 10; // dimension line height
+        ctx.font = '18px "Times New Roman", serif';
+        
+        function drawDimension(x1, y1, x2, y2, label, offset, side = 'top') {
+            ctx.beginPath();
+            const tick = 5;
+            if (y1 === y2) { // Horizontal dimension
+                const y_dim = y1 - offset;
+                ctx.moveTo(x1, y1); ctx.lineTo(x1, y_dim + tick);
+                ctx.moveTo(x2, y2); ctx.lineTo(x2, y_dim + tick);
+                ctx.moveTo(x1, y_dim); ctx.lineTo(x2, y_dim);
+                ctx.fillText(label, (x1 + x2) / 2, y_dim - dh);
+            } else { // Vertical dimension
+                const x_dim = x1 + offset;
+                ctx.moveTo(x1, y1); ctx.lineTo(x_dim - tick, y1);
+                ctx.moveTo(x2, y2); ctx.lineTo(x_dim - tick, y2);
+                ctx.moveTo(x_dim, y1); ctx.lineTo(x_dim, y2);
+                ctx.save();
+                ctx.translate((x_dim + dh), (y1 + y2) / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText(label, 0, 0);
+                ctx.restore();
+            }
+            ctx.stroke();
+        }
+
+        // 20
+        drawDimension(x0, y0, x0 + 20*s, y0, '20', 20);
+        // 9 (top)
+        drawDimension(x0 + 20*s, y0, x0 + 20*s, y0 + 9*s, '9', 20);
+        // 2
+        drawDimension(x0 + 20*s, y0 + 9*s, x0 + 20*s, y0 + 11*s, '2', 20);
+        // 9 (bottom)
+        drawDimension(x0 + 20*s, y0 + 11*s, x0 + 20*s, y0 + 20*s, '9', 20);
+        
+        // 7 (depth)
+        ctx.beginPath();
+        let xd1 = x0 + 20*s; let yd1 = y0;
+        let xd2 = xd1 + p.x; let yd2 = yd1 + p.y;
+        ctx.moveTo(xd1, yd1 - 5); ctx.lineTo(xd1, yd1 + 5);
+        ctx.moveTo(xd2, yd2 - 5); ctx.lineTo(xd2, yd2 + 5);
+        ctx.moveTo(xd1, yd1); ctx.lineTo(xd2, yd2);
+        ctx.fillText('7', (xd1+xd2)/2 + 10, (yd1+yd2)/2 - 15);
+        ctx.stroke();
+
+        // 7 (left leg)
+        drawDimension(x0, y0+20*s, x0+7*s, y0+20*s, '7', -20, 'bottom');
+        // 7 (right leg)
+        drawDimension(x0+13*s, y0+20*s, x0+20*s, y0+20*s, '7', -20, 'bottom');
+
+        // --- Labels ---
+        ctx.font = 'bold 24px "Times New Roman", serif';
+        ctx.fillText('Fe', x0 + 4 * s, y0 + 4 * s);
+        ctx.fillText('Fig. 2.18', canvas.width / 2, y0 + 20 * s + 60);
+
+    </script>
+</body>
+</html>

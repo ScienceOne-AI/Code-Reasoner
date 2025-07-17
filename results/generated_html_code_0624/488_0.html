@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Refraction through a Parallel Slab</title>
+</head>
+<body>
+<canvas id="refractionCanvas" width="500" height="350" style="border:1px solid #000;"></canvas>
+<script>
+    const canvas = document.getElementById('refractionCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // --- Helper function to draw text with a subscript ---
+    function drawTextWithSubscript(context, text, subscript, x, y) {
+        const baseFont = "italic 22px Times New Roman";
+        const subFont = "italic 16px Times New Roman";
+        
+        // Draw base text
+        context.font = baseFont;
+        const textMetrics = context.measureText(text);
+        context.fillText(text, x, y);
+
+        // Draw subscript
+        context.font = subFont;
+        context.fillText(subscript, x + textMetrics.width - 2, y + 4);
+    }
+
+    // --- Helper function to draw an arrowhead ---
+    function drawArrowhead(context, x, y, angle, size = 8) {
+        context.save();
+        context.translate(x, y);
+        context.rotate(angle);
+        context.beginPath();
+        context.moveTo(0, 0);
+        context.lineTo(-size, -size / 2);
+        context.moveTo(0, 0);
+        context.lineTo(-size, size / 2);
+        context.stroke();
+        context.restore();
+    }
+
+    // --- Define coordinates for the light rays ---
+    // Top ray
+    const s1 = { x: 80, y: 190 };
+    const p1 = { x: 200, y: 130 };
+    const p2 = { x: 300, y: 100 };
+    const e1 = { x: 420, y: 40 };
+    // Bottom ray (parallel to top ray)
+    const s2 = { x: 80, y: 230 };
+    const p3 = { x: 200, y: 170 };
+    const p4 = { x: 300, y: 140 };
+    const e2 = { x: 420, y: 80 };
+
+    // --- Draw the slab ---
+    ctx.fillStyle = '#E0E0E0'; // Light gray fill
+    ctx.fillRect(200, 30, 100, 290);
+    ctx.strokeRect(200, 30, 100, 290);
+    ctx.fillStyle = 'black'; // Reset fill style
+
+    // --- Draw the light rays ---
+    // Top ray path
+    ctx.beginPath();
+    ctx.moveTo(s1.x, s1.y);
+    ctx.lineTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.lineTo(e1.x, e1.y);
+    ctx.stroke();
+
+    // Bottom ray path
+    ctx.beginPath();
+    ctx.moveTo(s2.x, s2.y);
+    ctx.lineTo(p3.x, p3.y);
+    ctx.lineTo(p4.x, p4.y);
+    ctx.lineTo(e2.x, e2.y);
+    ctx.stroke();
+
+    // --- Draw arrows on the rays ---
+    const angle_i = Math.atan2(p1.y - s1.y, p1.x - s1.x);
+    const angle_r = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+    const angle_e = Math.atan2(e1.y - p2.y, e1.x - p2.x);
+    
+    drawArrowhead(ctx, (s1.x + p1.x) / 2, (s1.y + p1.y) / 2, angle_i);
+    drawArrowhead(ctx, (p1.x + p2.x) / 2, (p1.y + p2.y) / 2, angle_r);
+    drawArrowhead(ctx, (p2.x + e1.x) / 2, (p2.y + e1.y) / 2, angle_e);
+    
+    drawArrowhead(ctx, (s2.x + p3.x) / 2, (s2.y + p3.y) / 2, angle_i);
+    drawArrowhead(ctx, (p3.x + p4.x) / 2, (p3.y + p4.y) / 2, angle_r);
+    drawArrowhead(ctx, (p4.x + e2.x) / 2, (p4.y + e2.y) / 2, angle_e);
+
+    // --- Draw the normal and angle arc ---
+    // Dashed horizontal line (normal)
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash([4, 4]);
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(130, p1.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // Angle arc for α₀
+    const radius = 35;
+    const arc_start_angle = angle_i;
+    const arc_end_angle = Math.PI;
+    ctx.beginPath();
+    // JS arc draws CCW from start to end. angle_i is ~-0.5 rad, PI is 3.14.
+    // It will wrap around from ~357 deg to 180 deg, drawing the large arc.
+    // So we draw from end to start to get the small arc.
+    ctx.arc(p1.x, p1.y, radius, arc_end_angle, arc_start_angle, true);
+    ctx.stroke();
+
+    // Tick mark on the horizontal line
+    const tick_x = p1.x + radius * Math.cos(arc_end_angle);
+    const tick_y = p1.y + radius * Math.sin(arc_end_angle);
+    ctx.beginPath();
+    ctx.moveTo(tick_x, tick_y - 4);
+    ctx.lineTo(tick_x, tick_y + 4);
+    ctx.stroke();
+
+    // --- Draw labels ---
+    // Label for angle α₀
+    drawTextWithSubscript(ctx, 'α', '0', 155, 155);
+    
+    // Labels for refractive indices
+    drawTextWithSubscript(ctx, 'n', '1', 160, 90);
+    drawTextWithSubscript(ctx, 'n', '2', 240, 250);
+    drawTextWithSubscript(ctx, 'n', '1', 340, 180);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rochon Prism Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="300" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = '22px "Times New Roman"';
+
+    // Prism coordinates
+    const p_x1 = 150;
+    const p_y1 = 50;
+    const p_x2 = 300;
+    const p_y2 = 250;
+
+    // --- Draw Prism ---
+    ctx.fillStyle = '#eeeeee'; // Light gray fill
+    ctx.beginPath();
+    ctx.moveTo(p_x1, p_y1);
+    ctx.lineTo(p_x2, p_y1);
+    ctx.lineTo(p_x2, p_y2);
+    ctx.lineTo(p_x1, p_y2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Diagonal interface
+    ctx.beginPath();
+    ctx.moveTo(p_x1, p_y1);
+    ctx.lineTo(p_x2, p_y2);
+    ctx.stroke();
+
+    // --- Draw Optic Axis Markings ---
+    // Dashed lines in the first prism (lower-left triangle)
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    const m_diag = (p_y2 - p_y1) / (p_x2 - p_x1);
+    for (let i = 1; i <= 5; i++) {
+        let y = p_y2 - i * 28;
+        ctx.beginPath();
+        ctx.moveTo(p_x1, y);
+        let x_int = p_x1 + (y - p_y1) / m_diag;
+        ctx.lineTo(x_int, y);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // Dotted grid in the second prism (upper-right triangle)
+    ctx.fillStyle = 'black';
+    for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+            let x = p_x2 - 25 - i * 20;
+            let y = p_y1 + 25 + j * 20;
+            // Check if point is inside the triangle using the line equation 4x - 3y - 450 = 0
+            if (4 * x - 3 * y - 450 > 0) {
+                 ctx.beginPath();
+                 ctx.arc(x, y, 1, 0, 2 * Math.PI);
+                 ctx.fill();
+            }
+        }
+    }
+
+    // --- Draw Rays ---
+    const ray_y = 150;
+    const split_x = p_x1 + (ray_y - p_y1) / m_diag; // 225
+    const split_y = ray_y;
+
+    // Incident ray
+    ctx.beginPath();
+    ctx.moveTo(40, ray_y);
+    ctx.lineTo(split_x, split_y);
+    ctx.stroke();
+    // Arrowhead for incident ray
+    ctx.beginPath();
+    ctx.moveTo(split_x, split_y);
+    ctx.lineTo(split_x - 12, split_y - 6);
+    ctx.moveTo(split_x, split_y);
+    ctx.lineTo(split_x - 12, split_y + 6);
+    ctx.stroke();
+
+    // Ordinary ray (undeviated)
+    ctx.beginPath();
+    ctx.moveTo(split_x, split_y);
+    ctx.lineTo(460, ray_y);
+    ctx.stroke();
+    // Arrowhead for o-ray
+    ctx.beginPath();
+    ctx.moveTo(460, ray_y);
+    ctx.lineTo(450, ray_y - 6);
+    ctx.moveTo(460, ray_y);
+    ctx.lineTo(450, ray_y + 6);
+    ctx.stroke();
+
+    // Extraordinary ray (deviated, curved)
+    const e_ray_end_x = 420;
+    const e_ray_end_y = 230;
+    const e_ray_ctrl_x = 320;
+    const e_ray_ctrl_y = 160;
+    ctx.beginPath();
+    ctx.moveTo(split_x, split_y);
+    ctx.quadraticCurveTo(e_ray_ctrl_x, e_ray_ctrl_y, e_ray_end_x, e_ray_end_y);
+    ctx.stroke();
+    // Arrowhead for e-ray
+    const tangentAngle = Math.atan2(e_ray_end_y - e_ray_ctrl_y, e_ray_end_x - e_ray_ctrl_x);
+    ctx.beginPath();
+    ctx.moveTo(e_ray_end_x, e_ray_end_y);
+    ctx.lineTo(e_ray_end_x - 12 * Math.cos(tangentAngle - Math.PI / 6), e_ray_end_y - 12 * Math.sin(tangentAngle - Math.PI / 6));
+    ctx.moveTo(e_ray_end_x, e_ray_end_y);
+    ctx.lineTo(e_ray_end_x - 12 * Math.cos(tangentAngle + Math.PI / 6), e_ray_end_y - 12 * Math.sin(tangentAngle + Math.PI / 6));
+    ctx.stroke();
+
+    // --- Draw Angle Labels ---
+    // Angle alpha
+    const diagonal_angle_rad = Math.atan2(p_y2 - p_y1, p_x2 - p_x1);
+    ctx.beginPath();
+    ctx.arc(p_x1, p_y1, 25, diagonal_angle_rad, Math.PI / 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(p_x1, p_y1, 30, diagonal_angle_rad, Math.PI / 2);
+    ctx.stroke();
+    ctx.fillText('α', p_x1 + 35, p_y1 + 45);
+
+    // Angle beta
+    const deviation_angle_rad = 0.45; // Approx. 26 degrees
+    ctx.beginPath();
+    ctx.arc(300, 150, 50, 0, deviation_angle_rad, false);
+    ctx.stroke();
+    ctx.fillText('β', 325, 205);
+
+    // --- Draw Polarization and other markers ---
+    // Polarization of o-ray (vertical arrows)
+    function drawDoubleArrow(x, y, size) {
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x, y - size);
+        ctx.lineTo(x, y + size);
+        ctx.moveTo(x, y - size);
+        ctx.lineTo(x - 4, y - size + 6);
+        ctx.moveTo(x, y - size);
+        ctx.lineTo(x + 4, y - size + 6);
+        ctx.moveTo(x, y + size);
+        ctx.lineTo(x - 4, y + size - 6);
+        ctx.moveTo(x, y + size);
+        ctx.lineTo(x + 4, y + size - 6);
+        ctx.stroke();
+        ctx.restore();
+    }
+    drawDoubleArrow(380, ray_y, 12);
+    drawDoubleArrow(415, ray_y, 12);
+
+    // Polarization of e-ray (dots)
+    // Helper function to find point on quadratic Bezier curve
+    function getQuadBezierXY(start, c1, end, t) {
+        return {
+            x: Math.pow(1 - t, 2) * start.x + 2 * (1 - t) * t * c1.x + Math.pow(t, 2) * end.x,
+            y: Math.pow(1 - t, 2) * start.y + 2 * (1 - t) * t * c1.y + Math.pow(t, 2) * end.y
+        };
+    }
+    const e_start = {x: split_x, y: split_y};
+    const e_ctrl = {x: e_ray_ctrl_x, y: e_ray_ctrl_y};
+    const e_end = {x: e_ray_end_x, y: e_ray_end_y};
+    for (let t = 0.75; t <= 0.95; t += 0.1) {
+        let pt = getQuadBezierXY(e_start, e_ctrl, e_end, t);
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+
+    // Dashed lines at interface
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    // Normal to interface (slope is -1/m_diag)
+    ctx.beginPath();
+    ctx.moveTo(split_x, split_y);
+    ctx.lineTo(split_x - 20, split_y - 20 * (-1/m_diag));
+    ctx.stroke();
+    // Reflected ray direction (approx)
+    ctx.beginPath();
+    ctx.moveTo(split_x, split_y);
+    ctx.lineTo(split_x - 25, split_y + 5);
+    ctx.stroke();
+    ctx.restore();
+
+</script>
+</body>
+</html>

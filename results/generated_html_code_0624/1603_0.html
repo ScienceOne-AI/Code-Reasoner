@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical Path Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- General Settings ---
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = '22px serif';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Draw Left Side (Side View) ---
+    const y_center_left = 200;
+    const component_height = 140;
+
+    // Draw light ray
+    ctx.beginPath();
+    ctx.moveTo(40, y_center_left);
+    ctx.lineTo(410, y_center_left);
+    ctx.stroke();
+    // Arrowheads
+    function drawArrowhead(fromX, fromY, toX, toY) {
+        const headlen = 10;
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    drawArrowhead(100, y_center_left, 101, y_center_left);
+    drawArrowhead(190, y_center_left, 191, y_center_left);
+    drawArrowhead(280, y_center_left, 281, y_center_left);
+    drawArrowhead(370, y_center_left, 371, y_center_left);
+
+
+    // Draw components
+    const p1_x = 140;
+    const retarder_x = 225;
+    const p2_x = 310;
+    const polarizer_width = 10;
+    const retarder_width = 20;
+    const component_color = '#d3d3d3';
+
+    // Polarizer P1
+    ctx.fillStyle = component_color;
+    ctx.fillRect(p1_x - polarizer_width / 2, y_center_left - component_height / 2, polarizer_width, component_height);
+    ctx.strokeRect(p1_x - polarizer_width / 2, y_center_left - component_height / 2, polarizer_width, component_height);
+    ctx.fillStyle = 'black';
+    ctx.fillText('P₁', p1_x, y_center_left - component_height / 2 - 20);
+
+    // Retarder Plate
+    ctx.fillStyle = component_color;
+    ctx.fillRect(retarder_x - retarder_width / 2, y_center_left - component_height / 2, retarder_width, component_height);
+    ctx.strokeRect(retarder_x - retarder_width / 2, y_center_left - component_height / 2, retarder_width, component_height);
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.moveTo(retarder_x, y_center_left - component_height / 2 + 10);
+    ctx.lineTo(retarder_x, y_center_left + component_height / 2 - 10);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'black';
+    ctx.fillText('O', retarder_x, y_center_left - component_height / 2 - 20);
+    ctx.fillText("O'", retarder_x, y_center_left + component_height / 2 + 20);
+
+
+    // Polarizer P2
+    ctx.fillStyle = component_color;
+    ctx.fillRect(p2_x - polarizer_width / 2, y_center_left - component_height / 2, polarizer_width, component_height);
+    ctx.strokeRect(p2_x - polarizer_width / 2, y_center_left - component_height / 2, polarizer_width, component_height);
+    ctx.fillStyle = 'black';
+    ctx.fillText('P₂', p2_x, y_center_left - component_height / 2 - 20);
+
+    // Labels for light intensity
+    ctx.fillText('I₁', 80, y_center_left + 25);
+    ctx.fillText('I₂', 370, y_center_left + 25);
+
+
+    // --- Draw Right Side (Front View) ---
+    const cx = 600;
+    const cy = 200;
+    const R_outer = 110;
+
+    // Draw concentric circles/rings
+    // Innermost light gray circle
+    ctx.beginPath();
+    ctx.arc(cx, cy, R_outer * 0.8, 0, 2 * Math.PI);
+    ctx.fillStyle = '#EBEBEB';
+    ctx.fill();
+
+    // Darker gray ring
+    ctx.beginPath();
+    ctx.arc(cx, cy, R_outer * 0.9, 0, 2 * Math.PI);
+    ctx.arc(cx, cy, R_outer * 0.8, 0, 2 * Math.PI, true); // counter-clockwise for cutout
+    ctx.fillStyle = '#BDBDBD';
+    ctx.fill();
+
+    // Outermost light gray ring
+    ctx.beginPath();
+    ctx.arc(cx, cy, R_outer, 0, 2 * Math.PI);
+    ctx.arc(cx, cy, R_outer * 0.9, 0, 2 * Math.PI, true);
+    ctx.fillStyle = '#EBEBEB';
+    ctx.fill();
+
+    // Stroke the main circles
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R_outer, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, R_outer * 0.9, 0, 2 * Math.PI);
+    ctx.stroke();
+     ctx.beginPath();
+    ctx.arc(cx, cy, R_outer * 0.8, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.lineWidth = 2;
+
+
+    // Draw Axes
+    const R_axis = R_outer;
+    const alpha_deg = 35;
+    const beta_deg = 58;
+
+    // P1 Axis
+    // Angle in math (0=East, CCW), P1 is in Q1/Q3
+    let theta1_math_rad = (90 - alpha_deg) * Math.PI / 180;
+    ctx.beginPath();
+    ctx.moveTo(cx + R_axis * Math.cos(theta1_math_rad), cy - R_axis * Math.sin(theta1_math_rad));
+    ctx.lineTo(cx - R_axis * Math.cos(theta1_math_rad), cy + R_axis * Math.sin(theta1_math_rad));
+    ctx.stroke();
+
+    // P2 Axis
+    // Angle in math, P2 is in Q2/Q4
+    let theta2_math_rad = (90 + beta_deg) * Math.PI / 180;
+    ctx.beginPath();
+    ctx.moveTo(cx + R_axis * Math.cos(theta2_math_rad), cy - R_axis * Math.sin(theta2_math_rad));
+    ctx.lineTo(cx - R_axis * Math.cos(theta2_math_rad), cy + R_axis * Math.sin(theta2_math_rad));
+    ctx.stroke();
+
+    // O-O' Axis (vertical, dashed)
+    ctx.beginPath();
+    ctx.setLineDash([6, 6]);
+    ctx.moveTo(cx, cy - R_axis);
+    ctx.lineTo(cx, cy + R_axis);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Center dot
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = 'black';
+    ctx.fill();
+
+    // Draw Angle Arcs and Labels
+    // Angle alpha
+    const r_alpha_arc = 40;
+    // Angles for arc() are clockwise from 3 o'clock
+    const startAngle_alpha = -theta1_math_rad;
+    const endAngle_alpha = -Math.PI / 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r_alpha_arc, startAngle_alpha, endAngle_alpha);
+    ctx.stroke();
+    // Label alpha
+    const midAngle_alpha = (startAngle_alpha + endAngle_alpha) / 2;
+    ctx.fillText('α', cx + (r_alpha_arc + 15) * Math.cos(midAngle_alpha), cy + (r_alpha_arc + 15) * Math.sin(midAngle_alpha));
+
+    // Angle beta
+    const r_beta_arc1 = 45;
+    const r_beta_arc2 = 50;
+    // P2 is at 270+beta. O' is at 270.
+    const startAngle_beta = -( (270) * Math.PI / 180 );
+    const endAngle_beta = -( (270 - beta_deg) * Math.PI / 180 ); // P2 line in Q3
+    ctx.beginPath();
+    ctx.arc(cx, cy, r_beta_arc1, startAngle_beta, endAngle_beta);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r_beta_arc2, startAngle_beta, endAngle_beta);
+    ctx.stroke();
+    // Label beta
+    const midAngle_beta = (startAngle_beta + endAngle_beta) / 2;
+    ctx.fillText('β', cx + (r_beta_arc2 + 15) * Math.cos(midAngle_beta), cy + (r_beta_arc2 + 15) * Math.sin(midAngle_beta));
+
+    // Axis Labels
+    ctx.font = '24px serif';
+    ctx.fillText('O', cx, cy - R_axis - 15);
+    ctx.fillText("O'", cx, cy + R_axis + 15);
+    
+    // Label P1
+    const p1_label_angle = theta1_math_rad;
+    ctx.fillText('P₁', cx + (R_axis + 15) * Math.cos(p1_label_angle), cy - (R_axis + 15) * Math.sin(p1_label_angle));
+    
+    // Label P2
+    const p2_label_angle = theta2_math_rad;
+    ctx.fillText('P₂', cx + (R_axis + 15) * Math.cos(p2_label_angle), cy - (R_axis + 15) * Math.sin(p2_label_angle));
+
+</script>
+</body>
+</html>

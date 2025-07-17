@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram: Block on a Wedge</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style settings ---
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = '20px sans-serif';
+
+    // --- 1. Draw Ground ---
+    const groundY = 400;
+    const groundStart = 40;
+    const groundEnd = 560;
+    ctx.beginPath();
+    ctx.moveTo(groundStart, groundY);
+    ctx.lineTo(groundEnd, groundY);
+    ctx.stroke();
+
+    // Draw hatching for the ground
+    const hatchLength = 15;
+    const hatchSpacing = 20;
+    for (let x = groundStart + hatchSpacing; x < groundEnd; x += hatchSpacing) {
+        ctx.beginPath();
+        ctx.moveTo(x, groundY);
+        ctx.lineTo(x - hatchLength, groundY + hatchLength);
+        ctx.stroke();
+    }
+
+    // --- 2. Draw Wedge (m2) ---
+    const wedgeBottomLeft = { x: 100, y: groundY };
+    const wedgeBottomRight = { x: 500, y: groundY };
+    const wedgeTopLeft = { x: 100, y: 170 };
+
+    ctx.beginPath();
+    ctx.moveTo(wedgeTopLeft.x, wedgeTopLeft.y);
+    ctx.lineTo(wedgeBottomRight.x, wedgeBottomRight.y);
+    ctx.lineTo(wedgeBottomLeft.x, wedgeBottomLeft.y);
+    ctx.closePath();
+    ctx.stroke();
+
+    // --- 3. Draw Block (m1) ---
+    const blockW = 80;
+    const blockH = 60;
+
+    // Calculate the angle of the incline in radians
+    const dx = wedgeBottomRight.x - wedgeTopLeft.x;
+    const dy = wedgeBottomRight.y - wedgeTopLeft.y;
+    const theta = Math.atan2(dy, dx);
+
+    // Position the block on the incline. We place it at 35% of the way down the slope from the top.
+    const posFraction = 0.35;
+    const blockBaseStartX = wedgeTopLeft.x + dx * posFraction;
+    const blockBaseStartY = wedgeTopLeft.y + dy * posFraction;
+    
+    ctx.save();
+    // Translate to the point on the slope where the block's bottom-left corner will be
+    ctx.translate(blockBaseStartX, blockBaseStartY);
+    // Rotate the coordinate system to match the slope's angle
+    ctx.rotate(theta);
+    // Draw the block. Since the coordinate system is rotated, we draw a standard rectangle.
+    // Its bottom-left corner is at the new origin (0,0), so we draw it from (0, -blockH) up to (blockW, 0).
+    ctx.beginPath();
+    ctx.rect(0, -blockH, blockW, blockH);
+    ctx.stroke();
+    
+    // Draw label m1 inside the block
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'italic 24px Times New Roman';
+    // Draw 'm'
+    ctx.fillText('m', blockW / 2 - 6, -blockH / 2);
+    // Draw subscript '1'
+    ctx.font = 'italic 16px Times New Roman';
+    ctx.fillText('1', blockW / 2 + 10, -blockH / 2 + 5);
+    ctx.restore();
+
+
+    // --- 4. Draw Labels ---
+    
+    // Label m2 for the wedge
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'italic 24px Times New Roman';
+    // Draw 'm'
+    ctx.fillText('m', 180, 300);
+    // Draw subscript '2'
+    ctx.font = 'italic 16px Times New Roman';
+    ctx.fillText('2', 180 + 18, 300 + 5);
+
+    // Angle arc for theta
+    ctx.beginPath();
+    const arcRadius = 60;
+    // The angle theta is at the bottom-right corner. The arc spans from the slope to the horizontal base.
+    // In the canvas coordinate system, the horizontal line to the left is at angle PI.
+    // The slope goes up and left, at an angle of (PI - theta).
+    ctx.arc(wedgeBottomRight.x, wedgeBottomRight.y, arcRadius, Math.PI - theta, Math.PI);
+    ctx.stroke();
+
+    // Label theta for the angle
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('θ', wedgeBottomRight.x - arcRadius - 20, wedgeBottomRight.y - 20);
+
+    // --- 5. Draw Caption ---
+    ctx.font = '24px KaiTi'; // A common Chinese font, similar to the one in the image
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 1-33 图', canvas.width / 2, 470);
+
+</script>
+</body>
+</html>

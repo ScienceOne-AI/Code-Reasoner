@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Capacitor Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="capacitorCanvas" width="600" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('capacitorCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws text with a subscript.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {string} text - The main text.
+         * @param {string} sub - The subscript text.
+         * @param {number} x - The x-coordinate.
+         * @param {number} y - The y-coordinate.
+         */
+        function drawTextWithSubscript(ctx, text, sub, x, y) {
+            const oldFont = ctx.font;
+            const mainTextWidth = ctx.measureText(text).width;
+            
+            ctx.fillText(text, x, y);
+            
+            // Set font for subscript
+            const fontSize = parseInt(oldFont);
+            ctx.font = `${fontSize * 0.7}px serif`;
+            
+            // Draw subscript
+            ctx.fillText(sub, x + mainTextWidth, y + fontSize * 0.2);
+            
+            // Restore original font
+            ctx.font = oldFont;
+        }
+
+        /**
+         * Draws an arrow head.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} fromx - Starting x-coordinate of the line.
+         * @param {number} fromy - Starting y-coordinate of the line.
+         * @param {number} tox - Ending x-coordinate of the line.
+         * @param {number} toy - Ending y-coordinate of the line.
+         * @param {number} [arrowLength=10] - Length of the arrow head sides.
+         */
+        function drawArrow(ctx, fromx, fromy, tox, toy, arrowLength = 10) {
+            const angle = Math.atan2(toy - fromy, tox - fromx);
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - arrowLength * Math.cos(angle - Math.PI / 6), toy - arrowLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - arrowLength * Math.cos(angle + Math.PI / 6), toy - arrowLength * Math.sin(angle + Math.PI / 6));
+        }
+
+        /**
+         * Draws a dimension line with ticks at the ends.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x1 - Start x of the dimension.
+         * @param {number} y1 - Start y of the dimension.
+         * @param {number} x2 - End x of the dimension.
+         * @param {number} y2 - End y of the dimension.
+         * @param {number} offset - Offset from the main object.
+         * @param {string} label - The text label for the dimension.
+         */
+        function drawDimensionLine(ctx, x1, y1, x2, y2, offset, label) {
+            ctx.beginPath();
+            if (y1 === y2) { // Horizontal dimension
+                ctx.moveTo(x1, y1 - offset);
+                ctx.lineTo(x2, y2 - offset);
+                // Ticks
+                ctx.moveTo(x1, y1 - offset - 5);
+                ctx.lineTo(x1, y1 - offset + 5);
+                ctx.moveTo(x2, y2 - offset - 5);
+                ctx.lineTo(x2, y2 - offset + 5);
+                // Label
+                ctx.fillText(label, (x1 + x2) / 2, y1 - offset - 10);
+            } else { // Vertical dimension
+                ctx.moveTo(x1 + offset, y1);
+                ctx.lineTo(x2 + offset, y2);
+                // Ticks
+                ctx.moveTo(x1 + offset - 5, y1);
+                ctx.lineTo(x1 + offset + 5, y1);
+                ctx.moveTo(x2 + offset - 5, y2);
+                ctx.lineTo(x2 + offset + 5, y2);
+                // Label
+                ctx.fillText(label, x1 + offset + 15, (y1 + y2) / 2);
+            }
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a dimension line with arrows at the ends.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x1 - Start x of the dimension.
+         * @param {number} y1 - Start y of the dimension.
+         * @param {number} x2 - End x of the dimension.
+         * @param {number} y2 - End y of the dimension.
+         * @param {number} offset - Offset from the main object.
+         * @param {string} label - The text label for the dimension.
+         */
+         function drawDimensionArrow(ctx, x1, y1, x2, y2, offset, label) {
+            ctx.beginPath();
+             if (y1 === y2) { // Horizontal
+                const y = y1 + offset;
+                ctx.moveTo(x1, y);
+                ctx.lineTo(x2, y);
+                drawArrow(ctx, x2, y, x1, y);
+                drawArrow(ctx, x1, y, x2, y);
+                ctx.fillText(label, (x1 + x2) / 2, y + 20);
+            } else { // Vertical
+                const x = x1 + offset;
+                ctx.moveTo(x, y1);
+                ctx.lineTo(x, y2);
+                drawArrow(ctx, x, y2, x, y1);
+                drawArrow(ctx, x, y1, x, y2);
+                ctx.fillText(label, x + 15, (y1 + y2) / 2);
+            }
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Drawing parameters
+        const x0 = 120;
+        const y0 = 100;
+        const W = 320;
+        const H = 280;
+        const plateWidth = 12;
+        const plateGap = 2;
+        const plateOverhang = 10;
+
+        // Set styles
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2;
+        ctx.font = '22px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // 1. Draw Capacitor Plates
+        ctx.fillStyle = '#d0d0d0';
+        ctx.fillRect(x0 - plateGap - plateWidth, y0 - plateOverhang, plateWidth, H + 2 * plateOverhang);
+        ctx.fillRect(x0 + W + plateGap, y0 - plateOverhang, plateWidth, H + 2 * plateOverhang);
+
+        // 2. Draw Dielectric Boundaries
+        ctx.beginPath();
+        ctx.rect(x0, y0, W, H); // Outer box
+        ctx.moveTo(x0 + W / 2, y0); // Middle vertical line
+        ctx.lineTo(x0 + W / 2, y0 + H);
+        ctx.moveTo(x0, y0 + H / 2); // Left horizontal line
+        ctx.lineTo(x0 + W / 2, y0 + H / 2);
+        ctx.stroke();
+
+        // 3. Draw Labels
+        // Epsilon labels
+        drawTextWithSubscript(ctx, 'ε', 'r1', x0 + W / 4, y0 + H / 4);
+        drawTextWithSubscript(ctx, 'ε', 'r2', x0 + W / 4, y0 + 3 * H / 4);
+        drawTextWithSubscript(ctx, 'ε', 'r3', x0 + 3 * W / 4, y0 + H / 2);
+
+        // Dimension labels
+        ctx.fillText('d', x0 + W / 4, y0 - 30);
+        ctx.fillText('d', x0 + 3 * W / 4, y0 - 30);
+
+        // 4. Draw Dimension Lines
+        // S/2 labels
+        drawDimensionLine(ctx, x0, y0, x0, y0 + H/2, - (plateGap + plateWidth + 20), 'S/2');
+        drawDimensionLine(ctx, x0, y0 + H/2, x0, y0 + H, - (plateGap + plateWidth + 20), 'S/2');
+        
+        // S label
+        drawDimensionLine(ctx, x0 + W, y0, x0 + W, y0 + H, plateGap + plateWidth + 20, 'S');
+        
+        // U label
+        drawDimensionArrow(ctx, x0, y0 + H, x0 + W, y0 + H, 50, 'U');
+
+        // 5. Draw dashed loop ABCD
+        const loop_cx = x0 + W * 0.25; // center x of left section
+        const loop_cy = y0 + H * 0.5; // center y is the boundary
+        const loop_w = W * 0.2;
+        const loop_h = H * 0.2;
+
+        const A = { x: loop_cx - loop_w / 2, y: loop_cy - loop_h / 2 };
+        const B = { x: loop_cx + loop_w / 2, y: loop_cy - loop_h / 2 };
+        const C = { x: loop_cx + loop_w / 2, y: loop_cy + loop_h / 2 };
+        const D = { x: loop_cx - loop_w / 2, y: loop_cy + loop_h / 2 };
+
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 1.5;
+
+        // Path A -> B
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        drawArrow(ctx, A.x, A.y, B.x, B.y, 8);
+        ctx.stroke();
+
+        // Path B -> C
+        ctx.beginPath();
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(C.x, C.y);
+        drawArrow(ctx, B.x, B.y, C.x, C.y, 8);
+        ctx.stroke();
+
+        // Path C -> D
+        ctx.beginPath();
+        ctx.moveTo(C.x, C.y);
+        ctx.lineTo(D.x, D.y);
+        drawArrow(ctx, C.x, C.y, D.x, D.y, 8);
+        ctx.stroke();
+
+        // Path D -> A
+        ctx.beginPath();
+        ctx.moveTo(D.x, D.y);
+        ctx.lineTo(A.x, A.y);
+        drawArrow(ctx, D.x, D.y, A.x, A.y, 8);
+        ctx.stroke();
+
+        // Reset line style
+        ctx.setLineDash([]);
+        ctx.lineWidth = 2;
+
+        // A, B, C, D labels
+        ctx.font = '20px serif';
+        ctx.fillText('A', A.x - 15, A.y);
+        ctx.fillText('B', B.x + 15, B.y);
+        ctx.fillText('C', C.x + 15, C.y);
+        ctx.fillText('D', D.x - 15, D.y);
+    </script>
+</body>
+</html>

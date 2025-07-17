@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 18px "Times New Roman"';
+
+        // Helper function to draw an arrow
+        function drawArrow(fromx, fromy, tox, toy) {
+            const headlen = 10;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        // Helper function to draw a dimension line with arrows on both ends
+        function drawDimensionLine(fromx, fromy, tox, toy) {
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            
+            const headlen = 8;
+            const angle1 = Math.atan2(toy-fromy, tox-fromx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(fromx + headlen * Math.cos(angle1 + Math.PI / 6), fromy + headlen * Math.sin(angle1 + Math.PI / 6));
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(fromx + headlen * Math.cos(angle1 - Math.PI / 6), fromy + headlen * Math.sin(angle1 - Math.PI / 6));
+            ctx.stroke();
+
+            const angle2 = Math.atan2(fromy-toy, fromx-tox);
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox + headlen * Math.cos(angle2 + Math.PI / 6), toy + headlen * Math.sin(angle2 + Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox + headlen * Math.cos(angle2 - Math.PI / 6), toy + headlen * Math.sin(angle2 - Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Parameters
+        const x0 = 120;
+        const y0 = 360;
+        const theta = Math.PI / 7; // Approx 25.7 degrees
+        const h = 100;
+        const base = h / Math.tan(theta);
+        const r = 30;
+        const xi = 90;
+
+        // 1. Draw Coordinate Axes
+        ctx.beginPath();
+        drawArrow(x0 - 40, y0, x0 + base + 80, y0); // x-axis
+        drawArrow(x0, y0 + 40, x0, y0 - h - 100); // y-axis
+        ctx.fillText('x', x0 + base + 85, y0 + 5);
+        ctx.fillText('y', x0 - 5, y0 - h - 105);
+
+        // 2. Draw Ground
+        ctx.beginPath();
+        ctx.moveTo(x0 - 20, y0);
+        ctx.lineTo(x0 + base + 20, y0);
+        ctx.stroke();
+        for (let i = x0 - 15; i < x0 + base + 20; i += 10) {
+            ctx.moveTo(i, y0);
+            ctx.lineTo(i - 10, y0 + 10);
+        }
+        ctx.stroke();
+
+        // 3. Draw Wedge
+        const A = { x: x0, y: y0 };
+        const B = { x: x0 + base, y: y0 };
+        const C = { x: x0 + base, y: y0 - h };
+        
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.lineTo(C.x, C.y);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Label M
+        ctx.font = 'italic 20px "Times New Roman"';
+        ctx.fillText('M', x0 + base * 0.5, y0 - h * 0.4);
+        ctx.font = 'italic 18px "Times New Roman"';
+
+        // Angle theta
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, 40, 0, -theta, true);
+        ctx.stroke();
+        ctx.fillText('θ', A.x + 45, A.y - 10);
+
+        // Height h
+        const h_offset = 20;
+        drawDimensionLine(C.x + h_offset, C.y, B.x + h_offset, B.y);
+        ctx.fillText('h', B.x + h_offset + 8, B.y - h / 2);
+
+        // 4. Cylinder calculations
+        const inclineLength = h / Math.sin(theta);
+        const distFromA = inclineLength - xi;
+        const contactP = {
+            x: x0 + distFromA * Math.cos(theta),
+            y: y0 - distFromA * Math.sin(theta)
+        };
+        const centerC = {
+            x: contactP.x - r * Math.sin(theta),
+            y: contactP.y - r * Math.cos(theta)
+        };
+
+        // 5. Draw Cylinder
+        ctx.beginPath();
+        ctx.arc(centerC.x, centerC.y, r, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 6. Cylinder details
+        // mg force
+        drawArrow(centerC.x, centerC.y, centerC.x, centerC.y + 60);
+        ctx.fillText('mg', centerC.x + 5, centerC.y + 65);
+
+        // Radius line to contact point
+        ctx.beginPath();
+        ctx.moveTo(centerC.x, centerC.y);
+        ctx.lineTo(contactP.x, contactP.y);
+        ctx.stroke();
+        
+        // Right angle symbol at contact point
+        const size = 8;
+        ctx.save();
+        ctx.translate(contactP.x, contactP.y);
+        ctx.rotate(-theta);
+        ctx.beginPath();
+        ctx.moveTo(-size, 0);
+        ctx.lineTo(-size, -size);
+        ctx.lineTo(0, -size);
+        ctx.stroke();
+        ctx.restore();
+
+        // Label 'r'
+        const mid_r = { x: (centerC.x + contactP.x) / 2, y: (centerC.y + contactP.y) / 2 };
+        ctx.fillText('r', mid_r.x - 20, mid_r.y - 5);
+        
+        // Angle phi and related lines
+        const phi_angle = Math.PI / 6; // 30 degrees for illustration
+
+        // Horizontal dashed line
+        ctx.save();
+        ctx.setLineDash([4, 2]);
+        ctx.beginPath();
+        ctx.moveTo(centerC.x, centerC.y);
+        ctx.lineTo(centerC.x + r, centerC.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Radius line for phi angle
+        const phi_endpoint = {
+            x: centerC.x + r * Math.cos(phi_angle),
+            y: centerC.y - r * Math.sin(phi_angle) // y increases downwards
+        };
+        ctx.beginPath();
+        ctx.moveTo(centerC.x, centerC.y);
+        ctx.lineTo(phi_endpoint.x, phi_endpoint.y);
+        ctx.stroke();
+
+        // Arc for phi
+        ctx.beginPath();
+        ctx.arc(centerC.x, centerC.y, 20, 0, -phi_angle, true);
+        ctx.stroke();
+        ctx.fillText('φ', centerC.x + 22, centerC.y - 8);
+
+        // Distance xi
+        const ext_len = 50;
+        const norm_vec = {x: -Math.sin(theta), y: -Math.cos(theta)}; // up and left relative to incline
+        const ext_C = { x: C.x + ext_len * norm_vec.x, y: C.y + ext_len * norm_vec.y };
+        const ext_P = { x: contactP.x + ext_len * norm_vec.x, y: contactP.y + ext_len * norm_vec.y };
+        
+        // Extension lines
+        ctx.beginPath();
+        ctx.moveTo(C.x, C.y);
+        ctx.lineTo(ext_C.x, ext_C.y);
+        ctx.moveTo(contactP.x, contactP.y);
+        ctx.lineTo(ext_P.x, ext_P.y);
+        ctx.stroke();
+
+        // Dimension line for xi
+        drawDimensionLine(ext_C.x, ext_C.y, ext_P.x, ext_P.y);
+        const mid_xi = {x: (ext_C.x + ext_P.x)/2, y: (ext_C.y + ext_P.y)/2};
+        ctx.save();
+        ctx.translate(mid_xi.x, mid_xi.y);
+        ctx.rotate(-theta);
+        ctx.fillText('ξ', -5, -8);
+        ctx.restore();
+
+        // 7. Figure Caption
+        ctx.font = '16px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 1.174.', canvas.width / 2, y0 + 60);
+
+    </script>
+</body>
+</html>

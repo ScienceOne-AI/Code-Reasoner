@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pulley System</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="450" style="border:1px solid #000;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = "italic 24px 'Times New Roman'";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Helper function to draw a surface (ceiling or ground)
+    function drawSurface(y, startX, endX) {
+        ctx.beginPath();
+        ctx.moveTo(startX, y);
+        ctx.lineTo(endX, y);
+        ctx.stroke();
+
+        // Draw hatch marks
+        for (let i = startX; i < endX; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(i, y);
+            ctx.lineTo(i - 10, y + 10);
+            ctx.stroke();
+        }
+    }
+
+    // Helper function to draw a pulley
+    function drawPulley(x, y, radius) {
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Axle
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+
+    // Helper function to draw a weight box with label
+    function drawWeight(x, y, width, height, mainLabel, subLabel) {
+        ctx.beginPath();
+        ctx.rect(x, y, width, height);
+        ctx.stroke();
+        
+        // Draw label with subscript
+        const mainLabelWidth = ctx.measureText(mainLabel).width;
+        const startX = x + width / 2 - mainLabelWidth / 2;
+        
+        ctx.font = "italic 24px 'Times New Roman'";
+        ctx.fillText(mainLabel, startX, y + height / 2);
+        
+        ctx.font = "italic 16px 'Times New Roman'";
+        ctx.fillText(subLabel, startX + mainLabelWidth, y + height / 2 + 5);
+    }
+    
+    // Helper function to draw a force arrow
+    function drawForceArrow(x, y, length, label) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y + length);
+        ctx.stroke();
+        // Arrowhead
+        ctx.beginPath();
+        ctx.moveTo(x, y + length);
+        ctx.lineTo(x - 6, y + length - 10);
+        ctx.moveTo(x, y + length);
+        ctx.lineTo(x + 6, y + length - 10);
+        ctx.stroke();
+        
+        // Label
+        ctx.font = "italic 24px 'Times New Roman'";
+        ctx.fillText(label, x + 20, y + length / 2);
+    }
+
+    // --- Main Drawing Logic ---
+
+    // Define coordinates and dimensions
+    const ceilingY = 50;
+    const groundY = 400;
+    const pulleyRadius = 30;
+
+    const fixedPulley1 = { x: 120, y: ceilingY + pulleyRadius };
+    const fixedPulley2 = { x: 380, y: ceilingY + pulleyRadius };
+    const movablePulley = { x: 250, y: 280 };
+
+    const weight1 = { x: fixedPulley1.x - 35, y: 200, w: 70, h: 70 };
+    const weight2 = { x: movablePulley.x - 40, y: 320, w: 80, h: 80 };
+
+    // 1. Draw surfaces
+    drawSurface(ceilingY, 0, 500);
+    drawSurface(groundY, 0, 500);
+
+    // 2. Draw supports for fixed pulleys and movable pulley
+    ctx.beginPath();
+    ctx.moveTo(fixedPulley1.x, ceilingY);
+    ctx.lineTo(fixedPulley1.x, fixedPulley1.y);
+    ctx.moveTo(fixedPulley2.x, ceilingY);
+    ctx.lineTo(fixedPulley2.x, fixedPulley2.y);
+    ctx.moveTo(movablePulley.x, movablePulley.y);
+    ctx.lineTo(movablePulley.x, weight2.y);
+    ctx.stroke();
+
+    // 3. Draw pulleys
+    drawPulley(fixedPulley1.x, fixedPulley1.y, pulleyRadius);
+    drawPulley(fixedPulley2.x, fixedPulley2.y, pulleyRadius);
+    drawPulley(movablePulley.x, movablePulley.y, pulleyRadius);
+
+    // 4. Draw weights
+    drawWeight(weight1.x, weight1.y, weight1.w, weight1.h, 'G', '1');
+    drawWeight(weight2.x, weight2.y, weight2.w, weight2.h, 'G', '2');
+
+    // 5. Draw the continuous rope
+    ctx.beginPath();
+    // From G1 to fixed pulley 1
+    ctx.moveTo(fixedPulley1.x, weight1.y);
+    ctx.lineTo(fixedPulley1.x, fixedPulley1.y + pulleyRadius);
+    // Arc over fixed pulley 1
+    ctx.arc(fixedPulley1.x, fixedPulley1.y, pulleyRadius, Math.PI / 2, Math.PI, false);
+    // From fixed pulley 1 to movable pulley
+    const p1_tangent = { x: fixedPulley1.x - pulleyRadius, y: fixedPulley1.y };
+    const p3_tangent_left = { x: movablePulley.x - pulleyRadius, y: movablePulley.y };
+    ctx.lineTo(p3_tangent_left.x, p3_tangent_left.y);
+    // Arc under movable pulley
+    ctx.arc(movablePulley.x, movablePulley.y, pulleyRadius, Math.PI, 0, false);
+    // From movable pulley to fixed pulley 2
+    const p2_tangent = { x: fixedPulley2.x + pulleyRadius, y: fixedPulley2.y };
+    const p3_tangent_right = { x: movablePulley.x + pulleyRadius, y: movablePulley.y };
+    ctx.lineTo(p2_tangent.x, p2_tangent.y);
+    // Arc over fixed pulley 2
+    ctx.arc(fixedPulley2.x, fixedPulley2.y, pulleyRadius, 0, Math.PI / 2, false);
+    // Rope down for force F
+    ctx.lineTo(fixedPulley2.x, 220);
+    ctx.stroke();
+    
+    // 6. Draw force F
+    drawForceArrow(fixedPulley2.x, 180, 60, 'F');
+
+</script>
+</body>
+</html>

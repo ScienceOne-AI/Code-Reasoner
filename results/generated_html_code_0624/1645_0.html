@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fraunhofer Diffraction Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="800" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = 'italic 24px "Times New Roman"';
+
+    // Helper function to draw an arrowhead on the left of a horizontal line
+    function drawLeftArrow(x, y, size = 8) {
+        ctx.moveTo(x + size, y - size * 0.6);
+        ctx.lineTo(x, y);
+        ctx.lineTo(x + size, y + size * 0.6);
+    }
+
+    // Helper function to draw a dimension arrow line
+    function drawDimensionArrow(x1, y1, x2, y2, size = 8) {
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        // Arrow at start
+        ctx.moveTo(x1 + size, y1 - size * 0.6);
+        ctx.lineTo(x1, y1);
+        ctx.lineTo(x1 + size, y1 + size * 0.6);
+        // Arrow at end
+        ctx.moveTo(x2 - size, y2 - size * 0.6);
+        ctx.lineTo(x2, y2);
+        ctx.lineTo(x2 - size, y2 + size * 0.6);
+    }
+
+    // Define coordinates
+    const x_slit = 150;
+    const x_lens = 350;
+    const x_screen = 700;
+    const y_axis = 250;
+
+    const y_A = 100; // Top of slit
+    const y_B = 400; // Bottom of slit
+
+    const y_P = 150; // Point P on the screen
+    const x_start = 50; // Start of incoming rays
+
+    // 1. Draw Slit Plane
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.moveTo(x_slit, 50);
+    ctx.lineTo(x_slit, 450);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Draw the opaque part of the slit screen
+    ctx.beginPath();
+    ctx.lineWidth = 3;
+    ctx.moveTo(x_slit, 50);
+    ctx.lineTo(x_slit, y_A);
+    ctx.moveTo(x_slit, y_B);
+    ctx.lineTo(x_slit, 450);
+    ctx.stroke();
+    ctx.lineWidth = 2;
+
+    // 2. Draw Lens
+    ctx.beginPath();
+    ctx.moveTo(x_lens, 60);
+    ctx.quadraticCurveTo(x_lens + 50, y_axis, x_lens, 440);
+    ctx.quadraticCurveTo(x_lens - 50, y_axis, x_lens, 60);
+    ctx.stroke();
+
+    // 3. Draw Screen
+    ctx.beginPath();
+    ctx.moveTo(x_screen, 50);
+    ctx.lineTo(x_screen, 450);
+    ctx.stroke();
+
+    // 4. Draw Principal Axis
+    ctx.beginPath();
+    ctx.moveTo(x_start, y_axis);
+    ctx.lineTo(x_screen, y_axis);
+    ctx.stroke();
+
+    // 5. Draw Rays
+    ctx.beginPath();
+    // Incoming rays
+    const y_inc_1 = 120;
+    const y_inc_2 = 220;
+    const y_inc_3 = 380;
+    ctx.moveTo(x_start, y_inc_1); ctx.lineTo(x_slit, y_inc_1); drawLeftArrow(x_start, y_inc_1);
+    ctx.moveTo(x_start, y_inc_2); ctx.lineTo(x_slit, y_inc_2); drawLeftArrow(x_start, y_inc_2);
+    ctx.moveTo(x_start, y_inc_3); ctx.lineTo(x_slit, y_inc_3); drawLeftArrow(x_start, y_inc_3);
+    
+    // Diffracted and Focused Rays
+    const lens_y_A_hit = 120;
+    const lens_y_B_hit = 380;
+    
+    // Ray from A
+    ctx.moveTo(x_slit, y_A);
+    ctx.lineTo(x_lens, lens_y_A_hit);
+    ctx.lineTo(x_screen, y_P);
+    
+    // Ray from "center" path in diagram
+    // This ray starts on the slit plane, passes through the lens center, and goes to P
+    const y_slit_mid_origin = y_axis + (y_axis - y_P) / (x_screen - x_lens) * (x_lens - x_slit);
+    ctx.moveTo(x_slit, y_slit_mid_origin);
+    ctx.lineTo(x_lens, y_axis);
+    ctx.lineTo(x_screen, y_P);
+    
+    // Ray from B
+    ctx.moveTo(x_slit, y_B);
+    ctx.lineTo(x_lens, lens_y_B_hit);
+    ctx.lineTo(x_screen, y_P);
+    ctx.stroke();
+
+    // 6. Draw Labels and Annotations
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('A', x_slit + 10, y_A);
+    ctx.fillText('B', x_slit + 10, y_B);
+    ctx.fillText('P', x_screen + 10, y_P);
+    ctx.fillText('O', x_screen + 10, y_axis);
+    ctx.fillText('λ', x_start + 20, y_inc_2 - 25);
+    ctx.textAlign = 'center';
+    ctx.fillText('f', (x_lens + x_screen) / 2, 455);
+    
+    // Angle theta near lens center
+    const angle_rad = Math.atan((y_axis - y_P) / (x_screen - x_lens));
+    ctx.beginPath();
+    ctx.arc(x_lens, y_axis, 100, 0, -angle_rad, true);
+    ctx.stroke();
+    // Angle tick mark
+    ctx.beginPath();
+    ctx.moveTo(x_lens + 90, y_axis);
+    ctx.lineTo(x_lens + 110, y_axis);
+    ctx.stroke();
+    ctx.fillText('θ', x_lens + 125, y_axis - 40);
+
+    // Angle theta near B
+    ctx.beginPath();
+    ctx.moveTo(x_slit, y_B);
+    ctx.lineTo(x_slit + 100, y_B); // Horizontal guide line
+    ctx.stroke();
+    ctx.beginPath();
+    const angle_B_rad = Math.atan((y_B-lens_y_B_hit)/(x_lens-x_slit));
+    ctx.arc(x_slit, y_B, 80, 0, -angle_B_rad, true);
+    ctx.stroke();
+    ctx.fillText('θ', x_slit + 100, y_B - 25);
+    
+    // 'f' dimension line
+    ctx.beginPath();
+    drawDimensionArrow(x_lens, 440, x_screen, 440);
+    ctx.stroke();
+
+</script>
+</body>
+</html>

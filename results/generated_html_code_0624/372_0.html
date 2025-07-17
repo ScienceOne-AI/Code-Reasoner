@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Energy Level Diagram</title>
+</head>
+<body>
+<canvas id="physicsDiagram" width="800" height="600"></canvas>
+<script>
+    const canvas = document.getElementById('physicsDiagram');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow from (fromx, fromy) to (tox, toy)
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 12; // length of head in pixels
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // Helper function to draw nucleus label with sub/superscripts (e.g., 42_20_Ca)
+    function drawNucleus(ctx, A, Z, symbol, x, y) {
+        const mainFont = '24px Times New Roman';
+        const subsupFont = '16px Times New Roman';
+
+        ctx.font = mainFont;
+        ctx.textAlign = 'center';
+        const symbolWidth = ctx.measureText(symbol).width;
+        ctx.fillText(symbol, x, y);
+
+        ctx.font = subsupFont;
+        ctx.textAlign = 'right';
+        ctx.fillText(A, x - symbolWidth / 2 - 2, y - 12);
+        ctx.fillText(Z, x - symbolWidth / 2 - 2, y + 8);
+    }
+
+    // --- Main Drawing ---
+    
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    // Draw the outer rectangular frame
+    ctx.strokeRect(10, 10, 780, 580);
+
+    // Define coordinates for the energy levels
+    const xCaEnd = 250;
+    const xScStart = 380;
+    
+    // The lines are drawn to the left and right of these points
+    const lineLength = 100;
+    
+    const yCaGnd = 430;
+    const yCaExc = 330;
+
+    const yScGnd = 390;
+    const yScExc = 290;
+
+    const yTiGnd = 350;
+    const yTiExc = 250;
+    
+    // Draw horizontal energy level lines for each nucleus
+    ctx.beginPath();
+    // Calcium (Ca) levels
+    ctx.moveTo(xCaEnd - lineLength, yCaGnd);
+    ctx.lineTo(xCaEnd, yCaGnd);
+    ctx.moveTo(xCaEnd - lineLength, yCaExc);
+    ctx.lineTo(xCaEnd, yCaExc);
+    // Scandium (Sc) levels
+    ctx.moveTo(xScStart, yScGnd);
+    ctx.lineTo(xScStart + lineLength, yScGnd);
+    ctx.moveTo(xScStart, yScExc);
+    ctx.lineTo(xScStart + lineLength, yScExc);
+    // Titanium (Ti) levels
+    const xTiStart = 580;
+    ctx.moveTo(xTiStart, yTiGnd);
+    ctx.lineTo(xTiStart + lineLength, yTiGnd);
+    ctx.moveTo(xTiStart, yTiExc);
+    ctx.lineTo(xTiStart + lineLength, yTiExc);
+    ctx.stroke();
+
+    // Draw the connecting lines between Ca and Sc levels
+    ctx.beginPath();
+    ctx.moveTo(xCaEnd, yCaGnd);
+    ctx.lineTo(xScStart, yScGnd);
+    ctx.moveTo(xCaEnd, yCaExc);
+    ctx.lineTo(xScStart, yScExc);
+    ctx.stroke();
+
+    // Draw the transition arrows from Sc ground state to Ca states
+    drawArrow(ctx, xScStart, yScGnd, xCaEnd, yCaExc); // Transition I
+    drawArrow(ctx, xScStart, yScGnd, xCaEnd, yCaGnd); // Transition II
+
+    // --- Add all text labels ---
+    
+    const baseFont = '22px Times New Roman';
+    const supFont = '16px Times New Roman';
+    const vOffset = 7; // Vertical offset to center text with lines
+
+    // Energy level labels (manual placement for superscript)
+    ctx.textAlign = 'right';
+    
+    // Ca labels
+    const labelX_Ca = xCaEnd - lineLength - 10;
+    ctx.font = baseFont;
+    ctx.fillText('1.8 MeV (0 )', labelX_Ca, yCaExc + vOffset); // Space added for '+'
+    ctx.fillText('0.0 MeV (0 )', labelX_Ca, yCaGnd + vOffset);
+    ctx.font = supFont;
+    ctx.fillText('+', labelX_Ca - 7, yCaExc + vOffset - 8);
+    ctx.fillText('+', labelX_Ca - 7, yCaGnd + vOffset - 8);
+
+    // Sc labels
+    const labelX_Sc = xScStart - 10;
+    ctx.font = baseFont;
+    ctx.fillText('1.8 MeV (0 )', labelX_Sc, yScExc + vOffset);
+    ctx.fillText('0.0 MeV (0 )', labelX_Sc, yScGnd + vOffset);
+    ctx.font = supFont;
+    ctx.fillText('+', labelX_Sc - 7, yScExc + vOffset - 8);
+    ctx.fillText('+', labelX_Sc - 7, yScGnd + vOffset - 8);
+
+    // Ti labels
+    const labelX_Ti = xTiStart - 10;
+    ctx.font = baseFont;
+    ctx.fillText('1.8 MeV (0 )', labelX_Ti, yTiExc + vOffset);
+    ctx.fillText('0.0 MeV (0 )', labelX_Ti, yTiGnd + vOffset);
+    ctx.font = supFont;
+    ctx.fillText('+', labelX_Ti - 7, yTiExc + vOffset - 8);
+    ctx.fillText('+', labelX_Ti - 7, yTiGnd + vOffset - 8);
+    
+    // Transition labels I and II
+    ctx.font = '24px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.fillText("I", (xScStart + xCaEnd) / 2 - 20, (yScGnd + yCaExc) / 2);
+    ctx.fillText("II", (xScStart + xCaEnd) / 2 - 20, (yScGnd + yCaGnd) / 2 + 10);
+
+    // Nucleus labels at the bottom
+    drawNucleus(ctx, '42', '20', 'Ca', xCaEnd - lineLength / 2, yCaGnd + 50);
+    drawNucleus(ctx, '42', '21', 'Sc', xScStart + lineLength / 2, yCaGnd + 50);
+    drawNucleus(ctx, '42', '22', 'Ti', xTiStart + lineLength / 2, yCaGnd + 50);
+
+    // Figure caption
+    ctx.font = '24px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 2.30', canvas.width / 2, 570);
+
+</script>
+</body>
+</html>

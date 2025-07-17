@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Speed-Time Graph</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+    canvas {
+        border: 1px solid #ccc;
+    }
+</style>
+</head>
+<body>
+<canvas id="physics-graph" width="550" height="480"></canvas>
+<script>
+    const canvas = document.getElementById('physics-graph');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const margin = { top: 20, right: 30, bottom: 60, left: 60 };
+    const graphWidth = canvas.width - margin.left - margin.right;
+    const graphHeight = canvas.height - margin.top - margin.bottom;
+
+    const timeMax = 10; // s
+    const speedMax = 9; // m/s (graph shows up to ~8.2, so a range up to 9 is appropriate)
+
+    // --- Coordinate transformation functions ---
+    function x(time) {
+        return margin.left + (time / timeMax) * graphWidth;
+    }
+    function y(speed) {
+        return margin.top + graphHeight - (speed / speedMax) * graphHeight;
+    }
+
+    // --- Drawing functions ---
+
+    function drawGrid() {
+        ctx.beginPath();
+        ctx.strokeStyle = '#e0e0e0'; // Light grey for minor grid
+        ctx.lineWidth = 0.5;
+
+        // Minor vertical lines (every 0.2s)
+        const x_step = (2 / timeMax) * graphWidth / 10;
+        for (let i = 0; i <= 50; i++) {
+            const currentX = margin.left + i * x_step;
+            ctx.moveTo(currentX, margin.top);
+            ctx.lineTo(currentX, margin.top + graphHeight);
+        }
+
+        // Minor horizontal lines (every 0.2 m/s)
+        const y_step = (2 / speedMax) * graphHeight / 10;
+        for (let i = 0; i <= 45; i++) {
+            const currentY = margin.top + graphHeight - i * y_step;
+            ctx.moveTo(margin.left, currentY);
+            ctx.lineTo(margin.left + graphWidth, currentY);
+        }
+        ctx.stroke();
+
+
+        ctx.beginPath();
+        ctx.strokeStyle = '#b0b0b0'; // Darker grey for major grid
+        ctx.lineWidth = 1;
+
+        // Major vertical lines (every 2s)
+        for (let t = 0; t <= timeMax; t += 2) {
+            ctx.moveTo(x(t), margin.top);
+            ctx.lineTo(x(t), margin.top + graphHeight);
+        }
+
+        // Major horizontal lines (every 2 m/s)
+        for (let s = 0; s <= speedMax; s += 2) {
+            ctx.moveTo(margin.left, y(s));
+            ctx.lineTo(margin.left + graphWidth, y(s));
+        }
+        ctx.stroke();
+    }
+
+    function drawAxes() {
+        ctx.beginPath();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // X-axis
+        ctx.moveTo(margin.left, y(0));
+        ctx.lineTo(margin.left + graphWidth, y(0));
+        ctx.stroke();
+
+        // Y-axis
+        ctx.moveTo(margin.left, y(0));
+        ctx.lineTo(margin.left, margin.top);
+        ctx.stroke();
+    }
+
+    function drawLabels() {
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+        
+        // X-axis labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let t = 0; t <= timeMax; t += 2) {
+            ctx.fillText(t, x(t), y(0) + 8);
+        }
+        ctx.fillText('time / s', x(timeMax / 2), y(0) + 30);
+
+        // Y-axis labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let s = 0; s <= 8; s += 2) {
+            ctx.fillText(s, x(0) - 8, y(s));
+        }
+
+        // Y-axis title ("speed / m/s")
+        ctx.textAlign = 'center';
+        const yAxisLabelX = x(0) - 40;
+        const yAxisLabelY = y(speedMax / 2);
+        ctx.fillText('speed', yAxisLabelX, yAxisLabelY - 10);
+        ctx.beginPath();
+        ctx.moveTo(yAxisLabelX - 20, yAxisLabelY);
+        ctx.lineTo(yAxisLabelX + 20, yAxisLabelY);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillText('m/s', yAxisLabelX, yAxisLabelY + 12);
+    }
+    
+    function drawGraphCurve() {
+        ctx.beginPath();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        
+        ctx.moveTo(x(0), y(0)); // Point A
+        ctx.lineTo(x(2), y(4)); // Point B
+        
+        // Bezier curve from B(2, 4) to a point near C(10, 8.2)
+        // Control points chosen to match the curve's shape and tangents
+        // CP1=(4, 8) ensures tangent at B has slope 2
+        // CP2=(8, 8.2) ensures tangent flattens towards C
+        ctx.bezierCurveTo(x(4), y(8), x(8), y(8.2), x(10), y(8.2));
+        ctx.stroke();
+    }
+    
+    function drawAnnotations() {
+        ctx.fillStyle = 'black';
+        ctx.font = '18px Arial';
+        
+        // Point A
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('A', x(0.2), y(-0.2));
+        
+        // Point B
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('B', x(2), y(4)-2);
+        
+        // Point C
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('C', x(10) + 5, y(8.2));
+        
+        // Figure caption
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Fig. 1.2', canvas.width / 2, canvas.height - 5);
+    }
+    
+    // --- Main drawing sequence ---
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    drawGrid();
+    drawAxes(); // Draw axes on top of the grid
+    drawLabels();
+    drawGraphCurve();
+    drawAnnotations();
+
+</script>
+</body>
+</html>

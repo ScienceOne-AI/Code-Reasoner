@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coupled Pendulums</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas dimensions
+        canvas.width = 800;
+        canvas.height = 350;
+
+        // Set drawing styles
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '20px Times New Roman';
+        ctx.textAlign = 'center';
+
+        /**
+         * Draws a spring (series of semicircles) between two points.
+         * @param {CanvasRenderingContext2D} ctx The canvas rendering context.
+         * @param {number} x1 The starting x-coordinate.
+         * @param {number} y The y-coordinate (spring is horizontal).
+         * @param {number} x2 The ending x-coordinate.
+         * @param {number} coils The number of coils in the spring.
+         */
+        function drawSpring(ctx, x1, y, x2, coils) {
+            const totalWidth = x2 - x1;
+            if (coils <= 0 || totalWidth <= 0) return;
+
+            const coilDiameter = totalWidth / coils;
+            const radius = coilDiameter / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+
+            for (let i = 0; i < coils; i++) {
+                const centerX = x1 + i * coilDiameter + radius;
+                ctx.arc(centerX, y, radius, 0, Math.PI, false);
+            }
+            // The path automatically connects to the end point of the last arc
+            ctx.lineTo(x2, y);
+
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a simple pendulum.
+         * @param {CanvasRenderingContext2D} ctx The canvas rendering context.
+         * @param {number} x The x-coordinate of the pivot.
+         * @param {number} yPivot The y-coordinate of the pivot.
+         * @param {number} length The length of the pendulum string.
+         * @param {number} bobRadius The radius of the bob.
+         * @param {boolean} showMassLabel If true, draws the mass label 'm'.
+         * @param {boolean} showLengthLabel If true, draws the length label 'l''.
+         * @param {string} lengthLabelSide Side for the length label ('left' or 'right').
+         */
+        function drawPendulum(ctx, x, yPivot, length, bobRadius, showMassLabel, showLengthLabel, lengthLabelSide) {
+            const yBob = yPivot + length;
+
+            // Draw pendulum string
+            ctx.beginPath();
+            ctx.moveTo(x, yPivot - 30); // Line extends slightly above pivot
+            ctx.lineTo(x, yBob);
+            ctx.stroke();
+
+            // Draw pivot point as small circle
+            ctx.beginPath();
+            ctx.arc(x, yPivot, 2, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Draw bob
+            ctx.beginPath();
+            ctx.arc(x, yBob, bobRadius, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Draw a small circle inside the bob to show attachment point
+            ctx.beginPath();
+            ctx.arc(x, yBob, 2, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.fillStyle = 'black';
+
+
+            // Draw labels
+            ctx.font = 'italic 20px Times New Roman';
+            if (showMassLabel) {
+                ctx.fillText('m', x, yBob + 25);
+            }
+            if (showLengthLabel) {
+                const labelX = (lengthLabelSide === 'left') ? x - 20 : x + 20;
+                ctx.fillText("l'", labelX, yPivot + length / 2);
+            }
+            ctx.font = '20px Times New Roman'; // Reset font
+        }
+
+        // --- Main Drawing ---
+
+        // Figure (a)
+        const yPivot_a = 60;
+        const length_a = 100;
+        const bobRadius_a = 6;
+        const yBob_a = yPivot_a + length_a;
+        const x1_a = 120;
+        const x2_a = 240;
+        
+        drawPendulum(ctx, x1_a, yPivot_a, length_a, bobRadius_a, true, true, 'left');
+        drawPendulum(ctx, x2_a, yPivot_a, length_a, bobRadius_a, true, true, 'right');
+        drawSpring(ctx, x1_a, yBob_a, x2_a, 8);
+        ctx.fillText('(a)', (x1_a + x2_a) / 2, yBob_a + 60);
+
+        // Figure (b)
+        const yPivot_b = 60;
+        const length_b = 100;
+        const bobRadius_b = 6;
+        const yBob_b = yPivot_b + length_b;
+        const x_coords_b = [380, 480, 580, 680];
+
+        drawPendulum(ctx, x_coords_b[0], yPivot_b, length_b, bobRadius_b, true, true, 'left');
+        for (let i = 1; i < x_coords_b.length; i++) {
+            drawPendulum(ctx, x_coords_b[i], yPivot_b, length_b, bobRadius_b, true, false);
+        }
+
+        for (let i = 0; i < x_coords_b.length - 1; i++) {
+            drawSpring(ctx, x_coords_b[i], yBob_b, x_coords_b[i+1], 7);
+        }
+        drawSpring(ctx, x_coords_b[3], yBob_b, x_coords_b[3] + 50, 4); // Partial spring at the end
+        
+        ctx.fillText('(b)', (x_coords_b[0] + x_coords_b[3]) / 2, yBob_b + 60);
+
+        // Figure Caption
+        ctx.fillText('Fig. 2.56.', canvas.width / 2 - 50, canvas.height - 30);
+
+    </script>
+</body>
+</html>

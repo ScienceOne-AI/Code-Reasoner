@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Diagrama de Péndulo Eléctrico</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #d3d3d3;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="400" height="450"></canvas>
+
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Definiciones de estilo y parámetros ---
+  const cx = canvas.width / 2;
+  const topMargin = 60;
+  const suspensionPoint = { x: cx, y: topMargin };
+  const stringLength = 180; // Representa 'l' en píxeles
+  const theta = 0.22; // Ángulo en radianes (aprox. 12.6 grados)
+  const sphereRadius = 15;
+
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 1.5;
+  ctx.font = 'italic 20px Arial';
+  ctx.textAlign = 'center';
+
+  // --- Cálculo de posiciones ---
+  const sphereY = suspensionPoint.y + stringLength * Math.cos(theta);
+  const horizontalDisplacement = stringLength * Math.sin(theta);
+  const leftSphere = { x: suspensionPoint.x - horizontalDisplacement, y: sphereY };
+  const rightSphere = { x: suspensionPoint.x + horizontalDisplacement, y: sphereY };
+
+  // 1. Dibujar el soporte superior
+  ctx.fillStyle = '#e0e0e0';
+  ctx.fillRect(cx - 150, topMargin - 20, 300, 20);
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(cx - 150, topMargin - 20, 300, 20);
+  ctx.fillStyle = 'black';
+
+  // 2. Dibujar el punto de suspensión 'O'
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('O', suspensionPoint.x, suspensionPoint.y - 8);
+
+  // 3. Dibujar la línea vertical discontinua
+  ctx.save();
+  ctx.beginPath();
+  ctx.setLineDash([4, 4]);
+  ctx.moveTo(suspensionPoint.x, suspensionPoint.y);
+  ctx.lineTo(suspensionPoint.x, sphereY + 20);
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+
+  // 4. Dibujar los hilos
+  ctx.beginPath();
+  ctx.moveTo(suspensionPoint.x, suspensionPoint.y);
+  ctx.lineTo(leftSphere.x, leftSphere.y);
+  ctx.moveTo(suspensionPoint.x, suspensionPoint.y);
+  ctx.lineTo(rightSphere.x, rightSphere.y);
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // 5. Dibujar las esferas
+  function drawSphere(x, y, radius) {
+    const gradient = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, radius * 0.1, x, y, radius);
+    gradient.addColorStop(0, 'white');
+    gradient.addColorStop(1, '#606060');
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.strokeStyle = '#333333';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  drawSphere(leftSphere.x, leftSphere.y, sphereRadius);
+  drawSphere(rightSphere.x, rightSphere.y, sphereRadius);
+  ctx.fillStyle = 'black'; // Restaurar el color de relleno
+
+  // 6. Dibujar las etiquetas
+  ctx.textBaseline = 'middle';
+  
+  // Etiquetas 'l'
+  const leftLabelPos = {
+    x: (suspensionPoint.x + leftSphere.x) / 2 - 20,
+    y: (suspensionPoint.y + leftSphere.y) / 2
+  };
+  const rightLabelPos = {
+    x: (suspensionPoint.x + rightSphere.x) / 2 + 20,
+    y: (suspensionPoint.y + rightSphere.y) / 2
+  };
+  ctx.fillText('l', leftLabelPos.x, leftLabelPos.y);
+  ctx.fillText('l', rightLabelPos.x, rightLabelPos.y);
+
+  // Etiquetas 'q'
+  ctx.textAlign = 'right';
+  ctx.fillText('q', leftSphere.x - sphereRadius - 5, leftSphere.y);
+  ctx.textAlign = 'left';
+  ctx.fillText('q', rightSphere.x + sphereRadius + 5, rightSphere.y);
+  ctx.textAlign = 'center'; // Restaurar la alineación
+
+  // Etiquetas y arcos de 'θ'
+  const angleArcRadius = 45;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(suspensionPoint.x, suspensionPoint.y, angleArcRadius, Math.PI / 2 - theta, Math.PI / 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(suspensionPoint.x, suspensionPoint.y, angleArcRadius, Math.PI / 2, Math.PI / 2 + theta);
+  ctx.stroke();
+
+  ctx.font = 'italic 18px Arial';
+  ctx.fillText('θ', suspensionPoint.x - 18, suspensionPoint.y + angleArcRadius * 0.6);
+  ctx.fillText('θ', suspensionPoint.x + 18, suspensionPoint.y + angleArcRadius * 0.6);
+
+  // Anotación 'x'
+  const x_y_level = sphereY + 60;
+  const x_start = leftSphere.x;
+  const x_end = rightSphere.x;
+  const x_mid = (x_start + x_end) / 2;
+
+  ctx.beginPath();
+  ctx.lineWidth = 1;
+  // Líneas guía verticales
+  ctx.moveTo(x_start, sphereY);
+  ctx.lineTo(x_start, x_y_level);
+  ctx.moveTo(x_end, sphereY);
+  ctx.lineTo(x_end, x_y_level);
+  
+  // Línea horizontal con flechas
+  ctx.moveTo(x_mid, x_y_level);
+  ctx.lineTo(x_start, x_y_level);
+  ctx.moveTo(x_mid, x_y_level);
+  ctx.lineTo(x_end, x_y_level);
+
+  // Cabezas de las flechas
+  const arrowSize = 8;
+  ctx.moveTo(x_start + arrowSize, x_y_level - arrowSize / 2);
+  ctx.lineTo(x_start, x_y_level);
+  ctx.lineTo(x_start + arrowSize, x_y_level + arrowSize / 2);
+  
+  ctx.moveTo(x_end - arrowSize, x_y_level - arrowSize / 2);
+  ctx.lineTo(x_end, x_y_level);
+  ctx.lineTo(x_end - arrowSize, x_y_level + arrowSize / 2);
+  ctx.stroke();
+
+  ctx.font = 'italic 20px Arial';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('x', x_mid, x_y_level - 5);
+  
+  // 7. Dibujar el texto en chino
+  ctx.font = '20px "SimSun", "STSong", "sans-serif"'; // Fuentes comunes para chino
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('习题 7-4 图', cx, canvas.height - 15);
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper function to draw text with subscript ---
+    function drawTextWithSubscript(ctx, text, sub, x, y, baseFont, subFont) {
+        const originalFont = ctx.font;
+        const originalBaseline = ctx.textBaseline;
+        
+        ctx.font = baseFont || "italic 24px 'Times New Roman'";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const textMetrics = ctx.measureText(text);
+        const textWidth = textMetrics.width;
+
+        // Position based on the center of the whole expression "text_sub"
+        const subMetrics = ctx.measureText(sub);
+        const subWidth = subMetrics.width * 0.7; // Estimate subscript width in main font context
+        const totalWidth = textWidth + subWidth;
+        const textX = x - totalWidth / 2 + textWidth / 2;
+        const subX = textX + textWidth / 2 + subWidth / 2 - 2;
+
+        ctx.fillText(text, textX, y);
+
+        ctx.font = subFont || "italic 16px 'Times New Roman'";
+        ctx.fillText(sub, subX, y + 6);
+
+        ctx.font = originalFont;
+        ctx.textBaseline = originalBaseline;
+    }
+    
+    // --- Helper function to draw the spring ---
+    function drawSpring(ctx, x, y, length, amplitude, coils) {
+        ctx.beginPath();
+        let currentX = x;
+        const coilWidth = length / coils;
+        const rx = coilWidth / 2;
+        const ry = amplitude;
+
+        // Draw each loop as a separate ellipse for visual accuracy
+        for (let i = 0; i < coils; i++) {
+            ctx.moveTo(currentX, y);
+            ctx.ellipse(currentX + rx, y, rx, ry, 0, Math.PI, 0, true);
+            ctx.ellipse(currentX + rx, y, rx, ry, 0, 0, Math.PI, true);
+            currentX += coilWidth;
+        }
+        ctx.stroke();
+    }
+
+
+    // --- Main Drawing ---
+    
+    // Clear canvas and set styles
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // Define dimensions and positions
+    const y_surface = 250;
+    const block_h = 80;
+    const block_w = 100;
+    
+    // 1. Draw the horizontal surface
+    ctx.beginPath();
+    ctx.moveTo(20, y_surface);
+    ctx.lineTo(780, y_surface);
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.lineWidth = 2; // Reset line width
+
+    // 2. Draw block m1
+    const m1_x = 80;
+    const m1_y = y_surface - block_h;
+    ctx.fillStyle = '#f0f0f0'; // Light gray fill
+    ctx.fillRect(m1_x, m1_y, block_w, block_h);
+    ctx.strokeRect(m1_x, m1_y, block_w, block_h);
+    drawTextWithSubscript(ctx, 'm', '1', m1_x + block_w/2, m1_y + block_h/2);
+
+    // 3. Draw velocity vector v₀
+    const v_y = m1_y + block_h / 2;
+    const v_start_x = m1_x - 70;
+    const v_end_x = m1_x - 10;
+    ctx.beginPath();
+    ctx.moveTo(v_start_x, v_y);
+    ctx.lineTo(v_end_x, v_y);
+    // Arrowhead
+    ctx.moveTo(v_end_x, v_y);
+    ctx.lineTo(v_end_x - 12, v_y - 6);
+    ctx.moveTo(v_end_x, v_y);
+    ctx.lineTo(v_end_x - 12, v_y + 6);
+    ctx.stroke();
+    drawTextWithSubscript(ctx, 'v', '0', v_start_x + 35, v_y - 25);
+
+    // 4. Draw the baffle
+    const baffle_x = 340;
+    const baffle_w = 10;
+    const baffle_h = 90;
+    const baffle_y = y_surface - baffle_h;
+    ctx.fillStyle = '#d3d3d3'; // Gray fill
+    ctx.fillRect(baffle_x, baffle_y, baffle_w, baffle_h);
+    ctx.strokeRect(baffle_x, baffle_y, baffle_w, baffle_h);
+
+    // 5. Draw the spring and its label 'k'
+    const spring_start_x = baffle_x + baffle_w;
+    const spring_y = y_surface - block_h / 2;
+    const spring_length = 200;
+    const spring_coils = 7;
+    const spring_amplitude = 18;
+    
+    // Draw connection to baffle
+    ctx.beginPath();
+    ctx.moveTo(spring_start_x, spring_y - spring_amplitude);
+    ctx.lineTo(spring_start_x, spring_y + spring_amplitude);
+    ctx.stroke();
+
+    drawSpring(ctx, spring_start_x, spring_y, spring_length, spring_amplitude, spring_coils);
+
+    // Label k
+    ctx.font = "italic 24px 'Times New Roman'";
+    ctx.fillStyle = 'black';
+    ctx.fillText('k', spring_start_x + spring_length/2, spring_y - 45);
+
+    // 6. Draw block m2
+    const m2_x = spring_start_x + spring_length;
+    const m2_y = y_surface - block_h;
+    ctx.fillStyle = '#f0f0f0'; // Light gray fill
+    ctx.fillRect(m2_x, m2_y, block_w, block_h);
+    ctx.strokeRect(m2_x, m2_y, block_w, block_h);
+    drawTextWithSubscript(ctx, 'm', '2', m2_x + block_w/2, m2_y + block_h/2);
+
+    // 7. Draw direction arrow on the surface
+    const dir_arrow_start_x = m2_x + block_w + 50;
+    const dir_arrow_end_x = dir_arrow_start_x + 60;
+    ctx.beginPath();
+    ctx.moveTo(dir_arrow_start_x, y_surface);
+    ctx.lineTo(dir_arrow_end_x, y_surface);
+    // Arrowhead
+    ctx.moveTo(dir_arrow_end_x, y_surface);
+    ctx.lineTo(dir_arrow_end_x - 12, y_surface - 6);
+    ctx.moveTo(dir_arrow_end_x, y_surface);
+    ctx.lineTo(dir_arrow_end_x - 12, y_surface + 6);
+    ctx.stroke();
+
+    // 8. Draw the caption
+    ctx.font = "24px 'KaiTi', 'SimSun'"; // Use common Chinese fonts
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 2-29 图', canvas.width / 2, y_surface + 70);
+
+</script>
+</body>
+</html>

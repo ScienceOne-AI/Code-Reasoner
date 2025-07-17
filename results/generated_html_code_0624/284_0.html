@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Recreation</title>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="400" height="400"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Helper Functions ---
+    // Clear canvas with white background
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Set default drawing styles
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = '16px Times New Roman';
+
+    // Helper function to draw an arrow on a line
+    function drawArrow(fromX, fromY, toX, toY) {
+        const headlen = 10;
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // Helper function for labels with subscripts, e.g., m₁
+    function drawMassLabel(base, sub, x, y) {
+        ctx.save();
+        ctx.textAlign = 'left';
+        ctx.font = 'italic 18px Times New Roman';
+        const baseWidth = ctx.measureText(base).width;
+        ctx.fillText(base, x, y);
+        ctx.font = 'italic 14px Times New Roman';
+        ctx.fillText(sub, x + baseWidth - 3, y + 4);
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+
+    // Define key coordinates
+    const origin = { x: 200, y: 150 };
+    const massRadius = 5;
+
+    // 1. Draw the Cone
+    const coneRight = { x: 280, y: 300 };
+    const coneLeft = { x: 120, y: 300 };
+    const coneBaseCenter = { x: 200, y: 300 };
+
+    // Cone sides
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(coneLeft.x, coneLeft.y);
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(coneRight.x, coneRight.y);
+    ctx.stroke();
+
+    // Cone base (dashed ellipse for 3D perspective)
+    ctx.beginPath();
+    ctx.setLineDash([5, 3]);
+    ctx.ellipse(coneBaseCenter.x, coneBaseCenter.y, coneRight.x - coneBaseCenter.x, 20, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line
+
+    // 2. Draw Coordinate Axes
+    // Z-axis (vertical)
+    drawArrow(origin.x, origin.y, origin.x, 50);
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('z', origin.x - 20, 60);
+
+    // Y-axis (horizontal)
+    drawArrow(origin.x, origin.y, 320, origin.y);
+    ctx.fillText('y', 325, origin.y + 8);
+
+    // X-axis (perspective)
+    const xAxisEnd = { x: 100, y: 180 };
+    drawArrow(origin.x, origin.y, xAxisEnd.x, xAxisEnd.y);
+    ctx.fillText('x', xAxisEnd.x - 15, xAxisEnd.y + 5);
+
+    // 3. Draw Masses and Ropes
+    // Mass m2 on the cone surface
+    const m2_pos = { x: 245, y: 235 };
+
+    // Rope from origin to m2
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(m2_pos.x, m2_pos.y);
+    ctx.stroke();
+
+    // Mass m2 circle
+    ctx.beginPath();
+    ctx.arc(m2_pos.x, m2_pos.y, massRadius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+
+    // Mass m1 hanging inside the cone
+    const m1_pos = { x: origin.x, y: 210 };
+
+    // Rope from origin to m1
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(m1_pos.x, m1_pos.y);
+    ctx.stroke();
+
+    // Mass m1 circle
+    ctx.beginPath();
+    ctx.arc(m1_pos.x, m1_pos.y, massRadius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+
+    // 4. Draw Angle α
+    const alphaArcRadius = 35;
+
+    // Dashed line along the negative z-axis for angle reference
+    ctx.beginPath();
+    ctx.setLineDash([2, 2]);
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(origin.x, origin.y + alphaArcRadius + 10);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Angle arc between the z-axis and the rope to m2
+    const startAngle = Math.atan2(m2_pos.y - origin.y, m2_pos.x - origin.y); // Angle of line to m2
+    const endAngle = Math.PI / 2; // Angle of vertical line (negative z-axis)
+    ctx.beginPath();
+    ctx.arc(origin.x, origin.y, alphaArcRadius, startAngle, endAngle);
+    ctx.stroke();
+
+    // 5. Add Labels
+    // Mass labels m₁ and m₂
+    drawMassLabel('m', '1', m1_pos.x + 10, m1_pos.y);
+    drawMassLabel('m', '2', m2_pos.x + 10, m2_pos.y);
+
+    // Angle label α
+    ctx.font = 'italic 18px Times New Roman';
+    ctx.fillText('α', 220, 180);
+
+    // Figure caption
+    ctx.font = '16px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 2.76.', canvas.width / 2, canvas.height - 30);
+
+</script>
+
+</body>
+</html>

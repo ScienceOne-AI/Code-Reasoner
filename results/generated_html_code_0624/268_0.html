@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="450" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Parameters
+        const cx = 220;
+        const cy = 250;
+        const R = 100;
+        const r = 30;
+        const theta = 45 * Math.PI / 180; // 45 degrees in radians
+
+        // --- Drawing ---
+
+        // 1. Large Sphere
+        ctx.beginPath();
+        ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // A small smudge/dot in the large circle as in the original
+        ctx.beginPath();
+        ctx.arc(cx - R/2.5, cy - R/4, 1.5, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+
+        // 2. Small Sphere at theta = 0 (top position)
+        const c1x = cx;
+        const c1y = cy - R - r;
+        ctx.beginPath();
+        ctx.arc(c1x, c1y, r, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 3. Small Sphere at general theta
+        const dist = R + r;
+        const c2x = cx + dist * Math.sin(theta);
+        const c2y = cy - dist * Math.cos(theta);
+        ctx.beginPath();
+        ctx.arc(c2x, c2y, r, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // 4. Line connecting centers of small spheres
+        // The original has a slight curve.
+        ctx.beginPath();
+        ctx.moveTo(c1x, c1y);
+        const controlX = (c1x + c2x) / 2 + 5;
+        const controlY = (c1y + c2y) / 2 + 15;
+        ctx.quadraticCurveTo(controlX, controlY, c2x, c2y);
+        ctx.stroke();
+
+        // 5. Angle theta helpers
+        ctx.setLineDash([4, 4]);
+        // Vertical dashed line
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(c1x, c1y);
+        ctx.stroke();
+        // Angled dashed line
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(c2x, c2y);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset line dash
+
+        // 6. Angle theta arc and label
+        const arcRadius = 40;
+        const startAngle = -Math.PI / 2;
+        const endAngle = startAngle + theta;
+        ctx.beginPath();
+        ctx.arc(cx, cy, arcRadius, startAngle, endAngle);
+        ctx.stroke();
+        // Label theta
+        const labelAngle = startAngle + theta / 2;
+        const labelX = cx + (arcRadius + 15) * Math.cos(labelAngle);
+        const labelY = cy + (arcRadius + 15) * Math.sin(labelAngle);
+        ctx.fillText('θ', labelX, labelY);
+
+        // 7. Radius 'r' marker in top sphere
+        ctx.beginPath();
+        ctx.moveTo(c1x, c1y);
+        ctx.lineTo(c1x - r, c1y); // Horizontal line
+        ctx.moveTo(c1x, c1y);
+        ctx.lineTo(c1x, c1y - r); // Vertical line
+        ctx.stroke();
+        ctx.fillText('r', c1x - r * 0.6, c1y - r * 0.6);
+
+        // 8. Angle 'phi' marker in right sphere (visual replication of the 3D-like axes)
+        const c2c = {x: c2x, y: c2y};
+        const r_phi = r * 0.9;
+        
+        // Dashed line (down-left)
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(c2c.x, c2c.y);
+        ctx.lineTo(c2c.x - r_phi*0.707, c2c.y + r_phi*0.707); // ~225 deg
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Solid line 1 (up-left, tangential-like)
+        const l1_end = {x: c2c.x - r_phi*0.707, y: c2c.y - r_phi*0.707}; // ~135 deg
+        ctx.beginPath();
+        ctx.moveTo(c2c.x, c2c.y);
+        ctx.lineTo(l1_end.x, l1_end.y);
+        ctx.stroke();
+        
+        // Solid line 2 (up-right, 'out of page' axis)
+        const l2_end = {x: c2c.x + r_phi*0.707, y: c2c.y - r_phi*0.707}; // ~-45 deg
+        ctx.beginPath();
+        ctx.moveTo(c2c.x, c2c.y);
+        ctx.lineTo(l2_end.x, l2_end.y);
+        ctx.stroke();
+
+        // Angle phi arc between solid lines
+        const arc_r_phi = r * 0.4;
+        ctx.beginPath();
+        ctx.arc(c2c.x, c2c.y, arc_r_phi, 135*Math.PI/180, -45*Math.PI/180, true);
+        ctx.stroke();
+        
+        // Right angle marker
+        const ras_r = arc_r_phi;
+        const p_on_l1 = {x: c2c.x + ras_r * Math.cos(135*Math.PI/180), y: c2c.y + ras_r * Math.sin(135*Math.PI/180)};
+        const p_on_l2 = {x: c2c.x + ras_r * Math.cos(-45*Math.PI/180), y: c2c.y + ras_r * Math.sin(-45*Math.PI/180)};
+        const corner = {x: p_on_l1.x + p_on_l2.x - c2c.x, y: p_on_l1.y + p_on_l2.y - c2c.y };
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(p_on_l1.x, p_on_l1.y);
+        ctx.lineTo(corner.x, corner.y);
+        ctx.lineTo(p_on_l2.x, p_on_l2.y);
+        ctx.stroke();
+        ctx.lineWidth = 2;
+
+        // Phi label
+        ctx.fillText('φ', c2c.x + r*0.2, c2c.y - r*0.1);
+
+        // 9. Figure Caption
+        ctx.font = '20px Times New Roman';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 1.165.', canvas.width / 2, canvas.height - 25);
+    </script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Filament Lamp I-V Graph</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="560" height="520"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const margin = { top: 60, right: 30, bottom: 80, left: 70 };
+        const graphWidth = canvas.width - margin.left - margin.right;
+        const graphHeight = canvas.height - margin.top - margin.bottom;
+
+        const pdMax = 9.0;
+        const currentMax = 0.8;
+        
+        const gridColor = '#d3d3d3';
+        const axisColor = '#000000';
+        const curveColor = '#000000';
+        const textColor = '#000000';
+
+        // --- Helper Functions for Coordinate Mapping ---
+        function mapX(pd) {
+            return margin.left + (pd / pdMax) * graphWidth;
+        }
+
+        function mapY(current) {
+            return margin.top + graphHeight - (current / currentMax) * graphHeight;
+        }
+
+        // --- Drawing ---
+        // Clear canvas with a white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 1. Draw Title
+        ctx.fillStyle = textColor;
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText('Fig. 9.1 shows a graph of current against potential difference (p.d.) for a filament lamp.', margin.left - 50, 10);
+
+        // 2. Draw Grid
+        ctx.strokeStyle = gridColor;
+        ctx.lineWidth = 1;
+
+        // Minor vertical grid lines (every 0.2 V)
+        for (let pd = 0.2; pd <= pdMax; pd += 0.2) {
+            ctx.beginPath();
+            ctx.moveTo(mapX(pd), margin.top);
+            ctx.lineTo(mapX(pd), margin.top + graphHeight);
+            ctx.stroke();
+        }
+
+        // Minor horizontal grid lines (every 0.02 A)
+        for (let i = 0.02; i <= currentMax; i += 0.02) {
+            // Avoid overdrawing the major lines
+            if ( (i * 100) % 20 !== 0) {
+                 ctx.beginPath();
+                 ctx.moveTo(margin.left, mapY(i));
+                 ctx.lineTo(margin.left + graphWidth, mapY(i));
+                 ctx.stroke();
+            }
+        }
+        
+        // Major horizontal grid lines (every 0.20 A)
+        // Redraw to be on top of minor lines
+        ctx.strokeStyle = gridColor;
+        for (let i = 0.2; i <= currentMax; i += 0.2) {
+            ctx.beginPath();
+            ctx.moveTo(margin.left, mapY(i));
+            ctx.lineTo(margin.left + graphWidth, mapY(i));
+            ctx.stroke();
+        }
+
+
+        // 3. Draw Axes and Labels
+        ctx.strokeStyle = axisColor;
+        ctx.fillStyle = textColor;
+        ctx.lineWidth = 1.5;
+        ctx.font = '14px Arial';
+
+        // X-axis
+        ctx.beginPath();
+        ctx.moveTo(margin.left, margin.top + graphHeight);
+        ctx.lineTo(margin.left + graphWidth, margin.top + graphHeight);
+        ctx.stroke();
+
+        // Y-axis
+        ctx.beginPath();
+        ctx.moveTo(margin.left, margin.top);
+        ctx.lineTo(margin.left, margin.top + graphHeight);
+        ctx.stroke();
+
+        // X-axis labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let pd = 0; pd <= 8.0; pd += 2.0) {
+            ctx.fillText(pd.toFixed(1), mapX(pd), margin.top + graphHeight + 5);
+        }
+        ctx.fillText('0', mapX(0) - 5, margin.top + graphHeight + 5);
+
+
+        // Y-axis labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let i = 0.2; i <= 0.8; i += 0.2) {
+            ctx.fillText(i.toFixed(2), margin.left - 8, mapY(i));
+        }
+        
+
+        // 4. Draw Axis Titles
+        // X-axis title
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.font = '16px Arial';
+        ctx.fillText('p.d. / V', margin.left + graphWidth / 2, margin.top + graphHeight + 30);
+        
+        // Y-axis title
+        ctx.save();
+        ctx.translate(margin.left - 50, margin.top + graphHeight / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('current / A', 0, 0);
+        ctx.restore();
+        
+        // 5. Draw the Curve
+        const points = [
+            [0, 0], [0.5, 0.16], [1.0, 0.26], [1.5, 0.34], [2.0, 0.40],
+            [2.5, 0.45], [3.0, 0.49], [3.5, 0.53], [4.0, 0.56],
+            [4.5, 0.59], [5.0, 0.62], [5.5, 0.64], [6.0, 0.66],
+            [6.5, 0.68], [7.0, 0.70], [7.5, 0.72], [8.0, 0.74],
+            [8.5, 0.76], [8.8, 0.77] 
+        ];
+
+        ctx.strokeStyle = curveColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(mapX(points[0][0]), mapY(points[0][1]));
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(mapX(points[i][0]), mapY(points[i][1]));
+        }
+        ctx.stroke();
+        
+        // 6. Draw Figure Caption
+        ctx.fillStyle = textColor;
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('Fig. 9.1', canvas.width / 2, margin.top + graphHeight + 60);
+
+    </script>
+</body>
+</html>

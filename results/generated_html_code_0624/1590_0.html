@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Transformer Circuit Diagram</title>
+</head>
+<body>
+<canvas id="transformerCanvas" width="660" height="420" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('transformerCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Font ---
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    const baseFont = '16px Arial';
+    const subscriptFont = '12px Arial';
+    ctx.font = baseFont;
+
+    // --- Helper function for subscripted text ---
+    function drawSubscriptText(text, sub, x, y) {
+        ctx.save();
+        ctx.font = baseFont;
+        const textMetrics = ctx.measureText(text);
+        const textWidth = textMetrics.width;
+        ctx.fillText(text, x, y);
+        ctx.font = subscriptFont;
+        ctx.fillText(sub, x + textWidth, y + 4);
+        ctx.restore();
+    }
+
+    // --- Draw Laminated Iron Core ---
+    const coreX = 140, coreY = 80, coreW = 400, coreH = 240;
+    const limbW = 70;
+    const innerX = coreX + limbW;
+    const innerY = coreY + 50;
+    const innerW = coreW - 2 * limbW;
+    const innerH = coreH - 2 * 50;
+
+    ctx.beginPath();
+    ctx.strokeRect(coreX, coreY, coreW, coreH);
+    ctx.clearRect(innerX, innerY, innerW, innerH); // Cut out the middle
+    ctx.strokeRect(innerX, innerY, innerW, innerH); // Draw the inner edge
+
+    // --- Draw Primary Coil (left side) ---
+    const pCoilX = coreX;
+    const pCoilY1 = 110, pCoilY2 = 290;
+    const pTurns = 10;
+    const pRadius = 15;
+    const pSpacing = (pCoilY2 - pCoilY1) / pTurns;
+    const vinTermX = 60;
+
+    ctx.beginPath();
+    // Wires from source
+    ctx.moveTo(vinTermX, pCoilY1);
+    ctx.lineTo(pCoilX, pCoilY1);
+    ctx.moveTo(vinTermX, pCoilY2);
+    ctx.lineTo(pCoilX, pCoilY2);
+
+    // Coil windings (arcs)
+    for (let i = 0; i < pTurns; i++) {
+        let y = pCoilY1 + (i + 0.5) * pSpacing;
+        ctx.moveTo(pCoilX, y - pSpacing / 2.01); // Use moveTo to draw separate arcs
+        ctx.arc(pCoilX, y, pRadius, Math.PI / 2, -Math.PI / 2, true);
+    }
+    ctx.stroke();
+
+    // --- Draw Secondary Coil (right side) ---
+    const sCoilX = coreX + coreW;
+    const sCoilY1 = 140, sCoilY2 = 260;
+    const sTurns = 6;
+    const sRadius = 15;
+    const sSpacing = (sCoilY2 - sCoilY1) / sTurns;
+    const loadTermX = 580;
+    
+    ctx.beginPath();
+    // Wires to load
+    ctx.moveTo(sCoilX, sCoilY1);
+    ctx.lineTo(loadTermX, sCoilY1);
+    ctx.moveTo(sCoilX, sCoilY2);
+    ctx.lineTo(loadTermX, sCoilY2);
+    
+    // Coil windings (arcs)
+    for (let i = 0; i < sTurns; i++) {
+        let y = sCoilY1 + (i + 0.5) * sSpacing;
+        ctx.moveTo(sCoilX, y - sSpacing / 2.01);
+        ctx.arc(sCoilX, y, sRadius, -Math.PI / 2, Math.PI / 2, false);
+    }
+    ctx.stroke();
+
+    // --- Draw Input Source (V_IN) ---
+    const vinYMid = (pCoilY1 + pCoilY2) / 2;
+    // Terminals
+    ctx.beginPath();
+    ctx.arc(vinTermX, pCoilY1, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(vinTermX, pCoilY2, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+
+    // V_IN Label
+    ctx.textAlign = 'left';
+    drawSubscriptText('V', 'IN', 10, vinYMid + 5);
+
+    // Sine wave symbol
+    ctx.beginPath();
+    const sineX = vinTermX, sineY = vinYMid;
+    ctx.moveTo(sineX - 10, sineY);
+    ctx.quadraticCurveTo(sineX - 5, sineY - 15, sineX, sineY);
+    ctx.quadraticCurveTo(sineX + 5, sineY + 15, sineX + 10, sineY);
+    ctx.stroke();
+
+    // --- Draw Load Resistor and V_OUT ---
+    const resYMid = (sCoilY1 + sCoilY2) / 2;
+    // Resistor
+    ctx.beginPath();
+    ctx.moveTo(loadTermX, sCoilY1);
+    ctx.lineTo(loadTermX, resYMid - 25);
+    ctx.strokeRect(loadTermX - 10, resYMid - 25, 20, 50);
+    ctx.moveTo(loadTermX, resYMid + 25);
+    ctx.lineTo(loadTermX, sCoilY2);
+    ctx.stroke();
+    
+    // Output Terminals
+    ctx.beginPath();
+    ctx.arc(loadTermX, sCoilY1, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.arc(loadTermX, sCoilY2, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+
+    // V_OUT double arrow
+    const voutX = loadTermX + 30;
+    ctx.beginPath();
+    ctx.moveTo(voutX, sCoilY1);
+    ctx.lineTo(voutX, sCoilY2);
+    // Arrowheads
+    ctx.moveTo(voutX, sCoilY1); ctx.lineTo(voutX - 4, sCoilY1 + 6);
+    ctx.moveTo(voutX, sCoilY1); ctx.lineTo(voutX + 4, sCoilY1 + 6);
+    ctx.moveTo(voutX, sCoilY2); ctx.lineTo(voutX - 4, sCoilY2 - 6);
+    ctx.moveTo(voutX, sCoilY2); ctx.lineTo(voutX + 4, sCoilY2 - 6);
+    ctx.stroke();
+    
+    // --- Text Labels ---
+    // Resistor value
+    ctx.textAlign = 'right';
+    ctx.fillText('640 Ω', loadTermX - 20, resYMid + 5);
+
+    // V_OUT label
+    ctx.textAlign = 'left';
+    drawSubscriptText('V', 'OUT', voutX + 10, resYMid + 5);
+
+    // Turn counts
+    ctx.textAlign = 'center';
+    ctx.fillText('25 000', innerX + innerW * 0.35, innerY + innerH / 2 - 5);
+    ctx.fillText('turns', innerX + innerW * 0.35, innerY + innerH / 2 + 15);
+
+    ctx.fillText('625', innerX + innerW * 0.7, innerY + innerH / 2 - 5);
+    ctx.fillText('turns', innerX + innerW * 0.7, innerY + innerH / 2 + 15);
+
+    // Core label
+    ctx.textAlign = 'left';
+    ctx.fillText('laminated iron core', coreX + coreW - 130, coreY - 20);
+    ctx.beginPath();
+    ctx.moveTo(coreX + coreW - 80, coreY - 12);
+    ctx.lineTo(coreX + coreW - 10, coreY + 2);
+    // Arrowhead
+    ctx.moveTo(coreX + coreW - 10, coreY + 2);
+    ctx.lineTo(coreX + coreW - 15, coreY - 5);
+    ctx.moveTo(coreX + coreW - 10, coreY + 2);
+    ctx.lineTo(coreX + coreW - 20, coreY + 8);
+    ctx.stroke();
+    
+    // Caption
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 10.1', canvas.width / 2, canvas.height - 20);
+
+</script>
+</body>
+</html>

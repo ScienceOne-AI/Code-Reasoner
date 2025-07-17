@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Diagrama de Anillos Cargados</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="550"></canvas>
+
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Estilo y configuración de parámetros ---
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // --- Transformación de coordenadas ---
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2 - 20; // Desplazar un poco hacia arriba para el pie de foto
+  ctx.translate(cx, cy);
+
+  // --- Parámetros del dibujo ---
+  const R = 120; // Radio vertical de los anillos
+  const l = 100; // La distancia entre los centros es l
+  const Rx_pers = 35; // Radio horizontal para la perspectiva
+  const axisLength = 220;
+  const zAxisLength = 160;
+
+  // --- Función auxiliar para dibujar flechas ---
+  function drawArrow(x1, y1, x2, y2, size = 8) {
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 6), y2 - size * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 6), y2 - size * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // --- Dibujar Ejes ---
+  ctx.lineWidth = 1;
+  ctx.font = 'italic 20px Times New Roman';
+
+  // Eje Y
+  drawArrow(0, axisLength * 0.7, 0, -axisLength * 0.8);
+  ctx.fillText('y', 15, -axisLength * 0.8 - 5);
+
+  // Eje X
+  drawArrow(-axisLength, 0, axisLength, 0);
+  ctx.fillText('x', axisLength + 15, 5);
+
+  // Eje Z
+  const zAngle = -135 * Math.PI / 180;
+  const zx = zAxisLength * Math.cos(zAngle);
+  const zy = -zAxisLength * Math.sin(zAngle); // La coordenada Y en canvas está invertida
+  drawArrow(0, 0, zx, zy);
+  ctx.fillText('z', zx - 15, zy + 10);
+  
+  // La etiqueta 'z' cerca del origen en el eje x
+  ctx.fillText('z', 15, 12);
+
+  // --- Dibujar Anillo Derecho (+q) ---
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.ellipse(l / 2, 0, Rx_pers, R, 0, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  // Sombreado más oscuro para el anillo derecho
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.ellipse(l / 2, 0, Rx_pers, R, 0, -Math.PI / 2 - 0.4, -Math.PI / 2 + 0.4);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(l / 2, 0, Rx_pers, R, 0, Math.PI / 2 - 0.4, Math.PI / 2 + 0.4);
+  ctx.stroke();
+
+
+  // --- Dibujar Anillo Izquierdo (-q) ---
+  ctx.lineWidth = 2.5;
+  // Parte sólida (frontal)
+  ctx.beginPath();
+  ctx.ellipse(-l / 2, 0, Rx_pers, R, 0, Math.PI / 2, 3 * Math.PI / 2);
+  ctx.stroke();
+  // Parte discontinua (posterior)
+  ctx.beginPath();
+  ctx.setLineDash([5, 4]);
+  ctx.ellipse(-l / 2, 0, Rx_pers, R, 0, -Math.PI / 2, Math.PI / 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Sombreado más oscuro para el anillo izquierdo
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.ellipse(-l / 2, 0, Rx_pers, R, 0, -Math.PI / 2 - 0.4, -Math.PI / 2 + 0.4);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(-l / 2, 0, Rx_pers, R, 0, Math.PI / 2 - 0.4, Math.PI / 2 + 0.4);
+  ctx.stroke();
+
+
+  // --- Dibujar Etiquetas y Líneas Auxiliares ---
+  ctx.lineWidth = 1.5;
+  ctx.font = 'italic 20px Times New Roman';
+
+  // Radio R en el anillo derecho
+  ctx.beginPath();
+  ctx.moveTo(l / 2, 0);
+  ctx.lineTo(l / 2 + 22, -85);
+  ctx.stroke();
+  ctx.fillText('R', l / 2 + 15, -45);
+
+  // Radio R en el anillo izquierdo
+  ctx.beginPath();
+  ctx.moveTo(-l / 2, 0);
+  ctx.lineTo(-l / 2 - 22, -85);
+  ctx.stroke();
+  ctx.fillText('R', -l / 2 - 15, -45);
+  
+  // Etiquetas de carga
+  ctx.font = '22px Times New Roman';
+  ctx.fillText('+q', l / 2 + Rx_pers + 20, -R + 10);
+  ctx.fillText('-q', -l / 2 - Rx_pers - 25, -R + 10);
+
+  // Acotación de la distancia l
+  ctx.font = 'italic 20px Times New Roman';
+  const l_y_pos = R + 40;
+  const tick_h = 8;
+  const arrow_size = 6;
+  ctx.lineWidth = 1;
+
+  // Marcas de acotación
+  ctx.beginPath();
+  ctx.moveTo(-l/2, l_y_pos - tick_h/2);
+  ctx.lineTo(-l/2, l_y_pos + tick_h/2);
+  ctx.stroke();
+  
+  ctx.beginPath();
+  ctx.moveTo(l/2, l_y_pos - tick_h/2);
+  ctx.lineTo(l/2, l_y_pos + tick_h/2);
+  ctx.stroke();
+
+  // Línea con flechas para 'l'
+  ctx.beginPath();
+  // Flecha izquierda >
+  ctx.moveTo(-l/2 + arrow_size, l_y_pos - arrow_size/2);
+  ctx.lineTo(-l/2, l_y_pos);
+  ctx.lineTo(-l/2 + arrow_size, l_y_pos + arrow_size/2);
+  // Línea
+  ctx.moveTo(-l/2, l_y_pos);
+  ctx.lineTo(l/2, l_y_pos);
+  // Flecha derecha <
+  ctx.moveTo(l/2 - arrow_size, l_y_pos - arrow_size/2);
+  ctx.lineTo(l/2, l_y_pos);
+  ctx.lineTo(l/2 - arrow_size, l_y_pos + arrow_size/2);
+  ctx.stroke();
+
+  ctx.fillText('l', 0, l_y_pos + 15);
+  
+  // --- Dibujar Pie de Foto ---
+  ctx.font = '24px "KaiTi", "SimSun", serif';
+  ctx.fillText('习题 7-31 图', 0, R + 110);
+
+</script>
+</body>
+</html>

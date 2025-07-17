@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Pulley System Diagram</title>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="400" height="520"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style settings ---
+    const primaryColor = '#000000';
+    const housingFillGray = '#E0E0E0'; // Lighter gray for pulley housing
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = primaryColor;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Helper function to draw an arrow ---
+    function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    // --- Create a pattern for the block/pulley fill to mimic the original image texture ---
+    const fillPatternCanvas = document.createElement('canvas');
+    const fpctx = fillPatternCanvas.getContext('2d');
+    fillPatternCanvas.width = 2;
+    fillPatternCanvas.height = 2;
+    fpctx.fillStyle = 'white';
+    fpctx.fillRect(0, 0, 2, 2);
+    fpctx.fillStyle = '#666666'; // Dark gray dots
+    fpctx.fillRect(0, 1, 1, 1);
+    fpctx.fillRect(1, 0, 1, 1);
+    const fillPattern = ctx.createPattern(fillPatternCanvas, 'repeat');
+
+    // --- Create a pattern for the ground texture ---
+    const groundPatternCanvas = document.createElement('canvas');
+    const gpctx = groundPatternCanvas.getContext('2d');
+    groundPatternCanvas.width = 6;
+    groundPatternCanvas.height = 6;
+    gpctx.fillStyle = '#FFFFFF';
+    gpctx.fillRect(0, 0, 6, 6);
+    gpctx.fillStyle = '#DDDDDD';
+    gpctx.fillRect(0, 0, 1, 1);
+    gpctx.fillRect(3, 3, 1, 1);
+    const groundPattern = ctx.createPattern(groundPatternCanvas, 'repeat');
+
+    // --- Drawing functions ---
+
+    // 1. Draw the ground
+    function drawGround() {
+        const groundY = 440;
+        ctx.beginPath();
+        ctx.moveTo(40, groundY);
+        ctx.lineTo(360, groundY);
+        ctx.stroke();
+        // Ground texture area
+        ctx.fillStyle = groundPattern;
+        ctx.fillRect(40, groundY, 320, 20);
+        ctx.beginPath();
+        ctx.moveTo(40, groundY);
+        ctx.lineTo(360, groundY);
+        ctx.stroke();
+    }
+
+    // Define geometry
+    const groundY = 440;
+    const blockA = { x: 100, w: 80, h: 120 };
+    blockA.y = groundY - blockA.h;
+    const blockB = { x: 230, w: 70, h: 70 };
+    blockB.y = groundY - blockB.h;
+    
+    const ropeAX = blockA.x + blockA.w / 2;
+    const ropeBX = blockB.x + blockB.w / 2;
+    
+    const pulleyX = (ropeAX + ropeBX) / 2;
+    const pulleyY = 150;
+    const pulleyRadius = 40;
+
+    // 2. Draw Blocks and their labels
+    function drawBlocks() {
+        // Block A
+        ctx.fillStyle = fillPattern;
+        ctx.fillRect(blockA.x, blockA.y, blockA.w, blockA.h);
+        ctx.strokeRect(blockA.x, blockA.y, blockA.w, blockA.h);
+        ctx.font = 'bold 24px sans-serif';
+        ctx.fillStyle = primaryColor;
+        ctx.fillText('A', ropeAX, blockA.y + blockA.h / 2);
+
+        // Block B
+        ctx.fillStyle = fillPattern;
+        ctx.fillRect(blockB.x, blockB.y, blockB.w, blockB.h);
+        ctx.strokeRect(blockB.x, blockB.y, blockB.w, blockB.h);
+        ctx.fillText('B', ropeBX, blockB.y + blockB.h / 2);
+    }
+
+    // 3. Draw the ropes
+    function drawRopes() {
+        ctx.beginPath();
+        // Rope for A
+        ctx.moveTo(ropeAX, blockA.y);
+        ctx.lineTo(ropeAX, pulleyY);
+        // Rope for B
+        ctx.moveTo(ropeBX, blockB.y);
+        ctx.lineTo(ropeBX, pulleyY);
+        ctx.stroke();
+    }
+
+    // 4. Draw the pulley system
+    function drawPulley() {
+        // Pulley Wheel
+        ctx.beginPath();
+        ctx.arc(pulleyX, pulleyY, pulleyRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = fillPattern;
+        ctx.fill();
+        ctx.stroke();
+
+        // Pulley Axle Housing
+        const housingWidth = 20;
+        const housingHeight = 50;
+        ctx.fillStyle = housingFillGray;
+        ctx.fillRect(pulleyX - housingWidth / 2, pulleyY - housingHeight / 2, housingWidth, housingHeight);
+        ctx.strokeRect(pulleyX - housingWidth / 2, pulleyY - housingHeight / 2, housingWidth, housingHeight);
+
+        // Rod for force F
+        const rodTopY = pulleyY - housingHeight / 2 - 40;
+        ctx.beginPath();
+        ctx.moveTo(pulleyX, pulleyY - housingHeight / 2);
+        ctx.lineTo(pulleyX, rodTopY);
+        ctx.stroke();
+
+        // Force F Arrow and Label
+        drawArrow(pulleyX, rodTopY, pulleyX, rodTopY - 40, 12);
+        ctx.font = 'italic bold 24px serif';
+        ctx.fillStyle = primaryColor;
+        ctx.textAlign = 'left';
+        ctx.fillText('F', pulleyX + 15, rodTopY - 20);
+    }
+    
+    // 5. Draw the caption
+    function drawCaption() {
+        ctx.font = '22px KaiTi, sans-serif';
+        ctx.fillStyle = primaryColor;
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 1-29 图', canvas.width / 2, 490);
+    }
+
+    // --- Main drawing sequence ---
+    drawGround();
+    drawBlocks();
+    drawRopes();
+    drawPulley();
+    drawCaption();
+
+</script>
+
+</body>
+</html>

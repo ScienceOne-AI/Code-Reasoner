@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spring-Mass System</title>
+</head>
+<body>
+    <canvas id="physicsCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas dimensions to match the image's aspect ratio
+        const canvasWidth = 450;
+        const canvasHeight = 400;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+
+        // --- Drawing Functions ---
+
+        // Draw the fixed support
+        function drawSupport(ctx) {
+            const startX = 140;
+            const endX = 310;
+            const y = 50;
+            const hatchLength = 15;
+            const hatchAngle = Math.PI / 4;
+
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+
+            // Main horizontal line
+            ctx.beginPath();
+            ctx.moveTo(startX, y);
+            ctx.lineTo(endX, y);
+            ctx.stroke();
+
+            // Hatching lines
+            ctx.lineWidth = 1;
+            for (let x = startX; x <= endX; x += 10) {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - hatchLength * Math.cos(hatchAngle), y - hatchLength * Math.sin(hatchAngle));
+                ctx.stroke();
+            }
+        }
+
+        // Draw the spring using arcs
+        function drawSpring(ctx) {
+            const centerX = 225;
+            const startY = 50;
+            const radius = 20;
+            const numCoils = 18;
+            const coilHeight = 8;
+            const springLength = numCoils * coilHeight;
+
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'black';
+
+            // Top connector
+            ctx.beginPath();
+            ctx.moveTo(centerX, startY);
+            ctx.lineTo(centerX, startY + coilHeight / 2);
+            ctx.stroke();
+
+            // Coils
+            ctx.beginPath();
+            // Start from the end of the top connector
+            let currentY = startY + coilHeight / 2;
+            ctx.moveTo(centerX, currentY);
+            // Draw a series of connected arcs
+            for (let i = 0; i < numCoils; i++) {
+                ctx.arc(centerX, currentY + coilHeight / 4, radius, Math.PI, 0, false);
+                currentY += coilHeight / 2;
+                ctx.arc(centerX, currentY + coilHeight / 4, radius, 0, Math.PI, false);
+                currentY += coilHeight / 2;
+            }
+            ctx.stroke();
+
+            const endY = startY + springLength + coilHeight / 2;
+            // Bottom connector
+            ctx.beginPath();
+            ctx.moveTo(centerX, endY);
+            ctx.lineTo(centerX, endY + 5);
+            ctx.stroke();
+
+            return endY + 5; // Return the y-coordinate for the top of the object
+        }
+
+        // Draw the object
+        function drawObject(ctx, topY) {
+            const width = 90;
+            const height = 45;
+            const x = 225 - width / 2;
+            const y = topY;
+            
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'black';
+            ctx.fillStyle = '#cccccc'; // Grey color
+            ctx.fillRect(x, y, width, height);
+            ctx.strokeRect(x, y, width, height);
+
+            return { x: x, y: y, width: width, height: height }; // Return object dimensions
+        }
+
+        // Draw labels and arrows
+        function drawLabels(ctx, objectRect) {
+            ctx.fillStyle = 'black';
+            ctx.font = '22px sans-serif';
+            ctx.lineWidth = 1;
+
+            // "spring" label
+            const springLabelX = 100;
+            const springLabelY = 130;
+            ctx.textAlign = 'right';
+            ctx.fillText('spring', springLabelX, springLabelY);
+            // Leader line for spring
+            ctx.beginPath();
+            ctx.moveTo(springLabelX + 5, springLabelY - 8);
+            ctx.lineTo(225 - 20 - 5, springLabelY - 8); // Pointing to the side of the spring
+            ctx.stroke();
+
+            // "object" label
+            const objectLabelX = 100;
+            const objectLabelY = objectRect.y + objectRect.height / 2 + 8;
+            ctx.textAlign = 'right';
+            ctx.fillText('object', objectLabelX, objectLabelY);
+            // Leader line for object
+            ctx.beginPath();
+            ctx.moveTo(objectLabelX + 5, objectLabelY - 8);
+            ctx.lineTo(objectRect.x, objectLabelY - 8);
+            ctx.stroke();
+            
+            // "oscillation" arrow and label
+            ctx.textAlign = 'left';
+            ctx.lineWidth = 1.5;
+            const arrowX = objectRect.x + objectRect.width + 30;
+            const arrowCenterY = objectRect.y + objectRect.height / 2;
+            const arrowLength = 60;
+            const arrowHeadSize = 8;
+            ctx.fillText('oscillation', arrowX + 15, arrowCenterY + 7);
+            // Arrow line
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowCenterY - arrowLength / 2);
+            ctx.lineTo(arrowX, arrowCenterY + arrowLength / 2);
+            ctx.stroke();
+            // Top arrowhead
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowCenterY - arrowLength / 2);
+            ctx.lineTo(arrowX - arrowHeadSize / 2, arrowCenterY - arrowLength / 2 + arrowHeadSize);
+            ctx.moveTo(arrowX, arrowCenterY - arrowLength / 2);
+            ctx.lineTo(arrowX + arrowHeadSize / 2, arrowCenterY - arrowLength / 2 + arrowHeadSize);
+            ctx.stroke();
+            // Bottom arrowhead
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowCenterY + arrowLength / 2);
+            ctx.lineTo(arrowX - arrowHeadSize / 2, arrowCenterY + arrowLength / 2 - arrowHeadSize);
+            ctx.moveTo(arrowX, arrowCenterY + arrowLength / 2);
+            ctx.lineTo(arrowX + arrowHeadSize / 2, arrowCenterY + arrowLength / 2 - arrowHeadSize);
+            ctx.stroke();
+
+            // "Fig. 3.1" caption
+            ctx.font = 'bold 22px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Fig. 3.1', canvasWidth / 2, 350);
+        }
+
+        // --- Main Execution ---
+        drawSupport(ctx);
+        const objectTopY = drawSpring(ctx);
+        const objectRect = drawObject(ctx, objectTopY);
+        drawLabels(ctx, objectRect);
+
+    </script>
+</body>
+</html>

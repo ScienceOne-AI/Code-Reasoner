@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Damped Oscillation and its Fourier Transform</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="850" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow on a path
+    function drawArrowHead(ctx, tox, toy, angle) {
+        const headlen = 10;
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    }
+
+    // Helper function to draw a thick arrow
+    function drawThickArrow(ctx, fromx, fromy, tox, toy, width) {
+        const headlen = width * 3;
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = width;
+        
+        // Line
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        
+        // Head
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.restore();
+    }
+
+
+    // --- General Style ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // --- Left Plot: Time Domain ---
+    const x_start_L = 80;
+    const y_axis_L = 200;
+    const x_axis_length_L = 300;
+    const y_axis_height_L = 150;
+
+    // Axes
+    ctx.beginPath();
+    ctx.moveTo(x_start_L, y_axis_L);
+    ctx.lineTo(x_start_L + x_axis_length_L, y_axis_L); // x-axis
+    drawArrowHead(ctx, x_start_L + x_axis_length_L, y_axis_L, 0);
+    ctx.moveTo(x_start_L, y_axis_L);
+    ctx.lineTo(x_start_L, y_axis_L - y_axis_height_L); // y-axis
+    drawArrowHead(ctx, x_start_L, y_axis_L - y_axis_height_L, -Math.PI / 2);
+    ctx.stroke();
+    
+    // Labels
+    ctx.fillText('t', x_start_L + x_axis_length_L + 15, y_axis_L);
+    ctx.fillText('E(t)', x_start_L - 35, y_axis_L - y_axis_height_L + 20);
+
+    // Damped Oscillation
+    const E0 = 80;      // Initial amplitude in pixels
+    const tau_c = 120;  // Damping time constant in pixels
+    const omega = 0.3;  // Angular frequency
+    
+    ctx.lineWidth = 1.5;
+    // Envelope (dashed lines)
+    ctx.beginPath();
+    ctx.setLineDash([4, 4]);
+    ctx.moveTo(x_start_L, y_axis_L - E0);
+    for (let x = 1; x <= 280; x++) {
+        const y_env = E0 * Math.exp(-x / tau_c);
+        ctx.lineTo(x_start_L + x, y_axis_L - y_env);
+    }
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(x_start_L, y_axis_L + E0);
+    for (let x = 1; x <= 280; x++) {
+        const y_env = E0 * Math.exp(-x / tau_c);
+        ctx.lineTo(x_start_L + x, y_axis_L + y_env);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Waveform (solid line)
+    ctx.beginPath();
+    ctx.moveTo(x_start_L, y_axis_L - E0);
+    for (let x = 1; x <= 280; x++) {
+        const y = E0 * Math.exp(-x / tau_c) * Math.cos(omega * x);
+        ctx.lineTo(x_start_L + x, y_axis_L - y);
+    }
+    ctx.stroke();
+
+    // Damping time τ_c indicator
+    const y_tau_arrow = y_axis_L + 40;
+    const x_tau_end = x_start_L + tau_c;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x_start_L, y_tau_arrow);
+    ctx.lineTo(x_tau_end, y_tau_arrow);
+    drawArrowHead(ctx, x_start_L, y_tau_arrow, Math.PI);
+    drawArrowHead(ctx, x_tau_end, y_tau_arrow, 0);
+    ctx.stroke();
+    ctx.fillText('\u03C4', x_start_L + tau_c / 2, y_tau_arrow + 18);
+    ctx.font = 'italic 16px Times New Roman';
+    ctx.fillText('c', x_start_L + tau_c / 2 + 8, y_tau_arrow + 22);
+    ctx.font = 'italic 22px Times New Roman';
+    
+    ctx.beginPath();
+    ctx.setLineDash([3, 3]);
+    ctx.moveTo(x_tau_end, y_axis_L);
+    ctx.lineTo(x_tau_end, y_tau_arrow);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // --- Connecting Arrow ---
+    drawThickArrow(ctx, 400, 150, 460, 150, 4);
+
+    // --- Right Plot: Frequency Domain ---
+    ctx.lineWidth = 1.5;
+    const x_start_R = 500;
+    const y_axis_R = 300;
+    const x_axis_length_R = 280;
+    const y_axis_height_R = 200;
+
+    // Axes
+    ctx.beginPath();
+    ctx.moveTo(x_start_R, y_axis_R);
+    ctx.lineTo(x_start_R + x_axis_length_R, y_axis_R); // x-axis
+    drawArrowHead(ctx, x_start_R + x_axis_length_R, y_axis_R, 0);
+    ctx.moveTo(x_start_R, y_axis_R);
+    ctx.lineTo(x_start_R, y_axis_R - y_axis_height_R); // y-axis
+    drawArrowHead(ctx, x_start_R, y_axis_R - y_axis_height_R, -Math.PI / 2);
+    ctx.stroke();
+
+    // Labels
+    ctx.fillText('I(\u03BD)', x_start_R - 35, y_axis_R - y_axis_height_R + 20);
+    ctx.fillText('\u03BD', x_start_R + x_axis_length_R + 15, y_axis_R);
+    
+    // Lorentzian Peak
+    const x_peak = x_start_R + 125;
+    const H = 180; // Peak height
+    const gamma = 25; // Half-width at half-maximum
+    
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x_start_R, y_axis_R);
+    for (let dx = -125; dx <= 140; dx++) {
+        const x = x_peak + dx;
+        const y = y_axis_R - H * Math.pow(gamma, 2) / (Math.pow(dx, 2) + Math.pow(gamma, 2));
+        ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    
+    // Peak position ν_0
+    ctx.fillText('\u03BD', x_peak, y_axis_R + 20);
+    ctx.font = 'italic 16px Times New Roman';
+    ctx.fillText('0', x_peak + 8, y_axis_R + 24);
+    ctx.font = 'italic 22px Times New Roman';
+
+    // Linewidth Δν
+    const y_half_max = y_axis_R - H / 2;
+    const x1_half = x_peak - gamma;
+    const x2_half = x_peak + gamma;
+    
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x1_half, y_half_max);
+    ctx.lineTo(x2_half, y_half_max);
+    drawArrowHead(ctx, x1_half, y_half_max, Math.PI);
+    drawArrowHead(ctx, x2_half, y_half_max, 0);
+    ctx.stroke();
+    
+    ctx.fillText('\u0394\u03BD', x_peak, y_half_max - 15);
+
+</script>
+</body>
+</html>

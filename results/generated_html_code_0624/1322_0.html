@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Young's Double Slit Interference Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="550" height="550"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow on a line
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.strokeStyle = ctx.fillStyle;
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Helper function to draw a double-headed arrow
+    function drawDoubleArrow(ctx, x1, y1, x2, y2, headlen = 10) {
+        drawArrow(ctx, x1, y1, x2, y2, headlen);
+        drawArrow(ctx, x2, y2, x1, y1, headlen);
+    }
+    
+    // --- Main Drawing ---
+
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    
+    // Coordinates and Dimensions
+    const cornerX = 200;
+    const cornerY = 320;
+    const armLength = 80;
+    const screenY = 100;
+
+    // 1. Draw the Apparatus (the corner barrier)
+    ctx.beginPath();
+    ctx.moveTo(cornerX, cornerY);
+    ctx.lineTo(cornerX, cornerY - armLength); // Vertical arm
+    ctx.moveTo(cornerX, cornerY);
+    ctx.lineTo(cornerX + armLength, cornerY); // Horizontal arm
+    ctx.stroke();
+
+    // 2. Label the apparatus
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('a', cornerX - 25, cornerY - armLength / 2 + 5);
+    ctx.fillText('a', cornerX + armLength / 2 - 10, cornerY - 10);
+    ctx.font = '22px Times New Roman';
+    ctx.fillText('A', cornerX - 35, cornerY - armLength / 2 + 20);
+    ctx.fillText('B', cornerX + armLength / 2 + 10, cornerY - 10);
+
+    // 3. Draw the Screen
+    ctx.lineWidth = 1.5;
+    drawArrow(ctx, 50, screenY, 480, screenY);
+    ctx.font = '24px KaiTi';
+    ctx.fillText('屏幕', 400, screenY - 20);
+
+    // 4. Draw the distance 'b'
+    ctx.lineWidth = 1;
+    ctx.fillStyle = 'black';
+    ctx.strokeStyle = 'black';
+    drawDoubleArrow(ctx, 320, cornerY, 320, screenY, 8);
+    ctx.font = 'italic 22px Times New Roman';
+    const b_y_pos = (cornerY + screenY) / 2;
+    ctx.fillText('b', 330, b_y_pos - 10);
+    const muchGreaterThan = '\u226B'; // Unicode for MUCH GREATER-THAN
+    ctx.fillText(`b ${muchGreaterThan} a`, 330, b_y_pos + 15);
+
+    // 5. Draw Incoming Light (rays and wavefronts)
+    ctx.save();
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    
+    // Rays (slope -1)
+    drawArrow(ctx, 300, 450, 200, 350, 10);
+    drawArrow(ctx, 340, 410, 240, 310, 10);
+    drawArrow(ctx, 380, 370, 280, 270, 10);
+
+    // Wavefronts (dashed, slope 1)
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(210, 460); ctx.lineTo(330, 340);
+    ctx.moveTo(250, 500); ctx.lineTo(370, 380);
+    ctx.stroke();
+    ctx.restore();
+
+    // 6. Draw the 135° angle
+    ctx.lineWidth = 1;
+    const angleCenterX = cornerX;
+    const angleCenterY = cornerY + 40;
+    const angleRadius = 25;
+
+    // Draw reference ray and vertical line for the angle
+    ctx.beginPath();
+    ctx.moveTo(angleCenterX, angleCenterY);
+    ctx.lineTo(angleCenterX, angleCenterY - 70); // Upward part of vertical line
+    ctx.stroke();
+    drawArrow(ctx, angleCenterX + 40, angleCenterY + 40, angleCenterX - 30, angleCenterY - 30, 8);
+
+    // Draw the arc (from downward vertical (270 deg) to ray (135 deg), clockwise)
+    ctx.beginPath();
+    const startAngle = 270 * Math.PI / 180;
+    const endAngle = 135 * Math.PI / 180;
+    ctx.arc(angleCenterX, angleCenterY, angleRadius, startAngle, endAngle, true); // true for counter-clockwise
+    ctx.stroke();
+
+    // Arrowhead for the arc
+    const arcArrowAngle = endAngle;
+    const arcArrowX = angleCenterX + angleRadius * Math.cos(arcArrowAngle);
+    const arcArrowY = angleCenterY + angleRadius * Math.sin(arcArrowAngle);
+    ctx.save();
+    ctx.translate(arcArrowX, arcArrowY);
+    ctx.rotate(arcArrowAngle - Math.PI / 2); // Align with tangent
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.lineTo(-4, -5);
+    ctx.lineTo(4, -5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Label the angle
+    ctx.font = '20px Times New Roman';
+    ctx.fillText('135°', angleCenterX - 65, angleCenterY + 10);
+
+    // 7. Label wavelength λ
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('λ', 390, 350);
+
+</script>
+
+</body>
+</html>

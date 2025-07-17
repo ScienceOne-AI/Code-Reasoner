@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>P-V Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="pvDiagramCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('pvDiagramCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Dimensions and styling
+        const canvasWidth = 800;
+        const canvasHeight = 700;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        const margin = { top: 40, right: 160, bottom: 80, left: 80 };
+        const graphWidth = canvasWidth - margin.left - margin.right;
+        const graphHeight = canvasHeight - margin.top - margin.bottom;
+
+        const volMin = 0.75, volMax = 2.50;
+        const presMin = 1.0, presMax = 7.0;
+
+        const volRange = volMax - volMin;
+        const presRange = presMax - presMin;
+
+        // Colors and fonts
+        const bgColor = '#FFFFFF';
+        const gridColor = '#E0E0E0';
+        const axisColor = '#000000';
+        const textColor = '#000000';
+        const pathColor = '#000000';
+        const baseFont = '14px Arial';
+        const labelFont = '16px Arial';
+        const axisLabelFont = '16px Arial';
+        const supFont = '10px Arial';
+        const figFont = '16px Arial';
+
+        // --- Helper Functions ---
+
+        // Map data coordinates to canvas coordinates
+        function mapX(volume) {
+            return margin.left + ((volume - volMin) / volRange) * graphWidth;
+        }
+
+        function mapY(pressure) {
+            return margin.top + graphHeight - ((pressure - presMin) / presRange) * graphHeight;
+        }
+
+        // Function to draw text with superscripts
+        function drawFormattedText(text, x, y, align = 'left') {
+            ctx.save();
+            ctx.font = baseFont;
+            ctx.fillStyle = textColor;
+            ctx.textAlign = align;
+            ctx.textBaseline = 'middle';
+
+            const baseFontSize = parseInt(baseFont.match(/\d+/)[0], 10);
+            const supOffset = baseFontSize * 0.4;
+
+            const parts = text.split(/(<sup>.*?<\/sup>)/g);
+            let totalWidth = 0;
+            if (align !== 'left') {
+                 totalWidth = parts.reduce((width, part) => {
+                    if (part.startsWith('<sup>')) {
+                        ctx.font = supFont;
+                        return width + ctx.measureText(part.replace(/<\/?sup>/g, '')).width;
+                    } else {
+                        ctx.font = baseFont;
+                        return width + ctx.measureText(part).width;
+                    }
+                }, 0);
+            }
+
+            let currentX = x;
+            if (align === 'center') {
+                currentX -= totalWidth / 2;
+            } else if (align === 'right') {
+                currentX -= totalWidth;
+            }
+
+
+            parts.forEach(part => {
+                if (part.startsWith('<sup>')) {
+                    ctx.font = supFont;
+                    const content = part.replace(/<\/?sup>/g, '');
+                    ctx.fillText(content, currentX, y - supOffset);
+                    currentX += ctx.measureText(content).width;
+                } else {
+                    ctx.font = baseFont;
+                    ctx.fillText(part, currentX, y);
+                    currentX += ctx.measureText(part).width;
+                }
+            });
+
+            ctx.restore();
+        }
+
+        // Function to draw an arrow
+        function drawArrow(ctx, x, y, angle, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2.5);
+            ctx.lineTo(-size, size / 2.5);
+            ctx.closePath();
+            ctx.fillStyle = pathColor;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // --- Drawing Functions ---
+
+        function drawGrid() {
+            ctx.strokeStyle = gridColor;
+            ctx.lineWidth = 1;
+
+            // Vertical grid lines (major and minor)
+            const vMinorStep = 0.05;
+            for (let v = volMin; v <= volMax + 0.001; v += vMinorStep) {
+                ctx.beginPath();
+                const x = mapX(v);
+                ctx.moveTo(x, margin.top);
+                ctx.lineTo(x, margin.top + graphHeight);
+                ctx.stroke();
+            }
+
+            // Horizontal grid lines (major and minor)
+            const hMinorStep = 0.1;
+            for (let p = presMin; p <= presMax + 0.001; p += hMinorStep) {
+                ctx.beginPath();
+                const y = mapY(p);
+                ctx.moveTo(margin.left, y);
+                ctx.lineTo(margin.left + graphWidth, y);
+                ctx.stroke();
+            }
+        }
+
+        function drawAxes() {
+            ctx.strokeStyle = axisColor;
+            ctx.lineWidth = 1.5;
+
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, margin.top + graphHeight);
+            ctx.stroke();
+
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top + graphHeight);
+            ctx.lineTo(margin.left + graphWidth, margin.top + graphHeight);
+            ctx.stroke();
+
+            // Axis Ticks and Labels
+            ctx.fillStyle = textColor;
+            ctx.font = labelFont;
+            
+            // X-axis labels
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            const vMajorStep = 0.25;
+            for (let v = volMin; v <= volMax + 0.001; v += vMajorStep) {
+                const x = mapX(v);
+                ctx.fillText(v.toFixed(2), x, margin.top + graphHeight + 8);
+            }
+            // X-axis title
+            ctx.textAlign = 'center';
+            drawFormattedText('volume / 10<sup>-3</sup> m<sup>3</sup>', margin.left + graphWidth / 2, margin.top + graphHeight + 40);
+            
+            // Y-axis labels
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            const hMajorStep = 1.0;
+            for (let p = presMin; p <= presMax + 0.001; p += hMajorStep) {
+                const y = mapY(p);
+                ctx.fillText(p.toFixed(1), margin.left - 10, y);
+            }
+            // Y-axis title
+            ctx.save();
+            ctx.translate(margin.left - 55, margin.top + graphHeight / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            drawFormattedText('pressure / 10<sup>5</sup> Pa', 0, 0);
+            ctx.restore();
+        }
+
+        function drawCycle() {
+            const A = { v: 2.4, p: 1.6 };
+            const B = { v: 0.87, p: 6.6 };
+            const C = { v: 0.87, p: 1.6 };
+
+            const Ax = mapX(A.v), Ay = mapY(A.p);
+            const Bx = mapX(B.v), By = mapY(B.p);
+            const Cx = mapX(C.v), Cy = mapY(C.p);
+
+            ctx.strokeStyle = pathColor;
+            ctx.lineWidth = 2;
+
+            // Path C -> A (isobaric)
+            ctx.beginPath();
+            ctx.moveTo(Cx, Cy);
+            ctx.lineTo(Ax, Ay);
+            ctx.stroke();
+            drawArrow(ctx, (Cx + Ax) / 2 + 30, Cy, 0, 8); // Right arrow
+
+            // Path B -> C (isochoric)
+            ctx.beginPath();
+            ctx.moveTo(Bx, By);
+            ctx.lineTo(Cx, Cy);
+            ctx.stroke();
+            drawArrow(ctx, Bx, (By + Cy) / 2, -Math.PI / 2, 8); // Down arrow
+
+            // Path A -> B (adiabatic curve)
+            ctx.beginPath();
+            ctx.moveTo(Ax, Ay);
+            const c1x = mapX(2.0), c1y = mapY(1.6);
+            const c2x = mapX(0.87), c2y = mapY(5.0);
+            ctx.bezierCurveTo(c1x, c1y, c2x, c2y, Bx, By);
+            ctx.stroke();
+            
+            // Arrow on the curve A -> B
+            const t = 0.55; 
+            const inv_t = 1 - t;
+            const midX = inv_t**3*Ax + 3*inv_t**2*t*c1x + 3*inv_t*t**2*c2x + t**3*Bx;
+            const midY = inv_t**3*Ay + 3*inv_t**2*t*c1y + 3*inv_t*t**2*c2y + t**3*By;
+            const dx = 3*inv_t**2*(c1x-Ax) + 6*inv_t*t*(c2x-c1x) + 3*t**2*(Bx-c2x);
+            const dy = 3*inv_t**2*(c1y-Ay) + 6*inv_t*t*(c2y-c1y) + 3*t**2*(By-c2y);
+            const angle = Math.atan2(dy, dx);
+            drawArrow(ctx, midX, midY, angle, 8);
+
+
+            // Point labels
+            ctx.font = 'bold 16px Arial';
+            ctx.fillStyle = textColor;
+            ctx.fillText('A', Ax + 10, Ay + 10);
+            ctx.fillText('B', Bx - 15, By - 5);
+            ctx.fillText('C', Cx - 15, Cy + 15);
+        }
+
+        function drawDataBoxes() {
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = axisColor;
+            const boxW = 145, boxH = 75;
+
+            // Box for B
+            const boxB_x = mapX(0.95);
+            const boxB_y = mapY(7.0);
+            ctx.strokeRect(boxB_x, boxB_y, boxW, boxH);
+            drawFormattedText('8.7 × 10<sup>-4</sup> m<sup>3</sup>', boxB_x + boxW / 2, boxB_y + 18, 'center');
+            drawFormattedText('6.6 × 10<sup>5</sup> Pa', boxB_x + boxW / 2, boxB_y + 38, 'center');
+            drawFormattedText('450 K', boxB_x + boxW / 2, boxB_y + 58, 'center');
+
+            // Box for C
+            const boxC_x = mapX(0.95);
+            const boxC_y = mapY(2.6);
+            ctx.strokeRect(boxC_x, boxC_y, boxW, boxH);
+            drawFormattedText('8.7 × 10<sup>-4</sup> m<sup>3</sup>', boxC_x + boxW / 2, boxC_y + 18, 'center');
+            drawFormattedText('1.6 × 10<sup>5</sup> Pa', boxC_x + boxW / 2, boxC_y + 38, 'center');
+            drawFormattedText('110 K', boxC_x + boxW / 2, boxC_y + 58, 'center');
+            
+            // Box for A
+            const boxA_x = mapX(1.95);
+            const boxA_y = mapY(3.5);
+            ctx.strokeRect(boxA_x, boxA_y, boxW, boxH);
+            drawFormattedText('2.4 × 10<sup>-3</sup> m<sup>3</sup>', boxA_x + boxW / 2, boxA_y + 18, 'center');
+            drawFormattedText('1.6 × 10<sup>5</sup> Pa', boxA_x + boxW / 2, boxA_y + 38, 'center');
+            drawFormattedText('300 K', boxA_x + boxW / 2, boxA_y + 58, 'center');
+            // Leader line for A
+            ctx.beginPath();
+            ctx.moveTo(boxA_x + boxW, boxA_y + boxH - 15);
+            ctx.lineTo(mapX(2.4), mapY(1.6));
+            ctx.stroke();
+        }
+
+        function drawCaption() {
+            ctx.font = figFont;
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'center';
+            ctx.fillText('Fig. 2.1', canvasWidth / 2, canvasHeight - 20);
+        }
+
+        // --- Main Drawing ---
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        drawGrid();
+        drawAxes();
+        drawCycle();
+        drawDataBoxes();
+        drawCaption();
+    </script>
+</body>
+</html>

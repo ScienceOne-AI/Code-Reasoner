@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spring-Mass System</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="400" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = '#000';
+        ctx.fillStyle = '#000';
+        ctx.lineWidth = 1.5;
+        ctx.font = '20px Arial';
+
+        // Center of the diagram
+        const centerX = canvas.width / 2;
+
+        // 1. Draw the fixed support (ceiling)
+        function drawSupport(x_center, y, width) {
+            ctx.beginPath();
+            // Main horizontal line
+            ctx.moveTo(x_center - width / 2, y);
+            ctx.lineTo(x_center + width / 2, y);
+            
+            // Hatching lines
+            const hatchCount = 10;
+            const hatchLength = 15;
+            for (let i = 0; i <= hatchCount; i++) {
+                const x_start = x_center - width / 2 + (i * width / hatchCount);
+                ctx.moveTo(x_start, y);
+                ctx.lineTo(x_start - hatchLength / 2, y - hatchLength);
+            }
+            ctx.stroke();
+        }
+
+        // 2. Draw the spring
+        function drawSpring(x_center, y_start, length, coils, amplitude) {
+            ctx.beginPath();
+            
+            // Top connector
+            ctx.moveTo(x_center, y_start);
+            const lineTopEnd = y_start + 20;
+            ctx.lineTo(x_center, lineTopEnd);
+
+            // Coils
+            const springBodyLength = length - 40;
+            const segmentLength = springBodyLength / (coils * 2);
+            let currentY = lineTopEnd;
+
+            for (let i = 0; i < coils * 2; i++) {
+                const controlX = (i % 2 === 0) ? x_center - amplitude : x_center + amplitude;
+                const endY = currentY + segmentLength;
+                const controlY = currentY + segmentLength / 2;
+                ctx.quadraticCurveTo(controlX, controlY, x_center, endY);
+                currentY = endY;
+            }
+            
+            // Bottom connector
+            const lineBottomEnd = y_start + length;
+            ctx.lineTo(x_center, lineBottomEnd);
+
+            ctx.stroke();
+
+            // Label 'k'
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.fillText('k', x_center + amplitude, y_start + length / 2);
+        }
+
+        // 3. Draw a mass block
+        function drawMass(x_center, y, width, height, label, subscript) {
+            ctx.beginPath();
+            const x = x_center - width / 2;
+            ctx.rect(x, y, width, height);
+            ctx.stroke();
+            
+            // Label inside the box
+            ctx.textAlign = 'center';
+            // Main letter 'm'
+            ctx.font = 'italic 22px Times New Roman';
+            ctx.fillText(label, x_center - 4, y + height / 2 + 8);
+            // Subscript
+            ctx.font = 'italic 16px Times New Roman';
+            ctx.fillText(subscript, x_center + 10, y + height / 2 + 12);
+        }
+
+        // 4. Draw a connecting line
+        function drawConnector(x_center, y_start, y_end) {
+            ctx.beginPath();
+            ctx.moveTo(x_center, y_start);
+            ctx.lineTo(x_center, y_end);
+            ctx.stroke();
+        }
+
+        // 5. Draw the caption
+        function drawCaption(text, x, y) {
+            ctx.font = '24px SimHei'; // Font that supports Chinese characters
+            ctx.textAlign = 'center';
+            ctx.fillText(text, x, y);
+        }
+
+        // --- Drawing sequence ---
+
+        const supportY = 100;
+        const springStartY = 100;
+        const springLength = 160;
+        const mass1Y = springStartY + springLength;
+        const massWidth = 60;
+        const massHeight = 40;
+        const connectorLength = 20;
+        const mass2Y = mass1Y + massHeight + connectorLength;
+
+        // Draw components
+        drawSupport(centerX, supportY, 120);
+        drawSpring(centerX, springStartY, springLength, 4, 20);
+        drawMass(centerX, mass1Y, massWidth, massHeight, 'm', '1');
+        drawConnector(centerX, mass1Y + massHeight, mass2Y);
+        drawMass(centerX, mass2Y, massWidth, massHeight, 'm', '2');
+        drawCaption('力图 3.1.1', centerX, mass2Y + massHeight + 60);
+
+    </script>
+</body>
+</html>

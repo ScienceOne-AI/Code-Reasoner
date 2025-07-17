@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Clear canvas with a white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // General settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper function to draw the magnetic field (B) symbol ---
+        function drawBField(x, y) {
+            const radius = 15;
+            const crossRadius = radius * 0.7;
+            
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            // Draw the circle
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Draw the cross inside the circle
+            ctx.beginPath();
+            ctx.moveTo(x - crossRadius, y - crossRadius);
+            ctx.lineTo(x + crossRadius, y + crossRadius);
+            ctx.moveTo(x + crossRadius, y - crossRadius);
+            ctx.lineTo(x - crossRadius, y + crossRadius);
+            ctx.stroke();
+            
+            // Draw the label "B"
+            ctx.font = "italic bold 22px Times New Roman";
+            ctx.fillText('B', x + radius + 18, y);
+            ctx.restore();
+        }
+
+        // --- Helper function to draw the rotation arrow (ω) ---
+        function drawOmegaArrow(cx, cy, radius, startAngle, endAngle, labelX, labelY) {
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, startAngle, endAngle, false);
+            ctx.stroke();
+
+            // Draw the arrowhead at the end of the arc
+            const arrowAngle = Math.PI / 8;
+            const arrowLength = 8;
+            const ax = cx + radius * Math.cos(endAngle);
+            const ay = cy + radius * Math.sin(endAngle);
+
+            ctx.beginPath();
+            ctx.moveTo(ax, ay);
+            ctx.lineTo(ax - arrowLength * Math.cos(endAngle - arrowAngle), ay - arrowLength * Math.sin(endAngle - arrowAngle));
+            ctx.moveTo(ax, ay);
+            ctx.lineTo(ax - arrowLength * Math.cos(endAngle + arrowAngle), ay - arrowLength * Math.sin(endAngle + arrowAngle));
+            ctx.stroke();
+            
+            // Draw the label "ω"
+            ctx.font = "italic 22px Times New Roman";
+            ctx.fillText('ω', labelX, labelY);
+            ctx.restore();
+        }
+
+        // --- Draw the four magnetic field symbols ---
+        drawBField(80, 70);
+        drawBField(420, 70);
+        drawBField(80, 380);
+        drawBField(420, 380);
+
+        // --- Define rod parameters ---
+        const centerX = 250;
+        const centerY = 225;
+        const rodLength = 360;
+        const rodAngle = -Math.PI / 6; // -30 degrees
+        const rodThickness = 6;
+
+        const L = rodLength / 2;
+        const cosA = Math.cos(rodAngle);
+        const sinA = Math.sin(rodAngle);
+
+        // --- Draw the rod as two parallel lines ---
+        const dx = (rodThickness / 2) * sinA;
+        const dy = (rodThickness / 2) * cosA;
+        const x1 = centerX - L * cosA;
+        const y1 = centerY - L * sinA;
+        const x2 = centerX + L * cosA;
+        const y2 = centerY + L * sinA;
+        
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        // Upper line
+        ctx.moveTo(x1 - dx, y1 + dy);
+        ctx.lineTo(x2 - dx, y2 + dy);
+        // Lower line
+        ctx.moveTo(x1 + dx, y1 - dy);
+        ctx.lineTo(x2 + dx, y2 - dy);
+        ctx.stroke();
+        
+        // --- Draw the mark for the fixed axis ---
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(rodAngle);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        // A small rectangle representing the pivot, between the rod lines
+        const markHalfWidth = 3;
+        ctx.rect(-markHalfWidth, -rodThickness / 2, 2 * markHalfWidth, rodThickness);
+        ctx.stroke();
+        ctx.restore();
+
+        // --- Draw the charged ring ---
+        const ringDist = 100;
+        const ringX = centerX + ringDist * cosA;
+        const ringY = centerY + ringDist * sinA;
+        
+        ctx.save();
+        ctx.translate(ringX, ringY);
+        ctx.rotate(rodAngle);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        // Draw a C-shaped clamp around the rod
+        ctx.arc(0, 0, rodThickness - 1, Math.PI / 2, -Math.PI / 2, false);
+        ctx.stroke();
+        ctx.restore();
+
+        // --- Draw labels for the ring (m, q, and C) ---
+        ctx.font = "italic 18px Times New Roman";
+        ctx.fillText('m,q', ringX + 20, ringY - 25);
+        // Position 'C' on the rod, just to the left of the ring
+        const cDist = ringDist - 15;
+        const cX = centerX + cDist * cosA;
+        const cY = centerY + cDist * sinA;
+        ctx.fillText('C', cX, cY + 12);
+
+        // --- Draw the two rotation arrows ---
+        // Top-right arrow
+        drawOmegaArrow(425, 125, 30, -Math.PI * 0.7, -Math.PI * 0.2, 450, 95);
+        // Bottom-left arrow
+        drawOmegaArrow(75, 325, 30, Math.PI * 0.3, Math.PI * 0.8, 50, 355);
+
+        // --- Draw Chinese text labels ---
+        ctx.font = "20px 'SimSun', '宋体'"; // Use a common Chinese font
+        // "Fixed Axis" label
+        ctx.fillText('固定轴', centerX, centerY + 50);
+
+        // Figure caption
+        ctx.font = "20px 'SimSun', '宋体'";
+        ctx.fillText('电图 2.8.1', 250, 430);
+
+    </script>
+</body>
+</html>

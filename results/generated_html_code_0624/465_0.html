@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #999;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+<canvas id="forceDiagramCanvas" width="800" height="600"></canvas>
+<script>
+    const canvas = document.getElementById('forceDiagramCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration and Coordinates ---
+    const scale = 25;
+    const centerX = canvas.width / 2;
+    const refY = 220; // Y-coordinate of the horizontal line CD
+
+    // Dimensions from the image
+    const hDist = 11.65 * scale;
+    const vDist = 6.10 * scale;
+
+    // Key points
+    const pA = { x: centerX, y: refY - vDist };
+    const pC = { x: centerX - hDist, y: refY };
+    const pD = { x: centerX + hDist, y: refY };
+    const pB = { x: centerX, y: refY + 50 }; // Position of the support B
+
+    // --- 1. Draw Ground/Scenery ---
+
+    // Define the inner boundary of the ground (the visible contour)
+    const innerContour = new Path2D();
+    // Left side
+    innerContour.moveTo(pC.x - 20, pC.y - 80);
+    innerContour.quadraticCurveTo(pC.x - 100, pC.y + 80, pC.x - 50, pC.y + 200);
+    // Bottom of the valley
+    innerContour.quadraticCurveTo(centerX, pC.y + 280, pB.x, pB.y + 200);
+    // Right side
+    innerContour.lineTo(pB.x, pB.y);
+    innerContour.lineTo(pB.x + 20, pB.y);
+    innerContour.lineTo(pB.x + 20, pD.y + 30);
+    innerContour.lineTo(pD.x, pD.y + 30);
+    innerContour.quadraticCurveTo(pD.x, pD.y, pD.x + 20, pD.y - 90);
+    innerContour.closePath();
+
+    // Create a path for the entire canvas area
+    const outerContour = new Path2D();
+    outerContour.rect(0, 0, canvas.width, canvas.height);
+
+    // Use the evenodd fill rule to clip the area *inside* the ground contour
+    ctx.save();
+    const clipPath = new Path2D(outerContour);
+    clipPath.addPath(innerContour);
+    ctx.clip(clipPath, 'evenodd');
+
+    // Draw hatching lines
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.beginPath();
+    for (let i = -canvas.height; i < canvas.width + canvas.height; i += 12) {
+        ctx.moveTo(i - canvas.height, 0);
+        ctx.lineTo(i, canvas.height);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // Draw the thick outline of the ground on top of the hatching
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'black';
+    ctx.stroke(innerContour);
+    
+    // Draw railway track base
+    ctx.beginPath();
+    ctx.moveTo(pB.x, pB.y);
+    ctx.lineTo(pD.x - 40, pB.y);
+    ctx.stroke();
+
+    // Draw rails
+    ctx.fillStyle = 'black';
+    function drawRail(x, y) {
+        ctx.beginPath();
+        ctx.arc(x, y - 8, 5, Math.PI, 2 * Math.PI);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillRect(x - 5, y - 8, 10, 8);
+    }
+    drawRail(pB.x + 50, pB.y);
+    drawRail(pB.x + 100, pB.y);
+
+
+    // --- 2. Draw Main Structure ---
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = 'black';
+    // Rod AC
+    ctx.beginPath();
+    ctx.moveTo(pA.x, pA.y);
+    ctx.lineTo(pC.x, pC.y);
+    ctx.stroke();
+    // Rod AD
+    ctx.beginPath();
+    ctx.moveTo(pA.x, pA.y);
+    ctx.lineTo(pD.x, pD.y);
+    ctx.stroke();
+    // Rod AB
+    ctx.beginPath();
+    ctx.moveTo(pA.x, pA.y);
+    ctx.lineTo(pB.x, pB.y);
+    ctx.stroke();
+
+
+    // --- 3. Draw Joints and Anchors ---
+    // Point A (pin joint)
+    ctx.beginPath();
+    ctx.arc(pA.x, pA.y, 7, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Anchors at C and D
+    ctx.fillStyle = 'white';
+    ctx.fillRect(pC.x - 20, pC.y - 10, 40, 20);
+    ctx.strokeRect(pC.x - 20, pC.y - 10, 40, 20);
+    ctx.fillRect(pD.x - 20, pD.y - 10, 40, 20);
+    ctx.strokeRect(pD.x - 20, pD.y - 10, 40, 20);
+
+
+    // --- 4. Draw Dimensions ---
+    ctx.lineWidth = 1;
+    // Horizontal dimension line
+    ctx.beginPath();
+    ctx.moveTo(pC.x, refY);
+    ctx.lineTo(pD.x, refY);
+    ctx.stroke();
+    // Ticks on horizontal line
+    ctx.beginPath();
+    ctx.moveTo(centerX, refY - 8);
+    ctx.lineTo(centerX, refY + 8);
+    ctx.stroke();
+
+    // Vertical dimension line
+    const vDimX = pA.x - 120;
+    // Dashed guide line from A
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(pA.x, pA.y);
+    ctx.lineTo(vDimX, pA.y);
+    ctx.stroke();
+    ctx.restore();
+    // Vertical line with arrows
+    ctx.beginPath();
+    ctx.moveTo(vDimX, pA.y);
+    ctx.lineTo(vDimX, refY);
+    // Top arrowhead
+    ctx.moveTo(vDimX, pA.y);
+    ctx.lineTo(vDimX - 5, pA.y + 8);
+    ctx.moveTo(vDimX, pA.y);
+    ctx.lineTo(vDimX + 5, pA.y + 8);
+    // Bottom arrowhead
+    ctx.moveTo(vDimX, refY);
+    ctx.lineTo(vDimX - 5, refY - 8);
+    ctx.moveTo(vDimX, refY);
+    ctx.lineTo(vDimX + 5, refY - 8);
+    ctx.stroke();
+
+    // --- 5. Draw Text and Labels ---
+    ctx.fillStyle = 'black';
+    ctx.font = '22px sans-serif';
+    
+    // Dimension values
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('11.65 m', (pC.x + centerX) / 2, refY - 10);
+    ctx.fillText('11.65 m', (pD.x + centerX) / 2, refY - 10);
+
+    // Rotated vertical dimension value
+    ctx.save();
+    ctx.translate(vDimX - 15, (pA.y + refY) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('6.10 m', 0, 0);
+    ctx.restore();
+
+    // Point labels
+    ctx.font = 'bold 28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('A', pA.x, pA.y - 12);
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textBaseline = 'top';
+    ctx.fillText('B', pB.x - 25, pB.y);
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('C', pC.x - 10, pC.y - 15);
+    ctx.textAlign = 'left';
+    ctx.fillText('D', pD.x + 10, pD.y - 15);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Acqusto-Optic Diffraction</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, x1, y1, x2, y2) {
+            const headlen = 10;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Parameters ---
+        const cx = 300;
+        const cy = 200;
+        const crystalWidth = 80;
+        const crystalHeight = 250;
+        const angleTheta = Math.PI / 14; // Angle θ in radians for visualization
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // --- 1. Draw central dashed line ---
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(0, cy);
+        ctx.lineTo(canvas.width, cy);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid line
+
+        // --- 2. Draw the LiNbO3 Crystal ---
+        const cLeftX = cx - crystalWidth / 2;
+        const cRightX = cx + crystalWidth / 2;
+        const cBottomY = cy + crystalHeight / 2;
+        const cTopRightY = cy - crystalHeight / 2;
+        const cTopLeftY = cTopRightY + 20;
+
+        // Crystal body (light gray)
+        ctx.fillStyle = '#E0E0E0';
+        ctx.beginPath();
+        ctx.moveTo(cLeftX, cBottomY);
+        ctx.lineTo(cLeftX, cTopLeftY);
+        ctx.lineTo(cRightX, cTopRightY);
+        ctx.lineTo(cRightX, cBottomY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Top cap (black)
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.moveTo(cLeftX, cTopLeftY);
+        ctx.lineTo(cRightX, cTopRightY);
+        ctx.lineTo(cRightX, cTopRightY - 18);
+        ctx.lineTo(cLeftX, cTopLeftY - 18);
+        ctx.closePath();
+        ctx.fill();
+
+        // Internal lines (acoustic wavefronts)
+        ctx.lineWidth = 1.2;
+        const numLines = 11;
+        const lineSpacing = 18;
+        const startY = cy - (numLines - 1) * lineSpacing / 2;
+        for (let i = 0; i < numLines; i++) {
+            const y = startY + i * lineSpacing;
+            ctx.beginPath();
+            ctx.moveTo(cLeftX + 2, y);
+            ctx.lineTo(cRightX - 2, y);
+            ctx.stroke();
+        }
+        ctx.lineWidth = 1.5;
+
+        // Label for the crystal
+        ctx.font = '24px Times New Roman';
+        ctx.fillText('LiNbO', 390, 90);
+        ctx.font = '16px Times New Roman';
+        ctx.fillText('3', 455, 95);
+
+        // --- 3. Draw the PET (Piezoelectric Transducer) ---
+        const petWidth = 50;
+        const petHeight = 20;
+        ctx.fillStyle = 'black';
+        ctx.fillRect(cx - petWidth / 2, cBottomY, petWidth, petHeight);
+        ctx.font = '24px Arial';
+        ctx.fillText('PET', cx - 20, cBottomY + petHeight + 25);
+
+        // --- 4. Draw the Input Signal ---
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText('U', 190, 345);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('s', 205, 350);
+        ctx.font = '24px Times New Roman';
+        ctx.fillText('~', 175, 345);
+        ctx.fillText(',', 215, 345);
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText('f', 225, 345);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('s', 237, 350);
+
+        // Input signal arrow
+        const petAttachX = cx - petWidth / 2;
+        const petAttachY = cBottomY + petHeight / 2 - 5;
+        ctx.beginPath();
+        ctx.moveTo(250, petAttachY);
+        ctx.lineTo(petAttachX, petAttachY);
+        ctx.stroke();
+        // Arrowhead
+        ctx.beginPath();
+        ctx.moveTo(255, petAttachY - 5);
+        ctx.lineTo(250, petAttachY);
+        ctx.lineTo(255, petAttachY + 5);
+        ctx.stroke();
+
+
+        // --- 5. Draw the Light Rays ---
+        const rayOffsets = [-35, 0, 35];
+        const xStart = 40;
+        const xEnd = 560;
+        const m = Math.tan(angleTheta);
+
+        // Define central ray's path relative to the crystal center
+        const enterY_center = cy - m * (cx - cLeftX);
+        const startY_center = enterY_center - m * (cLeftX - xStart);
+        const exitY_trans_center = enterY_center + m * (cRightX - cLeftX);
+        const exitY_diff_center = enterY_center - m * (cRightX - cLeftX); // This is incorrect, reflection is about the wavefront
+        
+        // Corrected diffracted ray logic: reflects across the horizontal plane passing through the entry point
+        const exitY_diff_center_corr = enterY_center - m * (cRightX - cLeftX); // for this geometry, reflection is about the y-axis
+        
+        for (const offset of rayOffsets) {
+            // Calculate y-coordinates for the current ray
+            const startY = startY_center + offset / Math.cos(angleTheta);
+            const enterY = enterY_center + offset / Math.cos(angleTheta);
+            
+            // Incident Ray
+            drawArrow(ctx, xStart, startY, cLeftX, enterY);
+            
+            // Paths inside crystal
+            const exitY_trans = enterY + m * (cRightX - cLeftX);
+            const exitY_diff = enterY - m * (cRightX - cLeftX);
+            ctx.beginPath();
+            ctx.moveTo(cLeftX, enterY);
+            ctx.lineTo(cRightX, exitY_trans); // Transmitted path
+            ctx.moveTo(cLeftX, enterY);
+            ctx.lineTo(cRightX, exitY_diff);  // Diffracted path
+            ctx.stroke();
+            
+            // Transmitted (undiffracted) Ray
+            const endY_trans = exitY_trans + m * (xEnd - cRightX);
+            drawArrow(ctx, cRightX, exitY_trans, xEnd, endY_trans);
+
+            // Diffracted Ray
+            const endY_diff = exitY_diff - m * (xEnd - cRightX);
+            drawArrow(ctx, cRightX, exitY_diff, xEnd, endY_diff);
+        }
+
+        // --- 6. Draw the Angle θ Markers ---
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.lineWidth = 1;
+
+        // Angle on the left (incident)
+        const arc_x_left = 130;
+        const arc_y_left = cy; // Relative to the main dashed line
+        ctx.beginPath();
+        ctx.arc(arc_x_left, arc_y_left + m * (arc_x_left - cx), 40, 0, angleTheta, false);
+        ctx.stroke();
+        ctx.fillText('θ', arc_x_left + 45, arc_y_left + m * (arc_x_left - cx) + 12);
+        
+        // Angle on the right (diffracted)
+        const arc_x_right = 470;
+        const arc_y_right = cy; // Relative to the main dashed line
+        ctx.beginPath();
+        ctx.arc(arc_x_right, arc_y_right - m * (arc_x_right - cx), 40, -angleTheta, 0, false);
+        ctx.stroke();
+        ctx.fillText('θ', arc_x_right + 45, arc_y_right - m * (arc_x_right - cx) - 5);
+        
+    </script>
+</body>
+</html>

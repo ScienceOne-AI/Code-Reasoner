@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Recreation</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="650" height="550" style="border:1px solid #000;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow
+    function drawArrow(ctx, fromx, fromy, tox, toy, arrowWidth = 5, color = 'black') {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 2;
+
+        const headlen = 10;
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 7), toy - headlen * Math.sin(angle - Math.PI / 7));
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 7), toy - headlen * Math.sin(angle + Math.PI / 7));
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Configuration & Constants ---
+    ctx.font = '18px Times New Roman';
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+
+    const angle = 30 * Math.PI / 180;
+    const cRadius = 40;
+    const pulleyRadius = 30;
+
+    // --- Coordinate Calculations ---
+
+    // Incline Plane (Hill H)
+    const inclineTopRight = { x: 520, y: 250 };
+    const inclineBaseLength = 470;
+    const inclineBottomLeft = {
+        x: inclineTopRight.x - inclineBaseLength,
+        y: inclineTopRight.y + inclineBaseLength * Math.tan(angle)
+    };
+    
+    // Direction vectors
+    const u = { x: -Math.cos(angle), y: Math.sin(angle) }; // Unit vector along incline (pointing down-left)
+    const n = { x: Math.sin(angle), y: -Math.cos(angle) }; // Unit vector normal to incline (pointing out)
+
+    // Cylinder (C)
+    const distFromTop = 270; // Distance along incline from the top
+    const contactP = {
+        x: inclineTopRight.x + distFromTop * u.x,
+        y: inclineTopRight.y + distFromTop * u.y
+    };
+    const centerC = {
+        x: contactP.x + cRadius * n.x,
+        y: contactP.y + cRadius * n.y
+    };
+
+    // Pulley
+    const pulleyCenter = { x: 500, y: 200 };
+    
+    // Hanging Block
+    const blockCenter = { x: pulleyCenter.x + pulleyRadius, y: 400 };
+    const blockSize = 30;
+
+    // String Tangent Points
+    const tangentCylinder = {
+        x: centerC.x - cRadius * n.x,
+        y: centerC.y - cRadius * n.y
+    };
+    const tangentPulley = {
+        x: pulleyCenter.x - pulleyRadius * n.x,
+        y: pulleyCenter.y - pulleyRadius * n.y
+    };
+    const tangentPulleyVertical = {
+        x: pulleyCenter.x + pulleyRadius,
+        y: pulleyCenter.y
+    };
+
+
+    // --- Drawing ---
+
+    // 1. Incline Plane (Hill H)
+    ctx.beginPath();
+    ctx.moveTo(inclineBottomLeft.x, inclineBottomLeft.y);
+    ctx.lineTo(inclineTopRight.x, inclineTopRight.y);
+    ctx.lineTo(inclineTopRight.x, inclineBottomLeft.y + 40);
+    ctx.lineTo(inclineBottomLeft.x - 40, inclineBottomLeft.y + 40);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Hatching for the hill
+    ctx.save();
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 40; i++) {
+        const startX = inclineTopRight.x - i * 15;
+        const startY = inclineBottomLeft.y + 35;
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(startX - 15, startY - 15);
+        ctx.stroke();
+    }
+    ctx.restore();
+    ctx.fillText('H', 400, 350);
+
+    // 2. Pulley and Support
+    const supportTop = {x: inclineTopRight.x, y: inclineTopRight.y};
+    const supportBottom = {x: supportTop.x, y: supportTop.y + 80};
+    const armPivot1 = {x: supportTop.x, y: supportTop.y + 10};
+    const armPivot2 = {x: supportTop.x, y: supportTop.y + 40};
+    
+    // Support structure
+    ctx.beginPath();
+    ctx.moveTo(supportTop.x, supportTop.y);
+    ctx.lineTo(supportBottom.x, supportBottom.y);
+    ctx.stroke();
+    
+    // Arm
+    ctx.beginPath();
+    ctx.moveTo(pulleyCenter.x, pulleyCenter.y);
+    ctx.lineTo(armPivot1.x, armPivot1.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(pulleyCenter.x, pulleyCenter.y);
+    ctx.lineTo(armPivot2.x, armPivot2.y);
+    ctx.stroke();
+
+    // Pulley wheel
+    ctx.beginPath();
+    ctx.arc(pulleyCenter.x, pulleyCenter.y, pulleyRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(pulleyCenter.x, pulleyCenter.y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 3. Cylinder
+    ctx.beginPath();
+    ctx.arc(centerC.x, centerC.y, cRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(centerC.x, centerC.y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('C', centerC.x - 20, centerC.y + 5);
+    ctx.fillText('P', contactP.x - 15, contactP.y + 15);
+
+    // 4. String
+    ctx.beginPath();
+    ctx.moveTo(tangentCylinder.x, tangentCylinder.y);
+    ctx.lineTo(tangentPulley.x, tangentPulley.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(tangentPulleyVertical.x, tangentPulleyVertical.y);
+    ctx.lineTo(blockCenter.x, blockCenter.y - blockSize / 2);
+    ctx.stroke();
+
+    // 5. Hanging Block
+    ctx.strokeRect(blockCenter.x - blockSize / 2, blockCenter.y - blockSize / 2, blockSize, blockSize);
+    ctx.beginPath();
+    ctx.arc(blockCenter.x, blockCenter.y, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('2.0 kg', blockCenter.x + blockSize, blockCenter.y + 5);
+
+    // 6. Forces and Vectors
+    // mg on cylinder
+    drawArrow(ctx, centerC.x, centerC.y, centerC.x, centerC.y + 70);
+    ctx.fillText('mg', centerC.x + 5, centerC.y + 85);
+    // mg on block
+    drawArrow(ctx, blockCenter.x, blockCenter.y, blockCenter.x, blockCenter.y + 50);
+    ctx.fillText('mg', blockCenter.x + 8, blockCenter.y + 45);
+    // Tension F on block
+    drawArrow(ctx, blockCenter.x, blockCenter.y - blockSize / 2, blockCenter.x, blockCenter.y - 65);
+    ctx.fillText('F', blockCenter.x + 8, blockCenter.y - 50);
+    // Tension F on cylinder
+    const forceF_start = { x: tangentCylinder.x + 40 * u.x, y: tangentCylinder.y + 40 * u.y };
+    const forceF_end = { x: forceF_start.x - 60 * u.x, y: forceF_start.y - 60 * u.y };
+    drawArrow(ctx, forceF_start.x, forceF_start.y, forceF_end.x, forceF_end.y);
+    ctx.fillText('F', forceF_end.x - 20, forceF_end.y - 15);
+    // Friction f
+    const forcef_end = { x: contactP.x - 50 * u.x, y: contactP.y - 50 * u.y };
+    drawArrow(ctx, contactP.x, contactP.y, forcef_end.x, forcef_end.y);
+    ctx.fillText('f', forcef_end.x + 10, forcef_end.y - 5);
+
+
+    // 7. Annotations
+    // Angle 30°
+    const angleArcOrigin = { x: inclineBottomLeft.x, y: inclineBottomLeft.y };
+    ctx.beginPath();
+    ctx.moveTo(angleArcOrigin.x + 60, angleArcOrigin.y);
+    ctx.lineTo(angleArcOrigin.x, angleArcOrigin.y);
+    ctx.lineTo(angleArcOrigin.x + 60 * Math.cos(angle), angleArcOrigin.y - 60 * Math.sin(angle));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(angleArcOrigin.x, angleArcOrigin.y, 40, 0, -angle, true);
+    ctx.stroke();
+    ctx.fillText('30°', angleArcOrigin.x + 45, angleArcOrigin.y - 15);
+
+    // Coordinate system x, y
+    const axisOrigin = { x: 100, y: 400 };
+    ctx.save();
+    ctx.translate(axisOrigin.x, axisOrigin.y);
+    ctx.rotate(-angle);
+    drawArrow(ctx, 0, 0, 70, 0); // x-axis
+    ctx.fillText('x', 75, 8);
+    drawArrow(ctx, 0, 0, 0, -70); // y-axis
+    ctx.fillText('y', -5, -75);
+    ctx.restore();
+    
+    // Rotational velocity theta_dot
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(centerC.x, centerC.y, cRadius + 10, 0.2 * Math.PI, -0.7 * Math.PI);
+    ctx.stroke();
+    // Arrowhead for theta_dot
+    const thetaArrowAngle = -0.7 * Math.PI;
+    const arrowX = centerC.x + (cRadius + 10) * Math.cos(thetaArrowAngle);
+    const arrowY = centerC.y + (cRadius + 10) * Math.sin(thetaArrowAngle);
+    ctx.translate(arrowX, arrowY);
+    ctx.rotate(thetaArrowAngle + Math.PI/2);
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.lineTo(5, 5);
+    ctx.lineTo(-5, 5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    ctx.fillText('θ̇', centerC.x + cRadius + 15, centerC.y);
+
+    // Figure Caption
+    ctx.font = 'bold 16px Times New Roman';
+    ctx.fillText('Fig. 1.121.', 270, 530);
+
+</script>
+</body>
+</html>

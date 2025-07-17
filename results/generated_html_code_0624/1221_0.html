@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Static Force Analysis</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="320"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Clear canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // --- Style and Settings ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        // The font in the image has a hand-drawn feel. A serif font is a good approximation.
+        ctx.font = 'bold 28px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a rectangle with diagonal hatching.
+         * @param {number} x - The x-coordinate of the top-left corner.
+         * @param {number} y - The y-coordinate of the top-left corner.
+         * @param {number} w - The width of the rectangle.
+         * @param {number} h - The height of the rectangle.
+         */
+        function drawHatchedRect(x, y, w, h) {
+            ctx.strokeRect(x, y, w, h);
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(x, y, w, h);
+            ctx.clip();
+            const oldLineWidth = ctx.lineWidth;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            for (let i = -h; i < w; i += 8) {
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x + i + h, y + h);
+            }
+            ctx.stroke();
+            ctx.lineWidth = oldLineWidth;
+            ctx.restore();
+        }
+
+        /**
+         * Draws a filled arrowhead at a given point and angle.
+         * @param {number} x - The x-coordinate of the arrow tip.
+         * @param {number} y - The y-coordinate of the arrow tip.
+         * @param {number} angle - The angle of the arrow in radians.
+         */
+        function drawArrowHead(x, y, angle) {
+            const headlen = 12;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headlen, -headlen / 2.5);
+            ctx.lineTo(-headlen, headlen / 2.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+
+        // Define key coordinates and dimensions based on the image
+        const beamYTop = 100;
+        const beamHeight = 15;
+        const beamYBottom = beamYTop + beamHeight;
+        const xC = 80;
+        const xA = xC + 350;
+        const xB_end = xA + 50; // x-coordinate for support B and the end of the beam
+        const wallWidth = 50;
+        const wallHeight = 50;
+
+        // 1. Draw the Beam
+        ctx.beginPath();
+        // The beam is represented by two parallel lines
+        ctx.moveTo(xC, beamYTop);
+        ctx.lineTo(xB_end, beamYTop);
+        ctx.moveTo(xC, beamYBottom);
+        ctx.lineTo(xB_end, beamYBottom);
+        ctx.stroke();
+        
+        // Draw the C-shaped bracket at the end
+        ctx.beginPath();
+        ctx.moveTo(xC + 5, beamYTop);
+        ctx.lineTo(xC, beamYTop);
+        ctx.lineTo(xC, beamYBottom);
+        ctx.lineTo(xC + 5, beamYBottom);
+        ctx.stroke();
+
+        // 2. Draw the Wall Supports (at A and B)
+        // Support A (bottom)
+        drawHatchedRect(xA, beamYBottom, wallWidth, wallHeight);
+        // Support B (top)
+        drawHatchedRect(xA, beamYTop - wallHeight, wallWidth, wallHeight);
+
+        // 3. Draw the Hanging Weight (F)
+        const weightSize = 40;
+        const ropeLength = 45;
+        const weightY = beamYBottom + ropeLength;
+        
+        // Rope
+        ctx.beginPath();
+        ctx.moveTo(xC, beamYBottom);
+        ctx.lineTo(xC, weightY - 5); // Leave space for the connection loop
+        ctx.stroke();
+        
+        // Connection loop
+        ctx.beginPath();
+        ctx.arc(xC, weightY - 2.5, 2.5, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // Weight block
+        ctx.strokeRect(xC - weightSize / 2, weightY, weightSize, weightSize);
+
+        // 4. Draw Labels (A, B, C, F)
+        ctx.fillText("C", xC - 25, beamYTop + beamHeight / 2);
+        ctx.fillText("F", xC + weightSize / 2 + 15, weightY + weightSize / 2);
+        ctx.fillText("A", xA - 20, beamYBottom + 20);
+        ctx.fillText("B", xB_end + 15, beamYTop - 15);
+
+        // 5. Draw Dimensions
+
+        // Dimension: 3.5 m
+        const dimY1 = 190;
+        ctx.beginPath();
+        // Extension lines from connection points
+        ctx.moveTo(xC, beamYBottom); 
+        ctx.lineTo(xC, dimY1);
+        ctx.moveTo(xA, beamYBottom);
+        ctx.lineTo(xA, dimY1);
+        // Main dimension line
+        ctx.moveTo(xC, dimY1);
+        ctx.lineTo(xA, dimY1);
+        ctx.stroke();
+        // Arrowheads pointing inwards
+        drawArrowHead(xC, dimY1, 0);       // Arrow at left end, pointing right
+        drawArrowHead(xA, dimY1, Math.PI); // Arrow at right end, pointing left
+        // Text label
+        const midX1 = (xC + xA) / 2;
+        ctx.clearRect(midX1 - 45, dimY1 - 20, 90, 22); // Clear background for text
+        ctx.fillText("3.5 m", midX1, dimY1 - 10);
+
+        // Dimension: 0.5 m
+        const dimY2 = 240;
+        ctx.beginPath();
+        // Extension lines (thinner)
+        const oldLineWidth = ctx.lineWidth;
+        ctx.lineWidth = 1.5; 
+        ctx.moveTo(xA, beamYBottom + wallHeight);
+        ctx.lineTo(xA, dimY2);
+        ctx.moveTo(xB_end, beamYBottom + wallHeight);
+        ctx.lineTo(xB_end, dimY2);
+        ctx.stroke();
+        ctx.lineWidth = oldLineWidth;
+        
+        // Main dimension line with I-shaped ends
+        const tickSize = 8;
+        ctx.beginPath();
+        ctx.moveTo(xA, dimY2);
+        ctx.lineTo(xB_end, dimY2);
+        ctx.moveTo(xA, dimY2 - tickSize / 2);
+        ctx.lineTo(xA, dimY2 + tickSize / 2);
+        ctx.moveTo(xB_end, dimY2 - tickSize / 2);
+        ctx.lineTo(xB_end, dimY2 + tickSize / 2);
+        ctx.stroke();
+        // Text label
+        const midX2 = (xA + xB_end) / 2;
+        ctx.fillText("0.5 m", midX2, dimY2 + 20);
+
+    </script>
+</body>
+</html>

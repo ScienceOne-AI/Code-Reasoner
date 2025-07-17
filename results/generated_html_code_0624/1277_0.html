@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram: Pendulum between Grounded Plates</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Clear canvas with a white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // --- Style and Parameter Setup ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Geometric Parameters ---
+        const centerX = canvas.width / 2; // 250
+        const topSupportY = 60;
+        const pendulumLength = 200;
+        const bobRadius = 5;
+        const plateDistFromCenter = 120; // 'd' in pixels
+        const plateHeight = 380;
+        const plateWidth = 4;
+        const plateTopY = 90;
+        const plateBottomY = plateTopY + plateHeight;
+        const bobX = centerX;
+        const bobY = topSupportY + pendulumLength;
+
+        // --- Helper Function for Ground Symbol ---
+        function drawGround(x, y) {
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + 15);
+            ctx.stroke();
+            // Ground lines
+            ctx.beginPath();
+            ctx.moveTo(x - 20, y + 15);
+            ctx.lineTo(x + 20, y + 15);
+            ctx.moveTo(x - 13, y + 21);
+            ctx.lineTo(x + 13, y + 21);
+            ctx.moveTo(x - 6, y + 27);
+            ctx.lineTo(x + 6, y + 27);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Helper Function for Dimension Line: <--label--> ---
+        function drawDimensionLine(x1, x2, y, label) {
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            const headlen = 8;
+
+            // Main horizontal line
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+
+            // Arrowhead at x1 (pointing left)
+            let angle1 = Math.PI;
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x1 - headlen * Math.cos(angle1 - Math.PI / 6), y - headlen * Math.sin(angle1 - Math.PI / 6));
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x1 - headlen * Math.cos(angle1 + Math.PI / 6), y - headlen * Math.sin(angle1 + Math.PI / 6));
+            ctx.stroke();
+
+            // Arrowhead at x2 (pointing right)
+            let angle2 = 0;
+            ctx.beginPath();
+            ctx.moveTo(x2, y);
+            ctx.lineTo(x2 - headlen * Math.cos(angle2 - Math.PI / 6), y - headlen * Math.sin(angle2 - Math.PI / 6));
+            ctx.moveTo(x2, y);
+            ctx.lineTo(x2 - headlen * Math.cos(angle2 + Math.PI / 6), y - headlen * Math.sin(angle2 + Math.PI / 6));
+            ctx.stroke();
+
+            // Label
+            ctx.fillText(label, (x1 + x2) / 2, y - 15);
+            ctx.restore();
+        }
+
+        // --- Draw Scene Components ---
+
+        // 1. Draw Plates A and B
+        const plateAX = centerX - plateDistFromCenter;
+        const plateBX = centerX + plateDistFromCenter;
+        ctx.save();
+        ctx.lineWidth = plateWidth;
+        // Plate A
+        ctx.beginPath();
+        ctx.moveTo(plateAX, plateTopY);
+        ctx.lineTo(plateAX, plateBottomY);
+        ctx.stroke();
+        // Plate B
+        ctx.beginPath();
+        ctx.moveTo(plateBX, plateTopY);
+        ctx.lineTo(plateBX, plateBottomY);
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Draw Ground Connections
+        const groundWireY = plateBottomY + 20;
+        // Connection A
+        ctx.beginPath();
+        ctx.moveTo(plateAX, plateBottomY);
+        ctx.lineTo(plateAX, groundWireY);
+        ctx.stroke();
+        drawGround(plateAX, groundWireY);
+        // Connection B
+        ctx.beginPath();
+        ctx.moveTo(plateBX, plateBottomY);
+        ctx.lineTo(plateBX, groundWireY);
+        ctx.stroke();
+        drawGround(plateBX, groundWireY);
+        
+        // 3. Draw Support
+        ctx.beginPath();
+        ctx.moveTo(centerX - 50, topSupportY);
+        ctx.lineTo(centerX + 50, topSupportY);
+        ctx.stroke();
+        // Hatching for the fixed support
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        for (let i = -50; i <= 40; i += 10) {
+            ctx.beginPath();
+            ctx.moveTo(centerX + i, topSupportY);
+            ctx.lineTo(centerX + i - 10, topSupportY - 10);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // 4. Draw Pendulum
+        // String
+        ctx.beginPath();
+        ctx.moveTo(centerX, topSupportY);
+        ctx.lineTo(bobX, bobY);
+        ctx.stroke();
+        // Bob
+        ctx.beginPath();
+        ctx.arc(bobX, bobY, bobRadius, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 5. Draw Dimension Lines
+        const dimY = plateBottomY - 60;
+        // Ticks for dimension lines
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        const tickHeight = 8;
+        // Left tick
+        ctx.beginPath();
+        ctx.moveTo(plateAX, dimY - tickHeight / 2);
+        ctx.lineTo(plateAX, dimY + tickHeight / 2);
+        ctx.stroke();
+        // Center tick
+        ctx.beginPath();
+        ctx.moveTo(centerX, dimY - tickHeight / 2);
+        ctx.lineTo(centerX, dimY + tickHeight / 2);
+        ctx.stroke();
+        // Right tick
+        ctx.beginPath();
+        ctx.moveTo(plateBX, dimY - tickHeight / 2);
+        ctx.lineTo(plateBX, dimY + tickHeight / 2);
+        ctx.stroke();
+        ctx.restore();
+        
+        // Dimension lines with arrows and labels
+        drawDimensionLine(plateAX, centerX, dimY, 'd');
+        drawDimensionLine(centerX, plateBX, dimY, 'd');
+
+        // 6. Add Labels
+        // Plate labels
+        ctx.fillText('A', plateAX - 30, plateTopY + plateHeight / 2);
+        ctx.fillText('B', plateBX + 30, plateTopY + plateHeight / 2);
+        // Pendulum labels
+        ctx.textAlign = 'left';
+        ctx.fillText('l', centerX + 10, topSupportY + pendulumLength / 2);
+        ctx.fillText('m, q', bobX + 15, bobY + 10);
+
+    </script>
+</body>
+</html>

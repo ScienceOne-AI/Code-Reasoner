@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Orbital Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #d3d3d3;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper function to draw a curved arrow ---
+        function drawCurvedArrow(ctx, fromX, fromY, toX, toY, controlX, controlY) {
+            const headlen = 10; // length of head in pixels
+            
+            // Draw the curve
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.quadraticCurveTo(controlX, controlY, toX, toY);
+            ctx.stroke();
+
+            // Calculate angle for arrowhead
+            // The angle of the arrowhead is determined by the tangent of the curve at the endpoint.
+            // For a quadratic Bezier curve, the tangent at t=1 is the line from the control point to the end point.
+            const angle = Math.atan2(toY - controlY, toX - controlX);
+
+            // Draw the arrowhead
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Drawing parameters ---
+        const cx = 270;
+        const cy = 250;
+        const scale = 100; // pixels per A.U.
+        
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 16px sans-serif';
+
+        // 1. Sun
+        ctx.beginPath();
+        ctx.arc(cx, cy, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.textAlign = 'right';
+        ctx.fillText('Sun', cx - 15, cy + 5);
+
+        // 2. Ecliptic plane representation (horizontal ellipse) to match the original's 3D perspective style
+        const eclipticRx = 1 * scale;
+        const eclipticRy = 0.4 * scale;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, eclipticRx, eclipticRy, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 3. Earth's Orbit (circle)
+        const r_earth = 1 * scale;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r_earth, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 4. Mars' Orbit (circle)
+        const r_mars = 1.5 * scale;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r_mars, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 5. Airship's Orbit (Hohmann transfer orbit)
+        // This is a semi-ellipse from Earth's orbit (perihelion) to Mars' orbit (aphelion).
+        // Semi-major axis a = (r_p + r_a) / 2 = (1 + 1.5) / 2 = 1.25 A.U.
+        // Distance from center to focus c = a - r_p = 1.25 - 1 = 0.25 A.U.
+        // Semi-minor axis b = sqrt(a^2 - c^2) = sqrt(1.25^2 - 0.25^2) = sqrt(1.5) A.U.
+        const a_px = 1.25 * scale;
+        const b_px = Math.sqrt(1.5) * scale;
+        const c_px = 0.25 * scale;
+        const ellipse_cx = cx - c_px; // Center of the ellipse is shifted from the Sun (focus)
+        
+        ctx.beginPath();
+        // The top half of the ellipse
+        ctx.ellipse(ellipse_cx, cy, a_px, b_px, 0, Math.PI, 2 * Math.PI);
+        ctx.stroke();
+
+        // 6. Labels and Pointers
+        
+        // Earth (point on its orbit)
+        const earth_x = cx + r_earth;
+        const earth_y = cy;
+        ctx.beginPath();
+        ctx.arc(earth_x, earth_y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.textAlign = 'left';
+        ctx.fillText('Earth', earth_x + 10, earth_y);
+        
+        // "Airship's orbit" label and pointer
+        ctx.textAlign = 'center';
+        const airship_label_x = 480;
+        const airship_label_y = 140;
+        ctx.fillText("Airship's orbit", airship_label_x, airship_label_y);
+        ctx.beginPath();
+        ctx.moveTo(airship_label_x - 30, airship_label_y + 10); // Start near the text
+        const point_on_airship_orbit_x = ellipse_cx + a_px * Math.cos(1.8 * Math.PI);
+        const point_on_airship_orbit_y = cy + b_px * Math.sin(1.8 * Math.PI);
+        ctx.lineTo(point_on_airship_orbit_x, point_on_airship_orbit_y);
+        ctx.stroke();
+        
+        // "Earth's orbit" label and pointer
+        const earth_orbit_label_x = 480;
+        const earth_orbit_label_y = 300;
+        ctx.fillText("Earth's orbit", earth_orbit_label_x, earth_orbit_label_y);
+        const earth_orbit_arrow_start_x = earth_orbit_label_x - 40;
+        const earth_orbit_arrow_start_y = earth_orbit_label_y + 5;
+        const earth_orbit_arrow_end_x = cx + r_earth * Math.cos(20 * Math.PI/180);
+        const earth_orbit_arrow_end_y = cy + r_earth * Math.sin(20 * Math.PI/180);
+        const earth_orbit_arrow_ctrl_x = 400;
+        const earth_orbit_arrow_ctrl_y = 295;
+        drawCurvedArrow(ctx, earth_orbit_arrow_start_x, earth_orbit_arrow_start_y, earth_orbit_arrow_end_x, earth_orbit_arrow_end_y, earth_orbit_arrow_ctrl_x, earth_orbit_arrow_ctrl_y);
+        
+        // "Mar's orbit" label and pointer (using typo from original image)
+        const mars_orbit_label_x = 480;
+        const mars_orbit_label_y = 360;
+        ctx.fillText("Mar's orbit", mars_orbit_label_x, mars_orbit_label_y);
+        const mars_orbit_arrow_start_x = mars_orbit_label_x - 40;
+        const mars_orbit_arrow_start_y = mars_orbit_label_y + 5;
+        const mars_orbit_arrow_end_x = cx + r_mars * Math.cos(25 * Math.PI/180);
+        const mars_orbit_arrow_end_y = cy + r_mars * Math.sin(25 * Math.PI/180);
+        const mars_orbit_arrow_ctrl_x = 420;
+        const mars_orbit_arrow_ctrl_y = 350;
+        drawCurvedArrow(ctx, mars_orbit_arrow_start_x, mars_orbit_arrow_start_y, mars_orbit_arrow_end_x, mars_orbit_arrow_end_y, mars_orbit_arrow_ctrl_x, mars_orbit_arrow_ctrl_y);
+
+        // 7. Figure caption
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 1.30.', canvas.width / 2, canvas.height - 20);
+
+    </script>
+</body>
+</html>

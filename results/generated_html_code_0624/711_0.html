@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>E.m.f. vs Time Graph</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f8f8f8;
+    }
+    canvas {
+        border: 1px solid #ccc;
+    }
+</style>
+</head>
+<body>
+<canvas id="physicsGraph" width="700" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsGraph');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const padding = { top: 30, right: 30, bottom: 60, left: 60 };
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const graphWidth = canvasWidth - padding.left - padding.right;
+    const graphHeight = canvasHeight - padding.top - padding.bottom;
+
+    // Data ranges from image
+    const tMin = 0;
+    const tMax = 25.0;
+    const EMin = -60;
+    const EMax = 60;
+
+    // Wave parameters from image analysis
+    const E_peak = 52; // V
+    const period = 16.0; // ms
+    const t_end = 22.0; // ms
+
+    // Scaling factors
+    const xScale = graphWidth / (tMax - tMin);
+    const yScale = graphHeight / (EMax - EMin);
+
+    // --- Coordinate Mapping Functions ---
+    function mapX(t) {
+        return padding.left + (t - tMin) * xScale;
+    }
+
+    function mapY(E) {
+        // Y-axis is inverted in canvas coordinates
+        return canvasHeight - padding.bottom - (E - EMin) * yScale;
+    }
+
+    // --- Drawing Functions ---
+
+    function drawGrid() {
+        // Minor grid lines
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 1;
+        
+        // Minor vertical grid lines (every 0.5 ms)
+        for (let t = tMin + 0.5; t < tMax; t += 0.5) {
+            // Use a tolerance for floating point modulo to avoid drawing over major lines
+            if (Math.abs(t % 5.0) > 1e-9) { 
+                ctx.beginPath();
+                ctx.moveTo(mapX(t), mapY(EMin));
+                ctx.lineTo(mapX(t), mapY(EMax));
+                ctx.stroke();
+            }
+        }
+        
+        // Minor horizontal grid lines (every 2 V)
+        for (let E = EMin + 2; E < EMax; E += 2) {
+             if (Math.abs(E % 20) > 1e-9) {
+                ctx.beginPath();
+                ctx.moveTo(mapX(tMin), mapY(E));
+                ctx.lineTo(mapX(tMax), mapY(E));
+                ctx.stroke();
+             }
+        }
+
+        // Major grid lines
+        ctx.strokeStyle = '#c0c0c0';
+        ctx.lineWidth = 1;
+
+        // Major vertical grid lines (every 5.0 ms)
+        for (let t = tMin + 5.0; t < tMax; t += 5.0) {
+            ctx.beginPath();
+            ctx.moveTo(mapX(t), mapY(EMin));
+            ctx.lineTo(mapX(t), mapY(EMax));
+            ctx.stroke();
+        }
+        
+        // Major horizontal grid lines (every 20 V)
+        for (let E = EMin + 20; E < EMax; E += 20) {
+            if (E !== 0) { // Don't overdraw the main x-axis
+                ctx.beginPath();
+                ctx.moveTo(mapX(tMin), mapY(E));
+                ctx.lineTo(mapX(tMax), mapY(E));
+                ctx.stroke();
+            }
+        }
+    }
+
+    function drawAxesAndLabels() {
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Y-axis (t=0)
+        ctx.beginPath();
+        ctx.moveTo(mapX(tMin), mapY(EMin));
+        ctx.lineTo(mapX(tMin), mapY(EMax));
+        ctx.stroke();
+
+        // X-axis (E=0)
+        ctx.beginPath();
+        ctx.moveTo(mapX(tMin), mapY(0));
+        ctx.lineTo(mapX(tMax), mapY(0));
+        ctx.stroke();
+
+        // --- Labels and Ticks ---
+        ctx.font = '16px Arial';
+        
+        // Y-axis ticks and labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let E = EMin; E <= EMax; E += 20) {
+            ctx.fillText(E, padding.left - 8, mapY(E));
+            ctx.beginPath();
+            ctx.moveTo(mapX(tMin), mapY(E));
+            ctx.lineTo(mapX(tMin) - 4, mapY(E));
+            ctx.stroke();
+        }
+
+        // X-axis ticks and labels
+        ctx.textBaseline = 'top';
+        // Labels from 5.0 to 25.0
+        ctx.textAlign = 'center';
+        for (let t = 5.0; t <= tMax; t += 5.0) {
+            ctx.fillText(t.toFixed(1), mapX(t), mapY(0) + 8);
+            ctx.beginPath();
+            ctx.moveTo(mapX(t), mapY(0));
+            ctx.lineTo(mapX(t), mapY(0) + 4);
+            ctx.stroke();
+        }
+        // Origin label '0'
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillText('0', mapX(0) - 5, mapY(0) + 5);
+        ctx.beginPath();
+        ctx.moveTo(mapX(0), mapY(0));
+        ctx.lineTo(mapX(0), mapY(0) + 4);
+        ctx.stroke();
+
+
+        // Axis Titles
+        ctx.font = 'italic 20px Arial';
+        ctx.textAlign = 'center';
+        
+        // Y-axis title "E / V"
+        ctx.save();
+        ctx.translate(padding.left - 45, canvasHeight / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('E / V', 0, 0);
+        ctx.restore();
+
+        // X-axis title "t / ms"
+        ctx.fillText('t / ms', canvasWidth / 2, canvasHeight - padding.bottom + 35);
+    }
+
+    function drawCurve() {
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+
+        const dt = 0.1; // time step for smooth curve
+        const initial_t = 0;
+        const initial_E = E_peak * Math.sin(2 * Math.PI * initial_t / period);
+        ctx.moveTo(mapX(initial_t), mapY(initial_E));
+
+        for (let t = initial_t + dt; t <= t_end; t += dt) {
+            const E = E_peak * Math.sin(2 * Math.PI * t / period);
+            ctx.lineTo(mapX(t), mapY(E));
+        }
+        
+        ctx.stroke();
+    }
+    
+    function drawCaption() {
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
+        // Place caption below the x-axis label
+        ctx.fillText('Fig. 9.2', canvasWidth / 2, canvasHeight - 10);
+    }
+
+    // --- Main Drawing Execution ---
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    drawGrid();
+    drawAxesAndLabels();
+    drawCurve();
+    drawCaption();
+</script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="500" height="350"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#000000';
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'center';
+
+        // Fonts
+        const serifFont = 'italic 20px "Times New Roman"';
+        const subscriptFont = 'italic 15px "Times New Roman"';
+
+        // Dimensions
+        const x_L = 80, x_R = 420;
+        const y_T = 100, y_B = 200;
+        const x_mid = 250;
+        const y_batt_line = 280;
+        const x_batt_center = 250;
+        const res_w = 70, res_h = 25;
+        const sw_len = 50;
+
+        // Draw Wires
+        ctx.beginPath();
+        // Top Branch Wires
+        const r1_x_center = (x_L + x_mid) / 2;
+        ctx.moveTo(x_L, y_T);
+        ctx.lineTo(r1_x_center - res_w / 2, y_T);
+        ctx.moveTo(r1_x_center + res_w / 2, y_T);
+        ctx.lineTo(x_mid, y_T);
+
+        const s1_x_center = (x_mid + x_R) / 2;
+        ctx.moveTo(x_mid, y_T);
+        ctx.lineTo(s1_x_center - sw_len / 2, y_T);
+        ctx.moveTo(s1_x_center + sw_len / 2, y_T);
+        ctx.lineTo(x_R, y_T);
+
+        // Bottom Branch Wires
+        const s2_x_center = (x_L + x_mid) / 2;
+        ctx.moveTo(x_L, y_B);
+        ctx.lineTo(s2_x_center - sw_len / 2, y_B);
+        ctx.moveTo(s2_x_center + sw_len / 2, y_B);
+        ctx.lineTo(x_mid, y_B);
+
+        const r2_x_center = (x_mid + x_R) / 2;
+        ctx.moveTo(x_mid, y_B);
+        ctx.lineTo(r2_x_center - res_w / 2, y_B);
+        ctx.moveTo(r2_x_center + res_w / 2, y_B);
+        ctx.lineTo(x_R, y_B);
+
+        // Vertical Wires
+        ctx.moveTo(x_L, y_T);
+        ctx.lineTo(x_L, y_B);
+        ctx.moveTo(x_R, y_T);
+        ctx.lineTo(x_R, y_B);
+
+        // S3 Wires
+        const s3_y_center = (y_T + y_B) / 2;
+        const s3_len = 50;
+        ctx.moveTo(x_mid, y_T);
+        ctx.lineTo(x_mid, s3_y_center - s3_len / 2);
+        ctx.moveTo(x_mid, s3_y_center + s3_len / 2);
+        ctx.lineTo(x_mid, y_B);
+
+        // Battery Wires
+        ctx.moveTo(x_L, y_B);
+        ctx.lineTo(x_L, y_batt_line);
+        ctx.lineTo(x_batt_center - 30, y_batt_line);
+        ctx.moveTo(x_R, y_B);
+        ctx.lineTo(x_R, y_batt_line);
+        ctx.lineTo(x_batt_center + 30, y_batt_line);
+        ctx.stroke();
+
+        // --- Draw Components ---
+
+        // Resistor R1
+        ctx.strokeRect(r1_x_center - res_w / 2, y_T - res_h / 2, res_w, res_h);
+        ctx.font = serifFont;
+        ctx.fillText('R', r1_x_center, y_T + res_h + 5);
+        ctx.font = subscriptFont;
+        ctx.fillText('1', r1_x_center + 10, y_T + res_h + 8);
+
+        // Resistor R2
+        ctx.strokeRect(r2_x_center - res_w / 2, y_B - res_h / 2, res_w, res_h);
+        ctx.font = serifFont;
+        ctx.fillText('R', r2_x_center, y_B + res_h + 5);
+        ctx.font = subscriptFont;
+        ctx.fillText('2', r2_x_center + 10, y_B + res_h + 8);
+
+        // Switch S1
+        drawHSwitch(s1_x_center - sw_len / 2, y_T, sw_len, 'S₁', 'above');
+        
+        // Switch S2
+        drawHSwitch(s2_x_center - sw_len / 2, y_B, sw_len, 'S₂', 'below');
+        
+        // Switch S3
+        drawVSwitch(x_mid, s3_y_center - s3_len / 2, s3_len, 'S₃', 'left');
+
+        // --- Draw Junctions ---
+        function drawJunction(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        drawJunction(x_L, y_T);
+        drawJunction(x_L, y_B);
+        drawJunction(x_R, y_T);
+        drawJunction(x_R, y_B);
+        drawJunction(x_mid, y_T);
+        drawJunction(x_mid, y_B);
+
+        // --- Draw Battery ---
+        function drawBattery(x, y, w, h) {
+            // Wires to battery
+            ctx.beginPath();
+            ctx.moveTo(x - 30, y); ctx.lineTo(x - w / 2, y);
+            ctx.moveTo(x + 30, y); ctx.lineTo(x + w / 2, y);
+            ctx.stroke();
+            // Long plate (positive)
+            ctx.beginPath();
+            ctx.moveTo(x - w / 2, y - h / 2);
+            ctx.lineTo(x - w / 2, y + h / 2);
+            ctx.stroke();
+            // Short plate (negative)
+            ctx.save();
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(x + w / 2, y - h / 4);
+            ctx.lineTo(x + w / 2, y + h / 4);
+            ctx.stroke();
+            ctx.restore();
+        }
+        drawBattery(x_batt_center, y_batt_line, 12, 30);
+
+
+        // --- Helper functions for drawing switches ---
+        function drawHSwitch(x, y, len, label, label_pos) {
+            const r = 3;
+            const angle = -Math.PI / 6;
+            ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.stroke();
+            ctx.beginPath(); ctx.arc(x + len, y, r, 0, 2 * Math.PI); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + len * Math.cos(angle), y + len * Math.sin(angle));
+            ctx.stroke();
+            ctx.font = serifFont;
+            if (label_pos === 'below') {
+                ctx.fillText(label.slice(0, 1), x + len / 2, y + r + 20);
+                ctx.font = subscriptFont;
+                ctx.fillText(label.slice(1), x + len / 2 + 8, y + r + 22);
+            } else { // 'above'
+                ctx.fillText(label.slice(0, 1), x + len / 2, y - r - 8);
+                ctx.font = subscriptFont;
+                ctx.fillText(label.slice(1), x + len / 2 + 8, y - r - 6);
+            }
+        }
+        
+        function drawVSwitch(x, y, len, label, label_pos) {
+            const r = 3;
+            const angle = Math.PI / 6;
+            ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.stroke();
+            ctx.beginPath(); ctx.arc(x, y + len, r, 0, 2 * Math.PI); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + len * Math.sin(angle), y + len * Math.cos(angle));
+            ctx.stroke();
+            ctx.textAlign = 'left';
+            ctx.font = serifFont;
+            ctx.fillText(label.slice(0, 1), x - 30, y + len / 2 + 5);
+            ctx.font = subscriptFont;
+            ctx.fillText(label.slice(1), x - 22, y + len / 2 + 7);
+            ctx.textAlign = 'center'; // Reset alignment
+        }
+
+    </script>
+</body>
+</html>

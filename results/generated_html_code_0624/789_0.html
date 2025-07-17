@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Análisis de Fuerza Estática de una Viga</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #999;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="beamCanvas" width="800" height="500"></canvas>
+<script>
+  const canvas = document.getElementById('beamCanvas');
+  const ctx = canvas.getContext('2d');
+  
+  // --- Estilos y Parámetros Globales ---
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 2.5;
+  ctx.font = '22px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  const l = 600;
+  const xA = 100;
+  const yBeam = 260;
+  
+  const xB = xA + l;
+  const xD = xA + l / 4;
+  const xMid = xA + l / 2;
+  
+  const beamThickness = 8;
+  const qHeight = 60;
+  
+  const yBeamTop = yBeam - beamThickness / 2;
+  const yBeamBottom = yBeam + beamThickness / 2;
+  
+  const yLoadBase = yBeamTop - 5; 
+  const yLoadLevel_q = yLoadBase - qHeight;
+  const yLoadLevel_2q = yLoadLevel_q - qHeight;
+
+  // --- Funciones Auxiliares ---
+
+  // Dibuja una punta de flecha (estilo lineal para dimensiones horizontales)
+  function drawLineArrowhead(x, y, angle) {
+    const headLength = 12;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(headLength, -headLength / 2);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(headLength, headLength / 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+  
+  // Dibuja una punta de flecha (rellena para fuerzas/cargas)
+  function drawFilledArrowhead(x, y, angle, size = 10) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, -size / 2.5);
+    ctx.lineTo(-size, size / 2.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Dibuja fracciones como l/4
+  function drawFraction(numerator, denominator, x, y) {
+    const oldFont = ctx.font;
+    ctx.font = 'italic 22px serif';
+    const numMetrics = ctx.measureText(numerator);
+    ctx.font = '22px serif';
+    const denMetrics = ctx.measureText(denominator);
+    const barWidth = Math.max(numMetrics.width, denMetrics.width) + 8;
+
+    ctx.font = 'italic 22px serif';
+    ctx.fillText(numerator, x, y - 13);
+    
+    ctx.beginPath();
+    ctx.moveTo(x - barWidth / 2, y);
+    ctx.lineTo(x + barWidth / 2, y);
+    ctx.stroke();
+    
+    ctx.font = '22px serif';
+    ctx.fillText(denominator, x, y + 14);
+    ctx.font = oldFont;
+  }
+
+  // Dibuja el sombreado para el suelo
+  function drawHatching(x_center, y_base, width) {
+    const hatchLength = 15;
+    const hatchSpacing = 8;
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x_center - width/2, y_base);
+    ctx.lineTo(x_center + width/2, y_base);
+    ctx.stroke();
+    for(let i = x_center - width/2; i <= x_center + width/2; i += hatchSpacing) {
+        ctx.moveTo(i, y_base);
+        ctx.lineTo(i - hatchLength/2, y_base + hatchLength);
+        ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // --- Dibujo de Componentes Principales ---
+
+  // 1. Dibujar la viga
+  ctx.fillRect(xA, yBeamTop, l, beamThickness);
+  
+  // 2. Dibujar soportes
+  function drawSupport(x) {
+      const supportHeight = 35;
+      const supportWidth = 40;
+      const pinRadius = 4;
+      
+      ctx.beginPath();
+      ctx.arc(x, yBeamBottom + pinRadius, pinRadius, 0, 2 * Math.PI);
+      ctx.stroke();
+      
+      const triTopY = yBeamBottom + 2 * pinRadius;
+      const triBottomY = triTopY + supportHeight;
+      ctx.beginPath();
+      ctx.moveTo(x, triTopY);
+      ctx.lineTo(x - supportWidth/2, triBottomY);
+      ctx.lineTo(x + supportWidth/2, triBottomY);
+      ctx.closePath();
+      ctx.stroke();
+      
+      drawHatching(x, triBottomY, supportWidth + 20);
+      return triBottomY;
+  }
+  
+  const supportDBottomY = drawSupport(xD);
+  const supportBBottomY = drawSupport(xB);
+
+  // 3. Dibujar la carga distribuida
+  ctx.beginPath();
+  ctx.moveTo(xA, yLoadLevel_q);
+  ctx.lineTo(xMid, yLoadLevel_2q);
+  ctx.lineTo(xB, yLoadLevel_q);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(xA, yLoadLevel_q);
+  ctx.lineTo(xB, yLoadLevel_q);
+  ctx.stroke();
+  
+  const numFillLines = 24;
+  for (let i = 0; i <= numFillLines; i++) {
+    const x = xA + i * (l / numFillLines);
+    let yTop;
+    if (x <= xMid) {
+        yTop = yLoadLevel_q + (yLoadLevel_2q - yLoadLevel_q) * (x - xA) / (xMid - xA);
+    } else {
+        yTop = yLoadLevel_2q + (yLoadLevel_q - yLoadLevel_2q) * (x - xMid) / (xB - xMid);
+    }
+    
+    ctx.beginPath();
+    ctx.moveTo(x, yTop);
+    ctx.lineTo(x, yLoadBase);
+    ctx.stroke();
+    
+    drawFilledArrowhead(x, yLoadBase, Math.PI / 2);
+  }
+
+  // 4. Dibujar dimensiones y etiquetas
+  const yDimBase = Math.max(supportDBottomY, supportBBottomY) + 45;
+
+  // Líneas de extensión vertical
+  ctx.save();
+  ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(xA, yBeamBottom); ctx.lineTo(xA, yDimBase);
+  ctx.moveTo(xD, supportDBottomY-10); ctx.lineTo(xD, yDimBase);
+  ctx.moveTo(xMid, yBeamTop); ctx.lineTo(xMid, yDimBase);
+  ctx.moveTo(xB, supportBBottomY-10); ctx.lineTo(xB, yDimBase);
+  ctx.stroke();
+  ctx.restore();
+
+  // Líneas de cota horizontales
+  function drawHorizontalDim(x1, x2, y, label_num, label_den) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y); ctx.lineTo(x2, y);
+    ctx.stroke();
+    drawLineArrowhead(x1, y, 0);
+    drawLineArrowhead(x2, y, Math.PI);
+    drawFraction(label_num, label_den, (x1+x2)/2, y-20);
+  }
+
+  drawHorizontalDim(xA, xD, yDimBase, 'l', '4');
+  drawHorizontalDim(xD, xMid, yDimBase, 'l', '4');
+  drawHorizontalDim(xMid, xB, yDimBase, 'l', '2');
+
+  // Dimensiones de carga 'q'
+  const xLoadDim = xA - 50;
+  ctx.beginPath();
+  ctx.moveTo(xLoadDim, yLoadBase); ctx.lineTo(xLoadDim, yLoadLevel_2q);
+  ctx.stroke();
+  drawFilledArrowhead(xLoadDim, yLoadBase, Math.PI / 2, 8);
+  drawFilledArrowhead(xLoadDim, yLoadLevel_2q, -Math.PI / 2, 8);
+  ctx.beginPath();
+  ctx.moveTo(xLoadDim - 5, yLoadLevel_q); ctx.lineTo(xLoadDim + 5, yLoadLevel_q);
+  ctx.stroke();
+
+  ctx.textAlign = 'right';
+  ctx.font = 'italic 22px serif';
+  ctx.fillText('q', xLoadDim - 10, (yLoadBase + yLoadLevel_q) / 2);
+  ctx.fillText('q', xLoadDim - 10, (yLoadLevel_q + yLoadLevel_2q) / 2);
+
+  // Etiquetas de los puntos A, B, D
+  ctx.font = '24px serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('A', xA, yDimBase + 30);
+  ctx.fillText('D', xD, supportDBottomY + 20);
+  ctx.fillText('B', xB, supportBBottomY + 20);
+
+</script>
+</body>
+</html>

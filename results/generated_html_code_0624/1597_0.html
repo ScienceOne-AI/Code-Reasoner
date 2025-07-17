@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>麦克斯韦滚摆</title>
+<meta charset="UTF-8">
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw arrows for dimension lines
+    function drawArrow(ctx, x, y, direction, size = 6) {
+        ctx.beginPath();
+        if (direction === 'up') {
+            ctx.moveTo(x, y); ctx.lineTo(x - size / 2, y + size);
+            ctx.moveTo(x, y); ctx.lineTo(x + size / 2, y + size);
+        } else if (direction === 'down') {
+            ctx.moveTo(x, y); ctx.lineTo(x - size / 2, y - size);
+            ctx.moveTo(x, y); ctx.lineTo(x + size / 2, y - size);
+        }
+        ctx.stroke();
+    }
+
+    // Drawing Parameters
+    const centerX = canvas.width / 2;
+    const supportY = 100;
+    const axleY = 280;
+    const axleRadius_r = 12;
+    const discRadius_R = 80;
+    const axleHalfLength = 220;
+    const discWidth = 60;
+    const stringAttachOffset = 130;
+
+    // --- Draw Top Support ---
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, supportY);
+    ctx.lineTo(canvas.width, supportY);
+    ctx.stroke();
+    // Hatching for support
+    ctx.lineWidth = 1;
+    const hatchSpacing = 20;
+    for (let i = 0; i < canvas.width; i += hatchSpacing) {
+        ctx.beginPath();
+        ctx.moveTo(i, supportY);
+        ctx.lineTo(i + hatchSpacing, supportY - hatchSpacing);
+        ctx.stroke();
+    }
+
+    // --- Draw Maxwell's Wheel ---
+    // Disc (drawn first, so axle is on top)
+    ctx.lineWidth = 2;
+    ctx.fillStyle = 'white';
+    const discX = centerX - discWidth / 2;
+    const discY = axleY - discRadius_R;
+    ctx.fillRect(discX, discY, discWidth, 2 * discRadius_R);
+    // Hatching for disc
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(discX, discY, discWidth, 2 * discRadius_R);
+    ctx.clip();
+    ctx.lineWidth = 1.5;
+    const discHatchStep = 12;
+    for (let i = - (2 * discRadius_R + discWidth); i < (discWidth + 2 * discRadius_R); i += discHatchStep) {
+        ctx.beginPath();
+        ctx.moveTo(discX + i, discY);
+        ctx.lineTo(discX + i - 2 * discRadius_R, discY + 2 * discRadius_R);
+        ctx.stroke();
+    }
+    ctx.restore();
+    ctx.strokeRect(discX, discY, discWidth, 2 * discRadius_R);
+
+    // Axle
+    ctx.lineWidth = 2;
+    ctx.fillStyle = 'white';
+    ctx.fillRect(centerX - axleHalfLength, axleY - axleRadius_r, 2 * axleHalfLength, 2 * axleRadius_r);
+    ctx.strokeRect(centerX - axleHalfLength, axleY - axleRadius_r, 2 * axleHalfLength, 2 * axleRadius_r);
+
+    // --- Draw Suspension Strings ---
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(centerX - stringAttachOffset, supportY);
+    ctx.lineTo(centerX - stringAttachOffset, axleY - axleRadius_r);
+    ctx.moveTo(centerX + stringAttachOffset, supportY);
+    ctx.lineTo(centerX + stringAttachOffset, axleY - axleRadius_r);
+    ctx.stroke();
+
+    // --- Draw Winding Marks on Axle ---
+    ctx.lineWidth = 1;
+    // Left side marks
+    for (let i = 0; i < 3; i++) {
+        let x = centerX - 180 + i * 6;
+        ctx.beginPath();
+        ctx.moveTo(x, axleY - axleRadius_r);
+        ctx.lineTo(x, axleY - axleRadius_r + 6);
+        ctx.stroke();
+    }
+    // Right side marks
+    for (let i = 0; i < 3; i++) {
+        let x = centerX + 180 + i * 6;
+        ctx.beginPath();
+        ctx.moveTo(x, axleY - axleRadius_r);
+        ctx.lineTo(x, axleY - axleRadius_r + 6);
+        ctx.stroke();
+    }
+
+    // --- Draw Dimensions and Labels ---
+    ctx.lineWidth = 1;
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Dimension for '2r'
+    const dim_2r_line_x = 40;
+    const dim_2r_label_x = 20;
+    // Lines for dimension
+    ctx.beginPath();
+    ctx.moveTo(centerX - axleHalfLength, axleY - axleRadius_r);
+    ctx.lineTo(dim_2r_line_x, axleY - axleRadius_r);
+    ctx.moveTo(centerX - axleHalfLength, axleY + axleRadius_r);
+    ctx.lineTo(dim_2r_line_x, axleY + axleRadius_r);
+    ctx.moveTo(dim_2r_line_x, axleY - axleRadius_r);
+    ctx.lineTo(dim_2r_line_x, axleY + axleRadius_r);
+    ctx.stroke();
+    // Arrows for dimension
+    drawArrow(ctx, dim_2r_line_x, axleY - axleRadius_r, 'up', 5);
+    drawArrow(ctx, dim_2r_line_x, axleY + axleRadius_r, 'down', 5);
+    // Label for dimension
+    ctx.font = "italic 22px 'Times New Roman'";
+    ctx.fillText("2r", dim_2r_label_x, axleY);
+
+    // Dimension for '2R'
+    const dim_2R_line_x = centerX + discWidth / 2 + 40;
+    const dim_2R_label_x = dim_2R_line_x + 30;
+    // Lines for dimension
+    ctx.beginPath();
+    ctx.moveTo(centerX + discWidth / 2, axleY - discRadius_R);
+    ctx.lineTo(dim_2R_line_x, axleY - discRadius_R);
+    ctx.moveTo(centerX + discWidth / 2, axleY + discRadius_R);
+    ctx.lineTo(dim_2R_line_x, axleY + discRadius_R);
+    ctx.moveTo(dim_2R_line_x, axleY - discRadius_R);
+    ctx.lineTo(dim_2R_line_x, axleY + discRadius_R);
+    ctx.stroke();
+    // Arrows for dimension
+    drawArrow(ctx, dim_2R_line_x, axleY - discRadius_R, 'up', 8);
+    drawArrow(ctx, dim_2R_line_x, axleY + discRadius_R, 'down', 8);
+    // Label for dimension
+    ctx.font = "italic 26px 'Times New Roman'";
+    ctx.fillText("2R", dim_2R_label_x, axleY);
+
+    // --- Draw Caption ---
+    ctx.font = "28px 'SimSun', 'STSong'";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText("习题 3-5 图", centerX, canvas.height - 10);
+</script>
+</body>
+</html>

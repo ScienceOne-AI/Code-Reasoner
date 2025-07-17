@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Inverting Op-Amp Circuit</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="550" height="350"></canvas>
+<script>
+const canvas = document.getElementById('circuitCanvas');
+const ctx = canvas.getContext('2d');
+// Clear canvas with white background
+ctx.fillStyle = 'white';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+ctx.fillStyle = 'black';
+
+// --- Helper Functions ---
+function drawResistor(x, y, width, height, label) {
+    ctx.save();
+    // Draw white rectangle with black border
+    ctx.beginPath();
+    ctx.rect(x - width / 2, y - height / 2, width, height);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'white';
+    ctx.lineWidth = 1.5;
+    ctx.fill();
+    ctx.stroke();
+    
+    // Draw label
+    ctx.fillStyle = 'black';
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(label, x, y - height / 2 - 4);
+    ctx.restore();
+}
+
+function drawTerminal(x, y) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'white';
+    ctx.lineWidth = 1.5;
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawDot(x, y) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, 2 * Math.PI);
+    ctx.fillStyle = 'black';
+    ctx.fill();
+    ctx.restore();
+}
+
+// --- Main Drawing ---
+ctx.strokeStyle = 'black';
+ctx.lineWidth = 1.5;
+
+// Op-Amp Body
+const opampX = 270;
+const opampY = 150;
+const opampWidth = 100;
+const opampHeight = 80;
+const opampBaseX = opampX - opampWidth / 2;
+const opampTipX = opampX + opampWidth / 2;
+
+ctx.beginPath();
+ctx.moveTo(opampBaseX, opampY - opampHeight / 2);
+ctx.lineTo(opampTipX, opampY);
+ctx.lineTo(opampBaseX, opampY + opampHeight / 2);
+ctx.closePath();
+ctx.stroke();
+
+// Op-Amp Inputs and Output lines
+const invertingY = opampY - 20;
+const nonInvertingY = opampY + 20;
+const inputNodeX = opampBaseX - 40;
+ctx.beginPath();
+ctx.moveTo(inputNodeX, invertingY);
+ctx.lineTo(opampBaseX, invertingY);
+ctx.moveTo(inputNodeX + 20, nonInvertingY);
+ctx.lineTo(opampBaseX, nonInvertingY);
+ctx.moveTo(opampTipX, opampY);
+ctx.lineTo(opampTipX + 70, opampY);
+ctx.stroke();
+
+// Op-Amp Labels (+, -)
+ctx.font = '24px Arial';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('-', opampBaseX + 15, invertingY);
+ctx.fillText('+', opampBaseX + 15, nonInvertingY);
+
+// Power Supply
+ctx.font = '16px Arial';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+ctx.beginPath();
+ctx.moveTo(opampX, opampY - opampHeight / 2);
+ctx.lineTo(opampX, opampY - opampHeight / 2 - 20);
+ctx.stroke();
+ctx.fillText('+8.0 V', opampX, opampY - opampHeight / 2 - 25);
+
+ctx.textBaseline = 'top';
+ctx.beginPath();
+ctx.moveTo(opampX, opampY + opampHeight / 2);
+ctx.lineTo(opampX, opampY + opampHeight / 2 + 20);
+ctx.stroke();
+ctx.fillText('−8.0 V', opampX, opampY + opampHeight / 2 + 25); // Using U+2212 MINUS SIGN
+
+// Input side (Vin and Rin)
+const rinX = inputNodeX - 60;
+const vinTermX = 60;
+drawTerminal(vinTermX, invertingY);
+// V_IN label with subscript
+ctx.font = '16px Arial';
+ctx.textAlign = 'right';
+ctx.textBaseline = 'middle';
+ctx.fillText('V', vinTermX - 10, invertingY);
+ctx.font = '12px Arial';
+ctx.textAlign = 'left';
+ctx.fillText('IN', vinTermX - 8, invertingY + 6);
+
+ctx.beginPath();
+ctx.moveTo(vinTermX + 4, invertingY);
+ctx.lineTo(rinX - 30, invertingY);
+ctx.stroke();
+drawResistor(rinX, invertingY, 60, 20, '480 Ω');
+ctx.beginPath();
+ctx.moveTo(rinX + 30, invertingY);
+ctx.lineTo(inputNodeX, invertingY);
+ctx.stroke();
+
+// Feedback Loop (Rf)
+const feedbackTopY = 80;
+const outputNodeX = opampTipX + 70;
+const rfX = (inputNodeX + outputNodeX) / 2;
+drawDot(inputNodeX, invertingY);
+ctx.beginPath();
+ctx.moveTo(inputNodeX, invertingY);
+ctx.lineTo(inputNodeX, feedbackTopY);
+ctx.lineTo(rfX - 40, feedbackTopY);
+ctx.stroke();
+drawResistor(rfX, feedbackTopY, 80, 20, '1.2 kΩ');
+ctx.beginPath();
+ctx.moveTo(rfX + 40, feedbackTopY);
+ctx.lineTo(outputNodeX, feedbackTopY);
+ctx.lineTo(outputNodeX, opampY);
+ctx.stroke();
+drawDot(outputNodeX, opampY);
+
+// Output side (Vout)
+const voutTermX = 490;
+drawTerminal(voutTermX, opampY);
+// V_OUT label with subscript
+ctx.font = '16px Arial';
+ctx.textAlign = 'left';
+ctx.textBaseline = 'middle';
+ctx.fillText('V', voutTermX + 10, opampY);
+ctx.font = '12px Arial';
+ctx.fillText('OUT', voutTermX + 10 + ctx.measureText('V').width - 2, opampY + 6);
+
+ctx.beginPath();
+ctx.moveTo(outputNodeX, opampY);
+ctx.lineTo(voutTermX - 4, opampY);
+ctx.stroke();
+
+// Ground Connection
+const groundY = 250;
+const groundNodeX = inputNodeX + 20;
+ctx.beginPath();
+ctx.moveTo(groundNodeX, nonInvertingY);
+ctx.lineTo(groundNodeX, groundY);
+ctx.stroke();
+drawDot(groundNodeX, groundY);
+
+// Ground Line
+const groundTermLeftX = 60;
+const groundTermRightX = 490;
+ctx.beginPath();
+ctx.moveTo(groundTermLeftX, groundY);
+ctx.lineTo(groundTermRightX, groundY);
+ctx.stroke();
+drawTerminal(groundTermLeftX, groundY);
+ctx.font = '16px Arial';
+ctx.textAlign = 'right';
+ctx.textBaseline = 'middle';
+ctx.fillText('0 V', groundTermLeftX - 10, groundY);
+
+drawTerminal(groundTermRightX, groundY);
+ctx.textAlign = 'left';
+ctx.fillText('0 V', groundTermRightX + 10, groundY);
+
+// Figure Label
+ctx.font = 'bold 16px Arial';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+ctx.fillText('Fig. 7.1', canvas.width / 2, canvas.height - 10);
+
+</script>
+</body>
+</html>

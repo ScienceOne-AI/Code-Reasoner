@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comet Path Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrowhead at a point with a given angle
+        function drawArrowhead(ctx, x, y, angle, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            // The arrowhead points towards the negative x-direction before rotation
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2.5);
+            ctx.lineTo(-size, size / 2.5);
+            ctx.closePath();
+            ctx.fillStyle = 'black';
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // 1. Draw the path of the comet (a quadratic Bezier curve)
+        const p0 = { x: 100, y: 100 };
+        const p1 = { x: 600, y: 225 };
+        const p2 = { x: 150, y: 400 };
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.quadraticCurveTo(p1.x, p1.y, p2.x, p2.y);
+        ctx.stroke();
+
+        // 2. Draw the star (a grey circle)
+        const star = { x: 500, y: 225, radius: 35 };
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.radius, 0, 2 * Math.PI);
+        ctx.fillStyle = '#D3D3D3'; // lightgray
+        ctx.fill();
+        ctx.stroke();
+
+        // 3. Draw the comet at point X
+        // Calculate point X at t=0.15 on the curve
+        const tX = 0.15;
+        const xX = Math.pow(1 - tX, 2) * p0.x + 2 * (1 - tX) * tX * p1.x + Math.pow(tX, 2) * p2.x;
+        const yX = Math.pow(1 - tX, 2) * p0.y + 2 * (1 - tX) * tX * p1.y + Math.pow(tX, 2) * p2.y;
+        ctx.beginPath();
+        ctx.arc(xX, yX, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+
+        // 4. Draw point Y (closest approach)
+        // Visually place Y on the path near the star
+        const yY = { x: star.x - star.radius - 8, y: star.y };
+        ctx.beginPath();
+        ctx.arc(yY.x, yY.y, 3, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+
+
+        // 5. Draw arrows on the path to show direction
+        // Arrow 1 (near X)
+        const tArrow1 = tX; // at the same position as X
+        const dx1 = 2 * (1 - tArrow1) * (p1.x - p0.x) + 2 * tArrow1 * (p2.x - p1.x);
+        const dy1 = 2 * (1 - tArrow1) * (p1.y - p0.y) + 2 * tArrow1 * (p2.y - p1.y);
+        const angle1 = Math.atan2(dy1, dx1);
+        // We draw the arrow by moving slightly along the path from X
+        const arrow1Pos = {
+            x: Math.pow(1 - (tX+0.01), 2) * p0.x + 2 * (1 - (tX+0.01)) * (tX+0.01) * p1.x + Math.pow((tX+0.01), 2) * p2.x,
+            y: Math.pow(1 - (tX+0.01), 2) * p0.y + 2 * (1 - (tX+0.01)) * (tX+0.01) * p1.y + Math.pow((tX+0.01), 2) * p2.y
+        }
+        drawArrowhead(ctx, arrow1Pos.x, arrow1Pos.y, angle1, 10);
+        
+        // Arrow 2 (on the outgoing path)
+        const tArrow2 = 0.8;
+        const xArrow2 = Math.pow(1 - tArrow2, 2) * p0.x + 2 * (1 - tArrow2) * tArrow2 * p1.x + Math.pow(tArrow2, 2) * p2.x;
+        const yArrow2 = Math.pow(1 - tArrow2, 2) * p0.y + 2 * (1 - tArrow2) * tArrow2 * p1.y + Math.pow(tArrow2, 2) * p2.y;
+        const dx2 = 2 * (1 - tArrow2) * (p1.x - p0.x) + 2 * tArrow2 * (p2.x - p1.x);
+        const dy2 = 2 * (1 - tArrow2) * (p1.y - p0.y) + 2 * tArrow2 * (p2.y - p1.y);
+        const angle2 = Math.atan2(dy2, dx2);
+        drawArrowhead(ctx, xArrow2, yArrow2, angle2, 10);
+
+        // 6. Draw velocity vector at X
+        const velVecLength = 80;
+        const xVelEnd = xX + velVecLength * Math.cos(angle1);
+        const yVelEnd = yX + velVecLength * Math.sin(angle1);
+        ctx.beginPath();
+        ctx.moveTo(xX, yX);
+        ctx.lineTo(xVelEnd, yVelEnd);
+        ctx.stroke();
+        drawArrowhead(ctx, xVelEnd, yVelEnd, angle1, 10);
+        
+        // 7. Add labels and text
+        ctx.font = '16px Arial';
+        ctx.fillStyle = 'black';
+
+        // Comet labels
+        ctx.textAlign = 'left';
+        ctx.fillText('X', xX - 20, yX);
+        ctx.beginPath();
+        ctx.moveTo(xX - 30, yX + 30);
+        ctx.lineTo(xX, yX);
+        ctx.stroke();
+        ctx.fillText('comet', xX - 140, yX + 35);
+        ctx.fillText('mass 2.20 × 10\u00B9\u2074 kg', xX - 140, yX + 55);
+
+        // Velocity label
+        ctx.fillText('34.1 km s\u207B\u00B9', xX + 60, yX - 5);
+        
+        // Star labels
+        ctx.textAlign = 'left';
+        const starLabelX = star.x + star.radius + 15;
+        const starLabelY = star.y - star.radius;
+        ctx.beginPath();
+        ctx.moveTo(starLabelX, starLabelY + 10);
+        ctx.lineTo(star.x + star.radius * Math.cos(-Math.PI/4), star.y + star.radius * Math.sin(-Math.PI/4));
+        ctx.stroke();
+        ctx.fillText('star', starLabelX, starLabelY);
+        ctx.fillText('mass 1.99 × 10\u00B3\u2070 kg', starLabelX, starLabelY + 20);
+
+        // Point Y label
+        ctx.fillText('Y', yY.x + 10, yY.y + 5);
+
+        // Path label
+        ctx.textAlign = 'right';
+        const pathLabelY = yArrow2 + 50;
+        const pathLabelX = xArrow2 + 100;
+        ctx.fillText('path of comet', pathLabelX, pathLabelY);
+        ctx.beginPath();
+        ctx.moveTo(pathLabelX, pathLabelY - 10);
+        ctx.lineTo(xArrow2 + 20, yArrow2 + 10);
+        ctx.stroke();
+
+        // Figure caption
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 16px Arial';
+        ctx.fillText('Fig. 1.1 (not to scale)', canvas.width / 2, canvas.height - 15);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electron Path in Magnetic Field</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const centerX = 280;
+        const centerY = 250;
+        const outerRadius = 150;
+        const innerRadius = 110;
+
+        // Function to draw an arrow on the circular path
+        // posAngle is in canvas coordinates (0 at 3 o'clock, PI/2 at 6 o'clock)
+        // For counter-clockwise motion, tangent angle is posAngle - PI/2
+        function drawArrowOnCircle(ctx, cx, cy, r, posAngle, size) {
+            const x = cx + r * Math.cos(posAngle);
+            const y = cy + r * Math.sin(posAngle);
+            const tangentAngle = posAngle - Math.PI / 2;
+
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(tangentAngle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2.5);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2.5);
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // 1. Draw the region of uniform magnetic field (grey circle)
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, outerRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = '#E0E0E0';
+        ctx.fill();
+
+        // 2. Draw the path of electrons (dashed circle)
+        ctx.beginPath();
+        ctx.setLineDash([8, 6]);
+        ctx.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid line
+
+        // 3. Draw the arrows indicating counter-clockwise motion
+        // Angles are chosen to match the visual placement in the original image.
+        drawArrowOnCircle(ctx, centerX, centerY, innerRadius, 1.7 * Math.PI, 15); // Top-left
+        drawArrowOnCircle(ctx, centerX, centerY, innerRadius, 1.15 * Math.PI, 15); // Left-bottom
+        drawArrowOnCircle(ctx, centerX, centerY, innerRadius, 0.45 * Math.PI, 15); // Bottom-right
+
+        // 4. Draw the injection point S
+        const sAngle = Math.PI; // Position S exactly on the left
+        const sx = centerX + innerRadius * Math.cos(sAngle);
+        const sy = centerY + innerRadius * Math.sin(sAngle);
+        
+        ctx.beginPath();
+        ctx.arc(sx, sy, 4, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+
+        ctx.font = 'bold 16px Arial';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('S', sx - 8, sy);
+
+        // 5. Draw labels and pointers
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'black';
+        ctx.textAlign = 'left';
+
+        // Label for the magnetic field region
+        const label1_x = centerX + outerRadius + 40;
+        const label1_y = centerY - 60;
+        const pointer1_x = centerX + outerRadius * Math.cos(-Math.PI / 10);
+        const pointer1_y = centerY + outerRadius * Math.sin(-Math.PI / 10);
+        ctx.beginPath();
+        ctx.moveTo(label1_x, label1_y);
+        ctx.lineTo(pointer1_x, pointer1_y);
+        ctx.stroke();
+
+        ctx.font = '16px Arial';
+        ctx.fillText('region of uniform', label1_x + 5, label1_y - 25);
+        ctx.fillText('magnetic field,', label1_x + 5, label1_y - 5);
+        let text_x = label1_x + 5;
+        ctx.fillText('flux density ', text_x, label1_y + 15);
+        let textWidth = ctx.measureText('flux density ').width;
+        text_x += textWidth;
+        ctx.font = 'italic 16px Arial';
+        ctx.fillText('B', text_x, label1_y + 15);
+
+        // Label for the electron path
+        const label2_x = centerX + outerRadius + 40;
+        const label2_y = centerY + 80;
+        const pointer2_x = centerX + innerRadius * Math.cos(Math.PI / 5);
+        const pointer2_y = centerY + innerRadius * Math.sin(Math.PI / 5);
+        ctx.beginPath();
+        ctx.moveTo(label2_x, label2_y);
+        ctx.lineTo(pointer2_x, pointer2_y);
+        ctx.stroke();
+
+        ctx.font = '16px Arial';
+        ctx.fillText('path of electrons,', label2_x + 5, label2_y - 10);
+        text_x = label2_x + 5;
+        ctx.fillText('radius ', text_x, label2_y + 10);
+        textWidth = ctx.measureText('radius ').width;
+        text_x += textWidth;
+        ctx.font = 'italic 16px Arial';
+        ctx.fillText('r', text_x, label2_y + 10);
+
+
+        // 6. Draw the figure caption
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Fig. 8.1', centerX, canvas.height - 20);
+
+    </script>
+</body>
+</html>

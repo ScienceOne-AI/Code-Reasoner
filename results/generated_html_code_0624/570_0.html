@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Martin Furnace Crane</title>
+    <style>
+        body { margin: 20px; display: flex; justify-content: center; align-items: center; background-color: #f0f0f0; }
+        canvas { border: 1px solid #999; background-color: white; }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="600"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Configuration ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.font = 'bold 24px Arial';
+    
+    // --- Key Coordinates and Scale ---
+    const centerX = 350;
+    const scale = 50; // pixels per meter
+    const m_dist = 1 * scale;
+    const five_m_dist = 5 * scale;
+
+    const yBeamTop = 150;
+    const beamHeight = 40;
+    const yBeamBottom = yBeamTop + beamHeight;
+    
+    const yTrolleyBase = yBeamBottom;
+    const yO = yTrolleyBase + 120; // Vertical position of point O
+    const yArm = yO + 40; // Vertical position of the shovel arm
+    
+    // --- Helper Function for Hatching ---
+    function drawHatch(x, y, w, h) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, w, h);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        const step = 10;
+        for (let i = -h; i < w; i += step) {
+            ctx.moveTo(x + i, y);
+            ctx.lineTo(x + i + h, y + h);
+        }
+        ctx.lineWidth = 1.5;
+        ctx.clip(); // Clip to the rectangle bounds
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // --- Helper Function for Arrows ---
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 12; // length of head in pixels
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // 1. Draw Walls and Supports
+    // Left Wall
+    drawHatch(30, 0, 70, 600);
+    // Left Support for Beam
+    ctx.beginPath();
+    ctx.moveTo(100, yBeamBottom);
+    ctx.lineTo(120, yBeamBottom);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.rect(100, yBeamBottom, 20, 20);
+    ctx.moveTo(110, yBeamBottom + 20);
+    ctx.arc(110, yBeamBottom + 25, 5, 0, Math.PI * 2); // Roller
+    ctx.fill();
+    ctx.stroke();
+    
+    // Right Wall
+    drawHatch(720, 0, 80, 250);
+    drawHatch(720, 450, 80, 150);
+    // Right Support
+    ctx.beginPath();
+    ctx.rect(700, yBeamTop-20, 20, 20);
+    ctx.moveTo(710, yBeamTop);
+    ctx.lineTo(710, yBeamTop + 40); // Vertical rod
+    ctx.moveTo(710, yBeamTop + 40);
+    ctx.arc(710, yBeamTop + 45, 5, 0, 2 * Math.PI); // Pin
+    ctx.moveTo(695, yBeamTop + 60);
+    ctx.lineTo(725, yBeamTop + 60); // T-bar
+    ctx.stroke();
+    ctx.fill();
+
+    // 2. Draw Beam B
+    const beamStartX = 120;
+    const beamEndX = 700;
+    ctx.beginPath();
+    ctx.rect(beamStartX, yBeamTop, beamEndX - beamStartX, beamHeight);
+    ctx.stroke();
+    ctx.fillText('B', beamStartX + 200, yBeamTop + beamHeight / 2);
+
+    // 3. Draw Trolley (A) and Lattice Structure (D)
+    // Trolley Body
+    ctx.beginPath();
+    ctx.rect(centerX - 65, yBeamTop - 50, 130, 40);
+    ctx.stroke();
+    
+    // Wheels
+    const wheelRadius = 15;
+    ctx.beginPath();
+    ctx.arc(centerX - m_dist, yBeamTop - wheelRadius, wheelRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(centerX + m_dist, yBeamTop - wheelRadius, wheelRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+    // Inner wheel circles
+    ctx.beginPath();
+    ctx.arc(centerX - m_dist, yBeamTop - wheelRadius, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(centerX + m_dist, yBeamTop - wheelRadius, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Lattice Structure D
+    const d_width_top = 40;
+    const d_width_bottom = 30;
+    ctx.beginPath();
+    // Outlines
+    ctx.moveTo(centerX - d_width_top, yTrolleyBase);
+    ctx.lineTo(centerX - d_width_bottom, yO);
+    ctx.moveTo(centerX + d_width_top, yTrolleyBase);
+    ctx.lineTo(centerX + d_width_bottom, yO);
+    // Crosses
+    const num_crosses = 4;
+    for (let i = 0; i < num_crosses; i++) {
+        const y1 = yTrolleyBase + i * (yO - yTrolleyBase) / num_crosses;
+        const y2 = yTrolleyBase + (i + 1) * (yO - yTrolleyBase) / num_crosses;
+        const w1_top = d_width_top - i * (d_width_top - d_width_bottom) / num_crosses;
+        const w1_bot = d_width_top - (i+1) * (d_width_top - d_width_bottom) / num_crosses;
+        ctx.moveTo(centerX - w1_top, y1);
+        ctx.lineTo(centerX + w1_top, y1);
+        ctx.moveTo(centerX - w1_top, y1);
+        ctx.lineTo(centerX + w1_bot, y2);
+        ctx.moveTo(centerX + w1_top, y1);
+        ctx.lineTo(centerX - w1_bot, y2);
+    }
+    ctx.stroke();
+
+    // 4. Draw Shovel Arm and Shovel (C)
+    // Base at O
+    ctx.beginPath();
+    ctx.rect(centerX - 40, yO, 80, 30);
+    ctx.stroke();
+    
+    // Arm
+    const armStartX = centerX + 40;
+    const armEndX = centerX + five_m_dist - 30;
+    ctx.beginPath();
+    ctx.moveTo(armStartX, yArm - 10);
+    ctx.lineTo(armStartX + 30, yArm - 10);
+    ctx.lineTo(armEndX - 30, yArm - 5);
+    ctx.lineTo(armEndX, yArm - 5);
+    ctx.moveTo(armStartX, yArm + 10);
+    ctx.lineTo(armStartX + 30, yArm + 10);
+    ctx.lineTo(armEndX - 30, yArm + 5);
+    ctx.lineTo(armEndX, yArm + 5);
+    ctx.stroke();
+    
+    // Shovel C
+    const shovelX = centerX + five_m_dist;
+    const shovelY = yArm;
+    ctx.beginPath();
+    ctx.moveTo(shovelX - 30, shovelY-20);
+    ctx.lineTo(shovelX - 30, shovelY+20);
+    ctx.arc(shovelX, shovelY + 20, 30, Math.PI, 0);
+    ctx.lineTo(shovelX + 30, shovelY - 20);
+    ctx.stroke();
+    // Material in shovel
+    ctx.beginPath();
+    ctx.moveTo(shovelX-25, shovelY-10);
+    ctx.quadraticCurveTo(shovelX, shovelY-25, shovelX+25, shovelY-10);
+    ctx.fill();
+
+    // 5. Draw Annotations
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Labels
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText('A', centerX, yBeamTop - 65);
+    ctx.beginPath();
+    ctx.arc(centerX, yBeamTop-35, 3, 0, 2*Math.PI);
+    ctx.fill();
+    
+    ctx.fillText('D', centerX + 80, yTrolleyBase + 60);
+    ctx.fillText('C', shovelX - 50, shovelY - 40);
+    ctx.fillText('O', centerX - 25, yO + 45);
+    
+    ctx.fillText('E', centerX - m_dist, yBeamBottom + 20);
+    ctx.fillText('F', centerX + m_dist, yBeamBottom + 20);
+
+    // Force Q
+    drawArrow(ctx, shovelX, shovelY + 30, shovelX, shovelY + 80);
+    ctx.fillText('Q', shovelX + 25, shovelY + 55);
+
+    // Dimension lines
+    ctx.lineWidth = 1.5;
+    ctx.font = 'italic 22px Arial';
+    // 5m dimension
+    const yDim5m = yArm + 120;
+    drawArrow(ctx, centerX + 10, yDim5m, centerX, yDim5m);
+    drawArrow(ctx, shovelX - 10, yDim5m, shovelX, yDim5m);
+    ctx.beginPath();
+    ctx.moveTo(centerX, yDim5m);
+    ctx.lineTo(shovelX, yDim5m);
+    ctx.stroke();
+    ctx.fillText('5 m', centerX + five_m_dist / 2, yDim5m - 20);
+    
+    // Vertical helper lines for 5m dimension
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(centerX, yO + 15);
+    ctx.lineTo(centerX, yDim5m);
+    ctx.moveTo(shovelX, shovelY + 30);
+    ctx.lineTo(shovelX, yDim5m);
+    ctx.stroke();
+    ctx.restore();
+    
+    // m dimensions
+    const yDimm = yBeamBottom - 20;
+    ctx.beginPath();
+    ctx.moveTo(centerX - m_dist, yDimm);
+    ctx.lineTo(centerX, yDimm);
+    ctx.moveTo(centerX, yDimm);
+    ctx.lineTo(centerX + m_dist, yDimm);
+    // Ticks for m dimensions
+    ctx.moveTo(centerX-m_dist, yDimm-5); ctx.lineTo(centerX-m_dist, yDimm+5);
+    ctx.moveTo(centerX, yDimm-5); ctx.lineTo(centerX, yDimm+5);
+    ctx.moveTo(centerX+m_dist, yDimm-5); ctx.lineTo(centerX+m_dist, yDimm+5);
+    ctx.stroke();
+    ctx.fillText('m', centerX - m_dist/2, yDimm - 15);
+    ctx.fillText('m', centerX + m_dist/2, yDimm - 15);
+    
+    // Centerline OA
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(centerX, yBeamTop-80);
+    ctx.lineTo(centerX, yO);
+    ctx.stroke();
+    ctx.restore();
+
+</script>
+</body>
+</html>

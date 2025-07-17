@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="circuitCanvas" width="450" height="600"></canvas>
+
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Coordinate Settings ---
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    const x_left = 100;
+    const x_right = 300;
+    
+    const y_top_bus_start = 50;
+    const y_L1 = 80;
+    const y_C1 = 150;
+    const y_C2 = 220;
+    const y_L2 = 290;
+    const y_R = 380;
+    const y_Source = 450;
+    const y_bottom_bus_end = 500;
+    
+    const y_switch_break_upper = 325;
+    const y_switch_break_lower = 355;
+
+
+    // --- Helper functions for drawing components ---
+
+    function drawInductor(x1, y, x2, label) {
+        const inductorWidth = (x2 - x1) * 0.4;
+        const wireLength = (x2 - x1 - inductorWidth) / 2;
+        const startX = x1 + wireLength;
+        const loopRadius = 8;
+        const numLoops = 4;
+        
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        ctx.lineTo(startX, y);
+        ctx.moveTo(x2 - wireLength, y);
+        ctx.lineTo(x2, y);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(startX, y);
+        for (let i = 0; i < numLoops; i++) {
+            ctx.arc(startX + (i + 0.5) * (inductorWidth / numLoops), y, loopRadius, Math.PI, 0, false);
+        }
+        ctx.stroke();
+
+        ctx.font = 'italic 20px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(label, (x1 + x2) / 2, y - 12);
+    }
+
+    function drawCapacitor(x1, y, x2, label) {
+        const midX = (x1 + x2) / 2;
+        const gap = 10;
+        const plateHeight = 25;
+        
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        ctx.lineTo(midX - gap / 2, y);
+        ctx.moveTo(midX + gap / 2, y);
+        ctx.lineTo(x2, y);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(midX - gap / 2, y - plateHeight / 2);
+        ctx.lineTo(midX - gap / 2, y + plateHeight / 2);
+        ctx.moveTo(midX + gap / 2, y - plateHeight / 2);
+        ctx.lineTo(midX + gap / 2, y + plateHeight / 2);
+        ctx.stroke();
+
+        ctx.font = 'italic 20px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(label, (x1 + x2) / 2, y - 12);
+    }
+
+    function drawResistor(x1, y, x2, label) {
+        const boxWidth = 70;
+        const boxHeight = 25;
+        const wireLength = (x2 - x1 - boxWidth) / 2;
+        const startX = x1 + wireLength;
+        
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        ctx.lineTo(startX, y);
+        ctx.moveTo(startX + boxWidth, y);
+        ctx.lineTo(x2, y);
+        ctx.stroke();
+
+        ctx.strokeRect(startX, y - boxHeight / 2, boxWidth, boxHeight);
+
+        ctx.font = 'italic 20px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, (x1 + x2) / 2, y);
+    }
+
+    function drawACSource(x1, y, x2) {
+        const midX = (x1 + x2) / 2;
+        const radius = 22;
+        
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        ctx.lineTo(midX - radius, y);
+        ctx.moveTo(midX + radius, y);
+        ctx.lineTo(x2, y);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.arc(midX, y, radius, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        const sineWaveAmplitude = radius * 0.6;
+        const sineWaveLength = radius * 0.8;
+        ctx.moveTo(midX - sineWaveLength, y);
+        ctx.bezierCurveTo(midX - sineWaveLength / 2, y - sineWaveAmplitude, midX + sineWaveLength / 2, y + sineWaveAmplitude, midX + sineWaveLength, y);
+        ctx.stroke();
+    }
+    
+    function drawArrow(x, y_start, y_end) {
+        const headlen = 8;
+        ctx.beginPath();
+        ctx.moveTo(x, y_start);
+        ctx.lineTo(x, y_end);
+        if (y_end > y_start) { // Down arrow
+            ctx.moveTo(x, y_end);
+            ctx.lineTo(x - headlen/2, y_end - headlen);
+            ctx.moveTo(x, y_end);
+            ctx.lineTo(x + headlen/2, y_end - headlen);
+        } else { // Up arrow
+            ctx.moveTo(x, y_end);
+            ctx.lineTo(x - headlen/2, y_end + headlen);
+            ctx.moveTo(x, y_end);
+            ctx.lineTo(x + headlen/2, y_end + headlen);
+        }
+        ctx.stroke();
+    }
+
+    // --- Main Drawing ---
+
+    // Draw vertical bus bars
+    ctx.beginPath();
+    ctx.moveTo(x_left, y_top_bus_start);
+    ctx.lineTo(x_left, y_bottom_bus_end);
+    
+    ctx.moveTo(x_right, y_top_bus_start);
+    ctx.lineTo(x_right, y_switch_break_upper);
+    ctx.moveTo(x_right, y_switch_break_lower);
+    ctx.lineTo(x_right, y_bottom_bus_end);
+    ctx.stroke();
+
+    // Draw components
+    drawInductor(x_left, y_L1, x_right, 'L₁');
+    drawCapacitor(x_left, y_C1, x_right, 'C₁');
+    drawCapacitor(x_left, y_C2, x_right, 'C₂');
+    drawInductor(x_left, y_L2, x_right, 'L₂');
+    drawResistor(x_left, y_R, x_right, 'R');
+    drawACSource(x_left, y_Source, x_right);
+
+    // Draw Switch K
+    ctx.beginPath();
+    ctx.moveTo(x_right, y_switch_break_upper);
+    ctx.lineTo(x_right + 30, y_switch_break_upper - 20);
+    ctx.stroke();
+    
+    // Draw labels and arrows
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    
+    // Current i_01
+    const y_i01 = (y_L1 + y_C1) / 2;
+    drawArrow(x_right, y_i01 - 10, y_i01 + 10);
+    ctx.fillText('i₀₁', x_right + 15, y_i01);
+
+    // Current i_02
+    const y_i02 = (y_L2 + y_switch_break_upper) / 2 + 10;
+    drawArrow(x_right, y_i02 + 10, y_i02 - 10);
+    ctx.fillText('i₀₂', x_right + 15, y_i02);
+
+    // Nodes A, B and Switch K
+    ctx.font = '20px "Times New Roman"';
+    ctx.fillText('A', x_right + 15, (y_C1 + y_C2) / 2);
+    ctx.fillText('B', x_right + 15, (y_C2 + y_L2) / 2);
+    ctx.fillText('K', x_right + 35, y_switch_break_upper - 15);
+    
+    // Bottom caption
+    ctx.font = '22px "KaiTi"';
+    ctx.textAlign = 'center';
+    ctx.fillText('电图 5.11.1', canvas.width / 2, 550);
+
+</script>
+
+</body>
+</html>

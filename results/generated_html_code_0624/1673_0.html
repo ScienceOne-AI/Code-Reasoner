@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="700" height="500" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+const canvas = document.getElementById('myCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Drawing Parameters ---
+// Central point A
+const Ax = 320;
+const Ay = 300;
+// Distance from A to S1 or S2
+const s_dist = 80;
+// Length of rays AB and AC for visual representation
+const ray_len = 280;
+// Radius of the plotted points
+const point_radius = 4;
+
+// Angles in radians, chosen to visually match the diagram
+const alpha = Math.PI / 9; // ~20 degrees
+const phi = 5 * Math.PI / 6; // 150 degrees
+
+// --- Calculate Coordinates ---
+// Coordinates for S1 and S2 on a horizontal line through A
+const S1x = Ax - s_dist;
+const S1y = Ay;
+const S2x = Ax + s_dist;
+const S2y = Ay;
+
+// Angle of line AB relative to horizontal x-axis (clockwise from S2 axis)
+const angle_AB = -alpha;
+const Bx = Ax + ray_len * Math.cos(angle_AB);
+const By = Ay + ray_len * Math.sin(angle_AB);
+
+// Angle of line AC relative to horizontal x-axis (CCW from AB by phi)
+const angle_AC = angle_AB + phi;
+const Cx = Ax + ray_len * Math.cos(angle_AC);
+const Cy = Ay + ray_len * Math.sin(angle_AC);
+
+// --- Start Drawing ---
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+ctx.lineWidth = 1.5;
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.font = "italic 24px serif";
+
+// Draw dashed line S1-A-S2
+ctx.beginPath();
+ctx.setLineDash([8, 4]);
+// Extend the dashed line to where the alpha arc starts
+ctx.moveTo(S1x, S1y);
+ctx.lineTo(S2x + 45, S2y);
+ctx.stroke();
+ctx.setLineDash([]); // Reset line dash
+
+// Draw solid lines AB and AC
+ctx.beginPath();
+ctx.moveTo(Ax, Ay);
+ctx.lineTo(Bx, By);
+ctx.stroke();
+
+ctx.beginPath();
+ctx.moveTo(Ax, Ay);
+ctx.lineTo(Cx, Cy);
+ctx.stroke();
+
+// Draw angle alpha arc
+const alpha_arc_radius = 45;
+const alpha_arc_start_angle = 0; // Starts from horizontal line S2 direction
+const alpha_arc_end_angle = -alpha;
+ctx.beginPath();
+ctx.arc(Ax, Ay, alpha_arc_radius, alpha_arc_start_angle, alpha_arc_end_angle, true); // true for clockwise
+ctx.stroke();
+
+// Draw filled arrowhead for alpha
+const alpha_arrow_x = Ax + alpha_arc_radius * Math.cos(alpha_arc_end_angle);
+const alpha_arrow_y = Ay + alpha_arc_radius * Math.sin(alpha_arc_end_angle);
+const tangent_angle_alpha = alpha_arc_end_angle - Math.PI / 2; // Tangent direction for clockwise arc
+ctx.save();
+ctx.translate(alpha_arrow_x, alpha_arrow_y);
+ctx.rotate(tangent_angle_alpha);
+const alpha_arrow_size = 8;
+ctx.beginPath();
+ctx.moveTo(alpha_arrow_size, 0); // Tip of the arrow
+ctx.lineTo(0, -alpha_arrow_size / 2);
+ctx.lineTo(0, alpha_arrow_size / 2);
+ctx.closePath();
+ctx.fill();
+ctx.restore();
+
+// Draw angle phi arc
+const phi_arc_radius = 120;
+ctx.beginPath();
+ctx.arc(Ax, Ay, phi_arc_radius, angle_AB, angle_AC, false); // false for counter-clockwise
+ctx.stroke();
+
+// Draw outline arrowhead for phi
+const phi_arrow_x = Ax + phi_arc_radius * Math.cos(angle_AC);
+const phi_arrow_y = Ay + phi_arc_radius * Math.sin(angle_AC);
+const tangent_angle_phi = angle_AC + Math.PI / 2; // Tangent direction for CCW arc
+ctx.save();
+ctx.translate(phi_arrow_x, phi_arrow_y);
+ctx.rotate(tangent_angle_phi);
+const phi_arrow_size = 12;
+ctx.beginPath();
+ctx.moveTo(phi_arrow_size, 0); // Tip of the arrow
+ctx.lineTo(0, -phi_arrow_size / 2);
+ctx.moveTo(phi_arrow_size, 0);
+ctx.lineTo(0, phi_arrow_size / 2);
+ctx.stroke();
+ctx.restore();
+
+// Draw points S1, S2, A, B, C (draw last to be on top)
+ctx.beginPath();
+ctx.arc(S1x, S1y, point_radius, 0, 2 * Math.PI);
+ctx.fill();
+
+ctx.beginPath();
+ctx.arc(S2x, S2y, point_radius, 0, 2 * Math.PI);
+ctx.fill();
+
+ctx.beginPath();
+ctx.arc(Ax, Ay, point_radius, 0, 2 * Math.PI);
+ctx.fill();
+
+ctx.beginPath();
+ctx.arc(Bx, By, point_radius, 0, 2 * Math.PI);
+ctx.fill();
+
+ctx.beginPath();
+ctx.arc(Cx, Cy, point_radius, 0, 2 * Math.PI);
+ctx.fill();
+
+// Draw Labels
+ctx.fillStyle = 'black';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+ctx.fillText('S₁', S1x, S1y - 10);
+ctx.fillText('S₂', S2x, S2y - 10);
+ctx.fillText('A', Ax, Ay + 25);
+ctx.fillText('r', Ax - s_dist / 2, Ay - 10);
+
+ctx.textAlign = 'left';
+ctx.textBaseline = 'middle';
+ctx.fillText('B', Bx + 10, By);
+ctx.fillText('C', Cx + 10, Cy);
+
+// Place angle labels
+ctx.font = "italic 28px serif";
+// Position alpha label
+const alpha_label_angle = -alpha / 2;
+const alpha_label_radius = alpha_arc_radius - 15;
+ctx.fillText('α', Ax + alpha_label_radius * Math.cos(alpha_label_angle), Ay + alpha_label_radius * Math.sin(alpha_label_angle) + 8);
+
+// Position phi label
+const phi_label_angle = angle_AB + phi / 2;
+const phi_label_radius = phi_arc_radius - 20;
+ctx.fillText('φ', Ax + phi_label_radius * Math.cos(phi_label_angle), Ay + phi_label_radius * Math.sin(phi_label_angle));
+
+</script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Static Force Analysis Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="trussCanvas" width="700" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('trussCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Helper function to draw an arrow
+  function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 12) {
+    const angle = Math.atan2(toy - fromy, tox - fromx);
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+  }
+
+  // Helper function to draw a pin joint
+  function drawJoint(ctx, x, y, radius = 7) {
+    ctx.save();
+    // Outer circle
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Inner pin
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.4, 0, 2 * Math.PI);
+    ctx.fillStyle = 'black';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Helper function to draw a fixed hinge support, mimicking the original image
+  function drawHinge(ctx, x, y, groundY) {
+    // Draw the joint itself
+    drawJoint(ctx, x, y, 8);
+    
+    // The small pedestal under the joint connecting to the ground
+    ctx.beginPath();
+    ctx.moveTo(x-12, groundY);
+    ctx.lineTo(x, y);
+    ctx.lineTo(x+12, groundY);
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Draw ground line
+    const ground_width = 50;
+    const hatch_height = 8;
+    ctx.beginPath();
+    ctx.moveTo(x - ground_width / 2, groundY);
+    ctx.lineTo(x + ground_width / 2, groundY);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    
+    // Draw hatching
+    for (let i = 0; i <= ground_width; i += 8) {
+        ctx.beginPath();
+        ctx.moveTo(x - ground_width / 2 + i, groundY);
+        ctx.lineTo(x - ground_width / 2 + i - hatch_height, groundY + hatch_height);
+        ctx.stroke();
+    }
+  }
+  
+  // Helper function to draw an angle arc with an arrow
+  function drawAngleArc(ctx, cx, cy, radius, startAngle, endAngle, ccw) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, startAngle, endAngle, ccw);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Draw arrowhead on the arc
+    const arrowAngle = endAngle;
+    const arrowX = cx + radius * Math.cos(arrowAngle);
+    const arrowY = cy + radius * Math.sin(arrowAngle);
+    
+    let tangentAngle = arrowAngle + (ccw ? -Math.PI / 2 : Math.PI / 2);
+    
+    const headlen = 7;
+    ctx.beginPath();
+    ctx.moveTo(arrowX, arrowY);
+    ctx.lineTo(arrowX - headlen * Math.cos(tangentAngle - Math.PI / 6), arrowY - headlen * Math.sin(tangentAngle - Math.PI / 6));
+    ctx.moveTo(arrowX, arrowY);
+    ctx.lineTo(arrowX - headlen * Math.cos(tangentAngle + Math.PI / 6), arrowY - headlen * Math.sin(tangentAngle + Math.PI / 6));
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+
+  // --- Main Drawing ---
+
+  // Clear canvas
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Define geometry
+  const cx = canvas.width / 2;
+  const L = 200; // Length of each rod
+  const alpha = Math.PI / 3; // 60 degrees
+
+  const Ax = 125, Ay = 380;
+  const Ex = canvas.width - Ax, Ey = Ay;
+
+  const Bx = Ax + L * Math.cos(alpha);
+  const By = Ay - L * Math.sin(alpha);
+
+  const Dx = Ex - L * Math.cos(alpha);
+  const Dy = By;
+
+  const Cx = cx;
+  const Cy = By - Math.sqrt(L * L - (Cx - Bx) * (Cx - Bx));
+
+  const A = { x: Ax, y: Ay };
+  const B = { x: Bx, y: By };
+  const C = { x: Cx, y: Cy };
+  const D = { x: Dx, y: Dy };
+  const E = { x: Ex, y: Ey };
+
+  // Set drawing styles
+  ctx.strokeStyle = 'black';
+  ctx.lineCap = 'round';
+  
+  // Draw rods
+  ctx.beginPath();
+  ctx.moveTo(A.x, A.y);
+  ctx.lineTo(B.x, B.y);
+  ctx.lineTo(C.x, C.y);
+  ctx.lineTo(D.x, D.y);
+  ctx.lineTo(E.x, E.y);
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Draw supports
+  const groundLevel = A.y + 15;
+  drawHinge(ctx, A.x, A.y, groundLevel);
+  drawHinge(ctx, E.x, E.y, groundLevel);
+
+  // Draw joints on top of rods
+  drawJoint(ctx, A.x, A.y);
+  drawJoint(ctx, B.x, B.y);
+  drawJoint(ctx, C.x, C.y);
+  drawJoint(ctx, D.x, D.y);
+  drawJoint(ctx, E.x, E.y);
+  
+  // Draw forces
+  const forceLen = 60;
+  const forceStartOffsetY = -20;
+  ctx.lineWidth = 2.5;
+  drawArrow(ctx, B.x, B.y + forceStartOffsetY, B.x, B.y + forceLen - 20);
+  drawArrow(ctx, C.x, C.y, C.x, C.y + forceLen);
+  drawArrow(ctx, D.x, D.y + forceStartOffsetY, D.x, D.y + forceLen - 20);
+  
+  // Draw angle lines and arcs
+  ctx.lineWidth = 1.5;
+  
+  // Angle alpha at A
+  ctx.beginPath();
+  ctx.moveTo(A.x - 40, A.y);
+  ctx.lineTo(A.x, A.y);
+  ctx.stroke();
+  drawAngleArc(ctx, A.x, A.y, 35, Math.PI, Math.PI - alpha, true);
+  
+  // Angle alpha at E
+  ctx.beginPath();
+  ctx.moveTo(E.x, E.y);
+  ctx.lineTo(E.x + 40, E.y);
+  ctx.stroke();
+  drawAngleArc(ctx, E.x, E.y, 35, 0, -alpha, false);
+  
+  // Angle beta
+  const theta_BC = Math.atan2(C.y - B.y, C.x - B.x);
+  const theta_CD = Math.atan2(C.y - D.y, C.x - D.x);
+  
+  // Horizontal helper line for beta
+  ctx.beginPath();
+  ctx.setLineDash([4, 4]);
+  ctx.moveTo(B.x - 20, B.y);
+  ctx.lineTo(D.x + 20, D.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // Arc for beta at B
+  drawAngleArc(ctx, B.x, B.y, 40, theta_BC, 0, false);
+  
+  // Arc for beta at D
+  drawAngleArc(ctx, D.x, D.y, 40, Math.PI, theta_CD, true);
+  
+  // Add labels
+  ctx.fillStyle = 'black';
+  ctx.font = 'italic bold 24px serif';
+  
+  ctx.fillText('A', A.x - 30, A.y);
+  ctx.fillText('B', B.x - 10, B.y - 20);
+  ctx.fillText('C', C.x - 8, C.y - 15);
+  ctx.fillText('D', D.x + 5, D.y - 20);
+  ctx.fillText('E', E.x + 20, E.y);
+
+  ctx.font = 'italic bold 32px serif';
+  ctx.fillText('Q', B.x - 45, B.y - 10);
+  ctx.fillText('Q', D.x + 20, D.y - 10);
+  ctx.fillText('Q', C.x + 15, C.y + 40);
+
+  ctx.font = 'italic bold 28px serif';
+  ctx.fillText('α', A.x + 20, A.y - 18);
+  ctx.fillText('α', E.x - 40, E.y - 18);
+  
+  ctx.fillText('β', B.x + 45, B.y + 10);
+  ctx.fillText('β', D.x - 65, D.y + 10);
+  
+</script>
+</body>
+</html>

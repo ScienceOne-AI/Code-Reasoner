@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Amplifier Circuit Diagram</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="800" height="550"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style settings ---
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Helper functions ---
+
+    function drawLine(x1, y1, x2, y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    function drawResistor(x, y, w, h) {
+        ctx.strokeRect(x - w / 2, y - h / 2, w, h);
+    }
+
+    function drawDot(x, y) {
+        ctx.beginPath();
+        ctx.arc(x, y, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+    
+    function drawTerminal(x, y) {
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, 2 * Math.PI);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.lineWidth = 2;
+    }
+
+    function drawOpAmp(x_base, y_top, y_bottom, tip_x) {
+        const y_center = (y_top + y_bottom) / 2;
+        const y_non_inv = y_top + (y_center - y_top) * 0.5;
+        const y_inv = y_center + (y_bottom - y_center) * 0.5;
+        
+        // Triangle body
+        ctx.beginPath();
+        ctx.moveTo(x_base, y_top);
+        ctx.lineTo(tip_x, y_center);
+        ctx.lineTo(x_base, y_bottom);
+        ctx.closePath();
+        ctx.stroke();
+        
+        // Inputs
+        drawLine(x_base, y_non_inv, x_base - 20, y_non_inv);
+        drawLine(x_base, y_inv, x_base - 20, y_inv);
+        
+        // Signs
+        ctx.font = 'bold 24px Arial';
+        ctx.fillText('+', x_base + 18, y_non_inv);
+        ctx.fillText('–', x_base + 18, y_inv);
+        ctx.font = '20px Arial';
+
+        // Power supply lines
+        const x_power = x_base + (tip_x - x_base) / 2;
+        drawLine(x_power, y_top, x_power, y_top - 30);
+        drawLine(x_power, y_bottom, x_power, y_bottom + 30);
+
+        return { x_in: x_base - 20, y_non_inv, y_inv, x_tip: tip_x, y_out: y_center, x_pwr_top: x_power, y_pwr_top: y_top - 30, x_pwr_bot: x_power, y_pwr_bot: y_bottom + 30 };
+    }
+
+    function drawGround(x, y, w) {
+        drawLine(x, y, x, y + 15);
+        drawLine(x - w / 2, y + 15, x + w / 2, y + 15);
+        drawLine(x - w / 3, y + 22, x + w / 3, y + 22);
+        drawLine(x - w / 6, y + 29, x + w / 6, y + 29);
+    }
+    
+    function drawArrow(x, y1, y2, headlen) {
+        ctx.beginPath();
+        // line
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, y2);
+        // top head
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x - headlen, y1 + headlen);
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x + headlen, y1 + headlen);
+        // bottom head
+        ctx.moveTo(x, y2);
+        ctx.lineTo(x - headlen, y2 - headlen);
+        ctx.moveTo(x, y2);
+        ctx.lineTo(x + headlen, y2 - headlen);
+        ctx.stroke();
+    }
+
+
+    // --- Main Drawing ---
+
+    // Coordinates
+    const y_gnd = 470;
+    const y_p_line = 180;
+    const x_src_sym = 150;
+    const x_res_in = 250;
+    const opamp_x_base = 380;
+    const opamp_x_tip = 500;
+    const opamp_y_center = 260;
+    const opamp_height = 140;
+    const x_feedback_stack = 600;
+    const x_out_term = 720;
+    
+    // Ground line
+    drawLine(x_src_sym, y_gnd, x_out_term, y_gnd);
+    drawGround(300, y_gnd, 40);
+
+    // Top horizontal wire (at point P)
+    const opamp_y_non_inv = opamp_y_center - opamp_height / 4;
+    drawLine(100, y_p_line, opamp_x_base - 20, opamp_y_non_inv);
+    drawDot(x_res_in, y_p_line);
+    ctx.fillText('P', x_res_in, y_p_line - 20);
+
+    // Input branch 1 (Microphone/Source Symbol)
+    drawLine(x_src_sym, y_p_line, x_src_sym, y_gnd);
+    const y_src_center = (y_p_line + y_gnd) / 2;
+    // The symbol in the diagram is a generic source, often used for a microphone.
+    // It's drawn as a circle with prongs connecting to the main circuit lines.
+    ctx.save();
+    ctx.fillStyle = 'white'; // Draw background to break the vertical line
+    ctx.beginPath();
+    ctx.arc(x_src_sym, y_src_center, 30, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+    // Prongs and line through symbol
+    drawLine(x_src_sym-30, y_src_center-10, x_src_sym, y_src_center-10);
+    drawLine(x_src_sym-30, y_src_center+10, x_src_sym, y_src_center+10);
+    drawLine(x_src_sym, y_src_center-30, x_src_sym, y_src_center+30);
+
+    // Input branch 2 (Resistor)
+    drawLine(x_res_in, y_p_line, x_res_in, y_gnd);
+    drawResistor(x_res_in, y_src_center, 30, 80);
+
+    // Op-Amp
+    const opamp_y_top = opamp_y_center - opamp_height / 2;
+    const opamp_y_bot = opamp_y_center + opamp_height / 2;
+    const opamp = drawOpAmp(opamp_x_base, opamp_y_top, opamp_y_bot, opamp_x_tip);
+    
+    // Feedback network
+    drawLine(opamp.x_tip, opamp.y_out, x_feedback_stack, opamp.y_out); // From op-amp out to feedback stack
+    drawDot(x_feedback_stack, opamp.y_out);
+    const y_feedback_junc = opamp.y_inv;
+    drawLine(x_feedback_stack, opamp.y_out, x_feedback_stack, y_gnd); // Vertical line for resistors
+    
+    // Feedback resistors
+    drawResistor(x_feedback_stack, (opamp.y_out + y_feedback_junc)/2, 30, 80); // Top resistor
+    drawResistor(x_feedback_stack, (y_feedback_junc + y_gnd)/2, 30, 80); // Bottom resistor
+    
+    // Feedback connection
+    drawDot(x_feedback_stack, y_feedback_junc);
+    drawLine(x_feedback_stack, y_feedback_junc, opamp.x_in, opamp.y_inv);
+
+    // Output
+    drawLine(x_feedback_stack, opamp.y_out, x_out_term, opamp.y_out);
+    drawTerminal(x_out_term, opamp.y_out);
+    drawLine(x_feedback_stack, y_gnd, x_out_term, y_gnd);
+    drawTerminal(x_out_term, y_gnd);
+    
+    // Labels
+    ctx.textAlign = 'center';
+    ctx.fillText('+5.0 V', opamp.x_pwr_top, opamp.y_pwr_top - 15);
+    ctx.fillText('–5.0 V', opamp.x_pwr_bot, opamp.y_pwr_bot + 15);
+    
+    ctx.textAlign = 'left';
+    ctx.fillText('92.5 kΩ', x_feedback_stack + 25, (opamp.y_out + y_feedback_junc)/2);
+    ctx.fillText('R', x_feedback_stack + 25, (y_feedback_junc + y_gnd)/2);
+    
+    // V_OUT label and arrow
+    ctx.textAlign = 'left';
+    ctx.font = 'italic 20px Arial';
+    ctx.fillText('V', x_out_term + 40, (opamp.y_out + y_gnd)/2);
+    ctx.font = 'italic 16px Arial';
+    ctx.fillText('OUT', x_out_term + 48, (opamp.y_out + y_gnd)/2 + 8);
+    ctx.font = '20px Arial';
+    drawArrow(x_out_term + 20, opamp.y_out, y_gnd, 10);
+
+    // Figure caption
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 7.1', 450, y_gnd + 60);
+
+</script>
+</body>
+</html>

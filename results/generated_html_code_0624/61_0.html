@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>5-Slit Diffraction Diagram</title>
+</head>
+<body>
+    <canvas id="diffractionCanvas" width="800" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('diffractionCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and parameters ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px serif';
+        
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2 + 10; // Optical axis y-coordinate
+
+        const yAxisX = 80;
+        const slitPlaneX = 180;
+        const lensX = 400;
+        const screenX = 700;
+
+        const slitSpacing = 40;
+        const slitHeight = 25;
+        const slitWidth = 10;
+
+        const lensHeight = 220;
+        const lensCurve = 60;
+
+        const focalLength = screenX - lensX;
+        const focalPointY = centerY + 90;
+
+        // --- Helper functions ---
+        function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        function drawDashedLine(x1, y1, x2, y2, dashLen = 5) {
+            ctx.beginPath();
+            ctx.setLineDash([dashLen, dashLen]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset to solid line
+        }
+
+        // --- Drawing ---
+
+        // 1. Optical Axis
+        drawDashedLine(0, centerY, canvas.width, centerY, 10);
+
+        // 2. Y-axis (wavefront)
+        ctx.beginPath();
+        ctx.moveTo(yAxisX, 50);
+        ctx.lineTo(yAxisX, canvas.height - 50);
+        ctx.stroke();
+        ctx.fillText('y', yAxisX - 5, 40);
+
+        // 3. Incoming wave (λ)
+        drawArrow(yAxisX, centerY - 40, slitPlaneX - 20, centerY - 40);
+        ctx.fillText('λ', yAxisX + 20, centerY - 50);
+
+        // 4. Slits (5 of them)
+        const slitOffsets = [-2, -1, 0, 1, 2];
+        const slitPositions = slitOffsets.map(offset => ({
+            x: slitPlaneX,
+            y: centerY + offset * slitSpacing
+        }));
+        
+        slitPositions.forEach(pos => {
+            ctx.fillRect(pos.x - slitWidth / 2, pos.y - slitHeight / 2, slitWidth, slitHeight);
+        });
+
+        // 5. Lens
+        ctx.beginPath();
+        ctx.moveTo(lensX, centerY - lensHeight / 2);
+        ctx.quadraticCurveTo(lensX - lensCurve, centerY, lensX, centerY + lensHeight / 2);
+        ctx.quadraticCurveTo(lensX + lensCurve, centerY, lensX, centerY - lensHeight / 2);
+        ctx.stroke();
+
+        // 6. Screen
+        ctx.beginPath();
+        ctx.moveTo(screenX, 50);
+        ctx.lineTo(screenX, canvas.height - 50);
+        ctx.stroke();
+
+        // 7. Rays
+        ctx.lineWidth = 1.2;
+        const rayStartX = slitPlaneX + slitWidth / 2;
+        slitPositions.forEach(pos => {
+            const slitY = pos.y;
+            // Calculate intersection with lens plane using line equation
+            const intersectY = slitY + (focalPointY - slitY) * (lensX - rayStartX) / (screenX - rayStartX);
+
+            ctx.beginPath();
+            ctx.moveTo(rayStartX, slitY);
+            ctx.lineTo(lensX, intersectY);
+            ctx.lineTo(screenX, focalPointY);
+            ctx.stroke();
+        });
+        ctx.lineWidth = 2;
+
+        // 8. Labels
+        // Label 'd' for slit spacing
+        const d_label_x = slitPlaneX - 35;
+        // In the original, the label 'd' refers to the height of the central slit, which contradicts the problem text.
+        // For clarity and physical correctness according to the problem, 'd' is drawn as the spacing between slits.
+        // A dashed rectangle similar to the original is added for visual consistency.
+        ctx.beginPath();
+        ctx.setLineDash([3, 3]);
+        ctx.strokeRect(slitPlaneX - slitWidth / 2, centerY - slitSpacing/2, slitWidth, slitSpacing);
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(d_label_x, centerY - slitSpacing / 2);
+        ctx.lineTo(d_label_x, centerY + slitSpacing / 2);
+        ctx.moveTo(d_label_x - 4, centerY - slitSpacing / 2); // tick
+        ctx.lineTo(d_label_x + 4, centerY - slitSpacing / 2);
+        ctx.moveTo(d_label_x - 4, centerY + slitSpacing / 2); // tick
+        ctx.lineTo(d_label_x + 4, centerY + slitSpacing / 2);
+        ctx.stroke();
+        ctx.fillText('d', d_label_x - 15, centerY + 6);
+        
+        // Label 'θ'
+        const theta_center_x = rayStartX + 10;
+        const centralRayStartY = centerY;
+        const centralRayIntersectY = centralRayStartY + (focalPointY - centralRayStartY) * (lensX - rayStartX) / (screenX - rayStartX);
+        const theta_angle = Math.atan2(centralRayIntersectY - centerY, lensX - rayStartX);
+        const theta_radius = 45;
+        ctx.beginPath();
+        ctx.arc(theta_center_x, centerY, theta_radius, 0, theta_angle);
+        ctx.stroke();
+        // Arrow on arc
+        const arcEndX = theta_center_x + theta_radius * Math.cos(theta_angle);
+        const arcEndY = centerY + theta_radius * Math.sin(theta_angle);
+        const tangentAngle = theta_angle + Math.PI / 2;
+        const arrowLength = 8;
+        ctx.beginPath();
+        ctx.moveTo(arcEndX, arcEndY);
+        ctx.lineTo(arcEndX - arrowLength * Math.cos(tangentAngle - Math.PI / 4), arcEndY - arrowLength * Math.sin(tangentAngle - Math.PI / 4));
+        ctx.moveTo(arcEndX, arcEndY);
+        ctx.lineTo(arcEndX - arrowLength * Math.cos(tangentAngle + Math.PI / 4), arcEndY - arrowLength * Math.sin(tangentAngle + Math.PI / 4));
+        ctx.stroke();
+        const text_x = theta_center_x + theta_radius * 0.7 * Math.cos(theta_angle / 2);
+        const text_y = centerY + theta_radius * 0.7 * Math.sin(theta_angle / 2);
+        ctx.fillText('θ', text_x + 5, text_y + 5);
+        
+        // Label 'f' for focal length
+        const f_line_y = centerY + 170;
+        ctx.beginPath();
+        ctx.moveTo(lensX, f_line_y);
+        ctx.lineTo(screenX, f_line_y);
+        ctx.moveTo(lensX, f_line_y - 5);
+        ctx.lineTo(lensX, f_line_y + 5);
+        ctx.moveTo(screenX, f_line_y - 5);
+        ctx.lineTo(screenX, f_line_y + 5);
+        ctx.stroke();
+        ctx.fillText('f', lensX + focalLength / 2 - 5, f_line_y + 25);
+        
+        // 9. Figure Caption
+        ctx.font = 'bold 20px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 2.55', centerX, canvas.height - 20);
+
+    </script>
+</body>
+</html>

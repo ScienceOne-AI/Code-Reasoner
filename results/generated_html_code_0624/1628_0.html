@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Polymer Chain Model</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = "22px 'Comic Sans MS', cursive, sans-serif";
+        ctx.textAlign = 'center';
+
+        // Helper function to draw an arrow
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headlen = 10;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Helper function to draw a molecule
+        function drawMolecule(x, y, radius, hasClock = false) {
+            ctx.save();
+            // Circle
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white'; // Fill with white to erase lines underneath
+            ctx.fill();
+            ctx.stroke();
+
+            // Speckles
+            ctx.fillStyle = 'black';
+            const numSpeckles = 15;
+            for (let i = 0; i < numSpeckles; i++) {
+                const angle = Math.random() * 2 * Math.PI;
+                const r = Math.random() * radius * 0.85; // Stay away from the edge
+                const sx = x + r * Math.cos(angle);
+                const sy = y + r * Math.sin(angle);
+                ctx.beginPath();
+                ctx.arc(sx, sy, 0.8, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+            if (hasClock) {
+                // Draw clock hands
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + radius * 0.7, y); // Long hand
+                ctx.moveTo(x, y);
+                ctx.lineTo(x, y - radius * 0.5); // Short hand
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+
+        // 1. Draw Walls and Length L indicator
+        const leftWallX = 50;
+        const rightWallX = 750;
+        const wallY1 = 150;
+        const wallY2 = 350;
+        const L_Y = 320;
+
+        ctx.beginPath();
+        ctx.moveTo(leftWallX, wallY1);
+        ctx.lineTo(leftWallX, wallY2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(rightWallX, wallY1);
+        ctx.lineTo(rightWallX, wallY2);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(leftWallX, L_Y);
+        ctx.lineTo(rightWallX, L_Y);
+        ctx.moveTo(leftWallX, L_Y - 10);
+        ctx.lineTo(leftWallX, L_Y + 10);
+        ctx.moveTo(rightWallX, L_Y - 10);
+        ctx.lineTo(rightWallX, L_Y + 10);
+        ctx.stroke();
+        ctx.fillText('L', canvas.width / 2, L_Y + 25);
+        
+        // 2. Draw Length d indicator
+        const d_Y = 140;
+        const d_X1 = 200;
+        const d_X2 = 280;
+        drawArrow(d_X1, d_Y, d_X2, d_Y);
+        ctx.fillText('d', (d_X1 + d_X2) / 2, d_Y - 10);
+        
+        // 3. Draw Text Annotations
+        ctx.textAlign = 'left';
+        ctx.fillText('N molecules', 550, 50);
+        ctx.fillText('(N = constant)', 550, 75);
+        ctx.fillText('d = length of one link', 550, 100);
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 2.3.', canvas.width / 2, 420);
+        
+        // 4. Define Molecule positions
+        const radius = 15;
+        const molecules = [
+            { x: 120, y: 200, clock: true },  // 0
+            { x: 200, y: 215, clock: true },  // 1 (bot)
+            { x: 200, y: 185, clock: false }, // 2 (top)
+            { x: 280, y: 170, clock: false }, // 3
+            { x: 280, y: 200, clock: false }, // 4
+            { x: 360, y: 185, clock: false }, // 5
+            { x: 360, y: 215, clock: false }, // 6
+            { x: 440, y: 230, clock: false }, // 7
+            { x: 520, y: 230, clock: false }, // 8
+            { x: 600, y: 230, clock: false }, // 9
+        ];
+
+        // 5. Draw connections (arrows)
+        // Draw arrows first so molecules can be drawn on top.
+        drawArrow(leftWallX, molecules[0].y, molecules[0].x, molecules[0].y);
+        drawArrow(molecules[0].x, molecules[0].y, molecules[1].x, molecules[1].y);
+        drawArrow(molecules[2].x, molecules[2].y, molecules[3].x, molecules[3].y);
+        drawArrow(molecules[3].x, molecules[3].y, molecules[2].x, molecules[2].y); // backward
+        drawArrow(molecules[1].x, molecules[1].y, molecules[4].x, molecules[4].y);
+        drawArrow(molecules[3].x, molecules[3].y, molecules[5].x, molecules[5].y);
+        drawArrow(molecules[5].x, molecules[5].y, molecules[4].x, molecules[4].y); // backward
+        drawArrow(molecules[4].x, molecules[4].y, molecules[6].x, molecules[6].y);
+        drawArrow(molecules[6].x, molecules[6].y, molecules[7].x, molecules[7].y);
+        drawArrow(molecules[7].x, molecules[7].y, molecules[8].x, molecules[8].y);
+        drawArrow(molecules[8].x, molecules[8].y, molecules[9].x, molecules[9].y);
+        drawArrow(molecules[9].x, molecules[9].y, rightWallX, molecules[9].y);
+
+        // 6. Draw molecules on top of the lines
+        molecules.forEach(m => {
+            drawMolecule(m.x, m.y, radius, m.clock);
+        });
+
+    </script>
+</body>
+</html>

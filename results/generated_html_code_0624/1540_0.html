@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>W-shaped Tube Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const config = {
+            scale: 7, // pixels per cm
+            baseY: 400,
+            font: '20px Arial',
+            labelFont: 'bold 22px Times New Roman',
+            lineWidth: 2,
+            hatchStep: 6,
+            hatchDash: [4, 4]
+        };
+
+        // --- Heights from problem ---
+        const h1_cm = 20;
+        const h2_cm = 23;
+        const h3_cm = 3;
+        const h4_cm = 4;
+
+        // --- Convert heights to pixel coordinates ---
+        const y1 = config.baseY - h1_cm * config.scale;
+        const y2 = config.baseY - h2_cm * config.scale;
+        const y3 = config.baseY - h3_cm * config.scale;
+        const y4 = config.baseY - h4_cm * config.scale;
+
+        // --- Tube Geometry ---
+        const slope = 2.5;
+        const B = { x: 190, y: config.baseY };
+        const E = { x: 410, y: config.baseY };
+        const G = { x: 300, y: 100 };
+
+        // V-Tube arm equations (y = m(x-x0) + y0)
+        const leftV = {
+            v: B,
+            left_arm_x: (y) => B.x + (y - B.y) / slope,  // slope > 0
+            right_arm_x: (y) => B.x - (y - B.y) / slope  // slope < 0
+        };
+        const rightV = {
+            v: E,
+            left_arm_x: (y) => E.x + (y - E.y) / slope,
+            right_arm_x: (y) => E.x - (y - E.y) / slope
+        };
+        const airV = {
+            v: G,
+            left_arm_x: (y) => G.x + (y - G.y) / (-slope),
+            right_arm_x: (y) => G.x - (y - G.y) / (-slope)
+        }
+        
+        // --- Drawing Functions ---
+
+        function drawTube() {
+            ctx.lineWidth = config.lineWidth;
+            ctx.strokeStyle = 'black';
+            ctx.beginPath();
+            // Left V
+            ctx.moveTo(leftV.left_arm_x(y1 - 20), y1 - 20);
+            ctx.lineTo(B.x, B.y);
+            ctx.lineTo(leftV.right_arm_x(y4-10), y4-10);
+
+            // Right V
+            ctx.moveTo(rightV.right_arm_x(y2 - 20), y2 - 20);
+            ctx.lineTo(E.x, E.y);
+            ctx.lineTo(rightV.left_arm_x(y3-10), y3-10);
+
+            // Air partition
+            const c_point_x = leftV.right_arm_x(y4 - 10);
+            const d_point_x = rightV.left_arm_x(y3 - 10);
+            ctx.moveTo(c_point_x, y4-10);
+            ctx.lineTo(G.x, G.y);
+            ctx.lineTo(d_point_x, y3-10);
+            
+            ctx.stroke();
+        }
+        
+        function drawLiquid(v_tube, y_left_surface, y_right_surface) {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1;
+            ctx.setLineDash(config.hatchDash);
+            
+            const y_bottom = v_tube.v.y;
+            const y_top_max = Math.min(y_left_surface, y_right_surface);
+
+            for (let y = y_bottom - config.hatchStep/2; y > y_top_max; y -= config.hatchStep) {
+                const x1 = v_tube.left_arm_x(y);
+                const x2 = v_tube.right_arm_x(y);
+                ctx.beginPath();
+                ctx.moveTo(x1, y);
+                ctx.lineTo(x2, y);
+                ctx.stroke();
+            }
+
+            if (y_left_surface < y_right_surface) { // Left level is higher
+                for (let y = y_right_surface; y > y_left_surface; y -= config.hatchStep) {
+                    const x1 = v_tube.left_arm_x(y);
+                    const x2 = v_tube.left_arm_x(y_right_surface); // Approx. vertical boundary
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y);
+                    ctx.lineTo(x2, y);
+                    ctx.stroke();
+                }
+            } else { // Right level is higher
+                 for (let y = y_left_surface; y > y_right_surface; y -= config.hatchStep) {
+                    const x1 = v_tube.right_arm_x(y);
+                    const x2 = v_tube.right_arm_x(y_left_surface); // Approx. vertical boundary
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y);
+                    ctx.lineTo(x2, y);
+                    ctx.stroke();
+                }
+            }
+            ctx.setLineDash([]);
+        }
+
+        function drawAnnotations() {
+            // Base line
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.moveTo(50, config.baseY);
+            ctx.lineTo(550, config.baseY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Height lines and labels
+            drawHeight(60, y1, config.baseY, 'h₁');
+            drawHeight(540, y2, config.baseY, 'h₂');
+            drawHeight(380, y3, config.baseY, 'h₃');
+            drawHeight(230, y4, config.baseY, 'h₄');
+            
+            // Point labels
+            ctx.font = config.labelFont;
+            ctx.fillStyle = 'black';
+            ctx.fillText('A', leftV.left_arm_x(y1+20) - 20, y1+15);
+            ctx.fillText('B', B.x - 25, B.y + 5);
+            ctx.fillText('C', leftV.right_arm_x(y4+15) + 5, y4 - 5);
+            ctx.fillText('D', rightV.left_arm_x(y3+15) - 20, y3 - 5);
+            ctx.fillText('E', E.x + 15, E.y + 5);
+            ctx.fillText('F', rightV.right_arm_x(y2+20) + 10, y2+15);
+            ctx.fillText('G', G.x - 8, G.y - 10);
+        }
+
+        function drawHeight(x, y_start, y_end, label) {
+            ctx.lineWidth = 1;
+            // Line
+            ctx.beginPath();
+            ctx.moveTo(x, y_start);
+            ctx.lineTo(x, y_end);
+            ctx.stroke();
+            // Arrows
+            ctx.beginPath();
+            ctx.moveTo(x, y_start);
+            ctx.lineTo(x - 4, y_start + 4);
+            ctx.moveTo(x, y_start);
+            ctx.lineTo(x + 4, y_start + 4);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y_end);
+            ctx.lineTo(x - 4, y_end - 4);
+            ctx.moveTo(x, y_end);
+            ctx.lineTo(x + 4, y_end - 4);
+            ctx.stroke();
+            // Surface tick
+            ctx.beginPath();
+            ctx.moveTo(x, y_start);
+            ctx.lineTo(x + 20, y_start);
+            ctx.stroke();
+            // Label
+            ctx.font = config.font;
+            ctx.fillStyle = 'black';
+            ctx.fillText(label, x - 25, (y_start + y_end) / 2 + 5);
+        }
+
+        // --- Main Drawing ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw liquids first
+        drawLiquid(leftV, y1, y4);
+        drawLiquid(rightV, y3, y2);
+
+        // Draw tube and annotations on top
+        drawTube();
+        drawAnnotations();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cantilever Beam Diagram</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      background-color: #fff;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="cantileverCanvas" width="550" height="400"></canvas>
+  <script>
+    const canvas = document.getElementById('cantileverCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper function to draw an arrow ---
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+      const dx = tox - fromx;
+      const dy = toy - fromy;
+      const angle = Math.atan2(dy, dx);
+      ctx.beginPath();
+      ctx.moveTo(fromx, fromy);
+      ctx.lineTo(tox, toy);
+      ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+      ctx.moveTo(tox, toy);
+      ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+      ctx.stroke();
+    }
+
+    // --- Drawing Parameters ---
+    const origin = { x: 80, y: 180 };
+    const scale = 80; // pixels per meter
+    const beamThickness = 12;
+    const l1 = 3; // meters
+    const l2 = 2; // meters
+    const totalLength = l1 + l2;
+
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // 1. Draw the Wall
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y - 60);
+    ctx.lineTo(origin.x, origin.y + 80);
+    ctx.stroke();
+    for (let i = 0; i < 8; i++) {
+        ctx.moveTo(origin.x, origin.y - 60 + i * 20);
+        ctx.lineTo(origin.x - 20, origin.y - 40 + i * 20);
+    }
+    ctx.stroke();
+
+    // 2. Draw the Beam
+    ctx.fillRect(origin.x, origin.y - beamThickness / 2, totalLength * scale, beamThickness);
+    // Dashed line for neutral axis
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(origin.x + totalLength * scale, origin.y);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset line dash
+
+    // 3. Draw Coordinate Axes
+    drawArrow(ctx, origin.x, origin.y + 40, origin.x, origin.y - 60); // y-axis
+    ctx.fillText('y', origin.x - 20, origin.y - 60);
+    drawArrow(ctx, origin.x, origin.y, origin.x + totalLength * scale + 40, origin.y); // x-axis
+    ctx.fillText('x', origin.x + totalLength * scale + 50, origin.y);
+
+    // 4. Draw Distributed Load (q)
+    const q_x_start = origin.x;
+    const q_x_end = origin.x + l1 * scale;
+    const q_y_top = origin.y - 45;
+    ctx.beginPath();
+    ctx.moveTo(q_x_start, q_y_top);
+    ctx.lineTo(q_x_end, q_y_top);
+    ctx.lineTo(q_x_end, origin.y - beamThickness / 2);
+    ctx.lineTo(q_x_start, origin.y - beamThickness / 2);
+    ctx.stroke();
+    for (let i = 0; i < 10; i++) {
+        const x_pos = q_x_start + (i + 0.5) * (l1 * scale / 10);
+        drawArrow(ctx, x_pos, q_y_top, x_pos, origin.y - beamThickness / 2, 8);
+    }
+    ctx.fillText('q = 1.5 kN/m', origin.x + (l1 * scale) / 2, q_y_top - 15);
+
+    // 5. Draw Concentrated Couple (Moment)
+    const couple_x = origin.x + l1 * scale;
+    const couple_y_top = origin.y - 35;
+    const couple_y_bot = origin.y + 35;
+    ctx.beginPath();
+    ctx.moveTo(couple_x, couple_y_top);
+    ctx.lineTo(couple_x, couple_y_bot);
+    ctx.stroke();
+    // In the image, top arrow is right, bottom is left, indicating a CW moment.
+    // However, the standard problem this image is from usually has a CCW moment.
+    // Let's draw what's literally in the image: a representation of a counter-clockwise couple.
+    // Left arrow points down, right arrow points up.
+    const couple_horz_len = 20;
+    const couple_y = origin.y - 50;
+    ctx.beginPath();
+    ctx.moveTo(couple_x - couple_horz_len, couple_y);
+    ctx.lineTo(couple_x + couple_horz_len, couple_y);
+    ctx.stroke();
+    drawArrow(ctx, couple_x - couple_horz_len, couple_y + 10, couple_x - couple_horz_len, couple_y - 10, 8); // Down arrow on left
+    drawArrow(ctx, couple_x + couple_horz_len, couple_y - 10, couple_x + couple_horz_len, couple_y + 10, 8); // Up arrow on right
+    ctx.fillText('2 kN·m', couple_x + 60, couple_y);
+
+    // 6. Draw Concentrated Force (F)
+    const force_x = origin.x + totalLength * scale;
+    const force_y = origin.y;
+    const force_len = 60;
+    const angle_rad = 45 * Math.PI / 180;
+    // The arrow points up and to the left at 45 deg to horizontal
+    const force_tail_x = force_x + force_len * Math.cos(angle_rad);
+    const force_tail_y = force_y + force_len * Math.sin(angle_rad);
+    drawArrow(ctx, force_tail_x, force_tail_y, force_x, force_y, 12);
+    ctx.fillText('4 kN', force_tail_x + 5, force_tail_y + 20);
+
+    // Draw Angle for the Force
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(force_x, force_y);
+    ctx.lineTo(force_x + 40, force_y); // Horizontal line for angle reference
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(force_x, force_y, 30, Math.PI, Math.PI + angle_rad, false);
+    ctx.stroke();
+    const angleText_x = force_x - 35 * Math.cos(angle_rad / 2);
+    const angleText_y = force_y + 35 * Math.sin(angle_rad / 2);
+    // Correcting the angle drawing to match the image's confusing placement
+    ctx.beginPath();
+    ctx.arc(force_x, force_y, 30, 0, -angle_rad, true);
+    ctx.stroke();
+    drawArrow(ctx, force_x + 30*Math.cos(-angle_rad/2), force_y + 30*Math.sin(-angle_rad/2), force_x + 25*Math.cos(-angle_rad/2), force_y + 25*Math.sin(-angle_rad/2), 6)
+    ctx.font = '16px sans-serif';
+    ctx.fillText('45°', force_x + 40, force_y + 18);
+    ctx.font = 'bold 18px sans-serif';
+    ctx.lineWidth = 2;
+
+
+    // 7. Draw Dimensions
+    const dim_y = origin.y + 60;
+    ctx.lineWidth = 1.5;
+    // Vertical extension lines
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y + beamThickness / 2);
+    ctx.lineTo(origin.x, dim_y + 10);
+    ctx.moveTo(origin.x + l1 * scale, origin.y - 35);
+    ctx.lineTo(origin.x + l1 * scale, dim_y + 10);
+    ctx.moveTo(origin.x + totalLength * scale, origin.y + beamThickness/2);
+    ctx.lineTo(origin.x + totalLength * scale, dim_y + 10);
+    ctx.stroke();
+    // Horizontal dimension lines with text
+    drawArrow(ctx, origin.x + l1 * scale, dim_y, origin.x, dim_y);
+    drawArrow(ctx, origin.x, dim_y, origin.x + l1 * scale, dim_y);
+    ctx.fillText('3 m', origin.x + (l1 * scale) / 2, dim_y + 15);
+    
+    drawArrow(ctx, origin.x + totalLength * scale, dim_y, origin.x + l1 * scale, dim_y);
+    drawArrow(ctx, origin.x + l1 * scale, dim_y, origin.x + totalLength * scale, dim_y);
+    ctx.fillText('2 m', origin.x + l1 * scale + (l2 * scale) / 2, dim_y + 15);
+
+  </script>
+</body>
+</html>

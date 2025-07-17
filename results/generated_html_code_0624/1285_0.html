@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Parameters
+        const cx = 480;
+        const cy = 250;
+        const R_canvas = 110;
+        const theta = Math.PI / 4.5; // Angle approx 40 degrees
+
+        // Helper function for arrowheads
+        function drawArrowhead(x, y, angle, size = 10, style = 'fill') {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2.5);
+            ctx.lineTo(-size, size / 2.5);
+            ctx.closePath();
+            if (style === 'fill') {
+                ctx.fill();
+            } else {
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // 1. Draw the circular magnetic field region
+        ctx.beginPath();
+        ctx.arc(cx, cy, R_canvas, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 2. Draw the magnetic field symbols (B out of page)
+        function drawBFieldSymbol(x, y) {
+            const radius = 4;
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(x, y, radius / 3, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.restore();
+        }
+        const b_ring_radius = R_canvas * 0.7;
+        for (let i = 0; i < 6; i++) {
+            const angle = i * Math.PI / 3 + Math.PI/6;
+            drawBFieldSymbol(cx + b_ring_radius * Math.cos(angle), cy + b_ring_radius * Math.sin(angle));
+        }
+        drawBFieldSymbol(cx, cy);
+
+        // 3. Define particle start and tangency points
+        const startX = 100;
+        const startY = cy;
+        const tangentX = cx - R_canvas * Math.cos(theta);
+        const tangentY = cy - R_canvas * Math.sin(theta);
+
+        // 4. Draw dashed lines and angle
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
+        // Horizontal line from P to center
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(cx, cy);
+        ctx.stroke();
+        // Radius to tangency point
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(tangentX, tangentY);
+        ctx.stroke();
+        ctx.restore();
+
+        // Angle arc and label 'θ'
+        ctx.beginPath();
+        ctx.arc(cx, cy, 40, Math.PI - theta, Math.PI);
+        ctx.stroke();
+        const thetaLabelAngle = Math.PI - theta / 2;
+        ctx.fillText('θ', cx + 55 * Math.cos(thetaLabelAngle), cy - 55 * Math.sin(thetaLabelAngle));
+        
+        // Label 'R'
+        const RLabelAngle = Math.PI - theta / 2;
+        ctx.fillText('R', cx + (R_canvas/2 + 10) * Math.cos(RLabelAngle), cy - (R_canvas/2 + 10) * Math.sin(RLabelAngle));
+
+        // 5. Draw the particle's trajectory
+        // Use a cubic Bezier curve for a smooth path with correct tangents
+        // P0: start point, P3: end point (tangency)
+        // P1: control point for start tangent (horizontal)
+        // P2: control point for end tangent (tangent to circle)
+        const tangentSlope = -1 / Math.tan(theta);
+        const P0 = { x: startX, y: startY };
+        const P3 = { x: tangentX, y: tangentY };
+        const d1 = 140; // controls initial straightness
+        const d2 = 80; // controls approach to tangency
+        const P1 = { x: P0.x + d1, y: P0.y };
+        const P2 = { x: P3.x - d2, y: P3.y - d2 * tangentSlope };
+        
+        // Outgoing path continues smoothly
+        // P4: new control point for C1 continuity
+        // P5, P6: further control point and end point for the rest of the curve
+        const P4 = { x: 2 * P3.x - P2.x, y: 2 * P3.y - P2.y };
+        const P6 = { x: P3.x + 150, y: P3.y - 100 };
+        const P5 = { x: (P4.x + P6.x)/2, y: (P4.y + P6.y)/2 - 20 };
+
+        ctx.beginPath();
+        ctx.moveTo(P0.x, P0.y);
+        ctx.bezierCurveTo(P1.x, P1.y, P2.x, P2.y, P3.x, P3.y);
+        ctx.bezierCurveTo(P4.x, P4.y, P5.x, P5.y, P6.x, P6.y);
+        ctx.stroke();
+
+        // 6. Draw arrows on the trajectory
+        // Helper to get point on a cubic Bezier curve
+        function getCubicBezierPoint(t, p0, p1, p2, p3) {
+            const c = (1 - t);
+            const x = c * c * c * p0.x + 3 * c * c * t * p1.x + 3 * c * t * t * p2.x + t * t * t * p3.x;
+            const y = c * c * c * p0.y + 3 * c * c * t * p1.y + 3 * c * t * t * p2.y + t * t * t * p3.y;
+            return { x, y };
+        }
+        function getCubicBezierDerivative(t, p0, p1, p2, p3) {
+            const c = (1 - t);
+            const dx = 3 * c * c * (p1.x - p0.x) + 6 * c * t * (p2.x - p1.x) + 3 * t * t * (p3.x - p2.x);
+            const dy = 3 * c * c * (p1.y - p0.y) + 6 * c * t * (p2.y - p1.y) + 3 * t * t * (p3.y - p2.y);
+            return { dx, dy };
+        }
+
+        // Arrow 1 (incoming)
+        let t1 = 0.3;
+        let pt1 = getCubicBezierPoint(t1, P0, P1, P2, P3);
+        let deriv1 = getCubicBezierDerivative(t1, P0, P1, P2, P3);
+        drawArrowhead(pt1.x, pt1.y, Math.atan2(deriv1.dy, deriv1.dx));
+
+        // Arrow 2 (near tangency)
+        let t2 = 0.9;
+        let pt2 = getCubicBezierPoint(t2, P0, P1, P2, P3);
+        let deriv2 = getCubicBezierDerivative(t2, P0, P1, P2, P3);
+        drawArrowhead(pt2.x, pt2.y, Math.atan2(deriv2.dy, deriv2.dx));
+
+        // Arrow 3 (outgoing)
+        let t3 = 0.7;
+        let pt3 = getCubicBezierPoint(t3, P3, P4, P5, P6);
+        let deriv3 = getCubicBezierDerivative(t3, P3, P4, P5, P6);
+        drawArrowhead(pt3.x, pt3.y, Math.atan2(deriv3.dy, deriv3.dx));
+
+        // 7. Draw the horizontal velocity arrow at the tangency point (as depicted)
+        ctx.beginPath();
+        ctx.moveTo(tangentX, tangentY);
+        ctx.lineTo(tangentX + 120, tangentY);
+        ctx.stroke();
+        drawArrowhead(tangentX + 120, tangentY, 0);
+
+        // 8. Draw particle starting point and labels
+        ctx.beginPath();
+        ctx.arc(startX, startY, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.textAlign = 'left';
+        ctx.fillText('P', startX - 25, startY);
+        ctx.fillText('m, q > 0', startX - 25, startY + 35);
+        
+        ctx.textAlign = 'center';
+        ctx.font = '24px "Times New Roman"';
+        ctx.fillText('B', cx + R_canvas + 35, cy);
+        ctx.font = '30px "Times New Roman"';
+        ctx.fillText('~', cx + R_canvas + 55, cy-2);
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('t', cx + R_canvas + 75, cy);
+
+    </script>
+</body>
+</html>

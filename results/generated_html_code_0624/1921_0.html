@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram of a Ball in a Dish</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="420"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Parameters for drawing, chosen to match the image's appearance
+    const centerX = 300;
+    const pointCY = 320; // Y-coordinate of the lowest point of the dish surface
+    const arcRadius = 500; // Radius of the circle that forms the dish's curve
+    const arcCenterY = pointCY - arcRadius; // Center of the circle (above the visible arc)
+
+    const ballRadius = 13;
+    const horizontalDisplacement = 140; // Horizontal distance 'x' in pixels
+
+    // --- Draw Hatched Base ---
+    const baseY = pointCY + 5;
+    const baseWidth = 500;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(centerX - baseWidth / 2, baseY);
+    ctx.lineTo(centerX + baseWidth / 2, baseY);
+    ctx.stroke();
+    // Draw hatches
+    for (let i = centerX - baseWidth / 2; i <= centerX + baseWidth / 2; i += 20) {
+        ctx.beginPath();
+        ctx.moveTo(i, baseY);
+        ctx.lineTo(i - 10, baseY + 10);
+        ctx.stroke();
+    }
+    ctx.lineWidth = 2;
+
+
+    // --- Draw Dish Surface (Arc) ---
+    // Calculate start and end angles to draw a symmetric arc
+    const arcWidth = 500;
+    const arcStartX = centerX - arcWidth / 2;
+    const arcEndX = centerX + arcWidth / 2;
+    const yStart = arcCenterY + Math.sqrt(arcRadius**2 - (arcStartX - centerX)**2);
+    const yEnd = arcCenterY + Math.sqrt(arcRadius**2 - (arcEndX - centerX)**2);
+    const startAngle = Math.atan2(yStart - arcCenterY, arcStartX - centerX);
+    const endAngle = Math.atan2(yEnd - arcCenterY, arcEndX - centerX);
+
+    ctx.beginPath();
+    ctx.arc(centerX, arcCenterY, arcRadius, startAngle, endAngle);
+    ctx.stroke();
+
+    // --- Draw Point C ---
+    ctx.beginPath();
+    ctx.arc(centerX, pointCY, 3, 0, 2 * Math.PI);
+    ctx.fillStyle = 'black';
+    ctx.fill();
+    ctx.fillText('C', centerX, pointCY + 20);
+
+
+    // --- Draw Ball ---
+    // Calculate the ball's center position so it rests on the dish surface
+    const ballCenterX = centerX - horizontalDisplacement;
+    // The ball's center moves on a concentric circle with a smaller radius
+    const pathRadius = arcRadius - ballRadius;
+    const ballCenterY = arcCenterY + Math.sqrt(pathRadius**2 - (ballCenterX - centerX)**2);
+
+    ctx.beginPath();
+    ctx.arc(ballCenterX, ballCenterY, ballRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = '#D3D3D3'; // Light gray fill
+    ctx.fill();
+    ctx.strokeStyle = 'black';
+    ctx.stroke();
+
+
+    // --- Draw 'x' displacement indicator ---
+    const dimLineY = 220; // Y-level for the horizontal dimension line
+
+    // Dashed lines
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1;
+    // Vertical line from ball
+    ctx.beginPath();
+    ctx.moveTo(ballCenterX, ballCenterY);
+    ctx.lineTo(ballCenterX, dimLineY);
+    ctx.stroke();
+    // Vertical line from C
+    ctx.beginPath();
+    ctx.moveTo(centerX, pointCY);
+    ctx.lineTo(centerX, dimLineY);
+    ctx.stroke();
+    ctx.restore();
+
+    // Horizontal arrow line
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(ballCenterX, dimLineY);
+    ctx.lineTo(centerX, dimLineY);
+    ctx.stroke();
+
+    // Arrowheads for the dimension line
+    const arrowSize = 8;
+    // Left arrowhead (points right)
+    ctx.beginPath();
+    ctx.moveTo(ballCenterX, dimLineY);
+    ctx.lineTo(ballCenterX + arrowSize, dimLineY - arrowSize / 2);
+    ctx.moveTo(ballCenterX, dimLineY);
+    ctx.lineTo(ballCenterX + arrowSize, dimLineY + arrowSize / 2);
+    ctx.stroke();
+    // Right arrowhead (points left)
+    ctx.beginPath();
+    ctx.moveTo(centerX, dimLineY);
+    ctx.lineTo(centerX - arrowSize, dimLineY - arrowSize / 2);
+    ctx.moveTo(centerX, dimLineY);
+    ctx.lineTo(centerX - arrowSize, dimLineY + arrowSize / 2);
+    ctx.stroke();
+
+    // 'x' label
+    ctx.fillStyle = 'black';
+    ctx.fillText('x', centerX - horizontalDisplacement / 2, dimLineY - 15);
+
+
+    // --- Draw Text Labels ---
+    ctx.lineWidth = 1;
+
+    // Ball label
+    ctx.textAlign = 'left';
+    const ballLabelX = 60;
+    const ballLabelY1 = 80;
+    const ballLabelY2 = 105;
+    ctx.fillText('ball', ballLabelX, ballLabelY1);
+    ctx.fillText('mass 45g', ballLabelX, ballLabelY2);
+    // Pointer line to ball
+    ctx.beginPath();
+    ctx.moveTo(ballLabelX + 90, (ballLabelY1 + ballLabelY2)/2);
+    ctx.lineTo(ballCenterX + ballRadius * Math.cos(Math.PI * 0.75), ballCenterY + ballRadius * Math.sin(Math.PI * 0.75));
+    ctx.stroke();
+
+
+    // Surface label
+    ctx.textAlign = 'right';
+    const surfaceLabelX = 540;
+    const surfaceLabelY1 = 80;
+    const surfaceLabelY2 = 105;
+    ctx.fillText('surface', surfaceLabelX, surfaceLabelY1);
+    ctx.fillText('of dish', surfaceLabelX, surfaceLabelY2);
+    // Pointer line to dish surface
+    const surfacePointX = centerX + 180;
+    const surfacePointY = arcCenterY + Math.sqrt(arcRadius**2 - (surfacePointX - centerX)**2);
+    ctx.beginPath();
+    ctx.moveTo(surfaceLabelX - 70, (surfaceLabelY1 + surfaceLabelY2)/2);
+    ctx.lineTo(surfacePointX, surfacePointY);
+    ctx.stroke();
+
+    // Figure label
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 4.1', centerX, 400);
+
+</script>
+</body>
+</html>

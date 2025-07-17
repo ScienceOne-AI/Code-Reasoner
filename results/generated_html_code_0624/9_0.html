@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Pendulum with Driven Support</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    background-color: white;
+    border: 1px solid #ccc;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="500" height="500"></canvas>
+
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style settings
+ctx.lineCap = 'round';
+ctx.lineJoin = 'round';
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+
+// Parameters
+const originX = 100;
+const originY = 150;
+const axisLength = 300;
+const zAxisLength = 120;
+
+const ys_val = 150; // Horizontal position of the support from the origin
+const l_val = 200;  // Length of the pendulum
+const theta = Math.PI / 7; // Angle in radians ~25.7 degrees
+
+const blockWidth = 70;
+const blockHeight = 25;
+const bobRadius = 8;
+const lineWidth = 2;
+ctx.lineWidth = lineWidth;
+
+// --- Helper function for arrows ---
+function drawArrow(ctx, fromx, fromy, tox, toy) {
+    const headlen = 12; // length of head in pixels
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+// --- Drawing starts here ---
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+// 1. Draw Coordinate Axes
+ctx.font = 'italic 20px serif';
+// y-axis (horizontal)
+drawArrow(ctx, originX, originY, originX + axisLength, originY);
+ctx.fillText('y', originX + axisLength + 10, originY + 8);
+// z-axis (vertical)
+drawArrow(ctx, originX, originY, originX, originY - zAxisLength);
+ctx.fillText('z', originX - 5, originY - zAxisLength - 10);
+// Origin label
+ctx.fillText('O', originX - 25, originY + 8);
+
+// 2. Define Pivot Point
+const pivotX = originX + ys_val;
+const pivotY = originY;
+
+// 3. Draw y_s dimension line
+const dimY = originY - 60;
+ctx.beginPath();
+ctx.moveTo(originX, dimY);
+ctx.lineTo(pivotX, dimY);
+// Ticks
+ctx.moveTo(originX, dimY - 5);
+ctx.lineTo(originX, dimY + 5);
+ctx.moveTo(pivotX, dimY - 5);
+ctx.lineTo(pivotX, dimY + 5);
+ctx.stroke();
+// Label y_s
+ctx.fillText('y', (originX + pivotX)/2 - 8, dimY - 8);
+ctx.font = 'italic 16px serif';
+ctx.fillText('s', (originX + pivotX)/2 + 4, dimY - 4);
+ctx.font = 'italic 20px serif'; // Reset font
+
+// 4. Draw Motion Arrows (double-headed arrow)
+ctx.beginPath();
+const arrowTotalLength = blockWidth + 40;
+const arrowStartX = pivotX - arrowTotalLength / 2;
+const arrowEndX = pivotX + arrowTotalLength / 2;
+// Shaft
+ctx.moveTo(arrowStartX, pivotY);
+ctx.lineTo(arrowEndX, pivotY);
+// Left head
+ctx.moveTo(arrowStartX + 10, pivotY - 6);
+ctx.lineTo(arrowStartX, pivotY);
+ctx.lineTo(arrowStartX + 10, pivotY + 6);
+// Right head
+ctx.moveTo(arrowEndX - 10, pivotY - 6);
+ctx.lineTo(arrowEndX, pivotY);
+ctx.lineTo(arrowEndX - 10, pivotY + 6);
+ctx.stroke();
+
+// 5. Draw Support Block (drawn on top of the arrow line)
+ctx.beginPath();
+ctx.rect(pivotX - blockWidth / 2, pivotY - blockHeight / 2, blockWidth, blockHeight);
+ctx.fillStyle = 'white'; // To draw the block over the arrow
+ctx.fill();
+ctx.stroke();
+ctx.fillStyle = 'black'; // Reset fillStyle
+
+// 6. Calculate Bob Position
+const bobX = pivotX + l_val * Math.sin(theta);
+const bobY = pivotY + l_val * Math.cos(theta);
+
+// 7. Draw Dashed Vertical Line
+ctx.beginPath();
+ctx.setLineDash([6, 4]);
+ctx.moveTo(pivotX, pivotY);
+ctx.lineTo(pivotX, pivotY + l_val * 0.8);
+ctx.stroke();
+ctx.setLineDash([]); // Reset line dash
+
+// 8. Draw Pendulum String
+ctx.beginPath();
+ctx.moveTo(pivotX, pivotY);
+ctx.lineTo(bobX, bobY);
+ctx.stroke();
+
+// 9. Draw Pendulum Bob
+ctx.beginPath();
+ctx.arc(bobX, bobY, bobRadius, 0, 2 * Math.PI);
+ctx.fill();
+
+// 10. Draw Angle Arc and Label
+const arcRadius = 45;
+// Canvas angles: 0 is right, PI/2 is down.
+// Arc starts from vertical (PI/2) and goes clockwise by theta.
+const startAngle = Math.PI / 2;
+const endAngle = Math.PI / 2 + theta;
+ctx.beginPath();
+ctx.arc(pivotX, pivotY, arcRadius, startAngle, endAngle, false); // false for clockwise
+ctx.stroke();
+// Angle label θ
+const midAngle = (startAngle + endAngle) / 2;
+const labelRadius = arcRadius + 15;
+const thetaLabelX = pivotX + labelRadius * Math.cos(midAngle);
+const thetaLabelY = pivotY + labelRadius * Math.sin(midAngle);
+ctx.fillText('θ', thetaLabelX - 10, thetaLabelY);
+
+// 11. Labels for l and m
+// Label l
+const lLabelX = pivotX + (l_val / 2) * Math.sin(theta) + 15;
+const lLabelY = pivotY + (l_val / 2) * Math.cos(theta);
+ctx.fillText('l', lLabelX, lLabelY);
+// Label m
+ctx.fillText('m', bobX + 15, bobY + 8);
+
+// 12. Draw Caption
+ctx.font = 'bold 20px serif';
+ctx.fillText('Fig. 2.25.', canvas.width / 2 - 45, canvas.height - 30);
+
+</script>
+
+</body>
+</html>

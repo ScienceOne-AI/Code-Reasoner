@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Toroidal Inductor Diagram</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+        canvas { background-color: white; }
+    </style>
+</head>
+<body>
+    <canvas id="toroidCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('toroidCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Canvas dimensions
+        const canvasWidth = 500;
+        const canvasHeight = 550;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        // Diagram parameters in pixels
+        const centerX = canvasWidth / 2;
+        const R1 = 70;
+        const R2 = 140;
+        const h = 50;
+        const y_cross_section_base = 420;
+        const y_3d_top = 180;
+
+        // Helper function to draw an arrow head
+        function drawArrowhead(ctx, x, y, angle) {
+            const headLength = 8;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headLength, -headLength / 2.5);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headLength, headLength / 2.5);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Helper function to draw text with subscript
+        function drawSubscriptText(ctx, text, sub, x, y) {
+            const baseFont = 'italic 20px Times New Roman';
+            const subFont = 'italic 14px Times New Roman';
+            
+            ctx.font = baseFont;
+            const textWidth = ctx.measureText(text).width;
+            
+            ctx.fillText(text, x, y);
+            
+            ctx.font = subFont;
+            ctx.fillText(sub, x + textWidth, y + 4);
+        }
+        
+        // Helper function to draw hatching
+        function drawHatching(ctx, x, y, w, h) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(x, y, w, h);
+            ctx.clip();
+            
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1;
+            
+            const spacing = 8;
+            ctx.beginPath();
+            for (let i = -h; i < w; i += spacing) {
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x + i + h, y + h);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // 1. Draw the Centerline
+        function drawCenterline() {
+            ctx.save();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([10, 3, 2, 3]); // Dash-dot pattern
+            ctx.beginPath();
+            ctx.moveTo(centerX, 20);
+            ctx.lineTo(centerX, y_cross_section_base + 50);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // 2. Draw the 3D Toroid
+        function draw3DToroid() {
+            const cx = centerX;
+            const cy_top = y_3d_top;
+            const cy_bottom = cy_top + h;
+            const rx_outer = R2;
+            const rx_inner = R1;
+            const ry_outer = rx_outer * 0.4;
+            const ry_inner = rx_inner * 0.4;
+            const num_windings = 52;
+
+            // Fill surfaces to create a 3D effect and occlude the centerline
+            ctx.save();
+            // Outer surface gradient
+            const outerGradient = ctx.createLinearGradient(cx - rx_outer, 0, cx + rx_outer, 0);
+            outerGradient.addColorStop(0, '#bbbbbb');
+            outerGradient.addColorStop(0.25, '#ffffff');
+            outerGradient.addColorStop(0.5, '#bbbbbb');
+            outerGradient.addColorStop(0.75, '#ffffff');
+            outerGradient.addColorStop(1, '#bbbbbb');
+            ctx.fillStyle = outerGradient;
+
+            ctx.beginPath();
+            ctx.moveTo(cx - rx_outer, cy_top);
+            ctx.lineTo(cx - rx_outer, cy_bottom);
+            ctx.ellipse(cx, cy_bottom, rx_outer, ry_outer, 0, Math.PI, 2 * Math.PI);
+            ctx.lineTo(cx + rx_outer, cy_top);
+            ctx.ellipse(cx, cy_top, rx_outer, ry_outer, 0, 2 * Math.PI, Math.PI, true);
+            ctx.closePath();
+            ctx.fill();
+
+            // Top surface gradient
+            const topGradient = ctx.createLinearGradient(0, cy_top - ry_outer, 0, cy_top + ry_outer);
+            topGradient.addColorStop(0, '#f0f0f0');
+            topGradient.addColorStop(1, '#cccccc');
+            ctx.fillStyle = topGradient;
+
+            ctx.beginPath();
+            ctx.ellipse(cx, cy_top, rx_outer, ry_outer, 0, 0, 2 * Math.PI);
+            ctx.ellipse(cx, cy_top, rx_inner, ry_inner, 0, 0, 2 * Math.PI, true); // Create hole
+            ctx.fill();
+            ctx.restore();
+
+            // Draw windings and outlines
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            for (let i = 0; i < num_windings; i++) {
+                const angle = (i / num_windings) * 2 * Math.PI;
+                
+                // Top radial lines
+                const x1_top = cx + rx_inner * Math.cos(angle);
+                const y1_top = cy_top + ry_inner * Math.sin(angle);
+                const x2_top = cx + rx_outer * Math.cos(angle);
+                const y2_top = cy_top + ry_outer * Math.sin(angle);
+                ctx.moveTo(x1_top, y1_top);
+                ctx.lineTo(x2_top, y2_top);
+                
+                // Vertical lines on visible front faces
+                if (Math.sin(angle) >= 0.01) {
+                    // Outer wall
+                    const x_outer = cx + rx_outer * Math.cos(angle);
+                    const y_top_outer = cy_top + ry_outer * Math.sin(angle);
+                    ctx.moveTo(x_outer, y_top_outer);
+                    ctx.lineTo(x_outer, y_top_outer + h);
+
+                    // Inner wall
+                    const x_inner = cx + rx_inner * Math.cos(angle);
+                    const y_top_inner = cy_top + ry_inner * Math.sin(angle);
+                    ctx.moveTo(x_inner, y_top_inner);
+                    ctx.lineTo(x_inner, y_top_inner + h);
+                }
+            }
+            ctx.stroke();
+
+            // Draw main outlines on top of windings and fills
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy_top, rx_outer, ry_outer, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.ellipse(cx, cy_top, rx_inner, ry_inner, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Draw visible bottom outlines
+            ctx.beginPath();
+            ctx.ellipse(cx, cy_bottom, rx_outer, ry_outer, 0, 0, Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.ellipse(cx, cy_bottom, rx_inner, ry_inner, 0, 0, Math.PI);
+            ctx.stroke();
+
+            // Vertical edges
+            ctx.beginPath();
+            ctx.moveTo(cx - rx_outer, cy_top);
+            ctx.lineTo(cx - rx_outer, cy_bottom);
+            ctx.moveTo(cx + rx_outer, cy_top);
+            ctx.lineTo(cx + rx_outer, cy_bottom);
+            ctx.stroke();
+        }
+
+        // 3. Draw the Cross-section
+        function drawCrossSection() {
+            const y_top = y_cross_section_base - h;
+
+            // Draw rectangles
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'black';
+            const rect_w = R2 - R1;
+            // Left rectangle
+            ctx.strokeRect(centerX - R2, y_top, rect_w, h);
+            drawHatching(ctx, centerX - R2, y_top, rect_w, h);
+            // Right rectangle
+            ctx.strokeRect(centerX + R1, y_top, rect_w, h);
+            drawHatching(ctx, centerX + R1, y_top, rect_w, h);
+            
+            // Draw dimension lines
+            ctx.lineWidth = 1;
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Dimension for h
+            const h_dim_x = centerX + R2 + 25;
+            ctx.beginPath();
+            ctx.moveTo(h_dim_x, y_top);
+            ctx.lineTo(h_dim_x, y_cross_section_base);
+            ctx.moveTo(centerX + R2, y_top);
+            ctx.lineTo(h_dim_x - 5, y_top);
+            ctx.moveTo(centerX + R2, y_cross_section_base);
+            ctx.lineTo(h_dim_x - 5, y_cross_section_base);
+            ctx.stroke();
+            drawArrowhead(ctx, h_dim_x, y_top, Math.PI / 2);
+            drawArrowhead(ctx, h_dim_x, y_cross_section_base, -Math.PI / 2);
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.fillText('h', h_dim_x + 15, y_cross_section_base - h / 2);
+
+            // Dimension for R1
+            const r1_dim_y = y_cross_section_base + 25;
+            ctx.beginPath();
+            ctx.moveTo(centerX, r1_dim_y);
+            ctx.lineTo(centerX + R1, r1_dim_y);
+            ctx.stroke();
+            drawArrowhead(ctx, centerX, r1_dim_y, Math.PI);
+            drawArrowhead(ctx, centerX + R1, r1_dim_y, 0);
+            ctx.textAlign = 'left';
+            drawSubscriptText(ctx, 'R', '1', centerX + R1 / 2 - 12, r1_dim_y);
+            
+            // Dimension for R2
+            const r2_dim_y = y_cross_section_base + 25;
+            ctx.beginPath();
+            ctx.moveTo(centerX, r2_dim_y);
+            ctx.lineTo(centerX - R2, r2_dim_y);
+            ctx.stroke();
+            drawArrowhead(ctx, centerX, r2_dim_y, 0);
+            drawArrowhead(ctx, centerX - R2, r2_dim_y, Math.PI);
+            drawSubscriptText(ctx, 'R', '2', centerX - R2 / 2 - 12, r2_dim_y);
+        }
+        
+        // 4. Draw Caption
+        function drawCaption() {
+            ctx.font = '24px "KaiTi", "SimSun"';
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.fillText('习题 9-30 图', centerX, y_cross_section_base + 80);
+        }
+
+        // --- Execute Drawing ---
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        drawCenterline(); // Draw first to be in the background
+        draw3DToroid();
+        drawCrossSection();
+        drawCaption();
+
+    </script>
+</body>
+</html>

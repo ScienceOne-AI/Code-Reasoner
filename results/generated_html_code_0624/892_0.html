@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="700" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Helper function to draw a wire
+        function drawWire(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        // Helper function to draw a resistor
+        function drawResistor(x, y, w, h, label) {
+            ctx.clearRect(x - w / 2 - 2, y - h / 2 - 2, w + 4, h + 4);
+            ctx.strokeRect(x - w / 2, y - h / 2, w, h);
+            ctx.font = 'italic 18px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillStyle = 'black';
+            ctx.fillText(label, x, y - h / 2 - 5);
+        }
+
+        // Helper function to draw a battery (horizontal)
+        function drawBattery(x, y, w, h, labelObj) {
+            const short_h = h * 0.6;
+            const pos_x = x + w / 2;
+            const neg_x = x - w / 2;
+
+            // Clear area behind battery
+            ctx.clearRect(neg_x - 2, y - h / 2 - 2, w + 4, h + 4);
+            
+            // Draw plates
+            ctx.beginPath();
+            ctx.moveTo(pos_x, y - h / 2);
+            ctx.lineTo(pos_x, y + h / 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(neg_x, y - short_h / 2);
+            ctx.lineTo(neg_x, y + short_h / 2);
+            ctx.stroke();
+
+            // Draw label
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillStyle = 'black';
+            const labelY = y - h / 2 - 8;
+            
+            // ℰ part
+            ctx.font = 'italic 20px serif';
+            ctx.fillText('ℰ', x - 22, labelY);
+            ctx.font = '14px serif';
+            ctx.fillText(labelObj.e, x - 12, labelY + 3);
+            
+            // ,R part
+            ctx.font = '16px serif';
+            ctx.fillText(',', x - 2, labelY);
+            ctx.font = 'italic 18px serif';
+            ctx.fillText('R', x + 8, labelY);
+            ctx.font = 'italic 14px serif';
+            ctx.fillText(labelObj.r, x + 18, labelY + 3);
+        }
+
+        // Helper function to draw a labeled point
+        function drawPoint(x, y, label) {
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = 'black';
+            ctx.fill();
+
+            ctx.font = '18px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText(label, x, y + 8);
+        }
+
+        // Helper function to draw a ground symbol
+        function drawGround(x, y, size) {
+            drawWire(x, y, x, y + size/2);
+            const h = y + size/2;
+            drawWire(x - size, h, x + size, h);
+            drawWire(x - size * 0.6, h + 5, x + size * 0.6, h + 5);
+            drawWire(x - size * 0.3, h + 10, x + size * 0.3, h + 10);
+        }
+
+        // --- Main Drawing ---
+        
+        const yTop = 100;
+        const yMid = 270;
+        const xLeft = 50;
+        const xRight = 650;
+        const resW = 80;
+        const resH = 25;
+
+        // Outer frame wires
+        drawWire(xLeft, yTop, xRight, yTop); // top wire
+        drawWire(xLeft, yTop, xLeft, yMid); // left wire
+        drawWire(xRight, yTop, xRight, yMid); // right wire
+        drawGround(xRight, yMid, 20); // ground symbol
+
+        // Bottom Branch
+        const xR3 = 120;
+        const xA = 210;
+        const xParStart = 250;
+        const xParEnd = 410;
+        const xB = 450;
+        
+        drawWire(xLeft, yMid, xR3 - resW/2, yMid);
+        drawWire(xR3 + resW/2, yMid, xA, yMid);
+        drawWire(xA, yMid, xParStart, yMid);
+        drawWire(xParEnd, yMid, xB, yMid);
+        drawWire(xB, yMid, xRight, yMid);
+        
+        // Parallel Part
+        const yParOffset = 50;
+        drawWire(xParStart, yMid, xParStart, yMid - yParOffset);
+        drawWire(xParStart, yMid - yParOffset, xParEnd, yMid - yParOffset);
+        drawWire(xParEnd, yMid - yParOffset, xParEnd, yMid);
+        drawWire(xParStart, yMid, xParStart, yMid + yParOffset);
+        drawWire(xParStart, yMid + yParOffset, xParEnd, yMid + yParOffset);
+        drawWire(xParEnd, yMid + yParOffset, xParEnd, yMid);
+
+        // Components on bottom branch
+        drawResistor(xR3, yMid, resW, resH, "R₃");
+        drawPoint(xA, yMid, "A");
+        drawResistor(xParStart + (xParEnd - xParStart)/2, yMid - yParOffset, resW, resH, "R₁");
+        drawResistor(xParStart + (xParEnd - xParStart)/2, yMid + yParOffset, resW, resH, "R₂");
+        drawPoint(xB, yMid, "B");
+
+        // Top Branch Components
+        const xE1 = 140;
+        const xC = 250;
+        const xR4 = 345;
+        const xD = 450;
+        const xE2 = 540;
+        const batteryW = 10;
+        const batteryH = 40;
+
+        drawBattery(xE1, yTop, batteryW, batteryH, { e: '1', r: 'i1' });
+        drawPoint(xC, yTop, 'C');
+        drawResistor(xR4, yTop, resW, resH, 'R₄');
+        drawPoint(xD, yTop, 'D');
+        drawBattery(xE2, yTop, batteryW, batteryH, { e: '2', r: 'i2' });
+
+        // Caption
+        ctx.font = '24px "KaiTi", "SimSun", serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillStyle = 'black';
+        ctx.fillText('习题 8-2 图', canvas.width / 2, 430);
+
+    </script>
+</body>
+</html>

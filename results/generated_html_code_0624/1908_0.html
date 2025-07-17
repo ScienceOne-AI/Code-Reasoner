@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Projectile Motion Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Parameters ---
+        const s_val = 20;
+        const h_val = 10;
+        const scale = 18;
+        const margin = { top: 50, right: 80, bottom: 70, left: 50 };
+
+        const s_px = s_val * scale; // Horizontal distance in pixels
+        const h_px = h_val * scale; // Vertical distance in pixels
+
+        canvas.width = s_px + margin.left + margin.right;
+        canvas.height = h_px + margin.top + margin.bottom;
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a line with an arrowhead at the end (for dimension lines).
+         */
+        function drawDimensionArrow(ctx, fromx, fromy, tox, toy, headlen = 8) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        }
+
+        /**
+         * Draws a vector with a filled arrowhead.
+         */
+        function drawVector(ctx, fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+
+            // Line
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+
+            // Head
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        /**
+         * Fills a rectangular area with a crosshatch pattern.
+         */
+        function fillWithCrosshatch(ctx, x, y, width, height) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(x, y, width, height);
+            ctx.clip();
+            
+            const spacing = 7;
+            const oldLineWidth = ctx.lineWidth;
+            ctx.lineWidth = 1;
+            
+            // First direction: ////
+            for (let i = -height; i < width; i += spacing) {
+                ctx.beginPath();
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x + i + height, y + height);
+                ctx.stroke();
+            }
+            // Second direction: \\\\
+            for (let i = 0; i < width + height; i += spacing) {
+                ctx.beginPath();
+                ctx.moveTo(x + i, y + height);
+                ctx.lineTo(x + i - height, y);
+                ctx.stroke();
+            }
+            
+            ctx.lineWidth = oldLineWidth;
+            ctx.restore();
+        }
+
+        /**
+         * Draws text, handling the flipped y-coordinate system.
+         */
+        function drawText(text, x, y, options = {}) {
+            const { font = 'italic 20px Times New Roman', align = 'center', baseline = 'middle', color = 'black' } = options;
+            ctx.save();
+            ctx.scale(1, -1);
+            ctx.font = font;
+            ctx.textAlign = align;
+            ctx.textBaseline = baseline;
+            ctx.fillStyle = color;
+            ctx.fillText(text, x, -y);
+            ctx.restore();
+        }
+
+        // --- Coordinate System Setup ---
+        // Move origin to bottom-left with margin
+        ctx.translate(margin.left, canvas.height - margin.bottom);
+        // Flip Y-axis to point upwards
+        ctx.scale(1, -1);
+
+        // --- Main Drawing ---
+        const x1 = 0, y1 = 0; // Position of the ground launcher
+        const x2 = s_px, y2 = h_px; // Position of the tower launcher
+        const launchAngle = Math.atan2(y2, x2);
+        const ballRadius = 6;
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Dashed lines
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        ctx.lineWidth = 1.2;
+        // Horizontal base line
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y1);
+        ctx.stroke();
+        // Line connecting launchers
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.restore();
+
+        // Tower
+        const towerWidth = 18;
+        fillWithCrosshatch(ctx, x2 - towerWidth / 2, 0, towerWidth, y2);
+        ctx.strokeRect(x2 - towerWidth / 2, 0, towerWidth, y2);
+
+        // Launcher Objects (Balls)
+        ctx.beginPath();
+        ctx.arc(x1, y1, ballRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(x2, y2, ballRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Velocity Vectors
+        const vecLength = 75;
+        const v1_endX = x1 + vecLength * Math.cos(launchAngle);
+        const v1_endY = y1 + vecLength * Math.sin(launchAngle);
+        drawVector(ctx, x1, y1, v1_endX, v1_endY);
+
+        const v2_endX = x2 - vecLength * Math.cos(launchAngle);
+        const v2_endY = y2 - vecLength * Math.sin(launchAngle);
+        drawVector(ctx, x2, y2, v2_endX, v2_endY);
+
+        // Y-axis guide at origin
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1, 50);
+        drawDimensionArrow(ctx, x1, y1, x1, 50);
+        ctx.stroke();
+
+        // Angle Arc for theta
+        ctx.beginPath();
+        ctx.arc(x1, y1, 50, 0, launchAngle);
+        ctx.stroke();
+
+        // Dimension Lines
+        ctx.save();
+        ctx.lineWidth = 1;
+        // 's' dimension line
+        const s_dim_y = -40;
+        ctx.beginPath();
+        ctx.moveTo(x1, s_dim_y);
+        ctx.lineTo(x2, s_dim_y);
+        drawDimensionArrow(ctx, x1, s_dim_y, x2, s_dim_y);
+        drawDimensionArrow(ctx, x2, s_dim_y, x1, s_dim_y);
+        ctx.stroke();
+        // 'h' dimension line
+        const h_dim_x = x2 + 45;
+        ctx.beginPath();
+        ctx.moveTo(h_dim_x, y1);
+        ctx.lineTo(h_dim_x, y2);
+        drawDimensionArrow(ctx, h_dim_x, y1, h_dim_x, y2);
+        drawDimensionArrow(ctx, h_dim_x, y2, h_dim_x, y1);
+        ctx.stroke();
+        ctx.restore();
+        
+        // --- Text and Labels ---
+        
+        // v₀ labels
+        drawText('v', v1_endX + 8, v1_endY + 6, { font: 'italic 22px Times New Roman', align: 'left' });
+        drawText('0', v1_endX + 17, v1_endY + 1, { font: 'italic 14px Times New Roman', align: 'left' });
+        
+        drawText('v', v2_endX - 8, v2_endY - 6, { font: 'italic 22px Times New Roman', align: 'right' });
+        drawText('0', v2_endX, v2_endY - 11, { font: 'italic 14px Times New Roman', align: 'right' });
+
+        // θ label
+        const theta_x = x1 + 65 * Math.cos(launchAngle / 2);
+        const theta_y = y1 + 65 * Math.sin(launchAngle / 2);
+        drawText('θ', theta_x, theta_y, {font: 'italic 22px Times New Roman'});
+        
+        // s and h labels
+        drawText('s', (x1 + x2) / 2, s_dim_y);
+        drawText('h', h_dim_x + 15, (y1 + y2) / 2, {align: 'left'});
+
+        // Caption
+        drawText('习题 1-16 图', s_px / 2, -margin.bottom + 20, { font: '18px KaiTi' });
+    </script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Phased Antenna Array</title>
+</head>
+<body>
+    <canvas id="myCanvas" width="500" height="500" style="background-color: white;"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings to mimic the hand-drawn style
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.font = '24px "Comic Sans MS", cursive, sans-serif';
+        ctx.lineCap = 'round'; // For softer line ends
+
+        // Helper function to draw a line with an arrow at the end
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 15; // length of arrow head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+
+            // Main line
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Parameters ---
+        const centerY = 250;
+        const elementX = 140;
+
+        // --- 1. Antenna Elements ---
+        const elementRadius = 8;
+        const elementSpacing = 60;
+
+        const y_positions = [
+            centerY - 1.5 * elementSpacing, // y = 160
+            centerY - 0.5 * elementSpacing, // y = 220
+            centerY + 0.5 * elementSpacing, // y = 280
+            centerY + 1.5 * elementSpacing  // y = 340
+        ];
+
+        y_positions.forEach(y => {
+            ctx.beginPath();
+            ctx.arc(elementX, y, elementRadius, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+
+        // --- 2. "antenna elements" Label ---
+        ctx.textAlign = 'center';
+        ctx.fillText('antenna', elementX - 45, y_positions[0] - 25);
+        ctx.fillText('elements', elementX - 45, y_positions[0] + 5);
+
+        // --- 3. Angle and Radiation Lines ---
+        const lineOriginX = elementX + 20; // Start lines from near the array center
+        const lineOriginY = centerY;
+        const lineLength = 250;
+
+        // Angle theta (From problem context, sin(θ)=1/3 -> θ ≈ 19.47°)
+        const theta = Math.asin(1 / 3); // in radians
+
+        // Horizontal line (reference axis)
+        ctx.beginPath();
+        ctx.moveTo(lineOriginX, lineOriginY);
+        ctx.lineTo(lineOriginX + lineLength + 20, lineOriginY);
+        ctx.stroke();
+
+        // Angled line (main lobe direction)
+        const endX = lineOriginX + lineLength * Math.cos(theta);
+        const endY = lineOriginY - lineLength * Math.sin(theta); // Y is inverted in canvas coordinates
+        drawArrow(ctx, lineOriginX, lineOriginY, endX, endY);
+
+        // --- 4. Angle Arc and Label (θ) ---
+        const arcRadius = 45;
+        ctx.beginPath();
+        ctx.arc(lineOriginX, lineOriginY, arcRadius, 0, -theta, true); // Draw arc counter-clockwise
+        ctx.stroke();
+        
+        ctx.font = 'italic 24px serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('θ', lineOriginX + arcRadius - 10, lineOriginY - 10);
+
+        // --- 5. Spacing Indicator (λ/4) ---
+        const spacingBracketX = elementX + 40;
+        const y3 = y_positions[2]; // y of 3rd element
+        const y4 = y_positions[3]; // y of 4th element
+
+        // Bracket lines (I-beam shape)
+        ctx.beginPath();
+        ctx.moveTo(spacingBracketX, y3);
+        ctx.lineTo(spacingBracketX + 15, y3); // Top cap
+        ctx.moveTo(spacingBracketX, y3);
+        ctx.lineTo(spacingBracketX, y4);     // Vertical line
+        ctx.moveTo(spacingBracketX, y4);
+        ctx.lineTo(spacingBracketX + 15, y4); // Bottom cap
+        ctx.stroke();
+        
+        // Label λ/4
+        const lambdaX = spacingBracketX + 35;
+        const lambdaY = (y3 + y4) / 2;
+        
+        ctx.font = '24px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('λ', lambdaX, lambdaY - 5);
+        
+        ctx.beginPath();
+        ctx.moveTo(lambdaX - 12, lambdaY + 5);
+        ctx.lineTo(lambdaX + 12, lambdaY + 5);
+        ctx.stroke();
+        
+        ctx.font = '24px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('4', lambdaX, lambdaY + 30);
+        
+        // --- 6. Caption ---
+        ctx.font = 'bold 24px "Comic Sans MS", cursive, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 2.63', canvas.width / 2, 450);
+
+    </script>
+</body>
+</html>

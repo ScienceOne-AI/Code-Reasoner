@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inverting Op-Amp Circuit</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="700" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Helper function to draw a line
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        // Helper function to draw a resistor
+        function drawResistor(x, y, width, height, label) {
+            const rectX = x - width / 2;
+            const rectY = y - height / 2;
+            ctx.beginPath();
+            ctx.rect(rectX, rectY, width, height);
+            ctx.fillStyle = 'white'; // Fill with white to erase line underneath
+            ctx.fill();
+            ctx.strokeStyle = 'black';
+            ctx.stroke();
+            ctx.fillStyle = 'black';
+            ctx.fillText(label, x, y - height);
+        }
+
+        // Helper function to draw an op-amp
+        function drawOpAmp(x, y, width, height) {
+            ctx.beginPath();
+            ctx.moveTo(x, y - height / 2);
+            ctx.lineTo(x, y + height / 2);
+            ctx.lineTo(x + width, y);
+            ctx.closePath();
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        // Helper function to draw a connection dot
+        function drawDot(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        
+        // Helper function to draw an I/O terminal (hollow circle)
+        function drawTerminal(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.stroke();
+        }
+        
+        // Helper function to draw the ground symbol
+        function drawGround(x, y) {
+            const width = 40;
+            const spacing = 7;
+            drawLine(x, y, x, y + 15);
+            drawLine(x - width / 2, y + 15, x + width / 2, y + 15);
+            drawLine(x - width / 3, y + 15 + spacing, x + width / 3, y + 15 + spacing);
+            drawLine(x - width / 6, y + 15 + 2*spacing, x + width / 6, y + 15 + 2*spacing);
+        }
+
+        // Helper function to draw an arrow
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headlen = 10; // length of head in pixels
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            drawLine(fromX, fromY, toX, toY);
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+
+        // Define coordinates
+        const y_gnd = 400;
+        const y_inv_in = 200;
+        const y_op_mid = 225;
+        const y_noninv_in = 250;
+        const y_feedback_resistor = 120;
+        
+        const x_vin_term = 100;
+        const x_rin_start = 120;
+        const x_rin_end = 220;
+        const x_node_in = 260;
+        const x_op_base = 300;
+        const x_op_tip = 400;
+        const x_node_out = 450;
+        const x_vout_term = 500;
+        const x_gnd_symbol = 550;
+
+        // Ground line
+        drawLine(50, y_gnd, 650, y_gnd);
+        
+        // Input section
+        const x_vin_arrow = 70;
+        drawArrow(x_vin_arrow, y_gnd, x_vin_arrow, y_inv_in);
+        ctx.font = '20px Arial';
+        ctx.fillText('V', x_vin_arrow - 25, (y_gnd + y_inv_in) / 2 + 5);
+        ctx.font = '14px Arial';
+        ctx.fillText('IN', x_vin_arrow - 15, (y_gnd + y_inv_in) / 2 + 10);
+        ctx.font = '18px Arial';
+
+        drawTerminal(x_vin_term, y_inv_in);
+        drawLine(x_vin_term, y_inv_in, x_rin_start, y_inv_in);
+        drawLine(x_rin_start, y_inv_in, (x_rin_start+x_rin_end)/2-40, y_inv_in); // Line to resistor
+        drawLine((x_rin_start+x_rin_end)/2+40, y_inv_in, x_rin_end, y_inv_in); // Line from resistor
+        drawResistor((x_rin_start+x_rin_end)/2, y_inv_in, 80, 25, '800 \u03A9');
+        drawLine(x_rin_end, y_inv_in, x_node_in, y_inv_in);
+        
+        // Op-Amp
+        drawOpAmp(x_op_base, y_op_mid, 100, 100);
+        
+        // Op-Amp connections
+        drawLine(x_node_in, y_inv_in, x_op_base, y_inv_in); // Inverting input
+        drawLine(x_op_base, y_noninv_in, x_op_base, y_gnd); // Non-inverting input to ground
+        drawLine(x_op_tip, y_op_mid, x_node_out, y_op_mid); // Output line
+
+        // Op-Amp labels (+/- and power)
+        ctx.font = '24px Arial';
+        ctx.fillText('-', x_op_base + 15, y_inv_in + 5);
+        ctx.fillText('+', x_op_base + 15, y_noninv_in + 5);
+        ctx.font = '18px Arial';
+        // +6V supply
+        drawLine(x_op_base + 50, y_op_mid - 50, x_op_base + 50, y_op_mid - 70);
+        ctx.fillText('+6 V', x_op_base + 50, y_op_mid - 85);
+        // -6V supply
+        drawLine(x_op_base + 50, y_op_mid + 50, x_op_base + 50, y_op_mid + 70);
+        ctx.fillText('–6 V', x_op_base + 50, y_op_mid + 85);
+
+        // Feedback loop
+        drawLine(x_node_in, y_inv_in, x_node_in, y_feedback_resistor);
+        drawResistor((x_node_in + x_node_out) / 2, y_feedback_resistor, 100, 25, '9600 \u03A9');
+        drawLine(x_node_in, y_feedback_resistor, (x_node_in + x_node_out) / 2 - 50, y_feedback_resistor);
+        drawLine((x_node_in + x_node_out) / 2 + 50, y_feedback_resistor, x_node_out, y_feedback_resistor);
+        drawLine(x_node_out, y_feedback_resistor, x_node_out, y_op_mid);
+
+        // Output section
+        drawLine(x_node_out, y_op_mid, x_vout_term, y_op_mid);
+        drawTerminal(x_vout_term, y_op_mid);
+        const x_vout_arrow = 525;
+        drawArrow(x_vout_arrow, y_gnd, x_vout_arrow, y_op_mid);
+        ctx.font = '20px Arial';
+        ctx.fillText('V', x_vout_arrow + 20, (y_gnd + y_op_mid) / 2 + 5);
+        ctx.font = '14px Arial';
+        ctx.fillText('OUT', x_vout_arrow + 32, (y_gnd + y_op_mid) / 2 + 10);
+        ctx.font = '18px Arial';
+        
+        // Connection dots
+        drawDot(x_node_in, y_inv_in);
+        drawDot(x_node_out, y_op_mid);
+        drawDot(x_op_base, y_gnd);
+
+        // Ground Symbol
+        drawGround(x_gnd_symbol, y_gnd);
+        drawDot(x_gnd_symbol, y_gnd);
+
+        // Figure Caption
+        ctx.fillText('Fig. 8.1', canvas.width / 2, 470);
+    </script>
+</body>
+</html>

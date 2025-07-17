@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PV Diagram for a Thermodynamic Cycle</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #d3d3d3;
+        }
+    </style>
+</head>
+<body>
+<canvas id="pvDiagramCanvas" width="450" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('pvDiagramCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Drawing Parameters ---
+    const margin = { top: 40, right: 40, bottom: 50, left: 70 };
+    const width = canvas.width - margin.left - margin.right;
+    const height = canvas.height - margin.top - margin.bottom;
+
+    const originX = margin.left;
+    const originY = canvas.height - margin.bottom;
+
+    // --- Physics to Canvas Coordinate Mapping ---
+    // Define relative scale for P and V based on the problem
+    const p0_rel = 3.0;
+    const v0_rel = 1.0;
+    const vb_rel = Math.pow(3, 3/5); // For adiabatic process PV^(5/3)=const, so Vb = Vo * 3^(3/5)
+
+    // Scaling factors to fit the diagram in the canvas area
+    const xScale = width / (vb_rel + 0.5);
+    const yScale = height / (p0_rel + 0.5);
+
+    // Calculate canvas coordinates for points A, B, C
+    const xA = originX + v0_rel * xScale;
+    const yA = originY - p0_rel * yScale;
+    const xB = originX + vb_rel * xScale;
+    const yB = originY - (p0_rel / 3) * yScale;
+    const xC = xA;
+    const yC = yB;
+
+    // --- Helper Functions ---
+    // Helper to draw text with a subscript
+    function drawSubscript(ctx, text, sub, x, y, textAlign) {
+        ctx.textAlign = textAlign || 'center';
+        const mainFont = "italic 18px 'Times New Roman'";
+        const subFont = "italic 12px 'Times New Roman'";
+        
+        ctx.font = mainFont;
+        const textWidth = ctx.measureText(text).width;
+        ctx.fillText(text, x, y);
+
+        ctx.font = subFont;
+        if (textAlign === 'right') {
+             ctx.fillText(sub, x + textWidth, y + 4);
+        } else { // 'center' or 'left'
+             ctx.fillText(sub, x + textWidth / 2, y + 4);
+        }
+    }
+
+    // Helper to draw an arrowhead
+    function drawArrow(ctx, x, y, angle) {
+        const headlen = 8;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headlen, headlen / 2.5);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headlen, -headlen / 2.5);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Drawing ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'black';
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+
+    // Draw Axes
+    // P-axis (y-axis)
+    ctx.beginPath();
+    ctx.moveTo(originX, originY + 10);
+    ctx.lineTo(originX, margin.top - 20);
+    ctx.stroke();
+    drawArrow(ctx, originX, margin.top - 20, -Math.PI / 2);
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.fillText("P", originX - 25, margin.top - 5);
+
+    // V-axis (x-axis)
+    ctx.beginPath();
+    ctx.moveTo(originX - 10, originY);
+    ctx.lineTo(canvas.width - margin.right + 20, originY);
+    ctx.stroke();
+    drawArrow(ctx, canvas.width - margin.right + 20, originY, 0);
+    ctx.fillText("V", canvas.width - margin.right + 10, originY + 25);
+
+
+    // Draw Dashed Lines for coordinates
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = '#555';
+    // From A
+    ctx.beginPath();
+    ctx.moveTo(originX, yA);
+    ctx.lineTo(xA, yA);
+    ctx.moveTo(xA, originY);
+    ctx.lineTo(xA, yA);
+    ctx.stroke();
+    // From B
+    ctx.beginPath();
+    ctx.moveTo(originX, yB);
+    ctx.lineTo(xB, yB);
+    ctx.moveTo(xB, originY);
+    ctx.lineTo(xB, yB);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = 'black';
+
+    // Draw Axis Labels
+    // P-axis labels
+    drawSubscript(ctx, "P", "o", originX - 10, yA + 5, 'right');
+    // For P_o / 3
+    const po3y = yB + 5;
+    ctx.font = "italic 18px 'Times New Roman'";
+    ctx.textAlign = 'right';
+    ctx.fillText("/ 3", originX - 10, po3y);
+    const w_slash3 = ctx.measureText("/ 3").width;
+    const x_po = originX - 10 - w_slash3;
+    drawSubscript(ctx, "P", "o", x_po, po3y, 'right');
+
+    // V-axis labels
+    drawSubscript(ctx, "V", "o", xA, originY + 20, 'center');
+    drawSubscript(ctx, "V", "B", xB, originY + 20, 'center');
+
+    // Draw the Thermodynamic Cycle Path
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(xA, yA);
+    // A -> B (Adiabatic curve - approximated with a quadratic Bezier curve)
+    // A control point at (xB, yA) gives a good visual representation.
+    ctx.quadraticCurveTo(xB, yA, xB, yB);
+    // B -> C (Isobaric compression)
+    ctx.lineTo(xC, yC);
+    // C -> A (Isochoric heating)
+    ctx.lineTo(xA, yA);
+    ctx.stroke();
+
+    // Draw Arrows on the path
+    // Arrow C -> A
+    drawArrow(ctx, xA, yA + (yC - yA) / 2, -Math.PI / 2);
+    // Arrow B -> C
+    drawArrow(ctx, xC + (xB - xC) / 2, yC, Math.PI);
+    // Arrow A -> B
+    const t = 0.5; // Position on the curve (0 to 1)
+    const midX = Math.pow(1 - t, 2) * xA + 2 * (1 - t) * t * xB + Math.pow(t, 2) * xB;
+    const midY = Math.pow(1 - t, 2) * yA + 2 * (1 - t) * t * yA + Math.pow(t, 2) * yB;
+    const derivX = 2 * (1 - t) * (xB - xA);
+    const derivY = 2 * t * (yB - yA);
+    const angleAB = Math.atan2(derivY, derivX);
+    drawArrow(ctx, midX, midY, angleAB);
+
+    // Draw Points and their Labels
+    ctx.fillStyle = 'black';
+    ctx.font = "bold 16px 'Times New Roman'";
+    // Point A
+    ctx.beginPath();
+    ctx.arc(xA, yA, 3.5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText("A", xA, yA - 15);
+    // Point B
+    ctx.beginPath();
+    ctx.arc(xB, yB, 3.5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText("B", xB + 15, yB);
+    // Point C
+    ctx.beginPath();
+    ctx.arc(xC, yC, 3.5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText("C", xC - 15, yC);
+
+</script>
+</body>
+</html>

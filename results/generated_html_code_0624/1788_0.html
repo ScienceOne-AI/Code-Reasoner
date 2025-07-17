@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Spring on a Cone</title>
+</head>
+<body>
+<canvas id="canvas" width="450" height="550"></canvas>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const centerX = 225;
+    const apexY = 100;
+    const coneHeight = 300;
+    const theta = 25 * Math.PI / 180; // Half-angle in radians
+    const coneBaseRadius = coneHeight * Math.tan(theta);
+    const coneBaseY = apexY + coneHeight;
+
+    // --- Style ---
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = 'italic 22px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Drawing Function for the Spring ---
+    function drawSpring(ctx, x1, y1, x2, y2, coils, amplitude) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        const segmentCount = 100;
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+
+        // Coiled section
+        for (let i = 1; i <= segmentCount; i++) {
+            const u = i / segmentCount; // Progress along the spring's axis (0 to 1)
+            
+            // Current point on the spring's axis
+            const mainX = x1 + u * dx;
+            const mainY = y1 + u * dy;
+
+            // Perpendicular offset for the coil
+            const phase = u * coils * 2 * Math.PI;
+            const offset = amplitude * Math.sin(phase);
+            
+            // Calculate the perpendicular vector and apply the offset
+            const perpX = offset * -dy / len;
+            const perpY = offset * dx / len;
+
+            ctx.lineTo(mainX + perpX, mainY + perpY);
+        }
+        ctx.stroke();
+    }
+
+    // --- Main Drawing ---
+
+    // 1. Draw central axis
+    ctx.beginPath();
+    ctx.moveTo(centerX, apexY - 60);
+    ctx.lineTo(centerX, coneBaseY + 60);
+    ctx.stroke();
+    
+    // 2. Draw cone outline
+    const leftX = centerX - coneBaseRadius;
+    const rightX = centerX + coneBaseRadius;
+    ctx.beginPath();
+    ctx.moveTo(centerX, apexY);
+    ctx.lineTo(leftX, coneBaseY);
+    ctx.moveTo(centerX, apexY);
+    ctx.lineTo(rightX, coneBaseY);
+    ctx.stroke();
+
+    // 3. Draw cone base (dashed back, solid front)
+    const baseEllipseYRadius = coneBaseRadius * 0.2;
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.ellipse(centerX, coneBaseY, coneBaseRadius, baseEllipseYRadius, 0, Math.PI, 2 * Math.PI);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.setLineDash([]);
+    ctx.ellipse(centerX, coneBaseY, coneBaseRadius, baseEllipseYRadius, 0, 0, Math.PI);
+    ctx.stroke();
+
+    // 4. Draw angle arcs and labels
+    const arcRadius = 45;
+    ctx.beginPath();
+    ctx.arc(centerX, apexY, arcRadius, Math.PI / 2 - theta, Math.PI / 2);
+    ctx.stroke();
+    
+    const labelRadius = 30;
+    const labelAngle1 = Math.PI / 2 - theta / 2;
+    ctx.fillText('θ', centerX + labelRadius * Math.cos(labelAngle1), apexY + labelRadius * Math.sin(labelAngle1));
+
+    ctx.beginPath();
+    ctx.arc(centerX, apexY, arcRadius, Math.PI / 2, Math.PI / 2 + theta);
+    ctx.stroke();
+    
+    const labelAngle2 = Math.PI / 2 + theta / 2;
+    ctx.fillText('θ', centerX + labelRadius * Math.cos(labelAngle2), apexY + labelRadius * Math.sin(labelAngle2));
+    
+    // 5. Define positions for spring attachment and mass
+    const massSlantDistance = 220;
+    const massX = centerX + massSlantDistance * Math.sin(theta);
+    const massY = apexY + massSlantDistance * Math.cos(theta);
+    const massRadius = 16;
+    
+    // Spring attachment rod (visually matched to the original drawing)
+    const rodEndX = centerX + 18;
+    const rodEndY = apexY + 22;
+    ctx.beginPath();
+    ctx.moveTo(centerX, apexY);
+    ctx.lineTo(rodEndX, rodEndY);
+    ctx.stroke();
+
+    const springStartX = rodEndX;
+    const springStartY = rodEndY;
+
+    // Spring end point (just before the mass connector)
+    const springEndOffset = massRadius + 5; // A small gap for the connector
+    const springEndX = massX - springEndOffset * Math.sin(theta);
+    const springEndY = massY - springEndOffset * Math.cos(theta);
+
+    // 6. Draw the spring
+    drawSpring(ctx, springStartX, springStartY, springEndX, springEndY, 8, 8);
+    
+    // 7. Draw the connector from the spring to the mass
+    ctx.beginPath();
+    ctx.moveTo(springEndX, springEndY);
+    ctx.lineTo(massX - massRadius * Math.sin(theta), massY - massRadius * Math.cos(theta));
+    ctx.stroke();
+    
+    // 8. Draw the mass
+    ctx.beginPath();
+    ctx.arc(massX, massY, massRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.fillText('m', massX, massY);
+    
+    // 9. Add the label at the bottom
+    ctx.font = '24px "KaiTi", "SimSun"'; // Use fonts that support Chinese characters
+    ctx.fillText('习题 1-36 图', centerX, coneBaseY + 80);
+
+</script>
+</body>
+</html>

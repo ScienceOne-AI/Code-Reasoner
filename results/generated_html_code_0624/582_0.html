@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sistemas de Péndulo</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      background-color: white;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="physicsCanvas" width="600" height="500"></canvas>
+  <script>
+    window.onload = function() {
+      const canvas = document.getElementById('physicsCanvas');
+      const ctx = canvas.getContext('2d');
+
+      // --- Función auxiliar para dibujar una punta de flecha ---
+      function drawArrowhead(ctx, fromX, fromY, toX, toY, headLength) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+      }
+
+      // --- Función para dibujar un sistema de péndulo ---
+      function drawPendulum(x_offset, type) {
+        // Parámetros de dibujo
+        const l = 220; // longitud de la varilla
+        const r = 45;  // radio del disco
+        const angle = 15 * Math.PI / 180; // ángulo desde la vertical
+        const sinA = Math.sin(angle);
+        const cosA = Math.cos(angle);
+
+        const pivot = { x: x_offset, y: 70 };
+        const center = { x: pivot.x + l * sinA, y: pivot.y + l * cosA };
+        const rodWidth = 8;
+        
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // 1. Dibujar el techo
+        ctx.beginPath();
+        ctx.moveTo(pivot.x - 80, pivot.y);
+        ctx.lineTo(pivot.x + 80, pivot.y);
+        ctx.stroke();
+        // Sombreado para el techo
+        ctx.save();
+        ctx.lineWidth = 1;
+        for (let i = -75; i <= 75; i += 10) {
+          ctx.beginPath();
+          ctx.moveTo(pivot.x + i, pivot.y);
+          ctx.lineTo(pivot.x + i - 10, pivot.y - 10);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        // 2. Dibujar la varilla
+        ctx.beginPath();
+        const perp_dx = -cosA * rodWidth / 2;
+        const perp_dy = sinA * rodWidth / 2;
+        ctx.moveTo(pivot.x + perp_dx, pivot.y + perp_dy);
+        ctx.lineTo(center.x + perp_dx, center.y + perp_dy);
+        ctx.moveTo(pivot.x - perp_dx, pivot.y - perp_dy);
+        ctx.lineTo(center.x - perp_dx, center.y - perp_dy);
+        ctx.stroke();
+
+        // 3. Dibujar el pivote O
+        ctx.beginPath();
+        ctx.arc(pivot.x, pivot.y, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText("O", pivot.x - 25, pivot.y + 8);
+
+        // 4. Dibujar el disco
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, r, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'black';
+
+        // 5. Dibujar la marca central del disco
+        if (type === 'a') {
+          ctx.beginPath();
+          ctx.arc(center.x, center.y, 4, 0, 2 * Math.PI);
+          ctx.fillStyle = 'white';
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = 'black';
+        } else if (type === 'b') {
+          ctx.beginPath();
+          ctx.arc(center.x, center.y, 4, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+        
+        // 6. Dibujar la cota de longitud l
+        ctx.beginPath();
+        ctx.moveTo(pivot.x, pivot.y);
+        ctx.lineTo(center.x, center.y);
+        drawArrowhead(ctx, center.x, center.y, pivot.x, pivot.y, 12);
+        drawArrowhead(ctx, pivot.x, pivot.y, center.x, center.y, 12);
+        ctx.stroke();
+        
+        const l_label_pos = {
+            x: (pivot.x + center.x) / 2 - 30 * cosA,
+            y: (pivot.y + center.y) / 2 + 30 * sinA
+        };
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText("l", l_label_pos.x, l_label_pos.y);
+
+        // 7. Dibujar la cota de radio r
+        ctx.beginPath();
+        const r_angle = Math.PI / 4; // Ángulo para la línea del radio desde la horizontal
+        const r_end = { x: center.x + r * Math.cos(r_angle), y: center.y + r * Math.sin(r_angle) };
+        ctx.moveTo(center.x, center.y);
+        ctx.lineTo(r_end.x, r_end.y);
+        ctx.stroke();
+        ctx.fillText("r", center.x + 0.5 * r * Math.cos(r_angle) + 5, center.y + 0.5 * r * Math.sin(r_angle) + 10);
+
+        // 8. Etiqueta (a) o (b)
+        ctx.font = '22px Times New Roman';
+        ctx.fillText(`(${type})`, center.x - 7, center.y + r + 40);
+      }
+
+      // Dibujar los dos sistemas de péndulo
+      drawPendulum(180, 'a');
+      drawPendulum(420, 'b');
+
+      // Dibujar el texto inferior
+      ctx.font = '24px KaiTi'; // Fuente común para caracteres chinos
+      ctx.fillStyle = 'black';
+      ctx.fillText("习题 10-11 图", canvas.width / 2 - 70, 460);
+    };
+  </script>
+</body>
+</html>

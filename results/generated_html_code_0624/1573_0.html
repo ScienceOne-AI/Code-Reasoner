@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spring-Mass System</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style settings ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = "20px sans-serif";
+    ctx.textBaseline = "middle";
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws a vertical spring.
+     * @param {CanvasRenderingContext2D} ctx - The rendering context.
+     * @param {number} x - The center x-coordinate of the spring.
+     * @param {number} y - The top y-coordinate of the spring's connector.
+     * @param {number} length - The length of the coiled section.
+     * @param {number} radius - The radius of the coils.
+     * @param {number} coils - The number of coils.
+     */
+    function drawSpring(ctx, x, y, length, radius, coils) {
+        const segments = 100;
+        const dy = length / segments;
+        const totalAngle = coils * 2 * Math.PI;
+        const dAngle = totalAngle / segments;
+
+        ctx.beginPath();
+        // Top straight part attached to the ceiling
+        ctx.moveTo(x, y);
+
+        // Coils
+        for (let i = 0; i <= segments; i++) {
+            const currentY = y + i * dy;
+            const currentX = x + radius * Math.sin(i * dAngle);
+            ctx.lineTo(currentX, currentY);
+        }
+        
+        // Bottom straight part
+        const endY = y + length;
+        // The last point from the loop is (x, endY).
+        ctx.lineTo(x, endY + 5); // Short connector to the sphere
+        ctx.stroke();
+    }
+
+    /**
+     * Draws a vertical double-headed arrow.
+     * @param {CanvasRenderingContext2D} ctx - The rendering context.
+     * @param {number} x - The x-coordinate of the arrow.
+     * @param {number} y1 - The top y-coordinate.
+     * @param {number} y2 - The bottom y-coordinate.
+     */
+    function drawDoubleVArrow(ctx, x, y1, y2) {
+        const headlen = 10;
+        ctx.beginPath();
+        // Main line
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, y2);
+        // Arrowhead at top (y1)
+        ctx.moveTo(x - 5, y1 + headlen);
+        ctx.lineTo(x, y1);
+        ctx.lineTo(x + 5, y1 + headlen);
+        // Arrowhead at bottom (y2)
+        ctx.moveTo(x - 5, y2 - headlen);
+        ctx.lineTo(x, y2);
+        ctx.lineTo(x + 5, y2 - headlen);
+        ctx.stroke();
+    }
+
+    // --- Main Drawing ---
+
+    // 1. Fixed surface (Ceiling)
+    const ceilingY = 60;
+    const ceilingStartX = 150;
+    const ceilingEndX = 450;
+    ctx.beginPath();
+    ctx.moveTo(ceilingStartX, ceilingY);
+    ctx.lineTo(ceilingEndX, ceilingY);
+    ctx.stroke();
+
+    // Hatching for the ceiling
+    ctx.beginPath();
+    for (let x = ceilingStartX + 15; x < ceilingEndX; x += 15) {
+        ctx.moveTo(x, ceilingY);
+        ctx.lineTo(x - 15, ceilingY - 15);
+    }
+    ctx.stroke();
+
+    // 2. Spring
+    const springX = 300;
+    const springStartY = 60;
+    const springLength = 140;
+    const springRadius = 22;
+    const springCoils = 8;
+    drawSpring(ctx, springX, springStartY, springLength, springRadius, springCoils);
+
+    // 3. Steel Sphere
+    const sphereRadius = 30;
+    const sphereCenterY = springStartY + springLength + 5 + sphereRadius;
+    const sphereCenterX = springX;
+    ctx.beginPath();
+    ctx.arc(sphereCenterX, sphereCenterY, sphereRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 4. Equilibrium Line
+    ctx.beginPath();
+    ctx.setLineDash([8, 4]);
+    const dashedLineY = sphereCenterY;
+    const dashedLineStartX = 140;
+    const dashedLineEndX = sphereCenterX - sphereRadius;
+    ctx.moveTo(dashedLineStartX, dashedLineY);
+    ctx.lineTo(dashedLineEndX, dashedLineY);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid lines
+
+    // 5. Oscillation Indicator
+    const arrowX = 100;
+    const arrowHeight = 80;
+    const arrowTopY = sphereCenterY - arrowHeight / 2;
+    const arrowBottomY = sphereCenterY + arrowHeight / 2;
+    drawDoubleVArrow(ctx, arrowX, arrowTopY, arrowBottomY);
+    ctx.fillText("oscillations", 5, sphereCenterY - 25);
+
+    // 6. Labels
+    // "spring" label
+    const springLabelX = 380;
+    const springLabelY = 120;
+    ctx.fillText("spring", springLabelX, springLabelY);
+    ctx.beginPath();
+    ctx.moveTo(springLabelX - 5, springLabelY);
+    ctx.lineTo(springX + springRadius, springLabelY + 10);
+    ctx.stroke();
+
+    // "steel sphere" label
+    const sphereLabelX = 380;
+    const sphereLabelY = 250;
+    ctx.fillText("steel sphere", sphereLabelX, sphereLabelY);
+    ctx.beginPath();
+    ctx.moveTo(sphereLabelX - 5, sphereLabelY);
+    ctx.lineTo(sphereCenterX + sphereRadius, sphereLabelY);
+    ctx.stroke();
+
+    // Figure caption
+    ctx.font = "bold 20px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Fig. 4.1", canvas.width / 2, 380);
+</script>
+</body>
+</html>

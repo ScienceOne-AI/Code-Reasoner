@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Thermodynamics Diagram of Airflow over a Mountain</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    canvas {
+        border: 1px solid #ccc;
+        background-color: white;
+    }
+</style>
+</head>
+<body>
+<canvas id="thermo-diagram" width="550" height="420"></canvas>
+<script>
+const canvas = document.getElementById('thermo-diagram');
+const ctx = canvas.getContext('2d');
+
+// Style settings
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = 2;
+ctx.lineCap = 'round';
+
+// Helper function to draw flow arrows
+function drawArrow(ctx, x1, y1, x2, y2) {
+    const headlen = 10;
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+// 1. Draw the baseline (M0 to M3) - Dashed
+ctx.beginPath();
+ctx.setLineDash([6, 4]);
+const baseY = 330;
+const m0_x = 80;
+const m3_x = 470;
+ctx.moveTo(m0_x, baseY);
+ctx.lineTo(m3_x, baseY);
+ctx.stroke();
+ctx.setLineDash([]); // Reset to solid line
+
+// 2. Draw the mountain profile
+ctx.beginPath();
+const mountainStartX = 100;
+const mountainEndX = 440;
+const peakX = 260;
+const peakY = 120;
+// Windward slope (left)
+ctx.moveTo(mountainStartX, baseY);
+// This bezier curve models the changing slope of the windward side
+ctx.bezierCurveTo(150, 310, 200, 170, peakX, peakY);
+// Leeward slope (right)
+ctx.quadraticCurveTo(360, 160, mountainEndX, baseY);
+ctx.stroke();
+
+// Calculate M1 position for placing labels and h1 line.
+// This is an approximation based on the visual location in the diagram.
+const m1_pos = { x: 161, y: 265 };
+
+// 3. Draw h1 indicator
+// Dashed horizontal lines
+ctx.beginPath();
+ctx.setLineDash([6, 4]);
+const h1_dashed_start_x = m1_pos.x - 60;
+ctx.moveTo(h1_dashed_start_x, m1_pos.y);
+ctx.lineTo(m1_pos.x, m1_pos.y);
+ctx.moveTo(h1_dashed_start_x, baseY);
+ctx.lineTo(m1_pos.x + 20, baseY);
+ctx.stroke();
+ctx.setLineDash([]);
+
+// Vertical line with arrows
+const h1_vertical_x = h1_dashed_start_x + 20;
+ctx.beginPath();
+// Vertical line
+ctx.moveTo(h1_vertical_x, m1_pos.y);
+ctx.lineTo(h1_vertical_x, baseY);
+// Arrowhead at top (pointing down)
+ctx.moveTo(h1_vertical_x - 5, m1_pos.y + 8);
+ctx.lineTo(h1_vertical_x, m1_pos.y);
+ctx.lineTo(h1_vertical_x + 5, m1_pos.y + 8);
+// Arrowhead at bottom (pointing up)
+ctx.moveTo(h1_vertical_x - 5, baseY - 8);
+ctx.lineTo(h1_vertical_x, baseY);
+ctx.lineTo(h1_vertical_x + 5, baseY - 8);
+ctx.stroke();
+
+// 4. Draw flow arrows
+// Windward arrow
+drawArrow(ctx, 180, 245, 225, 185);
+// Leeward arrow
+drawArrow(ctx, 310, 170, 360, 220);
+
+// 5. Draw clouds
+ctx.lineWidth = 1.5;
+function drawCloudArc(x, y, r) {
+    ctx.beginPath();
+    // Draws a crescent shape like '('
+    ctx.arc(x, y, r, Math.PI * 0.7, Math.PI * 1.3);
+    ctx.stroke();
+}
+drawCloudArc(160, 200, 12); drawCloudArc(185, 195, 12); drawCloudArc(210, 198, 12);
+drawCloudArc(150, 215, 12); drawCloudArc(175, 210, 12); drawCloudArc(200, 213, 12);
+drawCloudArc(140, 230, 12); drawCloudArc(165, 225, 12);
+ctx.lineWidth = 2; // Reset
+
+// 6. Add labels
+const mainFont = "italic 22px 'Times New Roman'";
+const subFont = "italic 16px 'Times New Roman'";
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// M0
+ctx.font = mainFont;
+ctx.fillText("M", m0_x, baseY + 20);
+ctx.font = subFont;
+ctx.fillText("0", m0_x + 12, baseY + 25);
+
+// M1
+ctx.font = mainFont;
+ctx.fillText("M", m1_pos.x - 10, m1_pos.y + 20);
+ctx.font = subFont;
+ctx.fillText("1", m1_pos.x, m1_pos.y + 25);
+
+// M2
+ctx.font = mainFont;
+ctx.fillText("M", peakX, peakY - 15);
+ctx.font = subFont;
+ctx.fillText("2", peakX + 12, peakY - 10);
+
+// M3
+ctx.font = mainFont;
+ctx.fillText("M", m3_x, baseY + 20);
+ctx.font = subFont;
+ctx.fillText("3", m3_x + 12, baseY + 25);
+
+// h1
+ctx.font = mainFont;
+ctx.fillText("h", h1_vertical_x + 20, baseY - 35);
+ctx.font = subFont;
+ctx.fillText("1", h1_vertical_x + 28, baseY - 30);
+
+// 7. Add caption
+ctx.font = "22px 'SimSun', 'KaiTi'";
+ctx.textAlign = 'center';
+ctx.fillText("热图 2. 14. 1", canvas.width / 2, baseY + 65);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  canvas {
+    border: 1px solid black;
+  }
+</style>
+</head>
+<body>
+<canvas id="craneCanvas" width="600" height="400"></canvas>
+<script>
+  const canvas = document.getElementById('craneCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Helper function to draw an arrow
+  function drawArrow(ctx, fromx, fromy, tox, toy) {
+    const headlen = 10; // length of head in pixels
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+  }
+
+  // Helper function for dimension lines
+  function drawDimLine(ctx, x1, y, x2, text) {
+      ctx.beginPath();
+      // Main horizontal line
+      ctx.moveTo(x1, y);
+      ctx.lineTo(x2, y);
+
+      // Arrowheads
+      const arrowSize = 5;
+      ctx.moveTo(x1, y);
+      ctx.lineTo(x1 + arrowSize, y - arrowSize);
+      ctx.moveTo(x1, y);
+      ctx.lineTo(x1 + arrowSize, y + arrowSize);
+      ctx.moveTo(x2, y);
+      ctx.lineTo(x2 - arrowSize, y - arrowSize);
+      ctx.moveTo(x2, y);
+      ctx.lineTo(x2 - arrowSize, y + arrowSize);
+      
+      // Vertical ticks
+      ctx.moveTo(x1, y - 10);
+      ctx.lineTo(x1, y + 10);
+      ctx.moveTo(x2, y - 10);
+      ctx.lineTo(x2, y + 10);
+      
+      ctx.stroke();
+
+      // Text
+      ctx.font = "16px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText(text, (x1 + x2) / 2, y + 5);
+  }
+
+  // --- Start Drawing ---
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+
+  // Define key coordinates
+  const y_ground = 350;
+  const scale = 40; // pixels per meter
+  const x_G1_line = 180;
+  const x_A_pos = x_G1_line + 2 * scale;
+  const x_G2_line = x_A_pos + 3 * scale;
+  const x_G_line = x_G2_line + 3 * scale;
+  const x_B_pos = 120; // Estimated from diagram
+
+  // 1. Draw Ground
+  ctx.beginPath();
+  ctx.moveTo(0, y_ground);
+  ctx.lineTo(canvas.width, y_ground);
+  ctx.stroke();
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= canvas.width; i += 20) {
+    ctx.beginPath();
+    ctx.moveTo(i, y_ground);
+    ctx.lineTo(i - 10, y_ground + 10);
+    ctx.stroke();
+  }
+  ctx.lineWidth = 2;
+
+  // 2. Draw Dimensions
+  const y_dim_ticks = 360;
+  const y_dim_line = 370;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x_G1_line, y_ground);
+  ctx.lineTo(x_G1_line, y_dim_ticks);
+  ctx.moveTo(x_A_pos, y_ground - 20); // support A top
+  ctx.lineTo(x_A_pos, y_dim_ticks);
+  
+  // Find point on boom for G2 to draw dimension line from
+  const boom_tip_for_dim = {x: x_G_line, y: 165};
+  const boom_bottom_joint_for_dim = {x: 250, y: y_ground - 55};
+  const m_bottom_for_dim = (boom_tip_for_dim.y - boom_bottom_joint_for_dim.y) / (boom_tip_for_dim.x - boom_bottom_joint_for_dim.x);
+  const y_bottom_at_strut_for_dim = boom_bottom_joint_for_dim.y + m_bottom_for_dim * (x_G2_line - boom_bottom_joint_for_dim.x);
+  ctx.moveTo(x_G2_line, y_bottom_at_strut_for_dim);
+  ctx.lineTo(x_G2_line, y_dim_ticks);
+  
+  ctx.moveTo(x_G_line, y_ground);
+  ctx.lineTo(x_G_line, y_dim_ticks);
+  ctx.stroke();
+  
+  drawDimLine(ctx, x_G1_line, y_dim_line, x_A_pos, "2m");
+  drawDimLine(ctx, x_A_pos, y_dim_line, x_G2_line, "3m");
+  drawDimLine(ctx, x_G2_line, y_dim_line, x_G_line, "3m");
+  ctx.lineWidth = 2;
+  ctx.textAlign = 'left';
+
+
+  // 3. Draw Crane Base
+  ctx.beginPath();
+  // Support B
+  ctx.rect(x_B_pos - 20, y_ground - 20, 40, 20);
+  ctx.font = "20px Arial";
+  ctx.fillText("B", x_B_pos - 50, y_ground - 5);
+  // Support A
+  ctx.rect(x_A_pos - 20, y_ground - 20, 40, 20);
+  ctx.fillText("A", x_A_pos + 25, y_ground - 5);
+  // Chassis base
+  ctx.rect(x_B_pos - 30, y_ground - 35, (x_A_pos + 30) - (x_B_pos - 30) , 15);
+  // Turntable base
+  ctx.rect(x_B_pos - 10, y_ground - 45, (x_A_pos + 10) - (x_B_pos - 10), 10);
+  ctx.stroke();
+
+
+  // 4. Draw Crane Superstructure
+  ctx.beginPath();
+  // Platform and Cabin outline
+  const platform_y = y_ground - 55;
+  const cabin_top_y = platform_y - 70;
+  const cabin_back_x = 110;
+  const cabin_front_x = 180;
+  ctx.moveTo(90, platform_y);
+  ctx.lineTo(250, platform_y); // Platform bottom
+  ctx.moveTo(cabin_back_x, platform_y);
+  ctx.lineTo(cabin_back_x, cabin_top_y); // Cabin back
+  ctx.lineTo(cabin_front_x, cabin_top_y); // Cabin top
+
+  // Boom (Jib)
+  const boom_tip = {x: x_G_line, y: 165};
+  const boom_top_joint = {x: cabin_front_x, y: cabin_top_y};
+  const boom_bottom_joint = {x: 250, y: platform_y};
+  ctx.moveTo(boom_top_joint.x, boom_top_joint.y);
+  ctx.lineTo(boom_tip.x, boom_tip.y);
+  ctx.moveTo(boom_bottom_joint.x, boom_bottom_joint.y);
+  ctx.lineTo(boom_tip.x, boom_tip.y);
+  
+  // Internal strut as per original image visual
+  const g2_dot_x = 380;
+  const g2_dot_y = 230;
+  ctx.moveTo(g2_dot_x - 10, g2_dot_y - 30);
+  ctx.lineTo(g2_dot_x + 10, g2_dot_y + 30);
+  
+  ctx.stroke();
+
+  // 5. Draw Forces
+  ctx.font = "24px serif";
+  // G1
+  const g1_pos = {x: x_G1_line, y: platform_y - 25};
+  ctx.beginPath();
+  ctx.arc(g1_pos.x, g1_pos.y, 4, 0, 2 * Math.PI);
+  ctx.fill();
+  drawArrow(ctx, g1_pos.x, g1_pos.y, g1_pos.x, g1_pos.y + 40);
+  ctx.fillText("G", g1_pos.x + 10, g1_pos.y);
+  ctx.font = "18px serif";
+  ctx.fillText("1", g1_pos.x + 25, g1_pos.y + 8);
+  
+  // G2
+  ctx.font = "24px serif";
+  const g2_pos = {x: g2_dot_x, y: g2_dot_y};
+  ctx.beginPath();
+  ctx.arc(g2_pos.x, g2_pos.y, 4, 0, 2 * Math.PI);
+  ctx.fill();
+  drawArrow(ctx, g2_pos.x, g2_pos.y, g2_pos.x, g2_pos.y + 40);
+  ctx.fillText("G", g2_pos.x + 10, g2_pos.y - 10);
+  ctx.font = "18px serif";
+  ctx.fillText("2", g2_pos.x + 25, g2_pos.y - 2);
+
+  // G (Load)
+  // Pulley
+  ctx.beginPath();
+  ctx.arc(boom_tip.x, boom_tip.y, 10, 0, 2 * Math.PI);
+  ctx.stroke();
+  // Cable
+  const hook_y = boom_tip.y + 50;
+  ctx.beginPath();
+  ctx.moveTo(boom_tip.x, boom_tip.y + 10);
+  ctx.lineTo(boom_tip.x, hook_y);
+  ctx.stroke();
+  // Hook
+  ctx.beginPath();
+  ctx.arc(boom_tip.x, hook_y + 5, 8, Math.PI, 0, true);
+  ctx.stroke();
+  // Load
+  const load_size = 40;
+  ctx.beginPath();
+  ctx.rect(boom_tip.x - load_size/2, hook_y + 13, load_size, load_size);
+  ctx.stroke();
+  ctx.font = "24px serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("G", boom_tip.x, hook_y + 13 + load_size/2);
+
+</script>
+</body>
+</html>

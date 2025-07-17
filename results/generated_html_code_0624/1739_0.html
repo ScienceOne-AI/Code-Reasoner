@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamics - Free Expansion</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Drawing Parameters
+        const centerX = canvas.width / 2;
+        const boxWidth = 280;
+        const boxHeight = 120;
+        const wallThickness = 8;
+        const topBoxY = 80;
+        const bottomBoxY = topBoxY + boxHeight + 80;
+        const topBoxX = centerX - boxWidth / 2;
+        const bottomBoxX = topBoxX;
+        const dotCount = 55;
+        const dotRadius = 1.5;
+
+        // Unicode characters for subscripts
+        const V1_UNICODE = 'V\u2081';
+        const V2_UNICODE = 'V\u2082';
+
+        // Helper function to draw the double-walled box
+        function drawContainer(x, y, w, h, t) {
+            ctx.lineWidth = 2.5;
+            ctx.strokeRect(x, y, w, h);
+            ctx.strokeRect(x + t, y + t, w - 2 * t, h - 2 * t);
+        }
+
+        // Helper function to draw random dots (gas particles)
+        function drawDots(x, y, w, h, count, r) {
+            ctx.fillStyle = 'black';
+            for (let i = 0; i < count; i++) {
+                const dotX = x + r + Math.random() * (w - 2 * r);
+                const dotY = y + r + Math.random() * (h - 2 * r);
+                ctx.beginPath();
+                ctx.arc(dotX, dotY, r, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+        
+        // Helper function to draw a simple arrow
+        function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            // line
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            // arrowhead
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Start Drawing ---
+
+        // General styles
+        ctx.strokeStyle = 'black';
+        ctx.font = '24px "Comic Sans MS", cursive, sans-serif';
+        
+        // --- Top Diagram (Initial State) ---
+        
+        // Draw the container
+        drawContainer(topBoxX, topBoxY, boxWidth, boxHeight, wallThickness);
+        
+        // Draw the partition
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(centerX, topBoxY);
+        ctx.lineTo(centerX, topBoxY + boxHeight);
+        ctx.stroke();
+
+        // Draw gas in V1
+        const v1_x = topBoxX + wallThickness;
+        const v1_y = topBoxY + wallThickness;
+        const v1_width = boxWidth / 2 - wallThickness;
+        const v1_height = boxHeight - 2 * wallThickness;
+        drawDots(v1_x, v1_y, v1_width, v1_height, dotCount, dotRadius);
+
+        // Label "insulated walls"
+        ctx.textAlign = 'left';
+        ctx.fillText('insulated walls', centerX + 15, 50);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(centerX + 10, 60);
+        ctx.quadraticCurveTo(centerX + 5, 70, centerX, topBoxY);
+        // Arrowhead for the curved line
+        const endX_curve = centerX;
+        const endY_curve = topBoxY;
+        const headLen_curve = 8;
+        const angle_curve = Math.atan2(endY_curve - 70, endX_curve - (centerX + 5));
+        ctx.moveTo(endX_curve - headLen_curve * Math.cos(angle_curve - Math.PI / 6), endY_curve - headLen_curve * Math.sin(angle_curve - Math.PI / 6));
+        ctx.lineTo(endX_curve, endY_curve);
+        ctx.lineTo(endX_curve - headLen_curve * Math.cos(angle_curve + Math.PI / 6), endY_curve - headLen_curve * Math.sin(angle_curve + Math.PI / 6));
+        ctx.stroke();
+
+        // Label "V1"
+        ctx.textAlign = 'center';
+        ctx.fillText(V1_UNICODE, 95, 150);
+        drawArrow(115, 145, topBoxX + wallThickness, 145);
+
+        // Label "V2"
+        ctx.fillText(V2_UNICODE, centerX + boxWidth / 4, 150);
+
+        // --- Transition Arrow ---
+        const arrowCenterY = (topBoxY + boxHeight + bottomBoxY) / 2;
+        const arrowH = 40;
+        const headH = 20;
+        const headW = 18;
+        const shaftW = 8;
+
+        const tipY = arrowCenterY + arrowH/2;
+        const topY = arrowCenterY - arrowH/2;
+        const neckY = tipY - headH;
+
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(centerX - shaftW/2, topY);
+        ctx.lineTo(centerX - shaftW/2, neckY);
+        ctx.lineTo(centerX - headW, neckY);
+        ctx.lineTo(centerX, tipY);
+        ctx.lineTo(centerX + headW, neckY);
+        ctx.lineTo(centerX + shaftW/2, neckY);
+        ctx.lineTo(centerX + shaftW/2, topY);
+        ctx.stroke();
+
+        // --- Bottom Diagram (Final State) ---
+        
+        // Draw the container
+        drawContainer(bottomBoxX, bottomBoxY, boxWidth, boxHeight, wallThickness);
+
+        // Draw gas distributed throughout
+        const final_x = bottomBoxX + wallThickness;
+        const final_y = bottomBoxY + wallThickness;
+        const final_width = boxWidth - 2 * wallThickness;
+        const final_height = boxHeight - 2 * wallThickness;
+        drawDots(final_x, final_y, final_width, final_height, dotCount * 2, dotRadius); // Dots are now more spread out
+        
+        // --- Figure Caption ---
+        ctx.font = '22px "Comic Sans MS", cursive, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 1.20.', centerX, bottomBoxY + boxHeight + 45);
+
+    </script>
+</body>
+</html>

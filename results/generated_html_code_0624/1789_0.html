@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Dumbbell Rotation</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2 - 25; // Center vertically, leaving space for caption
+
+        // --- Style and Parameter Setup ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5; // Thicker lines for hand-drawn feel
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        // Drawing parameters
+        const axisLength = 190;
+        const rodHalfLengthA = 150;
+        const massRadius = 4.5;
+        const theta = Math.PI / 7; // Approx 25.7 degrees, similar to image
+
+        // Helper function to draw an arrowhead on a line
+        function drawArrow(ctx, fromX, fromY, toX, toY) {
+            const headLength = 12;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        }
+
+        // --- Clear Canvas ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // --- Draw Coordinate Axes ---
+        ctx.beginPath();
+        // z-axis (horizontal)
+        drawArrow(ctx, centerX - axisLength, centerY, centerX + axisLength, centerY);
+        // x-axis (vertical)
+        drawArrow(ctx, centerX, centerY + axisLength * 0.8, centerX, centerY - axisLength * 0.8);
+        ctx.stroke();
+
+        // --- Draw Dumbbell (Rod and Masses) ---
+        const z1 = rodHalfLengthA * Math.cos(theta);
+        const x1 = rodHalfLengthA * Math.sin(theta);
+
+        const m1_canvasX = centerX + z1;
+        const m1_canvasY = centerY - x1;
+        const m2_canvasX = centerX - z1;
+        const m2_canvasY = centerY + x1;
+
+        // Rod
+        ctx.beginPath();
+        ctx.moveTo(m2_canvasX, m2_canvasY);
+        ctx.lineTo(m1_canvasX, m1_canvasY);
+        ctx.stroke();
+
+        // Masses M1 and M2
+        ctx.beginPath();
+        ctx.arc(m1_canvasX, m1_canvasY, massRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(m2_canvasX, m2_canvasY, massRadius, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // --- Draw Angle Arc (θ) ---
+        const arcRadius = 60;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, arcRadius, 0, -theta, false); // false for clockwise
+        ctx.stroke();
+        
+        // --- Draw Rotation Arrow (ω) ---
+        const omegaArrowCenterX = centerX + 110;
+        const omegaArrowRadiusX = 8;
+        const omegaArrowRadiusY = 25;
+        
+        ctx.beginPath();
+        ctx.ellipse(omegaArrowCenterX, centerY, omegaArrowRadiusX, omegaArrowRadiusY, 0, Math.PI / 2, 3 * Math.PI / 2);
+        ctx.stroke();
+        
+        // Arrowhead for ω
+        const arrowTipY = centerY + omegaArrowRadiusY;
+        ctx.beginPath();
+        ctx.moveTo(omegaArrowCenterX, arrowTipY);
+        ctx.lineTo(omegaArrowCenterX - 7, arrowTipY - 7);
+        ctx.moveTo(omegaArrowCenterX, arrowTipY);
+        ctx.lineTo(omegaArrowCenterX + 7, arrowTipY - 7);
+        ctx.stroke();
+
+        // --- Draw Labels ---
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Axis Labels
+        ctx.font = 'italic bold 22px serif';
+        ctx.fillText('x', centerX + 15, centerY - axisLength * 0.8 - 15);
+        ctx.fillText('z', centerX + axisLength + 15, centerY);
+        
+        // Origin Label
+        ctx.font = 'bold 22px serif';
+        ctx.fillText('O', centerX - 25, centerY - 12);
+        
+        // Mass Labels (M1, M2)
+        ctx.font = 'italic bold 22px serif';
+        ctx.fillText('M', m1_canvasX + 15, m1_canvasY - 12);
+        ctx.font = 'bold 16px serif';
+        ctx.fillText('1', m1_canvasX + 27, m1_canvasY - 7);
+
+        ctx.font = 'italic bold 22px serif';
+        ctx.fillText('M', m2_canvasX - 22, m2_canvasY + 5);
+        ctx.font = 'bold 16px serif';
+        ctx.fillText('2', m2_canvasX - 10, m2_canvasY + 12);
+
+        // Length 'A' Labels
+        ctx.font = 'italic bold 22px serif';
+        const A_midpoint1_x = centerX + z1 / 2;
+        const A_midpoint1_y = centerY - x1 / 2;
+        ctx.fillText('A', A_midpoint1_x - 15, A_midpoint1_y - 20);
+
+        const A_midpoint2_x = centerX - z1 / 2;
+        const A_midpoint2_y = centerY + x1 / 2;
+        ctx.fillText('A', A_midpoint2_x - 25, A_midpoint2_y - 5);
+        
+        // Angle Label 'θ'
+        const thetaLabelX = centerX + (arcRadius + 15) * Math.cos(-theta / 2);
+        const thetaLabelY = centerY - (arcRadius + 15) * Math.sin(-theta / 2);
+        ctx.fillText('θ', thetaLabelX, thetaLabelY);
+
+        // Angular Velocity Label 'ω'
+        ctx.fillText('ω', omegaArrowCenterX, centerY + omegaArrowRadiusY + 20);
+        
+        // Figure Caption
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('Fig. 1.134.', centerX, canvas.height - 30);
+    </script>
+</body>
+</html>

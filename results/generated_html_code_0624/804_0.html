@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Graph Reproduction</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="380"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Graph parameters from analysis
+        const originX = 60;
+        const originY = 320;
+        const graphWidth = 400; // 8 boxes * 50px
+        const graphHeight = 240; // 6 boxes * 40px
+
+        const tMax = 4000; // s
+        const pMax = 60;   // conventional units
+
+        const tScale = graphWidth / tMax; // px per second
+        const pScale = graphHeight / pMax; // px per pressure unit
+
+        // Coordinate transformation functions
+        function x(t) {
+            return originX + t * tScale;
+        }
+
+        function y(p) {
+            return originY - p * pScale;
+        }
+
+        // Draw Axes
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        // Y-axis
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(originX, originY - graphHeight - 20);
+        ctx.lineTo(originX - 5, originY - graphHeight - 15);
+        ctx.moveTo(originX, originY - graphHeight - 20);
+        ctx.lineTo(originX + 5, originY - graphHeight - 15);
+        // X-axis
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(originX + graphWidth + 20, originY);
+        ctx.lineTo(originX + graphWidth + 15, originY - 5);
+        ctx.moveTo(originX + graphWidth + 20, originY);
+        ctx.lineTo(originX + graphWidth + 15, originY + 5);
+        ctx.stroke();
+
+        // Draw Grid
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#888'; // Lighter color for grid
+        // Vertical grid lines (every 500s)
+        for (let i = 1; i <= 8; i++) {
+            const t = i * 500;
+            ctx.beginPath();
+            ctx.moveTo(x(t), originY);
+            ctx.lineTo(x(t), originY - graphHeight);
+            ctx.stroke();
+        }
+        // Horizontal grid lines (every 10p)
+        for (let i = 1; i <= 6; i++) {
+            const p = i * 10;
+            ctx.beginPath();
+            ctx.moveTo(originX, y(p));
+            ctx.lineTo(originX + graphWidth, y(p));
+            ctx.stroke();
+        }
+        
+        ctx.strokeStyle = 'black'; // Reset for other elements
+
+        // Draw Labels and Ticks
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('0', originX, originY + 5);
+        for (let i = 1; i <= 4; i++) {
+            const t = i * 1000;
+            ctx.fillText(t.toString(), x(t), originY + 5);
+        }
+        ctx.fillText('t/s', x(tMax) + 30, originY - 8);
+
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let i = 1; i <= 3; i++) {
+            const p = i * 20;
+            ctx.fillText(p.toString(), originX - 10, y(p));
+        }
+        ctx.save();
+        ctx.translate(originX - 35, originY - graphHeight - 5);
+        ctx.textAlign = 'center';
+        ctx.fillText('p(约定单位)', 0, 0);
+        ctx.restore();
+
+
+        // Draw the main curve
+        // Based on analysis: quadratic Bezier from (0,0) to (3800, 55)
+        // with control point at (3400, 0)
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x(0), y(0));
+        ctx.quadraticCurveTo(x(3400), y(0), x(3800), y(55));
+        ctx.stroke();
+
+        // Draw dashed lines
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+
+        // Tangent line from S(3800, 55) to t-intercept (3400, 0)
+        ctx.beginPath();
+        ctx.moveTo(x(3800), y(55));
+        ctx.lineTo(x(3400), y(0));
+        ctx.stroke();
+
+        // Vertical line from S(3800, 55) to t-axis
+        ctx.beginPath();
+        ctx.moveTo(x(3800), y(55));
+        ctx.lineTo(x(3800), y(0));
+        ctx.stroke();
+
+        ctx.restore(); // a.k.a ctx.setLineDash([]);
+
+        // Label point S
+        ctx.font = 'italic 18px Times New Roman';
+        ctx.fillText('S', x(3700), y(60));
+
+    </script>
+</body>
+</html>

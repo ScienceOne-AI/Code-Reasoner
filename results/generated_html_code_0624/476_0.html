@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frequency Spectrum</title>
+</head>
+<body>
+    <canvas id="myCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px Arial';
+        
+        // --- Coordinate System ---
+        const xOrigin = 80;
+        const yOrigin = 350;
+        const xAxisLength = 480;
+        const yAxisLength = 300;
+        
+        // --- Function to map frequency to x-coordinate ---
+        function fx(f) {
+            // We set a scale of 20 pixels per kHz.
+            // The center frequency of 300 kHz is placed at a specific x-coordinate.
+            const f_center = 300;
+            const x_center = 320;
+            const scale = 20;
+            return x_center + (f - f_center) * scale;
+        }
+
+        // --- Draw Axes ---
+        ctx.beginPath();
+        // X-axis
+        ctx.moveTo(xOrigin, yOrigin);
+        ctx.lineTo(xOrigin + xAxisLength, yOrigin);
+        // Y-axis
+        ctx.moveTo(xOrigin, yOrigin);
+        ctx.lineTo(xOrigin, yOrigin - yAxisLength);
+        // Arrowhead for Y-axis
+        ctx.moveTo(xOrigin, yOrigin - yAxisLength);
+        ctx.lineTo(xOrigin - 6, yOrigin - yAxisLength + 12);
+        ctx.moveTo(xOrigin, yOrigin - yAxisLength);
+        ctx.lineTo(xOrigin + 6, yOrigin - yAxisLength + 12);
+        ctx.stroke();
+
+        // --- Draw Labels and Ticks ---
+        // Y-axis label
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('amplitude', xOrigin - 15, yOrigin - yAxisLength / 1.8);
+        
+        // X-axis label
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillText('f / kHz', xOrigin + xAxisLength, yOrigin + 10);
+        
+        // Origin label '0'
+        ctx.textAlign = 'right';
+        ctx.fillText('0', xOrigin - 8, yOrigin + 5);
+
+        // X-axis ticks and values
+        ctx.textAlign = 'center';
+        const tickValues = [292, 300, 308];
+        tickValues.forEach(f => {
+            const x = fx(f);
+            ctx.beginPath();
+            ctx.moveTo(x, yOrigin);
+            ctx.lineTo(x, yOrigin + 5);
+            ctx.stroke();
+            ctx.fillText(f.toString(), x, yOrigin + 10);
+        });
+
+        // --- Draw Carrier Spike ---
+        const carrierFreq = 300;
+        const carrierAmplitude = 220; // Spike height in pixels
+        const carrierX = fx(carrierFreq);
+        ctx.beginPath();
+        ctx.lineWidth = 1.5; // The spike is thinner than the axes
+        ctx.moveTo(carrierX, yOrigin);
+        ctx.lineTo(carrierX, yOrigin - carrierAmplitude);
+        ctx.stroke();
+
+        // --- Draw Sidebands ---
+        ctx.lineWidth = 1.8;
+        const sidebandAmp = 45; // Max height of sidebands in pixels
+        
+        // Lower Sideband (from 292 to 300 kHz)
+        ctx.beginPath();
+        ctx.moveTo(fx(292), yOrigin);
+        // A series of Bezier curves to create the wavy shape
+        ctx.bezierCurveTo(fx(293.5), yOrigin - sidebandAmp*0.8, fx(294.5), yOrigin - sidebandAmp*1.1, fx(296), yOrigin - sidebandAmp*0.7);
+        ctx.bezierCurveTo(fx(297.5), yOrigin - sidebandAmp*0.3, fx(299), yOrigin - sidebandAmp*0.9, fx(300), yOrigin);
+        ctx.stroke();
+
+        // Upper Sideband (from 300 to 308 kHz) - shaped to mirror the lower sideband
+        ctx.beginPath();
+        ctx.moveTo(fx(300), yOrigin);
+        ctx.bezierCurveTo(fx(301), yOrigin - sidebandAmp*0.9, fx(302.5), yOrigin - sidebandAmp*0.3, fx(304), yOrigin - sidebandAmp*0.7);
+        ctx.bezierCurveTo(fx(305.5), yOrigin - sidebandAmp*1.1, fx(306.5), yOrigin - sidebandAmp*0.8, fx(308), yOrigin);
+        ctx.stroke();
+        
+        // --- Draw Caption ---
+        ctx.font = 'bold 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Fig. 5.1', canvas.width / 2, canvas.height - 10);
+
+    </script>
+</body>
+</html>

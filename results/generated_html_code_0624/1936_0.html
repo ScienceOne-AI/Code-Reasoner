@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Solid Plate in Coordinate System</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Parameters ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        const axisLineWidth = 1.5;
+        const plateLineWidth = 2;
+        ctx.font = 'italic 18px Times New Roman';
+
+        // Canvas and projection settings
+        const cx = 300; // Canvas center X
+        const cy = 250; // Canvas center Y
+
+        // 3D dimensions of the plate section
+        const lengthX = 100;
+        const lengthY = 140;
+        const heightD = 40;
+
+        // Projection parameters (Cabinet projection style)
+        const projAngle = Math.PI * (7/6); // 210 degrees for the x-axis
+        const projFactor = 0.6; // Foreshortening factor for the x-axis
+
+        // Helper function to project a 3D point to a 2D canvas point
+        function project(x, y, z) {
+            const screenX = cx + y + x * projFactor * Math.cos(projAngle);
+            const screenY = cy - z - x * projFactor * Math.sin(projAngle); // y increases downwards on canvas
+            return { x: screenX, y: screenY };
+        }
+
+        // --- Draw Plate ---
+        // Calculate all 8 vertices of the cuboid in 2D screen coordinates
+        const vertices = {};
+        for (const i of [-1, 1]) { // x direction: -1 for back, +1 for front
+            for (const j of [-1, 1]) { // y direction: -1 for left, +1 for right
+                for (const k of [-1, 1]) { // z direction: -1 for bottom, +1 for top
+                    const key = `${i > 0 ? 'p' : 'n'}x_${j > 0 ? 'p' : 'n'}y_${k > 0 ? 'p' : 'n'}z`;
+                    vertices[key] = project(i * lengthX, j * lengthY, k * heightD);
+                }
+            }
+        }
+        
+        ctx.lineWidth = plateLineWidth;
+
+        // Draw visible faces with different shades for 3D effect
+        // Top face (z = +d) - lightest gray
+        ctx.fillStyle = '#B0B0B0';
+        ctx.beginPath();
+        ctx.moveTo(vertices.nx_py_pz.x, vertices.nx_py_pz.y);
+        ctx.lineTo(vertices.px_py_pz.x, vertices.px_py_pz.y);
+        ctx.lineTo(vertices.px_ny_pz.x, vertices.px_ny_pz.y);
+        ctx.lineTo(vertices.nx_ny_pz.x, vertices.nx_ny_pz.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Right face (y = +lengthY) - medium gray
+        ctx.fillStyle = '#8C8C8C';
+        ctx.beginPath();
+        ctx.moveTo(vertices.nx_py_pz.x, vertices.nx_py_pz.y);
+        ctx.lineTo(vertices.px_py_pz.x, vertices.px_py_pz.y);
+        ctx.lineTo(vertices.px_py_nz.x, vertices.px_py_nz.y);
+        ctx.lineTo(vertices.nx_py_nz.x, vertices.nx_py_nz.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Front face (x = +lengthX) - darkest gray
+        ctx.fillStyle = '#696969';
+        ctx.beginPath();
+        ctx.moveTo(vertices.px_py_pz.x, vertices.px_py_pz.y);
+        ctx.lineTo(vertices.px_ny_pz.x, vertices.px_ny_pz.y);
+        ctx.lineTo(vertices.px_ny_nz.x, vertices.px_ny_nz.y);
+        ctx.lineTo(vertices.px_py_nz.x, vertices.px_py_nz.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // --- Draw Axes ---
+        ctx.lineWidth = axisLineWidth;
+        ctx.fillStyle = 'black'; // for arrowheads and labels
+
+        // Helper function to draw an axis with an arrowhead and a label
+        function drawAxis(p1, p2, label, labelPos) {
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+
+            // Arrowhead
+            const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            ctx.save();
+            ctx.translate(p2.x, p2.y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-10, 5);
+            ctx.lineTo(-10, -5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+            
+            ctx.fillText(label, labelPos.x, labelPos.y);
+        }
+
+        // Z-axis (vertical)
+        const z_start = project(0, 0, -100);
+        const z_end = project(0, 0, 180);
+        drawAxis(z_start, z_end, 'z', {x: z_end.x + 10, y: z_end.y});
+
+        // Y-axis (horizontal)
+        const y_start = project(0, -180, 0);
+        const y_end = project(0, 200, 0);
+        drawAxis(y_start, y_end, 'y', {x: y_end.x + 5, y: y_end.y + 15});
+
+        // X-axis (angled)
+        const x_start = project(150, 0, 0);
+        const x_end = project(-180, 0, 0);
+        drawAxis(x_start, x_end, 'x', {x: x_end.x - 15, y: x_end.y + 15});
+
+
+        // --- Draw Dashed Lines on Top Surface ---
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 1.5;
+        
+        // y-axis trace on top surface
+        const y_dash_start = project(0, -lengthY, heightD);
+        const y_dash_end = project(0, lengthY, heightD);
+        ctx.beginPath();
+        ctx.moveTo(y_dash_start.x, y_dash_start.y);
+        ctx.lineTo(y_dash_end.x, y_dash_end.y);
+        ctx.stroke();
+
+        // x-axis trace on top surface
+        const x_dash_start = project(-lengthX, 0, heightD);
+        const x_dash_end = project(lengthX, 0, heightD);
+        ctx.beginPath();
+        ctx.moveTo(x_dash_start.x, x_dash_start.y);
+        ctx.lineTo(x_dash_end.x, x_dash_end.y);
+        ctx.stroke();
+        
+        ctx.restore();
+
+        // --- Draw Thickness Annotation (+d, -d) ---
+        ctx.lineWidth = 1;
+
+        // Position the annotation to the left of the block
+        const ann_x_3d = -lengthX;
+        const ann_y_3d = -lengthY - 40;
+        
+        const ann_pos_center = project(ann_x_3d, ann_y_3d, 0);
+        
+        // The annotation line is parallel to the z-axis, so its projection is a vertical line.
+        const ann_x_screen = ann_pos_center.x;
+        const ann_top_y_screen = ann_pos_center.y - heightD;
+        const ann_bot_y_screen = ann_pos_center.y + heightD;
+
+        // Vertical line
+        ctx.beginPath();
+        ctx.moveTo(ann_x_screen, ann_top_y_screen);
+        ctx.lineTo(ann_x_screen, ann_bot_y_screen);
+        ctx.stroke();
+
+        // Ticks
+        ctx.beginPath();
+        ctx.moveTo(ann_x_screen - 4, ann_top_y_screen);
+        ctx.lineTo(ann_x_screen + 4, ann_top_y_screen);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(ann_x_screen - 4, ann_bot_y_screen);
+        ctx.lineTo(ann_x_screen + 4, ann_bot_y_screen);
+        ctx.stroke();
+
+        // Labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('+d', ann_x_screen - 8, ann_top_y_screen);
+        ctx.fillText('-d', ann_x_screen - 8, ann_bot_y_screen);
+    </script>
+</body>
+</html>

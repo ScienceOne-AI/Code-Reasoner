@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fraunhofer Diffraction Pattern (3 Slits)</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="diffractionCanvas" width="800" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('diffractionCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Drawing parameters
+        const cx = canvas.width / 2;
+        const cy = 380;
+        const main_amplitude = 250;
+        const x_scale = 1;
+
+        // --- Helper Functions ---
+        
+        // Sinc function for the envelope
+        function sinc(x) {
+            if (x === 0) {
+                return 1;
+            }
+            return Math.sin(Math.PI * x) / (Math.PI * x);
+        }
+
+        // Envelope function (single-slit diffraction)
+        // We set the first minimum at x=240, which corresponds to sinc(x/240)
+        function envelope(x) {
+            return main_amplitude * Math.pow(sinc(x / 240), 2);
+        }
+
+        // --- Drawing Functions ---
+
+        function drawAxes() {
+            ctx.save();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(50, cy);
+            ctx.lineTo(750, cy);
+            ctx.stroke();
+
+            // Y-axis (just the positive part from the origin)
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx, cy - main_amplitude - 30);
+            // Arrowhead
+            ctx.lineTo(cx - 5, cy - main_amplitude - 25);
+            ctx.moveTo(cx, cy - main_amplitude - 30);
+            ctx.lineTo(cx + 5, cy - main_amplitude - 25);
+            ctx.stroke();
+
+            // Origin Label '0'
+            ctx.font = "bold 16px serif";
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText("0", cx, cy + 5);
+            ctx.restore();
+        }
+
+        function drawEnvelopeCurve() {
+            ctx.save();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 4]);
+
+            ctx.beginPath();
+            let firstPoint = true;
+            for (let x = -350; x <= 350; x += 2) {
+                const y = envelope(x);
+                if (firstPoint) {
+                    ctx.moveTo(cx + x, cy - y);
+                    firstPoint = false;
+                } else {
+                    ctx.lineTo(cx + x, cy - y);
+                }
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawDiffractionPattern() {
+            ctx.save();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+
+            // The pattern is drawn by patching together cosine-squared like shapes for each peak
+            // The visual in the image suggests a pattern resembling N=4 or N=5 slits, 
+            // with two secondary maxima between principal maxima. We replicate that look.
+            // Principal maxima at x = 0, +/-80, +/-160. Envelope zero at +/-240.
+            // Minima between principal maxima at relative x = +/-20, +/-40, +/-60.
+            
+            // Draw right side, then reflect for left side
+            for (let side = 1; side >= -1; side -= 2) {
+                if (side === -1) continue; // We will handle symmetry in the loop
+
+                // Central peak (half)
+                let peak_x = 0;
+                let peak_width = 20;
+                let peak_height = envelope(peak_x);
+                ctx.moveTo(cx + peak_x, cy - peak_height);
+                for (let x = 0; x <= peak_width; x++) {
+                    const h = peak_height * Math.pow(Math.cos(x / peak_width * Math.PI / 2), 2);
+                    ctx.lineTo(cx + side * x, cy - h);
+                }
+                
+                // Draw subsequent peaks
+                for (let m = 0; m < 3; m++) {
+                    const principal_x = m * 80;
+                    
+                    if (m > 0) { // Principal peak m
+                        peak_x = principal_x;
+                        peak_width = 20; // total width is 40
+                        peak_height = envelope(peak_x);
+                        ctx.moveTo(cx + side * (peak_x - peak_width), cy);
+                        for (let x = -peak_width; x <= peak_width; x++) {
+                            const h = peak_height * Math.pow(Math.cos(x / peak_width * Math.PI / 2), 2);
+                            ctx.lineTo(cx + side * (peak_x + x), cy - h);
+                        }
+                    }
+
+                    // Two secondary maxima between principal peaks
+                    const secondary_peak_x1 = principal_x + 30;
+                    const secondary_peak_x2 = principal_x + 50;
+                    const secondary_width = 10;
+                    
+                    // Secondary peak 1
+                    let sec_peak_height1 = envelope(secondary_peak_x1) * 0.1; // Secondary peaks are much smaller
+                    ctx.moveTo(cx + side * (secondary_peak_x1 - secondary_width), cy);
+                    for (let x = -secondary_width; x <= secondary_width; x++) {
+                        const h = sec_peak_height1 * Math.pow(Math.cos(x / secondary_width * Math.PI / 2), 2);
+                        ctx.lineTo(cx + side * (secondary_peak_x1 + x), cy - h);
+                    }
+                    
+                    // Secondary peak 2
+                    let sec_peak_height2 = envelope(secondary_peak_x2) * 0.1;
+                    ctx.moveTo(cx + side * (secondary_peak_x2 - secondary_width), cy);
+                    for (let x = -secondary_width; x <= secondary_width; x++) {
+                        const h = sec_peak_height2 * Math.pow(Math.cos(x / secondary_width * Math.PI / 2), 2);
+                        ctx.lineTo(cx + side * (secondary_peak_x2 + x), cy - h);
+                    }
+                }
+            }
+            
+            // Create the left half by drawing again with negative side
+             for (let side = -1; side <=-1; side += 2) {
+                // Central peak (half)
+                let peak_x = 0;
+                let peak_width = 20;
+                let peak_height = envelope(peak_x);
+                ctx.moveTo(cx + peak_x, cy - peak_height);
+                for (let x = 0; x <= peak_width; x++) {
+                    const h = peak_height * Math.pow(Math.cos(x / peak_width * Math.PI / 2), 2);
+                    ctx.lineTo(cx + side * x, cy - h);
+                }
+                
+                // Draw subsequent peaks
+                for (let m = 0; m < 3; m++) {
+                    const principal_x = m * 80;
+                    
+                    if (m > 0) { // Principal peak m
+                        peak_x = principal_x;
+                        peak_width = 20; // total width is 40
+                        peak_height = envelope(peak_x);
+                        ctx.moveTo(cx + side * (peak_x - peak_width), cy);
+                        for (let x = -peak_width; x <= peak_width; x++) {
+                            const h = peak_height * Math.pow(Math.cos(x / peak_width * Math.PI / 2), 2);
+                            ctx.lineTo(cx + side * (peak_x + x), cy - h);
+                        }
+                    }
+
+                    // Two secondary maxima between principal peaks
+                    const secondary_peak_x1 = principal_x + 30;
+                    const secondary_peak_x2 = principal_x + 50;
+                    const secondary_width = 10;
+                    
+                    // Secondary peak 1
+                    let sec_peak_height1 = envelope(secondary_peak_x1) * 0.1;
+                    ctx.moveTo(cx + side * (secondary_peak_x1 - secondary_width), cy);
+                    for (let x = -secondary_width; x <= secondary_width; x++) {
+                        const h = sec_peak_height1 * Math.pow(Math.cos(x / secondary_width * Math.PI / 2), 2);
+                        ctx.lineTo(cx + side * (secondary_peak_x1 + x), cy - h);
+                    }
+                    
+                    // Secondary peak 2
+                    let sec_peak_height2 = envelope(secondary_peak_x2) * 0.1;
+                    ctx.moveTo(cx + side * (secondary_peak_x2 - secondary_width), cy);
+                    for (let x = -secondary_width; x <= secondary_width; x++) {
+                        const h = sec_peak_height2 * Math.pow(Math.cos(x / secondary_width * Math.PI / 2), 2);
+                        ctx.lineTo(cx + side * (secondary_peak_x2 + x), cy - h);
+                    }
+                }
+            }
+
+
+            // Draw far-field pattern (small wiggles)
+            for(let side of [1, -1]) {
+                ctx.moveTo(cx + side * 240, cy);
+                ctx.bezierCurveTo(cx + side * 260, cy, cx + side * 270, cy - 15, cx + side * 280, cy);
+                ctx.bezierCurveTo(cx + side * 290, cy + 10, cx + side * 300, cy - 10, cx + side * 310, cy);
+                ctx.bezierCurveTo(cx + side * 320, cy + 5, cx + side * 330, cy - 8, cx + side * 340, cy);
+            }
+
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawAnnotations() {
+            ctx.save();
+            ctx.strokeStyle = '#000';
+            ctx.fillStyle = '#000';
+            ctx.lineWidth = 1;
+
+            // --- I_0 ---
+            const I0_x = cx + 180;
+            const I0_y_start = cy;
+            const I0_y_end = cy - main_amplitude;
+            ctx.beginPath();
+            ctx.moveTo(I0_x, I0_y_start);
+            ctx.lineTo(I0_x, I0_y_end);
+            // Arrowheads
+            ctx.moveTo(I0_x - 4, I0_y_start - 6); ctx.lineTo(I0_x, I0_y_start); ctx.lineTo(I0_x + 4, I0_y_start - 6);
+            ctx.moveTo(I0_x - 4, I0_y_end + 6); ctx.lineTo(I0_x, I0_y_end); ctx.lineTo(I0_x + 4, I0_y_end + 6);
+            ctx.stroke();
+            // Ticks
+            ctx.beginPath();
+            ctx.moveTo(cx, I0_y_end);
+            ctx.lineTo(I0_x, I0_y_end);
+            ctx.moveTo(I0_x, I0_y_start);
+            ctx.lineTo(cx + 250, I0_y_start);
+            ctx.stroke();
+            ctx.font = "italic bold 20px serif";
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText("I", I0_x + 10, (I0_y_start + I0_y_end) / 2);
+            ctx.font = "italic bold 14px serif";
+            ctx.fillText("0", I0_x + 18, (I0_y_start + I0_y_end) / 2 + 8);
+
+            // --- I_1 ---
+            const I1_x = cx - 45;
+            const I1_h = envelope(30) * 0.1;
+            ctx.beginPath();
+            ctx.moveTo(I1_x, cy);
+            ctx.lineTo(I1_x, cy - I1_h);
+            // Arrowheads
+            ctx.moveTo(I1_x - 3, cy - 4); ctx.lineTo(I1_x, cy); ctx.lineTo(I1_x + 3, cy - 4);
+            ctx.moveTo(I1_x - 3, cy - I1_h + 4); ctx.lineTo(I1_x, cy - I1_h); ctx.lineTo(I1_x + 3, cy - I1_h + 4);
+            ctx.stroke();
+            // Ticks
+            ctx.beginPath();
+            ctx.moveTo(cx - 30, cy - I1_h);
+            ctx.lineTo(I1_x, cy - I1_h);
+            ctx.stroke();
+            ctx.font = "italic bold 20px serif";
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            ctx.fillText("I", I1_x - 10, cy - I1_h / 2);
+            ctx.font = "italic bold 14px serif";
+            ctx.fillText("1", I1_x - 2, cy - I1_h / 2 + 8);
+            
+            // --- D ---
+            const D_y = cy - main_amplitude - 15;
+            const D_half_width = 20;
+            ctx.beginPath();
+            ctx.moveTo(cx - D_half_width, D_y);
+            ctx.lineTo(cx + D_half_width, D_y);
+            // Ticks
+            ctx.moveTo(cx - D_half_width, D_y); ctx.lineTo(cx - D_half_width, cy - envelope(D_half_width));
+            ctx.moveTo(cx + D_half_width, D_y); ctx.lineTo(cx + D_half_width, cy - envelope(D_half_width));
+            ctx.stroke();
+            ctx.font = "italic bold 20px serif";
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText("D", cx, D_y-2);
+
+            // --- x ---
+            const x_y = cy + 40;
+            const x_half_width = 240;
+            ctx.beginPath();
+            ctx.moveTo(cx - x_half_width, x_y);
+            ctx.lineTo(cx + x_half_width, x_y);
+            // Ticks
+            ctx.moveTo(cx - x_half_width, x_y); ctx.lineTo(cx - x_half_width, cy);
+            ctx.moveTo(cx + x_half_width, x_y); ctx.lineTo(cx + x_half_width, cy);
+            ctx.stroke();
+            ctx.font = "italic bold 20px serif";
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText("x", cx, x_y + 5);
+
+            // --- Figure Caption ---
+            ctx.font = "bold 16px serif";
+            ctx.fillText("Fig. 2.49", cx, cy + 80);
+
+            ctx.restore();
+        }
+
+
+        // --- Main Drawing Call ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawAxes();
+        drawEnvelopeCurve();
+        drawDiffractionPattern();
+        drawAnnotations();
+
+    </script>
+</body>
+</html>

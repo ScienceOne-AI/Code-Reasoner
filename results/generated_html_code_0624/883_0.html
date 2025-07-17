@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cathode Ray Tube Diagram</title>
+</head>
+<body>
+    <canvas id="crtCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('crtCanvas');
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        const centerY = h / 2;
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Helper function to draw an arrow line
+        function drawArrow(x1, y1, x2, y2) {
+            const headlen = 8;
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        }
+
+        // Helper function for hatching rectangles
+        function hatchRect(x, y, w, h) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(x, y, w, h);
+            ctx.clip();
+            const originalLineWidth = ctx.lineWidth;
+            ctx.lineWidth = 1;
+            for (let i = -h; i < w; i += 5) {
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x + i + h, y + h);
+            }
+            ctx.stroke();
+            ctx.lineWidth = originalLineWidth;
+            ctx.restore();
+        }
+        
+        // Helper function for hatching parallelograms
+        function hatchParallelogram(x, y, length, height, skew, isTopPlate) {
+            ctx.save();
+            ctx.beginPath();
+            if (isTopPlate) {
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + skew, y - height);
+                ctx.lineTo(x + length + skew, y - height);
+                ctx.lineTo(x + length, y);
+            } else { // Bottom plate
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + skew, y + height);
+                ctx.lineTo(x + length + skew, y + height);
+                ctx.lineTo(x + length, y);
+            }
+            ctx.closePath();
+            ctx.clip();
+            
+            const originalLineWidth = ctx.lineWidth;
+            ctx.lineWidth = 1;
+            const step = 5;
+            if (isTopPlate) {
+                for (let i = 0; i < length + skew + height; i += step) {
+                    ctx.moveTo(x + i, y);
+                    ctx.lineTo(x + i - skew, y - height);
+                }
+            } else {
+                 for (let i = 0; i < length + skew + height; i += step) {
+                    ctx.moveTo(x + i, y);
+                    ctx.lineTo(x + i - skew, y + height);
+                }
+            }
+            ctx.stroke();
+            ctx.lineWidth = originalLineWidth;
+            ctx.restore();
+        }
+
+        // 1. Draw Tube Outline
+        const neckRadius = 60;
+        const screenRadiusY = 140;
+        const neckStartX = 50;
+        const flareStartX = 450;
+        const screenCenterX = 720;
+        const screenCurveDepth = 30;
+
+        ctx.beginPath();
+        // Top
+        ctx.moveTo(neckStartX, centerY - neckRadius);
+        ctx.lineTo(flareStartX, centerY - neckRadius);
+        ctx.lineTo(screenCenterX - screenCurveDepth, centerY - screenRadiusY);
+        // Screen
+        ctx.quadraticCurveTo(screenCenterX, centerY, screenCenterX - screenCurveDepth, centerY + screenRadiusY);
+        // Bottom
+        ctx.lineTo(flareStartX, centerY + neckRadius);
+        ctx.lineTo(neckStartX, centerY + neckRadius);
+        // Back
+        ctx.arc(neckStartX, centerY, neckRadius, Math.PI / 2, -Math.PI / 2, false);
+        ctx.closePath();
+        ctx.stroke();
+
+        // 2. Draw Electron Gun
+        ctx.beginPath();
+        // Pins
+        ctx.moveTo(0, centerY - 15); ctx.lineTo(25, centerY - 15);
+        ctx.moveTo(0, centerY); ctx.lineTo(25, centerY);
+        ctx.moveTo(0, centerY + 15); ctx.lineTo(25, centerY + 15);
+        ctx.moveTo(25, centerY - 15); ctx.lineTo(35, centerY); ctx.lineTo(25, centerY + 15);
+        // Arrow
+        ctx.moveTo(40, centerY); ctx.lineTo(60, centerY);
+        ctx.lineTo(55, centerY - 4); ctx.moveTo(60, centerY); ctx.lineTo(55, centerY + 4);
+        // Anode/Grid structure
+        ctx.moveTo(70, centerY - 20); ctx.lineTo(70, centerY + 20); // Cathode
+        ctx.moveTo(85, centerY - 22); ctx.lineTo(85, centerY + 22); // Grid
+        ctx.moveTo(105, centerY - 25); ctx.lineTo(120, centerY - 25); // Anode U-shape
+        ctx.lineTo(120, centerY + 25); ctx.lineTo(105, centerY + 25);
+        ctx.stroke();
+
+        // 3. Draw Deflection Plates
+        // Horizontal deflection plates (first set)
+        const p1_x_top = 180, p1_y_top = centerY - 60, p1_w = 40, p1_h = 40;
+        ctx.strokeRect(p1_x_top, p1_y_top, p1_w, p1_h);
+        hatchRect(p1_x_top, p1_y_top, p1_w, p1_h);
+        const p1_x_bot = 160, p1_y_bot = centerY + 20;
+        ctx.strokeRect(p1_x_bot, p1_y_bot, p1_w, p1_h);
+        hatchRect(p1_x_bot, p1_y_bot, p1_w, p1_h);
+
+        // Vertical deflection plates (second set)
+        const vPlateXStart = 270;
+        const vPlateLength = 80; // Corresponds to 'l'
+        const vPlateGap = 40;    // Corresponds to 'a'
+        const vPlateH = 20;
+        const vPlateSkew = 10;
+        // Top plate
+        ctx.beginPath();
+        ctx.moveTo(vPlateXStart, centerY - vPlateGap / 2);
+        ctx.lineTo(vPlateXStart + vPlateSkew, centerY - vPlateGap / 2 - vPlateH);
+        ctx.lineTo(vPlateXStart + vPlateLength + vPlateSkew, centerY - vPlateGap / 2 - vPlateH);
+        ctx.lineTo(vPlateXStart + vPlateLength, centerY - vPlateGap / 2);
+        ctx.closePath();
+        ctx.stroke();
+        hatchParallelogram(vPlateXStart, centerY - vPlateGap / 2, vPlateLength, vPlateH, vPlateSkew, true);
+        // Bottom plate
+        ctx.beginPath();
+        ctx.moveTo(vPlateXStart, centerY + vPlateGap / 2);
+        ctx.lineTo(vPlateXStart + vPlateSkew, centerY + vPlateGap / 2 + vPlateH);
+        ctx.lineTo(vPlateXStart + vPlateLength + vPlateSkew, centerY + vPlateGap / 2 + vPlateH);
+        ctx.lineTo(vPlateXStart + vPlateLength, centerY + vPlateGap / 2);
+        ctx.closePath();
+        ctx.stroke();
+        hatchParallelogram(vPlateXStart, centerY + vPlateGap / 2, vPlateLength, vPlateH, vPlateSkew, false);
+        const vPlateXEnd = vPlateXStart + vPlateLength;
+
+        // 4. Draw Electron Beam Path
+        const s_val = 90; // Deflection 's' for visualization
+        const screen_hit_x = screenCenterX - screenCurveDepth;
+        const p_y = centerY - s_val;
+        
+        // Use apparent origin (center of plates) for realistic path
+        const apparentOriginX = vPlateXStart + vPlateLength / 2;
+        const slope = (p_y - centerY) / (screen_hit_x - apparentOriginX);
+        const y_at_plate_exit = centerY + slope * (vPlateXEnd - apparentOriginX);
+
+        // Central axis
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(120, centerY);
+        ctx.lineTo(screenCenterX, centerY);
+        ctx.stroke();
+        ctx.restore();
+
+        // Deflected Path
+        ctx.beginPath();
+        ctx.moveTo(120, centerY);
+        ctx.lineTo(vPlateXStart, centerY);
+        ctx.quadraticCurveTo(vPlateXStart + vPlateLength / 2, centerY, vPlateXEnd, y_at_plate_exit);
+        ctx.lineTo(screen_hit_x, p_y);
+        ctx.stroke();
+        
+        // Dashed line showing apparent origin
+        ctx.save();
+        ctx.setLineDash([2, 3]);
+        ctx.lineWidth=1;
+        ctx.beginPath();
+        ctx.moveTo(apparentOriginX, centerY);
+        ctx.lineTo(vPlateXEnd, y_at_plate_exit);
+        ctx.stroke();
+        ctx.restore();
+
+        // 5. Draw Labels and Dimensions
+        ctx.font = "italic 20px 'Times New Roman'";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Labels O and p
+        ctx.fillText("O", screenCenterX + 15, centerY);
+        ctx.fillText("p", screen_hit_x + 15, p_y);
+
+        // Dimension s
+        ctx.beginPath();
+        const s_dim_x = screen_hit_x + 40;
+        drawArrow(s_dim_x, centerY, s_dim_x, p_y);
+        ctx.moveTo(screen_hit_x, p_y); ctx.lineTo(s_dim_x, p_y);
+        ctx.moveTo(screenCenterX, centerY); ctx.lineTo(s_dim_x, centerY);
+        ctx.stroke();
+        ctx.fillText("s", s_dim_x + 18, centerY - s_val / 2);
+
+        // Dimension a (plate gap)
+        ctx.beginPath();
+        ctx.lineWidth = 1;
+        const a_dim_x = vPlateXEnd + 15;
+        drawArrow(a_dim_x, centerY - vPlateGap / 2, a_dim_x, centerY + vPlateGap / 2);
+        ctx.moveTo(vPlateXEnd, centerY - vPlateGap / 2); ctx.lineTo(a_dim_x, centerY - vPlateGap / 2);
+        ctx.moveTo(vPlateXEnd, centerY + vPlateGap / 2); ctx.lineTo(a_dim_x, centerY + vPlateGap / 2);
+        ctx.stroke();
+        ctx.fillText("a", a_dim_x + 15, centerY);
+
+        // Dimension 'l' indicators
+        ctx.beginPath();
+        ctx.lineWidth = 1;
+        const l_dim_y = centerY + vPlateGap / 2 + vPlateH + 15;
+        ctx.moveTo(vPlateXStart, centerY + vPlateGap / 2); ctx.lineTo(vPlateXStart, l_dim_y);
+        ctx.moveTo(vPlateXEnd, centerY + vPlateGap / 2); ctx.lineTo(vPlateXEnd, l_dim_y);
+        ctx.moveTo(vPlateXStart, l_dim_y); ctx.lineTo(vPlateXStart - 10, l_dim_y);
+        ctx.moveTo(vPlateXStart, l_dim_y); ctx.lineTo(vPlateXStart - 5, l_dim_y - 3);
+        ctx.moveTo(vPlateXStart, l_dim_y); ctx.lineTo(vPlateXStart - 5, l_dim_y + 3);
+        ctx.moveTo(vPlateXEnd, l_dim_y); ctx.lineTo(vPlateXEnd + 10, l_dim_y);
+        ctx.moveTo(vPlateXEnd, l_dim_y); ctx.lineTo(vPlateXEnd + 5, l_dim_y - 3);
+        ctx.moveTo(vPlateXEnd, l_dim_y); ctx.lineTo(vPlateXEnd + 5, l_dim_y + 3);
+        ctx.stroke();
+        
+        // Dimension L
+        ctx.beginPath();
+        ctx.lineWidth = 1;
+        const L_dim_y = centerY + 80;
+        drawArrow(vPlateXEnd, L_dim_y, screenCenterX, L_dim_y);
+        ctx.moveTo(vPlateXEnd, L_dim_y - 5); ctx.lineTo(vPlateXEnd, L_dim_y + 5);
+        ctx.moveTo(vPlateXEnd, centerY); ctx.lineTo(vPlateXEnd, L_dim_y);
+        ctx.moveTo(screenCenterX, L_dim_y - 5); ctx.lineTo(screenCenterX, L_dim_y + 5);
+        ctx.moveTo(screenCenterX, centerY); ctx.lineTo(screenCenterX, L_dim_y);
+        ctx.stroke();
+        ctx.fillText("L", vPlateXEnd + (screenCenterX - vPlateXEnd) / 2, L_dim_y - 15);
+        
+        // Angle 'a'
+        ctx.beginPath();
+        ctx.lineWidth = 1;
+        const angle_vtx_x = apparentOriginX;
+        const angle_vtx_y = centerY;
+        const angle_rad = 40;
+        ctx.arc(angle_vtx_x, angle_vtx_y, angle_rad, 0, Math.atan(slope), true);
+        ctx.stroke();
+        ctx.fillText("a", angle_vtx_x + angle_rad * Math.cos(Math.atan(slope)/2) + 5, angle_vtx_y + angle_rad * Math.sin(Math.atan(slope)/2) - 10);
+        
+        // 6. Add Caption
+        ctx.font = "20px 'SimSun', 'STSong'";
+        ctx.textAlign = 'center';
+        ctx.fillText("习题 7-38 图", w / 2, h - 25);
+    </script>
+</body>
+</html>

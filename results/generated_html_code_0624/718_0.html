@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coupled Oscillator System</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const config = {
+            wallX: 80,
+            baseY: 300,
+            blockWidth: 90,
+            blockHeight: 80,
+            springCoils: 7,
+            springAmplitude: 25,
+            spring1Length: 180,
+            spring2Length: 180,
+            lineWidth: 1.5,
+            hatchSpacing: 15,
+            hatchLength: 10
+        };
+
+        // --- Drawing Functions ---
+
+        /**
+         * Draws a spring as a series of quadratic curve humps.
+         * @param {CanvasRenderingContext2D} ctx The context to draw on.
+         * @param {number} x1 The starting x-coordinate.
+         * @param {number} y1 The starting y-coordinate.
+         * @param {number} x2 The ending x-coordinate.
+         * @param {number} y2 The ending y-coordinate (assumed same as y1).
+         * @param {number} coils The number of coils.
+         * @param {number} amplitude The height of the coils.
+         */
+        function drawSpring(ctx, x1, y1, x2, y2, coils, amplitude) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            
+            const lead = 5; // Length of the straight part at the beginning
+            ctx.lineTo(x1 + lead, y1);
+
+            const coilTotalWidth = x2 - x1 - 2 * lead;
+            const coilWidth = coilTotalWidth / coils;
+            
+            let currentX = x1 + lead;
+
+            for (let i = 0; i < coils; i++) {
+                ctx.quadraticCurveTo(currentX + coilWidth / 2, y1 - amplitude, currentX + coilWidth, y1);
+                currentX += coilWidth;
+            }
+
+            ctx.lineTo(x2, y1);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws text with a subscript.
+         * @param {CanvasRenderingContext2D} ctx The context to draw on.
+         * @param {string} text The main text.
+         * @param {string} sub The subscript text.
+         * @param {number} x The x-coordinate.
+         * @param {number} y The y-coordinate.
+         * @param {string} mainFont The font for the main text.
+         * @param {string} subFont The font for the subscript.
+         */
+        function drawSubscriptText(ctx, text, sub, x, y, mainFont, subFont) {
+            ctx.font = mainFont;
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillText(text, x, y);
+
+            ctx.font = subFont;
+            ctx.fillText(sub, x + textWidth * 0.9, y + 5);
+        }
+
+
+        // --- Main Drawing Logic ---
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = config.lineWidth;
+
+        // 1. Draw Wall and Surface
+        ctx.beginPath();
+        // Wall
+        ctx.moveTo(config.wallX, config.baseY - 200);
+        ctx.lineTo(config.wallX, config.baseY);
+        // Surface
+        ctx.lineTo(canvas.width - 50, config.baseY);
+        ctx.stroke();
+
+        // Hatching for wall and surface
+        ctx.beginPath();
+        // Wall hatching
+        for (let y = config.baseY; y > config.baseY - 200; y -= config.hatchSpacing) {
+            ctx.moveTo(config.wallX, y);
+            ctx.lineTo(config.wallX - config.hatchLength, y + config.hatchLength);
+        }
+        // Surface hatching
+        for (let x = config.wallX; x < canvas.width - 50; x += config.hatchSpacing) {
+            ctx.moveTo(x, config.baseY);
+            ctx.lineTo(x - config.hatchLength, config.baseY + config.hatchLength);
+        }
+        ctx.stroke();
+        
+        // 2. Define positions
+        const blockY = config.baseY - config.blockHeight;
+        const springY = config.baseY - config.blockHeight / 2;
+        
+        const m1_x_start = config.wallX + config.spring1Length;
+        const m1_x_end = m1_x_start + config.blockWidth;
+        
+        const m2_x_start = m1_x_end + config.spring2Length;
+        const m2_x_end = m2_x_start + config.blockWidth;
+
+        // 3. Draw Springs
+        drawSpring(ctx, config.wallX, springY, m1_x_start, springY, config.springCoils, config.springAmplitude);
+        drawSpring(ctx, m1_x_end, springY, m2_x_start, springY, config.springCoils, config.springAmplitude);
+
+        // 4. Draw Blocks
+        ctx.beginPath();
+        ctx.rect(m1_x_start, blockY, config.blockWidth, config.blockHeight);
+        ctx.rect(m2_x_start, blockY, config.blockWidth, config.blockHeight);
+        ctx.stroke();
+
+        // 5. Draw Labels
+        // 'k' labels
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        const k1_x = config.wallX + config.spring1Length / 2;
+        const k2_x = m1_x_end + config.spring2Length / 2;
+        const k_y = springY - config.springAmplitude - 10;
+        ctx.fillText('k', k1_x, k_y);
+        ctx.fillText('k', k2_x, k_y);
+
+        // 'm1' and 'm2' labels
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        const mainFont = 'italic 24px Times New Roman';
+        const subFont = '16px Times New Roman';
+        
+        drawSubscriptText(ctx, 'm', '1', m1_x_start + 28, springY, mainFont, subFont);
+        drawSubscriptText(ctx, 'm', '2', m2_x_start + 28, springY, mainFont, subFont);
+
+        // Caption
+        ctx.font = '24px "SimSun", "KaiTi"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('习题 10-30 图', canvas.width / 2, canvas.height - 20);
+
+    </script>
+</body>
+</html>

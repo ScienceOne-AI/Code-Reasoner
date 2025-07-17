@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Font Settings ---
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineCap = 'round';
+        const labelFont = "italic 22px serif";
+        const terminalFont = "bold 22px sans-serif";
+        const figureFont = "bold 20px serif";
+
+        // --- Coordinates ---
+        const x1 = 100, y1 = 100;
+        const x2 = 350, y2 = 300;
+        const dash_x = 400;
+
+        // --- Draw Solid Part of the Circuit ---
+        ctx.beginPath();
+
+        // Battery (Voltage source V)
+        const y_mid = (y1 + y2) / 2;
+        const battery_gap = 20;
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1, y_mid - battery_gap); // Top wire
+        ctx.moveTo(x1 - 20, y_mid - battery_gap); // Positive plate (long)
+        ctx.lineTo(x1 + 20, y_mid - battery_gap);
+        ctx.moveTo(x1 - 12, y_mid + battery_gap); // Negative plate (short)
+        ctx.lineTo(x1 + 12, y_mid + battery_gap);
+        ctx.moveTo(x1, y_mid + battery_gap); // Bottom wire
+        ctx.lineTo(x1, y2);
+
+        // Top Wire and Resistor 'r'
+        const r_start_x = x1 + 40;
+        const r_end_x = x2 - 40;
+        const r_len = r_end_x - r_start_x;
+        const r_amp = 10;
+        const r_peaks = 7;
+        const r_zig_len = r_len / r_peaks;
+
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(r_start_x, y1); // Wire to resistor
+        for (let i = 0; i < r_peaks; i++) {
+            ctx.lineTo(r_start_x + (i + 0.5) * r_zig_len, y1 + (i % 2 === 0 ? -r_amp : r_amp));
+        }
+        ctx.lineTo(r_end_x, y1);
+        ctx.lineTo(x2, y1); // Wire to terminal A
+
+        // Bottom Wire
+        ctx.moveTo(x1, y2);
+        ctx.lineTo(x2, y2);
+
+        ctx.stroke(); // Render all solid lines
+
+        // Terminals A and B (filled circles)
+        ctx.beginPath();
+        ctx.arc(x2, y1, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x2, y2, 4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // --- Draw Dashed Part of the Circuit ---
+        ctx.setLineDash([7, 5]);
+        ctx.beginPath();
+
+        // Dashed horizontal wires from terminals
+        ctx.moveTo(x2, y1);
+        ctx.lineTo(dash_x, y1);
+        ctx.moveTo(dash_x, y2);
+        ctx.lineTo(x2, y2);
+
+        // Dashed vertical wire and Resistor 'R'
+        const R_y_start = y1 + 40;
+        const R_y_end = y2 - 40;
+        const R_len = R_y_end - R_y_start;
+        const R_amp = 10;
+        const R_peaks = 5;
+        const R_zig_len = R_len / R_peaks;
+        
+        ctx.moveTo(dash_x, y1);
+        ctx.lineTo(dash_x, R_y_start); // Wire to resistor
+        for (let i = 0; i < R_peaks; i++) {
+            ctx.lineTo(dash_x + (i % 2 === 0 ? R_amp : -R_amp), R_y_start + (i + 0.5) * R_zig_len);
+        }
+        ctx.lineTo(dash_x, R_y_end);
+        ctx.lineTo(dash_x, y2); // Wire from resistor
+
+        ctx.stroke(); // Render all dashed lines
+        ctx.setLineDash([]); // Reset to solid lines
+
+        // --- Add Labels ---
+        // V
+        ctx.font = labelFont;
+        ctx.fillText("V", x1 + 25, y_mid + 8);
+        // r
+        ctx.fillText("r", (r_start_x + r_end_x) / 2 - 5, y1 + 32);
+        // R
+        ctx.fillText("R", dash_x + 15, y_mid + 8);
+        // A
+        ctx.font = terminalFont;
+        ctx.fillText("A", x2 + 10, y1 + 8);
+        // B
+        ctx.fillText("B", x2 + 10, y2 + 8);
+        // Fig. 3.4
+        ctx.font = figureFont;
+        ctx.textAlign = 'center';
+        ctx.fillText("Fig. 3.4", canvas.width / 2, y2 + 60);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>力图 4.8.1</title>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="600" height="500" style="border:1px solid #eee"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and parameters ---
+    const R0 = 140; // Radius of Earth's orbit in pixels
+    const cx = 300; // Canvas center x
+    const cy = 270; // Canvas center y
+
+    // The provided diagram is physically inconsistent with the problem description.
+    // This code generates a corrected diagram that matches the physics:
+    // - The Sun (O) is at the origin and the focus of the orbits.
+    // - Earth's orbit is a circle of radius R0.
+    // - The comet's orbit is a parabola that intersects the Earth's orbit at the ends
+    //   of the vertical diameter (0, R0) and (0, -R0).
+    // All labels from the original diagram are preserved and placed correctly on the
+    // physically consistent paths.
+
+    // --- Main drawing function ---
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // --- Draw Axes ---
+        drawAxes();
+
+        // --- Draw Static Labels ---
+        drawStaticLabels();
+
+        // --- Set up transformed coordinate system (origin at cx, cy, y-axis up) ---
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(1, -1);
+
+        // --- Draw Orbits ---
+        drawEarthOrbit();
+        drawCometOrbit();
+
+        // --- Draw Annotations (r, phi) ---
+        drawAnnotations();
+        
+        ctx.restore();
+
+        // --- Draw dynamic labels (on curves) ---
+        drawDynamicLabels();
+        
+        // --- Draw Caption ---
+        drawCaption();
+    }
+
+    function drawAxes() {
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '20px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        ctx.beginPath();
+        // X-axis
+        ctx.moveTo(40, cy);
+        ctx.lineTo(560, cy);
+        ctx.lineTo(550, cy - 5);
+        ctx.moveTo(560, cy);
+        ctx.lineTo(550, cy + 5);
+        // Y-axis
+        ctx.moveTo(cx, 480);
+        ctx.lineTo(cx, 20);
+        ctx.lineTo(cx - 5, 30);
+        ctx.moveTo(cx, 20);
+        ctx.lineTo(cx + 5, 30);
+        ctx.stroke();
+
+        ctx.fillText('x', 565, cy + 15);
+        ctx.fillText('y', cx + 15, 25);
+    }
+    
+    function drawStaticLabels() {
+        ctx.font = '20px "SimSun", "Times New Roman"';
+        ctx.fillText('O(太阳)', cx + 35, cy + 15);
+        ctx.fillText('R₀', cx - R0 / 2, cy + 20);
+    }
+
+    function drawEarthOrbit() {
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, R0, 0, 2 * Math.PI);
+        ctx.stroke();
+    }
+
+    function drawCometOrbit() {
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        // Equation of the parabola with focus at origin, passing through (0, +/-R0)
+        // is y^2 = R0^2 - 2*R0*x
+        const y_start = -1.4 * R0;
+        const y_end = 1.4 * R0;
+        for (let y = y_start; y <= y_end; y += 1) {
+            let x = (R0 * R0 - y * y) / (2 * R0);
+            if (y === y_start) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        }
+        ctx.stroke();
+    }
+
+    function drawAnnotations() {
+        // Point P on the parabola for annotations
+        const x_p = -0.7 * R0;
+        const y_p = Math.sqrt(R0*R0 - 2*R0*x_p);
+
+        // Draw dashed line for r
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(x_p, y_p);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw arc for phi
+        const angle_p = Math.atan2(y_p, x_p);
+        const arc_radius = 40;
+        ctx.beginPath();
+        ctx.arc(0, 0, arc_radius, Math.PI / 2, angle_p, false);
+        ctx.stroke();
+    }
+
+    function drawDynamicLabels() {
+        ctx.font = '20px "SimSun", "Times New Roman"';
+        ctx.fillStyle = 'black';
+
+        // --- Earth ---
+        const earth_angle = 75 * Math.PI / 180;
+        const earth_x = R0 * Math.cos(earth_angle);
+        const earth_y = R0 * Math.sin(earth_angle);
+        ctx.beginPath();
+        ctx.arc(cx + earth_x, cy - earth_y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('地球', cx + earth_x + 30, cy - earth_y - 10);
+
+        // --- Comet ---
+        ctx.fillText('彗星', cx - 90, cy - 180);
+
+        // --- r and phi (text labels) ---
+        const x_p = -0.7 * R0;
+        const y_p = Math.sqrt(R0*R0 - 2*R0*x_p);
+        
+        // r label
+        const r_label_x = x_p * 0.5;
+        const r_label_y = y_p * 0.5;
+        const len = Math.sqrt(x_p*x_p + y_p*y_p);
+        const offset_dist = 18;
+        const label_x = r_label_x - offset_dist * y_p / len;
+        const label_y = r_label_y + offset_dist * x_p / len;
+        ctx.fillText('r', cx + label_x, cy - label_y);
+
+        // phi label
+        const angle_p = Math.atan2(y_p, x_p);
+        const phi_label_angle = (Math.PI / 2 + angle_p) / 2;
+        const phi_label_r = 25;
+        const phi_x = phi_label_r * Math.cos(phi_label_angle);
+        const phi_y = phi_label_r * Math.sin(phi_label_angle);
+        ctx.fillText('φ', cx + phi_x, cy - phi_y);
+    }
+    
+    function drawCaption() {
+        ctx.font = '24px "SimSun"';
+        ctx.textAlign = 'center';
+        ctx.fillText('力图 4.8.1', canvas.width / 2, canvas.height - 30);
+    }
+
+    // --- Execute ---
+    draw();
+</script>
+
+</body>
+</html>

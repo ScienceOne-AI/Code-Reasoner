@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-diagram" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-diagram');
+        const ctx = canvas.getContext('2d');
+
+        // Define geometry based on a 45-degree angle
+        const A = { x: 400, y: 100 };
+        const B = { x: 200, y: 300 };
+        const C = { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 };
+        const D = { x: A.x, y: B.y };
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws hatching lines inside a polygon.
+         * @param {Array<Object>} points - Array of {x, y} vertices of the polygon.
+         * @param {number} angle - Angle of hatching lines in radians.
+         * @param {number} spacing - Spacing between lines.
+         */
+        function drawHatching(points, angle, spacing) {
+            ctx.save();
+            ctx.beginPath();
+            points.forEach((p, i) => {
+                if (i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            });
+            ctx.closePath();
+            ctx.clip(); // Clip to the polygon region
+
+            // Get bounding box
+            const minX = Math.min(...points.map(p => p.x));
+            const maxX = Math.max(...points.map(p => p.x));
+            const minY = Math.min(...points.map(p => p.y));
+            const maxY = Math.max(...points.map(p => p.y));
+            const d = Math.sqrt(Math.pow(maxX - minX, 2) + Math.pow(maxY - minY, 2));
+
+            // Draw lines across the bounding box, they will be clipped
+            const cosA = Math.cos(angle);
+            const sinA = Math.sin(angle);
+            
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'black';
+
+            for (let i = -d; i < d; i += spacing) {
+                const x1 = (minX + maxX) / 2 - d * cosA + i * sinA;
+                const y1 = (minY + maxY) / 2 - d * sinA - i * cosA;
+                const x2 = (minX + maxX) / 2 + d * cosA + i * sinA;
+                const y2 = (minY + maxY) / 2 + d * sinA - i * cosA;
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        /**
+         * Draws an arrow on a line segment.
+         * @param {number} fromX - Start X of the segment.
+         * @param {number} fromY - Start Y of the segment.
+         * @param {number} toX - End X of the segment.
+         * @param {number} toY - End Y of the segment.
+         */
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headlen = 8;
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+
+        // --- Main Drawing ---
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // General style setup
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '24px "Times New Roman"';
+
+        // 1. Draw dashed helper lines AD and BD
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(D.x, D.y);
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(D.x, D.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Draw supports
+        // Support at A (wall)
+        const supportA_points = [
+            {x: A.x, y: A.y-25},
+            {x: A.x+30, y: A.y-40},
+            {x: A.x+30, y: A.y+40},
+            {x: A.x, y: A.y+25}
+        ];
+        drawHatching(supportA_points, Math.PI/4, 8);
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y-25);
+        ctx.lineTo(A.x+30, A.y-40);
+        ctx.lineTo(A.x+30, A.y+40);
+        ctx.lineTo(A.x, A.y+25);
+        ctx.stroke();
+
+        // Support at B (step)
+        const supportB_points = [
+            {x: B.x-25, y: B.y},
+            {x: B.x+25, y: B.y},
+            {x: B.x+25, y: B.y+30},
+            {x: B.x-40, y: B.y+30}
+        ];
+        drawHatching(supportB_points, Math.PI/4, 8);
+        ctx.beginPath();
+        ctx.moveTo(B.x-25, B.y);
+        ctx.lineTo(B.x+25, B.y);
+        ctx.lineTo(B.x+25, B.y+30);
+        ctx.lineTo(B.x-40, B.y+30);
+        ctx.closePath();
+        ctx.stroke();
+
+
+        // 3. Draw the main rod AB
+        ctx.lineWidth = 10;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+
+        // 4. Draw texture on the rod
+        ctx.save();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 1.5;
+        const numTextures = 25;
+        const rodVecX = B.x - A.x;
+        const rodVecY = B.y - A.y;
+        for (let i = 1; i < numTextures; i++) {
+            const t = i / numTextures;
+            const cx = A.x + t * rodVecX;
+            const cy = A.y + t * rodVecY;
+            
+            const rodAngle = Math.atan2(rodVecY, rodVecX);
+            const textureAngle = rodAngle + Math.PI / 2 + 0.4; // Perpendicular + tilt
+
+            const halfWidth = 4.5;
+            const x1 = cx + halfWidth * Math.cos(textureAngle);
+            const y1 = cy + halfWidth * Math.sin(textureAngle);
+            const x2 = cx - halfWidth * Math.cos(textureAngle);
+            const y2 = cy - halfWidth * Math.sin(textureAngle);
+            
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // 5. Draw the hinge pin at A
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+
+        // 6. Draw angle mark and label
+        const angleRadius = 45;
+        const startAngle = Math.PI / 2; // Vertical down
+        const endAngle = Math.atan2(B.y - A.y, B.x - A.x); // To B
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, angleRadius, startAngle, endAngle);
+        ctx.stroke();
+        // Arrow on arc
+        const arrowAngle = Math.atan2(A.y - B.y, A.x - B.x); // Reverse direction for arrowhead
+        const arrowEndX = A.x + angleRadius * Math.cos(endAngle);
+        const arrowEndY = A.y + angleRadius * Math.sin(endAngle);
+        drawArrow(arrowEndX + 10*Math.cos(arrowAngle), arrowEndY + 10*Math.sin(arrowAngle), arrowEndX, arrowEndY);
+        ctx.font = '24px "Times New Roman"';
+        ctx.fillText("45°", A.x - 65, A.y + 55);
+
+        // 7. Draw length markers 'a'
+        ctx.lineWidth = 1.5;
+        const offsetDist = -35;
+        const normX = -(B.y - A.y);
+        const normY = (B.x - A.x);
+        const mag = Math.sqrt(normX * normX + normY * normY);
+        const unitNormX = normX / mag;
+        const unitNormY = normY / mag;
+        
+        const A_off = { x: A.x + offsetDist * unitNormX, y: A.y + offsetDist * unitNormY };
+        const C_off = { x: C.x + offsetDist * unitNormX, y: C.y + offsetDist * unitNormY };
+        const B_off = { x: B.x + offsetDist * unitNormX, y: B.y + offsetDist * unitNormY };
+        
+        // Ticks
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y); ctx.lineTo(A_off.x, A_off.y);
+        ctx.moveTo(C.x, C.y); ctx.lineTo(C_off.x, C_off.y);
+        ctx.moveTo(B.x, B.y); ctx.lineTo(B_off.x, B_off.y);
+        ctx.stroke();
+
+        // Dimension line with arrows
+        ctx.beginPath();
+        ctx.moveTo(A_off.x, A_off.y);
+        ctx.lineTo(C_off.x, C_off.y);
+        ctx.stroke();
+        drawArrow(C_off.x, C_off.y, A_off.x, A_off.y);
+        
+        ctx.beginPath();
+        ctx.moveTo(C_off.x, C_off.y);
+        ctx.lineTo(B_off.x, B_off.y);
+        ctx.stroke();
+        drawArrow(C_off.x, C_off.y, B_off.x, B_off.y);
+        
+        // 'a' labels
+        ctx.font = 'italic 24px "Times New Roman"';
+        const a_pos1 = { x: (A_off.x + C_off.x)/2, y: (A_off.y + C_off.y)/2 };
+        const a_pos2 = { x: (B_off.x + C_off.x)/2, y: (B_off.y + C_off.y)/2 };
+        ctx.fillText("a", a_pos1.x - 25, a_pos1.y + 10);
+        ctx.fillText("a", a_pos2.x - 25, a_pos2.y + 10);
+
+
+        // 8. Draw labels A, B, C, D
+        ctx.font = 'bold 28px "Times New Roman"';
+        ctx.fillStyle = 'black';
+        ctx.fillText("A", A.x + 10, A.y - 5);
+        ctx.fillText("B", B.x - 30, B.y + 15);
+        ctx.fillText("C", C.x + 10, C.y - 5);
+        ctx.fillText("D", D.x + 8, D.y + 25);
+
+    </script>
+</body>
+</html>

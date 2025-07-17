@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, arrowWidth = 5, color = 'black') {
+            const headlen = 10;
+            const angle = Math.atan2(toy - fromy, tox - fromx);
+
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+
+            // Draw line
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw arrowhead
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 7), toy - headlen * Math.sin(angle - Math.PI / 7));
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 7), toy - headlen * Math.sin(angle + Math.PI / 7));
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Drawing parameters
+        const cx = 350; // Center O x-coordinate
+        const cy = 120; // Center O y-coordinate (door line)
+        const scale = 45; // pixels per meter
+
+        const l0 = 2 * scale; // 2m half-door length
+        const R = 4 * scale;  // 4m radius
+        const boxLength = 1 * scale; // 1m box length AB
+        const boxWidth = 0.4 * scale;
+
+        const theta_deg = 35;
+        const theta_rad = theta_deg * Math.PI / 180;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = "20px 'KaiTi', 'SimSun', serif";
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+
+        // 1. Draw door line, walls, and labels P, O, Q
+        const doorLineStart = cx - l0 - 80;
+        const doorLineEnd = cx + l0 + 80;
+        ctx.beginPath();
+        ctx.moveTo(doorLineStart, cy);
+        ctx.lineTo(doorLineEnd, cy);
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Walls
+        ctx.fillText('墙', doorLineStart - 30, cy + 8);
+        ctx.fillText('墙', doorLineEnd + 10, cy + 8);
+
+        // Points P, O, Q
+        const Px = cx - l0;
+        const Qx = cx + l0;
+        [Px, cx, Qx].forEach(x => {
+            ctx.beginPath();
+            ctx.arc(x, cy, 3, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+
+        // Labels P, O, Q and door names
+        ctx.font = "24px 'Times New Roman'";
+        ctx.fillText('P', Px - 20, cy - 15);
+        ctx.fillText('O', cx - 5, cy - 15);
+        ctx.fillText('Q', Qx + 10, cy - 15);
+
+        ctx.font = "20px 'KaiTi', 'SimSun', serif";
+        ctx.fillText('左半扇', Px + 20, cy - 20);
+        ctx.fillText('右半扇', cx + 20, cy - 20);
+
+        // 2. Draw the dashed semi-circular arc
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.arc(cx, cy, R, 0.05 * Math.PI, 0.95 * Math.PI); // Slightly less than a full semi-circle to match image
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+
+        // 3. Calculate and draw the box M
+        const Mx = cx - R * Math.sin(theta_rad);
+        const My = cy + R * Math.cos(theta_rad);
+
+        const box_half_len = boxLength / 2;
+        const dir_perp_x = Math.cos(theta_rad);
+        const dir_perp_y = Math.sin(theta_rad);
+
+        const Ax = Mx - box_half_len * dir_perp_x;
+        const Ay = My - box_half_len * dir_perp_y;
+        const Bx = Mx + box_half_len * dir_perp_x;
+        const By = My + box_half_len * dir_perp_y;
+
+        const dir_para_x = -Math.sin(theta_rad);
+        const dir_para_y = Math.cos(theta_rad);
+
+        const C1x = Ax + boxWidth * dir_para_x;
+        const C1y = Ay + boxWidth * dir_para_y;
+        const C2x = Bx + boxWidth * dir_para_x;
+        const C2y = By + boxWidth * dir_para_y;
+
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(Bx, By);
+        ctx.lineTo(C2x, C2y);
+        ctx.lineTo(C1x, C1y);
+        ctx.closePath();
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Labels A, B, M
+        ctx.font = "italic 24px 'Times New Roman'";
+        ctx.fillText('M', C1x + 10, C1y + 25);
+        ctx.fillText('A', Ax - 30, Ay + 5);
+        ctx.fillText('B', Bx + 5, By + 15);
+
+        // 4. Draw dashed lines and angle θ
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 1.5;
+
+        // Line MO
+        ctx.beginPath();
+        ctx.moveTo(Mx, My);
+        ctx.lineTo(cx, cy);
+        ctx.stroke();
+        
+        // Vertical line from O
+        const vertLineEndY = cy + 60;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx, vertLineEndY);
+        ctx.stroke();
+
+        // Point E and lines ME, OE
+        const Ex = cx - 90;
+        const Ey = cy;
+        ctx.beginPath();
+        ctx.arc(Ex, Ey, 3, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(Mx, My);
+        ctx.lineTo(Ex, Ey);
+        ctx.stroke();
+
+        // Dashed line from H (just a label)
+        const Hx = Mx + 20;
+        const Hy = My-10;
+        
+        // Dashed line to H (The H label seems to be on the line OM)
+        // A line from a point below theta towards M
+        const H_start_x = cx - 35;
+        const H_start_y = cy + 45;
+        // ctx.beginPath();
+        // ctx.moveTo(H_start_x, H_start_y);
+        // ctx.lineTo(Mx,My);
+        // ctx.stroke();
+        // The original diagram has a line MH where H is on PQ. Let's add that.
+        const H_on_PQ_x = Mx;
+        const H_on_PQ_y = cy;
+        ctx.beginPath();
+        ctx.moveTo(Mx, My);
+        ctx.lineTo(H_on_PQ_x, H_on_PQ_y);
+        // ctx.stroke(); // This line is not in the original image. The vertical line from O is.
+
+        ctx.restore();
+
+        // Angle arc for θ
+        ctx.beginPath();
+        ctx.arc(cx, cy, 40, Math.PI / 2 - theta_rad, Math.PI / 2);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Angle arc at E
+        const angle_E_rad = Math.atan2(My - Ey, Mx - Ex);
+        ctx.beginPath();
+        ctx.arc(Ex, Ey, 20, Math.PI, Math.PI - angle_E_rad);
+        ctx.stroke();
+        
+        // Labels for R, θ, H, E, v
+        ctx.font = "italic 24px 'Times New Roman'";
+        ctx.fillText('R', cx - 90, cy + 90);
+        ctx.fillText('θ', cx - 50, cy + 40);
+        ctx.fillText('H', cx - 25, cy + 70);
+        ctx.fillText('E', Ex - 20, Ey - 5);
+
+
+        // 5. Draw velocity vector v
+        const v_len = 50;
+        const v_end_x = Mx + v_len * Math.sin(theta_rad);
+        const v_end_y = My - v_len * Math.cos(theta_rad);
+        drawArrow(ctx, Mx, My, v_end_x, v_end_y);
+        ctx.font = "italic bold 24px 'Times New Roman'";
+        ctx.fillText('v', Mx + 15, My - 30);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Young's Double-Slit with Polarizers</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings to mimic hand-drawn look
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        // Using a font that looks somewhat like handwriting
+        const baseFont = "px 'Comic Sans MS', cursive, sans-serif";
+        const mainFontSize = 20;
+        const subscriptFontSize = 14;
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 10; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Helper function to draw a vertical double-headed arrow
+        function drawDoubleArrow(ctx, x, y1, y2) {
+            drawArrow(ctx, x, y1, x, y2);
+            drawArrow(ctx, x, y2, x, y1);
+        }
+
+        // Helper function for text with subscript
+        function drawLabel(ctx, text, sub, x, y) {
+            ctx.font = mainFontSize + baseFont;
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillText(text, x, y);
+            ctx.font = subscriptFontSize + baseFont;
+            ctx.fillText(sub, x + textWidth - 2, y + 5);
+        }
+
+        // --- Main Drawing ---
+
+        const centerY = 275;
+        const x_Q = 80;
+        const x_S1 = 150;
+        const x_P1 = 200;
+        const x_S2 = 350;
+        const x_P23 = 450;
+        const x_P4 = 600;
+        const x_S3 = 700;
+
+        // 1. Draw Optical Axis (dashed line)
+        ctx.save();
+        ctx.setLineDash([10, 5]);
+        ctx.beginPath();
+        ctx.moveTo(50, centerY);
+        ctx.lineTo(x_S3, centerY);
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Draw Light Source Q
+        ctx.font = "bold 30" + baseFont;
+        ctx.fillText("*", x_Q - 15, centerY + 10);
+        ctx.font = mainFontSize + baseFont;
+        drawLabel(ctx, "Q", "", x_Q - 20, centerY - 20);
+
+        // 3. Draw Aperture S1
+        const s1_slit_half_height = 10;
+        const s1_arrow_offset = 40;
+        drawArrow(ctx, x_S1, centerY - s1_arrow_offset, x_S1, centerY - s1_slit_half_height);
+        drawArrow(ctx, x_S1, centerY + s1_arrow_offset, x_S1, centerY + s1_slit_half_height);
+        ctx.beginPath();
+        ctx.moveTo(x_S1 - 5, centerY - s1_slit_half_height);
+        ctx.lineTo(x_S1 + 5, centerY - s1_slit_half_height);
+        ctx.moveTo(x_S1 - 5, centerY + s1_slit_half_height);
+        ctx.lineTo(x_S1 + 5, centerY + s1_slit_half_height);
+        ctx.stroke();
+        drawLabel(ctx, "S", "1", x_S1 - 5, centerY + s1_arrow_offset + 20);
+
+        // 4. Draw Polarizer P1
+        const p1_h = 60;
+        const p1_w = 15;
+        ctx.strokeRect(x_P1 - p1_w / 2, centerY - p1_h / 2, p1_w, p1_h);
+        drawLabel(ctx, "P", "1", x_P1 - 5, centerY - p1_h / 2 - 10);
+
+        // 5. Draw Aperture S2
+        const a_dist = 60;
+        const slit_top_y = centerY - a_dist;
+        const slit_bot_y = centerY + a_dist;
+        const arrow_len_a = 40;
+        // 'd' dimension
+        drawDoubleArrow(ctx, x_S2 - 30, slit_top_y, slit_bot_y);
+        ctx.fillText("d", x_S2 - 50, centerY + 5);
+        // 'a' dimensions
+        drawArrow(ctx, x_S2, slit_top_y - arrow_len_a, x_S2, slit_top_y);
+        ctx.fillText("a", x_S2 + 10, slit_top_y - arrow_len_a / 2 + 5);
+        drawArrow(ctx, x_S2, slit_bot_y + arrow_len_a, x_S2, slit_bot_y);
+        ctx.fillText("a", x_S2 + 10, slit_bot_y + arrow_len_a / 2 + 5);
+        // Slit markers
+        ctx.beginPath();
+        ctx.moveTo(x_S2 - 5, slit_top_y);
+        ctx.lineTo(x_S2 + 5, slit_top_y);
+        ctx.moveTo(x_S2 - 5, slit_bot_y);
+        ctx.lineTo(x_S2 + 5, slit_bot_y);
+        ctx.stroke();
+        const s2_label_y = slit_bot_y + arrow_len_a + 25;
+        drawLabel(ctx, "S", "2", x_S2 - 5, s2_label_y);
+
+        // 6. Draw Polarizers P2, P3
+        const p23_h = 40;
+        const p23_w = 12;
+        ctx.strokeRect(x_P23 - p23_w / 2, slit_top_y - p23_h / 2, p23_w, p23_h);
+        drawLabel(ctx, "P", "2", x_P23 - 5, slit_top_y - p23_h / 2 - 10);
+        ctx.strokeRect(x_P23 - p23_w / 2, slit_bot_y - p23_h / 2, p23_w, p23_h);
+        drawLabel(ctx, "P", "3", x_P23 - 5, slit_bot_y + p23_h / 2 + 20);
+
+        // 7. Draw Polarizer P4
+        const p4_h = 160;
+        const p4_w = 18;
+        ctx.strokeRect(x_P4 - p4_w / 2, centerY - p4_h / 2, p4_w, p4_h);
+        drawLabel(ctx, "P", "4", x_P4 - 5, centerY - p4_h / 2 - 10);
+
+        // 8. Draw Screen S3
+        const s3_h = 240;
+        const s3_bottom_y = centerY + s3_h / 2;
+        ctx.save();
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(x_S3, centerY - s3_h / 2);
+        ctx.lineTo(x_S3, s3_bottom_y);
+        ctx.stroke();
+        ctx.restore();
+        // Hatching for screen
+        ctx.save();
+        ctx.lineWidth = 1;
+        for (let y = centerY - s3_h / 2; y <= s3_bottom_y; y += 10) {
+            ctx.beginPath();
+            ctx.moveTo(x_S3, y);
+            ctx.lineTo(x_S3 + 10, y - 10);
+            ctx.stroke();
+        }
+        ctx.restore();
+        drawLabel(ctx, "S", "3", x_S3 - 5, s3_bottom_y + 20);
+
+
+        // 9. Draw Dimension D
+        const d_line_y = 480;
+        ctx.beginPath();
+        // Vertical extension from S2
+        ctx.moveTo(x_S2, s2_label_y + 20);
+        ctx.lineTo(x_S2, d_line_y);
+        // Vertical extension from S3
+        ctx.moveTo(x_S3, s3_bottom_y);
+        ctx.lineTo(x_S3, d_line_y);
+        // Horizontal line
+        ctx.moveTo(x_S2, d_line_y);
+        ctx.lineTo(x_S3, d_line_y);
+        ctx.stroke();
+        ctx.font = mainFontSize + baseFont;
+        ctx.fillText("D", (x_S2 + x_S3) / 2 - 5, d_line_y + 25);
+
+        // 10. Draw Figure Caption
+        ctx.font = mainFontSize + baseFont;
+        ctx.fillText("Fig. 2.78", canvas.width / 2 - 40, canvas.height - 10);
+
+    </script>
+</body>
+</html>

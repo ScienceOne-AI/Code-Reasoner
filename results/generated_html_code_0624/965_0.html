@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Graph</title>
+</head>
+<body>
+<canvas id="physicsGraph" width="560" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsGraph');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const margin = { top: 30, right: 20, bottom: 60, left: 60 };
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const graphWidth = canvasWidth - margin.left - margin.right;
+    const graphHeight = canvasHeight - margin.top - margin.bottom;
+
+    const tMin = 0;
+    const tMax = 25.0; // ms
+    const eMin = -60; // V
+    const eMax = 60;  // V
+
+    // --- Scaling Functions ---
+    function scaleX(t) {
+        return margin.left + (t / tMax) * graphWidth;
+    }
+
+    function scaleY(e) {
+        // Y-axis goes from top to bottom in canvas, so we invert the value
+        return margin.top + graphHeight - ((e - eMin) / (eMax - eMin)) * graphHeight;
+    }
+
+    // --- Drawing Functions ---
+
+    // 1. Draw Grid
+    function drawGrid() {
+        ctx.beginPath();
+        ctx.strokeStyle = '#d3d3d3'; // Light grey for minor grid
+        ctx.lineWidth = 0.5;
+
+        // Vertical minor lines (every 0.5 ms)
+        const tStepMinor = 0.5;
+        for (let t = tMin + tStepMinor; t < tMax; t += tStepMinor) {
+             if (t % 5 !== 0) { // Don't draw over major lines
+                ctx.moveTo(scaleX(t), scaleY(eMin));
+                ctx.lineTo(scaleX(t), scaleY(eMax));
+            }
+        }
+
+        // Horizontal minor lines (every 2 V)
+        const eStepMinor = 2;
+        for (let e = eMin + eStepMinor; e < eMax; e += eStepMinor) {
+             if (e % 20 !== 0) { // Don't draw over major lines
+                ctx.moveTo(scaleX(tMin), scaleY(e));
+                ctx.lineTo(scaleX(tMax), scaleY(e));
+            }
+        }
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.strokeStyle = '#a9a9a9'; // Darker grey for major grid
+        ctx.lineWidth = 1;
+
+        // Vertical major lines (every 5 ms)
+        const tStepMajor = 5;
+        for (let t = tMin; t <= tMax; t += tStepMajor) {
+            ctx.moveTo(scaleX(t), scaleY(eMin));
+            ctx.lineTo(scaleX(t), scaleY(eMax));
+        }
+
+        // Horizontal major lines (every 20 V)
+        const eStepMajor = 20;
+        for (let e = eMin; e <= eMax; e += eStepMajor) {
+            ctx.moveTo(scaleX(tMin), scaleY(e));
+            ctx.lineTo(scaleX(tMax), scaleY(e));
+        }
+        ctx.stroke();
+    }
+
+
+    // 2. Draw Axes
+    function drawAxes() {
+        ctx.beginPath();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Y-axis
+        ctx.moveTo(scaleX(0), scaleY(eMin));
+        ctx.lineTo(scaleX(0), scaleY(eMax));
+
+        // X-axis
+        ctx.moveTo(scaleX(0), scaleY(0));
+        ctx.lineTo(scaleX(tMax), scaleY(0));
+        ctx.stroke();
+    }
+
+
+    // 3. Draw Labels and Ticks
+    function drawLabels() {
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+
+        // Y-axis labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let e = eMin; e <= eMax; e += 20) {
+            ctx.fillText(e, scaleX(0) - 8, scaleY(e));
+        }
+
+        // X-axis labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let t = 5; t <= tMax; t += 5) {
+             ctx.fillText(t.toFixed(1), scaleX(t), scaleY(0) + 8);
+        }
+        // Draw the 0 label separately
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillText('0', scaleX(0) - 8, scaleY(0) + 8);
+
+
+        // Axis titles
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.translate(margin.left - 40, margin.top + graphHeight / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.font = 'italic 18px Arial';
+        ctx.fillText('E', -12, 0);
+        ctx.font = '18px Arial';
+        ctx.fillText(' / V', 8, 0);
+        ctx.restore();
+
+        // X-axis title
+        const xTitleX = scaleX(19);
+        const xTitleY = scaleY(0) + 28;
+        ctx.textAlign = 'left';
+        ctx.font = 'italic 18px Arial';
+        ctx.fillText('t', xTitleX, xTitleY);
+        ctx.font = '18px Arial';
+        ctx.fillText(' / ms', xTitleX + ctx.measureText('t').width - 2, xTitleY);
+
+
+        // Figure caption
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 9.2', canvasWidth / 2, canvasHeight - 15);
+    }
+
+
+    // 4. Draw the Wave
+    function drawWave() {
+        const peakEmf = 53; // From analysis of the graph
+        const period = 16.0; // ms, from analysis (one cycle completes at 16ms)
+        const omega = (2 * Math.PI) / period;
+
+        ctx.beginPath();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+
+        const dt = 0.1; // time step for plotting
+        const plotLimit = 24.0; // Wave stops at t=24ms in the figure
+        
+        ctx.moveTo(scaleX(0), scaleY(0));
+
+        for (let t = dt; t <= plotLimit; t += dt) {
+            const e = peakEmf * Math.sin(omega * t);
+            ctx.lineTo(scaleX(t), scaleY(e));
+        }
+        ctx.stroke();
+    }
+
+    // --- Main Drawing Execution ---
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    
+    drawGrid();
+    drawAxes();
+    drawWave();
+    drawLabels();
+
+</script>
+</body>
+</html>

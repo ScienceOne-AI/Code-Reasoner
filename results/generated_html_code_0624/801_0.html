@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mechanical Arm Diagram</title>
+</head>
+<body>
+  <canvas id="mechanicalArmCanvas" width="600" height="450"></canvas>
+  <script>
+    const canvas = document.getElementById('mechanicalArmCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Clear canvas with a white background
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // --- Style and Parameter settings ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    const mainLineWidth = 4;
+    const thinLineWidth = 1.5;
+
+    // --- Geometric Parameters (lengths are scaled for visibility) ---
+    const scale = 350; // pixels per meter
+    const l1 = 0.8 * scale;
+    const l2 = 0.5 * scale;
+    const l3 = 0.3 * scale;
+
+    const originX = 100;
+    const originY = 380;
+
+    const degToRad = (deg) => deg * Math.PI / 180;
+
+    // --- Coordinate System Transformation ---
+    // Move origin to (originX, originY) and flip the Y-axis so that positive Y is up
+    ctx.translate(originX, originY);
+    ctx.scale(1, -1);
+
+    // --- Angle and Coordinate Calculations ---
+    const angle1_deg = 45;
+    const angle2_rel_deg = -30; // 30 degrees down from link 1
+    const angle3_deg = -60;     // 60 degrees down from horizontal
+
+    const angle1_rad = degToRad(angle1_deg);
+    const angle2_rad = degToRad(angle1_deg + angle2_rel_deg); // Absolute angle of link 2 is 15 degrees
+    const angle3_rad = degToRad(angle3_deg);
+
+    // Point Coordinates
+    const Ax = 0, Ay = 0;
+    const Bx = Ax + l1 * Math.cos(angle1_rad);
+    const By = Ay + l1 * Math.sin(angle1_rad);
+    const Cx = Bx + l2 * Math.cos(angle2_rad);
+    const Cy = By + l2 * Math.sin(angle2_rad);
+    const Dx = Cx + l3 * Math.cos(angle3_rad);
+    const Dy = Cy + l3 * Math.sin(angle3_rad);
+
+    // --- Drawing Elements ---
+
+    // 1. Ground Support at A
+    ctx.lineWidth = mainLineWidth;
+    const groundBaseY = -15;
+    const groundWidth = 100;
+    ctx.beginPath();
+    ctx.moveTo(Ax - groundWidth / 2, groundBaseY);
+    ctx.lineTo(Ax + groundWidth / 2, groundBaseY);
+    ctx.stroke();
+    // Hatching
+    ctx.lineWidth = thinLineWidth;
+    for (let i = 0; i <= 8; i++) {
+        let xPos = Ax - groundWidth / 2 + i * (groundWidth / 8);
+        ctx.beginPath();
+        ctx.moveTo(xPos, groundBaseY);
+        ctx.lineTo(xPos - 10, groundBaseY - 15);
+        ctx.stroke();
+    }
+    // Pivot Frame
+    ctx.lineWidth = mainLineWidth;
+    ctx.beginPath();
+    ctx.moveTo(Ax - 25, groundBaseY);
+    ctx.lineTo(Ax, Ay);
+    ctx.lineTo(Ax + 25, groundBaseY);
+    ctx.stroke();
+
+    // 2. Links
+    ctx.lineWidth = mainLineWidth;
+    // Link AB (l1)
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay);
+    ctx.lineTo(Bx, By);
+    ctx.stroke();
+    // Link BC (l2)
+    ctx.beginPath();
+    ctx.moveTo(Bx, By);
+    ctx.lineTo(Cx, Cy);
+    ctx.stroke();
+    // Link CD (l3)
+    ctx.beginPath();
+    ctx.moveTo(Cx, Cy);
+    ctx.lineTo(Dx, Dy);
+    ctx.stroke();
+
+    // 3. Joints
+    // Joint at A (filled circle, part of link)
+    ctx.beginPath();
+    ctx.arc(Ax, Ay, 6, 0, 2 * Math.PI);
+    ctx.fill();
+    // Joint at B (hollow circle)
+    ctx.beginPath();
+    ctx.arc(Bx, By, 8, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    // Joint at C (hollow circle)
+    ctx.beginPath();
+    ctx.arc(Cx, Cy, 8, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black'; // Reset fill color
+
+    // 4. Gripper at D
+    ctx.save();
+    ctx.translate(Dx, Dy);
+    ctx.rotate(angle3_rad);
+    ctx.lineWidth = mainLineWidth;
+    const gSize = 15;
+    ctx.beginPath();
+    ctx.moveTo(-gSize, gSize/1.5);
+    ctx.lineTo(0, gSize/1.5);
+    ctx.lineTo(gSize-5, 0);
+    ctx.lineTo(0, -gSize/1.5);
+    ctx.lineTo(-gSize, -gSize/1.5);
+    ctx.closePath();
+    ctx.fill();
+    // Prongs
+    ctx.lineWidth = thinLineWidth + 1;
+    ctx.beginPath();
+    ctx.moveTo(gSize-5, 0);
+    ctx.lineTo(gSize + 5, 8);
+    ctx.moveTo(gSize-5, 0);
+    ctx.lineTo(gSize + 5, -8);
+    ctx.stroke();
+    ctx.restore();
+
+    // 5. Angle Indicators
+    ctx.lineWidth = thinLineWidth;
+    const arrowSize = 5;
+
+    // Angle 45° at A
+    const r_A = 60;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay);
+    ctx.lineTo(Ax + r_A + 20, Ay);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(Ax, Ay, r_A, 0, angle1_rad, false);
+    ctx.stroke();
+    const arrow_A_x = Ax + r_A * Math.cos(angle1_rad);
+    const arrow_A_y = Ay + r_A * Math.sin(angle1_rad);
+    ctx.save();
+    ctx.translate(arrow_A_x, arrow_A_y);
+    ctx.rotate(angle1_rad + degToRad(90));
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(-arrowSize, arrowSize*1.5); ctx.lineTo(arrowSize, arrowSize*1.5); ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    // Angle 30° at B
+    const r_B = 60;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(Bx, By);
+    ctx.lineTo(Bx + (r_B + 20) * Math.cos(angle1_rad), By + (r_B + 20) * Math.sin(angle1_rad));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(Bx, By, r_B, angle1_rad, angle2_rad, true);
+    ctx.stroke();
+    const arrow_B_x = Bx + r_B * Math.cos(angle2_rad);
+    const arrow_B_y = By + r_B * Math.sin(angle2_rad);
+    ctx.save();
+    ctx.translate(arrow_B_x, arrow_B_y);
+    ctx.rotate(angle2_rad - degToRad(90));
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(-arrowSize, arrowSize*1.5); ctx.lineTo(arrowSize, arrowSize*1.5); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    
+    // Angle 60° at C
+    const r_C = 50;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(Cx, Cy);
+    ctx.lineTo(Cx + r_C + 20, Cy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(Cx, Cy, r_C, 0, angle3_rad, true);
+    ctx.stroke();
+    const arrow_C_x = Cx + r_C * Math.cos(angle3_rad);
+    const arrow_C_y = Cy + r_C * Math.sin(angle3_rad);
+    ctx.save();
+    ctx.translate(arrow_C_x, arrow_C_y);
+    ctx.rotate(angle3_rad - degToRad(90));
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(-arrowSize, arrowSize*1.5); ctx.lineTo(arrowSize, arrowSize*1.5); ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    // 6. Labels (drawn last to be on top)
+    // To draw text upright, we temporarily undo the y-flip by scaling
+    ctx.save();
+    ctx.scale(1, -1);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Point Labels
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText("A", Ax - 35, -Ay + 10);
+    ctx.fillText("B", Bx - 20, -By - 20);
+    ctx.fillText("C", Cx + 25, -Cy - 5);
+    ctx.fillText("D", Dx + 40, -Dy - 5);
+
+    // Link Labels
+    ctx.font = 'italic bold 22px Arial';
+    ctx.fillText("l", (Ax + Bx) / 2 - 20, -(Ay + By) / 2 + 20);
+    ctx.font = 'italic 16px Arial';
+    ctx.fillText("1", (Ax + Bx) / 2 - 12, -(Ay + By) / 2 + 25);
+
+    ctx.font = 'italic bold 22px Arial';
+    ctx.fillText("l", (Bx + Cx) / 2 + 20, -(By + Cy) / 2 + 25);
+    ctx.font = 'italic 16px Arial';
+    ctx.fillText("2", (Bx + Cx) / 2 + 28, -(By + Cy) / 2 + 30);
+
+    ctx.font = 'italic bold 22px Arial';
+    ctx.fillText("l", (Cx + Dx) / 2 - 20, -(Cy + Dy) / 2 - 20);
+    ctx.font = 'italic 16px Arial';
+    ctx.fillText("3", (Cx + Dx) / 2 - 12, -(Cy + Dy) / 2 - 15);
+
+    // Angle values
+    ctx.font = 'bold 22px Arial';
+    ctx.fillText("45°", Ax + 45, -(Ay + 30));
+    ctx.fillText("30°", Bx + 65, -(By + 30));
+    ctx.fillText("60°", Cx + 50, -(Cy - 25));
+
+    ctx.restore(); // Restore the flipped coordinate system
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Telescopic Optical System</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="optical-system-canvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('optical-system-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a filled arrowhead at point p2, pointing from p1.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {{x: number, y: number}} p1 - The starting point of the vector.
+         * @param {{x: number, y: number}} p2 - The end point of the vector (where the arrow is).
+         * @param {number} [size=8] - The length of the arrowhead sides.
+         */
+        function drawArrow(ctx, p1, p2, size = 8) {
+            const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            ctx.save();
+            ctx.beginPath();
+            ctx.translate(p2.x, p2.y);
+            ctx.rotate(angle);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2.5);
+            ctx.lineTo(-size, -size / 2.5);
+            ctx.closePath();
+            ctx.fillStyle = 'black';
+            ctx.fill();
+            ctx.restore();
+        }
+
+        /**
+         * Draws a line segment from p1 to p2 with an arrowhead.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {{x: number, y: number}} p1 - The starting point.
+         * @param {{x: number, y: number}} p2 - The ending point.
+         * @param {number} [arrowPos=0.5] - The position of the arrow along the line (0 to 1).
+         */
+        function drawRayWithArrow(ctx, p1, p2, arrowPos = 0.5) {
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+            const arrowPoint = {
+                x: p1.x + (p2.x - p1.x) * arrowPos,
+                y: p1.y + (p2.y - p1.y) * arrowPos
+            };
+            drawArrow(ctx, p1, arrowPoint);
+        }
+        
+        // --- Main Drawing ---
+        
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Parameters
+        const y_axis = 200;
+        const x_start = 20;
+        const x_end = 780;
+
+        const x_L1 = 180;
+        const h_L1 = 30;
+        const f1 = 100;
+
+        const x_focal = x_L1 + f1;
+
+        const f2 = 250;
+        const x_L2_center = x_focal + f2;
+        const h_L2 = 80;
+        const L2_thickness = 20;
+
+        const ray_y_offset = 20;
+
+        // 1. Optical Axis and Central Ray
+        ctx.beginPath();
+        ctx.moveTo(x_start, y_axis);
+        ctx.lineTo(x_end, y_axis);
+        ctx.stroke();
+        drawArrow(ctx, {x: x_start, y: y_axis}, {x: 100, y: y_axis});
+        drawArrow(ctx, {x: x_focal, y: y_axis}, {x: x_focal + 100, y: y_axis});
+
+
+        // 2. Lens L1 (Biconvex)
+        ctx.save();
+        ctx.fillStyle = '#E0E0E0';
+        const L1_thickness = 10;
+        ctx.beginPath();
+        ctx.moveTo(x_L1, y_axis - h_L1);
+        ctx.quadraticCurveTo(x_L1 + L1_thickness, y_axis, x_L1, y_axis + h_L1);
+        ctx.quadraticCurveTo(x_L1 - L1_thickness, y_axis, x_L1, y_axis - h_L1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+        ctx.font = '22px "Times New Roman"';
+        ctx.fillText('L₁', x_L1, y_axis - h_L1 - 15);
+
+        // 3. Lens L2 (Plano-convex, curved left)
+        ctx.save();
+        ctx.fillStyle = '#E0E0E0';
+        const x_L2_right = x_L2_center + L2_thickness / 2;
+        const controlX = x_L2_center - L2_thickness / 2 - 30;
+        ctx.beginPath();
+        ctx.moveTo(x_L2_right, y_axis - h_L2);
+        ctx.lineTo(x_L2_right, y_axis + h_L2);
+        ctx.quadraticCurveTo(controlX, y_axis, x_L2_right, y_axis - h_L2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+        ctx.font = '22px "Times New Roman"';
+        ctx.fillText('L₂', x_L2_center - 40, y_axis - h_L2 - 10);
+        
+        // 4. Ray Tracing
+        const p_start_top = { x: x_start, y: y_axis - ray_y_offset };
+        const p_L1_top = { x: x_L1, y: y_axis - ray_y_offset };
+        drawRayWithArrow(ctx, p_start_top, p_L1_top, 0.5);
+
+        const p_start_bot = { x: x_start, y: y_axis + ray_y_offset };
+        const p_L1_bot = { x: x_L1, y: y_axis + ray_y_offset };
+        drawRayWithArrow(ctx, p_start_bot, p_L1_bot, 0.5);
+        
+        const p_focal = { x: x_focal, y: y_axis };
+        drawRayWithArrow(ctx, p_L1_top, p_focal, 0.5);
+        drawRayWithArrow(ctx, p_L1_bot, p_focal, 0.5);
+        
+        const y_L2_top_hit = y_axis - (ray_y_offset / f1) * f2;
+        const y_L2_bot_hit = y_axis + (ray_y_offset / f1) * f2;
+        const p_L2_top = {x: x_L2_center, y: y_L2_top_hit};
+        const p_L2_bot = {x: x_L2_center, y: y_L2_bot_hit};
+        drawRayWithArrow(ctx, p_focal, p_L2_top, 0.5);
+        drawRayWithArrow(ctx, p_focal, p_L2_bot, 0.5);
+        
+        // 5. Emergent Rays
+        const alpha = 0.08;
+        const p_exit_top = {x: x_L2_right, y: p_L2_top.y};
+        const p_exit_bot = {x: x_L2_right, y: p_L2_bot.y};
+        const p_end_top = {x: x_end, y: p_exit_top.y - (x_end - p_exit_top.x) * Math.tan(alpha)};
+        const p_end_bot = {x: x_end, y: p_exit_bot.y + (x_end - p_exit_bot.x) * Math.tan(alpha)};
+        
+        drawRayWithArrow(ctx, p_exit_top, p_end_top, 0.7);
+        drawRayWithArrow(ctx, p_exit_bot, p_end_bot, 0.7);
+
+        // 6. Dashed lines and Alpha annotation
+        ctx.save();
+        ctx.setLineDash([6, 6]);
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(p_exit_top.x, p_exit_top.y); ctx.lineTo(x_end, p_exit_top.y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(p_exit_bot.x, p_exit_bot.y); ctx.lineTo(x_end, p_exit_bot.y); ctx.stroke();
+        ctx.restore();
+        
+        ctx.font = 'italic 22px "Times New Roman"';
+        const angle_arc_radius = 40;
+        const angle_arc_x_start = x_end - 60;
+        // Top alpha
+        ctx.beginPath();
+        ctx.arc(angle_arc_x_start, p_exit_top.y, angle_arc_radius, 0, -alpha, true);
+        ctx.stroke();
+        ctx.fillText('α', angle_arc_x_start + angle_arc_radius + 5, p_exit_top.y - 15);
+        // Bottom alpha
+        ctx.beginPath();
+        ctx.arc(angle_arc_x_start, p_exit_bot.y, angle_arc_radius, 0, alpha, false);
+        ctx.stroke();
+        ctx.fillText('α', angle_arc_x_start + angle_arc_radius + 5, p_exit_bot.y + 25);
+        
+        // 7. Dimension Lines for focal lengths
+        const dim_y = y_axis + 80;
+        
+        function drawDimensionLine(x1, x2, y, label) {
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x1, y_axis + 2); ctx.lineTo(x1, y);
+            ctx.moveTo(x2, y_axis + 2); ctx.lineTo(x2, y);
+            ctx.moveTo(x1, y); ctx.lineTo(x2, y);
+            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x1 + 8, y - 4); ctx.lineTo(x1, y); ctx.lineTo(x1 + 8, y + 4); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x2 - 8, y - 4); ctx.lineTo(x2, y); ctx.lineTo(x2 - 8, y + 4); ctx.stroke();
+            ctx.font = 'italic 22px "Times New Roman"';
+            ctx.fillText(label, (x1 + x2) / 2 - 10, y - 8);
+            ctx.restore();
+        }
+        
+        drawDimensionLine(x_L1, x_focal, dim_y, "f₁");
+        drawDimensionLine(x_focal, x_L2_center, dim_y, "f₂");
+        
+        // 8. D2 Aperture Annotation
+        const D2_x = x_L2_center + 45;
+        const D2_top_y_ref = y_axis - h_L2;
+        const D2_bot_y_ref = y_axis + h_L2;
+        const D2_tick_len = 10;
+        
+        ctx.font = '22px "Times New Roman"';
+        ctx.fillText('D₂', D2_x + 5, D2_top_y_ref - 5);
+        
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        // Top
+        ctx.beginPath();
+        ctx.moveTo(D2_x - D2_tick_len, D2_top_y_ref);
+        ctx.lineTo(D2_x + D2_tick_len, D2_top_y_ref);
+        ctx.moveTo(D2_x, D2_top_y_ref);
+        ctx.lineTo(D2_x, D2_top_y_ref + 20);
+        ctx.stroke();
+        drawArrow(ctx, {x: D2_x, y: D2_top_y_ref + 20}, {x: D2_x, y: D2_top_y_ref});
+        
+        // Bottom
+        ctx.beginPath();
+        ctx.moveTo(D2_x - D2_tick_len, D2_bot_y_ref);
+        ctx.lineTo(D2_x + D2_tick_len, D2_bot_y_ref);
+        ctx.moveTo(D2_x, D2_bot_y_ref);
+        ctx.lineTo(D2_x, D2_bot_y_ref - 20);
+        ctx.stroke();
+        drawArrow(ctx, {x: D2_x, y: D2_bot_y_ref - 20}, {x: D2_x, y: D2_bot_y_ref});
+        ctx.restore();
+
+    </script>
+</body>
+</html>

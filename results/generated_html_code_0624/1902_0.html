@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram - Rotating Tube</title>
+<style>
+  body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+  canvas { border: 1px solid #ccc; background-color: white; }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="550"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow on the current path
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        // Main line
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        // Arrowhead
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    }
+
+    // --- Parameters ---
+    const cx = 250;
+    const cy = 230;
+    const radius_a = 90;
+    const tube_thickness = 8;
+    const theta = Math.PI / 3.8; // Angle approx 47 degrees, similar to image
+
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    
+    // --- Base and Support Rod ---
+    const rod_vertex_y = cy + radius_a + 160;
+    const ground_y = rod_vertex_y + 25;
+    
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    // Rod
+    ctx.moveTo(cx, rod_vertex_y);
+    ctx.lineTo(cx, cy + radius_a + tube_thickness);
+    // Support triangle
+    ctx.moveTo(cx, rod_vertex_y);
+    ctx.lineTo(cx - 30, ground_y);
+    ctx.moveTo(cx, rod_vertex_y);
+    ctx.lineTo(cx + 30, ground_y);
+    // Ground line
+    ctx.moveTo(cx - 50, ground_y);
+    ctx.lineTo(cx + 50, ground_y);
+    // Hatching
+    for (let i = -45; i <= 45; i += 10) {
+        ctx.moveTo(cx + i, ground_y);
+        ctx.lineTo(cx + i - 5, ground_y + 10);
+    }
+    ctx.stroke();
+
+    // --- Tube (Circles) ---
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius_a, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius_a + tube_thickness, 0, 2 * Math.PI);
+    ctx.stroke();
+    
+    // --- Vertical Axis ---
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - radius_a - 60);
+    ctx.lineTo(cx, cy + radius_a);
+    ctx.stroke();
+
+    // --- Rotation Symbol (ω) ---
+    ctx.font = 'italic 24px Times New Roman';
+    const omega_arc_cy = cy - radius_a - 35;
+    const omega_arc_r = 20;
+    const omega_start_angle = Math.PI * 1.3;
+    const omega_end_angle = Math.PI * 0.1;
+    ctx.beginPath();
+    ctx.arc(cx, omega_arc_cy, omega_arc_r, omega_start_angle, omega_end_angle, false);
+    // Arrowhead for omega
+    const headlen_omega = 8;
+    const tox_omega = cx + omega_arc_r * Math.cos(omega_end_angle);
+    const toy_omega = omega_arc_cy + omega_arc_r * Math.sin(omega_end_angle);
+    const angle_omega = omega_end_angle + Math.PI / 2; // Tangent angle
+    ctx.moveTo(tox_omega, toy_omega);
+    ctx.lineTo(tox_omega - headlen_omega * Math.cos(angle_omega - Math.PI / 6), toy_omega - headlen_omega * Math.sin(angle_omega - Math.PI / 6));
+    ctx.moveTo(tox_omega, toy_omega);
+    ctx.lineTo(tox_omega - headlen_omega * Math.cos(angle_omega + Math.PI / 6), toy_omega - headlen_omega * Math.sin(angle_omega + Math.PI / 6));
+    ctx.stroke();
+    ctx.fillText('ω', cx + 30, cy - radius_a - 40);
+
+    // --- Gravity Vector (g) ---
+    const g_x = cx - 180;
+    const g_y_start = cy - 50;
+    const g_y_end = g_y_start + 60;
+    ctx.beginPath();
+    drawArrow(ctx, g_x, g_y_start, g_x, g_y_end);
+    ctx.stroke();
+    ctx.fillText('g', g_x - 20, g_y_start + 35);
+    
+    // --- Particle and related elements ---
+    const px = cx + radius_a * Math.sin(theta);
+    const py = cy - radius_a * Math.cos(theta);
+
+    // --- Forces on particle ---
+    ctx.beginPath();
+    // Force mg
+    const mg_len = 70;
+    drawArrow(ctx, px, py, px, py + mg_len);
+    // Force N
+    const n_len = 60;
+    const nx = px + n_len * Math.sin(theta);
+    const ny = py - n_len * Math.cos(theta);
+    drawArrow(ctx, px, py, nx, ny);
+    ctx.stroke();
+    // Force Labels
+    ctx.fillText('mg', px + 10, py + mg_len);
+    ctx.fillText('N', nx + 5, ny - 5);
+    
+    // --- Annotation Lines (Radius and Angle) ---
+    ctx.lineWidth = 1.5;
+    // Radius line
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(px, py);
+    ctx.stroke();
+    // Angle θ arc
+    ctx.beginPath();
+    const arc_radius_theta = 30;
+    ctx.arc(cx, cy, arc_radius_theta, -Math.PI / 2, -Math.PI / 2 + theta);
+    ctx.stroke();
+
+    // --- Annotation Labels (a, θ) ---
+    // Label 'a'
+    const a_label_x = cx + (px-cx)/2 + 10;
+    const a_label_y = cy + (py-cy)/2 + 5;
+    ctx.fillText('a', a_label_x, a_label_y);
+    // Label 'θ'
+    const theta_label_x = cx + (arc_radius_theta + 10) * Math.sin(theta / 2);
+    const theta_label_y = cy - (arc_radius_theta + 10) * Math.cos(theta / 2);
+    ctx.fillText('θ', theta_label_x - 5, theta_label_y + 5);
+
+    // --- Particle (drawn last to be on top) ---
+    ctx.beginPath();
+    ctx.arc(px, py, 7, 0, 2 * Math.PI);
+    ctx.fillStyle = 'black';
+    ctx.fill();
+
+    // --- Figure Caption ---
+    ctx.font = '20px Times New Roman';
+    ctx.fillStyle = 'black';
+    ctx.fillText('Fig. 1.79.', cx - 40, canvas.height - 15);
+
+</script>
+</body>
+</html>

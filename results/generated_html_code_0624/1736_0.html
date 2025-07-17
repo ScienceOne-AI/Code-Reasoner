@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Parallel Plate Capacitor</title>
+</head>
+<body>
+  <canvas id="capacitor-canvas" width="600" height="450"></canvas>
+  <script>
+    const canvas = document.getElementById('capacitor-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const config = {
+      x: 100,
+      y: 80,
+      width: 400,
+      plateH: 20,
+      d1: 70,
+      d2: 80,
+      hatchSpacingPlates: 8,
+      hatchSpacingDiel: 15,
+      lineWidth: 2,
+      dimLineOffset: 40,
+      arrowHeight: 10,
+      arrowWidth: 8,
+    };
+
+    const d_total = config.d1 + config.d2;
+    const totalH = 2 * config.plateH + d_total;
+
+    // --- Y coordinates ---
+    const yTopPlateStart = config.y;
+    const yTopPlateEnd = yTopPlateStart + config.plateH;
+    const yDielStart = yTopPlateEnd;
+    const yDielMid = yDielStart + config.d1;
+    const yDielEnd = yDielMid + config.d2;
+    const yBotPlateStart = yDielEnd;
+    const yBotPlateEnd = yBotPlateStart + config.plateH;
+
+    // --- Helper Functions ---
+
+    // Function to draw hatching (diagonal lines from top-left to bottom-right)
+    function drawHatching(x, y, w, h, spacing) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+      ctx.clip();
+      ctx.lineWidth = 1;
+      const startX = x - h;
+      const endX = x + w;
+      for (let i = startX; i < endX; i += spacing) {
+        ctx.beginPath();
+        ctx.moveTo(i, y);
+        ctx.lineTo(i + h, y + h);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Function to draw a filled arrowhead
+    function drawFilledArrow(x, y, pointingUp) {
+      const h = config.arrowHeight;
+      const w = config.arrowWidth;
+      const dir = pointingUp ? -1 : 1;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - w / 2, y + dir * h);
+      ctx.lineTo(x + w / 2, y + dir * h);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // --- Main Drawing ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // Main Outline and Plates
+    ctx.lineWidth = config.lineWidth;
+    ctx.strokeRect(config.x, yTopPlateStart, config.width, config.plateH);
+    drawHatching(config.x, yTopPlateStart, config.width, config.plateH, config.hatchSpacingPlates);
+    ctx.strokeRect(config.x, yBotPlateStart, config.width, config.plateH);
+    drawHatching(config.x, yBotPlateStart, config.width, config.plateH, config.hatchSpacingPlates);
+
+    // Dielectrics Area
+    ctx.strokeRect(config.x, yDielStart, config.width, d_total);
+    drawHatching(config.x, yDielStart, config.width, d_total, config.hatchSpacingDiel);
+
+    // Dielectric Interface Line
+    ctx.beginPath();
+    ctx.moveTo(config.x, yDielMid);
+    ctx.lineTo(config.x + config.width, yDielMid);
+    ctx.stroke();
+
+    // --- Dimensions and Labels ---
+    ctx.lineWidth = 1;
+
+    // Left side dimensions (d1, d2)
+    const dimLeftX = config.x - config.dimLineOffset;
+    // Extension lines
+    ctx.beginPath();
+    ctx.moveTo(dimLeftX, yDielStart); ctx.lineTo(config.x, yDielStart);
+    ctx.moveTo(dimLeftX, yDielMid); ctx.lineTo(config.x, yDielMid);
+    ctx.moveTo(dimLeftX, yDielEnd); ctx.lineTo(config.x, yDielEnd);
+    ctx.stroke();
+    // Vertical dimension lines
+    ctx.beginPath();
+    ctx.moveTo(dimLeftX, yDielStart); ctx.lineTo(dimLeftX, yDielMid);
+    ctx.moveTo(dimLeftX, yDielMid); ctx.lineTo(dimLeftX, yDielEnd);
+    ctx.stroke();
+    // Arrows
+    drawFilledArrow(dimLeftX, yDielStart, true);
+    drawFilledArrow(dimLeftX, yDielMid, false);
+    drawFilledArrow(dimLeftX, yDielMid, true);
+    drawFilledArrow(dimLeftX, yDielEnd, false);
+    // Labels
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    const labelX_left = dimLeftX - 10;
+    
+    const labelY1 = (yDielStart + yDielMid) / 2;
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('d', labelX_left, labelY1);
+    ctx.font = 'italic 14px Times New Roman';
+    ctx.fillText('1', labelX_left + 3, labelY1 + 8);
+
+    const labelY2 = (yDielMid + yDielEnd) / 2;
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('d', labelX_left, labelY2);
+    ctx.font = 'italic 14px Times New Roman';
+    ctx.fillText('2', labelX_left + 3, labelY2 + 8);
+
+    // Right side dimension (d)
+    const dimRightX = config.x + config.width + config.dimLineOffset;
+    // Extension lines
+    ctx.beginPath();
+    ctx.moveTo(dimRightX, yDielStart); ctx.lineTo(config.x + config.width, yDielStart);
+    ctx.moveTo(dimRightX, yDielEnd); ctx.lineTo(config.x + config.width, yDielEnd);
+    ctx.stroke();
+    // Vertical dimension line
+    ctx.beginPath();
+    ctx.moveTo(dimRightX, yDielStart); ctx.lineTo(dimRightX, yDielEnd);
+    ctx.stroke();
+    // Arrows
+    drawFilledArrow(dimRightX, yDielStart, true);
+    drawFilledArrow(dimRightX, yDielEnd, false);
+    // Label
+    ctx.textAlign = 'left';
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('d', dimRightX + 10, (yDielStart + yDielEnd) / 2);
+
+    // --- Dielectric Labels (ε) ---
+    ctx.textAlign = 'center';
+    
+    // ε_r1
+    const x_e1 = config.x + config.width * 0.7;
+    const y_e1 = (yDielStart + yDielMid) / 2;
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('ε', x_e1, y_e1);
+    ctx.font = 'italic 16px Times New Roman';
+    ctx.fillText('r1', x_e1 + 13, y_e1 + 8);
+
+    // ε_r2
+    const x_e2 = config.x + config.width * 0.3;
+    const y_e2 = (yDielMid + yDielEnd) / 2;
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('ε', x_e2, y_e2);
+    ctx.font = 'italic 16px Times New Roman';
+    ctx.fillText('r2', x_e2 + 13, y_e2 + 8);
+    
+    // --- Bottom Title ---
+    ctx.font = '22px "KaiTi", "SimSun"';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.fillText('题 9 图', canvas.width / 2, yBotPlateEnd + 60);
+
+  </script>
+</body>
+</html>

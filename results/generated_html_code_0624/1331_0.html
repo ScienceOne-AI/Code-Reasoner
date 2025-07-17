@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="500" height="600" style="border:1px solid #d3d3d3;"></canvas>
+
+<script>
+    const canvas = document.getElementById("myCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Clear canvas with a white background
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws text with a subscript.
+     * @param {CanvasRenderingContext2D} ctx - The rendering context.
+     * @param {string} text - The main text.
+     * @param {string} sub - The subscript text.
+     * @param {number} x - The x-coordinate for the main text.
+     * @param {number} y - The y-coordinate for the main text.
+     * @param {string} baseFont - The font for the main text.
+     * @param {string} subFont - The font for the subscript.
+     */
+    function drawSubscriptText(ctx, text, sub, x, y, baseFont, subFont) {
+        ctx.font = baseFont;
+        const textMetrics = ctx.measureText(text);
+        const textWidth = textMetrics.width;
+        ctx.fillText(text, x, y);
+        
+        // Save current baseline to restore it later
+        const originalBaseline = ctx.textBaseline;
+        ctx.font = subFont;
+        ctx.textBaseline = "top"; // Align subscript vertically
+        ctx.fillText(sub, x + textWidth * 0.9, y + 3); // Adjust position for better look
+        ctx.textBaseline = originalBaseline; // Restore baseline
+    }
+
+    /**
+     * Draws a line segment with an arrowhead at the end.
+     * @param {CanvasRenderingContext2D} ctx - The rendering context.
+     * @param {number} fromX - The starting x-coordinate.
+     * @param {number} fromY - The starting y-coordinate.
+     * @param {number} toX - The ending x-coordinate.
+     * @param {number} toY - The ending y-coordinate.
+     * @param {number} headLength - The length of the arrowhead sides.
+     */
+    function drawArrow(ctx, fromX, fromY, toX, toY, headLength) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        
+        // Draw the arrowhead
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        
+        ctx.stroke();
+    }
+
+    // --- Drawing Parameters ---
+    const L0 = 240;
+    const centerX = canvas.width / 2;
+    const wallTop = 40;
+    const wallBottom = 520;
+    const leftWallX = centerX - L0 / 2;
+    const rightWallX = centerX + L0 / 2;
+    
+    // Y-coordinates for points A and B
+    const Ay = 350;
+    const By = Ay - L0;
+
+    // --- Main Drawing Logic ---
+    
+    // Set default drawing styles
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "black";
+    ctx.lineWidth = 1.5;
+
+    // 1. Draw Walls
+    ctx.beginPath();
+    ctx.moveTo(leftWallX, wallTop);
+    ctx.lineTo(leftWallX, wallBottom);
+    ctx.moveTo(rightWallX, wallTop);
+    ctx.lineTo(rightWallX, wallBottom);
+    ctx.stroke();
+
+    // 2. Draw Points A and B
+    ctx.beginPath();
+    ctx.arc(leftWallX, Ay, 3.5, 0, 2 * Math.PI); // Point A
+    ctx.fill();
+    
+    ctx.beginPath();
+    ctx.arc(rightWallX, By, 3.5, 0, 2 * Math.PI); // Point B
+    ctx.fill();
+
+    // 3. Draw Fluid Flow Arrows
+    const arrowLength = 80;
+    const arrowXOffset = 70;
+    drawArrow(ctx, centerX - arrowXOffset, 480, centerX - arrowXOffset, 480 - arrowLength, 12);
+    drawArrow(ctx, centerX + arrowXOffset, 480, centerX + arrowXOffset, 480 - arrowLength, 12);
+    drawArrow(ctx, centerX - arrowXOffset, 250, centerX - arrowXOffset, 250 - arrowLength, 12);
+    drawArrow(ctx, centerX + arrowXOffset, 250, centerX + arrowXOffset, 250 - arrowLength, 12);
+
+    // 4. Draw Latin Character Labels (A, B, v)
+    ctx.font = "22px Times New Roman";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText("A", leftWallX - 8, Ay);
+    
+    ctx.textAlign = "left";
+    ctx.textBaseline = "bottom";
+    ctx.fillText("B", rightWallX + 5, By);
+    
+    ctx.font = "italic 26px Times New Roman";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    ctx.fillText("v", centerX, wallTop + 40);
+
+    // 5. Draw Horizontal Dimension L₀
+    const hDimY = Ay;
+    ctx.beginPath();
+    // Draw line from center to left with arrowhead
+    ctx.moveTo(centerX, hDimY);
+    ctx.lineTo(leftWallX, hDimY);
+    ctx.moveTo(leftWallX, hDimY);
+    ctx.lineTo(leftWallX + 12, hDimY - 6);
+    ctx.moveTo(leftWallX, hDimY);
+    ctx.lineTo(leftWallX + 12, hDimY + 6);
+    // Draw line from center to right with arrowhead
+    ctx.moveTo(centerX, hDimY);
+    ctx.lineTo(rightWallX, hDimY);
+    ctx.moveTo(rightWallX, hDimY);
+    ctx.lineTo(rightWallX - 12, hDimY - 6);
+    ctx.moveTo(rightWallX, hDimY);
+    ctx.lineTo(rightWallX - 12, hDimY + 6);
+    ctx.stroke();
+    // Label L₀
+    ctx.fillStyle = "white"; // Erase line behind label
+    ctx.fillRect(centerX - 25, hDimY - 15, 50, 25);
+    ctx.fillStyle = "black";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    drawSubscriptText(ctx, "L", "0", centerX - 10, hDimY, "22px Times New Roman", "15px Times New Roman");
+
+    // 6. Draw Vertical Dimension L₀
+    const vDimX = rightWallX + 30;
+    const vDimY_bottom = Ay;
+    const vDimY_top = By;
+    const vDimY_mid = (vDimY_top + vDimY_bottom) / 2;
+
+    // T-stops connecting dimension line to the wall
+    ctx.beginPath();
+    ctx.moveTo(rightWallX, vDimY_top);
+    ctx.lineTo(vDimX, vDimY_top);
+    ctx.moveTo(rightWallX, vDimY_bottom);
+    ctx.lineTo(vDimX, vDimY_bottom);
+    ctx.stroke();
+
+    // Vertical line with two arrowheads (drawn from center outwards)
+    drawArrow(ctx, vDimX, vDimY_mid, vDimX, vDimY_top, 12);
+    drawArrow(ctx, vDimX, vDimY_mid, vDimX, vDimY_bottom, 12);
+    
+    // Label L₀
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    drawSubscriptText(ctx, "L", "0", vDimX + 8, vDimY_mid, "22px Times New Roman", "15px Times New Roman");
+
+    // 7. Draw Chinese Text
+    ctx.font = "34px KaiTi";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("流体", centerX, 280);
+    
+    ctx.font = "30px KaiTi";
+    ctx.textBaseline = "top";
+    ctx.fillText("实验室参考系", centerX, wallBottom + 15);
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Redrawing</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="850" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        ctx.strokeStyle = "black";
+        ctx.fillStyle = "black";
+        ctx.lineWidth = 2.5;
+        // Use a font stack that mimics a handwritten style
+        ctx.font = "22px 'Comic Sans MS', 'Chalkduster', cursive, sans-serif";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper Functions ---
+
+        // Function to add an arrow head to the current path
+        function addArrowHead(ctx, fromx, fromy, tox, toy) {
+            const headlen = 10;
+            const angle = Math.atan2(toy - fromy, tox - x1);
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        }
+        
+        // Function to draw the hatched mirror
+        function drawHatchedMirror(ctx, x_center, y_top, width, depth, num_hatches) {
+            const x_left = x_center - width / 2;
+            const x_right = x_center + width / 2;
+            const y_bottom = y_top + depth;
+
+            // Draw the reflective surface (arc)
+            ctx.beginPath();
+            ctx.moveTo(x_left, y_top);
+            ctx.quadraticCurveTo(x_center, y_bottom, x_right, y_top);
+            ctx.stroke();
+
+            // Draw the hatchings
+            const hatch_len = 10;
+            ctx.beginPath();
+            for (let i = 0; i <= num_hatches; i++) {
+                const t = i / num_hatches;
+                // Point on quadratic Bezier curve: B(t)
+                const p0 = { x: x_left, y: y_top };
+                const p1 = { x: x_center, y: y_bottom };
+                const p2 = { x: x_right, y: y_top };
+                const pt_x = Math.pow(1 - t, 2) * p0.x + 2 * t * (1 - t) * p1.x + Math.pow(t, 2) * p2.x;
+                const pt_y = Math.pow(1 - t, 2) * p0.y + 2 * t * (1 - t) * p1.y + Math.pow(t, 2) * p2.y;
+
+                // Derivative (tangent vector): B'(t)
+                const d_x = 2 * (1 - t) * (p1.x - p0.x) + 2 * t * (p2.x - p1.x);
+                const d_y = 2 * (1 - t) * (p1.y - p0.y) + 2 * t * (p2.y - p1.y);
+
+                const tangent_angle = Math.atan2(d_y, d_x);
+                const normal_angle = tangent_angle - Math.PI / 2;
+
+                const h_start_x = pt_x;
+                const h_start_y = pt_y;
+                const h_end_x = pt_x + hatch_len * Math.cos(normal_angle);
+                const h_end_y = pt_y + hatch_len * Math.sin(normal_angle);
+
+                ctx.moveTo(h_start_x, h_start_y);
+                ctx.lineTo(h_end_x, h_end_y);
+            }
+            ctx.stroke();
+        }
+
+        // Function to draw the sun symbol
+        function drawSun(ctx, cx, cy, r, num_rays) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            for (let i = 0; i < num_rays; i++) {
+                const angle = (i / num_rays) * 2 * Math.PI;
+                const x1 = cx + r * Math.cos(angle);
+                const y1 = cy + r * Math.sin(angle);
+                const x2 = cx + (r + 10) * Math.cos(angle);
+                const y2 = cy + (r + 10) * Math.sin(angle);
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+            }
+            ctx.stroke();
+        }
+
+        // --- Figure (1) ---
+        const x1_c = 220;
+        const y1_mirror_top = 280;
+        const w1 = 180;
+        const mirror_depth1 = 25;
+        const h1_focal = 100; // Represents 20 cm
+        const x1_l = x1_c - w1 / 2;
+        const x1_r = x1_c + w1 / 2;
+        const y1_focus = y1_mirror_top - h1_focal;
+
+        drawHatchedMirror(ctx, x1_c, y1_mirror_top, w1, mirror_depth1, 12);
+
+        // Rays and triangle
+        ctx.beginPath();
+        const tri_top_x = x1_c;
+        const tri_top_y = y1_focus;
+        ctx.moveTo(tri_top_x, tri_top_y);
+        ctx.lineTo(x1_l, y1_mirror_top);
+        ctx.moveTo(tri_top_x, tri_top_y);
+        ctx.lineTo(x1_r, y1_mirror_top);
+        addArrowHead(ctx, x1_l, y1_mirror_top, tri_top_x, tri_top_y);
+        addArrowHead(ctx, x1_r, y1_mirror_top, tri_top_x, tri_top_y);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        const incoming_y_start = y1_focus - 40;
+        const incoming_x1 = x1_l - 20;
+        const incoming_x2 = x1_r + 20;
+        ctx.moveTo(incoming_x1, incoming_y_start);
+        ctx.lineTo(incoming_x1, y1_mirror_top);
+        addArrowHead(ctx, incoming_x1, incoming_y_start, incoming_x1, y1_mirror_top);
+        ctx.moveTo(incoming_x2, incoming_y_start);
+        ctx.lineTo(incoming_x2, y1_mirror_top);
+        addArrowHead(ctx, incoming_x2, incoming_y_start, incoming_x2, y1_mirror_top);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x1_l, y1_focus);
+        ctx.lineTo(x1_r + 40, y1_focus);
+        ctx.stroke();
+
+        // Dimension line "20 cm"
+        ctx.beginPath();
+        const dim_x1 = x1_r + 40;
+        ctx.moveTo(dim_x1, y1_focus);
+        ctx.lineTo(dim_x1, y1_mirror_top);
+        ctx.moveTo(dim_x1 - 5, y1_focus);
+        ctx.lineTo(dim_x1 + 5, y1_focus);
+        ctx.moveTo(dim_x1 - 5, y1_mirror_top);
+        ctx.lineTo(dim_x1 + 5, y1_mirror_top);
+        ctx.stroke();
+        ctx.save();
+        ctx.translate(dim_x1 + 18, (y1_focus + y1_mirror_top) / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText("20 cm", 0, 0);
+        ctx.restore();
+
+        ctx.fillText("(1)", x1_c, y1_mirror_top + 80);
+
+        // --- Figure (2) ---
+        const x2_c = 600;
+        const y2_water = 280;
+        const w2 = 180;
+        const mirror_depth2 = 25;
+        const h2_X = 150; // Represents 30 cm
+        const x2_l = x2_c - w2 / 2;
+        const x2_r = x2_c + w2 / 2;
+        const y2_card = y2_water - h2_X;
+
+        drawHatchedMirror(ctx, x2_c, y2_water, w2, mirror_depth2, 12);
+
+        // Water surface
+        ctx.beginPath();
+        ctx.moveTo(x2_l, y2_water);
+        ctx.lineTo(x2_r, y2_water);
+        ctx.stroke();
+        ctx.fillText("n = 4/3", x2_c, y2_water + 20);
+
+        // Card and source
+        const card_y = y2_card;
+        const card_x_start = x2_l - 40;
+        const card_x_end = x2_r + 40;
+        ctx.beginPath();
+        ctx.moveTo(card_x_start, card_y);
+        ctx.lineTo(card_x_end, card_y);
+        ctx.stroke();
+        ctx.textAlign = 'left';
+        ctx.fillText("white card", card_x_end - 50, card_y - 25);
+        drawSun(ctx, x2_c, card_y - 45, 15, 8);
+        const pinhole_x = x2_c;
+        const pinhole_y = card_y;
+
+        // Dashed ray triangle
+        ctx.save();
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(pinhole_x, pinhole_y);
+        ctx.lineTo(x2_l, y2_water);
+        addArrowHead(ctx, pinhole_x, pinhole_y, x2_l, y2_water);
+        ctx.moveTo(x2_r, y2_water);
+        ctx.lineTo(pinhole_x, pinhole_y);
+        addArrowHead(ctx, x2_r, y2_water, pinhole_x, pinhole_y);
+        ctx.moveTo(x2_l,y2_water);
+        ctx.lineTo(x2_r, y2_water);
+        ctx.stroke();
+        ctx.restore();
+        
+        // Dimension line "X = ?"
+        ctx.textAlign = 'center';
+        ctx.beginPath();
+        const dim_x2 = x2_r + 40;
+        ctx.moveTo(dim_x2, card_y);
+        ctx.lineTo(dim_x2, y2_water);
+        ctx.moveTo(dim_x2 - 5, card_y);
+        ctx.lineTo(dim_x2 + 5, card_y);
+        ctx.moveTo(dim_x2 - 5, y2_water);
+        ctx.lineTo(dim_x2 + 5, y2_water);
+        ctx.stroke();
+        ctx.fillText("X = ?", dim_x2 + 35, (card_y + y2_water) / 2);
+        
+        ctx.beginPath();
+        ctx.moveTo(x2_l-10, y2_card);
+        ctx.lineTo(dim_x2, y2_card);
+        ctx.stroke();
+
+        ctx.fillText("(2)", x2_c, y1_mirror_top + 80);
+
+        // --- Caption ---
+        ctx.fillText("Fig. 1.25", (x1_c + x2_c)/2, 420);
+    </script>
+</body>
+</html>

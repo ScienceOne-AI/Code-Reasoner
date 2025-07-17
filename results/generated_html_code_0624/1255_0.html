@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+    <canvas id="myCanvas" width="550" height="450" style="border: 1px solid black;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws a pin (circle) at a given point.
+     * @param {object} p - Point with x and y coordinates.
+     * @param {number} radius - The radius of the pin.
+     * @param {string} fillStyle - The fill color.
+     * @param {string} strokeStyle - The stroke color.
+     */
+    function drawPin(p, radius = 4, fillStyle = 'white', strokeStyle = 'black') {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius, 0, 2 * Math.PI);
+        ctx.fillStyle = fillStyle;
+        ctx.fill();
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    /**
+     * Draws a roller support at a given point.
+     * @param {object} p - The coordinates of the pin center.
+     */
+    function drawRoller(p) {
+        const pinRadius = 5;
+        const rollerRadius = 4;
+        const verticalOffset = 8;
+        const horizontalOffset = 8;
+
+        // Draw the pin itself
+        drawPin(p, pinRadius);
+
+        // Draw the two small rollers underneath
+        ctx.save();
+        ctx.beginPath();
+        ctx.lineWidth = 1.5;
+        ctx.arc(p.x - horizontalOffset, p.y + verticalOffset, rollerRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(p.x + horizontalOffset, p.y + verticalOffset, rollerRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    /**
+     * Draws diagonal hatching lines within a rectangular area.
+     * @param {number} x - The x-coordinate of the top-left corner.
+     * @param {number} y - The y-coordinate of the top-left corner.
+     * @param {number} width - The width of the area.
+     * @param {number} height - The height of the area.
+     */
+    function drawDiagonalHatching(x, y, width, height) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, width, height);
+        ctx.clip();
+
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        const spacing = 8;
+        for (let i = -Math.max(width, height); i < Math.max(width, height); i += spacing) {
+             ctx.moveTo(x + i, y);
+             ctx.lineTo(x + i + width, y + width);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    /**
+     * Draws an arrow from one point to another.
+     * @param {number} fromx - Starting x-coordinate.
+     * @param {number} fromy - Starting y-coordinate.
+     * @param {number} tox - Ending x-coordinate.
+     * @param {number} toy - Ending y-coordinate.
+     */
+    function drawArrow(fromx, fromy, tox, toy) {
+        const headlen = 10;
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.lineWidth = 2;
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+
+    // Define coordinates and geometry constants
+    const L_AD = 150;
+    const A = { x: 100, y: 350 };
+    const D = { x: A.x + L_AD, y: A.y }; // (250, 350)
+    const C = { x: D.x, y: A.y - L_AD }; // (250, 200)
+    const B = { x: A.x + 2 * L_AD, y: A.y - 2 * L_AD }; // (400, 50)
+    const E = { x: C.x, y: C.y + L_AD / 3 }; // (250, 250)
+    const H = { x: C.x, y: C.y + 2 * L_AD / 3 }; // (250, 300)
+    
+    const wallX = 450;
+    const G = { x: wallX, y: E.y }; // (450, 250)
+    const K = { x: wallX, y: H.y }; // (450, 300)
+    
+    const groundLineY = A.y + 16;
+    const groundHatchHeight = 20;
+    const wallHatchWidth = 20;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 1. Draw Ground and Wall surfaces
+    // Ground
+    ctx.beginPath();
+    ctx.moveTo(50, groundLineY);
+    ctx.lineTo(350, groundLineY);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    drawDiagonalHatching(50, groundLineY, 300, groundHatchHeight);
+    
+    // Wall
+    ctx.beginPath();
+    ctx.moveTo(wallX, 150);
+    ctx.lineTo(wallX, 400);
+    ctx.stroke();
+    drawDiagonalHatching(wallX, 150, wallHatchWidth, 250);
+
+    // 2. Draw bars
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'black';
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y);
+    ctx.lineTo(B.x, B.y);
+    ctx.moveTo(C.x, C.y);
+    ctx.lineTo(D.x, D.y);
+    ctx.moveTo(E.x, E.y);
+    ctx.lineTo(G.x, G.y);
+    ctx.moveTo(H.x, H.y);
+    ctx.lineTo(K.x, K.y);
+    ctx.stroke();
+
+    // 3. Draw dashed line for angle
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(A.x - 20, A.y);
+    ctx.lineTo(D.x, A.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // 4. Draw angle arc and text
+    ctx.beginPath();
+    ctx.lineWidth = 1;
+    ctx.arc(A.x, A.y, 40, 0, -Math.PI / 4, true);
+    ctx.stroke();
+    
+    ctx.font = '16px sans-serif';
+    ctx.fillStyle = 'black';
+    ctx.fillText('45°', A.x + 45, A.y - 15);
+
+    // 5. Draw force P
+    drawArrow(B.x + 80, B.y, B.x + 5, B.y);
+    ctx.font = 'bold 20px serif';
+    ctx.fillText('P', B.x + 35, B.y - 10);
+
+    // 6. Draw supports and pins
+    drawRoller(A);
+    drawRoller(D);
+    drawPin(C);
+    drawPin(E);
+    drawPin(H);
+    drawPin(G);
+    drawPin(K);
+    
+    // 7. Draw labels for points
+    ctx.font = 'bold 18px serif';
+    ctx.fillStyle = 'black';
+    ctx.fillText('A', A.x - 20, A.y + 15);
+    ctx.fillText('B', B.x + 10, B.y + 5);
+    ctx.fillText('C', C.x + 10, C.y);
+    ctx.fillText('D', D.x + 10, D.y + 20);
+    ctx.fillText('E', E.x - 18, E.y + 5);
+    ctx.fillText('H', H.x - 18, H.y + 5);
+    ctx.fillText('G', G.x + 10, G.y + 5);
+    ctx.fillText('K', K.x + 10, K.y + 5);
+
+</script>
+</body>
+</html>

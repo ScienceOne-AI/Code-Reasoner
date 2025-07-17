@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Graph of r^3 vs 1/w^2</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsGraphCanvas" width="750" height="550"></canvas>
+<script>
+  const canvas = document.getElementById('physicsGraphCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Configuration
+  const margin = { top: 30, right: 30, bottom: 90, left: 90 };
+  const graphWidth = canvas.width - margin.left - margin.right;
+  const graphHeight = canvas.height - margin.top - margin.bottom;
+
+  // Graph scale
+  const xMax = 6;
+  const yMax = 4.5; // Give a little extra space at the top
+
+  // Coordinate mapping functions
+  function mapX(x) {
+    return margin.left + (x / xMax) * graphWidth;
+  }
+
+  function mapY(y) {
+    return canvas.height - margin.bottom - (y / yMax) * graphHeight;
+  }
+
+  // --- Drawing Functions ---
+
+  function drawGrid() {
+    ctx.strokeStyle = '#dcdcdc'; // Light grey for minor grid
+    ctx.lineWidth = 1;
+
+    // Minor vertical grid lines
+    const xMinorIntervals = xMax * 10;
+    for (let i = 1; i <= xMinorIntervals; i++) {
+      const x = mapX(i / 10);
+      ctx.beginPath();
+      ctx.moveTo(x, mapY(0));
+      ctx.lineTo(x, mapY(4));
+      ctx.stroke();
+    }
+
+    // Minor horizontal grid lines
+    const yMinorIntervals = 4 * 10;
+    for (let i = 1; i <= yMinorIntervals; i++) {
+      const y = mapY(i / 10);
+      ctx.beginPath();
+      ctx.moveTo(mapX(0), y);
+      ctx.lineTo(mapX(xMax), y);
+      ctx.stroke();
+    }
+    
+    ctx.strokeStyle = '#a9a9a9'; // Darker grey for major grid
+    ctx.lineWidth = 1;
+
+    // Major vertical grid lines
+    for (let i = 1; i <= xMax; i++) {
+      const x = mapX(i);
+      ctx.beginPath();
+      ctx.moveTo(x, mapY(0));
+      ctx.lineTo(x, mapY(4));
+      ctx.stroke();
+    }
+
+    // Major horizontal grid lines
+    for (let i = 1; i <= 4; i++) {
+      const y = mapY(i);
+      ctx.beginPath();
+      ctx.moveTo(mapX(0), y);
+      ctx.lineTo(mapX(xMax), y);
+      ctx.stroke();
+    }
+  }
+
+  function drawAxes() {
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // Y-axis
+    ctx.beginPath();
+    ctx.moveTo(mapX(0), mapY(0));
+    ctx.lineTo(mapX(0), mapY(4.2));
+    ctx.stroke();
+
+    // X-axis
+    ctx.beginPath();
+    ctx.moveTo(mapX(0), mapY(0));
+    ctx.lineTo(mapX(xMax), mapY(0));
+    ctx.stroke();
+  }
+
+  function drawLabelsAndTicks() {
+    ctx.fillStyle = 'black';
+    ctx.font = '16px Arial';
+
+    // X-axis ticks and numbers
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let i = 0; i <= xMax; i++) {
+      ctx.fillText(i, mapX(i), mapY(0) + 8);
+    }
+
+    // Y-axis ticks and numbers
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i <= 4; i++) {
+      ctx.fillText(i, mapX(0) - 8, mapY(i));
+    }
+    
+    // Y-axis Label: r³ / 10²³ m³
+    ctx.save();
+    ctx.translate(margin.left - 60, canvas.height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    const baseFont = '18px Arial';
+    const supFont = '12px Arial';
+
+    let currentX = 0;
+    ctx.font = baseFont;
+    ctx.fillText('r', currentX, 0);
+    currentX += ctx.measureText('r').width / 2 + 2;
+    ctx.font = supFont;
+    ctx.fillText('3', currentX, -8);
+    currentX += ctx.measureText('3').width + 2;
+    
+    ctx.font = baseFont;
+    ctx.fillText(' / 10', currentX, 0);
+    currentX += ctx.measureText(' / 10').width;
+    
+    ctx.font = supFont;
+    ctx.fillText('23', currentX, -8);
+    currentX += ctx.measureText('23').width;
+    
+    ctx.font = baseFont;
+    ctx.fillText(' m', currentX, 0);
+    currentX += ctx.measureText(' m').width/2 + 2;
+
+    ctx.font = supFont;
+    ctx.fillText('3', currentX, -8);
+
+    ctx.restore();
+
+    // X-axis Label: 1/ω² / 10⁷ rad⁻² s²
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const xLabelY = canvas.height - margin.bottom + 35;
+    let xLabelX = mapX(xMax/2) - 80;
+
+    // Draw fraction 1/ω²
+    ctx.font = baseFont;
+    ctx.fillText('1', xLabelX, xLabelY - 10);
+    ctx.beginPath();
+    ctx.moveTo(xLabelX - 10, xLabelY);
+    ctx.lineTo(xLabelX + 10, xLabelY);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.stroke();
+    ctx.fillText('\u03C9', xLabelX - 4, xLabelY + 14); // ω
+    ctx.font = supFont;
+    ctx.fillText('2', xLabelX + 6, xLabelY + 8); // ²
+
+    // Draw the rest of the label
+    xLabelX += 30;
+    ctx.font = baseFont;
+    ctx.fillText(' / 10', xLabelX, xLabelY + 12);
+    xLabelX += ctx.measureText(' / 10').width;
+
+    ctx.font = supFont;
+    ctx.fillText('7', xLabelX, xLabelY + 6);
+    xLabelX += ctx.measureText('7').width;
+
+    ctx.font = baseFont;
+    ctx.fillText(' rad', xLabelX, xLabelY + 12);
+    xLabelX += ctx.measureText(' rad').width;
+
+    ctx.font = supFont;
+    ctx.fillText('-2', xLabelX, xLabelY + 6); //⁻²
+    xLabelX += ctx.measureText('-2').width;
+
+    ctx.font = baseFont;
+    ctx.fillText(' s', xLabelX, xLabelY + 12);
+    xLabelX += ctx.measureText(' s').width;
+
+    ctx.font = supFont;
+    ctx.fillText('2', xLabelX, xLabelY + 6);
+  }
+
+  function drawDataLine() {
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    
+    const x1 = 0, y1 = 0;
+    const x_trans = 0.9, y_trans = (2/3) * 0.9; // Transition point from dashed to solid
+    const x2 = 6, y2 = 4;
+
+    // Dashed part of the line
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.moveTo(mapX(x1), mapY(y1));
+    ctx.lineTo(mapX(x_trans), mapY(y_trans));
+    ctx.stroke();
+    
+    // Solid part of the line
+    ctx.beginPath();
+    ctx.setLineDash([]);
+    ctx.moveTo(mapX(x_trans), mapY(y_trans));
+    ctx.lineTo(mapX(x2), mapY(y2));
+    ctx.stroke();
+  }
+
+  function drawCaption() {
+      ctx.fillStyle = 'black';
+      ctx.font = 'bold 16px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Fig. 1.2', canvas.width / 2, canvas.height - 20);
+  }
+
+  // --- Main Execution ---
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawGrid();
+  drawAxes();
+  drawLabelsAndTicks();
+  drawDataLine();
+  drawCaption();
+
+</script>
+</body>
+</html>

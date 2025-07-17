@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Physics Collision Diagram</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      background-color: white;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="physicsCanvas" width="600" height="550"></canvas>
+  <script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper function to draw an arrow ---
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+      const headlen = 10;
+      const dx = tox - fromx;
+      const dy = toy - fromy;
+      const angle = Math.atan2(dy, dx);
+      
+      ctx.beginPath();
+      ctx.moveTo(fromx, fromy);
+      ctx.lineTo(tox, toy);
+      ctx.moveTo(tox, toy);
+      ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+      ctx.moveTo(tox, toy);
+      ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+      ctx.stroke();
+    }
+
+    // --- Helper function to draw a double-headed arrow for dimensions ---
+    function drawDimensionLine(ctx, x1, y1, x2, y2, label) {
+      const headlen = 8;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      // Arrow head 1
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x1 + headlen * Math.cos(angle + Math.PI / 6), y1 + headlen * Math.sin(angle + Math.PI / 6));
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x1 + headlen * Math.cos(angle - Math.PI / 6), y1 + headlen * Math.sin(angle - Math.PI / 6));
+      // Arrow head 2
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+      ctx.stroke();
+      
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, (x1 + x2) / 2 - 15, (y1 + y2) / 2);
+      ctx.restore();
+    }
+    
+    // --- Drawing parameters ---
+    const O = { x: 320, y: 260 };
+    const H = 100;
+    const h = 120;
+    const theta_deg = 15;
+    const alpha_deg = 40; // Visual estimation from diagram
+    
+    const theta = theta_deg * Math.PI / 180;
+    const alpha = alpha_deg * Math.PI / 180;
+    const y_axis_angle = Math.PI/2 - theta;
+
+    // --- Start drawing ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = 'italic 20px "Times New Roman"';
+    
+    // 1. Draw base and wedge
+    // Base line
+    ctx.beginPath();
+    ctx.moveTo(50, O.y + H);
+    ctx.lineTo(550, O.y + H);
+    ctx.stroke();
+    
+    // Wedge (schematic representation)
+    ctx.beginPath();
+    ctx.moveTo(180, O.y + H); // bottom-left
+    ctx.lineTo(180, O.y - 40); // top-left
+    ctx.lineTo(240, O.y - 40); // flat-top-right
+    ctx.lineTo(O.x, O.y); // To collision point O
+    ctx.stroke();
+
+    // 2. Draw coordinate systems
+    const axisLen = 150;
+    // x', y' axes (fixed frame)
+    drawArrow(ctx, O.x, O.y, O.x + axisLen, O.y);
+    ctx.fillText("x'", O.x + axisLen + 10, O.y + 5);
+    drawArrow(ctx, O.x, O.y, O.x, O.y - axisLen);
+    ctx.fillText("y'", O.x + 5, O.y - axisLen - 5);
+    
+    // x, y axes (tilted frame)
+    const x_end = { x: O.x + axisLen * Math.cos(-theta), y: O.y + axisLen * Math.sin(-theta) };
+    drawArrow(ctx, O.x, O.y, x_end.x, x_end.y);
+    ctx.fillText('x', x_end.x + 10, x_end.y + 15);
+    
+    const y_end = { x: O.x + axisLen * Math.cos(y_axis_angle), y: O.y - axisLen * Math.sin(y_axis_angle) };
+    drawArrow(ctx, O.x, O.y, y_end.x, y_end.y);
+    ctx.fillText('y', y_end.x - 5, y_end.y - 10);
+
+    // 3. Draw vectors
+    // u₁
+    const u1_len = 80;
+    drawArrow(ctx, O.x, O.y, O.x, O.y + u1_len);
+    ctx.save();
+    ctx.font = 'bold italic 20px "Times New Roman"';
+    ctx.fillText('u', O.x + 10, O.y + u1_len - 15);
+    ctx.restore();
+    ctx.save();
+    ctx.font = 'italic 14px "Times New Roman"';
+    ctx.fillText('1', O.x + 19, O.y + u1_len - 12);
+    ctx.restore();
+    ctx.fillText('M', O.x + 25, O.y + u1_len + 5);
+
+    // v₁
+    const v1_len = 130;
+    const v1_end = { x: O.x + v1_len * Math.cos(alpha), y: O.y - v1_len * Math.sin(alpha) };
+    drawArrow(ctx, O.x, O.y, v1_end.x, v1_end.y);
+    ctx.save();
+    ctx.font = 'bold italic 20px "Times New Roman"';
+    ctx.fillText('v', v1_end.x + 5, v1_end.y + 15);
+    ctx.restore();
+    ctx.save();
+    ctx.font = 'italic 14px "Times New Roman"';
+    ctx.fillText('1', v1_end.x + 14, v1_end.y + 18);
+    ctx.restore();
+    
+    // v₂
+    const v2_start = {x: 180, y: 295}; // On the wedge body
+    drawArrow(ctx, v2_start.x, v2_start.y, v2_start.x - 80, v2_start.y);
+    ctx.save();
+    ctx.font = 'bold italic 20px "Times New Roman"';
+    ctx.fillText('v', v2_start.x - 80 - 20, v2_start.y + 8);
+    ctx.restore();
+    ctx.save();
+    ctx.font = 'italic 14px "Times New Roman"';
+    ctx.fillText('2', v2_start.x - 80 - 11, v2_start.y + 11);
+    ctx.restore();
+    
+    // 4. Draw ball and dimensions
+    // Ball m
+    const ballPos = { x: O.x, y: O.y - h };
+    ctx.beginPath();
+    ctx.arc(ballPos.x, ballPos.y, 6, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('m', ballPos.x + 12, ballPos.y + 5);
+    
+    // Dimension h
+    const h_dim_x = O.x - 60;
+    drawDimensionLine(ctx, h_dim_x, O.y - h, h_dim_x, O.y, 'h');
+    
+    // Dimension H
+    const H_dim_x = O.x - 120;
+    ctx.beginPath();
+    ctx.setLineDash([2, 3]);
+    ctx.moveTo(O.x, O.y);
+    ctx.lineTo(H_dim_x, O.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    drawDimensionLine(ctx, H_dim_x, O.y, H_dim_x, O.y + H, 'H');
+
+    // 5. Draw angles (Note: canvas angles are clockwise from positive x-axis)
+    // Angle θ (between y' and y)
+    ctx.beginPath();
+    ctx.arc(O.x, O.y, 40, -Math.PI / 2, -y_axis_angle);
+    ctx.stroke();
+    ctx.fillText('θ', O.x + 20, O.y - 35);
+    
+    // Angle α (between v₁ and x')
+    ctx.beginPath();
+    ctx.arc(O.x, O.y, 70, -alpha, 0);
+    ctx.stroke();
+    ctx.fillText('α', O.x + 75, O.y - 15);
+
+    // Angle θ' (between v₁ and y)
+    ctx.beginPath();
+    ctx.arc(O.x, O.y, 55, -y_axis_angle, -alpha);
+    ctx.stroke();
+    ctx.fillText("θ'", O.x + 40, O.y - 50);
+
+    // Angle θ (at the base, schematically)
+    const base_angle_center = { x: O.x + 100, y: O.y + 100*Math.tan(theta) };
+    ctx.beginPath();
+    ctx.setLineDash([2, 3]);
+    ctx.moveTo(base_angle_center.x - 40, base_angle_center.y);
+    ctx.lineTo(base_angle_center.x + 40, base_angle_center.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(base_angle_center.x, base_angle_center.y, 30, -theta, 0);
+    ctx.stroke();
+    ctx.fillText('θ', base_angle_center.x + 18, base_angle_center.y + 20);
+
+    // 6. Draw labels
+    ctx.fillText('O', O.x - 20, O.y + 5);
+    ctx.font = '20px "SimSun"';
+    ctx.fillText('力图 3.27.1', canvas.width / 2 - 50, canvas.height - 20);
+  </script>
+</body>
+</html>

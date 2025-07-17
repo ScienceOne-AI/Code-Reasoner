@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="physics_diagram" width="600" height="450"></canvas>
+<script>
+    const canvas = document.getElementById("physics_diagram");
+    const ctx = canvas.getContext("2d");
+
+    // Style and parameter setup
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = "20px 'Times New Roman'";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Global coordinates and dimensions
+    const cx1 = 160;
+    const cx2 = 440;
+    const cy = 200;
+    const R = 90; // Wheel radius
+
+    // Function to draw a wheel with spokes and hub
+    function drawWheel(x, y, radius) {
+        // Outer rim
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Central hub (square)
+        const hubSize = 8;
+        ctx.beginPath();
+        ctx.rect(x - hubSize / 2, y - hubSize / 2, hubSize, hubSize);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+
+        // Spokes (from hub to rim)
+        const spokeAngles = [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2];
+        spokeAngles.forEach(angle => {
+            let sx, sy;
+            // Spokes connect from the flat sides of the hub square
+            if (angle === 0) { // right
+                sx = x + hubSize / 2; sy = y;
+            } else if (angle === Math.PI/2) { // down
+                sx = x; sy = y + hubSize / 2;
+            } else if (angle === Math.PI) { // left
+                sx = x - hubSize/2; sy = y;
+            } else { // up
+                sx = x; sy = y - hubSize/2;
+            }
+
+            const endX = x + radius * Math.cos(angle);
+            const endY = y + radius * Math.sin(angle);
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+        });
+        
+        // Central axle point
+        ctx.beginPath();
+        ctx.arc(x, y, 2.5, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+    }
+
+    // Function to draw the magnetic field symbol
+    function drawBField(x, y) {
+        const r_b = 10;
+        ctx.save();
+        ctx.font = "italic bold 24px 'Times New Roman'";
+        
+        // Circle
+        ctx.beginPath();
+        ctx.arc(x, y, r_b, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // Cross
+        ctx.beginPath();
+        ctx.moveTo(x - r_b * 0.7, y - r_b * 0.7);
+        ctx.lineTo(x + r_b * 0.7, y + r_b * 0.7);
+        ctx.moveTo(x + r_b * 0.7, y - r_b * 0.7);
+        ctx.lineTo(x - r_b * 0.7, y + r_b * 0.7);
+        ctx.stroke();
+
+        // Label 'B'
+        ctx.fillText("B", x + 28, y);
+        ctx.restore();
+    }
+
+    // --- Start Drawing ---
+
+    // 1. Magnetic Field
+    const b_field_x = (cx1 + cx2) / 2;
+    drawBField(b_field_x, cy - 65);
+    drawBField(b_field_x, cy + 65);
+
+    // 2. Axle wire (drawn behind wheels)
+    ctx.beginPath();
+    ctx.moveTo(cx1 + 4, cy); // Start from edge of hub
+    ctx.lineTo(cx2 - 4, cy); // End at edge of hub
+    ctx.stroke();
+
+    // 3. Wheels
+    drawWheel(cx1, cy, R);
+    drawWheel(cx2, cy, R);
+    
+    // 4. Top wire with brushes
+    const wireTopY = cy - R - 25;
+    ctx.beginPath();
+    // Path from left brush up, across, and down to right brush
+    ctx.moveTo(cx1, cy-R-8);
+    ctx.lineTo(cx1, wireTopY);
+    ctx.lineTo(cx2, wireTopY);
+    ctx.lineTo(cx2, cy-R-8);
+    ctx.stroke();
+    // Left brush hook
+    ctx.beginPath();
+    ctx.arc(cx1, cy-R, 8, Math.PI, 0, true);
+    ctx.stroke();
+    // Right brush hook
+    ctx.beginPath();
+    ctx.arc(cx2, cy-R, 8, Math.PI, 0, true);
+    ctx.stroke();
+
+
+    // 5. Angular velocity ω₁
+    const omega_x = cx1 - R - 20;
+    const omega_y = cy;
+    const omega_r = 20;
+    ctx.beginPath();
+    ctx.arc(omega_x, omega_y, omega_r, -Math.PI / 2.8, Math.PI / 2.8);
+    ctx.stroke();
+    // Arrowhead at the bottom (clockwise)
+    const arrow_end_y = omega_y + omega_r * Math.sin(Math.PI / 2.8);
+    const arrow_end_x = omega_x + omega_r * Math.cos(Math.PI / 2.8);
+    ctx.beginPath();
+    ctx.moveTo(arrow_end_x, arrow_end_y);
+    ctx.lineTo(arrow_end_x - 8, arrow_end_y - 3);
+    ctx.moveTo(arrow_end_x, arrow_end_y);
+    ctx.lineTo(arrow_end_x + 3, arrow_end_y - 8);
+    ctx.stroke();
+    // Label ω₁
+    ctx.save();
+    ctx.font = "italic 22px 'Times New Roman'";
+    ctx.fillText("ω", omega_x - 18, omega_y);
+    ctx.font = "16px 'Times New Roman'";
+    ctx.fillText("1", omega_x - 10, omega_y + 8);
+    ctx.restore();
+
+    // 6. Brake Block 'A'
+    const brake_x = cx2 + R;
+    ctx.beginPath();
+    ctx.moveTo(brake_x, cy - 12);
+    ctx.lineTo(brake_x + 18, cy - 18);
+    ctx.lineTo(brake_x + 18, cy + 18);
+    ctx.lineTo(brake_x, cy + 12);
+    ctx.closePath();
+    ctx.fillStyle = '#e0e0e0';
+    ctx.fill();
+    ctx.stroke();
+    // Label 'A'
+    ctx.fillStyle = 'black';
+    ctx.font = "20px 'Times New Roman'";
+    ctx.fillText("A", brake_x + 30, cy);
+
+    // 7. Text Labels
+    // Wheel numbers
+    ctx.fillText("1", cx1, cy + R + 30);
+    ctx.fillText("2", cx2, cy + R + 30);
+    // Bottom caption
+    ctx.font = "22px 'SimSun', 'Times New Roman'";
+    ctx.fillText("电图 3.11.1", b_field_x, cy + R + 65);
+
+</script>
+</body>
+</html>

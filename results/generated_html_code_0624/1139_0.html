@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Force Diagram</title>
+</head>
+<body>
+<canvas id="force_diagram_7_21_1" width="500" height="550"></canvas>
+<script>
+    const canvas = document.getElementById('force_diagram_7_21_1');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow
+    function drawArrow(ctx, x1, y1, x2, y2, arrowSize = 8) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.save();
+        ctx.beginPath();
+        ctx.translate(x2, y2);
+        ctx.rotate(angle);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-arrowSize, arrowSize / 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-arrowSize, -arrowSize / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Clear canvas
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Set default styles
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    // --- Define parameters ---
+    const pivotX = 250;
+    const pivotY = 80;
+    const rodLength = 350;
+    const rodWidth = 4;
+    const theta = 20 * Math.PI / 180; // Angle in radians
+
+    // --- 1. Draw Support/Ceiling ---
+    ctx.beginPath();
+    ctx.moveTo(pivotX - 180, pivotY);
+    ctx.lineTo(pivotX + 180, pivotY);
+    ctx.stroke();
+
+    // Hatching for the ceiling
+    ctx.save();
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 24; i++) {
+        const x = pivotX - 180 + i * 15;
+        ctx.beginPath();
+        ctx.moveTo(x, pivotY);
+        ctx.lineTo(x - 10, pivotY - 10);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // --- 2. Draw Rod ---
+    const rodEndX = pivotX + rodLength * Math.sin(theta);
+    const rodEndY = pivotY + rodLength * Math.cos(theta);
+
+    // The rod has thickness, drawn as two parallel lines
+    const dx = (rodWidth / 2) * Math.cos(theta);
+    const dy = (rodWidth / 2) * Math.sin(theta);
+
+    ctx.beginPath();
+    ctx.moveTo(pivotX - dx, pivotY + dy);
+    ctx.lineTo(rodEndX - dx, rodEndY + dy);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(pivotX + dx, pivotY - dy);
+    ctx.lineTo(rodEndX + dx, rodEndY - dy);
+    ctx.stroke();
+    
+    // Close the bottom end of the rod
+    ctx.beginPath();
+    ctx.moveTo(rodEndX - dx, rodEndY + dy);
+    ctx.lineTo(rodEndX + dx, rodEndY - dy);
+    ctx.stroke();
+
+    // --- 3. Draw Vertical Dashed Line ---
+    ctx.save();
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(pivotX, pivotY);
+    ctx.lineTo(pivotX, rodEndY + 10);
+    ctx.stroke();
+    ctx.restore();
+
+    // --- 4. Draw Angle Arc and Label ---
+    const arcRadius = 60;
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(pivotX, pivotY, arcRadius, Math.PI / 2 - theta, Math.PI / 2);
+    ctx.stroke();
+    ctx.restore();
+    
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('θ', pivotX + arcRadius * 0.6 * Math.sin(theta / 2), pivotY + arcRadius * 0.6 * Math.cos(theta / 2));
+
+    // --- 5. Draw Point Mass (Insect) ---
+    const insectDist = rodLength * 0.5;
+    const insectX = pivotX + insectDist * Math.sin(theta);
+    const insectY = pivotY + insectDist * Math.cos(theta);
+
+    ctx.beginPath();
+    ctx.arc(insectX, insectY, 6, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // --- 6. Draw Force Vectors and Labels ---
+    ctx.font = 'italic 22px "Times New Roman"';
+
+    // mg (Gravity)
+    const mgLen = 90;
+    drawArrow(ctx, insectX, insectY, insectX, insectY + mgLen);
+    ctx.fillText('mg', insectX + 15, insectY + mgLen / 2);
+
+    // f (Upward force)
+    const fLen = 70;
+    const fEndX = insectX - fLen * Math.sin(theta);
+    const fEndY = insectY - fLen * Math.cos(theta);
+    drawArrow(ctx, insectX, insectY, fEndX, fEndY);
+    const fMidX = (insectX + fEndX) / 2;
+    const fMidY = (insectY + fEndY) / 2;
+    ctx.fillText('f', fMidX + 20 * Math.cos(theta), fMidY - 20 * Math.sin(theta));
+
+    // mlθ̇² (Downward inertial force)
+    const centrifugalLen = 100;
+    const centrifugalEndX = insectX + centrifugalLen * Math.sin(theta);
+    const centrifugalEndY = insectY + centrifugalLen * Math.cos(theta);
+    drawArrow(ctx, insectX, insectY, centrifugalEndX, centrifugalEndY);
+    
+    // Label for mlθ̇²
+    const labelX = centrifugalEndX + 10;
+    const labelY = centrifugalEndY - 35;
+    ctx.fillText('mlθ', labelX, labelY);
+    
+    // Draw the dot over θ
+    ctx.save();
+    ctx.font = 'italic 22px "Times New Roman"'; // Ensure font is set for measurement
+    const mlWidth = ctx.measureText('ml').width;
+    const dotX = labelX + mlWidth + 2; // Position dot over theta
+    ctx.beginPath();
+    ctx.arc(dotX, labelY - 11, 1.5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.restore();
+    
+    // Draw the superscript '2'
+    ctx.save();
+    ctx.font = '16px "Times New Roman"';
+    ctx.fillText('2', labelX + mlWidth + 10, labelY - 8);
+    ctx.restore();
+
+    // --- 7. Label 'M' at the end of the rod ---
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('M', rodEndX + 15, rodEndY);
+
+    // --- 8. Caption ---
+    ctx.font = '24px "SimSun", "STSong"';
+    ctx.textAlign = 'center';
+    ctx.fillText('力图 7.21.1', canvas.width / 2, canvas.height - 30);
+
+</script>
+</body>
+</html>

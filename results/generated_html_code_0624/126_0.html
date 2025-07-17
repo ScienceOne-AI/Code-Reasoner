@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings to mimic a hand-drawn look
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        // Use a font that resembles handwriting
+        ctx.font = 'bold 28px "Comic Sans MS", cursive, sans-serif';
+        ctx.textBaseline = 'middle';
+
+        // Define core coordinates for the circuit layout
+        const xL = 150; // x-coordinate for the left vertical wire
+        const xR = 320; // x-coordinate for the right vertical wire
+        const yT = 80;  // y-coordinate for the top horizontal wire
+        const yB = 350; // y-coordinate for the bottom horizontal wire
+        const yA = 230; // y-coordinate for terminal A
+        const yBatMid = (yT + yB) / 2; // y-midpoint for the battery
+        const batGap = 25; // Half-height of the battery symbol's gap
+
+        /**
+         * Helper function to draw a vertical resistor (zigzag symbol).
+         * @param {number} x - The x-coordinate of the resistor.
+         * @param {number} y_center - The y-coordinate of the center of the resistor.
+         * @param {number} height - The total height of the zigzag symbol.
+         * @param {string} label - The text label for the resistor (e.g., "24 Ω").
+         * @param {number} label_x_offset - The horizontal offset for the label from x.
+         */
+        function drawVerticalResistor(x, y_center, height, label, label_x_offset) {
+            const y1 = y_center - height / 2;
+            const y2 = y_center + height / 2;
+            const n_segments = 7; // Number of zigzag segments
+            const width = 12;     // Width of the zigzags
+            const dy = (y2 - y1) / n_segments;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y1);
+            for (let i = 0; i < n_segments; i++) {
+                ctx.lineTo(x + (i % 2 === 0 ? 1 : -1) * width, y1 + (i + 0.5) * dy);
+            }
+            ctx.lineTo(x, y2);
+            ctx.stroke();
+
+            // Draw the label
+            ctx.textAlign = 'left';
+            ctx.fillText(label, x + label_x_offset, y_center);
+        }
+
+        // --- Main Drawing Logic ---
+
+        // 1. Draw Wires
+        ctx.beginPath();
+        // Top wire
+        ctx.moveTo(xL, yT);
+        ctx.lineTo(xR, yT);
+        // Bottom wire
+        ctx.moveTo(xL, yB);
+        ctx.lineTo(xR, yB);
+
+        // Left wire segments (with a gap for the battery)
+        ctx.moveTo(xL, yT);
+        ctx.lineTo(xL, yBatMid - batGap);
+        ctx.moveTo(xL, yBatMid + batGap);
+        ctx.lineTo(xL, yB);
+        
+        // Right wire segments (connecting the resistors)
+        const R1_height = 80;
+        const R2_height = 80;
+        const R1_center = (yT + yA) / 2;
+        const R2_center = (yA + yB) / 2;
+        
+        ctx.moveTo(xR, yT);
+        ctx.lineTo(xR, R1_center - R1_height/2); // Wire to top of R1
+        ctx.moveTo(xR, R1_center + R1_height/2);
+        ctx.lineTo(xR, R2_center - R2_height/2); // Wire connecting R1 and R2 (at node A)
+        ctx.moveTo(xR, R2_center + R2_height/2);
+        ctx.lineTo(xR, yB); // Wire from bottom of R2 to bottom rail
+        ctx.stroke();
+
+        // 2. Draw Battery
+        const longPlateW = 20;
+        const shortPlateW = 12;
+        // Positive plate (top, longer)
+        ctx.beginPath();
+        ctx.moveTo(xL - longPlateW, yBatMid - batGap);
+        ctx.lineTo(xL + longPlateW, yBatMid - batGap);
+        ctx.stroke();
+        // Negative plate (bottom, shorter and thicker)
+        ctx.save(); // Save context to change lineWidth temporarily
+        ctx.lineWidth = 4; 
+        ctx.beginPath();
+        ctx.moveTo(xL - shortPlateW, yBatMid + batGap);
+        ctx.lineTo(xL + shortPlateW, yBatMid + batGap);
+        ctx.stroke();
+        ctx.restore(); // Restore original lineWidth
+
+        // Battery Labels
+        ctx.font = 'bold 24px "Comic Sans MS", cursive, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('+', xL, yBatMid - batGap - 15);
+        ctx.fillText('-', xL, yBatMid + batGap + 15);
+        ctx.font = 'bold 28px "Comic Sans MS", cursive, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('15 V', xL - 40, yBatMid);
+
+        // 3. Draw Resistors
+        drawVerticalResistor(xR, R1_center, R1_height, '24 \u03A9', 25);
+        drawVerticalResistor(xR, R2_center, R2_height, '6 \u03A9', 25);
+
+        // 4. Draw Output Terminals A and B
+        const termLen = 80;
+        const termEndRadius = 4;
+        // Terminal A
+        ctx.beginPath();
+        ctx.moveTo(xR, yA);
+        ctx.lineTo(xR + termLen, yA);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(xR + termLen, yA, termEndRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.textAlign = 'left';
+        ctx.fillText('A', xR + termLen + 15, yA);
+
+        // Terminal B
+        ctx.beginPath();
+        ctx.moveTo(xR, yB);
+        ctx.lineTo(xR + termLen, yB);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(xR + termLen, yB, termEndRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('B', xR + termLen + 15, yB);
+
+        // 5. Draw Figure Label
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 26px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('Fig. 3.3', (xL + xR) / 2, yB + 60);
+
+    </script>
+</body>
+</html>

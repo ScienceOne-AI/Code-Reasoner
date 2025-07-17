@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Thermodynamics Diagram</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f8f9fa;
+    }
+    canvas {
+      border: 1px solid #dee2e6;
+      background-color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="500"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Style and Geometry Definitions ---
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 2;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const tubeX = 220;
+  const tubeWidth = 80;
+  const l0 = 60;
+
+  const gasHeight = l0;
+  const airHeight = 2 * l0;
+  const mercuryHeight = l0 * 1.5; // 90px
+
+  const topY = 50;
+  const gasY = topY;
+  const mercuryY = gasY + gasHeight;
+  const airY = mercuryY + mercuryHeight;
+  const bottomY = airY + airHeight;
+
+  // --- Drawing Functions ---
+
+  function drawTubeAndContents() {
+    // Draw the main tube outline
+    ctx.beginPath();
+    ctx.rect(tubeX, gasY, tubeWidth, gasHeight + mercuryHeight + airHeight);
+    ctx.stroke();
+
+    // Draw interfaces between substances
+    ctx.beginPath();
+    ctx.moveTo(tubeX, mercuryY);
+    ctx.lineTo(tubeX + tubeWidth, mercuryY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(tubeX, airY);
+    ctx.lineTo(tubeX + tubeWidth, airY);
+    ctx.stroke();
+
+    // Draw mercury column with staggered dashed lines
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    const numLines = 7;
+    for (let i = 0; i < numLines; i++) {
+        const y = mercuryY + (i + 1) * mercuryHeight / (numLines + 1);
+        const dashLength = 15;
+        const gap = 12;
+        const startOffset = (i % 2 === 0) ? 0 : dashLength / 2;
+        const startX = tubeX + 10 + startOffset;
+        const endX = tubeX + tubeWidth - 10;
+        
+        ctx.beginPath();
+        for (let x = startX; x < endX; x += (dashLength + gap)) {
+            ctx.moveTo(x, y);
+            ctx.lineTo(Math.min(x + dashLength, endX), y);
+        }
+        ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawDimensions() {
+    const dimX = tubeX - 60;
+    const tickLen = 25;
+    const arrowLen = 15;
+    const arrowWid = 6;
+
+    // --- Top Dimension (l₀) ---
+    const labelOffsetX_top = 25;
+    // Ticks
+    ctx.beginPath();
+    ctx.moveTo(dimX - tickLen / 2, gasY);
+    ctx.lineTo(dimX + tickLen / 2, gasY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(dimX - tickLen / 2, mercuryY);
+    ctx.lineTo(dimX + tickLen / 2, mercuryY);
+    ctx.stroke();
+    // Arrows pointing towards ticks
+    ctx.beginPath();
+    ctx.moveTo(dimX, gasY - arrowLen);
+    ctx.lineTo(dimX, gasY);
+    ctx.moveTo(dimX - arrowWid, gasY - arrowWid);
+    ctx.lineTo(dimX, gasY);
+    ctx.lineTo(dimX + arrowWid, gasY - arrowWid);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(dimX, mercuryY + arrowLen);
+    ctx.lineTo(dimX, mercuryY);
+    ctx.moveTo(dimX - arrowWid, mercuryY + arrowWid);
+    ctx.lineTo(dimX, mercuryY);
+    ctx.lineTo(dimX + arrowWid, mercuryY + arrowWid);
+    ctx.stroke();
+    // Label l₀
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('l', dimX - labelOffsetX_top, (gasY + mercuryY) / 2);
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText('0', dimX - labelOffsetX_top + 8, (gasY + mercuryY) / 2 + 6);
+
+    // --- Bottom Dimension (2l₀) ---
+    const labelOffsetX_bottom = 30;
+    // Vertical line with outward-pointing arrows
+    ctx.beginPath();
+    ctx.moveTo(dimX, airY);
+    ctx.lineTo(dimX, bottomY);
+    ctx.stroke();
+    // Top arrow (pointing up)
+    ctx.beginPath();
+    ctx.moveTo(dimX - arrowWid, airY + arrowWid);
+    ctx.lineTo(dimX, airY);
+    ctx.lineTo(dimX + arrowWid, airY + arrowWid);
+    ctx.stroke();
+    // Bottom arrow (pointing down)
+    ctx.beginPath();
+    ctx.moveTo(dimX - arrowWid, bottomY - arrowWid);
+    ctx.lineTo(dimX, bottomY);
+    ctx.lineTo(dimX + arrowWid, bottomY - arrowWid);
+    ctx.stroke();
+    // Label 2l₀
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('2l', dimX - labelOffsetX_bottom, (airY + bottomY) / 2);
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText('0', dimX - labelOffsetX_bottom + 17, (airY + bottomY) / 2 + 6);
+  }
+
+  function drawTextLabels() {
+    const labelX = tubeX + tubeWidth + 60;
+    ctx.font = '30px "KaiTi", "STKaiti", serif';
+
+    ctx.fillText('气体', labelX, gasY + gasHeight / 2);
+    ctx.fillText('水银柱', labelX, mercuryY + mercuryHeight / 2);
+    ctx.fillText('空气', labelX, airY + airHeight / 2);
+
+    // Bottom Caption
+    ctx.font = '28px "KaiTi", "STKaiti", serif';
+    ctx.fillText('热图 1.16.1', canvas.width / 2, bottomY + 70);
+  }
+
+  // --- Execute Drawing ---
+  drawTubeAndContents();
+  drawDimensions();
+  drawTextLabels();
+
+</script>
+</body>
+</html>

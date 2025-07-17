@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    canvas {
+        border: 1px solid #ccc;
+        background-color: white;
+    }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Constants ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    const baseLineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // --- Coordinates and Dimensions ---
+    const y_fluid_level = 280;
+    const container_bottom = 400;
+    const container_left = 50;
+    const container_right = 450;
+    
+    const x_axis = 200;
+    const vert_tube_width = 18;
+    const x_horiz_start = x_axis - vert_tube_width / 2;
+    const vert_tube_bottom = 330;
+
+    const h_val = 60;
+    const y_inner_fluid_level = y_fluid_level - h_val;
+    
+    const y_horiz_bottom1 = 180;
+    const y_horiz_top1 = 150;
+    
+    const x_len = 120; // Length 'x'
+    const joint_x = x_axis + x_len;
+    
+    const y_horiz_bottom2 = 185;
+    const y_horiz_top2 = 145;
+    
+    const horiz_end_x = 410;
+
+    // --- Drawing ---
+
+    // 1. Container and Fluid
+    ctx.lineWidth = baseLineWidth;
+    
+    // Container walls
+    ctx.beginPath();
+    ctx.moveTo(container_left, y_fluid_level);
+    ctx.lineTo(container_left, container_bottom);
+    ctx.moveTo(container_right, y_fluid_level);
+    ctx.lineTo(container_right, container_bottom);
+    ctx.stroke();
+
+    // Fluid surface
+    ctx.beginPath();
+    ctx.moveTo(container_left, y_fluid_level);
+    ctx.lineTo(container_right, y_fluid_level);
+    ctx.stroke();
+
+    // Fluid Hatching
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(container_left, y_fluid_level, container_right - container_left, container_bottom - y_fluid_level);
+    ctx.clip();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#333';
+    for (let i = container_left - (container_bottom - y_fluid_level); i < container_right; i += 15) {
+        ctx.beginPath();
+        ctx.moveTo(i, container_bottom);
+        ctx.lineTo(i + (container_bottom - y_fluid_level), y_fluid_level);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 2. Rotating Device
+    ctx.lineWidth = baseLineWidth;
+    
+    // Device Outline
+    ctx.beginPath();
+    // Left wall of vertical tube
+    ctx.moveTo(x_horiz_start, vert_tube_bottom);
+    ctx.lineTo(x_horiz_start, y_horiz_top1);
+    // Top wall of horizontal tube (part 1)
+    ctx.lineTo(joint_x, y_horiz_top1);
+    // Step up at joint
+    ctx.lineTo(joint_x, y_horiz_top2);
+    // Top wall of horizontal tube (part 2)
+    ctx.lineTo(horiz_end_x, y_horiz_top2);
+    // Right end wall (seal)
+    ctx.lineTo(horiz_end_x, y_horiz_bottom2);
+    // Bottom wall of horizontal tube (part 2)
+    ctx.lineTo(joint_x, y_horiz_bottom2);
+    // Step down at joint
+    ctx.lineTo(joint_x, y_horiz_bottom1);
+    // Bottom wall of horizontal tube (part 1)
+    ctx.lineTo(x_horiz_start + vert_tube_width, y_horiz_bottom1);
+    // Right wall of vertical tube
+    ctx.lineTo(x_horiz_start + vert_tube_width, vert_tube_bottom);
+    ctx.stroke();
+
+    // Hatching for submerged part of vertical tube
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x_horiz_start, y_fluid_level, vert_tube_width, vert_tube_bottom - y_fluid_level);
+    ctx.clip();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#333';
+    for (let i = x_horiz_start - (vert_tube_bottom - y_fluid_level); i < x_horiz_start + vert_tube_width; i += 10) {
+        ctx.beginPath();
+        ctx.moveTo(i, vert_tube_bottom);
+        ctx.lineTo(i + (vert_tube_bottom - y_fluid_level), y_fluid_level);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // Inner fluid level
+    ctx.beginPath();
+    ctx.moveTo(x_horiz_start, y_inner_fluid_level);
+    ctx.lineTo(x_horiz_start + vert_tube_width, y_inner_fluid_level);
+    ctx.stroke();
+
+    // 3. Labels and Dimensions
+
+    // `ω` (omega) symbol
+    const omega_arrow_y_start = 140;
+    const omega_arrow_y_end = 70;
+    const omega_arrow_head_size = 8;
+    ctx.beginPath();
+    ctx.moveTo(x_axis, omega_arrow_y_start);
+    ctx.lineTo(x_axis, omega_arrow_y_end);
+    ctx.moveTo(x_axis, omega_arrow_y_end);
+    ctx.lineTo(x_axis - 5, omega_arrow_y_end + omega_arrow_head_size);
+    ctx.moveTo(x_axis, omega_arrow_y_end);
+    ctx.lineTo(x_axis + 5, omega_arrow_y_end + omega_arrow_head_size);
+    ctx.stroke();
+    
+    // Rotation arc
+    const arc_center_y = omega_arrow_y_end + 25;
+    const arc_radius = 20;
+    ctx.beginPath();
+    ctx.arc(x_axis, arc_center_y, arc_radius, Math.PI * 1.25, Math.PI * 0.35);
+    ctx.stroke();
+    
+    // Arrowhead on arc
+    const angle = Math.PI * 0.35;
+    const arc_arrow_x = x_axis + arc_radius * Math.cos(angle);
+    const arc_arrow_y = arc_center_y + arc_radius * Math.sin(angle);
+    ctx.beginPath();
+    ctx.moveTo(arc_arrow_x, arc_arrow_y);
+    ctx.lineTo(arc_arrow_x - 8 * Math.cos(angle - Math.PI / 6), arc_arrow_y - 8 * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(arc_arrow_x, arc_arrow_y);
+    ctx.lineTo(arc_arrow_x - 8 * Math.cos(angle + Math.PI / 6), arc_arrow_y - 8 * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+    
+    ctx.font = 'italic 24px Georgia';
+    ctx.fillText('ω', x_axis + 35, arc_center_y + 5);
+
+    // 'x' dimension
+    const x_dim_y = y_horiz_top1 - 20;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x_axis, x_dim_y - 5);
+    ctx.lineTo(x_axis, x_dim_y + 5);
+    ctx.moveTo(joint_x, x_dim_y - 5);
+    ctx.lineTo(joint_x, x_dim_y + 5);
+    ctx.moveTo(x_axis, x_dim_y);
+    ctx.lineTo(joint_x, x_dim_y);
+    ctx.stroke();
+    ctx.font = '20px Georgia';
+    ctx.textAlign = 'center';
+    ctx.fillText('x', x_axis + x_len / 2, x_dim_y - 8);
+
+    // 'h' dimension
+    const h_dim_x = x_horiz_start - 25;
+    ctx.beginPath();
+    ctx.moveTo(h_dim_x - 5, y_fluid_level);
+    ctx.lineTo(h_dim_x + 5, y_fluid_level);
+    ctx.moveTo(h_dim_x - 5, y_inner_fluid_level);
+    ctx.lineTo(h_dim_x + 5, y_inner_fluid_level);
+    ctx.moveTo(h_dim_x, y_fluid_level);
+    ctx.lineTo(h_dim_x, y_inner_fluid_level);
+    ctx.stroke();
+    ctx.textAlign = 'right';
+    ctx.fillText('h', h_dim_x - 8, y_fluid_level - h_val / 2 + 7);
+
+    // rho_a and rho_f labels
+    ctx.textAlign = 'left';
+    // rho_a
+    ctx.font = 'italic 20px Georgia';
+    ctx.fillText('ρ', 360, 270);
+    ctx.font = 'italic 14px Georgia';
+    ctx.fillText('a', 372, 275);
+    // rho_f
+    ctx.font = 'italic 20px Georgia';
+    ctx.fillText('ρ', 380, 320);
+    ctx.font = 'italic 14px Georgia';
+    ctx.fillText('f', 392, 325);
+
+    // Figure caption
+    ctx.font = 'bold 18px Georgia';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 1.240.', canvas.width / 2, 435);
+</script>
+</body>
+</html>

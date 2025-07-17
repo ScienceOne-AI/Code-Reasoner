@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crane Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+<canvas id="craneCanvas" width="900" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('craneCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw text
+    function drawText(text, x, y, font = '24px serif', align = 'center', baseline = 'bottom') {
+        ctx.font = font;
+        ctx.textAlign = align;
+        ctx.textBaseline = baseline;
+        ctx.fillStyle = 'black';
+        ctx.fillText(text, x, y);
+    }
+    
+    // Helper function to draw an arrowed dimension line
+    function drawHorizontalDimension(x1, x2, y, text) {
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1;
+
+        // Main line
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x2, y);
+        ctx.stroke();
+
+        // Arrowheads
+        const headlen = 10;
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x1 + headlen, y - 4);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x1 + headlen, y + 4);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(x2, y);
+        ctx.lineTo(x2 - headlen, y - 4);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x2, y);
+        ctx.lineTo(x2 - headlen, y + 4);
+        ctx.stroke();
+
+        // Text
+        const midX = (x1 + x2) / 2;
+        drawText(text, midX, y - 5, '20px serif', 'center', 'bottom');
+        
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2.5;
+
+    // Coordinates and Scale
+    const scale = 80; // pixels per meter
+    const base_width = 2 * scale;
+    const base_height = 140;
+    const Fx = 600, Fy = 450;
+    const Ex = Fx - base_width;
+    const Ey = Fy;
+    const top_base_y_corner = Fy - base_height;
+    const axis_x = Ex + base_width / 2;
+
+    // 1. Draw Base (EF)
+    ctx.save();
+    const base_path = new Path2D();
+    base_path.moveTo(Ex, top_base_y_corner);
+    base_path.quadraticCurveTo(axis_x, top_base_y_corner - 20, Fx, top_base_y_corner);
+    base_path.lineTo(Fx, Fy);
+    base_path.lineTo(Ex, Ey);
+    base_path.closePath();
+    ctx.stroke(base_path);
+
+    // Hatching
+    ctx.clip(base_path); 
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    const hatch_gap = 12;
+    for (let i = Ex - base_height; i < Fx + base_height; i += hatch_gap) {
+        ctx.moveTo(i, top_base_y_corner - 20);
+        ctx.lineTo(i + base_height * 1.5, Fy);
+    }
+    ctx.stroke();
+    ctx.restore();
+    
+    // Feet
+    ctx.fillRect(Ex - 10, Fy, 20, 10);
+    ctx.fillRect(Fx - 10, Fy, 20, 10);
+
+    drawText('E', Ex - 20, Ey + 15, '24px serif');
+    drawText('F', Fx + 20, Fy + 15, '24px serif');
+    
+    // 2. Draw Crane
+    const mast_bottom_width = 40;
+    const mast_top_width = 20;
+    const mast_bottom_y = top_base_y_corner;
+    const mast_top_y = 100;
+    const Dx = axis_x;
+    const Dy = mast_top_y;
+    
+    ctx.lineWidth = 2.5;
+    // Circular base plate
+    ctx.beginPath();
+    ctx.ellipse(axis_x, mast_bottom_y, base_width/2 + 10, 15, 0, Math.PI, 2 * Math.PI, true);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(axis_x, mast_bottom_y, base_width/2 + 10, 15, 0, 0, Math.PI);
+    ctx.stroke();
+    
+    // Mast structure
+    ctx.beginPath();
+    ctx.moveTo(axis_x - mast_bottom_width/2, mast_bottom_y);
+    ctx.lineTo(axis_x - mast_top_width/2, mast_top_y);
+    ctx.moveTo(axis_x + mast_bottom_width/2, mast_bottom_y);
+    ctx.lineTo(axis_x + mast_top_width/2, mast_top_y);
+    ctx.stroke();
+    
+    // Mast top box
+    ctx.strokeRect(axis_x - mast_top_width/2 - 5, mast_top_y - 20, mast_top_width + 10, 20);
+    
+    // Mast axis line
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(axis_x, mast_bottom_y + 10);
+    ctx.lineTo(axis_x, mast_top_y - 30);
+    ctx.stroke();
+    ctx.restore();
+
+    // Boom and Cables
+    const boom_pivot_y = mast_bottom_y - 15;
+    const boom_pivot_x = axis_x;
+    const C_dist = 4 * scale;
+    const Cx = axis_x + C_dist;
+    const Cy = mast_top_y + 20;
+    
+    ctx.lineWidth = 2.5;
+    // Main Boom
+    ctx.beginPath();
+    ctx.moveTo(boom_pivot_x, boom_pivot_y);
+    ctx.lineTo(Cx, Cy);
+    ctx.stroke();
+
+    // Top support cable
+    ctx.beginPath();
+    ctx.moveTo(Dx, Dy);
+    ctx.lineTo(Cx, Cy);
+    ctx.stroke();
+
+    // Short support rod
+    const rod_mast_attach_y = 200;
+    const rod_dist = 0.8 * scale;
+    const rod_boom_x = axis_x + rod_dist;
+    const boom_slope = (Cy - boom_pivot_y) / (Cx - boom_pivot_x);
+    const rod_boom_y = boom_pivot_y + boom_slope * (rod_boom_x - boom_pivot_x);
+    ctx.beginPath();
+    ctx.moveTo(axis_x, rod_mast_attach_y);
+    ctx.lineTo(rod_boom_x, rod_boom_y);
+    ctx.stroke();
+    
+    // CG (A and B) mechanism
+    const B_y = 260;
+    const B_x = axis_x;
+    const A_x_cg = B_x - 50;
+    const A_y_cg = B_y + 15;
+    // draw lever/pin
+    ctx.strokeRect(B_x - 25, B_y - 4, 25, 8);
+    const pointer_end_x = A_x_cg + 6 * Math.cos(Math.PI/4); // point to edge of circle
+    const pointer_end_y = A_y_cg - 6 * Math.sin(Math.PI/4);
+    ctx.beginPath();
+    ctx.moveTo(B_x-25, B_y);
+    ctx.lineTo(pointer_end_x, pointer_end_y);
+    ctx.stroke();
+    // draw CG point A
+    ctx.beginPath();
+    ctx.arc(A_x_cg, A_y_cg, 6, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Labels for Crane
+    drawText('A', A_x_cg + 10, A_y_cg + 30, '24px serif');
+    drawText('B', B_x + 15, B_y - 10, '24px serif');
+    drawText('C', Cx + 20, Cy, '24px serif');
+    drawText('D', Dx - 25, Dy, '24px serif');
+
+    // 3. Draw Load
+    const load_width = 100;
+    const load_height = 50;
+    ctx.beginPath();
+    ctx.moveTo(Cx, Cy);
+    ctx.lineTo(Cx, Cy + 20); // rope
+    ctx.stroke();
+    // Hook
+    ctx.beginPath();
+    ctx.arc(Cx, Cy + 30, 10, Math.PI, 2 * Math.PI);
+    ctx.stroke();
+    ctx.strokeRect(Cx - load_width / 2, Cy + 40, load_width, load_height);
+
+    // 4. Dimensions
+    // 4m dimension
+    const dim_4m_y = mast_top_y - 50;
+    drawHorizontalDimension(Dx, Cx, dim_4m_y, '4 m');
+    ctx.save(); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(Dx, dim_4m_y); ctx.lineTo(Dx, Dy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(Cx, dim_4m_y); ctx.lineTo(Cx, Cy); ctx.stroke();
+    ctx.restore();
+
+    // 0.8m dimension
+    const dim_08m_y = mast_top_y + 50;
+    drawHorizontalDimension(Dx, rod_boom_x, dim_08m_y, '0.8 m');
+    ctx.save(); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(Dx, dim_08m_y); ctx.lineTo(Dx, Dy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(rod_boom_x, dim_08m_y); ctx.lineTo(rod_boom_x, rod_boom_y); ctx.stroke();
+    ctx.restore();
+</script>
+</body>
+</html>

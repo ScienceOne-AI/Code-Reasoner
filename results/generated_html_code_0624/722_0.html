@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sinusoidal Voltage Waveform</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="650" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const margin = { top: 40, right: 30, bottom: 60, left: 70 };
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const graphWidth = canvasWidth - margin.left - margin.right;
+        const graphHeight = canvasHeight - margin.top - margin.bottom;
+
+        // Graph (Data) parameters
+        const tMax = 10; // seconds
+        const vMax = 4;  // volts
+        const vMin = -4; // volts
+
+        // Scaling factors to map data coordinates to canvas coordinates
+        const xScale = graphWidth / tMax;
+        const yScale = graphHeight / (vMax - vMin);
+
+        // Canvas coordinates of the graph's origin (0,0)
+        const originX = margin.left;
+        const originY = margin.top + graphHeight / 2;
+
+        // --- Drawing Functions ---
+
+        // Function to draw the grid
+        function drawGrid() {
+            ctx.strokeStyle = '#cccccc';
+            ctx.lineWidth = 1;
+
+            // Vertical grid lines (minor)
+            const tStepMinor = 0.2;
+            for (let t = tStepMinor; t <= tMax; t += tStepMinor) {
+                const x = originX + t * xScale;
+                ctx.beginPath();
+                ctx.moveTo(x, margin.top);
+                ctx.lineTo(x, margin.top + graphHeight);
+                ctx.stroke();
+            }
+
+            // Horizontal grid lines (minor)
+            const vStepMinor = 0.4;
+            for (let v = vMin + vStepMinor; v < vMax; v += vStepMinor) {
+                // Avoid drawing on the x-axis
+                if (Math.abs(v) < 0.01) continue;
+                const y = originY - v * yScale;
+                ctx.beginPath();
+                ctx.moveTo(margin.left, y);
+                ctx.lineTo(margin.left + graphWidth, y);
+                ctx.stroke();
+            }
+        }
+
+        // Function to draw the axes and labels
+        function drawAxes() {
+            ctx.strokeStyle = '#000000';
+            ctx.fillStyle = '#000000';
+            ctx.lineWidth = 1.5;
+            ctx.font = '16px Arial';
+
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(margin.left, originY);
+            ctx.lineTo(margin.left + graphWidth, originY);
+            ctx.stroke();
+
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(originX, margin.top);
+            ctx.lineTo(originX, margin.top + graphHeight);
+            ctx.stroke();
+
+            // X-axis labels and ticks
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            const tStepMajor = 2;
+            for (let t = 0; t <= tMax; t += tStepMajor) {
+                const x = originX + t * xScale;
+                ctx.fillText(t, x, originY + 8);
+            }
+            // X-axis title
+            ctx.fillText('time / s', originX + graphWidth - 20, originY + 25);
+
+
+            // Y-axis labels and ticks
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            const vStepMajor = 2;
+            for (let v = vMin; v <= vMax; v += vStepMajor) {
+                 if (v === 0) continue; // Skip 0 label as it's at the origin
+                const y = originY - v * yScale;
+                ctx.fillText(v, originX - 8, y);
+            }
+            // Y-axis title
+            ctx.save();
+            ctx.translate(margin.left - 50, originY);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText('voltage / V', 0, 0);
+            ctx.restore();
+        }
+
+        // Function to draw the sinusoidal waveform
+        function drawWaveform() {
+            // Wave parameters from the graph analysis:
+            // V(t) = V₀ * sin(ωt) = V₀ * sin(2πft) = V₀ * sin(2πt/T)
+            const amplitude = 3.6; // V₀, peak voltage
+            const period = 3.2;    // T, time for one cycle in seconds
+            const angularFrequency = (2 * Math.PI) / period; // ω
+
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            const dt = 0.01; // time step for plotting
+            for (let t = 0; t <= tMax; t += dt) {
+                const v = amplitude * Math.sin(angularFrequency * t);
+                const x = originX + t * xScale;
+                const y = originY - v * yScale;
+
+                if (t === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+        }
+
+        // Function to draw the figure caption
+        function drawCaption() {
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Fig. 7.2', canvasWidth / 2, canvasHeight - 20);
+        }
+
+        // --- Main Drawing Execution ---
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight); // Clear canvas
+        drawGrid();
+        drawAxes();
+        drawWaveform();
+        drawCaption();
+
+    </script>
+</body>
+</html>

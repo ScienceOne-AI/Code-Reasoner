@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings to match the hand-drawn look
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Parameters
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2 + 50; // Move center down for better layout
+    const R = 150; // Radius of the cylinder
+
+    // Angles based on the physics problem for equilibrium.
+    // The problem states: L=0.2m, R=0.1m, WA=1N, WB=2N.
+    // Arc length L = R * (phi1 + phi2) => phi1 + phi2 = L/R = 0.2/0.1 = 2 radians.
+    // Tangential force balance: WA*sin(phi1) = WB*sin(phi2) => 1*sin(phi1) = 2*sin(phi2).
+    // Solving this system of equations:
+    const phi2_rad = Math.atan(Math.sin(2) / (2 + Math.cos(2))); // ~0.521 rad
+    const phi1_rad = 2 - phi2_rad; // ~1.479 rad
+
+    // Helper function to draw an arrowhead at a specific point and angle
+    function drawArrowhead(ctx, x, y, angle, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2.5);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2.5);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // 1. Draw the main circle (cylinder cross-section)
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 2. Calculate coordinates for points A and B on the circle
+    // In canvas, angle=0 is at 3 o'clock, positive is clockwise. Vertical up is -PI/2.
+    const angleA = -Math.PI / 2 - phi1_rad; // Angle for point A
+    const angleB = -Math.PI / 2 + phi2_rad; // Angle for point B
+
+    const Ax = cx + R * Math.cos(angleA);
+    const Ay = cy + R * Math.sin(angleA);
+    const Bx = cx + R * Math.cos(angleB);
+    const By = cy + R * Math.sin(angleB);
+
+    // 3. Draw dashed lines (radii and vertical axis)
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([8, 4, 2, 4]); // Dash-dot-like pattern
+
+    // Vertical line OC
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx, cy - R - 25);
+    ctx.stroke();
+
+    // Radius OA
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(Ax, Ay);
+    ctx.stroke();
+
+    // Radius OB
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(Bx, By);
+    ctx.stroke();
+
+    ctx.setLineDash([]); // Reset line style to solid
+
+    // 4. Draw the string connecting A and B as a double arc
+    ctx.lineWidth = 1;
+    const stringRadius1 = R + 2;
+    const stringRadius2 = R + 5;
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, stringRadius1, angleA, angleB);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, stringRadius2, angleA, angleB);
+    ctx.stroke();
+
+    // 5. Draw the balls A and B (white with black outline)
+    ctx.lineWidth = 2;
+    ctx.fillStyle = 'white';
+    const ballRadius = 5;
+
+    // Ball A
+    ctx.beginPath();
+    ctx.arc(Ax, Ay, ballRadius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+
+    // Ball B
+    ctx.beginPath();
+    ctx.arc(Bx, By, ballRadius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+
+    // 6. Draw angle arcs with arrows
+    const angleArcRadius = 60;
+    ctx.lineWidth = 1.5;
+
+    // Angle phi_1
+    const phi1_start_angle = -Math.PI / 2;
+    const phi1_end_angle = angleA;
+    ctx.beginPath();
+    ctx.arc(cx, cy, angleArcRadius, phi1_start_angle, phi1_end_angle, true); // true for counter-clockwise
+    ctx.stroke();
+    // Arrow for phi_1
+    const arrow1_x = cx + angleArcRadius * Math.cos(phi1_end_angle);
+    const arrow1_y = cy + angleArcRadius * Math.sin(phi1_end_angle);
+    const tangent1_angle = phi1_end_angle + Math.PI / 2; // Tangent angle for a counter-clockwise arc
+    drawArrowhead(ctx, arrow1_x, arrow1_y, tangent1_angle, 10);
+
+    // Angle phi_2
+    const phi2_start_angle = -Math.PI / 2;
+    const phi2_end_angle = angleB;
+    ctx.beginPath();
+    ctx.arc(cx, cy, angleArcRadius, phi2_start_angle, phi2_end_angle, false); // false for clockwise
+    ctx.stroke();
+    // Arrow for phi_2
+    const arrow2_x = cx + angleArcRadius * Math.cos(phi2_end_angle);
+    const arrow2_y = cy + angleArcRadius * Math.sin(phi2_end_angle);
+    const tangent2_angle = phi2_end_angle - Math.PI / 2; // Tangent angle for a clockwise arc
+    drawArrowhead(ctx, arrow2_x, arrow2_y, tangent2_angle, 10);
+
+    // 7. Add all labels
+    ctx.fillStyle = 'black';
+    const mainFontSize = 'italic 28px serif';
+    const labelFontSize = 'italic 24px serif';
+    const subFontSize = 'italic 16px serif';
+    
+    // Labels O and C
+    ctx.font = mainFontSize;
+    ctx.fillText('O', cx + 8, cy + 15);
+    ctx.fillText('C', cx, cy - R - 15);
+
+    // Labels A and B
+    ctx.font = mainFontSize;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('A', Ax - 10, Ay);
+    ctx.textAlign = 'left';
+    ctx.fillText('B', Bx + 10, By);
+
+    // Reset alignment for angle labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Label phi_1
+    const phi1_label_angle = -Math.PI / 2 - phi1_rad / 2;
+    const label_r1 = angleArcRadius - 25;
+    const phi1_label_x = cx + label_r1 * Math.cos(phi1_label_angle);
+    const phi1_label_y = cy + label_r1 * Math.sin(phi1_label_angle);
+    ctx.font = labelFontSize;
+    ctx.fillText('φ', phi1_label_x - 3, phi1_label_y);
+    ctx.font = subFontSize;
+    ctx.fillText('1', phi1_label_x + 9, phi1_label_y + 6);
+
+    // Label phi_2
+    const phi2_label_angle = -Math.PI / 2 + phi2_rad / 2;
+    const label_r2 = angleArcRadius - 20;
+    const phi2_label_x = cx + label_r2 * Math.cos(phi2_label_angle);
+    const phi2_label_y = cy + label_r2 * Math.sin(phi2_label_angle);
+    ctx.font = labelFontSize;
+    ctx.fillText('φ', phi2_label_x - 3, phi2_label_y);
+    ctx.font = subFontSize;
+    ctx.fillText('2', phi2_label_x + 9, phi2_label_y + 6);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Position vs. Time Graph</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="550" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const margin = 50;
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const graphWidth = canvasWidth - 2 * margin;
+        const graphHeight = canvasHeight - 2 * margin;
+
+        // Graph domain and range
+        const tMin = 0;
+        const tMax = 10;
+        const pMin = -5;
+        const pMax = 5;
+
+        // Calculate scales
+        const xScale = graphWidth / (tMax - tMin);
+        const yScale = graphHeight / (pMax - pMin);
+
+        // Calculate origin coordinates on the canvas
+        const originX = margin;
+        const originY = margin + pMax * yScale;
+
+        // --- Coordinate Transformation Functions ---
+        // Convert time (t) to canvas x-coordinate
+        function getCanvasX(t) {
+            return originX + (t - tMin) * xScale;
+        }
+
+        // Convert position (p) to canvas y-coordinate
+        function getCanvasY(p) {
+            return originY - (p - pMin) * yScale;
+        }
+
+        // --- Drawing Functions ---
+
+        // Draw the grid
+        function drawGrid() {
+            ctx.beginPath();
+            ctx.strokeStyle = '#cccccc';
+            ctx.lineWidth = 1;
+
+            // Vertical grid lines
+            for (let t = tMin; t <= tMax; t++) {
+                const x = getCanvasX(t);
+                ctx.moveTo(x, margin);
+                ctx.lineTo(x, canvasHeight - margin);
+            }
+
+            // Horizontal grid lines
+            for (let p = pMin; p <= pMax; p++) {
+                const y = getCanvasY(p);
+                ctx.moveTo(margin, y);
+                ctx.lineTo(canvasWidth - margin, y);
+            }
+            ctx.stroke();
+        }
+
+        // Draw the axes
+        function drawAxes() {
+            ctx.beginPath();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+
+            // X-axis (Position = 0)
+            ctx.moveTo(margin, originY);
+            ctx.lineTo(canvasWidth - margin, originY);
+
+            // Y-axis (Time = 0)
+            ctx.moveTo(originX, margin);
+            ctx.lineTo(originX, canvasHeight - margin);
+
+            ctx.stroke();
+        }
+
+        // Draw axis labels and ticks
+        function drawLabels() {
+            ctx.fillStyle = 'black';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+
+            // X-axis labels and ticks
+            for (let t = tMin; t <= tMax; t += 2) {
+                const x = getCanvasX(t);
+                ctx.fillText(t, x, originY + 5);
+            }
+            ctx.fillText('Time (s)', canvasWidth / 2, canvasHeight - margin + 25);
+
+            // Y-axis labels and ticks
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let p of [-5, 0, 5]) {
+                 if (p === 0) continue; // Avoid overlapping with x-axis label
+                const y = getCanvasY(p);
+                ctx.fillText(p, originX - 10, y);
+            }
+            ctx.fillText('0', originX - 10, originY + 10); // Position 0 label slightly offset
+
+            // Y-axis title
+            ctx.save();
+            ctx.translate(margin - 35, canvasHeight / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText('Position (m)', 0, 0);
+            ctx.restore();
+        }
+
+        // Draw the main position-time graph
+        function drawGraph() {
+            ctx.beginPath();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
+
+            // Segment 1: Straight line from t=0 to t=3
+            // Starts at (0, -4), ends at (3, 2)
+            ctx.moveTo(getCanvasX(0), getCanvasY(-4));
+            ctx.lineTo(getCanvasX(3), getCanvasY(2));
+
+            // Segment 2: Curved path from t=3 to t=7
+            // This is a quadratic Bezier curve that starts at (3, 2), ends at (7, 0),
+            // and is controlled to have a peak at (5, 5).
+            // The control point for a quadratic Bezier with vertex (tx, ty) on a line between
+            // (x0, y0) and (x1, y1) is calculated to ensure the peak.
+            // P_vertex = 0.25*P0 + 0.5*P_control + 0.25*P2
+            // For y-coordinate: 5 = 0.25*2 + 0.5*Py_control + 0.25*0 => Py_control = 9
+            const cp_x = 5; // control point x at the peak time
+            const cp_y = 9; // calculated control point y for peak height of 5
+            ctx.quadraticCurveTo(getCanvasX(cp_x), getCanvasY(cp_y), getCanvasX(7), getCanvasY(0));
+            
+            // Segment 3: Straight line from t=7 to t=10
+            // Starts at (7, 0), ends at (10, -3)
+            ctx.lineTo(getCanvasX(10), getCanvasY(-3));
+            
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Call ---
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        drawGrid();
+        drawAxes();
+        drawLabels();
+        drawGraph();
+    </script>
+</body>
+</html>

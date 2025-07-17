@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Diffraction Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f9f9f9;
+  }
+  canvas {
+    border: 1px solid #ddd;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="diffractionCanvas" width="550" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('diffractionCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Style and Configuration ---
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round'; // For a slightly softer, hand-drawn feel
+
+  // --- Coordinates and Dimensions ---
+  const centerX = 150;
+  const centerY = 225;
+  const L_pixels = 300;
+  const pointP_X = centerX + L_pixels;
+  const apertureRadius_pixels = 40;
+  const screenHeight_pixels = 100; // half-height from center
+  const rho_pixels = 30; // radial distance for ds
+  const point_ds_Y = centerY - rho_pixels;
+
+  // --- Drawing Functions ---
+
+  // 1. Draw the opaque screen with aperture
+  function drawScreen() {
+    ctx.beginPath();
+    // Top part of the screen
+    ctx.moveTo(centerX, centerY - screenHeight_pixels);
+    ctx.lineTo(centerX, centerY - apertureRadius_pixels);
+    // Bottom part of the screen
+    ctx.moveTo(centerX, centerY + apertureRadius_pixels);
+    ctx.lineTo(centerX, centerY + screenHeight_pixels);
+    ctx.stroke();
+  }
+
+  // 2. Draw the optical axis and related labels (0, P, L)
+  function drawAxis() {
+    // Dashed line for the axis
+    ctx.save();
+    ctx.setLineDash([7, 5]);
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(pointP_X, centerY);
+    ctx.stroke();
+    ctx.restore();
+
+    // Point 0 (origin) at the center of the aperture
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 3, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Labels
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('0', centerX - 25, centerY + 15);
+    ctx.fillText('P', pointP_X + 10, centerY + 8);
+    ctx.fillText('L', centerX + L_pixels / 2 - 5, centerY + 30);
+  }
+
+  // 3. Draw the element ds and path r
+  function drawPathAndElement() {
+    // The element 'ds' representation (looks like Ξ) is drawn slightly to the right
+    // of the aperture plane to avoid clutter, as in the source image.
+    const ds_x_start = centerX + 4;
+    const short_len = 12;
+    const long_len = 16;
+    ctx.beginPath();
+    // Top line
+    ctx.moveTo(ds_x_start, point_ds_Y - 4);
+    ctx.lineTo(ds_x_start + short_len, point_ds_Y - 4);
+    // Middle line
+    ctx.moveTo(ds_x_start, point_ds_Y);
+    ctx.lineTo(ds_x_start + long_len, point_ds_Y);
+    // Bottom line
+    ctx.moveTo(ds_x_start, point_ds_Y + 4);
+    ctx.lineTo(ds_x_start + short_len, point_ds_Y + 4);
+    ctx.stroke();
+
+    // Label 'ds'
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('ds', ds_x_start + long_len + 5, point_ds_Y + 8);
+
+    // Path 'r' (dashed line from ds to P)
+    // The path originates from a point representative of ds.
+    // Based on the image, this is near the center of the drawn symbol.
+    const r_start_x = ds_x_start + long_len/3;
+    ctx.save();
+    ctx.setLineDash([7, 5]);
+    ctx.beginPath();
+    ctx.moveTo(r_start_x, point_ds_Y);
+    ctx.lineTo(pointP_X, centerY);
+    ctx.stroke();
+    ctx.restore();
+
+    // Label 'r'
+    const r_label_x = (r_start_x + pointP_X) / 2;
+    const r_label_y = (point_ds_Y + centerY) / 2;
+    ctx.fillText('r', r_label_x + 5, r_label_y - 10);
+  }
+  
+  // 4. Draw the radial coordinate rho
+  function drawRho() {
+    const rho_arrow_x = centerX - 25;
+    // Arrow line
+    ctx.beginPath();
+    ctx.moveTo(rho_arrow_x, centerY);
+    ctx.lineTo(rho_arrow_x, point_ds_Y);
+    // Arrow head (pointing up)
+    ctx.moveTo(rho_arrow_x, point_ds_Y);
+    ctx.lineTo(rho_arrow_x - 5, point_ds_Y + 8);
+    ctx.moveTo(rho_arrow_x, point_ds_Y);
+    ctx.lineTo(rho_arrow_x + 5, point_ds_Y + 8);
+    ctx.stroke();
+
+    // Label 'ρ'
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.fillText('ρ', rho_arrow_x - 20, centerY - rho_pixels / 2 + 5);
+  }
+
+  // 5. Draw the Figure Caption
+  function drawCaption() {
+    ctx.font = 'bold 20px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 2.31', canvas.width / 2, canvas.height - 30);
+  }
+
+  // --- Execute Drawing ---
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawScreen();
+  drawAxis();
+  drawPathAndElement();
+  drawRho();
+  drawCaption();
+
+</script>
+</body>
+</html>

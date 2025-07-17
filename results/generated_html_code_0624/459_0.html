@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Op-Amp Circuit Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="550" height="380"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Font settings ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '16px sans-serif';
+
+        // --- Function for drawing terminals (hollow circles) ---
+        function drawTerminal(x, y) {
+            const radius = 4;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = 'black'; // Reset fillStyle
+        }
+
+        // --- Function for drawing junction dots (solid circles) ---
+        function drawJunction(x, y) {
+            const radius = 2.5;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        // --- Main Drawing Coordinates ---
+        const opampBaseX = 300;
+        const opampTipX = 400;
+        const opampCenterY = 170;
+        const opampHalfHeight = 40;
+        const invInputY = opampCenterY - 20;
+        const nonInvInputY = opampCenterY + 20;
+        const inputNodeX = 240;
+        const outputNodeX = 440;
+        const groundY = 280;
+        const vinTermX = 50;
+        const voutTermX = 500;
+
+        // --- Draw Wires and Components ---
+
+        // Op-amp Triangle
+        ctx.beginPath();
+        ctx.moveTo(opampBaseX, opampCenterY - opampHalfHeight);
+        ctx.lineTo(opampTipX, opampCenterY);
+        ctx.lineTo(opampBaseX, opampCenterY + opampHalfHeight);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Op-amp Input and Output Lines
+        ctx.beginPath();
+        ctx.moveTo(inputNodeX, invInputY);
+        ctx.lineTo(opampBaseX, invInputY);
+        ctx.moveTo(inputNodeX, nonInvInputY);
+        ctx.lineTo(opampBaseX, nonInvInputY);
+        ctx.moveTo(opampTipX, opampCenterY);
+        ctx.lineTo(outputNodeX, opampCenterY);
+        ctx.stroke();
+
+        // Ground Line and Connection
+        ctx.beginPath();
+        ctx.moveTo(vinTermX, groundY);
+        ctx.lineTo(voutTermX, groundY);
+        ctx.moveTo(inputNodeX, nonInvInputY);
+        ctx.lineTo(inputNodeX, groundY);
+        ctx.stroke();
+
+        // Input Resistor (R_in)
+        const rinStartX = 80;
+        const rinEndX = 180;
+        ctx.strokeRect(rinStartX, invInputY - 10, rinEndX - rinStartX, 20);
+        ctx.beginPath();
+        ctx.moveTo(vinTermX, invInputY);
+        ctx.lineTo(rinStartX, invInputY);
+        ctx.moveTo(rinEndX, invInputY);
+        ctx.lineTo(inputNodeX, invInputY);
+        ctx.stroke();
+
+        // Feedback Resistor (R_f)
+        const rfTopY = 60;
+        const rfStartX = 260;
+        const rfEndX = 380;
+        ctx.strokeRect(rfStartX, rfTopY - 10, rfEndX - rfStartX, 20);
+        ctx.beginPath();
+        ctx.moveTo(inputNodeX, invInputY);
+        ctx.lineTo(inputNodeX, rfTopY);
+        ctx.lineTo(rfStartX, rfTopY);
+        ctx.moveTo(rfEndX, rfTopY);
+        ctx.lineTo(outputNodeX, rfTopY);
+        ctx.lineTo(outputNodeX, opampCenterY);
+        ctx.stroke();
+
+        // Power Supply Lines
+        const pwrX = 350;
+        const pwrTopY = opampCenterY - opampHalfHeight;
+        const pwrBottomY = opampCenterY + opampHalfHeight;
+        ctx.beginPath();
+        ctx.moveTo(pwrX, pwrTopY);
+        ctx.lineTo(pwrX, pwrTopY - 30);
+        ctx.moveTo(pwrX, pwrBottomY);
+        ctx.lineTo(pwrX, pwrBottomY + 30);
+        ctx.stroke();
+        
+        // Output line to terminal
+        ctx.beginPath();
+        ctx.moveTo(outputNodeX, opampCenterY);
+        ctx.lineTo(voutTermX, opampCenterY);
+        ctx.stroke();
+
+        // --- Draw Terminals and Junctions ---
+        drawTerminal(vinTermX, invInputY);
+        drawTerminal(voutTermX, opampCenterY);
+        drawTerminal(vinTermX, groundY);
+        drawTerminal(voutTermX, groundY);
+        drawJunction(inputNodeX, invInputY);
+        drawJunction(inputNodeX, groundY);
+        drawJunction(outputNodeX, opampCenterY);
+
+        // --- Draw Labels ---
+        ctx.textAlign = 'center';
+
+        // Resistor values
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('480 Ω', (rinStartX + rinEndX) / 2, invInputY - 12);
+        ctx.fillText('1.2 kΩ', (rfStartX + rfEndX) / 2, rfTopY - 12);
+
+        // Power supply values
+        ctx.fillText('+8.0 V', pwrX, pwrTopY - 32);
+        ctx.textBaseline = 'top';
+        ctx.fillText('-8.0 V', pwrX, pwrBottomY + 32);
+
+        // Op-amp signs
+        ctx.font = '20px sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('-', opampBaseX + 15, invInputY);
+        ctx.fillText('+', opampBaseX + 15, nonInvInputY);
+        ctx.font = '16px sans-serif';
+
+        // Input/Output/Ground labels with subscripts
+        function drawSubscriptedText(baseText, subText, x, y, align) {
+            ctx.textAlign = align;
+            ctx.textBaseline = 'middle';
+            const baseFont = 'italic 16px sans-serif';
+            const subFont = 'italic 12px sans-serif';
+            
+            ctx.font = baseFont;
+            const baseWidth = ctx.measureText(baseText).width;
+            
+            let startX = x;
+            if (align === 'right') {
+                startX = x - ctx.measureText(subText).width;
+            }
+
+            ctx.fillText(baseText, startX, y);
+
+            ctx.font = subFont;
+            if (align === 'left') {
+                ctx.fillText(subText, startX + baseWidth, y + 5);
+            } else if (align === 'right') {
+                ctx.fillText(subText, startX + baseWidth, y + 5);
+            }
+        }
+        
+        drawSubscriptedText('V', 'IN', vinTermX - 10, invInputY, 'right');
+        drawSubscriptedText('V', 'OUT', voutTermX + 10, opampCenterY, 'left');
+
+        // Ground labels
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('0 V', vinTermX - 10, groundY);
+        ctx.textAlign = 'left';
+        ctx.fillText('0 V', voutTermX + 10, groundY);
+
+        // Figure caption
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Fig. 7.1', canvas.width / 2, canvas.height - 5);
+
+    </script>
+</body>
+</html>

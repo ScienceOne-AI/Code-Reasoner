@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Circuit Diagram for Induction</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="450" height="350" style="border:1px solid #000;"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // Helper function to draw a resistor
+    function drawResistor(x, y, width, height, segments) {
+        const segmentWidth = width / segments;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        for (let i = 0; i < segments; i++) {
+            if (i % 2 === 0) {
+                ctx.lineTo(x + (i + 0.5) * segmentWidth, y - height / 2);
+            } else {
+                ctx.lineTo(x + (i + 0.5) * segmentWidth, y + height / 2);
+            }
+        }
+        ctx.lineTo(x + width, y);
+        ctx.stroke();
+    }
+
+    // --- Coordinates ---
+    const outerX1 = 40, outerY1 = 40;
+    const outerX2 = 410, outerY1_end = 40;
+    const outerX_end = 40, outerY2 = 310;
+    
+    // --- Outer Loop ---
+    const rOuterX = 150, rOuterWidth = 150;
+    ctx.beginPath();
+    ctx.moveTo(rOuterX, outerY1);
+    ctx.lineTo(outerX1, outerY1); // Left part of top wire
+    ctx.lineTo(outerX1, outerY2); // Left wire
+    ctx.lineTo(outerX2, outerY2); // Bottom wire
+    ctx.lineTo(outerX2, outerY1_end); // Right wire
+    ctx.lineTo(rOuterX + rOuterWidth, outerY1_end); // Right part of top wire
+    ctx.stroke();
+
+    // Draw R_Outer
+    drawResistor(rOuterX, outerY1, rOuterWidth, 20, 7);
+
+    // Labels X, Y, R_Outer
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText('X', outerX1 - 25, outerY1 + 8);
+    ctx.beginPath(); ctx.arc(outerX1, outerY1, 4, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillText('Y', outerX2 + 10, outerY1_end + 8);
+    ctx.beginPath(); ctx.arc(outerX2, outerY1_end, 4, 0, 2 * Math.PI); ctx.fill();
+    
+    ctx.font = '18px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    const rOuterCenterX = rOuterX + rOuterWidth / 2;
+    ctx.fillText('R', rOuterCenterX - 12, outerY1 - 15);
+    ctx.font = '14px Arial';
+    ctx.fillText('Outer', rOuterCenterX + 16, outerY1 - 13);
+    
+    // --- Inner Loop ---
+    ctx.font = '18px Arial';
+    const innerX1 = 100, innerY1 = 120;
+    const innerX2 = 350, innerY2 = 250;
+    
+    const rInnerX = 160, rInnerWidth = 100;
+    const vCenterY = (innerY1 + innerY2) / 2;
+    const vGap = 15;
+
+    // Draw inner loop wires piecewise
+    ctx.beginPath();
+    ctx.moveTo(innerX1, innerY1); // Top-left corner
+    ctx.lineTo(innerX2, innerY1); // Top wire
+    ctx.lineTo(innerX2, vCenterY - vGap); // Top part of right wire
+    ctx.moveTo(innerX2, vCenterY + vGap); // Bottom part of right wire
+    ctx.lineTo(innerX2, innerY2); // To bottom-right corner
+    ctx.lineTo(rInnerX + rInnerWidth, innerY2); // Right part of bottom wire
+    ctx.moveTo(rInnerX, innerY2); // Left part of bottom wire
+    ctx.lineTo(innerX1, innerY2); // To bottom-left corner
+    ctx.lineTo(innerX1, innerY1); // Left wire
+    ctx.stroke();
+
+    // Draw R_Inner (variable)
+    drawResistor(rInnerX, innerY2, rInnerWidth, 20, 7);
+
+    // Arrow for variable resistor
+    const arrowX1 = rInnerX + 70, arrowY1 = innerY2 - 20;
+    const arrowX2 = rInnerX + 40, arrowY2 = innerY2 + 5;
+    ctx.beginPath();
+    ctx.moveTo(arrowX1, arrowY1);
+    ctx.lineTo(arrowX2, arrowY2);
+    ctx.stroke();
+    // Arrowhead
+    ctx.save();
+    ctx.translate(arrowX2, arrowY2);
+    ctx.rotate(Math.atan2(arrowY2 - arrowY1, arrowX2 - arrowX1));
+    ctx.moveTo(0, 0); ctx.lineTo(-10, -5); ctx.moveTo(0, 0); ctx.lineTo(-10, 5);
+    ctx.stroke();
+    ctx.restore();
+
+    // Label R_Inner
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const rInnerCenterX = rInnerX + rInnerWidth / 2;
+    ctx.fillText('R', rInnerCenterX - 12, innerY2 + 8);
+    ctx.font = '14px Arial';
+    ctx.fillText('Inner', rInnerCenterX + 16, innerY2 + 10);
+    ctx.font = '18px Arial';
+
+    // Draw Battery V
+    const longLine = 15, shortLine = 8;
+    ctx.lineWidth = 3;
+    // Positive terminal (top)
+    ctx.beginPath();
+    ctx.moveTo(innerX2 - longLine, vCenterY - vGap);
+    ctx.lineTo(innerX2 + longLine, vCenterY - vGap);
+    ctx.stroke();
+    // Negative terminal (bottom)
+    ctx.beginPath();
+    ctx.moveTo(innerX2 - shortLine, vCenterY + vGap);
+    ctx.lineTo(innerX2 + shortLine, vCenterY + vGap);
+    ctx.stroke();
+    ctx.lineWidth = 2;
+    
+    // Label V
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('V', innerX2 - 35, vCenterY);
+    
+    // --- Point P ---
+    const pX = 130, pY = 220;
+    ctx.beginPath();
+    ctx.arc(pX, pY, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.font = 'bold 20px Arial';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('P', pX - 5, pY);
+
+</script>
+</body>
+</html>

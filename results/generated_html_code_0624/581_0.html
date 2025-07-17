@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Young's Experiment with Extended Source</title>
+</head>
+<body>
+<canvas id="myCanvas" width="850" height="400" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'black';
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.2;
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Helper function to draw an arrow
+    function drawArrow(x1, y1, x2, y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        const headlen = 8;
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const angle = Math.atan2(dy, dx);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // Helper function for dimension lines with ticks (like for 'd')
+    function drawTickLine(x1, y1, x2, y2, tickSize) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        // Ticks
+        if (y1 === y2) { // Horizontal
+            ctx.moveTo(x1, y1 - tickSize);
+            ctx.lineTo(x1, y1 + tickSize);
+            ctx.moveTo(x2, y2 - tickSize);
+            ctx.lineTo(x2, y2 + tickSize);
+        } else { // Vertical
+            ctx.moveTo(x1 - tickSize, y1);
+            ctx.lineTo(x1 + tickSize, y1);
+            ctx.moveTo(x2 - tickSize, y2);
+            ctx.lineTo(x2 + tickSize, y2);
+        }
+        ctx.stroke();
+    }
+
+    // Main drawing parameters
+    const cy = 200;
+    const x_S = 100;
+    const x_P = 350;
+    const x_Screen = 650;
+    const x_Pattern = 760;
+
+    const D_pix = 80;
+    const d_pix = 60;
+
+    const S_top_y = cy - D_pix / 2;
+    const S_bot_y = cy + D_pix / 2;
+    const S_center_y = cy;
+
+    const P1_y = cy - d_pix / 2;
+    const P2_y = cy + d_pix / 2;
+
+    // 1. Draw Axes
+    // z-axis
+    drawArrow(30, cy, x_Screen + 50, cy);
+    ctx.fillText('z', x_Screen + 60, cy + 15);
+    // y-axis on screen
+    drawArrow(x_Screen, cy + 120, x_Screen, cy - 120);
+    ctx.fillText('y', x_Screen + 15, cy - 120);
+    ctx.fillText('x,y', x_Screen + 25, cy - 100);
+
+    // 2. Source S
+    ctx.fillStyle = 'black';
+    ctx.fillRect(x_S - 10, S_top_y, 10, D_pix);
+    ctx.beginPath();
+    ctx.moveTo(x_S, S_top_y);
+    ctx.lineTo(x_S, S_bot_y);
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+    ctx.fillText('S', x_S - 5, S_top_y - 20);
+
+    // Dimension D
+    drawArrow(x_S - 30, S_bot_y, x_S - 30, S_top_y);
+    drawArrow(x_S - 30, S_top_y, x_S - 30, S_bot_y);
+    ctx.fillText('D', x_S - 50, cy);
+
+
+    // 3. Pinhole Screen
+    const slit_gap = 8;
+    ctx.beginPath();
+    ctx.moveTo(x_P, cy - 100);
+    ctx.lineTo(x_P, P1_y - slit_gap / 2);
+    ctx.moveTo(x_P, P1_y + slit_gap / 2);
+    ctx.lineTo(x_P, P2_y - slit_gap / 2);
+    ctx.moveTo(x_P, P2_y + slit_gap / 2);
+    ctx.lineTo(x_P, cy + 100);
+    ctx.stroke();
+    ctx.fillText('P', x_P + 20, P1_y);
+    ctx.font = 'italic 12px "Times New Roman"';
+    ctx.fillText('1', x_P + 28, P1_y + 4);
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText('P', x_P + 20, P2_y);
+    ctx.font = 'italic 12px "Times New Roman"';
+    ctx.fillText('2', x_P + 28, P2_y + 4);
+    ctx.font = 'italic 18px "Times New Roman"';
+
+    // Dimension d
+    drawTickLine(x_P - 30, P1_y, x_P - 30, P2_y, 4);
+    ctx.fillText('d', x_P - 15, cy);
+
+    // 4. Dimension z0
+    drawArrow(x_S, cy + 80, x_P, cy + 80);
+    drawArrow(x_P, cy + 80, x_S, cy + 80);
+    ctx.fillText('z', (x_S + x_P) / 2, cy + 70);
+    ctx.font = 'italic 12px "Times New Roman"';
+    ctx.fillText('0', (x_S + x_P) / 2 + 8, cy + 75);
+    ctx.font = 'italic 18px "Times New Roman"';
+
+    // 5. Ray Tracing
+    ctx.lineWidth = 1;
+    // Outer crossing rays (from S edges to opposite pinholes)
+    const screen_y1 = P1_y + (x_Screen - x_P) * (P1_y - S_bot_y) / (x_P - x_S);
+    const screen_y2 = P2_y + (x_Screen - x_P) * (P2_y - S_top_y) / (x_P - x_S);
+    drawArrow(x_S, S_bot_y, x_P, P1_y);
+    drawArrow(x_P, P1_y, x_Screen, screen_y1);
+    drawArrow(x_S, S_top_y, x_P, P2_y);
+    drawArrow(x_P, P2_y, x_Screen, screen_y2);
+    
+    // Inner rays (from S center to pinholes, converging at screen center)
+    drawArrow(x_S, S_center_y, x_P, P1_y);
+    drawArrow(x_P, P1_y, x_Screen, cy);
+    drawArrow(x_S, S_center_y, x_P, P2_y);
+    drawArrow(x_P, P2_y, x_Screen, cy);
+
+    // 6. Observation Screen plane (already drawn with y-axis)
+    ctx.lineWidth = 1.2;
+
+    // 7. Interference Pattern
+    const pattern_r = 50;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x_Pattern, cy, pattern_r, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.clip();
+
+    // Draw fringes
+    const num_fringes = 5;
+    const fringe_h = (2 * pattern_r) / num_fringes;
+    ctx.fillStyle = '#cccccc'; // Gray
+    for (let i = 0; i < num_fringes; i++) {
+        if (i % 2 === 0) {
+            ctx.fillRect(x_Pattern - pattern_r, cy - pattern_r + i * fringe_h, 2 * pattern_r, fringe_h);
+        }
+    }
+    ctx.restore();
+
+    // Pattern axes
+    ctx.lineWidth = 1.5;
+    ctx.fillStyle = 'black';
+    drawArrow(x_Pattern - pattern_r - 20, cy, x_Pattern + pattern_r + 20, cy);
+    ctx.fillText('x', x_Pattern + pattern_r + 25, cy);
+    drawArrow(x_Pattern, cy + pattern_r + 20, x_Pattern, cy - pattern_r - 20);
+    ctx.fillText('y', x_Pattern, cy - pattern_r - 25);
+
+</script>
+</body>
+</html>

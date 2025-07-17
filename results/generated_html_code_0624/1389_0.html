@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Spring System</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws an arrow on the canvas.
+         * @param {CanvasRenderingContext2D} context The canvas context.
+         * @param {number} fromx The starting x-coordinate.
+         * @param {number} fromy The starting y-coordinate.
+         * @param {number} tox The ending x-coordinate.
+         * @param {number} toy The ending y-coordinate.
+         */
+        function drawArrow(context, fromx, fromy, tox, toy) {
+            const headlen = 10; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            context.beginPath();
+            context.moveTo(fromx, fromy);
+            context.lineTo(tox, toy);
+            context.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            context.moveTo(tox, toy);
+            context.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            context.stroke();
+        }
+
+        /**
+         * Draws a spring.
+         * @param {CanvasRenderingContext2D} context The canvas context.
+         * @param {number} x1 The starting x-coordinate.
+         * @param {number} y The y-coordinate of the centerline.
+         * @param {number} x2 The ending x-coordinate.
+         * @param {number} coils The number of coils.
+         * @param {number} radius The radius (amplitude) of the coils.
+         */
+        function drawSpring(context, x1, y, x2, coils, radius) {
+            const length = x2 - x1;
+            const n_segments = coils * 2;
+            const dx = length / n_segments;
+            
+            context.beginPath();
+            context.moveTo(x1, y);
+            for (let i = 0; i < n_segments; i++) {
+                // The boolean 'anticlockwise' parameter alternates to create the coil effect
+                context.arc(x1 + i * dx + dx / 2, y, dx / 2, Math.PI, 0, i % 2 !== 0);
+            }
+            context.stroke();
+        }
+
+        // --- Main Drawing Code ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.fillStyle = 'black';
+
+        // 1. Define dimensions and positions
+        const y_ground = 320;
+        const l = 50;
+        const x_A = 100;
+        const container_width = 600;
+        const x_B = x_A + container_width;
+        
+        const container_base_height = 20;
+        const y_base_top = y_ground - container_base_height;
+        const container_wall_height = 140;
+        const y_wall_top = y_base_top - container_wall_height;
+
+        const plate_length = 3 * l;
+        const plate_height = 40;
+        const lx_val = 100;
+        const x_plate_start = x_A + lx_val;
+        const y_plate_top = y_base_top - plate_height;
+
+        const block_size = 50;
+        const y_block_top = y_plate_top - block_size;
+        
+        const y_centerline = y_plate_top - block_size / 2;
+
+        const spring_length = 80;
+        const x_spring_start = x_plate_start;
+        const x_spring_end = x_spring_start + spring_length;
+        const x_block_start = x_spring_end;
+
+
+        // 2. Draw Ground
+        ctx.beginPath();
+        ctx.moveTo(0, y_ground);
+        ctx.lineTo(canvas.width, y_ground);
+        ctx.stroke();
+        // Hatches for the ground
+        for (let i = 20; i < canvas.width - 20; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(i, y_ground);
+            ctx.lineTo(i - 10, y_ground + 10);
+            ctx.stroke();
+        }
+
+        // 3. Draw Container (Sled) AB
+        ctx.beginPath();
+        ctx.moveTo(x_A, y_wall_top);
+        ctx.lineTo(x_A, y_base_top);
+        ctx.lineTo(x_B, y_base_top);
+        ctx.lineTo(x_B, y_wall_top);
+        ctx.stroke();
+
+        // 4. Draw Inner Plate
+        ctx.strokeRect(x_plate_start, y_plate_top, plate_length, plate_height);
+        // Inner double line detail
+        ctx.beginPath();
+        ctx.moveTo(x_plate_start, y_base_top - 3);
+        ctx.lineTo(x_plate_start + plate_length, y_base_top - 3);
+        ctx.stroke();
+
+        // 5. Draw Spring
+        drawSpring(ctx, x_spring_start, y_centerline, spring_length, 8, 12);
+
+        // 6. Draw Block
+        ctx.strokeRect(x_block_start, y_block_top, block_size, block_size);
+
+        // 7. Draw Arrows and Labels
+        ctx.font = 'italic 24px "Times New Roman"';
+        
+        // Container labels
+        ctx.fillText('A', x_A - 5, y_wall_top - 10);
+        ctx.fillText('B', x_B - 5, y_wall_top - 10);
+        
+        // Container mass and velocity arrow
+        ctx.fillText('m', 120, 200);
+        drawArrow(ctx, 115, 220, 80, 220); // Velocity arrow for container
+
+        // l_x dimension line
+        const y_lx_line = 120;
+        ctx.beginPath();
+        ctx.moveTo(x_A, y_lx_line);
+        ctx.lineTo(x_plate_start, y_lx_line);
+        ctx.stroke();
+        drawArrow(ctx, x_A + 15, y_lx_line, x_A, y_lx_line);
+        drawArrow(ctx, x_plate_start - 15, y_lx_line, x_plate_start, y_lx_line);
+        ctx.fillText('l', 145, y_lx_line + 30);
+        ctx.font = 'italic 18px "Times New Roman"';
+        ctx.fillText('x', 155, y_lx_line + 33);
+        
+        ctx.font = 'italic 24px "Times New Roman"';
+        // Plate labels
+        ctx.fillText('m', x_plate_start + 40, y_plate_top + 30);
+        ctx.fillText('3l', x_plate_start + 90, y_plate_top + 30);
+
+        // Spring labels
+        ctx.fillText('k, 2l', x_spring_start + 25, y_centerline - 40);
+
+        // Block labels and velocity
+        ctx.fillText('m', x_block_start + 15, y_block_top - 10);
+        drawArrow(ctx, x_block_start + block_size + 60, y_centerline, x_block_start + block_size + 5, y_centerline);
+        ctx.fillText('v', x_block_start + block_size + 25, y_centerline - 10);
+        ctx.font = 'italic 18px "Times New Roman"';
+        ctx.fillText('0', x_block_start + block_size + 38, y_centerline - 5);
+
+    </script>
+</body>
+</html>

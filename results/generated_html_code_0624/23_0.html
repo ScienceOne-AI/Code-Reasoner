@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical Path Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="420"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Config ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px serif';
+        
+        const center_y = 220;
+        const plate_start_x = 190;
+        const plate_end_x = 220;
+
+        // --- Helper Functions ---
+
+        function drawArrow(ctx, x, y, angle, length) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-length, length / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-length, -length / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        function drawHat(ctx, x, y) {
+            ctx.beginPath();
+            ctx.moveTo(x - 4, y);
+            ctx.lineTo(x, y - 4);
+            ctx.lineTo(x + 4, y);
+            ctx.stroke();
+        }
+
+        function hatchArea(path, hatchStyle) {
+            ctx.save();
+            ctx.clip(path);
+            const bounds = canvas.getBoundingClientRect(); // Simple bounds
+            
+            if (hatchStyle === 'vertical') {
+                for (let x = 0; x < canvas.width; x += 5) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, canvas.height);
+                    ctx.stroke();
+                }
+            } else if (hatchStyle === 'diagonal') {
+                for (let i = -canvas.height; i < canvas.width; i += 8) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i + canvas.height, canvas.height);
+                    ctx.stroke();
+                }
+            }
+            
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+
+        // 1. Axes
+        // Main horizontal propagation axis
+        ctx.beginPath();
+        ctx.moveTo(10, center_y);
+        ctx.lineTo(590, center_y);
+        ctx.stroke();
+
+        // Left axes
+        ctx.beginPath();
+        ctx.moveTo(100, center_y - 100);
+        ctx.lineTo(100, center_y + 100);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(100 - 70, center_y + 70);
+        ctx.lineTo(100 + 70, center_y - 70);
+        ctx.stroke();
+        drawArrow(ctx, 100 - 50, center_y - 50, -Math.PI / 4, 10);
+        ctx.fillText('x', 75, 165);
+        drawHat(ctx, 79, 155);
+
+        // Right axes
+        ctx.beginPath();
+        ctx.moveTo(400, center_y - 100);
+        ctx.lineTo(400, center_y + 20);
+        ctx.stroke();
+        drawArrow(ctx, 400, 115, -Math.PI/2, 10);
+        ctx.fillText('y', 405, 140);
+        drawHat(ctx, 409, 130);
+        ctx.beginPath();
+        ctx.moveTo(400 - 70, center_y + 70);
+        ctx.lineTo(400 + 120, center_y - 120);
+        ctx.stroke();
+
+
+        // 2. Incoming Wave (Left)
+        const in_A = 25;
+        const in_lambda = 100;
+        const in_start_x = 40;
+        const in_end_x = plate_start_x;
+        const in_angle = 135 * Math.PI / 180;
+        const cos_in_angle = Math.cos(in_angle);
+        const sin_in_angle = Math.sin(in_angle);
+
+        let pathInUpper = new Path2D();
+        pathInUpper.moveTo(in_start_x, center_y);
+        let pathInLower = new Path2D();
+
+        for (let x = in_start_x; x <= in_end_x; x++) {
+            const phase = 2 * Math.PI * (x - in_start_x) / in_lambda;
+            const disp = in_A * Math.cos(phase);
+            const wx = x + disp * cos_in_angle;
+            const wy = center_y + disp * sin_in_angle;
+            
+            if(disp > 0) {
+                 pathInUpper.lineTo(wx, wy);
+            } else {
+                if(pathInUpper.currentX !== undefined) {
+                    pathInUpper.lineTo(x, center_y);
+                    pathInLower.moveTo(x, center_y);
+                }
+                pathInLower.lineTo(wx, wy);
+            }
+        }
+        pathInLower.lineTo(in_end_x, center_y);
+
+        ctx.save();
+        ctx.lineWidth = 1;
+        hatchArea(pathInUpper, 'diagonal');
+        hatchArea(pathInLower, 'diagonal');
+        ctx.restore();
+
+        ctx.beginPath();
+        for (let x = in_start_x; x <= in_end_x; x++) {
+            const phase = 2 * Math.PI * (x - in_start_x) / in_lambda;
+            const disp = in_A * Math.cos(phase);
+            ctx.lineTo(x + disp * cos_in_angle, center_y + disp * sin_in_angle);
+        }
+        ctx.stroke();
+
+
+        // 3. Plate
+        ctx.beginPath();
+        const plate_h = 120;
+        const plate_depth = 30;
+        const plate_persp = 15;
+        ctx.rect(plate_start_x, center_y - plate_h / 2, plate_end_x - plate_start_x, plate_h);
+        ctx.moveTo(plate_start_x, center_y - plate_h/2);
+        ctx.lineTo(plate_start_x + plate_persp, center_y - plate_h/2 - plate_persp);
+        ctx.lineTo(plate_end_x + plate_persp, center_y - plate_h/2 - plate_persp);
+        ctx.lineTo(plate_end_x, center_y - plate_h/2);
+        
+        ctx.moveTo(plate_end_x + plate_persp, center_y - plate_h/2 - plate_persp);
+        ctx.lineTo(plate_end_x + plate_persp, center_y + plate_h/2 - plate_persp);
+        ctx.lineTo(plate_end_x, center_y + plate_h/2);
+        ctx.stroke();
+
+
+        // 4. Outgoing Waves (Right)
+        const out_start_x = plate_end_x;
+        const out_end_x = 550;
+        const out_lambda = 180;
+        const out_k = 2 * Math.PI / out_lambda;
+        
+        // Wave 1: y-component (-sin, vertical oscillation)
+        const out_A1 = 35;
+        let pathOut1Upper = new Path2D();
+        let pathOut1Lower = new Path2D();
+        pathOut1Lower.moveTo(out_start_x, center_y);
+
+        for (let x = out_start_x; x <= out_end_x; x++) {
+            const disp = -out_A1 * Math.sin(out_k * (x - out_start_x));
+            const y = center_y + disp;
+             if (disp < 0) {
+                pathOut1Lower.lineTo(x, y);
+            } else {
+                if(pathOut1Lower.currentX !== undefined) {
+                    pathOut1Lower.lineTo(x, center_y);
+                    pathOut1Upper.moveTo(x, center_y);
+                }
+                pathOut1Upper.lineTo(x,y);
+            }
+        }
+        pathOut1Upper.lineTo(out_end_x, center_y);
+
+        ctx.save();
+        ctx.lineWidth = 1;
+        hatchArea(pathOut1Upper, 'vertical');
+        hatchArea(pathOut1Lower, 'vertical');
+        ctx.restore();
+
+        ctx.beginPath();
+        ctx.moveTo(out_start_x, center_y);
+        for (let x = out_start_x; x <= out_end_x; x++) {
+            const disp = -out_A1 * Math.sin(out_k * (x - out_start_x));
+            ctx.lineTo(x, center_y + disp);
+        }
+        ctx.stroke();
+
+
+        // Wave 2: x-component (cos, on tilted axis)
+        const out_A2 = 25;
+        const base_y_start = center_y;
+        const base_y_end = center_y + 40; // Tilted downwards
+        
+        const get_base_y = (x) => base_y_start + (base_y_end - base_y_start) * (x - out_start_x) / (out_end_x - out_start_x);
+
+        let pathOut2Upper = new Path2D();
+        pathOut2Upper.moveTo(out_start_x, get_base_y(out_start_x));
+        let pathOut2Lower = new Path2D();
+        
+        for (let x = out_start_x; x <= out_end_x; x++) {
+            const base_y = get_base_y(x);
+            const disp = out_A2 * Math.cos(out_k * (x - out_start_x));
+            const y = base_y + disp;
+             if(disp > 0) {
+                 pathOut2Upper.lineTo(x, y);
+            } else {
+                if(pathOut2Upper.currentX !== undefined) {
+                    pathOut2Upper.lineTo(x, base_y);
+                    pathOut2Lower.moveTo(x, base_y);
+                }
+                pathOut2Lower.lineTo(x, y);
+            }
+        }
+        pathOut2Lower.lineTo(out_end_x, get_base_y(out_end_x));
+
+        ctx.save();
+        ctx.lineWidth = 1;
+        hatchArea(pathOut2Upper, 'vertical');
+        hatchArea(pathOut2Lower, 'vertical');
+        ctx.restore();
+
+        ctx.beginPath();
+        ctx.moveTo(out_start_x, get_base_y(out_start_x) + out_A2);
+        for (let x = out_start_x; x <= out_end_x; x++) {
+            const base_y = get_base_y(x);
+            const disp = out_A2 * Math.cos(out_k * (x - out_start_x));
+            ctx.lineTo(x, base_y + disp);
+        }
+        ctx.stroke();
+
+        // 5. Figure Caption
+        ctx.font = 'bold 22px serif';
+        ctx.fillText('Fig.', 250, 380);
+        ctx.font = '22px serif';
+        ctx.fillText(' 2.71', 290, 380);
+
+    </script>
+</body>
+</html>

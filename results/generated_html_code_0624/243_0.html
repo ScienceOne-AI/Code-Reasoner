@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Fig 5.5 - Moving Parallel Plates</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="500" height="380"></canvas>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style ---
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = 2;
+ctx.font = 'italic 20px "Times New Roman"';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// --- Helper Function ---
+// Draws a line with a simple arrowhead
+function drawArrow(fromX, fromY, toX, toY) {
+    const headlen = 8;
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const angle = Math.atan2(dy, dx);
+
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    // Arrow head
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+// --- Stationary Coordinate System (S) ---
+const oX = 80, oY = 260;
+drawArrow(oX, oY, oX, 160); // z-axis
+ctx.fillText('z', oX, 150);
+drawArrow(oX, oY, oX + 100, oY); // x-axis
+ctx.fillText('x', oX + 110, oY);
+drawArrow(oX, oY, oX + 55, oY - 55); // y-axis
+ctx.fillText('y', oX + 65, oY - 65);
+ctx.fillText('O', oX - 15, oY + 5);
+
+// --- Moving Plates and Coordinate System (S') ---
+const oPrimeX = 320, oPrimeY = 210;
+const plateWidth = 160;
+const plateDepthX = 40;
+const plateDepthY = 20;
+const d = 80;
+
+// Upper plate
+const upY = oPrimeY - d / 2;
+const up_fl = { x: oPrimeX - plateWidth / 2, y: upY }; // front-left
+const up_fr = { x: oPrimeX + plateWidth / 2, y: upY }; // front-right
+const up_br = { x: up_fr.x + plateDepthX, y: up_fr.y - plateDepthY }; // back-right
+const up_bl = { x: up_fl.x + plateDepthX, y: up_fl.y - plateDepthY }; // back-left
+ctx.beginPath();
+ctx.moveTo(up_fl.x, up_fl.y);
+ctx.lineTo(up_fr.x, up_fr.y);
+ctx.lineTo(up_br.x, up_br.y);
+ctx.lineTo(up_bl.x, up_bl.y);
+ctx.closePath();
+ctx.stroke();
+
+// Lower plate
+const lowY = oPrimeY + d / 2;
+const low_fl = { x: oPrimeX - plateWidth / 2, y: lowY };
+const low_fr = { x: oPrimeX + plateWidth / 2, y: lowY };
+const low_br = { x: low_fr.x + plateDepthX, y: low_fr.y - plateDepthY };
+const low_bl = { x: low_fl.x + plateDepthX, y: low_fl.y - plateDepthY };
+ctx.beginPath();
+ctx.moveTo(low_fl.x, low_fl.y);
+ctx.lineTo(low_fr.x, low_fr.y);
+ctx.lineTo(low_br.x, low_br.y);
+ctx.lineTo(low_bl.x, low_bl.y);
+ctx.closePath();
+ctx.stroke();
+
+// Moving Coordinate System (S')
+// z'-axis: starts below O' and passes through it
+drawArrow(oPrimeX, oPrimeY + 20, oPrimeX, oPrimeY - d / 2 - 30);
+ctx.fillText("z'", oPrimeX - 18, oPrimeY - d / 2 - 35);
+// x'-axis
+drawArrow(oPrimeX, oPrimeY, oPrimeX + plateWidth / 2 + 40, oPrimeY);
+ctx.fillText("x'", oPrimeX + plateWidth / 2 + 55, oPrimeY);
+// y'-axis
+drawArrow(oPrimeX, oPrimeY, oPrimeX + plateDepthX + 45, oPrimeY - plateDepthY - 22);
+ctx.fillText("y'", oPrimeX + plateDepthX + 55, oPrimeY - plateDepthY - 32);
+// Origin O'
+ctx.fillText("O'", oPrimeX - 10, oPrimeY + 20);
+
+// Annotations
+// Charge densities
+const charge_up_x = (up_fl.x + up_br.x) / 2 + 10;
+const charge_up_y = (up_fl.y + up_br.y) / 2 - 5;
+ctx.fillText('+σ', charge_up_x, charge_up_y);
+const charge_low_x = (low_fl.x + low_br.x) / 2 + 10;
+const charge_low_y = (low_fl.y + low_br.y) / 2 + 5;
+ctx.fillText('-σ', charge_low_x, charge_low_y);
+
+
+// Velocity V, emanating from the side face
+const up_side_mid = { x: (up_fr.x + up_br.x) / 2, y: (up_fr.y + up_br.y) / 2 };
+const low_side_mid = { x: (low_fr.x + low_br.x) / 2, y: (low_fr.y + low_br.y) / 2 };
+const vArrowLength = 40;
+drawArrow(up_side_mid.x, up_side_mid.y, up_side_mid.x + vArrowLength, up_side_mid.y);
+ctx.fillText('V', up_side_mid.x + vArrowLength + 15, up_side_mid.y);
+drawArrow(low_side_mid.x, low_side_mid.y, low_side_mid.x + vArrowLength, low_side_mid.y);
+ctx.fillText('V', low_side_mid.x + vArrowLength + 15, low_side_mid.y);
+
+// Separation d
+const d_X = up_fl.x - 30;
+ctx.beginPath();
+ctx.moveTo(d_X, upY);
+ctx.lineTo(d_X, lowY);
+// Ticks
+ctx.moveTo(d_X - 5, upY);
+ctx.lineTo(d_X + 5, upY);
+ctx.moveTo(d_X - 5, lowY);
+ctx.lineTo(d_X + 5, lowY);
+ctx.stroke();
+ctx.fillText('d', d_X - 15, oPrimeY);
+
+// Figure Caption
+ctx.font = '20px "Times New Roman"';
+ctx.fillText('Fig. 5.5', oPrimeX, 350);
+
+</script>
+</body>
+</html>

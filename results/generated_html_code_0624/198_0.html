@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Brayton Cycle P-V Diagram</title>
+</head>
+<body>
+<canvas id="pvDiagram" width="550" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('pvDiagram');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Helper Functions ---
+
+    // General style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Arrow drawing function to create filled arrowheads
+    function drawArrow(ctx, x, y, angle, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2.5);
+        ctx.lineTo(-size, size / 2.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Coordinates and Constants ---
+    const origin = { x: 80, y: 450 };
+    
+    // Cycle state points, chosen to match the visual proportions of the original image
+    const p1_y = 100;
+    const p2_y = 400;
+
+    const va_x = 180;
+    const vb_x = 280;
+    const vc_x = 380;
+    const vd_x = 220;
+
+    const a = { x: va_x, y: p1_y };
+    const b = { x: vb_x, y: p1_y };
+    const c = { x: vc_x, y: p2_y };
+    const d = { x: vd_x, y: p2_y };
+
+    // Control points for the quadratic Bezier curves representing adiabatic processes
+    const cp_bc = { x: 370, y: 150 };
+    const cp_da = { x: 190, y: 350 };
+
+    // --- Drawing ---
+
+    // 1. Draw Axes
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.font = 'bold 22px serif';
+    // V-axis
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(520, origin.y);
+    ctx.stroke();
+    drawArrow(ctx, 520, origin.y, 0, 10);
+    ctx.fillText('V', 535, origin.y);
+
+    // P-axis
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(origin.x, 30);
+    ctx.stroke();
+    drawArrow(ctx, origin.x, 30, -Math.PI / 2, 10);
+    ctx.fillText('P', origin.x, 15);
+    ctx.restore();
+
+    // 2. Draw Pressure Guides and Labels
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(origin.x, p1_y);
+    ctx.lineTo(b.x, p1_y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(origin.x, p2_y);
+    ctx.lineTo(c.x, p2_y);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.font = 'bold 20px serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('P\u2081', origin.x - 15, p1_y);
+    ctx.fillText('P\u2082', origin.x - 15, p2_y);
+    ctx.textAlign = 'center';
+
+    // 3. Draw Cycle Path
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y); // a -> b
+    ctx.quadraticCurveTo(cp_bc.x, cp_bc.y, c.x, c.y); // b -> c
+    ctx.lineTo(d.x, d.y); // c -> d
+    ctx.quadraticCurveTo(cp_da.x, cp_da.y, a.x, a.y); // d -> a
+    ctx.closePath();
+    ctx.stroke();
+    
+    // 4. Draw Arrows on the Cycle Path
+    const arrowSize = 8;
+    // a -> b arrow
+    drawArrow(ctx, (a.x + b.x) / 2, a.y, 0, arrowSize);
+    // c -> d arrow
+    drawArrow(ctx, (c.x + d.x) / 2, c.y, Math.PI, arrowSize);
+    // b -> c arrow (at t=0.5 of the quadratic curve)
+    const mid_bc = { x: 0.25 * b.x + 0.5 * cp_bc.x + 0.25 * c.x, y: 0.25 * b.y + 0.5 * cp_bc.y + 0.25 * c.y };
+    const tangent_bc_vec = { x: (cp_bc.x - b.x) + (c.x - cp_bc.x), y: (cp_bc.y - b.y) + (c.y - cp_bc.y) };
+    const angle_bc = Math.atan2(tangent_bc_vec.y, tangent_bc_vec.x);
+    drawArrow(ctx, mid_bc.x, mid_bc.y, angle_bc, arrowSize);
+    // d -> a arrow (at t=0.5 of the quadratic curve)
+    const mid_da = { x: 0.25 * d.x + 0.5 * cp_da.x + 0.25 * a.x, y: 0.25 * d.y + 0.5 * cp_da.y + 0.25 * a.y };
+    const tangent_da_vec = { x: (cp_da.x - d.x) + (a.x - cp_da.x), y: (cp_da.y - d.y) + (a.y - cp_da.y) };
+    const angle_da = Math.atan2(tangent_da_vec.y, tangent_da_vec.x);
+    drawArrow(ctx, mid_da.x, mid_da.y, angle_da, arrowSize);
+
+    // 5. Draw Vertex Labels
+    ctx.font = 'bold 20px serif';
+    ctx.fillText('a', a.x, a.y - 15);
+    ctx.fillText('b', b.x + 5, b.y - 15);
+    ctx.fillText('c', c.x + 15, c.y);
+    ctx.fillText('d', d.x - 5, d.y + 15);
+
+    // 6. "adiabatics" Label and Guide Curve
+    ctx.font = '20px serif';
+    const arch_p1 = {x: 200, y: 90};
+    const arch_p2 = {x: 350, y: 90};
+    const arch_cp = {x: (arch_p1.x + arch_p2.x)/2, y: 50};
+    ctx.fillText('adiabatics', arch_cp.x, arch_cp.y - 10);
+    
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(arch_p1.x, arch_p1.y);
+    ctx.quadraticCurveTo(arch_cp.x, arch_cp.y, arch_p2.x, arch_p2.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // 7. Figure Caption
+    ctx.font = '20px serif';
+    ctx.fillText('Fig. 1.14.', 275, 480);
+
+</script>
+</body>
+</html>

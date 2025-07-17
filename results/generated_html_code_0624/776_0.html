@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Haidinger Fringes Setup</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="900" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.2;
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    const midY = canvas.height / 2;
+
+    // Helper function for drawing an arrow at a specific position on a line segment
+    function drawArrowOnLine(x1, y1, x2, y2, size = 6, pos = 0.5) {
+        const midX = x1 + (x2 - x1) * pos;
+        const midY = y1 + (y2 - y1) * pos;
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.save();
+        ctx.translate(midX, midY);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // Helper function to draw a multi-segment ray with arrows
+    function drawRay(path, arrowPositions) {
+        ctx.beginPath();
+        ctx.moveTo(path[0].x, path[0].y);
+        for (let i = 1; i < path.length; i++) {
+            ctx.lineTo(path[i].x, path[i].y);
+        }
+        ctx.stroke();
+        
+        for (const pos of arrowPositions) {
+            const p1 = path[pos.segment];
+            const p2 = path[pos.segment + 1];
+            drawArrowOnLine(p1.x, p1.y, p2.x, p2.y, 6, pos.t);
+        }
+    }
+
+
+    // --- Draw Components ---
+
+    // GP (Glass Plate)
+    const gp_x = 80;
+    const gp_w = 20;
+    const gp_h = 300;
+    const gp_y = midY - gp_h / 2;
+    ctx.fillStyle = '#E0E0E0';
+    ctx.fillRect(gp_x, gp_y, gp_w, gp_h);
+    ctx.strokeRect(gp_x, gp_y, gp_w, gp_h);
+    ctx.fillStyle = 'black';
+    ctx.fillText('GP', 45, midY);
+
+    // h dimension
+    ctx.beginPath();
+    ctx.moveTo(gp_x, gp_y - 20);
+    ctx.lineTo(gp_x, gp_y - 10);
+    ctx.moveTo(gp_x + gp_w, gp_y - 20);
+    ctx.lineTo(gp_x + gp_w, gp_y - 10);
+    ctx.moveTo(gp_x, gp_y - 15);
+    ctx.lineTo(gp_x + gp_w, gp_y - 15);
+    ctx.stroke();
+    ctx.fillText('h', gp_x + gp_w / 2, gp_y - 18);
+
+    // S (Light Source)
+    const s_x = 180;
+    const s_y = midY - 100;
+    ctx.beginPath();
+    ctx.arc(s_x, s_y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('S', s_x, s_y - 10);
+
+    // BS (Beam Splitter)
+    const bs_cx = 230;
+    const bs_cy = midY;
+    ctx.save();
+    ctx.translate(bs_cx, bs_cy);
+    ctx.rotate(-Math.PI / 4);
+    ctx.fillStyle = '#E0E0E0';
+    ctx.fillRect(-85, -2.5, 170, 5);
+    ctx.strokeRect(-85, -2.5, 170, 5);
+    ctx.restore();
+    ctx.fillStyle = 'black';
+    ctx.fillText('BS', 275, midY - 60);
+
+    // L (Lens)
+    const lens_x = 450;
+    const lens_h = 300;
+    const lens_w = 40;
+    ctx.fillStyle = '#E0E0E0';
+    const r = (Math.pow(lens_h / 2, 2) + Math.pow(lens_w / 2, 2)) / lens_w;
+    const angle = Math.asin((lens_h / 2) / r);
+    ctx.beginPath();
+    ctx.arc(lens_x - r + lens_w / 2, midY, r, Math.PI - angle, Math.PI + angle);
+    ctx.arc(lens_x + r - lens_w / 2, midY, r, -angle, angle);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+    ctx.fillText('L', lens_x, midY - lens_h/2 - 15);
+
+    // P (Screen)
+    const f = 250;
+    const screen_x = lens_x + f;
+    ctx.beginPath();
+    ctx.moveTo(screen_x, midY - 150);
+    ctx.lineTo(screen_x, midY + 150);
+    ctx.stroke();
+    ctx.fillText('P', screen_x - 5, midY - 160);
+    ctx.fillText('F', screen_x - 5, midY + 28);
+
+    // f (focal length)
+    const f_y = midY + 140;
+    ctx.beginPath();
+    ctx.moveTo(lens_x, f_y);
+    ctx.lineTo(screen_x, f_y);
+    ctx.stroke();
+    drawArrowOnLine(lens_x, f_y, screen_x, f_y, 8, 0.01);
+    drawArrowOnLine(lens_x, f_y, screen_x, f_y, 8, 0.99);
+    ctx.fillText('f', lens_x + f/2, f_y + 25);
+
+
+    // --- Draw Rays ---
+    ctx.lineWidth = 1;
+
+    // Upper Beam (inclined, converges off-axis)
+    const upper_y1 = midY - 90;
+    const upper_y2 = midY - 110;
+    const upper_focus_y = midY - 45;
+    let path = [{x: gp_x + gp_w, y: upper_y1}, {x: lens_x, y: upper_y1}, {x: screen_x, y: upper_focus_y}];
+    drawRay(path, [{segment: 0, t: 0.5}, {segment: 1, t: 0.7}]);
+    path = [{x: gp_x, y: upper_y2}, {x: lens_x, y: upper_y2}, {x: screen_x, y: upper_focus_y}];
+    drawRay(path, [{segment: 0, t: 0.5}, {segment: 1, t: 0.7}]);
+
+    // Lower Beam (parallel to axis, converges on-axis)
+    const lower_y1 = midY + 90;
+    const lower_y2 = midY + 110;
+    path = [{x: gp_x + gp_w, y: lower_y1}, {x: lens_x, y: lower_y1}, {x: screen_x, y: midY}];
+    drawRay(path, [{segment: 0, t: 0.5}, {segment: 1, t: 0.7}]);
+    path = [{x: gp_x, y: lower_y2}, {x: lens_x, y: lower_y2}, {x: screen_x, y: midY}];
+    drawRay(path, [{segment: 0, t: 0.5}, {segment: 1, t: 0.7}]);
+    
+    // Central Ray
+    path = [{x: gp_x, y: midY}, {x: screen_x, y: midY}];
+    drawRay(path, [{segment: 0, t: 0.4}, {segment: 0, t: 0.9}]);
+
+
+    // Illumination Rays from S (schematic)
+    const bs_hit_upper = {x: 270.7, y: midY - 57.6};
+    const bs_hit_lower = {x: 215, y: midY + 21};
+    path = [{x: s_x, y: s_y}, bs_hit_upper, {x: gp_x + gp_w, y: upper_y1}];
+    drawRay(path, [{segment: 0, t: 0.7}, {segment: 1, t: 0.5}]);
+    path = [{x: s_x, y: s_y}, bs_hit_lower, {x: gp_x + gp_w, y: lower_y1}];
+    drawRay(path, [{segment: 0, t: 0.6}, {segment: 1, t: 0.5}]);
+
+
+    // --- Draw Interference Pattern ---
+    const pattern_cx = 825;
+    const pattern_cy = midY;
+    
+    // Crosshairs
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pattern_cx - 80, pattern_cy);
+    ctx.lineTo(pattern_cx + 80, pattern_cy);
+    ctx.moveTo(pattern_cx, pattern_cy - 80);
+    ctx.lineTo(pattern_cx, pattern_cy + 80);
+    ctx.stroke();
+    
+    // Rings
+    ctx.fillStyle = 'black';
+    const radii = [8, 16, 22, 28, 34, 39, 44, 48, 52, 55, 58];
+    
+    // Central dark spot
+    ctx.beginPath();
+    ctx.arc(pattern_cx, pattern_cy, radii[0], 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Dark rings (annuli)
+    for (let i = 1; i < radii.length; i += 2) {
+        ctx.beginPath();
+        ctx.arc(pattern_cx, pattern_cy, radii[i+1], 0, 2 * Math.PI, false); // Outer radius
+        ctx.arc(pattern_cx, pattern_cy, radii[i], 0, 2 * Math.PI, true);    // Inner radius (hole)
+        ctx.fill();
+    }
+</script>
+</body>
+</html>

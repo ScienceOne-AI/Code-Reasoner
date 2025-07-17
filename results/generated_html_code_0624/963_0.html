@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electric Potential Graph</title>
+</head>
+<body>
+<canvas id="physics-graph" width="700" height="520"></canvas>
+<script>
+    const canvas = document.getElementById('physics-graph');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+
+    const padding = { top: 40, right: 50, bottom: 60, left: 50 };
+
+    const graphWidth = canvasWidth - padding.left - padding.right;
+    const graphHeight = canvasHeight - padding.top - padding.bottom;
+
+    const xMin = -0.3;
+    const xMax = 0.3;
+    const yMin = -1000;
+    const yMax = 0;
+
+    const xRange = xMax - xMin;
+    const yRange = yMax - yMin;
+
+    // --- Coordinate mapping functions ---
+    function mapX(x) {
+        return padding.left + ((x - xMin) / xRange) * graphWidth;
+    }
+
+    function mapY(y) {
+        return padding.top + ((yMax - y) / yRange) * graphHeight;
+    }
+
+    // --- Drawing functions ---
+
+    function drawGrid() {
+        ctx.beginPath();
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 1;
+
+        // Vertical grid lines (every 0.01 m)
+        const xStep = 0.01;
+        for (let x = xMin; x <= xMax + xStep/2; x += xStep) {
+            const xPos = mapX(parseFloat(x.toFixed(2)));
+            ctx.moveTo(xPos, mapY(yMax));
+            ctx.lineTo(xPos, mapY(yMin));
+        }
+
+        // Horizontal grid lines (every 25 V)
+        const yStep = 25;
+        for (let y = yMin; y <= yMax; y += yStep) {
+            const yPos = mapY(y);
+            ctx.moveTo(mapX(xMin), yPos);
+            ctx.lineTo(mapX(xMax), yPos);
+        }
+        ctx.stroke();
+    }
+
+    function drawAxes() {
+        ctx.beginPath();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // X-axis (V=0)
+        ctx.moveTo(mapX(xMin), mapY(0));
+        ctx.lineTo(mapX(xMax), mapY(0));
+
+        // Y-axis (x=0)
+        ctx.moveTo(mapX(0), mapY(yMax));
+        ctx.lineTo(mapX(0), mapY(yMin));
+
+        ctx.stroke();
+    }
+
+    function drawLabels() {
+        ctx.fillStyle = 'black';
+        ctx.font = '16px sans-serif';
+
+        // X-axis labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const xLabelStep = 0.1;
+        for (let x = xMin; x <= xMax; x += xLabelStep) {
+            const xVal = parseFloat(x.toFixed(1));
+            if (xVal !== 0) {
+                ctx.fillText(xVal, mapX(xVal), mapY(0) + 8);
+            }
+        }
+
+        // Y-axis labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        const yLabelStep = 250;
+        for (let y = yMin; y <= yMax; y += yLabelStep) {
+            if (y !== 0) {
+                ctx.fillText(y, mapX(0) - 8, mapY(y));
+            }
+        }
+    
+        // Origin '0' label
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('0', mapX(0) - 5, mapY(0) - 5);
+
+
+        // Axis titles
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('x / m', mapX(0.22), mapY(0) - 8);
+    
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('V / V', mapX(-0.07), mapY(-375));
+    }
+
+    function drawCurve() {
+        ctx.beginPath();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+
+        const r = 0.1;      // Radius of the sphere in meters
+        const V_surf = -850; // Potential on the surface in volts
+        const kQ = V_surf * r; // From V = kQ/r, kQ = V*r
+
+        // --- Left curve (x from -0.3 to -0.1) ---
+        const num_points = 100;
+        let x = xMin;
+        let y = kQ / Math.abs(x);
+        ctx.moveTo(mapX(x), mapY(y));
+
+        let dx_left = (-r - x) / num_points;
+        for (let i = 1; i <= num_points; i++) {
+            x += dx_left;
+            y = kQ / Math.abs(x);
+            ctx.lineTo(mapX(x), mapY(y));
+        }
+
+        // --- Flat line (x from -0.1 to 0.1) ---
+        ctx.lineTo(mapX(-r), mapY(V_surf));
+        ctx.lineTo(mapX(r), mapY(V_surf));
+
+        // --- Right curve (x from 0.1 to 0.3) ---
+        x = r;
+        let dx_right = (xMax - r) / num_points;
+        for (let i = 1; i <= num_points; i++) {
+            x += dx_right;
+            y = kQ / Math.abs(x);
+            ctx.lineTo(mapX(x), mapY(y));
+        }
+
+        ctx.stroke();
+    }
+
+    function drawCaption() {
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Fig. 5.1', canvasWidth / 2, canvasHeight - 15);
+    }
+
+    // --- Main drawing logic ---
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    drawGrid();
+    drawAxes();
+    drawCurve(); 
+    drawLabels();
+    drawCaption();
+
+</script>
+</body>
+</html>

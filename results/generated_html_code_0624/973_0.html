@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AC Voltage Waveform</title>
+</head>
+<body>
+    <canvas id="physics-canvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const margin = { top: 40, right: 20, bottom: 60, left: 60 };
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        const graphWidth = canvasWidth - margin.left - margin.right;
+        const graphHeight = canvasHeight - margin.top - margin.bottom;
+
+        const xMin = 0, xMax = 10;
+        const yMin = -4, yMax = 4;
+
+        // --- Clear Canvas ---
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        // --- Mapping Functions ---
+        function mapX(t) {
+            return margin.left + (t - xMin) / (xMax - xMin) * graphWidth;
+        }
+
+        function mapY(v) {
+            return margin.top + (yMax - v) / (yMax - yMin) * graphHeight;
+        }
+
+        // --- Drawing Functions ---
+        function drawGrid() {
+            ctx.strokeStyle = '#d3d3d3'; // Light gray for minor grid
+            ctx.lineWidth = 0.5;
+
+            // Minor vertical lines (every 0.2s)
+            for (let t = xMin; t <= xMax; t += 0.2) {
+                // Use toFixed to avoid floating point inaccuracies
+                const tFixed = parseFloat(t.toFixed(1));
+                ctx.beginPath();
+                ctx.moveTo(mapX(tFixed), mapY(yMax));
+                ctx.lineTo(mapX(tFixed), mapY(yMin));
+                ctx.stroke();
+            }
+
+            // Minor horizontal lines (every 0.4V)
+            for (let v = yMin; v <= yMax; v += 0.4) {
+                const vFixed = parseFloat(v.toFixed(1));
+                ctx.beginPath();
+                ctx.moveTo(mapX(xMin), mapY(vFixed));
+                ctx.lineTo(mapX(xMax), mapY(vFixed));
+                ctx.stroke();
+            }
+        }
+
+        function drawAxes() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1.2;
+
+            // X-axis (at V=0)
+            ctx.beginPath();
+            ctx.moveTo(mapX(xMin), mapY(0));
+            ctx.lineTo(mapX(xMax), mapY(0));
+            ctx.stroke();
+
+            // Y-axis (at t=0)
+            ctx.beginPath();
+            ctx.moveTo(mapX(0), mapY(yMin));
+            ctx.lineTo(mapX(0), mapY(yMax));
+            ctx.stroke();
+        }
+
+        function drawLabelsAndTicks() {
+            ctx.fillStyle = 'black';
+            ctx.font = '18px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+
+            // X-axis ticks and labels
+            for (let t = xMin; t <= xMax; t += 2) {
+                if (t === 0) continue; // Origin label handled separately
+                const xPos = mapX(t);
+                const yPos = mapY(0);
+                ctx.fillText(t, xPos, yPos + 8);
+            }
+            // X-axis title
+            ctx.fillText('time / s', mapX(8.8), mapY(0) + 28);
+
+            // Y-axis ticks and labels
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let v = yMin; v <= yMax; v += 2) {
+                if (v === -4 || v === 0) continue; // -4 is not labeled, 0 is at origin
+                const xPos = mapX(0);
+                const yPos = mapY(v);
+                ctx.fillText(v, xPos - 8, yPos);
+            }
+            // Y-axis title
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('voltage / V', margin.left, margin.top - 12);
+
+            // Origin label '0'
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'top';
+            ctx.fillText('0', mapX(0) - 5, mapY(0) + 5);
+        }
+
+        function drawWave() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+
+            const peakVoltage = 3.6;
+            const period = 2.0;
+            const angularFrequency = 2 * Math.PI / period; // This is Math.PI
+
+            const dt = 0.01;
+            ctx.moveTo(mapX(0), mapY(0));
+
+            for (let t = dt; t <= xMax; t += dt) {
+                const v = peakVoltage * Math.sin(angularFrequency * t);
+                ctx.lineTo(mapX(t), mapY(v));
+            }
+            ctx.stroke();
+        }
+
+        function drawCaption() {
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('Fig. 7.2', canvasWidth / 2, canvasHeight - margin.bottom + 35);
+        }
+
+        // --- Execution Order ---
+        drawGrid();
+        drawAxes();
+        drawLabelsAndTicks();
+        drawWave();
+        drawCaption();
+    </script>
+</body>
+</html>

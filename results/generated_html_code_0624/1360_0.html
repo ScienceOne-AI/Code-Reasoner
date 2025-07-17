@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper function to draw an arrow head ---
+    function drawArrowhead(ctx, fromX, fromY, toX, toY, angle, length) {
+        const x = toX - fromX;
+        const y = toY - fromY;
+        const angleRad = Math.atan2(y, x);
+        
+        ctx.save();
+        ctx.translate(toX, toY);
+        ctx.rotate(angleRad);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-length, -angle);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-length, angle);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Helper function to draw dimension lines with arrows ---
+    function drawDimensionLine(ctx, x1, y1, x2, y2, label) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        drawArrowhead(ctx, x2, y2, x1, y1, 5, 10);
+        drawArrowhead(ctx, x1, y1, x2, y2, 5, 10);
+        
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 18px Times New Roman';
+        ctx.fillText(label, (x1 + x2) / 2, y1 - 10);
+        ctx.restore();
+    }
+    
+    // --- Main Drawing Function ---
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // --- Parameters and Coordinates ---
+        const a = 60;
+        const R = Math.sqrt(3) * a;
+        const len2x = 2 * Math.sqrt(5) * a;
+
+        const yCenter = 200;
+        const startX = 60;
+
+        // Point S
+        const Sx = startX;
+        const Sy = yCenter;
+
+        // Center of face AB (let's call it O)
+        const Ox = Sx + a;
+        
+        // Point P (center of face CD)
+        const Px = Ox + len2x;
+        const Py = yCenter;
+
+        // Point S'
+        const SprimeX = Px + a;
+        const SprimeY = yCenter;
+
+        // Point Q
+        const Qx = SprimeX + 80;
+
+        // Vertices of the rectangle ABCD
+        const Bx = Ox; const By = yCenter - R/2; // The original problem is about a cylinder, so the vertical extent is 2R, but the diagram's aspect ratio seems to imply a smaller height, let's use R instead of 2R for the height to match the look. Let's use R for the half-height to be consistent with the problem statement R=radius.
+        const Ax = Ox; const Ay = yCenter + R;
+        const Cx = Px; const Cy = yCenter - R;
+        const Dx = Px; const Dy = yCenter + R;
+        
+        // For drawing, let's adjust the height to make it look better like the diagram.
+        const H = 100; // Half-height for drawing.
+        const B_draw_y = yCenter - H;
+        const A_draw_y = yCenter + H;
+        const C_draw_y = yCenter - H;
+        const D_draw_y = yCenter + H;
+
+
+        // --- Styles ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '24px Times New Roman';
+
+        // --- Draw Central Axis ---
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(Sx, Sy);
+        ctx.lineTo(Qx, yCenter);
+        ctx.stroke();
+        ctx.restore();
+
+        // --- Draw Rectangle ABCD ---
+        ctx.beginPath();
+        ctx.moveTo(Bx, B_draw_y);
+        ctx.lineTo(Cx, C_draw_y);
+        ctx.lineTo(Dx, D_draw_y);
+        ctx.lineTo(Ax, A_draw_y);
+        ctx.closePath();
+        ctx.stroke();
+        
+        // --- Draw Points S, P, S' ---
+        ctx.beginPath();
+        ctx.arc(Sx, Sy, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(Px, Py, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(SprimeX, SprimeY, 3, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // --- Draw Labels ---
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('S', Sx - 20, Sy);
+        ctx.fillText('P', Px, Py + 25);
+        ctx.fillText("S'", SprimeX, SprimeY - 25);
+        ctx.fillText('Q', Qx - 20, Py);
+        ctx.fillText('B', Bx - 20, B_draw_y);
+        ctx.fillText('A', Ax - 20, A_draw_y + 5);
+        ctx.fillText('C', Cx + 20, C_draw_y);
+        ctx.fillText('D', Dx + 20, D_draw_y + 5);
+
+        // --- Draw Light Rays from S and Angle θ₀ ---
+        ctx.beginPath();
+        ctx.moveTo(Sx, Sy);
+        ctx.lineTo(Bx, B_draw_y);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(Sx, Sy);
+        ctx.lineTo(Ax, A_draw_y);
+        ctx.stroke();
+
+        // Angle arcs
+        const angle_radius = 40;
+        const angle = Math.atan2(B_draw_y - Sy, Bx - Sx);
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(Sx, Sy, angle_radius, angle, 0);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(Sx, Sy, angle_radius, 0, -angle);
+        ctx.stroke();
+        ctx.restore();
+
+        // Angle label θ₀
+        ctx.save();
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('θ₀', Sx + angle_radius * 0.7, Sy - 15);
+        ctx.fillText('θ₀', Sx + angle_radius * 0.7, Sy + 15);
+        ctx.restore();
+        
+        // --- Draw Dimension Lines ---
+        const dimY = A_draw_y + 60;
+        ctx.save();
+        ctx.lineWidth = 1;
+        // Ticks
+        ctx.beginPath();
+        ctx.moveTo(Sx, A_draw_y + 5);
+        ctx.lineTo(Sx, dimY);
+        ctx.moveTo(Ox, A_draw_y + 5);
+        ctx.lineTo(Ox, dimY);
+        ctx.moveTo(Px, A_draw_y + 5);
+        ctx.lineTo(Px, dimY);
+        ctx.moveTo(SprimeX, SprimeY - (A_draw_y - yCenter) - 5);
+        ctx.lineTo(SprimeX, dimY);
+        ctx.stroke();
+
+        // Horizontal lines with arrows
+        drawDimensionLine(ctx, Sx, dimY, Ox, dimY, 'a');
+        drawDimensionLine(ctx, Ox, dimY, Px, dimY, '2x');
+        drawDimensionLine(ctx, Px, dimY, SprimeX, dimY, 'a');
+        ctx.restore();
+
+        // --- Draw Vertical Arrow inside Cylinder ---
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        const arrowX = Ox + 30;
+        ctx.beginPath();
+        ctx.moveTo(arrowX, yCenter);
+        ctx.lineTo(arrowX, C_draw_y);
+        ctx.stroke();
+        drawArrowhead(ctx, arrowX, yCenter, arrowX, C_draw_y, 5, 10);
+        ctx.restore();
+    }
+
+    draw();
+</script>
+</body>
+</html>

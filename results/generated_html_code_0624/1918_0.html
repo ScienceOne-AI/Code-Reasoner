@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style ---
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '22px serif';
+
+        // --- Geometry Parameters ---
+        // Angles in degrees from the positive x-axis (right is 0, up is 90)
+        // Canvas y-coordinates are inverted (down is positive)
+        const angleBC_deg = 120; // Plane BC makes 60 deg with horizontal, sloping up-left
+        const angleAB_deg = 210; // Plane AB is perpendicular to BC (120 + 90)
+
+        // Convert to radians for Math functions
+        const angleBC_rad = angleBC_deg * Math.PI / 180;
+        const angleAB_rad = angleAB_deg * Math.PI / 180;
+
+        // Vertex B
+        const B = { x: 400, y: 380 };
+        
+        // Lengths of the plane segments
+        const lengthAB = 180;
+        const lengthBC = 220;
+
+        // Endpoints A and C
+        const A = {
+            x: B.x + lengthAB * Math.cos(angleAB_rad),
+            y: B.y - lengthAB * Math.sin(angleAB_rad) // Use minus for y because canvas y-axis is inverted
+        };
+        const C = {
+            x: B.x + lengthBC * Math.cos(angleBC_rad),
+            y: B.y - lengthBC * Math.sin(angleBC_rad)
+        };
+
+        // Sphere
+        const radius = 70;
+        const angleBisector_deg = (angleAB_deg + angleBC_deg) / 2; // 165 degrees
+        const angleBisector_rad = angleBisector_deg * Math.PI / 180;
+        const distBO = radius / Math.sin(45 * Math.PI / 180); // From geometry of angle bisector
+
+        const O = {
+            x: B.x + distBO * Math.cos(angleBisector_rad),
+            y: B.y - distBO * Math.sin(angleBisector_rad)
+        };
+
+        // Contact points D (on AB) and E (on BC)
+        const D = {
+            x: O.x + radius * Math.cos(angleAB_rad - Math.PI / 2),
+            y: O.y - radius * Math.sin(angleAB_rad - Math.PI / 2)
+        };
+        const E = {
+            x: O.x + radius * Math.cos(angleBC_rad - Math.PI / 2),
+            y: O.y - radius * Math.sin(angleBC_rad - Math.PI / 2)
+        };
+
+        // --- Drawing Functions ---
+        
+        // Draw the main structure
+        function drawStructure() {
+            // Plane AB
+            ctx.beginPath();
+            ctx.moveTo(A.x, A.y);
+            ctx.lineTo(B.x, B.y);
+            ctx.stroke();
+
+            // Plane BC
+            ctx.beginPath();
+            ctx.moveTo(B.x, B.y);
+            ctx.lineTo(C.x, C.y);
+            ctx.stroke();
+            
+            // Sphere
+            ctx.beginPath();
+            ctx.arc(O.x, O.y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+        }
+
+        // Draw hatching on the planes
+        function drawHatching() {
+            const hatchLength = 15;
+            const hatchSpacing = 10;
+            
+            // Hatching for plane AB
+            const hatchAngleAB_rad = angleAB_rad - Math.PI / 2;
+            for (let i = 0; i < lengthAB; i += hatchSpacing) {
+                const p_on_line = {
+                    x: A.x - i * Math.cos(angleAB_rad),
+                    y: A.y + i * Math.sin(angleAB_rad)
+                };
+                ctx.beginPath();
+                ctx.moveTo(p_on_line.x, p_on_line.y);
+                ctx.lineTo(
+                    p_on_line.x + hatchLength * Math.cos(hatchAngleAB_rad),
+                    p_on_line.y - hatchLength * Math.sin(hatchAngleAB_rad)
+                );
+                ctx.stroke();
+            }
+
+            // Hatching for plane BC
+            const hatchAngleBC_rad = angleBC_rad + Math.PI / 2;
+            for (let i = 0; i < lengthBC; i += hatchSpacing) {
+                const p_on_line = {
+                    x: B.x + i * Math.cos(angleBC_rad),
+                    y: B.y - i * Math.sin(angleBC_rad)
+                };
+                 ctx.beginPath();
+                ctx.moveTo(p_on_line.x, p_on_line.y);
+                ctx.lineTo(
+                    p_on_line.x + hatchLength * Math.cos(hatchAngleBC_rad),
+                    p_on_line.y - hatchLength * Math.sin(hatchAngleBC_rad)
+                );
+                ctx.stroke();
+            }
+        }
+
+        // Draw the angle notation for 60 degrees
+        function drawAngleMarkup() {
+            // Find intersection of extended BC with a horizontal line to place the angle vertex
+            const horizY = 420;
+            const slopeBC = -Math.tan(angleBC_rad); // Canvas slope
+            const angleVtx = {
+                x: B.x + (horizY - B.y) / slopeBC,
+                y: horizY
+            };
+            
+            // Dashed horizontal line
+            ctx.beginPath();
+            ctx.setLineDash([6, 6]);
+            ctx.moveTo(angleVtx.x - 120, angleVtx.y);
+            ctx.lineTo(angleVtx.x + 80, angleVtx.y);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset to solid line
+
+            // Arc for the angle
+            const arcRadius = 40;
+            ctx.beginPath();
+            ctx.arc(angleVtx.x, angleVtx.y, arcRadius, Math.PI, Math.PI * 2 / 3, true);
+            ctx.stroke();
+
+            // Arrow on the arc
+            const arrowAngle = Math.PI * 5/6; // Midpoint of the arc
+            const arrowTip = { x: angleVtx.x + arcRadius * Math.cos(arrowAngle), y: angleVtx.y - arcRadius * Math.sin(arrowAngle) };
+            ctx.save();
+            ctx.translate(arrowTip.x, arrowTip.y);
+            ctx.rotate(-arrowAngle + Math.PI/2);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-5, -8);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(5, -8);
+            ctx.stroke();
+            ctx.restore();
+
+            // Angle text
+            ctx.fillText("60°", angleVtx.x + 50, angleVtx.y - 25);
+        }
+
+        // Add all labels
+        function addLabels() {
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            ctx.fillText('A', A.x - 20, A.y + 15);
+            ctx.fillText('B', B.x + 20, B.y + 10);
+            ctx.fillText('C', C.x + 20, C.y - 10);
+            ctx.fillText('D', D.x - 15, D.y + 15);
+            ctx.fillText('E', E.x + 18, E.y - 15);
+            
+            // Dot for center O
+            ctx.beginPath();
+            ctx.arc(O.x, O.y, 3.5, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillText('O', O.x + 18, O.y);
+        }
+
+        // --- Main Execution ---
+        drawStructure();
+        drawHatching();
+        drawAngleMarkup();
+        addLabels();
+    </script>
+</body>
+</html>

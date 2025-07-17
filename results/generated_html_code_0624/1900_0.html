@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Optical Setup</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="350"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Helper Functions ---
+function drawArrow(ctx, fromx, fromy, tox, toy) {
+    const headlen = 10;
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+}
+
+function drawDashedLine(ctx, x1, y1, x2, y2, dashLen = 5, gapLen = 3) {
+    ctx.beginPath();
+    ctx.setLineDash([dashLen, gapLen]);
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+}
+
+// --- Main Drawing ---
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = 2;
+ctx.font = 'bold 20px Arial';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// --- Part 1: Side View (Left) ---
+const y_center = 175;
+const p_height = 120;
+const p_width = 10;
+const plate_height = 100;
+const plate_width = 20;
+
+// Light Ray
+ctx.beginPath();
+ctx.moveTo(20, y_center); ctx.lineTo(100, y_center);
+ctx.moveTo(110, y_center); ctx.lineTo(175, y_center);
+ctx.moveTo(195, y_center); ctx.lineTo(260, y_center);
+ctx.moveTo(270, y_center); ctx.lineTo(350, y_center);
+ctx.stroke();
+ctx.beginPath(); drawArrow(ctx, 70, y_center, 71, y_center); ctx.stroke();
+ctx.beginPath(); drawArrow(ctx, 142.5, y_center, 143.5, y_center); ctx.stroke();
+ctx.beginPath(); drawArrow(ctx, 227.5, y_center, 228.5, y_center); ctx.stroke();
+ctx.beginPath(); drawArrow(ctx, 310, y_center, 311, y_center); ctx.stroke();
+
+// Polarizer P1
+ctx.fillStyle = '#C0C0C0';
+ctx.fillRect(100, y_center - p_height / 2, p_width, p_height);
+ctx.strokeRect(100, y_center - p_height / 2, p_width, p_height);
+ctx.fillStyle = 'black';
+ctx.fillText('P₁', 105, y_center - p_height / 2 - 25);
+
+// Glass Plate
+ctx.save();
+ctx.lineWidth = 1;
+ctx.fillStyle = '#FFFFFF';
+ctx.fillRect(175, y_center - plate_height / 2, plate_width, plate_height);
+ctx.strokeRect(175, y_center - plate_height / 2, plate_width, plate_height);
+ctx.restore();
+
+// y-axis for plate
+ctx.save();
+ctx.lineWidth = 1;
+drawDashedLine(ctx, 185, y_center + 70, 185, y_center - 90, 4, 4);
+ctx.beginPath();
+drawArrow(ctx, 185, y_center - 70, 185, y_center - 90);
+ctx.stroke();
+ctx.font = 'italic bold 20px Arial';
+ctx.fillText('y', 185, y_center - 105);
+ctx.restore();
+
+// Polarizer P2
+ctx.fillStyle = '#C0C0C0';
+ctx.fillRect(260, y_center - p_height / 2, p_width, p_height);
+ctx.strokeRect(260, y_center - p_height / 2, p_width, p_height);
+ctx.fillStyle = 'black';
+ctx.fillText('P₂', 265, y_center - p_height / 2 - 25);
+
+// --- Connecting Dashed Line ---
+ctx.save();
+ctx.lineWidth = 1;
+drawDashedLine(ctx, 350, y_center, 440, y_center, 4, 4);
+ctx.restore();
+
+// --- Part 2: Front View (Right) ---
+const cx = 580;
+const cy = 175;
+const r = 90;
+const sq_side = 110;
+
+// Outer ring
+ctx.save();
+ctx.lineWidth = 3;
+ctx.strokeStyle = '#E0E0E0';
+ctx.beginPath();
+ctx.arc(cx, cy, r + 1.5, 0, 2 * Math.PI);
+ctx.stroke();
+ctx.restore();
+
+// Outer shaded area (circle)
+ctx.fillStyle = '#A9A9A9';
+ctx.beginPath();
+ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+ctx.fill();
+
+// Inner square
+ctx.fillStyle = '#DCDCDC';
+ctx.fillRect(cx - sq_side / 2, cy - sq_side / 2, sq_side, sq_side);
+ctx.strokeRect(cx - sq_side / 2, cy - sq_side / 2, sq_side, sq_side);
+
+// Axes (dashed)
+ctx.save();
+ctx.lineWidth = 1;
+drawDashedLine(ctx, cx - r - 30, cy, cx + r + 30, cy, 4, 4); // x-axis
+drawDashedLine(ctx, cx, cy - r - 30, cx, cy + r + 30, 4, 4); // y-axis
+ctx.beginPath();
+drawArrow(ctx, cx + r + 20, cy, cx + r + 30, cy); // x-arrow
+drawArrow(ctx, cx, cy - r - 20, cx, cy - r - 30); // y-arrow
+ctx.stroke();
+ctx.font = 'italic bold 20px Arial';
+ctx.fillText('x', cx + r + 45, cy);
+ctx.fillText('y', cx, cy - r - 45);
+ctx.restore();
+
+// Polarizer axes P1 and P2
+const line_len = r + 15;
+const diag_comp_x = line_len * Math.cos(Math.PI/4);
+const diag_comp_y = line_len * Math.sin(Math.PI/4);
+ctx.beginPath();
+ctx.moveTo(cx - diag_comp_x, cy + diag_comp_y);
+ctx.lineTo(cx + diag_comp_x, cy - diag_comp_y);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(cx - diag_comp_x, cy - diag_comp_y);
+ctx.lineTo(cx + diag_comp_x, cy + diag_comp_y);
+ctx.stroke();
+
+// Diagonals inside the square
+ctx.save();
+ctx.lineWidth = 1.5;
+ctx.beginPath();
+ctx.moveTo(cx - sq_side/2, cy + sq_side/2);
+ctx.lineTo(cx + sq_side/2, cy - sq_side/2);
+ctx.moveTo(cx - sq_side/2, cy - sq_side/2);
+ctx.lineTo(cx + sq_side/2, cy + sq_side/2);
+ctx.stroke();
+ctx.restore();
+
+// Polarizer labels
+ctx.font = 'bold 20px Arial';
+ctx.fillText('P₁', cx + 70, cy - 90);
+ctx.fillText('P₂', cx - 70, cy - 90);
+
+// Angle alpha
+const arc_rad = 35;
+ctx.save();
+ctx.lineWidth = 1.5;
+ctx.beginPath();
+ctx.arc(cx, cy, arc_rad, -Math.PI / 2, -Math.PI / 4);
+ctx.stroke();
+ctx.restore();
+
+// Angle label alpha
+ctx.font = 'italic 20px Arial';
+const alpha_angle = (-Math.PI / 2 + -Math.PI / 4) / 2;
+ctx.fillText('α', cx + (arc_rad + 15) * Math.cos(alpha_angle), cy + (arc_rad + 15) * Math.sin(alpha_angle));
+
+</script>
+</body>
+</html>

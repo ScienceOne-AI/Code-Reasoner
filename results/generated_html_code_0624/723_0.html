@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Michelson Interferometer</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="michelsonCanvas" width="850" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('michelsonCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws an arrow head at a given position and angle.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x - The x-coordinate of the arrow tip.
+         * @param {number} y - The y-coordinate of the arrow tip.
+         * @param {number} angle - The angle of the arrow in radians.
+         */
+        function drawArrowhead(ctx, x, y, angle) {
+            const headLength = 8;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headLength, -headLength / 2);
+            ctx.lineTo(-headLength, headLength / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        /**
+         * Draws text with a subscript.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {string} text - The main text.
+         * @param {string} sub - The subscript text.
+         * @param {number} x - The x-coordinate.
+         * @param {number} y - The y-coordinate.
+         * @param {string} mainFont - The font for the main text.
+         * @param {string} subFont - The font for the subscript.
+         */
+        function drawTextWithSubscript(ctx, text, sub, x, y, mainFont = '20px serif', subFont = '14px serif') {
+            ctx.font = mainFont;
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillText(text, x, y);
+            
+            ctx.font = subFont;
+            ctx.fillText(sub, x + textWidth * 0.9, y + 5);
+        }
+
+        // --- Main Drawing ---
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // --- Interferometer Setup ---
+        const cx = 220, cy = 250; // Center of Beam Splitter
+        const armLength = 120;
+        const parallelOffset = 4;
+
+        // Paths
+        ctx.beginPath();
+        // Source to BS
+        ctx.moveTo(cx, cy + armLength + 20);
+        ctx.lineTo(cx, cy);
+        
+        // M1 arm (parallel lines)
+        ctx.moveTo(cx, cy - parallelOffset / 2);
+        ctx.lineTo(cx - armLength, cy - parallelOffset / 2);
+        ctx.moveTo(cx - armLength, cy + parallelOffset / 2);
+        ctx.lineTo(cx, cy + parallelOffset / 2);
+        
+        // M2 arm (single line)
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx, cy - armLength);
+        
+        // PD arm
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + armLength + 40, cy);
+        ctx.stroke();
+
+        // Arrows
+        drawArrowhead(ctx, cx, cy + armLength/2, -Math.PI/2); // S -> BS
+        drawArrowhead(ctx, cx - armLength/2, cy - parallelOffset / 2, Math.PI); // BS -> M1
+        drawArrowhead(ctx, cx - armLength/2, cy + parallelOffset / 2, 0); // M1 -> BS
+        drawArrowhead(ctx, cx, cy - armLength/2, -Math.PI/2); // BS -> M2
+        drawArrowhead(ctx, cx, cy - armLength/2, Math.PI/2); // M2 -> BS
+        drawArrowhead(ctx, cx + armLength/2, cy, 0); // BS -> PD
+        
+        // Components
+        // Beam Splitter (BS)
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(-Math.PI / 4);
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-35, 0);
+        ctx.lineTo(35, 0);
+        ctx.stroke();
+        ctx.restore();
+        
+        // Mirror M1 (curved)
+        ctx.fillStyle = '#ccc';
+        ctx.fillRect(cx - armLength - 10, cy - 25, 10, 50);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.beginPath();
+        ctx.moveTo(cx - armLength, cy - 25);
+        ctx.quadraticCurveTo(cx - armLength + 5, cy, cx - armLength, cy + 25);
+        ctx.stroke();
+
+        // Mirror M2 (flat)
+        const m2y = cy - armLength - 20; // Position of M2
+        ctx.fillStyle = '#ccc';
+        ctx.fillRect(cx - 25, m2y - 5, 50, 5);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx - 25, m2y);
+        ctx.lineTo(cx + 25, m2y);
+        ctx.stroke();
+        
+        // Photodetector (PD)
+        ctx.fillStyle = 'black';
+        ctx.fillRect(cx + armLength + 40, cy - 15, 30, 30);
+        
+        // Dashed lines and arcs
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1;
+        // M1 virtual position arc
+        ctx.beginPath();
+        ctx.arc(cx, cy, armLength, -Math.PI * 0.45, Math.PI * 0.45);
+        ctx.stroke();
+        // M2 reference position line
+        const z2_ref_y = cy - armLength;
+        ctx.beginPath();
+        ctx.moveTo(cx - 20, z2_ref_y);
+        ctx.lineTo(cx + 40, z2_ref_y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Dimension lines for z2 and 2l0
+        ctx.lineWidth = 1;
+        // z2
+        const z2_x = cx + 50;
+        ctx.beginPath();
+        ctx.moveTo(z2_x, z2_ref_y);
+        ctx.lineTo(z2_x, m2y);
+        ctx.stroke();
+        drawArrowhead(ctx, z2_x, z2_ref_y, Math.PI / 2);
+        drawArrowhead(ctx, z2_x, m2y, -Math.PI / 2);
+        
+        // 2l0
+        const l0_x = cx + 80;
+        const l0_amp = 40;
+        ctx.beginPath();
+        ctx.moveTo(l0_x, z2_ref_y - l0_amp);
+        ctx.lineTo(l0_x, z2_ref_y + l0_amp);
+        ctx.stroke();
+        drawArrowhead(ctx, l0_x, z2_ref_y - l0_amp, Math.PI / 2);
+        drawArrowhead(ctx, l0_x, z2_ref_y + l0_amp, -Math.PI / 2);
+        
+        // Labels
+        ctx.fillStyle = 'black';
+        ctx.font = '20px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('S', cx - 15, cy + armLength + 15);
+        ctx.fillText('BS', cx + 40, cy + 40);
+        drawTextWithSubscript(ctx, 'M', '1', cx - armLength - 20, cy + 40);
+        drawTextWithSubscript(ctx, 'M', '2', cx - 40, m2y - 10);
+        ctx.fillText('PD', cx + armLength + 55, cy + 30);
+        drawTextWithSubscript(ctx, 'z', '2', z2_x + 10, m2y + (z2_ref_y - m2y)/2 + 5, 'italic 20px serif', 'italic 14px serif');
+        drawTextWithSubscript(ctx, '2l', '0', l0_x + 15, z2_ref_y + 5, 'italic 20px serif', 'italic 14px serif');
+        
+
+        // --- Graph ---
+        const gx = 650, gy = 250; // Graph origin
+        const gWidth = 300, gHeight = 200;
+
+        // Axes
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        // X-axis
+        ctx.moveTo(gx - gWidth/2, gy);
+        ctx.lineTo(gx + gWidth/2, gy);
+        // Y-axis
+        ctx.moveTo(gx, gy + gHeight/2);
+        ctx.lineTo(gx, gy - gHeight/2);
+        ctx.stroke();
+        
+        // Axis Arrows
+        drawArrowhead(ctx, gx + gWidth/2, gy, 0); // x-axis
+        drawArrowhead(ctx, gx, gy - gHeight/2, -Math.PI/2); // y-axis
+        
+        // Axis Labels
+        ctx.font = 'italic 20px serif';
+        ctx.textAlign = 'center';
+        drawTextWithSubscript(ctx, 'I(z', '2', gx, gy - gHeight/2 - 10, 'italic 20px serif', 'italic 14px serif');
+        ctx.fillText(')', gx + 22, gy - gHeight/2 - 10);
+        drawTextWithSubscript(ctx, 'z', '2', gx + gWidth/2 + 10, gy + 5, 'italic 20px serif', 'italic 14px serif');
+        ctx.font = '16px serif';
+        ctx.fillText('0', gx, gy + 20);
+
+        // Interferogram Curve
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        const amplitude = 80;
+        const envelopeWidth = 60; // Corresponds to coherence length
+        const frequency = 0.4; // Controls density of fringes
+
+        for (let x = -gWidth/2 + 20; x <= gWidth/2 - 20; x += 0.5) {
+            const envelope = amplitude * Math.exp(- (x * x) / (2 * envelopeWidth * envelopeWidth));
+            const oscillation = Math.cos(x * frequency);
+            const y = envelope * oscillation;
+
+            if (x === -gWidth/2 + 20) {
+                ctx.moveTo(gx + x, gy - y);
+            } else {
+                ctx.lineTo(gx + x, gy - y);
+            }
+        }
+        ctx.moveTo(gx - gWidth/2 + 20, gy);
+        ctx.lineTo(gx - gWidth/2, gy);
+        ctx.moveTo(gx + gWidth/2 - 20, gy);
+        ctx.lineTo(gx + gWidth/2, gy);
+        ctx.stroke();
+
+    </script>
+</body>
+</html>

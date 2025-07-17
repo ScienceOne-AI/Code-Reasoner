@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="400" height="400" style="border:1px solid #000;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // --- Helper function for drawing an arrow ---
+    function drawArrow(x1, y1, x2, y2) {
+        const headlen = 8; // length of head in pixels
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const angle = Math.atan2(dy, dx);
+        
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke(); // Draw the line
+
+        // Draw the arrowhead
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // --- Helper for drawing text with a subscript ---
+    function drawTextWithSubscript(text, sub, x, y) {
+        ctx.font = 'italic 20px Times New Roman';
+        const textMetrics = ctx.measureText(text);
+        const textWidth = textMetrics.width;
+        ctx.fillText(text, x, y);
+        
+        ctx.font = 'italic 14px Times New Roman';
+        ctx.fillText(sub, x + textWidth / 2 + 1, y + 6);
+    }
+
+    // --- Main Drawing ---
+
+    // Rocket Body Coordinates
+    const rocketCenterX = 200;
+    const rocketBottomY = 220;
+    const rocketTopY = 120;
+    const rocketWidth = 70;
+    const noseRadius = 9;
+
+    ctx.beginPath();
+    // Base of the rocket
+    ctx.moveTo(rocketCenterX - rocketWidth / 2, rocketBottomY);
+    ctx.lineTo(rocketCenterX + rocketWidth / 2, rocketBottomY);
+    
+    // Sides of the rocket. The control point's x is the same as the start/end point's x
+    // to make the curve start vertically from the base before curving inwards.
+    ctx.moveTo(rocketCenterX - rocketWidth / 2, rocketBottomY);
+    ctx.quadraticCurveTo(rocketCenterX - rocketWidth / 2, rocketBottomY - 70, rocketCenterX, rocketTopY);
+    
+    ctx.moveTo(rocketCenterX + rocketWidth / 2, rocketBottomY);
+    ctx.quadraticCurveTo(rocketCenterX + rocketWidth / 2, rocketBottomY - 70, rocketCenterX, rocketTopY);
+
+    // Nose Cap (a circle to round the top)
+    ctx.moveTo(rocketCenterX + noseRadius, rocketTopY);
+    ctx.arc(rocketCenterX, rocketTopY, noseRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+
+
+    // Exhaust
+    const exhaustLines = 7;
+    const exhaustSpacing = (rocketWidth - 10) / (exhaustLines - 1);
+    const exhaustLength = 15;
+    const exhaustStartX = rocketCenterX - (rocketWidth - 10) / 2;
+
+    // First row of exhaust
+    for (let i = 0; i < exhaustLines; i++) {
+        const x = exhaustStartX + i * exhaustSpacing;
+        drawArrow(x, rocketBottomY + 5, x, rocketBottomY + 5 + exhaustLength);
+    }
+    // Second row of exhaust
+    for (let i = 0; i < exhaustLines; i++) {
+        const x = exhaustStartX + i * exhaustSpacing;
+        drawArrow(x, rocketBottomY + 25, x, rocketBottomY + 25 + exhaustLength);
+    }
+
+
+    // Vectors and Labels
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    // Velocity vector 'v'
+    const v_arrow_end = rocketTopY - noseRadius - 40;
+    drawArrow(rocketCenterX, rocketTopY - noseRadius, rocketCenterX, v_arrow_end);
+    ctx.fillText('v', rocketCenterX - 25, (rocketTopY - noseRadius + v_arrow_end) / 2);
+
+    // Gravity vector 'g'
+    const vectorX = rocketCenterX + 80;
+    const g_arrow_start = 140;
+    drawArrow(vectorX, g_arrow_start, vectorX, g_arrow_start + 40);
+    ctx.fillText('g', vectorX + 10, g_arrow_start + 20);
+
+    // Exhaust velocity vector 'U₀'
+    const U0_arrow_start = g_arrow_start + 60;
+    drawArrow(vectorX, U0_arrow_start, vectorX, U0_arrow_start + 40);
+    drawTextWithSubscript('U', '0', vectorX + 10, U0_arrow_start + 20);
+
+
+    // Figure Caption
+    ctx.font = '18px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 1.105.', canvas.width / 2, 350);
+
+</script>
+</body>
+</html>

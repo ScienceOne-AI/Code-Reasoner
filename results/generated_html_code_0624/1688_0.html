@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Diagrama de Torre de Agua</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+<canvas id="canvas" width="500" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Estilos y Configuración ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Funciones Auxiliares ---
+
+    /**
+     * Dibuja una flecha en una posición y dirección dadas.
+     * @param {number} x - Coordenada x del punto de la flecha.
+     * @param {number} y - Coordenada y del punto de la flecha.
+     * @param {number} dx - Componente x de la dirección.
+     * @param {number} dy - Componente y de la dirección.
+     */
+    function drawArrow(x, y, dx, dy) {
+        const headLength = 8;
+        const angle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headLength, -headLength / 2.5);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headLength, headLength / 2.5);
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    /**
+     * Dibuja una línea de tierra sombreada.
+     * @param {number} x - Coordenada x del centro.
+     * @param {number} y - Coordenada y de la línea.
+     * @param {number} width - Ancho total de la línea de tierra.
+     */
+    function drawGround(x, y, width) {
+        const hatchLength = 10;
+        const hatchAngle = -Math.PI / 4;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x - width / 2, y);
+        ctx.lineTo(x + width / 2, y);
+        ctx.stroke();
+        for (let i = x - width / 2; i <= x + width / 2; i += 8) {
+            ctx.beginPath();
+            ctx.moveTo(i, y);
+            ctx.lineTo(i - hatchLength * Math.cos(hatchAngle), y + hatchLength * Math.sin(hatchAngle));
+            ctx.stroke();
+        }
+    }
+
+    // --- Coordenadas Principales ---
+    const cx = 250;
+    const y_base = 440;
+    const xA = 120;
+    const xB = 380;
+
+    const y_tank_bottom = 180;
+    const y_tank_top = 100;
+
+    const tank_width = 80;
+    const x_tank_left = cx - tank_width / 2;
+    const x_tank_right = cx + tank_width / 2;
+
+    const platform_width = 120;
+    const x_platform_L = cx - platform_width / 2;
+    const x_platform_R = cx + platform_width / 2;
+    
+    const y_arch_apex = 220;
+
+    // 1. Dibujar Soportes
+    ctx.lineWidth = 2;
+    // Soporte A (Rodillo)
+    ctx.beginPath();
+    ctx.arc(xA, y_base, 5, 0, 2 * Math.PI); // Pasador
+    ctx.stroke();
+    // Placa y rodillos debajo del pasador
+    ctx.beginPath();
+    ctx.rect(xA - 15, y_base + 5, 30, 4); 
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(xA - 10, y_base + 14, 5, 0, 2 * Math.PI); 
+    ctx.arc(xA + 10, y_base + 14, 5, 0, 2 * Math.PI); 
+    ctx.stroke();
+    drawGround(xA, y_base + 19, 50);
+    ctx.fillText('A', xA + 30, y_base);
+    
+    // Soporte B (Pasador/Bisagra)
+    ctx.beginPath();
+    ctx.arc(xB, y_base, 5, 0, 2 * Math.PI); // Pasador
+    ctx.stroke();
+    // Triángulo de anclaje
+    ctx.beginPath();
+    ctx.moveTo(xB - 20, y_base + 15);
+    ctx.lineTo(xB, y_base - 2);
+    ctx.lineTo(xB + 20, y_base + 15);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(xB - 25, y_base + 15);
+    ctx.lineTo(xB + 25, y_base + 15);
+    ctx.stroke();
+    drawGround(xB, y_base + 15, 60);
+    ctx.fillText('B', xB + 30, y_base);
+
+
+    // 2. Dibujar Estructura de la Torre
+    // Contornos de las patas
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(xA, y_base);
+    ctx.lineTo(x_platform_L, y_tank_bottom);
+    ctx.moveTo(xB, y_base);
+    ctx.lineTo(x_platform_R, y_tank_bottom);
+    ctx.stroke();
+
+    // Arco interior de las patas
+    ctx.beginPath();
+    ctx.moveTo(xA, y_base);
+    ctx.quadraticCurveTo(xA + 40, y_arch_apex + 40, cx, y_arch_apex);
+    ctx.moveTo(xB, y_base);
+    ctx.quadraticCurveTo(xB - 40, y_arch_apex + 40, cx, y_arch_apex);
+    ctx.stroke();
+
+    // Patrón de celosía de las patas (manual)
+    ctx.lineWidth = 1.5;
+    // Pata Izquierda
+    const left_leg_points = [
+        [125, 423], [151, 381], [131, 399], [162, 351], [141, 370], [172, 322],
+        [151, 342], [181, 296], [161, 315], [190, 269], [172, 285], [194, 245],
+        [181, 258], [205, 225]
+    ];
+    for (let i = 0; i < left_leg_points.length - 2; i += 2) {
+        ctx.beginPath();
+        ctx.moveTo(left_leg_points[i][0], left_leg_points[i][1]);
+        ctx.lineTo(left_leg_points[i+1][0], left_leg_points[i+1][1]);
+        ctx.lineTo(left_leg_points[i+2][0], left_leg_points[i+2][1]);
+        ctx.stroke();
+    }
+    // Pata Derecha
+    const right_leg_points = [
+        [375, 423], [349, 381], [369, 399], [338, 351], [359, 370], [328, 322],
+        [349, 342], [319, 296], [339, 315], [310, 269], [328, 285], [306, 245],
+        [319, 258], [295, 225]
+    ];
+    for (let i = 0; i < right_leg_points.length - 2; i += 2) {
+        ctx.beginPath();
+        ctx.moveTo(right_leg_points[i][0], right_leg_points[i][1]);
+        ctx.lineTo(right_leg_points[i+1][0], right_leg_points[i+1][1]);
+        ctx.lineTo(right_leg_points[i+2][0], right_leg_points[i+2][1]);
+        ctx.stroke();
+    }
+
+    // Celosía de Soporte Superior
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    // Barra horizontal superior
+    ctx.moveTo(x_platform_L, y_tank_bottom);
+    ctx.lineTo(x_platform_R, y_tank_bottom);
+    // Diagonales al centro inferior
+    ctx.moveTo(x_platform_L, y_tank_bottom);
+    ctx.lineTo(cx, y_arch_apex);
+    ctx.moveTo(x_platform_R, y_tank_bottom);
+    ctx.lineTo(cx, y_arch_apex);
+    ctx.moveTo(x_tank_left, y_tank_bottom);
+    ctx.lineTo(cx, y_arch_apex);
+    ctx.moveTo(x_tank_right, y_tank_bottom);
+    ctx.lineTo(cx, y_arch_apex);
+    // Barra vertical central
+    ctx.moveTo(cx, y_tank_bottom);
+    ctx.lineTo(cx, y_arch_apex);
+    ctx.stroke();
+
+    // 3. Dibujar Tanque de Agua
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    // Cuerpo del tanque
+    ctx.rect(x_tank_left, y_tank_top, tank_width, y_tank_bottom - y_tank_top);
+    ctx.stroke();
+    // Tapa superior
+    ctx.beginPath();
+    ctx.ellipse(cx, y_tank_top, tank_width / 2, 8, 0, Math.PI, 2 * Math.PI);
+    ctx.stroke();
+    // Remate superior
+    ctx.beginPath();
+    ctx.arc(cx, y_tank_top - 12, 5, 0, 2 * Math.PI);
+    ctx.moveTo(cx, y_tank_top - 8);
+    ctx.lineTo(cx, y_tank_top);
+    ctx.stroke();
+
+
+    // 4. Dibujar Dimensiones
+    ctx.lineWidth = 1;
+    // Dimensión de 17 m
+    const dim17_x = 60;
+    ctx.beginPath();
+    ctx.setLineDash([5, 3]);
+    ctx.moveTo(dim17_x + 5, y_base);
+    ctx.lineTo(xA, y_base);
+    ctx.moveTo(dim17_x + 5, y_tank_bottom);
+    ctx.lineTo(x_platform_L, y_tank_bottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(dim17_x, y_base);
+    ctx.lineTo(dim17_x, y_tank_bottom);
+    ctx.stroke();
+    drawArrow(dim17_x, y_base, 0, -1);
+    drawArrow(dim17_x, y_tank_bottom, 0, 1);
+    ctx.save();
+    ctx.translate(dim17_x - 12, (y_base + y_tank_bottom) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('17 m', 0, 0);
+    ctx.restore();
+
+    // Dimensión de 6 m
+    const dim6_x = 180;
+    ctx.beginPath();
+    ctx.setLineDash([5, 3]);
+    ctx.moveTo(dim6_x - 5, y_tank_bottom);
+    ctx.lineTo(x_tank_left, y_tank_bottom);
+    ctx.moveTo(dim6_x - 5, y_tank_top);
+    ctx.lineTo(x_tank_left, y_tank_top);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(dim6_x, y_tank_bottom);
+    ctx.lineTo(dim6_x, y_tank_top);
+    ctx.stroke();
+    drawArrow(dim6_x, y_tank_bottom, 0, -1);
+    drawArrow(dim6_x, y_tank_top, 0, 1);
+    ctx.save();
+    ctx.translate(dim6_x - 12, (y_tank_bottom + y_tank_top) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('6 m', 0, 0);
+    ctx.restore();
+    
+    // Dimensión de 4 m
+    const dim4_y = 140;
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('4 m', cx, dim4_y - 4);
+    ctx.beginPath();
+    ctx.moveTo(x_tank_left, dim4_y);
+    ctx.lineTo(x_tank_right, dim4_y);
+    ctx.stroke();
+    drawArrow(x_tank_left, dim4_y, 1, 0);
+    drawArrow(x_tank_right, dim4_y, -1, 0);
+
+</script>
+</body>
+</html>

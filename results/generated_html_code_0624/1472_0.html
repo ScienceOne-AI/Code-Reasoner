@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Propagación de Onda</title>
+</head>
+<body>
+<canvas id="waveCanvas" width="550" height="350"></canvas>
+
+<script>
+const canvas = document.getElementById('waveCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Parámetros de Dibujo ---
+const origin = { x: 80, y: 175 };
+const scale = { x: 180, y: 1500 }; // scaleY = 150px para 0.1m
+
+// --- Función de conversión de coordenadas físicas a coordenadas del canvas ---
+const toCanvasCoords = (x_m, y_m) => {
+    return {
+        x: origin.x + x_m * scale.x,
+        y: origin.y - y_m * scale.y
+    };
+};
+
+// --- Parámetros Físicos ---
+const A = 0.10; // Amplitud
+const k = Math.PI; // Número de onda k = π
+
+// Limpiar el canvas
+ctx.fillStyle = 'white';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// --- Funciones de Dibujo ---
+
+function drawAxes() {
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'black';
+
+    // Eje X
+    ctx.beginPath();
+    let p_x_start = toCanvasCoords(-0.2, 0);
+    let p_x_end = toCanvasCoords(2.5, 0);
+    ctx.moveTo(p_x_start.x, p_x_start.y);
+    ctx.lineTo(p_x_end.x, p_x_end.y);
+    // Flecha del eje X
+    ctx.moveTo(p_x_end.x, p_x_end.y);
+    ctx.lineTo(p_x_end.x - 10, p_x_end.y - 5);
+    ctx.moveTo(p_x_end.x, p_x_end.y);
+    ctx.lineTo(p_x_end.x - 10, p_x_end.y + 5);
+    ctx.stroke();
+    ctx.fillText('x/m', p_x_end.x - 10, p_x_end.y + 20);
+
+    // Eje Y
+    ctx.beginPath();
+    let p_y_start = toCanvasCoords(0, -0.14);
+    let p_y_end = toCanvasCoords(0, 0.14);
+    ctx.moveTo(p_y_start.x, p_y_start.y);
+    ctx.lineTo(p_y_end.x, p_y_end.y);
+    // Flecha del eje Y
+    ctx.moveTo(p_y_end.x, p_y_end.y);
+    ctx.lineTo(p_y_end.x - 5, p_y_end.y + 10);
+    ctx.moveTo(p_y_end.x, p_y_end.y);
+    ctx.lineTo(p_y_end.x + 5, p_y_end.y + 10);
+    ctx.stroke();
+    ctx.fillText('y/m', p_y_end.x - 30, p_y_end.y + 10);
+
+    // Etiqueta del origen
+    ctx.fillText('0', origin.x - 12, origin.y + 12);
+}
+
+function drawTicks() {
+    ctx.font = '16px sans-serif';
+    ctx.fillStyle = 'black';
+
+    // Marcas del eje X
+    ['1.0', '2.0'].forEach(valStr => {
+        const val = parseFloat(valStr);
+        const p = toCanvasCoords(val, 0);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - 4);
+        ctx.lineTo(p.x, p.y + 4);
+        ctx.stroke();
+        ctx.fillText(valStr, p.x, p.y + 20);
+    });
+
+    // Marcas del eje Y
+    ['0.10', '-0.10'].forEach(valStr => {
+        const val = parseFloat(valStr);
+        const p = toCanvasCoords(0, val);
+        ctx.textAlign = 'right';
+        ctx.fillText(valStr, p.x - 8, p.y);
+    });
+    ctx.textAlign = 'center'; // Restaurar alineación
+}
+
+function drawWave(waveFunction, startX, endX) {
+    const steps = 200;
+    ctx.beginPath();
+    let p_start = toCanvasCoords(startX, waveFunction(startX));
+    ctx.moveTo(p_start.x, p_start.y);
+
+    for (let i = 1; i <= steps; i++) {
+        const x = startX + i * (endX - startX) / steps;
+        const y = waveFunction(x);
+        const p = toCanvasCoords(x, y);
+        ctx.lineTo(p.x, p.y);
+    }
+    ctx.stroke();
+}
+
+function drawAnnotations() {
+    // Líneas de ayuda
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'black';
+
+    // Línea horizontal para la amplitud
+    let p_h_start = toCanvasCoords(0, A);
+    let p_h_end = toCanvasCoords(1.0, A);
+    ctx.beginPath();
+    ctx.moveTo(p_h_start.x, p_h_start.y);
+    ctx.lineTo(p_h_end.x, p_h_end.y);
+    ctx.stroke();
+    
+    // Línea vertical desde la cresta de la onda (I)
+    const crestI_x = 0.5;
+    let p_v1_start = toCanvasCoords(crestI_x, A);
+    let p_v1_end = toCanvasCoords(crestI_x, 0);
+    ctx.beginPath();
+    ctx.moveTo(p_v1_start.x, p_v1_start.y);
+    ctx.lineTo(p_v1_end.x, p_v1_end.y);
+    ctx.stroke();
+
+    // Línea vertical desde la cresta de la onda (II)
+    const crestII_x = 1.0;
+    let p_v2_start = toCanvasCoords(crestII_x, A);
+    let p_v2_end = toCanvasCoords(crestII_x, 0);
+    ctx.beginPath();
+    ctx.moveTo(p_v2_start.x, p_v2_start.y);
+    ctx.lineTo(p_v2_end.x, p_v2_end.y);
+    ctx.stroke();
+
+    // Etiquetas de las ondas
+    ctx.font = '20px sans-serif';
+    ctx.fillStyle = 'black';
+    let p_I = toCanvasCoords(0.7, 0.12);
+    ctx.fillText('(I)', p_I.x, p_I.y);
+    let p_II = toCanvasCoords(1.2, 0.12);
+    ctx.fillText('(II)', p_II.x, p_II.y);
+    
+    // Vector de velocidad 'u'
+    ctx.font = 'italic 20px sans-serif';
+    let p_u_label = toCanvasCoords(1.8, 0.18);
+    ctx.fillText('u', p_u_label.x, p_u_label.y);
+    
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    let p_u_start = toCanvasCoords(1.5, 0.15);
+    let p_u_end = toCanvasCoords(2.1, 0.15);
+    ctx.moveTo(p_u_start.x, p_u_start.y);
+    ctx.lineTo(p_u_end.x, p_u_end.y);
+    // Cabeza de la flecha
+    ctx.moveTo(p_u_end.x, p_u_end.y);
+    ctx.lineTo(p_u_end.x - 8, p_u_end.y - 4);
+    ctx.moveTo(p_u_end.x, p_u_end.y);
+    ctx.lineTo(p_u_end.x - 8, p_u_end.y + 4);
+    ctx.stroke();
+}
+
+
+// --- Ejecución Principal del Dibujo ---
+
+drawAxes();
+drawTicks();
+
+// Ecuaciones de las ondas basadas en el análisis
+const waveI_func = (x) => A * Math.sin(k * x); // t=0
+const waveII_func = (x) => A * Math.cos(k * (x - 1.0)); // t=0.1s
+
+ctx.lineWidth = 2;
+
+// Dibujar Onda (I)
+drawWave(waveI_func, 0, 2.3);
+
+// Dibujar Onda (II)
+drawWave(waveII_func, -0.2, 2.5);
+
+drawAnnotations();
+
+</script>
+</body>
+</html>

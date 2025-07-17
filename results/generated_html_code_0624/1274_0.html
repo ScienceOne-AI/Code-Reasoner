@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Conductor Spherical Shell and Charges</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = "italic 18px 'Times New Roman'";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Parameters
+        const cx = canvas.width / 2;
+        const cy = 210;
+        const R2 = 90;
+        const R1 = 65;
+        const chargeRadius = 4;
+
+        // Helper function to draw an arrow
+        function drawArrow(fromx, fromy, tox, toy, angle, length) {
+            angle = angle === undefined ? Math.PI / 8 : angle;
+            length = length === undefined ? 10 : length;
+            const headlen = length;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const arrowAngle = Math.atan2(dy, dx);
+
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(arrowAngle - angle), toy - headlen * Math.sin(arrowAngle - angle));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(arrowAngle + angle), toy - headlen * Math.sin(arrowAngle + angle));
+            ctx.stroke();
+        }
+        
+        // --- Start Drawing ---
+
+        // 1. Draw the conducting spherical shell
+        ctx.beginPath();
+        ctx.arc(cx, cy, R2, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, R1, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 2. Draw dashed lines
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 1.5;
+
+        // Horizontal line for charges Q
+        ctx.beginPath();
+        ctx.moveTo(cx - 2 * R2 - 40, cy);
+        ctx.lineTo(cx + 2 * R2 + 40, cy);
+        ctx.stroke();
+        
+        // Tilted line for charges q
+        const angle45 = 45 * Math.PI / 180;
+        ctx.beginPath();
+        ctx.moveTo(cx - R1 * Math.cos(angle45), cy + R1 * Math.sin(angle45));
+        ctx.lineTo(cx + R1 * Math.cos(angle45), cy - R1 * Math.sin(angle45));
+        ctx.stroke();
+
+        ctx.restore();
+
+        // 3. Draw charges
+        // External charges Q
+        const Q_dist = 2 * R2;
+        const q_left_x = cx - Q_dist;
+        const q_right_x = cx + Q_dist;
+        ctx.beginPath();
+        ctx.arc(q_left_x, cy, chargeRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(q_right_x, cy, chargeRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Internal charges q
+        const q_dist = R1 / 2;
+        const q_tr_x = cx + q_dist * Math.cos(angle45);
+        const q_tr_y = cy - q_dist * Math.sin(angle45);
+        const q_bl_x = cx - q_dist * Math.cos(angle45);
+        const q_bl_y = cy + q_dist * Math.sin(angle45);
+        ctx.beginPath();
+        ctx.arc(q_tr_x, q_tr_y, chargeRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(q_bl_x, q_bl_y, chargeRadius, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 4. Draw labels and arrows
+        ctx.fillStyle = 'black';
+
+        // Labels for Q charges
+        ctx.fillText("Q", q_left_x, cy - 20);
+        ctx.fillText("Q", q_right_x, cy - 20);
+
+        // Labels for q charges
+        ctx.fillText("q", q_tr_x + 15, q_tr_y - 15);
+        ctx.fillText("q", q_bl_x - 15, q_bl_y + 15);
+
+        // Distance labels 2R₂
+        ctx.fillText("2R", cx - 1.5 * R2, cy - 15);
+        ctx.save();
+        ctx.font = "italic 12px 'Times New Roman'";
+        ctx.fillText("2", cx - 1.5 * R2 + 20, cy - 11);
+        ctx.restore();
+        ctx.fillText("2R", cx + 1.5 * R2, cy - 15);
+        ctx.save();
+        ctx.font = "italic 12px 'Times New Roman'";
+        ctx.fillText("2", cx + 1.5 * R2 + 20, cy - 11);
+        ctx.restore();
+
+        // Arrow and label for R₁
+        const r1_arrow_end_x = cx + R1 * Math.cos(angle45);
+        const r1_arrow_end_y = cy + R1 * Math.sin(angle45);
+        drawArrow(cx, cy, r1_arrow_end_x, r1_arrow_end_y);
+        ctx.fillText("R", cx + 0.6 * R1 * Math.cos(angle45) + 12, cy + 0.6 * R1 * Math.sin(angle45));
+        ctx.save();
+        ctx.font = "italic 12px 'Times New Roman'";
+        ctx.fillText("1", cx + 0.6 * R1 * Math.cos(angle45) + 20, cy + 0.6 * R1 * Math.sin(angle45) + 4);
+        ctx.restore();
+
+        // Diagonal line and label for R₂
+        const diag_start_x = cx - R2 * Math.cos(angle45);
+        const diag_start_y = cy - R2 * Math.sin(angle45);
+        const diag_end_x = cx + R2 * Math.cos(angle45);
+        const diag_end_y = cy + R2 * Math.sin(angle45);
+        drawArrow(cx, cy, diag_start_x, diag_start_y);
+        // The image shows a full diameter line with arrowheads at both ends. Let's replicate that.
+        ctx.beginPath();
+        ctx.moveTo(diag_start_x, diag_start_y);
+        ctx.lineTo(diag_end_x, diag_end_y);
+        ctx.stroke();
+        // Manually draw arrow heads for the diameter line
+        const headlen = 10;
+        const arrowAngle1 = Math.atan2(diag_start_y - diag_end_y, diag_start_x - diag_end_x);
+        ctx.beginPath();
+        ctx.moveTo(diag_start_x, diag_start_y);
+        ctx.lineTo(diag_start_x + headlen * Math.cos(arrowAngle1 - Math.PI/8), diag_start_y + headlen * Math.sin(arrowAngle1 - Math.PI/8));
+        ctx.moveTo(diag_start_x, diag_start_y);
+        ctx.lineTo(diag_start_x + headlen * Math.cos(arrowAngle1 + Math.PI/8), diag_start_y + headlen * Math.sin(arrowAngle1 + Math.PI/8));
+        ctx.stroke();
+        const arrowAngle2 = Math.atan2(diag_end_y - diag_start_y, diag_end_x - diag_start_x);
+        ctx.beginPath();
+        ctx.moveTo(diag_end_x, diag_end_y);
+        ctx.lineTo(diag_end_x - headlen * Math.cos(arrowAngle2 - Math.PI/8), diag_end_y - headlen * Math.sin(arrowAngle2 - Math.PI/8));
+        ctx.moveTo(diag_end_x, diag_end_y);
+        ctx.lineTo(diag_end_x - headlen * Math.cos(arrowAngle2 + Math.PI/8), diag_end_y - headlen * Math.sin(arrowAngle2 + Math.PI/8));
+        ctx.stroke();
+
+        ctx.fillText("R", diag_start_x + 10, diag_start_y - 15);
+        ctx.save();
+        ctx.font = "italic 12px 'Times New Roman'";
+        ctx.fillText("2", diag_start_x + 18, diag_start_y - 11);
+        ctx.restore();
+
+
+        // Angle label 45°
+        ctx.beginPath();
+        ctx.arc(cx, cy, 30, 0, -angle45, true);
+        ctx.stroke();
+        ctx.fillText("45°", cx + 30 * Math.cos(angle45 / 2) + 5, cy - 30 * Math.sin(angle45 / 2) - 5);
+        
+        // Fraction labels R₁/2
+        function drawFraction(x, y, num1, sub1, den) {
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.font = "italic 16px 'Times New Roman'";
+            ctx.fillText(num1, x, y - 8);
+            ctx.font = "italic 11px 'Times New Roman'";
+            ctx.fillText(sub1, x + 7, y - 4);
+            ctx.font = "italic 16px 'Times New Roman'";
+            ctx.fillRect(x - 8, y, 16, 1.5); // line
+            ctx.fillText(den, x, y + 10);
+            ctx.restore();
+        }
+        drawFraction(cx + q_dist * Math.cos(angle45) * 0.5 + 5, cy - q_dist * Math.sin(angle45) * 0.5 - 5, "R", "1", "2");
+        drawFraction(cx - q_dist * Math.cos(angle45) * 0.5 - 5, cy + q_dist * Math.sin(angle45) * 0.5 + 5, "R", "1", "2");
+
+        // Chinese text label
+        ctx.font = "24px 'SimSun'";
+        ctx.fillText("导体球壳", cx, cy + R2 + 40);
+
+    </script>
+</body>
+</html>

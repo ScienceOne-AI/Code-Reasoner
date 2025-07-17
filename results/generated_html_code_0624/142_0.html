@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+<canvas id="physics-canvas" width="450" height="350"></canvas>
+<script>
+    const canvas = document.getElementById('physics-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Configuration ---
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    const baseFont = "italic 22px 'Times New Roman'";
+    const subFont = "italic 16px 'Times New Roman'";
+    const regularFont = "22px 'Times New Roman'";
+    const boldFont = "bold 20px 'Times New Roman'";
+
+    // --- Helper Functions ---
+    function drawResistor(x, y, w, h, n) {
+        ctx.beginPath();
+        const dx = w / n;
+        ctx.moveTo(x, y);
+        for (let i = 0; i < n; i++) {
+            ctx.lineTo(x + i * dx + dx / 2, y + (i % 2 === 0 ? -h : h));
+        }
+        ctx.lineTo(x + w, y);
+        ctx.stroke();
+    }
+    
+    function drawInductorLeft(x, y_start, turns, radius, length) {
+        ctx.beginPath();
+        const turnH = length / turns;
+        for (let i = 0; i < turns; i++) {
+            ctx.arc(x - radius, y_start + i * turnH + turnH / 2, radius, -Math.PI / 2, Math.PI / 2, false);
+        }
+        ctx.stroke();
+    }
+    
+    function drawInductorRight(x, y_start, turns, radius, length) {
+        ctx.beginPath();
+        const turnH = length / turns;
+        for (let i = 0; i < turns; i++) {
+            ctx.arc(x + radius, y_start + i * turnH + turnH / 2, radius, Math.PI/2, -Math.PI/2, true);
+        }
+        ctx.stroke();
+    }
+    
+    // --- Coordinates ---
+    const yTop = 60;
+    const yBottom = 260;
+    const yCenter = (yTop + yBottom) / 2;
+    
+    const xSource = 80;
+    const xResistorStart = 100;
+    const xResistorEnd = 180;
+    const xL1 = 200;
+    
+    const xL2 = 240;
+    const xCapacitor = 340;
+    
+    // --- Primary Circuit (Left) ---
+    // Wires
+    ctx.beginPath();
+    ctx.moveTo(xSource, yTop);
+    ctx.lineTo(xSource, yBottom);
+    ctx.lineTo(xL1, yBottom);
+    ctx.lineTo(xL1, yTop);
+    ctx.lineTo(xSource, yTop);
+    ctx.stroke();
+    
+    // AC Source
+    const sourceRadius = 20;
+    ctx.beginPath();
+    ctx.arc(xSource, yCenter, sourceRadius, 0, 2*Math.PI);
+    ctx.moveTo(xSource, yCenter - sourceRadius);
+    ctx.lineTo(xSource, yTop);
+    ctx.moveTo(xSource, yCenter + sourceRadius);
+    ctx.lineTo(xSource, yBottom);
+    ctx.stroke();
+    // Sine wave inside
+    ctx.beginPath();
+    ctx.moveTo(xSource - sourceRadius*0.7, yCenter);
+    ctx.quadraticCurveTo(xSource - sourceRadius*0.35, yCenter - sourceRadius*0.7, xSource, yCenter);
+    ctx.quadraticCurveTo(xSource + sourceRadius*0.35, yCenter + sourceRadius*0.7, xSource + sourceRadius*0.7, yCenter);
+    ctx.stroke();
+    
+    // Resistor
+    ctx.beginPath();
+    ctx.moveTo(xSource, yTop);
+    ctx.lineTo(xResistorStart, yTop);
+    ctx.moveTo(xResistorEnd, yTop);
+    ctx.lineTo(xL1, yTop);
+    ctx.stroke();
+    drawResistor(xResistorStart, yTop, xResistorEnd - xResistorStart, 10, 7);
+    
+    // Inductor L1
+    const indYstart = yTop + 20;
+    const indLen = yBottom - yTop - 40;
+    ctx.beginPath();
+    ctx.moveTo(xL1, yTop);
+    ctx.lineTo(xL1, indYstart);
+    ctx.moveTo(xL1, indYstart + indLen);
+    ctx.lineTo(xL1, yBottom);
+    ctx.stroke();
+    drawInductorLeft(xL1, indYstart, 4, 8, indLen);
+    // Dot for L1
+    ctx.beginPath();
+    ctx.arc(xL1, yTop + 8, 3.5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // --- Secondary Circuit (Right) ---
+    // Wires
+    ctx.beginPath();
+    ctx.moveTo(xL2, yTop);
+    ctx.lineTo(xL2, yBottom);
+    ctx.lineTo(xCapacitor, yBottom);
+    ctx.lineTo(xCapacitor, yTop);
+    ctx.lineTo(xL2, yTop);
+    ctx.stroke();
+    
+    // Inductor L2
+    ctx.beginPath();
+    ctx.moveTo(xL2, yTop);
+    ctx.lineTo(xL2, indYstart);
+    ctx.moveTo(xL2, indYstart + indLen);
+    ctx.lineTo(xL2, yBottom);
+    ctx.stroke();
+    drawInductorRight(xL2, indYstart, 4, 8, indLen);
+    // Dot for L2
+    ctx.beginPath();
+    ctx.arc(xL2, yTop + 8, 3.5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Capacitor C
+    const capGap = 12;
+    const capPlateW = 30;
+    ctx.beginPath();
+    ctx.moveTo(xCapacitor, yTop);
+    ctx.lineTo(xCapacitor, yCenter - capGap / 2);
+    ctx.moveTo(xCapacitor, yCenter + capGap / 2);
+    ctx.lineTo(xCapacitor, yBottom);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(xCapacitor - capPlateW / 2, yCenter - capGap / 2);
+    ctx.lineTo(xCapacitor + capPlateW / 2, yCenter - capGap / 2);
+    ctx.moveTo(xCapacitor - capPlateW / 2, yCenter + capGap / 2);
+    ctx.lineTo(xCapacitor + capPlateW / 2, yCenter + capGap / 2);
+    ctx.stroke();
+
+    // --- Coupling Lines ---
+    const coreXmid = (xL1 + xL2) / 2;
+    ctx.beginPath();
+    ctx.moveTo(coreXmid, indYstart - 5);
+    ctx.lineTo(coreXmid, indYstart + indLen + 5);
+    ctx.moveTo(coreXmid + 4, indYstart - 5);
+    ctx.lineTo(coreXmid + 4, indYstart + indLen + 5);
+    ctx.stroke();
+    
+    // --- Labels ---
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    ctx.font = baseFont;
+    ctx.fillText('R', (xResistorStart + xResistorEnd) / 2, yTop - 25);
+    
+    ctx.font = baseFont;
+    ctx.fillText('L', xL1 - 25, yCenter);
+    ctx.font = subFont;
+    ctx.fillText('1', xL1 - 18, yCenter + 8);
+
+    ctx.font = baseFont;
+    ctx.fillText('L', xL2 + 25, yCenter);
+    ctx.font = subFont;
+    ctx.fillText('2', xL2 + 32, yCenter + 8);
+    
+    ctx.font = baseFont;
+    ctx.fillText('C', xCapacitor + 25, yCenter);
+    
+    ctx.font = baseFont;
+    ctx.fillText('V = V', xSource + 35, yCenter + 35);
+    ctx.font = subFont;
+    ctx.fillText('0', xSource + 57, yCenter + 43);
+    ctx.font = regularFont;
+    ctx.fillText('cos ωt', xSource + 100, yCenter + 35);
+    
+    ctx.font = baseFont;
+    ctx.fillText('i', xSource + 70, yCenter + 65);
+    ctx.font = subFont;
+    ctx.fillText('1', xSource + 77, yCenter + 73);
+    
+    ctx.font = baseFont;
+    ctx.fillText('i', (xL2 + xCapacitor) / 2, yBottom - 25);
+    ctx.font = subFont;
+    ctx.fillText('2', (xL2 + xCapacitor) / 2 + 7, yBottom - 17);
+
+    ctx.font = boldFont;
+    ctx.fillText('Fig. 3.35', (xL1 + xL2) / 2, yBottom + 50);
+
+</script>
+</body>
+</html>

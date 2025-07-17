@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Harmonic Wave Diagram</title>
+</head>
+<body>
+<canvas id="waveCanvas" width="600" height="400" style="border:1px solid #d3d3d3;"></canvas>
+
+<script>
+    const canvas = document.getElementById('waveCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- 1. Setup Coordinates & Parameters ---
+    const margin = { top: 70, right: 30, bottom: 80, left: 60 };
+    const plotWidth = canvas.width - margin.left - margin.right;
+    const plotHeight = canvas.height - margin.top - margin.bottom;
+    const origin = {
+        x: margin.left,
+        y: margin.top + plotHeight / 2
+    };
+
+    // Physics parameters derived from the problem
+    // From analysis: λ(n+1/2)=0.45 and Δt=(k+3/4)T is inconsistent.
+    // The consistent solution is λn=0.45, Δt=(k+1/4)T. Taking n=1, k=1 -> λ=0.45m, T=0.2s.
+    const A = 0.2;        // Amplitude (m)
+    const lambda = 0.45;  // Wavelength (m)
+    const T = 0.2;        // Period (s)
+    const t1 = 0;         // Time for solid wave (s)
+    const t2 = 0.25;      // Time for dashed wave (s)
+    
+    const k = 2 * Math.PI / lambda; // Wave number (rad/m)
+    const omega = 2 * Math.PI / T;    // Angular frequency (rad/s)
+
+    // Scaling
+    const xMax = 1.6 * lambda; // Plot slightly more than 1.5 wavelengths
+    const yMax = 1.5 * A;      // y-axis range
+    const xScale = plotWidth / xMax;
+    const yScale = (plotHeight / 2) / yMax;
+
+    function toCanvasX(x_m) {
+        return origin.x + x_m * xScale;
+    }
+
+    function toCanvasY(y_m) {
+        return origin.y - y_m * yScale;
+    }
+
+    // --- 2. Draw Axes ---
+    ctx.beginPath();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    
+    // Y-axis with arrow
+    ctx.moveTo(origin.x, margin.top - 20);
+    ctx.lineTo(origin.x, canvas.height - margin.bottom);
+    ctx.moveTo(origin.x, margin.top - 20);
+    ctx.lineTo(origin.x - 5, margin.top - 10);
+    ctx.moveTo(origin.x, margin.top - 20);
+    ctx.lineTo(origin.x + 5, margin.top - 10);
+    
+    // X-axis with arrow
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(canvas.width - margin.right + 20, origin.y);
+    ctx.moveTo(canvas.width - margin.right + 20, origin.y);
+    ctx.lineTo(canvas.width - margin.right + 10, origin.y - 5);
+    ctx.moveTo(canvas.width - margin.right + 20, origin.y);
+    ctx.lineTo(canvas.width - margin.right + 10, origin.y + 5);
+    ctx.stroke();
+
+    // --- 3. Draw Labels and Ticks ---
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 18px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.fillText('y/m', origin.x - 30, margin.top - 5);
+    ctx.fillText('x/m', canvas.width - margin.right + 10, origin.y + 25);
+    
+    ctx.font = '16px Times New Roman';
+    ctx.fillText('0', origin.x - 10, origin.y + 20);
+
+    // Y-tick for 0.2
+    const yTickVal = 0.2;
+    const yTickCanvas = toCanvasY(yTickVal);
+    ctx.textAlign = 'right';
+    ctx.fillText('0.2', origin.x - 8, yTickCanvas + 5);
+    ctx.beginPath();
+    ctx.moveTo(origin.x - 4, yTickCanvas);
+    ctx.lineTo(origin.x, yTickCanvas);
+    ctx.stroke();
+    
+    // Dashed line from y-tick to crest
+    const crest_x = lambda / 4;
+    ctx.beginPath();
+    ctx.setLineDash([3, 3]);
+    ctx.moveTo(origin.x, yTickCanvas);
+    ctx.lineTo(toCanvasX(crest_x), yTickCanvas);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.textAlign = 'left';
+
+    // --- 4. Draw Waves ---
+    ctx.lineWidth = 2;
+    // Solid wave (t=0): y = A * sin(k*x)
+    ctx.beginPath();
+    ctx.strokeStyle = 'black';
+    for (let x_px = 0; x_px <= plotWidth; x_px++) {
+        const x_m = x_px / xScale;
+        const y_m = A * Math.sin(k * x_m);
+        if (x_px === 0) {
+            ctx.moveTo(toCanvasX(x_m), toCanvasY(y_m));
+        } else {
+            ctx.lineTo(toCanvasX(x_m), toCanvasY(y_m));
+        }
+    }
+    ctx.stroke();
+
+    // Dashed wave (t=0.25s): y = A * sin(k*x - omega*t2)
+    ctx.beginPath();
+    ctx.setLineDash([6, 4]);
+    for (let x_px = 0; x_px <= plotWidth; x_px++) {
+        const x_m = x_px / xScale;
+        const y_m = A * Math.sin(k * x_m - omega * t2);
+        if (x_px === 0) {
+            ctx.moveTo(toCanvasX(x_m), toCanvasY(y_m));
+        } else {
+            ctx.lineTo(toCanvasX(x_m), toCanvasY(y_m));
+        }
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // --- 5. Draw Annotations ---
+    // Point P
+    const p_x = lambda / 2;
+    ctx.beginPath();
+    ctx.arc(toCanvasX(p_x), toCanvasY(0), 4, 0, 2 * Math.PI);
+    ctx.fillStyle = '#696969';
+    ctx.fill();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 18px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.fillText('P', toCanvasX(p_x), toCanvasY(0) + 22);
+
+    // Dimension line for 0.45
+    const dim_start_x = p_x;
+    const crest_dashed_x = 0.675; // Derived: first crest of dashed wave
+    const dim_y_phys = -0.2;
+    const dim_y_canvas = toCanvasY(dim_y_phys);
+    
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(dim_start_x), origin.y);
+    ctx.lineTo(toCanvasX(dim_start_x), dim_y_canvas);
+    ctx.moveTo(toCanvasX(crest_dashed_x), origin.y);
+    ctx.lineTo(toCanvasX(crest_dashed_x), dim_y_canvas);
+    
+    // Horizontal line with arrows
+    ctx.moveTo(toCanvasX(dim_start_x), dim_y_canvas);
+    ctx.lineTo(toCanvasX(crest_dashed_x), dim_y_canvas);
+    ctx.moveTo(toCanvasX(dim_start_x), dim_y_canvas);
+    ctx.lineTo(toCanvasX(dim_start_x) + 5, dim_y_canvas - 4);
+    ctx.moveTo(toCanvasX(dim_start_x), dim_y_canvas);
+    ctx.lineTo(toCanvasX(dim_start_x) + 5, dim_y_canvas + 4);
+    ctx.moveTo(toCanvasX(crest_dashed_x), dim_y_canvas);
+    ctx.lineTo(toCanvasX(crest_dashed_x) - 5, dim_y_canvas - 4);
+    ctx.moveTo(toCanvasX(crest_dashed_x), dim_y_canvas);
+    ctx.lineTo(toCanvasX(crest_dashed_x) - 5, dim_y_canvas + 4);
+    ctx.stroke();
+    
+    ctx.font = '16px Times New Roman';
+    ctx.fillText('0.45', toCanvasX((dim_start_x + crest_dashed_x) / 2), dim_y_canvas - 8);
+
+    // Text labels and arrows for t1 and t2
+    ctx.textAlign = 'left';
+    ctx.font = 'italic 16px Times New Roman';
+
+    // t1=0 label
+    const t1_label_pos = { x: toCanvasX(0.25), y: toCanvasY(0.23) };
+    ctx.fillText('t', t1_label_pos.x, t1_label_pos.y);
+    ctx.font = '12px Times New Roman';
+    ctx.fillText('1', t1_label_pos.x + 6, t1_label_pos.y + 4);
+    ctx.font = 'italic 16px Times New Roman';
+    ctx.fillText('= 0', t1_label_pos.x + 11, t1_label_pos.y);
+    // Arrow for t1
+    const t1_arrow_to = {x: toCanvasX(0.2), y: toCanvasY(0.12)};
+    ctx.beginPath();
+    ctx.moveTo(t1_label_pos.x + 5, t1_label_pos.y + 5);
+    ctx.lineTo(t1_arrow_to.x, t1_arrow_to.y);
+    ctx.lineTo(t1_arrow_to.x - 5, t1_arrow_to.y + 6);
+    ctx.moveTo(t1_arrow_to.x, t1_arrow_to.y);
+    ctx.lineTo(t1_arrow_to.x + 5, t1_arrow_to.y + 6);
+    ctx.stroke();
+
+    // t2=0.25s label
+    const t2_label_pos = { x: toCanvasX(0.4), y: toCanvasY(0.26) };
+    ctx.fillText('t', t2_label_pos.x, t2_label_pos.y);
+    ctx.font = '12px Times New Roman';
+    ctx.fillText('2', t2_label_pos.x + 6, t2_label_pos.y + 4);
+    ctx.font = 'italic 16px Times New Roman';
+    ctx.fillText('= 0.25 s', t2_label_pos.x + 11, t2_label_pos.y);
+    // Arrow for t2
+    const t2_arrow_to = {x: toCanvasX(0.45), y: toCanvasY(0.12)};
+    ctx.beginPath();
+    ctx.moveTo(t2_label_pos.x + 15, t2_label_pos.y - 5);
+    ctx.lineTo(t2_arrow_to.x, t2_arrow_to.y);
+    ctx.lineTo(t2_arrow_to.x - 6, t2_arrow_to.y + 5);
+    ctx.moveTo(t2_arrow_to.x, t2_arrow_to.y);
+    ctx.lineTo(t2_arrow_to.x - 3, t2_arrow_to.y - 7);
+    ctx.stroke();
+
+    // Velocity arrow 'u'
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('u', toCanvasX(0.35), margin.top - 25);
+    ctx.beginPath();
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(toCanvasX(0.2), margin.top - 30);
+    ctx.lineTo(toCanvasX(0.3), margin.top - 30);
+    ctx.lineTo(toCanvasX(0.29), margin.top - 30 - 4);
+    ctx.moveTo(toCanvasX(0.3), margin.top - 30);
+    ctx.lineTo(toCanvasX(0.29), margin.top - 30 + 4);
+    ctx.stroke();
+
+    // Bottom title
+    ctx.font = '18px "SimSun", "Songti SC"';
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 11-8 图', canvas.width / 2, canvas.height - 25);
+</script>
+
+</body>
+</html>

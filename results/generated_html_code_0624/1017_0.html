@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram of a Moving Bar in a Magnetic Field</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="300"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Drawing Parameters ---
+        const railTopY = 50;
+        const railBottomY = 200;
+        const railLeftX = 50;
+        const railRightX = 550;
+        const railLength = railRightX - railLeftX;
+
+        // Ratio 3L : L implies total length is 4L.
+        // Bar position divides the total length.
+        const barX = railLeftX + (3 / 4) * railLength;
+        const barWidth = 12;
+
+        const mainLineWidth = 2;
+        const labelFont = '20px Times New Roman';
+        const velocityFont = 'italic 20px Times New Roman';
+
+        // --- Drawing Functions ---
+
+        function drawRails() {
+            ctx.beginPath();
+            ctx.lineWidth = mainLineWidth;
+            ctx.strokeStyle = 'black';
+            // Top rail
+            ctx.moveTo(railLeftX, railTopY);
+            ctx.lineTo(railRightX, railTopY);
+            // Bottom rail
+            ctx.moveTo(railLeftX, railBottomY);
+            ctx.lineTo(railRightX, railBottomY);
+            ctx.stroke();
+        }
+
+        function drawResistor(x, y_start, y_end, label) {
+            const resistorBodyStart = y_start + 30;
+            const resistorBodyEnd = y_end - 30;
+            const zigWidth = 10;
+
+            ctx.beginPath();
+            ctx.lineWidth = mainLineWidth;
+            ctx.strokeStyle = 'black';
+            
+            // Top wire
+            ctx.moveTo(x, y_start);
+            ctx.lineTo(x, resistorBodyStart);
+
+            // Zigzag body
+            ctx.lineTo(x - zigWidth, resistorBodyStart + 15);
+            ctx.lineTo(x + zigWidth, resistorBodyStart + 45);
+            ctx.lineTo(x - zigWidth, resistorBodyStart + 75);
+            ctx.lineTo(x, resistorBodyEnd);
+
+            // Bottom wire
+            ctx.lineTo(x, y_end);
+            ctx.stroke();
+
+            // Label
+            ctx.font = labelFont;
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            const labelX = (label === 'X') ? x - 25 : x + 25;
+            ctx.fillText(label, labelX, (y_start + y_end) / 2);
+        }
+
+        function drawMagneticField() {
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'black';
+
+            const crossSize = 10;
+            const numRows = 4;
+            const numCols = 9;
+            const xSpacing = railLength / (numCols + 1);
+            const ySpacing = (railBottomY - railTopY) / (numRows + 1);
+
+            for (let i = 1; i <= numCols; i++) {
+                for (let j = 1; j <= numRows; j++) {
+                    const x = railLeftX + i * xSpacing;
+                    const y = railTopY + j * ySpacing;
+                    // Draw a cross 'x'
+                    ctx.moveTo(x - crossSize / 2, y - crossSize / 2);
+                    ctx.lineTo(x + crossSize / 2, y + crossSize / 2);
+                    ctx.moveTo(x + crossSize / 2, y - crossSize / 2);
+                    ctx.lineTo(x - crossSize / 2, y + crossSize / 2);
+                }
+            }
+            ctx.stroke();
+        }
+
+        function drawSlidingBar() {
+            ctx.fillStyle = '#D3D3D3'; // Light gray
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1.5;
+            
+            ctx.fillRect(barX - barWidth / 2, railTopY, barWidth, railBottomY - railTopY);
+            ctx.strokeRect(barX - barWidth / 2, railTopY, barWidth, railBottomY - railTopY);
+        }
+
+        function drawVelocityVector() {
+            const arrowY = railTopY + 35;
+            const arrowLength = 60;
+            const arrowStartX = barX - barWidth / 2 - 10;
+            const arrowEndX = arrowStartX - arrowLength;
+            
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'black';
+            ctx.fillStyle = 'black';
+
+            // Arrow shaft
+            ctx.moveTo(arrowStartX, arrowY);
+            ctx.lineTo(arrowEndX, arrowY);
+            ctx.stroke();
+
+            // Arrow head
+            ctx.moveTo(arrowEndX, arrowY);
+            ctx.lineTo(arrowEndX + 10, arrowY - 5);
+            ctx.lineTo(arrowEndX + 10, arrowY + 5);
+            ctx.closePath();
+            ctx.fill();
+
+            // Label 'v'
+            ctx.font = velocityFont;
+            ctx.textAlign = 'center';
+            ctx.fillText('v', arrowStartX - arrowLength / 2, arrowY - 10);
+        }
+
+        function drawDimensionLines() {
+            const dimY = railBottomY + 30;
+            const tickHeight = 10;
+            
+            ctx.beginPath();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'black';
+
+            // Main horizontal line
+            ctx.moveTo(railLeftX, dimY);
+            ctx.lineTo(railRightX, dimY);
+
+            // Ticks
+            ctx.moveTo(railLeftX, railBottomY);
+            ctx.lineTo(railLeftX, dimY);
+            ctx.moveTo(barX, railBottomY);
+            ctx.lineTo(barX, dimY);
+            ctx.moveTo(railRightX, railBottomY);
+            ctx.lineTo(railRightX, dimY);
+            ctx.stroke();
+
+            // Labels '3L' and 'L'
+            ctx.font = labelFont;
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.fillText('3L', railLeftX + (barX - railLeftX) / 2, dimY + 20);
+            ctx.fillText('L', barX + (railRightX - barX) / 2, dimY + 20);
+        }
+
+        // --- Main Drawing Execution ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawMagneticField();
+            drawRails();
+            drawResistor(railLeftX, railTopY, railBottomY, 'X');
+            drawResistor(railRightX, railTopY, railBottomY, 'Y');
+            drawSlidingBar();
+            drawVelocityVector();
+            drawDimensionLines();
+        }
+
+        draw();
+
+    </script>
+</body>
+</html>

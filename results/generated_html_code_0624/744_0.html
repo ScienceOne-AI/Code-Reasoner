@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Parameter Definitions ---
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const bulbRadius = 22;
+
+        // --- Component Coordinates ---
+        const batteryX = 120;
+        const topWireY = 60;
+        const bottomWireY = 340;
+
+        const branch1X = 320; // X-coordinate for branch with bulbs A and B
+        const branch2X = 480; // X-coordinate for branch with bulb D
+
+        const bulbA = { x: branch1X, y: 140 };
+        const bulbB = { x: branch1X, y: 240 };
+        const bulbC = { x: 220, y: bottomWireY };
+        const bulbD = { x: branch2X, y: 190 };
+
+        // --- Drawing Wires ---
+        ctx.beginPath();
+        
+        // Top horizontal wire and connection to battery
+        ctx.moveTo(batteryX, 120); // Start from top of battery
+        ctx.lineTo(batteryX, topWireY);
+        ctx.lineTo(branch2X, topWireY);
+
+        // Bottom horizontal wire and connection to battery (passing through bulb C)
+        ctx.moveTo(batteryX, 280); // Start from bottom of battery
+        ctx.lineTo(batteryX, bottomWireY);
+        ctx.lineTo(bulbC.x - bulbRadius, bottomWireY); // Wire to the left of C
+        ctx.moveTo(bulbC.x + bulbRadius, bottomWireY); // Wire from the right of C
+        ctx.lineTo(branch2X, bottomWireY);
+
+        // Branch with bulbs A and B
+        ctx.moveTo(branch1X, topWireY);
+        ctx.lineTo(branch1X, bulbA.y - bulbRadius); // Wire to A
+        ctx.moveTo(branch1X, bulbA.y + bulbRadius); // Wire from A to B
+        ctx.lineTo(branch1X, bulbB.y - bulbRadius); // Wire to B
+        ctx.moveTo(branch1X, bulbB.y + bulbRadius); // Wire from B
+        ctx.lineTo(branch1X, bottomWireY); // Connect to bottom wire
+
+        // Branch with bulb D
+        ctx.moveTo(branch2X, topWireY);
+        ctx.lineTo(branch2X, bulbD.y - bulbRadius); // Wire to D
+        ctx.moveTo(branch2X, bulbD.y + bulbRadius); // Wire from D
+        ctx.lineTo(branch2X, bottomWireY); // Connect to bottom wire
+        
+        ctx.stroke();
+
+        // --- Drawing Components ---
+
+        // Draw Battery
+        const longLineWidth = 60;
+        const shortLineWidth = 30;
+        ctx.beginPath();
+        ctx.moveTo(batteryX - longLineWidth / 2, 120); // Top long plate
+        ctx.lineTo(batteryX + longLineWidth / 2, 120);
+        ctx.moveTo(batteryX - shortLineWidth / 2, 160); // Short plate
+        ctx.lineTo(batteryX + shortLineWidth / 2, 160);
+        ctx.moveTo(batteryX - longLineWidth / 2, 200); // Long plate
+        ctx.lineTo(batteryX + longLineWidth / 2, 200);
+        ctx.moveTo(batteryX - shortLineWidth / 2, 240); // Long plate in image is actually short
+        ctx.lineTo(batteryX + shortLineWidth / 2, 240);
+        ctx.moveTo(batteryX - shortLineWidth / 2, 280); // Bottom short plate
+        ctx.lineTo(batteryX + shortLineWidth / 2, 280);
+
+        // Based on the image, the battery symbol has 4 pairs of lines. The top-most long, the bottom-most short.
+        // Let's adjust to match the image exactly: Long, Short, Long, Short.
+        ctx.clearRect(0,0,canvas.width,canvas.height); // Clear and redraw battery
+        ctx.beginPath();
+        const batteryTopY = 140;
+        const cellSpacing = 40;
+        ctx.moveTo(batteryX - longLineWidth / 2, batteryTopY);
+        ctx.lineTo(batteryX + longLineWidth / 2, batteryTopY);
+        ctx.moveTo(batteryX - shortLineWidth / 2, batteryTopY + cellSpacing);
+        ctx.lineTo(batteryX + shortLineWidth / 2, batteryTopY + cellSpacing);
+        ctx.moveTo(batteryX - longLineWidth / 2, batteryTopY + 2 * cellSpacing);
+        ctx.lineTo(batteryX + longLineWidth / 2, batteryTopY + 2 * cellSpacing);
+        ctx.moveTo(batteryX - shortLineWidth / 2, batteryTopY + 3 * cellSpacing);
+        ctx.lineTo(batteryX + shortLineWidth / 2, batteryTopY + 3 * cellSpacing);
+        
+        // Reconnect wires to the new battery terminals
+        ctx.moveTo(batteryX, batteryTopY);
+        ctx.lineTo(batteryX, topWireY);
+        ctx.moveTo(batteryX, batteryTopY + 3 * cellSpacing);
+        ctx.lineTo(batteryX, bottomWireY);
+
+        ctx.stroke();
+
+        // Re-stroke wires now that battery is corrected
+        ctx.beginPath();
+        ctx.moveTo(batteryX, topWireY); ctx.lineTo(branch2X, topWireY);
+        ctx.moveTo(batteryX, bottomWireY); ctx.lineTo(bulbC.x - bulbRadius, bottomWireY);
+        ctx.moveTo(bulbC.x + bulbRadius, bottomWireY); ctx.lineTo(branch2X, bottomWireY);
+        ctx.moveTo(branch1X, topWireY); ctx.lineTo(branch1X, bulbA.y - bulbRadius);
+        ctx.moveTo(branch1X, bulbA.y + bulbRadius); ctx.lineTo(branch1X, bulbB.y - bulbRadius);
+        ctx.moveTo(branch1X, bulbB.y + bulbRadius); ctx.lineTo(branch1X, bottomWireY);
+        ctx.moveTo(branch2X, topWireY); ctx.lineTo(branch2X, bulbD.y - bulbRadius);
+        ctx.moveTo(branch2X, bulbD.y + bulbRadius); ctx.lineTo(branch2X, bottomWireY);
+        ctx.stroke();
+
+
+        // Draw Bulbs (circles) - draw these last to appear on top of wires
+        function drawBulb(x, y, radius, label) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white'; // Fill to cover the wire underneath
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = 'black'; // Set fill style back for text
+            
+            // Label positioning
+            if (label === 'C') {
+                ctx.fillText(label, x, y + radius + 20); // Label below
+            } else {
+                ctx.fillText(label, x + radius + 20, y); // Label to the right
+            }
+        }
+
+        drawBulb(bulbA.x, bulbA.y, bulbRadius, 'A');
+        drawBulb(bulbB.x, bulbB.y, bulbRadius, 'B');
+        drawBulb(bulbC.x, bulbC.y, bulbRadius, 'C');
+        drawBulb(bulbD.x, bulbD.y, bulbRadius, 'D');
+
+        // Draw Voltage Label
+        ctx.textAlign = 'center';
+        ctx.fillText("10 V", batteryX - 70, batteryTopY + 1.5 * cellSpacing);
+
+    </script>
+</body>
+</html>

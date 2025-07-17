@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+</head>
+<body>
+    <canvas id="canvas" width="500" height="450"></canvas>
+    <script>
+        // Function to draw an arrow head
+        function drawArrowHead(ctx, tox, toy, angle) {
+            const headlen = 10;
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Function to draw a line with an arrow at the end
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const angle = Math.atan2(toy - fromy, tox - fromx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            drawArrowHead(ctx, tox, toy, angle);
+        }
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+
+        const originX = 250;
+        const originY = 320;
+
+        // Draw axes
+        const axisLength = 150;
+        const xAxisAngle = Math.PI / 6;
+
+        // Z-axis
+        drawArrow(ctx, originX, originY, originX, originY - axisLength - 20);
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('z', originX - 20, originY - axisLength - 15);
+
+        // Y-axis
+        drawArrow(ctx, originX, originY, originX + axisLength + 50, originY);
+        ctx.fillText('y', originX + axisLength + 55, originY + 5);
+
+        // X-axis
+        const xEndX = originX - axisLength * Math.cos(xAxisAngle);
+        const xEndY = originY + axisLength * Math.sin(xAxisAngle);
+        drawArrow(ctx, originX, originY, xEndX, xEndY);
+        ctx.fillText('x', xEndX - 15, xEndY + 15);
+
+        // Origin Label
+        ctx.fillText('O', originX - 25, originY + 20);
+
+        // Loop parameters
+        const h = 120;
+        const r_major = 160;
+        const r_minor = r_major * 0.3;
+        const loopCenterX = originX;
+        const loopCenterY = originY - h;
+
+        // Draw dashed diameters
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 1.5;
+
+        // Horizontal diameter: Q1-Q2
+        const Q1x = loopCenterX - r_major;
+        const Q1y = loopCenterY;
+        const Q2x = loopCenterX + r_major;
+        const Q2y = loopCenterY;
+        ctx.moveTo(Q1x, Q1y);
+        ctx.lineTo(Q2x, Q2y);
+
+        // Diagonal diameter: P1-P2
+        const p_diag_x_offset = r_major * 0.6;
+        const p_diag_y_offset = r_minor * 1.1;
+        const P1x = loopCenterX - p_diag_x_offset;
+        const P1y = loopCenterY + p_diag_y_offset;
+        const P2x = loopCenterX + p_diag_x_offset;
+        const P2y = loopCenterY - p_diag_y_offset;
+        ctx.moveTo(P1x, P1y);
+        ctx.lineTo(P2x, P2y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.lineWidth = 2;
+
+
+        // Draw the loop (ellipse)
+        ctx.beginPath();
+        ctx.ellipse(loopCenterX, loopCenterY, r_major, r_minor, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Draw current arrows (simple filled triangles for style match)
+        // Back current arrow (pointing left)
+        ctx.save();
+        ctx.translate(loopCenterX - r_major*0.7, loopCenterY - r_minor * 0.7);
+        ctx.rotate(-Math.PI/12);
+        ctx.beginPath();
+        ctx.moveTo(0,0); ctx.lineTo(-10, -5); ctx.lineTo(-10, 5); ctx.closePath(); ctx.fill();
+        ctx.restore();
+
+        // Front current arrow (pointing right)
+        ctx.save();
+        ctx.translate(loopCenterX + r_major*0.7, loopCenterY + r_minor * 0.7);
+        ctx.rotate(Math.PI/12);
+        ctx.beginPath();
+        ctx.moveTo(0,0); ctx.lineTo(10, -5); ctx.lineTo(10, 5); ctx.closePath(); ctx.fill();
+        ctx.restore();
+        
+        // Draw radius line 'r'
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 1.5;
+        ctx.moveTo(loopCenterX, loopCenterY);
+        ctx.lineTo(P1x, P1y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.lineWidth = 2;
+
+        // Draw height indicator 'h'
+        const h_line_x = Q2x + 30;
+        ctx.beginPath();
+        ctx.moveTo(h_line_x, Q2y);
+        ctx.lineTo(h_line_x, originY);
+        ctx.stroke();
+        // Top T-bar
+        ctx.beginPath();
+        ctx.moveTo(h_line_x - 10, Q2y);
+        ctx.lineTo(h_line_x + 10, Q2y);
+        ctx.stroke();
+        // Bottom T-bar with two arrows (double arrow style)
+        drawArrow(ctx, h_line_x, Q2y, h_line_x, originY);
+        drawArrow(ctx, h_line_x, originY, h_line_x, Q2y);
+
+        // Labels
+        ctx.font = 'italic 24px "Times New Roman"';
+        // Q1, Q2
+        ctx.fillText('Q', Q1x - 30, Q1y + 8);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText('1', Q1x - 19, Q1y + 12);
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('Q', Q2x + 10, Q2y + 8);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText('2', Q2x + 23, Q2y + 12);
+
+        // P1, P2
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('P', P1x - 10, P1y + 20);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText('1', P1x, P1y + 24);
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('P', P2x - 5, P2y - 15);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText('2', P2x + 6, P2y - 11);
+
+        // I, m, r, h
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('I', loopCenterX - 110, loopCenterY - r_minor - 5);
+        ctx.fillText('I', loopCenterX + 100, loopCenterY + r_minor + 20);
+        ctx.fillText('m', P2x + 15, P2y + 5);
+        ctx.fillText('r', (loopCenterX + P1x) / 2 - 20, (loopCenterY + P1y) / 2 + 10);
+        ctx.fillText('h', h_line_x + 15, originY - h/2 + 8);
+
+        // Chinese text
+        ctx.font = '24px "SimSun"';
+        ctx.fillText('超导平板', originX, originY + 40);
+        ctx.fillText('电图 2.24.1', originX - 60, originY + 110);
+    </script>
+</body>
+</html>

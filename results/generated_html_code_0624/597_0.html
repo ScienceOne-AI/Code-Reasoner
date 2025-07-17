@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wave Optics Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="350" style="border:1px solid #d3d3d3;"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper function to draw a line with a filled arrowhead ---
+    function drawArrow(ctx, fromX, fromY, toX, toY, headLength) {
+        headLength = typeof headLength !== 'undefined' ? headLength : 10;
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+
+        // Draw the line
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+
+        // Draw the filled arrowhead
+        ctx.save();
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.beginPath();
+        ctx.translate(toX, toY);
+        ctx.rotate(angle);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headLength, -headLength / 2);
+        ctx.lineTo(-headLength, headLength / 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Drawing Parameters ---
+    const centerX = 250;
+    const centerY = 175;
+    const waveSpacing = 50;
+
+    const y_top_wave = centerY - waveSpacing;
+    const y_mid_wave = centerY;
+    const y_bot_wave = centerY + waveSpacing;
+
+    const x_start = 40;
+    const x_end = 460;
+
+    const plate_x_left = 180;
+    const plate_width_d1 = 140;
+    const plate_width_d2 = 80;
+    const plate_x_right_d1 = plate_x_left + plate_width_d1;
+    const plate_x_right_d2 = plate_x_left + plate_width_d2;
+
+    const plate_top = y_top_wave - 40;
+    const plate_bottom = y_bot_wave + 40;
+    const plate_step_y = y_mid_wave;
+
+    const point_radius = 4;
+    
+    // --- General Style ---
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    
+    // 1. Draw the stepped plate
+    ctx.fillStyle = '#E0E0E0'; // Light gray fill
+    ctx.beginPath();
+    ctx.moveTo(plate_x_left, plate_top);
+    ctx.lineTo(plate_x_right_d2, plate_top);
+    ctx.lineTo(plate_x_right_d2, plate_step_y);
+    ctx.lineTo(plate_x_right_d1, plate_step_y);
+    ctx.lineTo(plate_x_right_d1, plate_bottom);
+    ctx.lineTo(plate_x_left, plate_bottom);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // 2. Draw the wave lines
+    ctx.lineWidth = 1;
+    [y_top_wave, y_mid_wave, y_bot_wave].forEach(y => {
+        drawArrow(ctx, x_start, y, x_end, y, 10);
+    });
+
+    // 3. Draw the vertical wavefront lines
+    ctx.lineWidth = 1.5;
+    const line_y_top = y_top_wave - 15;
+    const line_y_bottom = y_bot_wave + 15;
+
+    ctx.beginPath();
+    ctx.moveTo(plate_x_left, line_y_top);
+    ctx.lineTo(plate_x_left, line_y_bottom);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(plate_x_right_d2, line_y_top);
+    ctx.lineTo(plate_x_right_d2, line_y_bottom);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(plate_x_right_d1, line_y_top);
+    ctx.lineTo(plate_x_right_d1, line_y_bottom);
+    ctx.stroke();
+
+    // 4. Draw points P1 and P2
+    const p1_x = plate_x_right_d1;
+    const p1_y = y_mid_wave;
+    const p2_x = plate_x_right_d1;
+    const p2_y = y_top_wave;
+
+    ctx.fillStyle = 'black';
+    ctx.beginPath();
+    ctx.arc(p1_x, p1_y, point_radius, 0, 2 * Math.PI);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(p2_x, p2_y, point_radius, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 5. Draw the vertical dashed line
+    ctx.save();
+    ctx.setLineDash([5, 4]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(p2_x, p2_y - 25);
+    ctx.lineTo(p1_x, p1_y + 15);
+    ctx.stroke();
+    ctx.restore();
+
+    // 6. Draw dimension lines and labels
+    ctx.lineWidth = 1;
+
+    // Dimension d2
+    const d2_y = plate_top - 10;
+    ctx.beginPath();
+    ctx.moveTo(plate_x_left, d2_y - 5);
+    ctx.lineTo(plate_x_left, d2_y + 5);
+    ctx.moveTo(plate_x_right_d2, d2_y - 5);
+    ctx.lineTo(plate_x_right_d2, d2_y + 5);
+    ctx.moveTo(plate_x_left, d2_y);
+    ctx.lineTo(plate_x_right_d2, d2_y);
+    ctx.stroke();
+
+    // Dimension d1
+    const d1_y = plate_bottom + 10;
+    ctx.beginPath();
+    ctx.moveTo(plate_x_left, d1_y - 5);
+    ctx.lineTo(plate_x_left, d1_y + 5);
+    ctx.moveTo(plate_x_right_d1, d1_y - 5);
+    ctx.lineTo(plate_x_right_d1, d1_y + 5);
+    ctx.moveTo(plate_x_left, d1_y);
+    ctx.lineTo(plate_x_right_d1, d1_y);
+    ctx.stroke();
+    
+    // --- Text Labels ---
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+
+    // Label d2
+    const d2_text_x = (plate_x_left + plate_x_right_d2) / 2;
+    ctx.font = 'italic 18px Times New Roman';
+    ctx.fillText('d', d2_text_x - 4, d2_y - 12);
+    ctx.font = '12px Times New Roman';
+    ctx.fillText('2', d2_text_x + 5, d2_y - 8);
+
+    // Label d1
+    const d1_text_x = (plate_x_left + plate_x_right_d1) / 2;
+    ctx.font = 'italic 18px Times New Roman';
+    ctx.fillText('d', d1_text_x - 4, d1_y + 22);
+    ctx.font = '12px Times New Roman';
+    ctx.fillText('1', d1_text_x + 5, d1_y + 26);
+    
+    ctx.textAlign = 'left';
+
+    // Label n0
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('n', 120, y_top_wave - 20);
+    ctx.font = '14px Times New Roman';
+    ctx.fillText('0', 133, y_top_wave - 15);
+    
+    // Label n
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('n', 225, y_mid_wave + 35);
+    
+    // Label P1
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('P', p1_x + 12, p1_y + 8);
+    ctx.font = '14px Times New Roman';
+    ctx.fillText('1', p1_x + 24, p1_y + 12);
+    
+    // Label P2
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('P', p2_x + 12, p2_y + 8);
+    ctx.font = '14px Times New Roman';
+    ctx.fillText('2', p2_x + 24, p2_y + 12);
+
+</script>
+</body>
+</html>

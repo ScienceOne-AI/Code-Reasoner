@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram of a Spring-Mass System</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Drawing Parameters & Coordinates ---
+        const wallX = 80;
+        const floorY = 320;
+        const blockWidth = 90;
+        const blockHeight = 60;
+        const springLength = 220; // Stretched length
+        
+        const blockX = wallX + springLength;
+        const blockY = floorY - blockHeight;
+        
+        const springY = floorY - blockHeight / 2;
+        
+        const fallingMassRadius = 6;
+        const fallingMassX = blockX + blockWidth / 2;
+        const fallingMassY = 100;
+        
+        const heightIndicatorX = fallingMassX + 90;
+
+        // --- Helper Function to Draw Hatching ---
+        function drawHatching(x1, y1, x2, y2, isVertical) {
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            const spacing = 10;
+            const length = 10;
+            if (isVertical) { // For the wall
+                for (let y = y1; y < y2; y += spacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y);
+                    ctx.lineTo(x1 - length, y + length);
+                    ctx.stroke();
+                }
+            } else { // For the floor
+                for (let x = x1; x < x2; x += spacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, y1);
+                    ctx.lineTo(x - length, y1 + length);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+
+        // --- Helper Function to Draw an Arrow Head ---
+        function drawArrowHead(fromX, fromY, toX, toY, headLength) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Sequence ---
+
+        // 1. Draw Wall and Floor
+        ctx.beginPath();
+        ctx.moveTo(wallX, 50);
+        ctx.lineTo(wallX, floorY);
+        ctx.lineTo(canvas.width - 50, floorY);
+        ctx.stroke();
+        drawHatching(wallX, 50, wallX, floorY, true);
+        drawHatching(wallX, floorY, canvas.width - 50, floorY, false);
+
+        // 2. Draw the Spring
+        ctx.beginPath();
+        ctx.moveTo(wallX, springY);
+        const leadLength = 15;
+        ctx.lineTo(wallX + leadLength, springY);
+        let currentX = wallX + leadLength;
+        const numCoils = 7;
+        const coilSectionLength = springLength - 2 * leadLength;
+        const loopWidth = coilSectionLength / numCoils;
+        const loopRadius = loopWidth / 2;
+
+        for (let i = 0; i < numCoils; i++) {
+            ctx.arc(currentX + loopRadius, springY, loopRadius, Math.PI, 0, false);
+            currentX += loopWidth;
+        }
+        ctx.lineTo(blockX, springY);
+        ctx.stroke();
+
+        // 3. Draw the Block (m')
+        ctx.beginPath();
+        ctx.rect(blockX, blockY, blockWidth, blockHeight);
+        ctx.stroke();
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText("m'", blockX + blockWidth / 2, blockY + blockHeight / 2);
+
+        // 4. Draw the Falling Object (m) and its motion arrow
+        ctx.beginPath();
+        ctx.arc(fallingMassX, fallingMassY, fallingMassRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText("m", fallingMassX - 25, fallingMassY);
+        
+        // Motion arrow
+        ctx.beginPath();
+        const arrowStartY = fallingMassY + fallingMassRadius + 5;
+        const arrowEndY = fallingMassY + 50;
+        ctx.moveTo(fallingMassX, arrowStartY);
+        ctx.lineTo(fallingMassX, arrowEndY);
+        ctx.stroke();
+        drawArrowHead(fallingMassX, arrowStartY, fallingMassX, arrowEndY, 10);
+
+        // 5. Draw the Height Indicator (h)
+        const h_topY = fallingMassY;
+        const h_bottomY = blockY;
+        // Ticks
+        ctx.beginPath();
+        ctx.moveTo(heightIndicatorX - 10, h_topY);
+        ctx.lineTo(heightIndicatorX + 10, h_topY);
+        ctx.moveTo(heightIndicatorX - 10, h_bottomY);
+        ctx.lineTo(heightIndicatorX + 10, h_bottomY);
+        ctx.stroke();
+        // Vertical Line with arrowheads
+        ctx.beginPath();
+        ctx.moveTo(heightIndicatorX, h_topY);
+        ctx.lineTo(heightIndicatorX, h_bottomY);
+        ctx.stroke();
+        drawArrowHead(heightIndicatorX, h_bottomY, heightIndicatorX, h_topY, 8); // Top head
+        drawArrowHead(heightIndicatorX, h_topY, heightIndicatorX, h_bottomY, 8); // Bottom head
+        // Label
+        ctx.fillText("h", heightIndicatorX + 25, (h_topY + h_bottomY) / 2);
+
+        // 6. Draw the Caption
+        ctx.font = '24px "SimSun", "Songti SC"';
+        ctx.fillText("习题 10-8 图", canvas.width / 2, floorY + 70);
+
+    </script>
+</body>
+</html>

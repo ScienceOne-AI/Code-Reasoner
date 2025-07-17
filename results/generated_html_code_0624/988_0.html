@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fig 12.1 Graph</title>
+</head>
+<body>
+<canvas id="physicsGraph" width="700" height="600"></canvas>
+<script>
+    const canvas = document.getElementById('physicsGraph');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const margin = { top: 40, right: 40, bottom: 80, left: 80 };
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const graphWidth = canvasWidth - margin.left - margin.right;
+    const graphHeight = canvasHeight - margin.top - margin.bottom;
+
+    const tMin = 0;
+    const tMax = 25;
+    const lnAMin = 35.0;
+    const lnAMax = 36.6;
+
+    // --- Coordinate mapping functions ---
+    function mapX(t) {
+        return margin.left + (t - tMin) / (tMax - tMin) * graphWidth;
+    }
+
+    function mapY(lnA) {
+        return margin.top + graphHeight - (lnA - lnAMin) / (lnAMax - lnAMin) * graphHeight;
+    }
+
+    // --- Drawing functions ---
+
+    function drawGrid() {
+        ctx.strokeStyle = '#d3d3d3'; // Light grey for grid
+        ctx.lineWidth = 0.5;
+
+        // Vertical minor grid lines (every 0.5 min)
+        const tStepMinor = 0.5;
+        for (let t = tMin + tStepMinor; t < tMax; t += tStepMinor) {
+            if (t % 5 !== 0) {
+                ctx.beginPath();
+                ctx.moveTo(mapX(t), mapY(lnAMin));
+                ctx.lineTo(mapX(t), mapY(lnAMax));
+                ctx.stroke();
+            }
+        }
+
+        // Horizontal minor grid lines (every 0.04)
+        const lnAStepMinor = 0.04;
+        for (let lnA = lnAMin + lnAStepMinor; lnA < lnAMax; lnA += lnAStepMinor) {
+            // Use tolerance for floating point comparison
+            if (Math.abs((lnA * 100) % 40) > 1e-9) {
+                 ctx.beginPath();
+                 ctx.moveTo(mapX(tMin), mapY(lnA));
+                 ctx.lineTo(mapX(tMax), mapY(lnA));
+                 ctx.stroke();
+            }
+        }
+
+        // Major grid lines
+        ctx.strokeStyle = '#a9a9a9'; // Darker grey for major grid
+        ctx.lineWidth = 1;
+
+        // Vertical major grid lines (every 5 min)
+        const tStepMajor = 5;
+        for (let t = tMin; t <= tMax; t += tStepMajor) {
+            ctx.beginPath();
+            ctx.moveTo(mapX(t), mapY(lnAMin));
+            ctx.lineTo(mapX(t), mapY(lnAMax));
+            ctx.stroke();
+        }
+
+        // Horizontal major grid lines (every 0.4)
+        const lnAStepMajor = 0.4;
+        for (let lnA = lnAMin; lnA <= lnAMax + lnAStepMajor/10; lnA += lnAStepMajor) {
+            ctx.beginPath();
+            ctx.moveTo(mapX(tMin), mapY(lnA));
+            ctx.lineTo(mapX(tMax), mapY(lnA));
+            ctx.stroke();
+        }
+    }
+
+    function drawAxes() {
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+
+        // X-axis
+        ctx.beginPath();
+        ctx.moveTo(mapX(tMin), mapY(lnAMin));
+        ctx.lineTo(mapX(tMax), mapY(lnAMin));
+        ctx.stroke();
+
+        // Y-axis
+        ctx.beginPath();
+        ctx.moveTo(mapX(tMin), mapY(lnAMin));
+        ctx.lineTo(mapX(tMin), mapY(lnAMax));
+        ctx.stroke();
+    }
+
+    function drawLabelsAndTicks() {
+        ctx.fillStyle = 'black';
+
+        // Axis ticks and labels
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+
+        // X-axis ticks and labels
+        for (let t = tMin; t <= tMax; t += 5) {
+            ctx.fillText(t, mapX(t), mapY(lnAMin) + 8);
+        }
+
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        // Y-axis ticks and labels
+        for (let lnA = lnAMin; lnA <= lnAMax + 0.01; lnA += 0.4) {
+            ctx.fillText(lnA.toFixed(1), mapX(tMin) - 8, mapY(lnA));
+        }
+
+        // Axis titles
+        const titleFontSize = '18px';
+        // X-axis title: "t / min" with italic t
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const xTitleX = margin.left + graphWidth / 2;
+        const xTitleY = mapY(lnAMin) + 40;
+
+        // Calculate total width for centering
+        ctx.font = `italic ${titleFontSize} Arial`;
+        const tWidth = ctx.measureText('t').width;
+        ctx.font = `${titleFontSize} Arial`;
+        const restWidth = ctx.measureText(' / min').width;
+        const totalWidth = tWidth + restWidth;
+
+        const startX = xTitleX - totalWidth / 2;
+        
+        ctx.font = `italic ${titleFontSize} Arial`;
+        ctx.textAlign = 'left';
+        ctx.fillText('t', startX, xTitleY);
+        
+        ctx.font = `${titleFontSize} Arial`;
+        ctx.fillText(' / min', startX + tWidth, xTitleY);
+        
+        // Y-axis title: "ln (A/Bq)"
+        ctx.save();
+        ctx.translate(margin.left - 60, margin.top + graphHeight / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.font = `${titleFontSize} Arial`;
+        ctx.fillText('ln (A / Bq)', 0, 0);
+        ctx.restore();
+
+        // Figure caption
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.font = '18px Arial';
+        ctx.fillText('Fig. 12.1', canvasWidth / 2, canvasHeight - 35);
+    }
+
+    function drawDataLine() {
+        // Line derived from points (0, 36.32) and (20, 35.0)
+        const t_start = 0;
+        const lnA_start = 36.32;
+        const t_end = 20;
+        const lnA_end = 35.0;
+
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(mapX(t_start), mapY(lnA_start));
+        ctx.lineTo(mapX(t_end), mapY(lnA_end));
+        ctx.stroke();
+    }
+
+
+    // --- Main drawing sequence ---
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    drawGrid();
+    drawAxes();
+    drawLabelsAndTicks();
+    drawDataLine();
+
+</script>
+</body>
+</html>

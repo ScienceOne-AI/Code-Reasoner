@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram: Inclined Plane with Ball</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General settings
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = "italic 20px 'Times New Roman'";
+        ctx.fillStyle = 'black';
+
+        // Define parameters
+        const theta = 30 * Math.PI / 180; // 30 degrees angle
+        const wedgeBaseY = 370;
+        const wedgeLeftX = 120;
+        const wedgeRightX = 480;
+        const wedgeBase = wedgeRightX - wedgeLeftX;
+        const wedgeHeight = wedgeBase * Math.tan(theta);
+        const wedgeTopY = wedgeBaseY - wedgeHeight;
+        const wedgeTopX = wedgeLeftX;
+
+        // 1. Draw the ground
+        ctx.fillStyle = '#E0E0E0';
+        ctx.fillRect(0, wedgeBaseY, canvas.width, 20);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, wedgeBaseY);
+        ctx.lineTo(canvas.width, wedgeBaseY);
+        ctx.stroke();
+
+        // 2. Draw the inclined plane (wedge)
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(wedgeTopX, wedgeTopY);
+        ctx.lineTo(wedgeLeftX, wedgeBaseY);
+        ctx.lineTo(wedgeRightX, wedgeBaseY);
+        ctx.lineTo(wedgeTopX, wedgeTopY);
+        ctx.stroke();
+
+        // 3. Draw the angle symbol (theta)
+        ctx.beginPath();
+        ctx.arc(wedgeRightX, wedgeBaseY, 50, Math.PI, Math.PI + theta, false);
+        ctx.stroke();
+        ctx.fillText("θ", wedgeRightX - 65 * Math.cos(theta / 2), wedgeBaseY - 65 * Math.sin(theta / 2) + 10);
+
+        // 4. Draw the ball (sphere)
+        const ballRadius = 25;
+        // Position the ball on the incline (e.g., halfway down)
+        const contactX = wedgeTopX + (wedgeRightX - wedgeTopX) * 0.55;
+        const contactY = wedgeTopY + (wedgeBaseY - wedgeTopY) * 0.55;
+        const ballCenterX = contactX + ballRadius * Math.sin(theta);
+        const ballCenterY = contactY - ballRadius * Math.cos(theta);
+
+        // Create a radial gradient for the 3D effect
+        const gradient = ctx.createRadialGradient(
+            ballCenterX - 8, ballCenterY - 8, 2,
+            ballCenterX, ballCenterY, ballRadius
+        );
+        gradient.addColorStop(0, 'white');
+        gradient.addColorStop(1, '#A9A9A9');
+
+        ctx.beginPath();
+        ctx.arc(ballCenterX, ballCenterY, ballRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        ctx.stroke();
+
+        // 5. Draw the connecting rod
+        const rodLength = 140;
+        const rodWidth = 6;
+
+        // Rod starts from ball center and goes up the incline
+        const rodStart = { x: ballCenterX, y: ballCenterY };
+        const rodEnd = {
+            x: rodStart.x - rodLength * Math.cos(theta),
+            y: rodStart.y - rodLength * Math.sin(theta)
+        };
+        
+        // Calculate the four corners of the rod rectangle
+        const normalVec = { x: Math.sin(theta), y: -Math.cos(theta) };
+        const p1 = { x: rodStart.x + normalVec.x * rodWidth / 2, y: rodStart.y + normalVec.y * rodWidth / 2 };
+        const p2 = { x: rodEnd.x + normalVec.x * rodWidth / 2, y: rodEnd.y + normalVec.y * rodWidth / 2 };
+        const p3 = { x: rodEnd.x - normalVec.x * rodWidth / 2, y: rodEnd.y - normalVec.y * rodWidth / 2 };
+        const p4 = { x: rodStart.x - normalVec.x * rodWidth / 2, y: rodStart.y - normalVec.y * rodWidth / 2 };
+        
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.lineTo(p3.x, p3.y);
+        ctx.lineTo(p4.x, p4.y);
+        ctx.closePath();
+        ctx.fillStyle = '#555555';
+        ctx.fill();
+        ctx.stroke();
+
+        // 6. Draw the support block at the end of the rod
+        const supportLength = 35;
+        const supportThickness = 8;
+        ctx.save();
+        ctx.translate(rodEnd.x, rodEnd.y);
+        ctx.rotate(-theta);
+        ctx.beginPath();
+        // The block is perpendicular to the rod on the incline
+        ctx.moveTo(0, -supportLength / 2);
+        ctx.lineTo(0, supportLength / 2);
+        ctx.lineWidth = supportThickness;
+        ctx.lineCap = 'butt';
+        ctx.strokeStyle = '#444444';
+        ctx.stroke();
+        ctx.restore();
+
+
+        // 7. Draw the acceleration vector 'a'
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        const arrowY = 250;
+        const arrowStartX = 110;
+        const arrowEndX = 40;
+        // Vertical line part
+        ctx.beginPath();
+        ctx.moveTo(arrowStartX, arrowY - 20);
+        ctx.lineTo(arrowStartX, arrowY + 20);
+        ctx.stroke();
+        // Horizontal arrow part
+        ctx.beginPath();
+        ctx.moveTo(arrowStartX, arrowY);
+        ctx.lineTo(arrowEndX, arrowY);
+        ctx.stroke();
+        // Arrowhead
+        ctx.beginPath();
+        ctx.moveTo(arrowEndX, arrowY);
+        ctx.lineTo(arrowEndX + 10, arrowY - 6);
+        ctx.moveTo(arrowEndX, arrowY);
+        ctx.lineTo(arrowEndX + 10, arrowY + 6);
+        ctx.stroke();
+        // Label 'a'
+        ctx.fillStyle = 'black';
+        ctx.fillText("a", arrowStartX - 40, arrowY - 5);
+
+
+        // 8. Add the bottom label
+        ctx.font = "24px 'KaiTi', 'SimSun'";
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.fillText("习题 1-41 图", canvas.width / 2, canvas.height - 15);
+
+    </script>
+</body>
+</html>

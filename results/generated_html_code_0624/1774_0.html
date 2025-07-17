@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rectangular Waveguide Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="waveguideCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('waveguideCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Configuration ---
+        ctx.strokeStyle = '#000';
+        ctx.fillStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 18px sans-serif';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // --- Coordinate Definitions ---
+        const ox = 150; // Origin x on canvas
+        const oy = 300; // Origin y on canvas
+        
+        const h = 80;   // Height of the waveguide (1 cm) in pixels
+        const w_proj_x = 160; // Projected width (2 cm) along x
+        const w_proj_y = 70;  // Projected width (2 cm) along y
+        const len = 280; // Length of the waveguide segment along x
+
+        // --- Helper Functions ---
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        function drawArrow(x1, y1, x2, y2, size = 8) {
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            drawLine(x1, y1, x2, y2);
+            ctx.save();
+            ctx.translate(x2, y2);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Main Drawing Logic ---
+
+        // 1. Draw Coordinate Axes
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        // z-axis
+        drawArrow(ox, oy, ox, oy - h - 60);
+        ctx.fillText('z', ox, oy - h - 75);
+        // x-axis
+        drawArrow(ox, oy, ox + len + 50, oy);
+        ctx.fillText('x', ox + len + 65, oy);
+        // y-axis
+        drawArrow(ox, oy, ox + w_proj_x + 30, oy - w_proj_y - 15);
+        ctx.fillText('y', ox + w_proj_x + 45, oy - w_proj_y - 25);
+        // Origin label
+        ctx.fillText('0', ox - 15, oy + 15);
+        
+        // 2. Define Waveguide Vertices
+        const v = {
+            '000': { x: ox, y: oy }, // Back-bottom-left (Origin)
+            '001': { x: ox, y: oy - h }, // Back-top-left
+            '020': { x: ox + w_proj_x, y: oy - w_proj_y }, // Front-bottom-left (hidden)
+            '021': { x: ox + w_proj_x, y: oy - w_proj_y - h }  // Front-top-left
+        };
+        
+        // Define points for the jagged (broken) edge
+        const j = {
+            'L00': { x: v['000'].x + len - 20, y: v['000'].y }, // on bottom-back edge
+            'L20': { x: v['020'].x + len - 40, y: v['020'].y }, // on bottom-front edge
+            'L21': { x: v['021'].x + len - 20, y: v['021'].y }, // on top-front edge
+            'L01': { x: v['001'].x + len - 5, y: v['001'].y }   // on top-back edge
+        };
+
+        // 3. Draw Waveguide
+        // Dashed lines (hidden edges)
+        ctx.save();
+        ctx.setLineDash([6, 6]);
+        drawLine(v['000'].x, v['000'].y, v['020'].x, v['020'].y);
+        drawLine(v['020'].x, v['020'].y, v['021'].x, v['021'].y);
+        drawLine(v['020'].x, v['020'].y, j['L20'].x, j['L20'].y);
+        ctx.restore();
+
+        // Solid lines (visible edges)
+        drawLine(v['001'].x, v['001'].y, v['021'].x, v['021'].y); // Top-left edge
+        drawLine(v['000'].x, v['000'].y, j['L00'].x, j['L00'].y); // Bottom-back edge
+        drawLine(v['001'].x, v['001'].y, j['L01'].x, j['L01'].y); // Top-back edge
+        drawLine(v['021'].x, v['021'].y, j['L21'].x, j['L21'].y); // Top-front edge
+        drawLine(v['000'].x, v['000'].y, v['001'].x, v['001'].y); // Back-left edge (on z-axis)
+        
+        // Jagged (broken) edge
+        ctx.beginPath();
+        ctx.moveTo(j['L00'].x, j['L00'].y);
+        ctx.lineTo(j['L00'].x + 5, j['L00'].y + 3);
+        ctx.lineTo(j['L20'].x - 10, j['L20'].y + 10);
+        ctx.lineTo(j['L20'].x, j['L20'].y);
+        ctx.lineTo(j['L21'].x - 5, j['L21'].y + 5);
+        ctx.lineTo(j['L21'].x, j['L21'].y);
+        ctx.lineTo(j['L01'].x - 8, j['L01'].y - 5);
+        ctx.lineTo(j['L01'].x, j['L01'].y);
+        ctx.stroke();
+
+        // 4. Draw Dimensions
+        // Height: 1 cm
+        ctx.textAlign = 'right';
+        const d1_x = ox - 20;
+        drawLine(d1_x, v['000'].y, d1_x, v['001'].y);
+        // T-ends
+        drawLine(d1_x - 4, v['000'].y, d1_x + 4, v['000'].y);
+        drawLine(d1_x - 4, v['001'].y, d1_x + 4, v['001'].y);
+        // Tick lines to object
+        drawLine(d1_x, v['000'].y, v['000'].x, v['000'].y);
+        drawLine(d1_x, v['001'].y, v['001'].x, v['001'].y);
+        ctx.fillText('1 cm', d1_x - 10, v['001'].y + h / 2);
+
+        // Width: 2 cm
+        ctx.textAlign = 'center';
+        const d2_tick_len = 20;
+        const d2_y_offset = v['001'].y - d2_tick_len;
+        // Ticks (vertical lines from top corners)
+        drawLine(v['001'].x, v['001'].y, v['001'].x, d2_y_offset);
+        drawLine(v['021'].x, v['021'].y, v['021'].x, d2_y_offset);
+        // Dimension line connecting the ticks
+        drawLine(v['001'].x, d2_y_offset, v['021'].x, d2_y_offset);
+        // Text label
+        ctx.fillText('2 cm', (v['001'].x + v['021'].x) / 2, d2_y_offset - 12);
+
+        // 5. Draw Figure Caption
+        ctx.font = '18px "Times New Roman"';
+        ctx.fillText('Fig. 4.13', canvas.width / 2, canvas.height - 30);
+    </script>
+</body>
+</html>

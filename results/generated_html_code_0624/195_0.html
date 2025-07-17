@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optical Path Diagram</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+        canvas { border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Clear canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // General style
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Center point and scales
+        const cx = 380;
+        const cy = 300;
+
+        // --- Main horizontal axis ---
+        ctx.beginPath();
+        ctx.moveTo(50, cy);
+        ctx.lineTo(750, cy);
+        ctx.stroke();
+
+        // --- The Quarter-Wave Plate ---
+        const plateFrontX = cx - 25;
+        const plateBackX = cx + 25;
+        const plateTopY = cy - 90;
+        const plateBottomY = cy + 90;
+        const perspectiveShift = 25;
+
+        ctx.beginPath();
+        ctx.moveTo(plateFrontX, plateTopY);
+        ctx.lineTo(plateFrontX, plateBottomY);
+        ctx.lineTo(plateBackX, plateBottomY - perspectiveShift);
+        ctx.lineTo(plateBackX, plateTopY - perspectiveShift);
+        ctx.lineTo(plateFrontX, plateTopY);
+        ctx.moveTo(plateFrontX, plateBottomY); // Re-draw edge for clarity
+        ctx.lineTo(plateBackX, plateBottomY-perspectiveShift);
+        ctx.stroke();
+
+        // --- Left Side (Incoming Wave) ---
+        const leftAxisX = 200;
+        const axisLength = 110;
+
+        // Vertical axis on left
+        ctx.beginPath();
+        ctx.moveTo(leftAxisX, cy - axisLength);
+        ctx.lineTo(leftAxisX, cy + axisLength);
+        ctx.stroke();
+
+        // Tilted axis on left (45 degrees)
+        ctx.save();
+        ctx.translate(leftAxisX, cy);
+        ctx.rotate(-Math.PI / 4);
+        ctx.beginPath();
+        ctx.moveTo(-axisLength, 0);
+        ctx.lineTo(axisLength, 0);
+        ctx.stroke();
+        ctx.restore();
+
+        // Incoming Wave
+        const ampIn = 45;
+        const lambdaIn = 100;
+        const kIn = 2 * Math.PI / lambdaIn;
+        const waveStartX = leftAxisX - lambdaIn / 2;
+        const waveEndX = plateFrontX;
+
+        function drawIncomingWave() {
+            ctx.save();
+            ctx.translate(waveStartX, cy);
+            ctx.rotate(-Math.PI / 4);
+
+            const len = waveEndX - waveStartX;
+            
+            // Create envelope paths
+            const pathTop = new Path2D();
+            for (let x = 0; x <= len; x += 1) {
+                const y = ampIn * Math.sin(kIn * x);
+                if (x === 0) pathTop.moveTo(x, y);
+                else pathTop.lineTo(x, y);
+            }
+            
+            const pathBottom = new Path2D();
+            for (let x = 0; x <= len; x += 1) {
+                const y = -ampIn * Math.sin(kIn * x);
+                if (x === 0) pathBottom.moveTo(x, y);
+                else pathBottom.lineTo(x, y);
+            }
+            
+            ctx.stroke(pathTop);
+            ctx.stroke(pathBottom);
+            
+            // Clipping and Hatching
+            ctx.save();
+            const clipPath = new Path2D(pathTop);
+            const points = [];
+            for (let x = 0; x <= len; x += 1) { points.push({x: x, y: -ampIn * Math.sin(kIn * x)}); }
+            points.reverse().forEach(p => clipPath.lineTo(p.x, p.y));
+            clipPath.closePath();
+            ctx.clip(clipPath);
+
+            ctx.lineWidth = 1.8;
+            // Hatching lines are perpendicular to the wave axis (i.e., vertical in this rotated frame)
+            const hatchSpacing = 8;
+            for (let x = 0; x < len * 1.5; x += hatchSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(x, -ampIn * 1.5);
+                ctx.lineTo(x, ampIn * 1.5);
+                ctx.stroke();
+            }
+            ctx.restore(); // restore clip
+            ctx.restore(); // restore rotate/translate
+        }
+        drawIncomingWave();
+        
+        // x-hat label and arrow
+        ctx.font = 'italic bold 24px Times New Roman';
+        ctx.fillText('x', 270, 240);
+        ctx.font = 'bold 20px Times New Roman';
+        ctx.fillText('^', 273, 235);
+        ctx.beginPath();
+        ctx.moveTo(260, 250);
+        ctx.lineTo(285, 225);
+        ctx.lineTo(285 - 9, 225 + 2);
+        ctx.moveTo(285, 225);
+        ctx.lineTo(285 - 2, 225 + 9);
+        ctx.stroke();
+        
+        // --- Right Side (Outgoing Waves) ---
+        const rightAxisX = 620;
+        
+        // Vertical axis on right (y-hat)
+        ctx.beginPath();
+        ctx.moveTo(rightAxisX, cy - axisLength);
+        ctx.lineTo(rightAxisX, cy + axisLength);
+        ctx.stroke();
+        // Arrowhead
+        ctx.beginPath();
+        ctx.moveTo(rightAxisX, cy - axisLength);
+        ctx.lineTo(rightAxisX - 6, cy - axisLength + 12);
+        ctx.moveTo(rightAxisX, cy - axisLength);
+        ctx.lineTo(rightAxisX + 6, cy - axisLength + 12);
+        ctx.stroke();
+        // y-hat label
+        ctx.font = 'italic bold 24px Times New Roman';
+        ctx.fillText('y', rightAxisX + 10, cy - axisLength + 5);
+        ctx.font = 'bold 20px Times New Roman';
+        ctx.fillText('^', rightAxisX + 13, cy - axisLength);
+
+
+        // Tilted axis on right
+        ctx.save();
+        ctx.translate(rightAxisX, cy);
+        ctx.rotate(-Math.PI / 4);
+        ctx.beginPath();
+        ctx.moveTo(-axisLength, 0);
+        ctx.lineTo(axisLength, 0);
+        ctx.stroke();
+        ctx.restore();
+
+        // Outgoing Waves
+        const waveOutStartX = plateBackX;
+        const waveOutEndX = rightAxisX + lambdaIn * 0.5;
+        const ampOut = 40;
+        const lambdaOut = 120;
+        const kOut = 2 * Math.PI / lambdaOut;
+        
+        // Function to draw a hatched wave
+        function drawHatchedWave(waveFunc, hatchingType) {
+            // Draw envelope
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(waveOutStartX, cy + waveFunc(waveOutStartX));
+            for (let x = waveOutStartX; x <= waveOutEndX; x++) {
+                ctx.lineTo(x, cy + waveFunc(x));
+            }
+            ctx.stroke();
+            
+            // Create path for clipping and hatching
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(waveOutStartX, cy);
+            for (let x = waveOutStartX; x <= waveOutEndX; x++) {
+                ctx.lineTo(x, cy + waveFunc(x));
+            }
+            ctx.lineTo(waveOutEndX, cy);
+            ctx.closePath();
+            ctx.clip();
+
+            ctx.lineWidth = 1.8;
+            const hatchSpacing = 8;
+            if (hatchingType === 'vertical') {
+                for (let x = waveOutStartX; x < waveOutEndX; x += hatchSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, cy - ampOut * 1.1);
+                    ctx.lineTo(x, cy + ampOut * 1.1);
+                    ctx.stroke();
+                }
+            } else if (hatchingType === 'horizontal') {
+                for (let y = cy - ampOut * 1.1; y < cy + ampOut * 1.1; y += hatchSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(waveOutStartX, y);
+                    ctx.lineTo(waveOutEndX, y);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+
+        // Wave 1: E_y component = A*sin(kz) -> VERTICAL hatching in original
+        const waveFuncY = (x) => ampOut * Math.sin(kOut * (x - waveOutStartX));
+        drawHatchedWave(waveFuncY, 'vertical');
+
+        // Wave 2: E_x component = -A*cos(kz) -> HORIZONTAL hatching in original
+        const waveFuncX = (x) => -ampOut * Math.cos(kOut * (x - waveOutStartX));
+        drawHatchedWave(waveFuncX, 'horizontal');
+
+        // --- Figure Caption ---
+        ctx.font = 'bold 24px Times New Roman';
+        ctx.fillText('Fig. 2.71', cx - 30, cy + 180);
+
+    </script>
+</body>
+</html>

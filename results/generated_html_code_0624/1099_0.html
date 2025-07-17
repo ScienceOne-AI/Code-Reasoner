@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mass-Spring System</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Parameters ---
+        const canvasWidth = 700;
+        const canvasHeight = 450;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+
+        const fontRoman = 'italic 24px Times New Roman';
+        const fontLabel = '24px Times New Roman';
+        const fontSubscript = 'italic 18px Times New Roman';
+        const fontCaption = '28px KaiTi';
+
+        // --- Coordinates and Dimensions ---
+        const groundY = 300;
+        const wallX = 80;
+
+        const massRadius = 35;
+        const springY = groundY - massRadius; // y-axis of spring and mass center
+
+        const O_pos = 400; // x-position of equilibrium point O
+        const l0 = 120;    // Distance from O to A
+        const l1 = 150;    // Distance from B to O
+
+        const A_pos = O_pos + l0; // x-position of mass center
+        const B_pos = O_pos - l1; // x-position where coils end
+
+        const massCenterX = A_pos;
+        const massCenterY = springY;
+
+        const markerY = groundY + 60; // y-position for distance markers
+        const tickHeight = 10;
+
+        // --- Helper function to draw an arrow line ---
+        function drawArrowLine(ctx, x1, y1, x2, y2) {
+            const headlen = 10;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            // Draw arrowhead at the start
+            let angle1 = Math.atan2(y1 - y2, x1 - x2);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 - headlen * Math.cos(angle1 - Math.PI / 6), y1 - headlen * Math.sin(angle1 - Math.PI / 6));
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 - headlen * Math.cos(angle1 + Math.PI / 6), y1 - headlen * Math.sin(angle1 + Math.PI / 6));
+            // Draw arrowhead at the end
+            let angle2 = Math.atan2(y2 - y1, x2 - x1);
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle2 - Math.PI / 6), y2 - headlen * Math.sin(angle2 - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle2 + Math.PI / 6), y2 - headlen * Math.sin(angle2 + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+        // 1. Draw the Wall
+        ctx.beginPath();
+        ctx.moveTo(wallX, springY - 80);
+        ctx.lineTo(wallX, groundY + 20);
+        ctx.stroke();
+        // Draw hatching for the wall
+        ctx.beginPath();
+        for (let y = springY - 75; y < groundY + 20; y += 15) {
+            ctx.moveTo(wallX, y);
+            ctx.lineTo(wallX - 15, y + 15);
+        }
+        ctx.stroke();
+
+        // 2. Draw the Ground
+        ctx.beginPath();
+        ctx.moveTo(wallX - 20, groundY);
+        ctx.lineTo(canvasWidth - 50, groundY);
+        ctx.stroke();
+        
+        // 3. Draw the Spring
+        const coilStartX = wallX + 20;
+        const coilEndX = B_pos;
+        const numCoils = 8;
+        const segmentLength = (coilEndX - coilStartX) / numCoils;
+        
+        ctx.beginPath();
+        // Straight part from wall
+        ctx.moveTo(wallX, springY);
+        ctx.lineTo(coilStartX, springY);
+        // Coiled part
+        let currentX = coilStartX;
+        for (let i = 0; i < numCoils; i++) {
+            let midX = currentX + segmentLength / 2;
+            ctx.arc(midX, springY, segmentLength / 2, Math.PI, 0, false);
+            currentX += segmentLength;
+        }
+        // Straight part to the mass
+        ctx.lineTo(massCenterX - massRadius, springY);
+        ctx.stroke();
+
+        // 4. Draw the Mass
+        ctx.beginPath();
+        ctx.arc(massCenterX, massCenterY, massRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 5. Draw Labels and Ticks
+        // k for spring constant
+        ctx.font = fontRoman;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('k', (coilStartX + coilEndX) / 2, springY - 20);
+
+        // m for mass
+        ctx.fillText('m', massCenterX, massCenterY - massRadius - 10);
+        
+        // μ for friction
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('μ', massCenterX + massRadius + 20, groundY - 10);
+        
+        // Points B, O, A
+        ctx.font = fontLabel;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        // B
+        ctx.beginPath();
+        ctx.moveTo(B_pos, groundY);
+        ctx.lineTo(B_pos, groundY - tickHeight);
+        ctx.stroke();
+        ctx.fillText('B', B_pos, groundY + 10);
+        // O
+        ctx.beginPath();
+        ctx.moveTo(O_pos, groundY);
+        ctx.lineTo(O_pos, groundY - tickHeight);
+        ctx.stroke();
+        ctx.fillText('O', O_pos, groundY + 10);
+        // A
+        ctx.beginPath();
+        ctx.moveTo(A_pos, groundY);
+        ctx.lineTo(A_pos, groundY - tickHeight);
+        ctx.stroke();
+        ctx.fillText('A', A_pos, groundY + 10);
+
+        // 6. Draw Distance Markers
+        const markerTickHeight = 5;
+        // Vertical ticks for markers
+        ctx.beginPath();
+        ctx.moveTo(B_pos, markerY - markerTickHeight);
+        ctx.lineTo(B_pos, markerY + markerTickHeight);
+        ctx.moveTo(O_pos, markerY - markerTickHeight);
+        ctx.lineTo(O_pos, markerY + markerTickHeight);
+        ctx.moveTo(A_pos, markerY - markerTickHeight);
+        ctx.lineTo(A_pos, markerY + markerTickHeight);
+        ctx.stroke();
+
+        // Arrow line for l1
+        drawArrowLine(ctx, B_pos, markerY, O_pos, markerY);
+        
+        // Arrow line for l0
+        drawArrowLine(ctx, O_pos, markerY, A_pos, markerY);
+
+        // Labels for l1 and l0
+        ctx.font = fontRoman;
+        ctx.textBaseline = 'middle';
+        const l1_label_x = (B_pos + O_pos) / 2;
+        const l0_label_x = (O_pos + A_pos) / 2;
+        
+        ctx.fillText('l', l1_label_x - 8, markerY - 20);
+        ctx.font = fontSubscript;
+        ctx.fillText('1', l1_label_x + 4, markerY - 16);
+        
+        ctx.font = fontRoman;
+        ctx.fillText('l', l0_label_x - 8, markerY - 20);
+        ctx.font = fontSubscript;
+        ctx.fillText('0', l0_label_x + 4, markerY - 16);
+
+        // 7. Draw Caption
+        ctx.font = fontCaption;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('力图 3.2.1', canvasWidth / 2, canvasHeight - 20);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Piston and Cylinder Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="480"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and General Settings ---
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '18px Arial';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a dashed line between two points.
+         * @param {number} x1 - Start x-coordinate.
+         * @param {number} y1 - Start y-coordinate.
+         * @param {number} x2 - End x-coordinate.
+         * @param {number} y2 - End y-coordinate.
+         */
+        function drawDashedLine(x1, y1, x2, y2) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([8, 6]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        /**
+         * Draws one complete system (cylinder, piston, and labels).
+         * @param {number} x - The top-left x-coordinate of the cylinder.
+         * @param {number} yPiston - The y-coordinate of the piston's top surface.
+         * @param {string} labelSide - 'left' or 'right' for positioning labels.
+         * @param {string} heightLabel - The text to display below the system.
+         */
+        function drawSystem(x, yPiston, labelSide, heightLabel) {
+            // --- Dimensions ---
+            const cylinderWidth = 180;
+            const cylinderHeight = 300;
+            const wallThickness = 20;
+            const cylinderTopY = 50;
+
+            const pistonHeight = 40;
+            const pistonWidth = cylinderWidth - 2 * wallThickness - 4;
+            const pistonX = x + wallThickness + 2;
+
+            // --- Draw Cylinder ---
+            // 1. Gray background fill
+            ctx.fillStyle = '#eeeeee';
+            ctx.fillRect(x, cylinderTopY, cylinderWidth, cylinderHeight);
+            
+            // 2. White interior
+            ctx.fillStyle = 'white';
+            ctx.fillRect(x + wallThickness, cylinderTopY + wallThickness, cylinderWidth - 2 * wallThickness, cylinderHeight - wallThickness);
+
+            // 3. Black outlines
+            ctx.beginPath();
+            // Outer walls
+            ctx.moveTo(x, cylinderTopY + cylinderHeight);
+            ctx.lineTo(x, cylinderTopY);
+            ctx.lineTo(x + cylinderWidth, cylinderTopY);
+            ctx.lineTo(x + cylinderWidth, cylinderTopY + cylinderHeight);
+            // Inner walls
+            ctx.moveTo(x + wallThickness, cylinderTopY + cylinderHeight);
+            ctx.lineTo(x + wallThickness, cylinderTopY + wallThickness);
+            ctx.lineTo(x + cylinderWidth - wallThickness, cylinderTopY + wallThickness);
+            ctx.lineTo(x + cylinderWidth - wallThickness, cylinderTopY + cylinderHeight);
+            ctx.stroke();
+
+            // --- Draw Piston ---
+            ctx.beginPath();
+            ctx.rect(pistonX, yPiston, pistonWidth, pistonHeight);
+            ctx.stroke();
+
+            // Piston rings
+            for (let i = 0; i < 3; i++) {
+                const ringY = yPiston + 12 + i * 8;
+                ctx.beginPath();
+                ctx.moveTo(pistonX, ringY);
+                ctx.lineTo(pistonX + pistonWidth, ringY);
+                ctx.stroke();
+            }
+
+            // --- Draw Labels ---
+            ctx.fillStyle = 'black';
+            if (labelSide === 'left') {
+                ctx.textAlign = 'right';
+                // Cylinder label
+                ctx.fillText('cylinder', x - 20, cylinderTopY + 20);
+                ctx.beginPath();
+                ctx.moveTo(x - 15, cylinderTopY + 20);
+                ctx.lineTo(x, cylinderTopY + 20);
+                ctx.stroke();
+                // Piston label
+                ctx.fillText('piston', x - 20, yPiston + 20);
+                ctx.beginPath();
+                ctx.moveTo(x - 15, yPiston + 20);
+                ctx.lineTo(pistonX, yPiston + 20);
+                ctx.stroke();
+
+            } else { // right side
+                ctx.textAlign = 'left';
+                // Cylinder label
+                ctx.fillText('cylinder', x + cylinderWidth + 20, cylinderTopY + 20);
+                ctx.beginPath();
+                ctx.moveTo(x + cylinderWidth + 20, cylinderTopY + 20);
+                ctx.lineTo(x + cylinderWidth, cylinderTopY + 20);
+                ctx.stroke();
+                // Piston label
+                ctx.fillText('piston', x + cylinderWidth + 20, yPiston + 20);
+                ctx.beginPath();
+                ctx.moveTo(x + cylinderWidth + 20, yPiston + 20);
+                ctx.lineTo(pistonX + pistonWidth, yPiston + 20);
+                ctx.stroke();
+            }
+
+            // --- Draw Height Label ---
+            ctx.textAlign = 'center';
+            ctx.fillText(heightLabel, x + cylinderWidth / 2, cylinderTopY + cylinderHeight + 40);
+        }
+
+        // --- Main Drawing Logic ---
+
+        // Define positions and dimensions
+        const x_left = 100;
+        const y_piston_max = 90;
+
+        const x_right = 500;
+        const displacement = 154; // Represents 9.8 cm
+        const y_piston_min = y_piston_max + displacement;
+
+        // Draw the two systems
+        drawSystem(x_left, y_piston_max, 'left', 'maximum height');
+        drawSystem(x_right, y_piston_min, 'right', 'minimum height');
+
+        // --- Draw the Dimensioning between systems ---
+        const dash_x_start = x_left + 180;
+        const dash_x_end = x_right;
+        
+        // Horizontal dashed lines from top of each piston
+        drawDashedLine(dash_x_start, y_piston_max, dash_x_end, y_piston_max);
+        drawDashedLine(dash_x_start, y_piston_min, dash_x_end, y_piston_min);
+
+        // Vertical dimension line
+        const dim_line_x = (dash_x_start + dash_x_end) / 2 + 50;
+        ctx.beginPath();
+        ctx.moveTo(dim_line_x, y_piston_max);
+        ctx.lineTo(dim_line_x, y_piston_min);
+        ctx.stroke();
+
+        // Arrowheads for dimension line
+        const arrowSize = 6;
+        // Top arrow
+        ctx.beginPath();
+        ctx.moveTo(dim_line_x, y_piston_max);
+        ctx.lineTo(dim_line_x - arrowSize, y_piston_max + arrowSize);
+        ctx.moveTo(dim_line_x, y_piston_max);
+        ctx.lineTo(dim_line_x + arrowSize, y_piston_max + arrowSize);
+        ctx.stroke();
+        // Bottom arrow
+        ctx.beginPath();
+        ctx.moveTo(dim_line_x, y_piston_min);
+        ctx.lineTo(dim_line_x - arrowSize, y_piston_min - arrowSize);
+        ctx.moveTo(dim_line_x, y_piston_min);
+        ctx.lineTo(dim_line_x + arrowSize, y_piston_min - arrowSize);
+        ctx.stroke();
+        
+        // Dimension text
+        ctx.textAlign = 'right';
+        ctx.fillText('9.8 cm', dim_line_x - 15, (y_piston_max + y_piston_min) / 2);
+
+        // --- Figure Caption ---
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 3.1', canvas.width / 2, 450);
+
+    </script>
+</body>
+</html>

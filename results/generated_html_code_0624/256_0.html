@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="canvas" width="500" height="300"></canvas>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Clear canvas
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // --- Helper function to draw an arrow ---
+    function drawArrow(fromX, fromY, toX, toY, isDashed) {
+        const headlen = 10;
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+
+        ctx.save();
+        ctx.beginPath();
+        if (isDashed) {
+            ctx.setLineDash([6, 6]);
+        }
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+        
+        // Reset dash for the arrowhead
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Draw the rocket ---
+    // Single path for the rocket outline
+    ctx.beginPath();
+    const nose = { x: 275, y: 108 };
+    const tail_top = { x: 180, y: 101 };
+    const tail_bottom = { x: 180, y: 114 };
+    const fin_top = { x: 155, y: 90 };
+    const fin_bottom = { x: 155, y: 125 };
+    const fin_root = { x: 165, y: 107.5 }; // Center point at the back of the fins
+
+    ctx.moveTo(nose.x, nose.y);
+    ctx.quadraticCurveTo(220, 90, tail_top.x, tail_top.y);
+    ctx.lineTo(fin_top.x, fin_top.y);
+    ctx.lineTo(fin_root.x, fin_root.y);
+    ctx.lineTo(fin_bottom.x, fin_bottom.y);
+    ctx.lineTo(tail_bottom.x, tail_bottom.y);
+    ctx.quadraticCurveTo(220, 126, nose.x, nose.y);
+    ctx.stroke();
+
+    // --- Draw the rocket's centerline (dashed) ---
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.moveTo(165, 107.5);
+    ctx.lineTo(275, 108);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line
+
+    // --- Draw the exhaust ---
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(165, 107.5);
+    ctx.lineTo(135, 102);
+    ctx.moveTo(165, 107.5);
+    ctx.lineTo(135, 108);
+    ctx.moveTo(165, 107.5);
+    ctx.lineTo(135, 114);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.setLineDash([4, 4]);
+    ctx.moveTo(155, 107.5);
+    ctx.lineTo(125, 107.5);
+    ctx.stroke();
+    ctx.restore();
+
+
+    // --- Draw vectors and angle ---
+    const origin = { x: 270, y: 115 };
+    ctx.lineWidth = 2;
+
+    // Δv vector (dashed)
+    const end_dv = { x: 380, y: 97 };
+    drawArrow(origin.x, origin.y, end_dv.x, end_dv.y, true);
+
+    // v vector (solid)
+    const end_v = { x: 355, y: 165 };
+    drawArrow(origin.x, origin.y, end_v.x, end_v.y, false);
+
+    // Angle arc
+    const startAngle = Math.atan2(end_dv.y - origin.y, end_dv.x - origin.x);
+    const endAngle = Math.atan2(end_v.y - origin.y, end_v.x - origin.x);
+    ctx.beginPath();
+    ctx.arc(origin.x, origin.y, 30, startAngle, endAngle);
+    ctx.stroke();
+
+    // --- Draw Labels ---
+    ctx.font = 'italic 22px serif';
+
+    // θ label
+    const midAngle = (startAngle + endAngle) / 2;
+    const theta_x = origin.x + 45 * Math.cos(midAngle);
+    const theta_y = origin.y + 45 * Math.sin(midAngle);
+    ctx.fillText('θ', theta_x - 5, theta_y + 8);
+
+    // Δv label
+    ctx.fillText('Δv', end_dv.x + 5, end_dv.y);
+
+    // v label
+    ctx.fillText('v', end_v.x + 10, end_v.y + 5);
+
+    // Figure caption
+    ctx.font = 'bold 20px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 1.42.', canvas.width / 2, 280);
+
+</script>
+</body>
+</html>

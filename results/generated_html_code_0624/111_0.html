@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rectangular Waveguide Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="waveguideCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('waveguideCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Clear canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // --- Style and Parameters ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.font = 'italic 20px Times New Roman';
+        
+        // --- Coordinates and Dimensions ---
+        const origin = { x: 180, y: 280 };
+        const w = 160; // dimension 'b'
+        const h = 90;  // dimension 'a'
+        const axisLen = 150;
+        const zAxisLen = 100;
+        const perspectiveLen = 80;
+        const zAngle = 2.35619; // 135 degrees in radians
+
+        // --- Helper function to draw an arrow ---
+        function drawArrow(fromX, fromY, toX, toY, size) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            
+            // Line
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - size * Math.cos(angle - Math.PI / 6), toY - size * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - size * Math.cos(angle + Math.PI / 6), toY - size * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // --- Draw Axes ---
+        // Y-axis
+        drawArrow(origin.x, origin.y, origin.x, origin.y - axisLen, 10);
+        ctx.fillText('y', origin.x - 20, origin.y - axisLen);
+        
+        // X-axis
+        drawArrow(origin.x, origin.y, origin.x + axisLen + 20, origin.y, 10);
+        ctx.fillText('x', origin.x + axisLen + 25, origin.y + 8);
+        
+        // Z-axis
+        const zEndX = origin.x + zAxisLen * Math.cos(zAngle);
+        const zEndY = origin.y - zAxisLen * Math.sin(zAngle);
+        drawArrow(origin.x, origin.y, zEndX, zEndY, 10);
+        ctx.fillText('z', zEndX - 20, zEndY + 10);
+
+        // --- Draw Waveguide ---
+        const p_dx = perspectiveLen * Math.cos(zAngle);
+        const p_dy = -perspectiveLen * Math.sin(zAngle);
+
+        // Front rectangle
+        ctx.beginPath();
+        ctx.rect(origin.x, origin.y - h, w, h);
+        ctx.stroke();
+
+        // Perspective lines
+        ctx.beginPath();
+        // Top-left corner to back
+        ctx.moveTo(origin.x, origin.y - h);
+        ctx.lineTo(origin.x + p_dx, origin.y - h + p_dy);
+        // Top-right corner to back
+        ctx.moveTo(origin.x + w, origin.y - h);
+        ctx.lineTo(origin.x + w + p_dx, origin.y - h + p_dy);
+        // Bottom-right corner to back
+        ctx.moveTo(origin.x + w, origin.y);
+        ctx.lineTo(origin.x + w + p_dx, origin.y + p_dy);
+        ctx.stroke();
+
+
+        // --- Draw Dimensions ---
+        // Dimension 'a' (height)
+        const a_x_pos = origin.x + w + 20;
+        const a_arrow_size = 7;
+        ctx.beginPath();
+        ctx.moveTo(a_x_pos, origin.y);
+        ctx.lineTo(a_x_pos, origin.y - h);
+        // Top arrowhead
+        ctx.moveTo(a_x_pos, origin.y - h);
+        ctx.lineTo(a_x_pos - a_arrow_size * 0.7, origin.y - h + a_arrow_size);
+        ctx.moveTo(a_x_pos, origin.y - h);
+        ctx.lineTo(a_x_pos + a_arrow_size * 0.7, origin.y - h + a_arrow_size);
+        // Bottom arrowhead
+        ctx.moveTo(a_x_pos, origin.y);
+        ctx.lineTo(a_x_pos - a_arrow_size * 0.7, origin.y - a_arrow_size);
+        ctx.moveTo(a_x_pos, origin.y);
+        ctx.lineTo(a_x_pos + a_arrow_size * 0.7, origin.y - a_arrow_size);
+        ctx.stroke();
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('a', a_x_pos + 10, origin.y - h / 2);
+
+        // Dimension 'b' (width)
+        const b_y_pos = origin.y + 30;
+        const b_tick_h = 10;
+        const text_b_width = ctx.measureText('b').width;
+        const b_gap = 6;
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('b', origin.x + w / 2, b_y_pos);
+
+        ctx.beginPath();
+        // Left T-bar
+        ctx.moveTo(origin.x, b_y_pos - b_tick_h / 2);
+        ctx.lineTo(origin.x, b_y_pos + b_tick_h / 2);
+        // Right T-bar
+        ctx.moveTo(origin.x + w, b_y_pos - b_tick_h / 2);
+        ctx.lineTo(origin.x + w, b_y_pos + b_tick_h / 2);
+        // Horizontal lines with gap for text
+        ctx.moveTo(origin.x, b_y_pos);
+        ctx.lineTo(origin.x + w / 2 - text_b_width / 2 - b_gap, b_y_pos);
+        ctx.moveTo(origin.x + w / 2 + text_b_width / 2 + b_gap, b_y_pos);
+        ctx.lineTo(origin.x + w, b_y_pos);
+        ctx.stroke();
+
+        // --- Draw Caption ---
+        ctx.font = 'bold 22px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Fig. 4.14', canvas.width / 2, canvas.height - 20);
+
+    </script>
+</body>
+</html>

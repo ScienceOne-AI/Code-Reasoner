@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Fig 2.62 Radiator Array</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Style and parameters ---
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 2.5; // Thicker lines like the original
+  ctx.font = 'bold 22px "Times New Roman", serif'; // A font that resembles the original text
+
+  const cx = 150;
+  const cy = 225;
+  const d_half = 80;
+  const c_dist = 20;
+  const num_dots = 5;
+  const dot_radius = 2.5;
+
+  // --- Calculate key Y coordinates ---
+  const group_span = (num_dots - 1) * c_dist;
+  const top_group_center_y = cy - d_half;
+  const bottom_group_center_y = cy + d_half;
+  const top_group_start_y = top_group_center_y - group_span / 2;
+  const top_group_end_y = top_group_center_y + group_span / 2;
+  const bottom_group_start_y = bottom_group_center_y - group_span / 2;
+  const bottom_group_end_y = bottom_group_center_y + group_span / 2;
+
+  // --- Draw main vertical line ---
+  ctx.beginPath();
+  ctx.moveTo(cx, top_group_start_y - 30);
+  ctx.lineTo(cx, bottom_group_end_y + 30);
+  ctx.stroke();
+
+  // --- Draw radiator dots ---
+  function drawDots(startY, num, spacing) {
+    for (let i = 0; i < num; i++) {
+      const y = startY + i * spacing;
+      ctx.beginPath();
+      ctx.arc(cx, y, dot_radius, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+  }
+  drawDots(top_group_start_y, num_dots, c_dist);
+  drawDots(bottom_group_start_y, num_dots, c_dist);
+
+  // --- Draw horizontal dashed axis ---
+  ctx.beginPath();
+  ctx.setLineDash([6, 6]);
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + 320, cy);
+  ctx.stroke();
+  ctx.setLineDash([]); // Reset line dash
+
+  // --- Draw ray 'r' ---
+  const angle_deg = 22;
+  const angle_rad = -angle_deg * Math.PI / 180; // Negative for upward angle in canvas coords
+  const r_length = 260;
+  const r_end_x = cx + r_length * Math.cos(angle_rad);
+  const r_end_y = cy + r_length * Math.sin(angle_rad);
+
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(r_end_x, r_end_y);
+  ctx.stroke();
+
+  // Draw arrowhead for 'r'
+  const arrow_head_length = 12;
+  const arrow_angle = Math.PI / 6;
+  ctx.beginPath();
+  ctx.moveTo(r_end_x, r_end_y);
+  ctx.lineTo(r_end_x - arrow_head_length * Math.cos(angle_rad - arrow_angle), r_end_y - arrow_head_length * Math.sin(angle_rad - arrow_angle));
+  ctx.moveTo(r_end_x, r_end_y);
+  ctx.lineTo(r_end_x - arrow_head_length * Math.cos(angle_rad + arrow_angle), r_end_y - arrow_head_length * Math.sin(angle_rad + arrow_angle));
+  ctx.stroke();
+
+  // --- Draw angle 'θ' arc ---
+  const angle_arc_radius = 60;
+  ctx.beginPath();
+  ctx.arc(cx, cy, angle_arc_radius, 0, angle_rad, true); // true for counter-clockwise
+  ctx.stroke();
+
+  // --- Draw dimension lines and labels ---
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  // Dimension 'd'
+  const d_line_x = cx - 70;
+  ctx.beginPath();
+  ctx.moveTo(d_line_x, top_group_center_y);
+  ctx.lineTo(d_line_x, bottom_group_center_y);
+  // Ticks
+  ctx.moveTo(d_line_x - 5, top_group_center_y);
+  ctx.lineTo(d_line_x + 5, top_group_center_y);
+  ctx.moveTo(d_line_x - 5, bottom_group_center_y);
+  ctx.lineTo(d_line_x + 5, bottom_group_center_y);
+  ctx.stroke();
+  ctx.fillText('d', d_line_x - 15, cy);
+
+  // Dimension 'c'
+  const c_line_x = cx - 40;
+  const c_y1 = top_group_start_y;
+  const c_y2 = top_group_start_y + c_dist;
+  ctx.beginPath();
+  ctx.moveTo(c_line_x, c_y1);
+  ctx.lineTo(c_line_x, c_y2);
+  // Ticks
+  ctx.moveTo(c_line_x - 5, c_y1);
+  ctx.lineTo(c_line_x + 5, c_y1);
+  ctx.moveTo(c_line_x - 5, c_y2);
+  ctx.lineTo(c_line_x + 5, c_y2);
+  ctx.stroke();
+  ctx.fillText('c', c_line_x - 15, (c_y1 + c_y2) / 2);
+
+  // --- Draw braces and 'radiator' labels ---
+  // This function draws a left-facing brace like '}'
+  function drawLeftFacingBrace(x_end, y1, y2, width) {
+    const mid_y = (y1 + y2) / 2;
+    const x_tip = x_end + width;
+    ctx.beginPath();
+    // Top part
+    ctx.moveTo(x_end, y1);
+    ctx.quadraticCurveTo(x_tip, y1, x_tip, mid_y);
+    // Bottom part
+    ctx.moveTo(x_end, y2);
+    ctx.quadraticCurveTo(x_tip, y2, x_tip, mid_y);
+    ctx.stroke();
+  }
+  
+  const brace_x_end = cx + 15;
+  const brace_width = 15;
+  
+  // Top brace and label
+  drawLeftFacingBrace(brace_x_end, top_group_start_y, top_group_end_y, brace_width);
+  ctx.textAlign = 'left';
+  ctx.fillText('radiator', brace_x_end + brace_width + 10, top_group_center_y);
+  
+  // Bottom brace and label
+  drawLeftFacingBrace(brace_x_end, bottom_group_start_y, bottom_group_end_y, brace_width);
+  ctx.fillText('radiator', brace_x_end + brace_width + 10, bottom_group_center_y);
+
+  // --- Draw text labels: θ and r ---
+  ctx.textAlign = 'center';
+  ctx.font = 'italic bold 22px "Times New Roman", serif';
+
+  // Label 'θ'
+  const theta_label_x = cx + (angle_arc_radius + 15) * Math.cos(angle_rad / 2);
+  const theta_label_y = cy + (angle_arc_radius + 15) * Math.sin(angle_rad / 2);
+  ctx.fillText('θ', theta_label_x, theta_label_y);
+
+  // Label 'r'
+  const r_label_x = cx + r_length * 0.5 * Math.cos(angle_rad);
+  const r_label_y = cy + r_length * 0.5 * Math.sin(angle_rad) - 20;
+  ctx.fillText('r', r_label_x, r_label_y);
+
+  // --- Figure Caption ---
+  ctx.font = 'bold 22px "Times New Roman", serif';
+  ctx.fillText('Fig. 2.62', canvas.width / 2 + 50, canvas.height - 20);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Toroidal Electromagnet Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow head
+        function drawArrowhead(ctx, fromx, fromy, tox, toy, angle, length) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const lineAngle = Math.atan2(dy, dx);
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - length * Math.cos(lineAngle - angle), toy - length * Math.sin(lineAngle - angle));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - length * Math.cos(lineAngle + angle), toy - length * Math.sin(lineAngle + angle));
+        }
+
+        // --- Drawing Parameters ---
+        const cx = 250;
+        const cy = 200;
+        const outerR = 120; // Represents outer radius
+        const innerR = 70;  // Represents inner radius
+        const gapAngle = 0.4; // Total angular size of the gap in radians
+
+        // --- Start Drawing ---
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        
+        // 1. Draw Toroid Core
+        const startAngle = gapAngle / 2;
+        const endAngle = 2 * Math.PI - gapAngle / 2;
+
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(cx, cy, outerR, startAngle, endAngle, false);
+        const innerGapEndX = cx + innerR * Math.cos(endAngle);
+        const innerGapEndY = cy + innerR * Math.sin(endAngle);
+        ctx.lineTo(innerGapEndX, innerGapEndY);
+        ctx.arc(cx, cy, innerR, endAngle, startAngle, true);
+        ctx.closePath();
+        ctx.stroke();
+
+        // 2. Draw Coil Windings
+        ctx.lineWidth = 1.5;
+        const coilStartAngle = Math.PI * 0.7;
+        const coilEndAngle = Math.PI * 1.3;
+        const numWindings = 20;
+        for (let i = 0; i <= numWindings; i++) {
+            const angle = coilStartAngle + (i / numWindings) * (coilEndAngle - coilStartAngle);
+            ctx.beginPath();
+            ctx.moveTo(cx + innerR * Math.cos(angle), cy + innerR * Math.sin(angle));
+            ctx.lineTo(cx + outerR * Math.cos(angle), cy + outerR * Math.sin(angle));
+            ctx.stroke();
+        }
+
+        // 3. Draw Voltage Source Connection
+        ctx.lineWidth = 3;
+        const wireYTop = cy - 40;
+        const wireYBottom = cy + 40;
+        const wireXStart = cx - outerR + 5; // A bit inside the coil
+        const wireXEnd = cx - outerR - 60;
+
+        // Horizontal wires
+        ctx.beginPath();
+        ctx.moveTo(wireXStart, wireYTop);
+        ctx.lineTo(wireXEnd, wireYTop);
+        ctx.moveTo(wireXStart, wireYBottom);
+        ctx.lineTo(wireXEnd, wireYBottom);
+        // Vertical wire for the source
+        ctx.moveTo(wireXEnd, wireYTop);
+        ctx.lineTo(wireXEnd, wireYBottom);
+        ctx.stroke();
+
+        // 4. Draw Labels and Arrows
+        ctx.font = 'italic 22px serif';
+
+        // Label 'V' for Voltage
+        ctx.fillText('V', wireXEnd - 25, cy + 8);
+
+        // Label 'b' for outer radius
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx, cy - outerR);
+        drawArrowhead(ctx, cx, cy, cx, cy - outerR, Math.PI / 6, 10);
+        ctx.stroke();
+        ctx.fillText('b', cx - 25, cy - outerR / 2 + 5);
+
+        // Label 'a' for core thickness
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + innerR);
+        ctx.lineTo(cx, cy + outerR);
+        drawArrowhead(ctx, cx, cy + outerR, cx, cy + innerR, Math.PI / 6, 10);
+        drawArrowhead(ctx, cx, cy + innerR, cx, cy + outerR, Math.PI / 6, 10);
+        ctx.stroke();
+        ctx.fillText('a', cx + 10, cy + (innerR + outerR) / 2 + 8);
+        
+        // Label 'w' for gap width
+        const w_arrow_x = cx + outerR + 25;
+        const w_arrow_y_top = cy - (outerR - innerR) / 2 - 10;
+        const w_arrow_y_bottom = cy + (outerR - innerR) / 2 + 10;
+        ctx.beginPath();
+        ctx.moveTo(w_arrow_x, w_arrow_y_top);
+        ctx.lineTo(w_arrow_x, w_arrow_y_bottom);
+        drawArrowhead(ctx, w_arrow_x, w_arrow_y_bottom, w_arrow_x, w_arrow_y_top, Math.PI / 6, 10);
+        drawArrowhead(ctx, w_arrow_x, w_arrow_y_top, w_arrow_x, w_arrow_y_bottom, Math.PI / 6, 10);
+        ctx.stroke();
+        ctx.fillText('w', w_arrow_x + 10, cy + 8);
+        
+        // 5. Draw Figure Caption
+        ctx.font = 'bold 24px serif';
+        ctx.fillText('Fig. 2.34', cx - 60, cy + outerR + 70);
+
+    </script>
+</body>
+</html>

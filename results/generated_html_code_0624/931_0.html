@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Op-Amp Circuit Diagram</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="650" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style settings ---
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = '18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Helper functions ---
+    function drawResistor(x, y, width, height, label, labelPos) {
+        ctx.save();
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.rect(x - width / 2, y - height / 2, width, height);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+        
+        ctx.font = '18px sans-serif';
+        ctx.textAlign = labelPos.align;
+        ctx.textBaseline = labelPos.baseline;
+        ctx.fillText(label, labelPos.x, labelPos.y);
+    }
+
+    function drawArrow(fromx, fromy, tox, toy, headlen) {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    function drawNode(x, y) {
+        ctx.beginPath();
+        ctx.arc(x, y, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+
+    function drawTerminal(x, y) {
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+    }
+    
+    function drawVLabel(label, sub, x, y) {
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.textAlign = 'right';
+        const vWidth = ctx.measureText(label).width;
+        ctx.fillText(label, x, y);
+
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.textAlign = 'left';
+        ctx.fillText(sub, x, y + 5);
+    }
+
+
+    // --- Main Drawing ---
+
+    // Op-Amp Body
+    const opamp_x_in = 250;
+    const opamp_x_out = 350;
+    const opamp_y_mid = 225;
+    const opamp_y_top = 175;
+    const opamp_y_bot = 275;
+
+    ctx.beginPath();
+    ctx.moveTo(opamp_x_in, opamp_y_top);
+    ctx.lineTo(opamp_x_out, opamp_y_mid);
+    ctx.lineTo(opamp_x_in, opamp_y_bot);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Op-Amp Inputs and Symbols
+    const opamp_in_y_neg = 200;
+    const opamp_in_y_pos = 250;
+    ctx.font = '30px sans-serif';
+    ctx.fillText('-', opamp_x_in + 15, opamp_in_y_neg);
+    ctx.fillText('+', opamp_x_in + 15, opamp_in_y_pos);
+    
+    // Power Supply Labels
+    ctx.font = '18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('+9.0 V', opamp_x_out - 30, opamp_y_top + 10);
+    ctx.fillText('-9.0 V', opamp_x_out - 30, opamp_y_bot - 10);
+
+    // Ground line
+    const ground_y = 400;
+    ctx.beginPath();
+    ctx.moveTo(50, ground_y);
+    ctx.lineTo(600, ground_y);
+    ctx.stroke();
+
+    // Ground Symbol
+    const ground_x = 450;
+    ctx.beginPath();
+    ctx.moveTo(ground_x, ground_y);
+    ctx.lineTo(ground_x, ground_y + 15);
+    ctx.moveTo(ground_x - 20, ground_y + 15);
+    ctx.lineTo(ground_x + 20, ground_y + 15);
+    ctx.moveTo(ground_x - 13, ground_y + 22);
+    ctx.lineTo(ground_x + 13, ground_y + 22);
+    ctx.moveTo(ground_x - 6, ground_y + 29);
+    ctx.lineTo(ground_x + 6, ground_y + 29);
+    ctx.stroke();
+    
+    // --- Input Side ---
+    const vin_x = 100;
+    // V_IN Terminal and wire
+    drawTerminal(vin_x, opamp_in_y_pos);
+    ctx.beginPath();
+    ctx.moveTo(vin_x, opamp_in_y_pos);
+    ctx.lineTo(opamp_x_in, opamp_in_y_pos); // to non-inverting input
+    ctx.stroke();
+    
+    // V_IN Label and Arrow
+    drawArrow(vin_x + 20, ground_y, vin_x + 20, opamp_in_y_pos + 15, 10);
+    drawVLabel('V', 'IN', vin_x + 10, opamp_in_y_pos + (ground_y - opamp_in_y_pos)/2);
+    
+
+    // --- Feedback and Input Resistor Side ---
+    const junction_x = 180;
+    // Wire to inverting input
+    ctx.beginPath();
+    ctx.moveTo(junction_x, opamp_in_y_neg);
+    ctx.lineTo(opamp_x_in, opamp_in_y_neg);
+    ctx.stroke();
+    drawNode(junction_x, opamp_in_y_neg);
+    
+    // Input Resistor (800 Ohm)
+    const r1_y_mid = 300;
+    ctx.beginPath();
+    ctx.moveTo(junction_x, opamp_in_y_neg);
+    ctx.lineTo(junction_x, r1_y_mid - 25);
+    ctx.moveTo(junction_x, r1_y_mid + 25);
+    ctx.lineTo(junction_x, ground_y);
+    ctx.stroke();
+    drawResistor(junction_x, r1_y_mid, 20, 50, '800 Ω', {x: junction_x + 20, y: r1_y_mid, align: 'left', baseline: 'middle'});
+    drawNode(junction_x, ground_y);
+
+    // Feedback Resistor (6400 Ohm)
+    const rf_y = 120;
+    const rf_x_mid = 300;
+    const rf_out_x = 420;
+    // Vertical wire up from junction
+    ctx.beginPath();
+    ctx.moveTo(junction_x, opamp_in_y_neg);
+    ctx.lineTo(junction_x, rf_y);
+    // Horizontal wire and resistor
+    ctx.moveTo(junction_x, rf_y);
+    ctx.lineTo(rf_x_mid - 50, rf_y);
+    ctx.moveTo(rf_x_mid + 50, rf_y);
+    ctx.lineTo(rf_out_x, rf_y);
+    // Vertical wire down to output
+    ctx.lineTo(rf_out_x, opamp_y_mid);
+    ctx.stroke();
+    drawResistor(rf_x_mid, rf_y, 100, 20, '6400 Ω', {x: rf_x_mid, y: rf_y - 20, align: 'center', baseline: 'bottom'});
+
+
+    // --- Output Side ---
+    const vout_x = 550;
+    // Wire from op-amp output
+    ctx.beginPath();
+    ctx.moveTo(opamp_x_out, opamp_y_mid);
+    ctx.lineTo(rf_out_x, opamp_y_mid);
+    ctx.stroke();
+    drawNode(rf_out_x, opamp_y_mid); // Junction for feedback
+    
+    // Wire to V_OUT terminal
+    ctx.beginPath();
+    ctx.moveTo(rf_out_x, opamp_y_mid);
+    ctx.lineTo(vout_x, opamp_y_mid);
+    ctx.stroke();
+    drawTerminal(vout_x, opamp_y_mid);
+
+    // V_OUT Label and Arrow
+    drawArrow(vout_x + 20, ground_y, vout_x + 20, opamp_y_mid + 15, 10);
+    drawVLabel('V', 'OUT', vout_x + 50, opamp_y_mid + (ground_y - opamp_y_mid)/2);
+
+
+    // --- Figure Label ---
+    ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 7.1', 325, 470);
+
+</script>
+</body>
+</html>

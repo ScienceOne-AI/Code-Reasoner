@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Light Reflection and Polarization</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #999;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw a line with an arrowhead
+    function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 10) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        
+        // Draw the line segment
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+
+        // Draw the arrowhead
+        ctx.save();
+        ctx.translate(toX, toY);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headLength, headLength / 2);
+        ctx.lineTo(-headLength, -headLength / 2);
+        ctx.closePath();
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Drawing parameters ---
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'black';
+    const glassFillColor = 'rgb(211, 211, 211)';
+
+    // 1. Water Surface
+    const yWater = 160;
+    ctx.beginPath();
+    ctx.moveTo(40, yWater);
+    ctx.lineTo(560, yWater);
+    ctx.stroke();
+
+    // 2. Glass Block
+    const glassAngleDeg = 18;
+    const glassAngleRad = glassAngleDeg * Math.PI / 180;
+    const glassTopLeft = { x: 160, y: 280 };
+    const glassLength = 320;
+    const glassThickness = 30;
+    
+    // Save context, translate to pivot, rotate, draw, and restore
+    ctx.save();
+    ctx.translate(glassTopLeft.x, glassTopLeft.y);
+    ctx.rotate(-glassAngleRad);
+    
+    ctx.fillStyle = glassFillColor;
+    ctx.fillRect(0, 0, glassLength, glassThickness);
+    ctx.strokeStyle = 'black';
+    ctx.strokeRect(0, 0, glassLength, glassThickness);
+    
+    // Label 'n' inside the glass
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText('n', glassLength - 45, glassThickness - 8);
+    
+    ctx.restore();
+
+    // 3. Light Rays
+    const p0 = { x: 230, y: yWater }; // Point on water surface
+    
+    // Incident ray 1 (Air -> Water)
+    const pStart1 = { x: 130, y: 80 };
+    drawArrow(ctx, pStart1.x, pStart1.y, p0.x, p0.y);
+    
+    // Reflected ray 1 (from Water)
+    const pEnd1 = { x: 330, y: 80 };
+    drawArrow(ctx, p0.x, p0.y, pEnd1.x, pEnd1.y);
+
+    // Calculate reflection point P1 on the glass surface
+    // The top surface of the glass is a line defined by the pivot and angle
+    const mGlass = Math.tan(-glassAngleRad);
+    const cGlass = glassTopLeft.y - mGlass * glassTopLeft.x;
+    
+    // Find intersection point P1 for the refracted ray
+    const p1 = { x: 280, y: mGlass * 280 + cGlass };
+    
+    // Refracted ray (Water -> Glass surface)
+    drawArrow(ctx, p0.x, p0.y, p1.x, p1.y);
+    
+    // Reflected ray 2 (from Glass surface)
+    // We choose an endpoint that visually matches the law of reflection and the original diagram.
+    const pEnd2 = { x: 410, y: 180 };
+    drawArrow(ctx, p1.x, p1.y, pEnd2.x, pEnd2.y);
+
+    // 4. Angle Theta
+    // Calculate the coordinates of the bottom-left corner of the glass
+    const bl_x = glassTopLeft.x + glassThickness * Math.sin(glassAngleRad);
+    const bl_y = glassTopLeft.y + glassThickness * Math.cos(glassAngleRad);
+    
+    const angleArcRadius = 35;
+    const angleLabelRadius = 22;
+    
+    // Horizontal guide line for the angle
+    ctx.beginPath();
+    ctx.moveTo(bl_x - angleArcRadius - 10, bl_y);
+    ctx.lineTo(bl_x, bl_y);
+    ctx.stroke();
+
+    // Arc for the angle
+    ctx.beginPath();
+    ctx.arc(bl_x, bl_y, angleArcRadius, Math.PI, Math.PI + glassAngleRad);
+    ctx.stroke();
+
+    // Label 'θ' for the angle
+    ctx.font = 'italic 18px "Times New Roman"';
+    const thetaLabelAngle = Math.PI + glassAngleRad / 2;
+    const thetaX = bl_x + angleLabelRadius * Math.cos(thetaLabelAngle);
+    const thetaY = bl_y + angleLabelRadius * Math.sin(thetaLabelAngle);
+    ctx.fillText('θ', thetaX, thetaY + 6); // Small offset for better visual placement
+
+    // 5. Text Label at the bottom
+    ctx.font = '22px "SimSun"';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 12-51 图', canvas.width / 2, 410);
+
+</script>
+</body>
+</html>

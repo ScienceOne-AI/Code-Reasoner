@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Capacitor and Dielectric Slab Circuit</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+        canvas { border: 1px solid #ccc; background-color: white; }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="650" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Helper Functions ---
+        ctx.lineWidth = 1.5;
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        function drawArrow(fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function drawVerticalDoubleArrow(x, y1, y2, headlen = 8) {
+            ctx.beginPath();
+            ctx.moveTo(x, y1); ctx.lineTo(x, y2);
+            // Top arrowhead
+            ctx.moveTo(x, y1); ctx.lineTo(x - headlen / 2, y1 + headlen);
+            ctx.moveTo(x, y1); ctx.lineTo(x + headlen / 2, y1 + headlen);
+            // Bottom arrowhead
+            ctx.moveTo(x, y2); ctx.lineTo(x - headlen / 2, y2 - headlen);
+            ctx.moveTo(x, y2); ctx.lineTo(x + headlen / 2, y2 - headlen);
+            ctx.stroke();
+        }
+
+        // --- Geometry Constants ---
+        const plateLen = 250;
+        const plateDist = 60;
+        const plateStartX = 180;
+        const plateCenterY = 200;
+        const plateTopY = plateCenterY - plateDist / 2;
+        const plateBottomY = plateCenterY + plateDist / 2;
+        const plateEndX = plateStartX + plateLen;
+
+        const slabLen = plateLen;
+        const slabOverlap = 150;
+        const slabStartX = plateStartX - (slabLen - slabOverlap);
+
+        // --- Draw Mechanical Parts ---
+        // Dielectric Slab
+        ctx.strokeRect(slabStartX, plateTopY, slabLen, plateDist);
+        // Capacitor Plates
+        ctx.beginPath();
+        ctx.moveTo(plateStartX, plateTopY); ctx.lineTo(plateEndX, plateTopY);
+        ctx.moveTo(plateStartX, plateBottomY); ctx.lineTo(plateEndX, plateBottomY);
+        ctx.stroke();
+
+        // --- Draw Mechanical Labels ---
+        // Dielectric labels: S, l
+        ctx.fillText("S, l", slabStartX + (plateStartX - slabStartX) / 2, plateTopY - 20);
+        ctx.fillText("S, l", slabStartX + (plateStartX - slabStartX) / 2, plateBottomY + 20);
+        // εr
+        ctx.fillText("ε", slabStartX + 50, plateCenterY);
+        ctx.font = 'italic 15px Times New Roman';
+        ctx.fillText("r", slabStartX + 50 + 8, plateCenterY + 5);
+        ctx.font = 'italic 20px Times New Roman';
+
+        // Plate labels: S and l
+        ctx.fillText("S", plateStartX + plateLen / 2, plateTopY - 20);
+        ctx.fillText("l", plateEndX - 40, plateTopY - 20);
+        
+        // Distance `d`
+        drawVerticalDoubleArrow(plateStartX - 20, plateTopY, plateBottomY);
+        ctx.fillText('d', plateStartX - 20, plateCenterY);
+        drawVerticalDoubleArrow(plateEndX + 20, plateTopY, plateBottomY);
+        ctx.fillText('d', plateEndX + 20, plateCenterY);
+
+        // Force `F`
+        const forceXStart = 40;
+        drawArrow(forceXStart, plateCenterY, slabStartX, plateCenterY, 12);
+        ctx.font = 'italic bold 22px Times New Roman';
+        ctx.fillText('F', forceXStart - 25, plateCenterY);
+        ctx.font = 'italic 20px Times New Roman';
+
+        // --- Draw Circuit ---
+        const circuitX = 550;
+        const circuitTopY = 80;
+        const circuitBottomY = 320;
+        const wireTurnX = plateEndX + 50;
+
+        // Wires
+        ctx.beginPath();
+        ctx.moveTo(plateEndX, plateTopY); ctx.lineTo(wireTurnX, plateTopY); ctx.lineTo(wireTurnX, circuitTopY);
+        ctx.moveTo(plateEndX, plateBottomY); ctx.lineTo(wireTurnX, plateBottomY); ctx.lineTo(wireTurnX, circuitBottomY);
+        ctx.moveTo(circuitX, circuitTopY); ctx.lineTo(circuitX, circuitBottomY);
+        ctx.moveTo(wireTurnX, circuitBottomY); ctx.lineTo(circuitX, circuitBottomY);
+        ctx.stroke();
+
+        // Switch K
+        const switchXCenter = wireTurnX + (circuitX - wireTurnX) / 2;
+        const switchGap = 20;
+        const switchY = circuitTopY;
+        const swX1 = switchXCenter - switchGap / 2;
+        const swX2 = switchXCenter + switchGap / 2;
+        ctx.clearRect(swX1 - ctx.lineWidth, switchY - ctx.lineWidth, switchGap + 2 * ctx.lineWidth, 2 * ctx.lineWidth);
+        ctx.beginPath(); // Wires with gap
+        ctx.moveTo(wireTurnX, switchY); ctx.lineTo(swX1, switchY);
+        ctx.moveTo(swX2, switchY); ctx.lineTo(circuitX, switchY);
+        ctx.stroke();
+        // Terminals
+        ctx.beginPath(); ctx.arc(swX1, switchY, 4, 0, 2 * Math.PI); ctx.fill();
+        ctx.beginPath(); ctx.arc(swX2, switchY, 4, 0, 2 * Math.PI); ctx.fill();
+        // Bar above
+        ctx.beginPath(); ctx.moveTo(swX1, switchY - 12); ctx.lineTo(swX2, switchY - 12); ctx.stroke();
+        ctx.fillText('K', switchXCenter, switchY - 28);
+
+        // Resistor R
+        const resW = 20; const resH = 50;
+        const resX = circuitX - resW / 2; const resY = circuitTopY + 50;
+        ctx.clearRect(resX - ctx.lineWidth, resY - ctx.lineWidth, resW + 2 * ctx.lineWidth, resH + 2 * ctx.lineWidth);
+        ctx.strokeRect(resX, resY, resW, resH);
+        ctx.beginPath();
+        ctx.moveTo(circuitX, circuitTopY); ctx.lineTo(circuitX, resY);
+        ctx.moveTo(circuitX, resY + resH);
+        ctx.stroke();
+        ctx.fillText('R', circuitX + 30, resY + resH / 2);
+
+        // Voltage Source U0
+        const battYCenter = 260; const battH = 30; const battW = 30;
+        ctx.clearRect(circuitX - battW / 2 - 2, battYCenter - battH / 2 - ctx.lineWidth, battW + 4, battH + 2 * ctx.lineWidth);
+        ctx.beginPath();
+        ctx.moveTo(circuitX, resY + resH); ctx.lineTo(circuitX, battYCenter - battH / 2);
+        ctx.moveTo(circuitX, battYCenter + battH / 2); ctx.lineTo(circuitX, circuitBottomY);
+        ctx.stroke();
+        // Battery plates
+        ctx.beginPath();
+        ctx.moveTo(circuitX - battW / 2, battYCenter - battH / 2); ctx.lineTo(circuitX + battW / 2, battYCenter - battH / 2);
+        ctx.stroke();
+        const oldLw = ctx.lineWidth;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(circuitX - battW / 3, battYCenter + battH / 2); ctx.lineTo(circuitX + battW / 3, battYCenter + battH / 2);
+        ctx.stroke();
+        ctx.lineWidth = oldLw;
+
+        // Voltage label
+        ctx.fillText('U', circuitX + 35, battYCenter);
+        ctx.font = 'italic 15px Times New Roman';
+        ctx.fillText('0', circuitX + 35 + 10, battYCenter + 6);
+
+    </script>
+</body>
+</html>

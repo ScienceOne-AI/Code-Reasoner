@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resistor Network Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="850" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const config = {
+            x_start: 100,
+            y_top: 100,
+            y_bottom: 300,
+            cell_width: 150,
+            num_cells: 4,
+            lineWidth: 2,
+            font: '24px Arial',
+            label_offset: 20,
+            node_label_offset: 25,
+            color: 'black',
+            omega: '\u03A9'
+        };
+
+        // --- Node Coordinates ---
+        const nodes = {};
+        const top_labels = ['A', 'B', 'C', 'D', 'E'];
+        const bottom_labels = ['A\'', 'B\'', 'C\'', 'D\'', 'E\''];
+
+        for (let i = 0; i <= config.num_cells; i++) {
+            const x = config.x_start + i * config.cell_width;
+            nodes[top_labels[i]] = { x: x, y: config.y_top };
+            nodes[bottom_labels[i]] = { x: x, y: config.y_bottom };
+        }
+
+        // --- Drawing Functions ---
+        ctx.lineWidth = config.lineWidth;
+        ctx.strokeStyle = config.color;
+        ctx.fillStyle = config.color;
+        ctx.font = config.font;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        function drawLine(p1, p2) {
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+        }
+        
+        // Function to draw the special diagonal lines with an arc near the end
+        function drawSpecialDiagonal(p1, p2) {
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+
+            // Calculate a point just before the end
+            const break_ratio = 0.85;
+            const break_point = {
+                x: p1.x * (1 - break_ratio) + p2.x * break_ratio,
+                y: p1.y * (1 - break_ratio) + p2.y * break_ratio
+            };
+            ctx.lineTo(break_point.x, break_point.y);
+
+            // Calculate control point for quadratic curve to create the arc
+            const mid_point = { x: (break_point.x + p2.x) / 2, y: (break_point.y + p2.y) / 2 };
+            const vec = { x: p2.x - break_point.x, y: p2.y - break_point.y };
+            const perp_vec = { x: -vec.y, y: vec.x }; // Perpendicular vector
+            const perp_len = Math.sqrt(perp_vec.x**2 + perp_vec.y**2);
+            const control_offset = 15;
+            const control_point = {
+                x: mid_point.x + control_offset * perp_vec.x / perp_len,
+                y: mid_point.y + control_offset * perp_vec.y / perp_len
+            };
+
+            ctx.quadraticCurveTo(control_point.x, control_point.y, p2.x, p2.y);
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Logic ---
+
+        // Draw Horizontal Resistors
+        for (let i = 0; i < config.num_cells; i++) {
+            // Top
+            const p1_top = nodes[top_labels[i]];
+            const p2_top = nodes[top_labels[i+1]];
+            drawLine(p1_top, p2_top);
+            ctx.fillText((i + 1) + config.omega, (p1_top.x + p2_top.x) / 2, p1_top.y - config.label_offset);
+
+            // Bottom
+            const p1_bot = nodes[bottom_labels[i]];
+            const p2_bot = nodes[bottom_labels[i+1]];
+            drawLine(p1_bot, p2_bot);
+            ctx.fillText((i + 1) + config.omega, (p1_bot.x + p2_bot.x) / 2, p1_bot.y + config.label_offset);
+        }
+
+        // Draw Vertical and Diagonal Resistors and their labels inside cells
+        for (let i = 0; i < config.num_cells; i++) {
+            // Diagonal Resistor
+            const p_diag_start = nodes[bottom_labels[i]];
+            const p_diag_end = nodes[top_labels[i+1]];
+            drawSpecialDiagonal(p_diag_start, p_diag_end);
+            
+            // Vertical Resistor
+            const p_vert_top = nodes[top_labels[i+1]];
+            const p_vert_bottom = nodes[bottom_labels[i+1]];
+            drawLine(p_vert_top, p_vert_bottom);
+            
+            // Labels inside the cell
+            const cell_center_x = nodes[top_labels[i]].x + config.cell_width / 2;
+            const diag_label_y = config.y_top + 50;
+            const vert_label_y = config.y_bottom - 50;
+            
+            ctx.fillText((i + 2) + config.omega, cell_center_x, diag_label_y); // Diagonal's label
+            ctx.fillText((i + 2) + config.omega, cell_center_x + 30, vert_label_y); // Vertical's label
+        }
+
+        // Draw First and Last Vertical Resistors (Special Cases for labels)
+        // First (AA')
+        const pA = nodes['A'];
+        const pA_prime = nodes['A\''];
+        drawLine(pA, pA_prime);
+        ctx.fillText('1' + config.omega, pA.x - config.label_offset - 10, (pA.y + pA_prime.y) / 2);
+
+        // Last (EE')
+        const pE = nodes['E'];
+        const pE_prime = nodes['E\''];
+        // This line is already drawn in the loop, but we need to place its label correctly
+        // The value is 5Ω, corresponding to the 4th cell (i=3), where value is i+2 = 5.
+        // Let's place it again based on the image.
+        ctx.textAlign = 'left';
+        ctx.fillText('5' + config.omega, pE.x + config.label_offset - 10, (pE.y + pE_prime.y) / 2);
+        ctx.textAlign = 'center';
+
+
+        // Draw Node Labels
+        ctx.font = `bold ${config.font}`;
+        for (let i = 0; i <= config.num_cells; i++) {
+            // Top
+            const node_top = nodes[top_labels[i]];
+            ctx.fillText(top_labels[i], node_top.x, node_top.y - config.node_label_offset - 10);
+
+            // Bottom
+            const node_bot = nodes[bottom_labels[i]];
+            ctx.fillText(bottom_labels[i], node_bot.x, node_bot.y + config.node_label_offset + 10);
+        }
+
+    </script>
+</body>
+</html>

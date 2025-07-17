@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        // --- Start Drawing ---
+
+        // Define parameters
+        const pivot = { x: 280, y: 220 };
+        const rodLength = 360;
+        const anglePhi = 20 * Math.PI / 180; // 20 degrees in radians
+        const cosPhi = Math.cos(anglePhi);
+        const sinPhi = Math.sin(anglePhi);
+        
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // 1. Draw the initial horizontal position (dashed rectangle/box)
+        const boxWidth = rodLength / 2 + rodLength / 4 + 40;
+        const boxHeight = 16;
+        const boxX = pivot.x - rodLength / 2 - 15;
+        const boxY = pivot.y - boxHeight / 2;
+        ctx.save();
+        ctx.setLineDash([6, 3]);
+        ctx.lineWidth = 1;
+        ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+        ctx.restore();
+
+        // 2. Draw the tilted rod
+        const x1 = pivot.x - (rodLength / 2) * cosPhi;
+        const y1 = pivot.y - (rodLength / 2) * sinPhi;
+        const x2 = pivot.x + (rodLength / 2) * cosPhi;
+        const y2 = pivot.y + (rodLength / 2) * sinPhi;
+        ctx.save();
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.restore();
+
+        // 3. Draw the pivot O
+        ctx.beginPath();
+        ctx.arc(pivot.x, pivot.y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('O', pivot.x, pivot.y + 18);
+
+        // 4. Draw the falling beetle and its velocity
+        const impactDistHorizontal = rodLength / 4;
+        const beetleStartX = pivot.x + impactDistHorizontal;
+        const beetleStartY = pivot.y - 120;
+        
+        ctx.beginPath();
+        ctx.arc(beetleStartX, beetleStartY, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('m', beetleStartX - 15, beetleStartY);
+
+        // Velocity vector
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        drawArrow(ctx, beetleStartX, beetleStartY + 10, beetleStartX, beetleStartY + 60);
+        ctx.fillText('v', beetleStartX + 15, beetleStartY + 35);
+        ctx.font = 'italic 14px Times New Roman';
+        ctx.fillText('0', beetleStartX + 22, beetleStartY + 40);
+        ctx.restore();
+
+        // Path of falling beetle
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(beetleStartX, beetleStartY);
+        ctx.lineTo(beetleStartX, pivot.y + 70);
+        ctx.stroke();
+        ctx.restore();
+
+        // 5. Draw the beetle on the rod
+        const r_dist = rodLength * (1/4 + 1/8); // Position somewhere between l/4 and l/2
+        const beetleOnRodX = pivot.x + r_dist * cosPhi;
+        const beetleOnRodY = pivot.y + r_dist * sinPhi;
+        ctx.beginPath();
+        ctx.arc(beetleOnRodX, beetleOnRodY, 4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 6. Draw labels and dimensions
+        // Mass label for the rod
+        ctx.fillText('m', x1 - 20, y1 - 10);
+        
+        // Angle φ
+        ctx.beginPath();
+        ctx.arc(pivot.x, pivot.y, 60, 0, anglePhi);
+        ctx.stroke();
+        const angleLabelX = pivot.x + 75 * Math.cos(anglePhi / 2);
+        const angleLabelY = pivot.y + 75 * Math.sin(anglePhi / 2);
+        ctx.fillText('φ', angleLabelX, angleLabelY);
+
+        // Dimension l/4
+        const dimY_l4 = pivot.y + 50;
+        ctx.save();
+        ctx.lineWidth = 1;
+        drawArrow(ctx, beetleStartX, dimY_l4, pivot.x, dimY_l4);
+        drawArrow(ctx, pivot.x, dimY_l4, beetleStartX, dimY_l4);
+        ctx.restore();
+        
+        // Fractional label for l/4
+        const l4_label_x = pivot.x + impactDistHorizontal / 2;
+        const l4_label_y = dimY_l4 - 10;
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('l', l4_label_x, l4_label_y - 8);
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(l4_label_x - 5, l4_label_y);
+        ctx.lineTo(l4_label_x + 5, l4_label_y);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillText('4', l4_label_x, l4_label_y + 8);
+
+        // Dimension r
+        const tickLength = 10;
+        ctx.save();
+        ctx.translate(pivot.x, pivot.y);
+        ctx.rotate(anglePhi);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        // Main line
+        ctx.moveTo(0, 0);
+        ctx.lineTo(r_dist, 0);
+        // Tick at pivot
+        ctx.moveTo(0, -tickLength / 2);
+        ctx.lineTo(0, tickLength / 2);
+        // Tick at beetle
+        ctx.moveTo(r_dist, -tickLength / 2);
+        ctx.lineTo(r_dist, tickLength / 2);
+        ctx.stroke();
+        // Label r
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('r', r_dist / 2, 20);
+        ctx.restore();
+        
+        // 7. Draw the caption
+        ctx.font = '18px SimSun'; // Font that supports Chinese characters
+        ctx.fillStyle = 'black';
+        ctx.fillText('力图 6.5.1', canvas.width / 2, canvas.height - 30);
+
+    </script>
+</body>
+</html>

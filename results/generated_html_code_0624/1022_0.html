@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Elevator Accelerometer Data</title>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Chart parameters
+        const margin = { top: 50, right: 30, bottom: 50, left: 60 };
+        const width = canvas.width - margin.left - margin.right;
+        const height = canvas.height - margin.top - margin.bottom;
+
+        // Data scale
+        const tMin = 0, tMax = 80;
+        const aMin = -10.8, aMax = -8.8;
+
+        // Coordinate mapping functions
+        function mapX(t) {
+            return margin.left + (t / tMax) * width;
+        }
+
+        function mapY(a) {
+            return margin.top + height - ((a - aMin) / (aMax - aMin)) * height;
+        }
+
+        // --- Drawing Functions ---
+
+        function drawAxesAndGrid() {
+            ctx.beginPath();
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 1;
+
+            // Vertical grid lines
+            for (let t = 5; t <= tMax; t += 5) {
+                ctx.moveTo(mapX(t), margin.top);
+                ctx.lineTo(mapX(t), margin.top + height);
+            }
+
+            // Horizontal grid lines
+            for (let a = -10.6; a <= -8.8; a += 0.2) {
+                ctx.moveTo(margin.left, mapY(a));
+                ctx.lineTo(margin.left + width, mapY(a));
+            }
+            ctx.stroke();
+
+            // Axes
+            ctx.beginPath();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            // X-Axis
+            ctx.moveTo(margin.left, margin.top + height);
+            ctx.lineTo(margin.left + width, margin.top + height);
+            // Y-Axis
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, margin.top + height);
+            ctx.stroke();
+        }
+
+        function drawLabels() {
+            ctx.fillStyle = '#000';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+
+            // X-axis labels
+            for (let t = 0; t <= tMax; t += 5) {
+                if (t % 5 === 0) {
+                    ctx.fillText(t, mapX(t), margin.top + height + 5);
+                }
+            }
+            ctx.fillText('Time (s)', margin.left + width / 2, margin.top + height + 25);
+            
+            // Y-axis labels
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let a = -10.8; a <= -8.8; a += 0.2) {
+                 // Use toFixed to avoid floating point representation issues
+                ctx.fillText(a.toFixed(1), margin.left - 8, mapY(a));
+            }
+
+            // Y-axis Title
+            ctx.save();
+            ctx.translate(margin.left - 40, margin.top + height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText('Acceleration (m/s²)', 0, 0);
+            ctx.restore();
+
+            // Main Title
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('"Going Up" - John Hancock Elevator Chicago', canvas.width / 2, margin.top - 30);
+        }
+
+        function drawDataPoints() {
+            ctx.fillStyle = '#000';
+
+            // Helper function to draw a cluster of points in a rectangular region
+            function drawScatterRegion(t_start, t_end, y_center, y_spread, num_points) {
+                for (let i = 0; i < num_points; i++) {
+                    const t = t_start + Math.random() * (t_end - t_start);
+                    const a = y_center + (Math.random() - 0.5) * 2 * y_spread;
+                    ctx.fillRect(mapX(t), mapY(a), 1, 1);
+                }
+            }
+
+            // Helper for slanted regions
+            function drawScatterTransition(t_start, y_start, t_end, y_end, y_spread, num_points) {
+                 const slope = (y_end - y_start) / (t_end - t_start);
+                for (let i = 0; i < num_points; i++) {
+                    const t = t_start + Math.random() * (t_end - t_start);
+                    const y_line = y_start + slope * (t - t_start);
+                    const a = y_line + (Math.random() - 0.5) * 2 * y_spread;
+                    ctx.fillRect(mapX(t), mapY(a), 1, 1);
+                }
+            }
+
+            // Helper for vertical spikes
+            function drawScatterSpike(t_center, t_spread, y_min, y_max, num_points) {
+                 for (let i = 0; i < num_points; i++) {
+                    const t = t_center + (Math.random() - 0.5) * 2 * t_spread;
+                    const a = y_min + Math.random() * (y_max - y_min);
+                    ctx.fillRect(mapX(t), mapY(a), 1, 1);
+                }
+            }
+
+            // Draw each segment of the graph based on visual analysis
+            
+            // 1. Initial rest period
+            drawScatterRegion(0, 10, -9.8, 0.08, 300);
+            
+            // 2. First spike
+            drawScatterSpike(11, 1.5, -10.8, -8.9, 100);
+            
+            // 3. Post-spike rest
+            drawScatterRegion(12.5, 15, -9.8, 0.08, 100);
+
+            // 4. Sharp drop
+            drawScatterTransition(15, -9.8, 17, -10.4, 0.1, 150);
+            
+            // 5. Downward acceleration phase
+            drawScatterRegion(17, 30, -10.4, 0.15, 1000);
+            
+            // 6. Transition to constant velocity (wide band)
+            drawScatterTransition(30, -10.4, 35, -9.8, 0.25, 600);
+            
+            // 7. Constant velocity phase (wide band)
+            drawScatterRegion(35, 50, -9.8, 0.25, 1500);
+
+            // 8. Transition to upward acceleration (wide band)
+            drawScatterTransition(50, -9.8, 55, -9.1, 0.2, 600);
+
+            // 9. Upward acceleration phase
+            drawScatterRegion(55, 65, -9.1, 0.15, 1300);
+
+            // 10. Sharp drop back to rest
+            drawScatterTransition(65, -9.1, 68, -9.8, 0.1, 200);
+
+            // 11. Final rest period
+            drawScatterRegion(68, 72, -9.8, 0.1, 250);
+
+            // 12. Second spike
+            drawScatterSpike(73, 1.5, -10.8, -8.9, 100);
+        }
+
+        // --- Main Drawing Call ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawAxesAndGrid();
+            drawLabels();
+            drawDataPoints();
+        }
+
+        draw();
+    </script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamics Process Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f8f9fa;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="300"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Font settings
+        const baseFont = '22px Arial';
+        const supFont = '13px Arial';
+        const labelFont = 'bold 22px Arial';
+
+        /**
+         * Draws horizontally centered text that can include normal and superscript parts.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} centerX - The x-coordinate for the center of the text block.
+         * @param {number} y - The y-coordinate for the baseline of the normal text.
+         * @param {Array<Object>} parts - An array of text parts, e.g., [{text: '10', type: 'normal'}, {text: '3', type: 'sup'}].
+         */
+        function drawCenteredRichText(ctx, centerX, y, parts) {
+            // 1. Calculate the total width of the rich text
+            let totalWidth = 0;
+            parts.forEach(part => {
+                ctx.font = (part.type === 'sup') ? supFont : baseFont;
+                totalWidth += ctx.measureText(part.text).width;
+            });
+
+            // 2. Calculate the starting x-coordinate for the text block
+            let currentX = centerX - totalWidth / 2;
+
+            // 3. Draw each part of the text
+            const supOffsetY = 8; // Vertical offset for superscripts
+            ctx.textBaseline = 'alphabetic';
+            
+            parts.forEach(part => {
+                if (part.type === 'sup') {
+                    ctx.font = supFont;
+                    ctx.fillText(part.text, currentX, y - supOffsetY);
+                } else {
+                    ctx.font = baseFont;
+                    ctx.fillText(part.text, currentX, y);
+                }
+                currentX += ctx.measureText(part.text).width;
+            });
+        }
+        
+        // Diagram layout dimensions
+        const boxWidth = 240;
+        const boxHeight = 120;
+        const arrowSpacing = 140;
+        const totalDiagramWidth = 2 * boxWidth + arrowSpacing;
+        
+        const startX = (canvas.width - totalDiagramWidth) / 2;
+        const yPos = 60;
+
+        const x1 = startX;
+        const x2 = startX + boxWidth + arrowSpacing;
+        
+        // --- Draw Left Box (Initial State) ---
+        ctx.strokeRect(x1, yPos, boxWidth, boxHeight);
+        const centerX1 = x1 + boxWidth / 2;
+        const line1Y = yPos + 40;
+        const line2Y = yPos + 75;
+        const line3Y = yPos + 110;
+
+        // Text content for the left box
+        const text1_parts = [
+            { text: '2.40 × 10', type: 'normal' }, { text: '3', type: 'sup' },
+            { text: ' cm', type: 'normal' }, { text: '3', type: 'sup' }
+        ];
+        const text2_parts = [
+            { text: '3.51 × 10', type: 'normal' }, { text: '5', type: 'sup' },
+            { text: ' Pa', type: 'normal' }
+        ];
+        const text3_parts = [{ text: '290 K', type: 'normal' }];
+
+        drawCenteredRichText(ctx, centerX1, line1Y, text1_parts);
+        drawCenteredRichText(ctx, centerX1, line2Y, text2_parts);
+        drawCenteredRichText(ctx, centerX1, line3Y, text3_parts);
+
+        // --- Draw Right Box (Final State) ---
+        ctx.strokeRect(x2, yPos, boxWidth, boxHeight);
+        const centerX2 = x2 + boxWidth / 2;
+
+        // Text content for the right box
+        const text4_parts = [
+            { text: '2.40 × 10', type: 'normal' }, { text: '3', type: 'sup' },
+            { text: ' cm', type: 'normal' }, { text: '3', type: 'sup' }
+        ];
+        const text5_parts = [
+            { text: '3.75 × 10', type: 'normal' }, { text: '5', type: 'sup' },
+            { text: ' Pa', type: 'normal' }
+        ];
+        const text6_parts = [{ text: '310 K', type: 'normal' }];
+
+        drawCenteredRichText(ctx, centerX2, line1Y, text4_parts);
+        drawCenteredRichText(ctx, centerX2, line2Y, text5_parts);
+        drawCenteredRichText(ctx, centerX2, line3Y, text6_parts);
+
+        // --- Draw Connecting Arrow ---
+        const arrowY = yPos + boxHeight / 2;
+        const arrowStartX = x1 + boxWidth;
+        const arrowEndX = x2;
+
+        ctx.beginPath();
+        // Main line of the arrow
+        ctx.moveTo(arrowStartX, arrowY);
+        ctx.lineTo(arrowEndX, arrowY);
+        
+        // Arrowhead placed in the middle, pointing right (as seen in image crop)
+        const midX = (arrowStartX + arrowEndX) / 2;
+        const headLength = 12;
+        const headHeight = 7;
+        const vertexX = midX + headLength / 2;
+        const baseX = midX - headLength / 2;
+        
+        ctx.moveTo(baseX, arrowY - headHeight);
+        ctx.lineTo(vertexX, arrowY);
+        ctx.lineTo(baseX, arrowY + headHeight);
+        ctx.stroke();
+
+        // --- Draw Figure Label ---
+        const labelY = yPos + boxHeight + 45;
+        const labelX = startX + totalDiagramWidth / 2;
+        ctx.font = labelFont;
+        ctx.textAlign = 'center';
+        ctx.fillText("Fig. 2.1", labelX, labelY);
+
+    </script>
+</body>
+</html>

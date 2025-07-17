@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Recreation</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Function to draw an arrow
+        function drawArrow(fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        }
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 20px Times New Roman';
+
+        // --- Main Drawing ---
+        
+        const ox = 250, oy = 270;
+
+        // Draw Axes
+        const zAxisEnd = { x: ox, y: 100 };
+        const yAxisEnd = { x: 430, y: oy };
+        const xAxisEnd = { x: 100, y: 350 };
+        
+        ctx.beginPath();
+        drawArrow(ox, oy, zAxisEnd.x, zAxisEnd.y);
+        ctx.stroke();
+        ctx.fillText('z', zAxisEnd.x - 5, zAxisEnd.y - 10);
+        
+        ctx.beginPath();
+        drawArrow(ox, oy, yAxisEnd.x, yAxisEnd.y);
+        ctx.stroke();
+        ctx.fillText('y', yAxisEnd.x + 10, yAxisEnd.y + 8);
+        
+        ctx.beginPath();
+        drawArrow(ox, oy, xAxisEnd.x, xAxisEnd.y);
+        ctx.stroke();
+        ctx.fillText('x', xAxisEnd.x - 15, xAxisEnd.y + 10);
+
+        // Define vector r and its projections
+        const P = { x: 300, y: 180 };
+        const P_xy = { x: 300, y: 290 };
+
+        // Draw dashed projection lines
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(P_xy.x, P_xy.y);
+        ctx.lineTo(P.x, P.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw solid vector r
+        ctx.beginPath();
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(P.x, P.y);
+        ctx.stroke();
+        
+        // Add tick marks to r
+        const tickPos = { x: ox + 0.65 * (P.x - ox), y: oy + 0.65 * (P.y - oy) };
+        const r_vec = { x: P.x - ox, y: P.y - oy };
+        const r_norm = { x: -r_vec.y, y: r_vec.x };
+        const r_norm_len = Math.sqrt(r_norm.x**2 + r_norm.y**2);
+        const r_unit_norm = { x: r_norm.x / r_norm_len, y: r_norm.y / r_norm_len };
+        
+        ctx.beginPath();
+        ctx.moveTo(tickPos.x - r_unit_norm.x * 5, tickPos.y - r_unit_norm.y * 5);
+        ctx.lineTo(tickPos.x + r_unit_norm.x * 5, tickPos.y + r_unit_norm.y * 5);
+        
+        const tickPos2 = { x: tickPos.x + 0.05 * r_vec.x, y: tickPos.y + 0.05 * r_vec.y };
+        ctx.moveTo(tickPos2.x - r_unit_norm.x * 5, tickPos2.y - r_unit_norm.y * 5);
+        ctx.lineTo(tickPos2.x + r_unit_norm.x * 5, tickPos2.y + r_unit_norm.y * 5);
+        ctx.stroke();
+        
+        // Label r
+        ctx.fillText('r', 295, 205);
+
+        // Draw angle arcs and labels
+        // Angle theta (θ)
+        const r_angle = Math.atan2(P.y - oy, P.x - ox);
+        ctx.beginPath();
+        ctx.arc(ox, oy, 35, -Math.PI / 2, r_angle);
+        ctx.stroke();
+        ctx.fillText('\u03B8', 275, 225);
+
+        // Angle phi (φ)
+        const x_axis_angle = Math.atan2(xAxisEnd.y - oy, xAxisEnd.x - ox);
+        const xy_proj_angle = Math.atan2(P_xy.y - oy, P_xy.x - ox);
+        ctx.beginPath();
+        ctx.arc(ox, oy, 60, x_axis_angle, xy_proj_angle);
+        ctx.stroke();
+        ctx.fillText('\u03C6', 290, 305);
+
+        // Draw 'Na' label with curly brace
+        const brace_p1 = { x: ox + 0.15 * (xAxisEnd.x - ox), y: oy + 0.15 * (xAxisEnd.y - oy) }; // (227.5, 282)
+        const brace_p2 = { x: ox + 0.5 * (xAxisEnd.x - ox), y: oy + 0.5 * (xAxisEnd.y - oy) };   // (175, 310)
+        const brace_mid = { x: (brace_p1.x + brace_p2.x) / 2, y: (brace_p1.y + brace_p2.y) / 2 }; // (201.25, 296)
+        const brace_tip = { x: brace_mid.x, y: brace_mid.y - 15 };
+        
+        ctx.beginPath();
+        ctx.moveTo(brace_p1.x, brace_p1.y);
+        ctx.quadraticCurveTo(brace_p1.x - 5, brace_mid.y, brace_tip.x, brace_tip.y);
+        ctx.quadraticCurveTo(brace_p2.x + 5, brace_mid.y, brace_p2.x, brace_p2.y);
+        ctx.stroke();
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('Na', brace_tip.x - 10, brace_tip.y - 10);
+        ctx.font = 'italic 20px Times New Roman'; // reset font
+
+        // Draw Figure caption
+        ctx.font = '18px Times New Roman';
+        ctx.fillText('Fig. 4.37', 230, 420);
+    </script>
+</body>
+</html>

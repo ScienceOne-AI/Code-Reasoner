@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram: Spring, Pulley, and Inclined Plane</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper function to draw an arrowhead ---
+        function drawArrowhead(ctx, fromX, fromY, toX, toY, size) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            ctx.save();
+            ctx.translate(toX, toY);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.lineTo(-size, size / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        // --- Helper function to draw a spring ---
+        function drawSpring(ctx, x1, y1, x2, y2, coils, width) {
+            const length = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+            
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            const segmentLength = length / (coils + 1);
+            for (let i = 0; i < coils; i++) {
+                const segX = (i + 0.5) * segmentLength;
+                const sign = (i % 2 === 0) ? 1 : -1;
+                ctx.lineTo(segX, sign * width / 2);
+            }
+            ctx.lineTo(length, 0);
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        // --- Drawing Parameters ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = "20px 'Times New Roman'";
+
+        // --- Coordinates and Dimensions ---
+        const groundY = 380;
+        
+        // Inclined Plane (Wedge)
+        const angleDeg = 37;
+        const angleRad = angleDeg * Math.PI / 180;
+        const wedgeTop = { x: 150, y: 80 }; // This is also the pulley center
+        const wedgeBottomLeft = { x: 150, y: groundY };
+        const wedgeBase = (groundY - wedgeTop.y) / Math.tan(angleRad);
+        const wedgeBottomRight = { x: wedgeTop.x + wedgeBase, y: groundY };
+        
+        // Pulley
+        const pulleyCenter = { x: wedgeTop.x, y: wedgeTop.y };
+        const pulleyRadius = 50;
+
+        // Block
+        const blockDim = { w: 60, h: 40 };
+        const inclineVec = { x: wedgeBottomRight.x - wedgeTop.x, y: wedgeBottomRight.y - wedgeTop.y };
+        const blockCenter = {
+            x: wedgeTop.x + inclineVec.x * 0.45,
+            y: wedgeTop.y + inclineVec.y * 0.45
+        };
+
+        // --- Draw Ground ---
+        ctx.beginPath();
+        ctx.moveTo(0, groundY);
+        ctx.lineTo(canvas.width, groundY);
+        ctx.stroke();
+        // Hatching for the ground
+        for (let i = 0; i < canvas.width; i += 15) {
+            ctx.beginPath();
+            ctx.moveTo(i, groundY);
+            ctx.lineTo(i - 10, groundY + 10);
+            ctx.stroke();
+        }
+
+        // --- Draw Wedge ---
+        ctx.beginPath();
+        ctx.moveTo(wedgeTop.x, wedgeTop.y);
+        ctx.lineTo(wedgeBottomLeft.x, wedgeBottomLeft.y);
+        ctx.lineTo(wedgeBottomRight.x, wedgeBottomRight.y);
+        ctx.closePath();
+        ctx.stroke();
+
+        // --- Draw Pulley ---
+        ctx.beginPath();
+        ctx.arc(pulleyCenter.x, pulleyCenter.y, pulleyRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // --- Draw the internal arrow/pointer in the pulley ---
+        // Tip of the arrow is at the tangent point of the rope from the incline
+        const normalAngle = Math.PI / 2 - angleRad; // Angle of radius perpendicular to incline
+        const arrowTip = {
+            x: pulleyCenter.x + pulleyRadius * Math.cos(normalAngle),
+            y: pulleyCenter.y + pulleyRadius * Math.sin(normalAngle)
+        };
+        // Base of the pointer (V-shape at the center)
+        const vBase1 = { x: pulleyCenter.x - 5, y: pulleyCenter.y + 10 };
+        const vBase2 = { x: pulleyCenter.x + 10, y: pulleyCenter.y - 5};
+        // Simplified pointer: a filled triangle
+        ctx.beginPath();
+        const baseCenter = {
+            x: pulleyCenter.x + 10 * Math.cos(normalAngle),
+            y: pulleyCenter.y + 10 * Math.sin(normalAngle)
+        };
+        const perpVec = { x: -Math.sin(normalAngle), y: Math.cos(normalAngle) };
+        const baseV1 = { x: baseCenter.x + 7*perpVec.x, y: baseCenter.y + 7*perpVec.y };
+        const baseV2 = { x: baseCenter.x - 7*perpVec.x, y: baseCenter.y - 7*perpVec.y };
+        ctx.moveTo(arrowTip.x, arrowTip.y);
+        ctx.lineTo(baseV1.x, baseV1.y);
+        ctx.lineTo(baseV2.x, baseV2.y);
+        ctx.closePath();
+        ctx.fill();
+
+
+        // --- Draw Block ---
+        ctx.save();
+        ctx.translate(blockCenter.x, blockCenter.y);
+        ctx.rotate(-angleRad);
+        ctx.strokeRect(-blockDim.w / 2, -blockDim.h / 2, blockDim.w, blockDim.h);
+        ctx.restore();
+
+        // --- Draw Rope ---
+        ctx.beginPath();
+        // Point on block where rope attaches
+        const blockRopeAttach = {
+            x: blockCenter.x - (blockDim.w / 2) * Math.cos(angleRad) - (blockDim.h / 2) * Math.sin(angleRad),
+            y: blockCenter.y + (blockDim.w / 2) * Math.sin(angleRad) - (blockDim.h / 2) * Math.cos(angleRad),
+        };
+        const tangentRight = arrowTip; // Same as arrow tip
+        const tangentLeft = { x: pulleyCenter.x - pulleyRadius, y: pulleyCenter.y };
+        const springTop = { x: tangentLeft.x, y: tangentLeft.y + 120 };
+        
+        ctx.moveTo(blockRopeAttach.x, blockRopeAttach.y);
+        ctx.lineTo(tangentRight.x, tangentRight.y);
+        ctx.arc(pulleyCenter.x, pulleyCenter.y, pulleyRadius, normalAngle, Math.PI, false);
+        ctx.lineTo(springTop.x, springTop.y);
+        ctx.stroke();
+
+        // --- Draw Spring ---
+        const springBottom = { x: springTop.x, y: groundY };
+        drawSpring(ctx, springTop.x, springTop.y, springBottom.x, springBottom.y, 16, 15);
+
+        // --- Add Labels ---
+        // 'k' for spring
+        ctx.font = "italic 24px 'Times New Roman'";
+        ctx.fillText('k', springTop.x - 30, springTop.y + 90);
+        
+        // '37°' for angle
+        ctx.font = "20px 'Times New Roman'";
+        const arcRadius = 40;
+        const arcCenter = wedgeBottomRight;
+        ctx.beginPath();
+        ctx.moveTo(arcCenter.x, arcCenter.y);
+        ctx.lineTo(arcCenter.x - arcRadius, arcCenter.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(arcCenter.x, arcCenter.y, arcRadius, Math.PI, Math.PI + angleRad);
+        ctx.stroke();
+        ctx.fillText('37°', arcCenter.x - arcRadius - 10, arcCenter.y - 15);
+
+        // '题 6 图' for figure caption
+        ctx.font = "24px 'KaiTi', 'SimSun', sans-serif";
+        ctx.textAlign = 'center';
+        ctx.fillText('题 6 图', canvas.width / 2, groundY + 50);
+
+    </script>
+</body>
+</html>

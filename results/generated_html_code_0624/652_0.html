@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="350"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Helper Functions ---
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 10;
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    function drawBFieldSymbol(ctx, x, y, radius) {
+        ctx.save();
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        const d = radius * 0.9;
+        ctx.moveTo(x - d / Math.sqrt(2), y - d / Math.sqrt(2));
+        ctx.lineTo(x + d / Math.sqrt(2), y + d / Math.sqrt(2));
+        ctx.moveTo(x - d / Math.sqrt(2), y + d / Math.sqrt(2));
+        ctx.lineTo(x + d / Math.sqrt(2), y - d / Math.sqrt(2));
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Main Drawing ---
+
+    // 1. Ground
+    const groundY = 250;
+    const groundStartX = 20;
+    const groundEndX = 480;
+    ctx.beginPath();
+    ctx.moveTo(groundStartX, groundY);
+    ctx.lineTo(groundEndX, groundY);
+    ctx.stroke();
+
+    // 2. Ground Hatching
+    ctx.save();
+    ctx.lineWidth = 1;
+    for (let i = groundStartX + 5; i < groundEndX; i += 20) {
+        ctx.beginPath();
+        ctx.moveTo(i, groundY);
+        ctx.lineTo(i + 15, groundY + 15);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 3. Ring
+    const ringRadius = 70;
+    const ringCenterX = 250;
+    const ringCenterY = groundY - ringRadius; // Center Y is 180
+    ctx.beginPath();
+    ctx.arc(ringCenterX, ringCenterY, ringRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 4. Labels and Symbols
+    
+    // m, Q
+    ctx.font = 'italic 22px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('m,Q', ringCenterX - 30, ringCenterY - ringRadius - 15);
+
+    // O (center)
+    ctx.font = 'italic 22px Arial';
+    ctx.fillText('O', ringCenterX + 12, ringCenterY + 5);
+
+    // R (radius line and label)
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    const angleR = (5/4) * Math.PI; // 225 degrees
+    const endX = ringCenterX + ringRadius * Math.cos(angleR);
+    const endY = ringCenterY + ringRadius * Math.sin(angleR);
+    ctx.moveTo(ringCenterX, ringCenterY);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+    ctx.restore();
+    ctx.font = 'italic 22px Arial';
+    ctx.fillText('R', ringCenterX - 35, ringCenterY + 30);
+
+    // Magnetic Field B
+    const bRadius = 15;
+    drawBFieldSymbol(ctx, 100, 80, bRadius);
+    ctx.font = 'italic bold 24px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('B', 100 + bRadius + 5, 80);
+    
+    drawBFieldSymbol(ctx, 400, 80, bRadius);
+    ctx.fillText('B', 400 + bRadius + 5, 80);
+
+    // Velocity v₀
+    const v_startX = ringCenterX + ringRadius + 10; // start at 330
+    const v_endX = v_startX + 70; // end at 400
+    drawArrow(ctx, v_startX, ringCenterY, v_endX, ringCenterY);
+    ctx.font = 'italic 22px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('v', v_endX + 10, ringCenterY - 10);
+    ctx.font = 'italic 16px Arial';
+    ctx.fillText('0', v_endX + 10 + 9, ringCenterY - 10 + 5);
+
+
+    // Directions: West (西), East (东)
+    ctx.font = '24px "SimSun", "KaiTi"';
+    ctx.textAlign = 'center';
+    ctx.fillText('西', 80, groundY - 20);
+    ctx.fillText('东', 420, groundY - 20);
+
+    // Friction Coefficient μ
+    ctx.font = 'italic 22px Arial';
+    ctx.fillText('μ', 300, groundY + 30);
+
+    // Figure Caption
+    ctx.font = '20px "SimSun", "KaiTi"';
+    ctx.fillText('电图 2.9.1', canvas.width / 2, 330);
+
+</script>
+</body>
+</html>

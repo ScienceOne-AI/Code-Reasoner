@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('22d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Main Drawing ---
+
+        // 1. Support structure at the top
+        ctx.fillStyle = '#d3d3d3'; // light gray
+        ctx.fillRect(100, 50, 500, 20);
+        ctx.strokeRect(100, 50, 500, 20);
+
+        // 2. Chain
+        const chainStartX = 175;
+        const chainStartY = 70;
+        const chainEndY = 230;
+        const numLinks = 6;
+        const linkHeight = (chainEndY - chainStartY) / numLinks;
+        const linkWidth = 18;
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < numLinks; i++) {
+            const y = chainStartY + i * linkHeight;
+            ctx.strokeRect(chainStartX - linkWidth / 2, y, linkWidth, linkHeight);
+        }
+        ctx.lineWidth = 2; // Reset line width
+
+        // Axle coordinates
+        const axleY = 250;
+        const axleStartX = 175;
+        const axleLength = 400;
+        const axleEndX = axleStartX + axleLength;
+        const wheelCenterX = axleStartX + axleLength / 2;
+
+        // 3. Wheel (drawn before the axle so the axle appears to go through it)
+        const wheelCenterY = axleY;
+        const wheelRadiusY = 120; // Vertical radius (major axis)
+        const wheelRadiusX = 40;  // Horizontal radius (minor axis for perspective)
+        const wheelThickness = 30;
+
+        // Draw the 3D wheel
+        const cx_back = wheelCenterX - wheelThickness / 2;
+        const cx_front = wheelCenterX + wheelThickness / 2;
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = '#f0f0f0'; // Face color
+
+        // Rim
+        ctx.beginPath();
+        ctx.moveTo(cx_back, wheelCenterY - wheelRadiusY);
+        ctx.lineTo(cx_front, wheelCenterY - wheelRadiusY);
+        ctx.moveTo(cx_back, wheelCenterY + wheelRadiusY);
+        ctx.lineTo(cx_front, wheelCenterY + wheelRadiusY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.ellipse(cx_back, wheelCenterY, wheelRadiusX, wheelRadiusY, 0, Math.PI / 2, 3 * Math.PI / 2);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.ellipse(cx_front, wheelCenterY, wheelRadiusX, wheelRadiusY, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        
+        // Markings on the wheel face
+        ctx.lineWidth = 1;
+        const numMarkings = 8;
+        // Top markings
+        for (let i = 1; i <= numMarkings; i++) {
+            ctx.beginPath();
+            const rY = wheelRadiusY - i * 10;
+            const rX = wheelRadiusX * (rY / wheelRadiusY);
+            ctx.ellipse(cx_front, wheelCenterY, rX, rY, 0, -Math.PI * 0.85, -Math.PI * 0.65);
+            ctx.stroke();
+        }
+        // Bottom markings
+        for (let i = 1; i <= numMarkings; i++) {
+            ctx.beginPath();
+            const rY = wheelRadiusY - i * 10;
+            const rX = wheelRadiusX * (rY / wheelRadiusY);
+            ctx.ellipse(cx_front, wheelCenterY, rX, rY, 0, Math.PI * 0.65, Math.PI * 0.85);
+            ctx.stroke();
+        }
+        ctx.lineWidth = 2; // Reset
+
+
+        // 4. Axle AB (drawn on top of the wheel's center)
+        ctx.beginPath();
+        ctx.moveTo(axleStartX, axleY);
+        ctx.lineTo(axleEndX, axleY);
+        ctx.stroke();
+
+
+        // 5. Rotation Arrow
+        ctx.beginPath();
+        const arrowArcCenterY = wheelCenterY - 15;
+        const arrowArcRadius = wheelRadiusY + 15;
+        const startAngle = -Math.PI * 0.6;
+        const endAngle = -Math.PI * 0.35;
+        ctx.arc(wheelCenterX + 10, arrowArcCenterY, arrowArcRadius, startAngle, endAngle);
+        ctx.stroke();
+        // Arrowhead
+        const arrowTipX = wheelCenterX + 10 + arrowArcRadius * Math.cos(endAngle);
+        const arrowTipY = arrowArcCenterY + arrowArcRadius * Math.sin(endAngle);
+        const arrowAngle = endAngle + Math.PI / 2;
+        const arrowLength = 15;
+        ctx.beginPath();
+        ctx.moveTo(arrowTipX, arrowTipY);
+        ctx.lineTo(arrowTipX - arrowLength * Math.cos(arrowAngle - Math.PI / 6), arrowTipY - arrowLength * Math.sin(arrowAngle - Math.PI / 6));
+        ctx.moveTo(arrowTipX, arrowTipY);
+        ctx.lineTo(arrowTipX - arrowLength * Math.cos(arrowAngle + Math.PI / 6), arrowTipY - arrowLength * Math.sin(arrowAngle + Math.PI / 6));
+        ctx.stroke();
+
+        // 6. Labels and Dimension Lines
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 24px "Times New Roman"';
+
+        // A, B, O
+        ctx.fillText('A', axleStartX - 20, axleY);
+        ctx.fillText('B', axleEndX + 20, axleY);
+        ctx.fillText('O', wheelCenterX, wheelCenterY - 15);
+
+        // Radius R
+        const angleR = 2.5; // Angle for the radius line
+        const radiusLineEndX = cx_front + wheelRadiusX * Math.cos(angleR);
+        const radiusLineEndY = wheelCenterY + wheelRadiusY * Math.sin(angleR);
+        ctx.beginPath();
+        ctx.moveTo(wheelCenterX, wheelCenterY);
+        ctx.lineTo(radiusLineEndX, radiusLineEndY);
+        ctx.stroke();
+        ctx.fillText('R', wheelCenterX - 50, wheelCenterY + 50);
+
+        // Dimension line for l
+        const dimY = 420;
+        ctx.lineWidth = 1;
+        // Horizontal line with arrows
+        ctx.beginPath();
+        ctx.moveTo(axleStartX, dimY);
+        ctx.lineTo(axleEndX, dimY);
+        // Arrowhead left
+        ctx.moveTo(axleStartX + 10, dimY - 5);
+        ctx.lineTo(axleStartX, dimY);
+        ctx.lineTo(axleStartX + 10, dimY + 5);
+        // Arrowhead right
+        ctx.moveTo(axleEndX - 10, dimY - 5);
+        ctx.lineTo(axleEndX, dimY);
+        ctx.lineTo(axleEndX - 10, dimY + 5);
+        ctx.stroke();
+        
+        // Vertical ticks
+        ctx.beginPath();
+        ctx.moveTo(axleStartX, axleY);
+        ctx.lineTo(axleStartX, dimY);
+        ctx.moveTo(axleEndX, axleY);
+        ctx.lineTo(axleEndX, dimY);
+        ctx.stroke();
+        
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('l', wheelCenterX, dimY + 20);
+
+        // 7. Title text
+        ctx.font = '24px "SimSun"'; // Chinese font
+        ctx.fillText('习题 3-25 图', canvas.width / 2, 490);
+    </script>
+</body>
+</html>

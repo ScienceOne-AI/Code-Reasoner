@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Circuit Diagram</title>
+<style>
+  body { background-color: #f0f0f0; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+  canvas { background-color: white; border: 1px solid #ccc; }
+</style>
+</head>
+<body>
+<canvas id="circuitCanvas" width="600" height="450"></canvas>
+<script>
+const canvas = document.getElementById('circuitCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style and Config ---
+ctx.lineWidth = 1.5;
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.font = '16px sans-serif';
+
+// --- Helper Functions ---
+function drawResistor(x, y, width, height, orientation) {
+    if (orientation === 'h') {
+        ctx.strokeRect(x - width / 2, y - height / 2, width, height);
+    } else { // 'v'
+        ctx.strokeRect(x - height / 2, y - width / 2, height, width);
+    }
+}
+
+function drawTerminal(x, y, radius) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black'; // Reset fillStyle
+}
+
+function drawJunction(x, y, radius) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.fill();
+}
+
+function drawGround(x, y) {
+    const width = 30;
+    const spacing = 6;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y + spacing);
+    y += spacing;
+    ctx.moveTo(x - width / 2, y);
+    ctx.lineTo(x + width / 2, y);
+    y += spacing;
+    ctx.moveTo(x - width * 0.7, y);
+    ctx.lineTo(x + width * 0.7, y);
+    y += spacing;
+    ctx.moveTo(x - width * 0.4, y);
+    ctx.lineTo(x + width * 0.4, y);
+    ctx.stroke();
+}
+
+function drawArrowHead(x, y, angle) {
+    const headlen = 8;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - headlen * Math.cos(angle - Math.PI / 6), y - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - headlen * Math.cos(angle + Math.PI / 6), y - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+// --- Main Drawing ---
+
+// Coordinates
+const groundY = 380;
+const opamp_xin = 220;
+const opamp_y_inv = 180;
+const opamp_y_noninv = 220;
+const opamp_xout = 320;
+const opamp_y_out = (opamp_y_inv + opamp_y_noninv) / 2;
+const vin_x = 50;
+const vout_term_x = 520;
+const led_junc_x = 420;
+
+// Ground line and symbol
+ctx.beginPath();
+ctx.moveTo(vin_x, groundY);
+ctx.lineTo(vout_term_x, groundY);
+ctx.stroke();
+drawGround(285, groundY);
+
+// Op-Amp
+ctx.beginPath();
+ctx.moveTo(opamp_xin, opamp_y_inv - 20); // Top vertex
+ctx.lineTo(opamp_xout, opamp_y_out);    // Right vertex
+ctx.lineTo(opamp_xin, opamp_y_noninv + 20); // Bottom vertex
+ctx.closePath();
+ctx.stroke();
+
+// Op-Amp Inputs
+const junc_x = opamp_xin - 70;
+ctx.beginPath();
+ctx.moveTo(vin_x, opamp_y_noninv);
+ctx.lineTo(opamp_xin, opamp_y_noninv);
+ctx.moveTo(opamp_xin, opamp_y_inv);
+ctx.lineTo(junc_x, opamp_y_inv);
+ctx.stroke();
+
+// Op-Amp Symbols
+ctx.font = '24px sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('–', opamp_xin + 15, opamp_y_inv + 2); // Using en-dash
+ctx.fillText('+', opamp_xin + 15, opamp_y_noninv - 2);
+ctx.font = '16px sans-serif';
+
+// V_IN Terminal and Label
+drawTerminal(vin_x, opamp_y_noninv, 4);
+ctx.textAlign = 'left';
+ctx.fillText('V', vin_x + 20, opamp_y_noninv + 80);
+ctx.font = '12px sans-serif';
+ctx.fillText('IN', vin_x + 30, opamp_y_noninv + 85);
+ctx.font = '16px sans-serif';
+ctx.beginPath();
+ctx.moveTo(vin_x + 25, opamp_y_noninv + 70);
+ctx.lineTo(vin_x + 25, opamp_y_noninv + 5);
+ctx.stroke();
+drawArrowHead(vin_x + 25, opamp_y_noninv + 5, -Math.PI / 2);
+
+// Feedback Network
+drawJunction(junc_x, opamp_y_inv, 2.5);
+
+// 800 Ohm Resistor
+const r800_y_center = (opamp_y_inv + groundY) / 2;
+ctx.beginPath();
+ctx.moveTo(junc_x, opamp_y_inv);
+ctx.lineTo(junc_x, r800_y_center - 25);
+ctx.moveTo(junc_x, r800_y_center + 25);
+ctx.lineTo(junc_x, groundY);
+ctx.stroke();
+drawResistor(junc_x, r800_y_center, 40, 18, 'v');
+ctx.fillText('800 Ω', junc_x + 15, r800_y_center);
+
+// 4.0 kOhm Resistor
+const fb_y = 100;
+const fb_x_center = junc_x + (opamp_xout - junc_x) / 2;
+ctx.beginPath();
+ctx.moveTo(junc_x, opamp_y_inv);
+ctx.lineTo(junc_x, fb_y);
+ctx.lineTo(opamp_xout, fb_y);
+ctx.lineTo(opamp_xout, opamp_y_out);
+ctx.stroke();
+drawResistor(fb_x_center, fb_y, 60, 20, 'h');
+ctx.textAlign = 'center';
+ctx.fillText('4.0 kΩ', fb_x_center, fb_y - 20);
+
+// Output section
+ctx.beginPath();
+ctx.moveTo(opamp_xout, opamp_y_out);
+ctx.lineTo(vout_term_x, opamp_y_out);
+ctx.stroke();
+drawTerminal(vout_term_x, opamp_y_out, 4);
+drawJunction(opamp_xout, opamp_y_out, 2.5);
+drawJunction(led_junc_x, opamp_y_out, 2.5);
+
+// V_OUT Label
+ctx.textAlign = 'left';
+ctx.fillText('V', vout_term_x + 10, opamp_y_out + 100);
+ctx.font = '12px sans-serif';
+ctx.fillText('OUT', vout_term_x + 20, opamp_y_out + 105);
+ctx.font = '16px sans-serif';
+ctx.beginPath();
+ctx.moveTo(vout_term_x, opamp_y_out + 5);
+ctx.lineTo(vout_term_x, groundY);
+ctx.stroke();
+drawArrowHead(vout_term_x, opamp_y_out + 5, -Math.PI / 2);
+drawArrowHead(vout_term_x, groundY, Math.PI / 2);
+
+
+// LED Branch
+const led_y_anode = opamp_y_out + 40;
+const led_height = 30;
+const led_y_cathode = led_y_anode + led_height;
+const resR_y_center = (led_y_cathode + groundY) / 2;
+ctx.beginPath();
+ctx.moveTo(led_junc_x, opamp_y_out);
+ctx.lineTo(led_junc_x, led_y_anode);
+ctx.moveTo(led_junc_x, led_y_cathode);
+ctx.lineTo(led_junc_x, resR_y_center - 25);
+ctx.moveTo(led_junc_x, resR_y_center + 25);
+ctx.lineTo(led_junc_x, groundY);
+ctx.stroke();
+
+// Draw LED Symbol
+const tri_h = led_height * 0.7;
+const tri_b_half = led_height * 0.5;
+ctx.beginPath();
+ctx.moveTo(led_junc_x, led_y_anode);
+ctx.lineTo(led_junc_x - tri_b_half, led_y_anode + tri_h);
+ctx.lineTo(led_junc_x + tri_b_half, led_y_anode + tri_h);
+ctx.closePath();
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(led_junc_x - tri_b_half, led_y_cathode);
+ctx.lineTo(led_junc_x + tri_b_half, led_y_cathode);
+ctx.stroke();
+// LED Arrows
+const arr_x_start = led_junc_x + tri_b_half;
+const arr_y_start = led_y_anode + tri_h / 2;
+ctx.beginPath();
+ctx.moveTo(arr_x_start, arr_y_start);
+ctx.lineTo(arr_x_start + 10, arr_y_start - 6);
+drawArrowHead(arr_x_start + 10, arr_y_start - 6, Math.atan2(-6, 10));
+ctx.moveTo(arr_x_start + 4, arr_y_start + 6);
+ctx.lineTo(arr_x_start + 14, arr_y_start);
+drawArrowHead(arr_x_start + 14, arr_y_start, Math.atan2(-6, 10));
+ctx.stroke();
+
+// Resistor R
+drawResistor(led_junc_x, resR_y_center, 40, 18, 'v');
+ctx.textAlign = 'left';
+ctx.fillText('R', led_junc_x + 15, resR_y_center);
+
+// Power Supplies
+const psu_x = opamp_xin + 50;
+const psu_top_y = opamp_y_inv - 20;
+const psu_bottom_y = opamp_y_noninv + 20;
+ctx.beginPath();
+ctx.moveTo(psu_x, psu_top_y - 20);
+ctx.lineTo(psu_x, psu_top_y);
+ctx.moveTo(psu_x, psu_bottom_y + 20);
+ctx.lineTo(psu_x, psu_bottom_y);
+ctx.stroke();
+ctx.textAlign = 'center';
+ctx.fillText('+5.0 V', psu_x, psu_top_y - 30);
+ctx.fillText('–5.0 V', psu_x, psu_bottom_y + 30);
+
+// Fig. Label
+ctx.fillText('Fig. 7.1', canvas.width / 2, groundY + 40);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Doppler Effect Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="650" height="350" style="border:1px solid #000;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Parameters
+    const xs = 120;
+    const xp = 530;
+    const y_axis = 180;
+    const s_radius = 8;
+    const pd_size = 22;
+    const v_len = 90;
+    const angle_s_deg = 135;
+    const angle_p_deg = 45;
+    const angle_s_rad = angle_s_deg * Math.PI / 180;
+    const angle_p_rad = angle_p_deg * Math.PI / 180;
+    const arc_radius = 50;
+
+    // Helper function to draw an arrowed line
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 12;
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // Helper function for small arrowheads on the S-PD line
+    function drawSimpleArrowhead(ctx, x, y, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.beginPath();
+        ctx.moveTo(0, 0); // Tip of the arrow
+        ctx.lineTo(-size, -size / 2.5);
+        ctx.lineTo(-size, size / 2.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+    
+    // --- Main Drawing Logic ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+
+    // Draw Source S (circle)
+    ctx.beginPath();
+    ctx.arc(xs, y_axis, s_radius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.font = 'bold 24px Times New Roman';
+    ctx.fillText('S', xs - 8, y_axis + 40);
+
+    // Draw Photodetector PD (square)
+    ctx.fillRect(xp - pd_size / 2, y_axis - pd_size / 2, pd_size, pd_size);
+    ctx.font = 'bold 24px Times New Roman';
+    ctx.fillText('PD', xp - 18, y_axis + 45);
+
+    // Draw line of sight from S to PD
+    ctx.beginPath();
+    ctx.moveTo(xs, y_axis);
+    ctx.lineTo(xp, y_axis);
+    ctx.stroke();
+
+    // Draw arrows on the line of sight
+    const num_arrows = 3;
+    const spacing = (xp - xs) / (num_arrows + 1);
+    for (let i = 1; i <= num_arrows; i++) {
+        drawSimpleArrowhead(ctx, xs + i * spacing, y_axis, 10);
+    }
+    
+    // Draw source velocity vector vs
+    const x_vs_end = xs + v_len * Math.cos(angle_s_rad);
+    const y_vs_end = y_axis - v_len * Math.sin(angle_s_rad);
+    drawArrow(ctx, xs, y_axis, x_vs_end, y_vs_end);
+
+    // Draw detector velocity vector vp
+    const x_vp_end = xp + v_len * Math.cos(angle_p_rad);
+    const y_vp_end = y_axis - v_len * Math.sin(angle_p_rad);
+    drawArrow(ctx, xp, y_axis, x_vp_end, y_vp_end);
+
+    // Draw angle alpha_s
+    ctx.beginPath();
+    ctx.arc(xs, y_axis, arc_radius, -angle_s_rad, 0); 
+    ctx.stroke();
+
+    // Draw angle alpha_p
+    ctx.beginPath();
+    ctx.arc(xp, y_axis, arc_radius, -angle_p_rad, 0);
+    ctx.stroke();
+
+    // --- Labels ---
+    
+    // Label alpha_s
+    ctx.font = 'italic 28px Times New Roman';
+    ctx.fillText('α', xs + 20, y_axis - 60);
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('s', xs + 38, y_axis - 55);
+
+    // Label alpha_p
+    ctx.font = 'italic 28px Times New Roman';
+    ctx.fillText('α', xp - 55, y_axis - 60);
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('p', xp - 38, y_axis - 55);
+
+    // Label vector v_s
+    const vs_label_x = x_vs_end - 40;
+    const vs_label_y = y_vs_end - 10;
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('v', vs_label_x, vs_label_y);
+    ctx.font = 'italic 18px Times New Roman';
+    ctx.fillText('s', vs_label_x + 10, vs_label_y + 5);
+    ctx.beginPath();
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(vs_label_x, vs_label_y - 22);
+    ctx.lineTo(vs_label_x + 15, vs_label_y - 22);
+    ctx.moveTo(vs_label_x + 15, vs_label_y - 22);
+    ctx.lineTo(vs_label_x + 10, vs_label_y - 25);
+    ctx.moveTo(vs_label_x + 15, vs_label_y - 22);
+    ctx.lineTo(vs_label_x + 10, vs_label_y - 19);
+    ctx.stroke();
+    ctx.lineWidth = 2;
+
+
+    // Label vector v_p
+    const vp_label_x = x_vp_end + 15;
+    const vp_label_y = y_vp_end - 10;
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('v', vp_label_x, vp_label_y);
+    ctx.font = 'italic 18px Times New Roman';
+    ctx.fillText('p', vp_label_x + 10, vp_label_y + 5);
+    ctx.beginPath();
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(vp_label_x, vp_label_y - 22);
+    ctx.lineTo(vp_label_x + 15, vp_label_y - 22);
+    ctx.moveTo(vp_label_x + 15, vp_label_y - 22);
+    ctx.lineTo(vp_label_x + 10, vp_label_y - 25);
+    ctx.moveTo(vp_label_x + 15, vp_label_y - 22);
+    ctx.lineTo(vp_label_x + 10, vp_label_y - 19);
+    ctx.stroke();
+    ctx.lineWidth = 2;
+    
+</script>
+</body>
+</html>

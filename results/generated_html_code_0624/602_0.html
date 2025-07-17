@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Reconstruction</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="650" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const l = 120; // Scale factor for distance 'l'
+        const y_axis = 180; // Y-coordinate for the horizontal axis
+        
+        // --- Points coordinates ---
+        const B = { x: 350, y: y_axis };
+        const A = { x: B.x - 2 * l, y: y_axis }; // A is at distance 2l from B
+        const O = { x: B.x - l, y: y_axis };   // O is at distance l from B (midpoint of AB)
+        const D = { x: B.x + l, y: y_axis };   // D is at distance l from B
+        const C = { x: B.x, y: y_axis - l };     // C is the top of the semicircle
+
+        // --- Drawing styles ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper function to draw dimension lines ---
+        function drawDimensionLine(x1, y1, x2, y2, label) {
+            const y_dim = y1 + 60;
+            
+            ctx.beginPath();
+            // Vertical ticks
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1, y_dim);
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2, y_dim);
+            
+            // Horizontal line
+            ctx.moveTo(x1, y_dim);
+            ctx.lineTo(x2, y_dim);
+            
+            // Arrowheads pointing outwards
+            ctx.moveTo(x1 + 10, y_dim - 4);
+            ctx.lineTo(x1, y_dim);
+            ctx.lineTo(x1 + 10, y_dim + 4);
+
+            ctx.moveTo(x2 - 10, y_dim - 4);
+            ctx.lineTo(x2, y_dim);
+            ctx.lineTo(x2 - 10, y_dim + 4);
+            
+            ctx.stroke();
+
+            // Text label (with white background to create a gap)
+            const textWidth = ctx.measureText(label).width;
+            const textX = (x1 + x2) / 2;
+            ctx.fillStyle = 'white';
+            ctx.fillRect(textX - textWidth / 2 - 4, y_dim - 10, textWidth + 8, 20);
+            ctx.fillStyle = 'black';
+            ctx.fillText(label, textX, y_dim);
+        }
+
+        // 1. Draw dashed horizontal line
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(A.x - 30, y_axis);
+        ctx.lineTo(D.x + 60, y_axis);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid line
+
+        // 2. Draw the semicircle OCD
+        ctx.beginPath();
+        ctx.arc(B.x, B.y, l, Math.PI, 0, false); // Upper semicircle from O to D
+        ctx.stroke();
+
+        // 3. Draw arrow on the semicircle path
+        // Place an arrow just before the peak, indicating direction
+        const arrowAngle = 2 * Math.PI / 3; // Angle for the arrow position
+        const arrowPoint = {
+            x: B.x + l * Math.cos(arrowAngle),
+            y: y_axis - l * Math.sin(arrowAngle)
+        };
+        const tangentAngle = arrowAngle - Math.PI / 2; // Tangent is perpendicular to radius
+        ctx.beginPath();
+        ctx.moveTo(arrowPoint.x, arrowPoint.y);
+        ctx.lineTo(arrowPoint.x + 10 * Math.cos(tangentAngle + Math.PI/6), arrowPoint.y + 10 * Math.sin(tangentAngle + Math.PI/6));
+        ctx.moveTo(arrowPoint.x, arrowPoint.y);
+        ctx.lineTo(arrowPoint.x + 10 * Math.cos(tangentAngle - Math.PI/6), arrowPoint.y + 10 * Math.sin(tangentAngle - Math.PI/6));
+        ctx.stroke();
+        
+        // 4. Draw charges and their labels
+        // Charge +q at A
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fillText('+q', A.x, A.y - 20);
+        ctx.fillText('A', A.x, A.y - 45);
+
+        // Charge -q at B
+        ctx.beginPath();
+        ctx.arc(B.x, B.y, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fillText('-q', B.x, B.y - 20);
+        ctx.fillText('B', B.x, B.y + 25);
+        
+        // 5. Draw point labels
+        ctx.fillText('O', O.x, O.y + 25);
+        ctx.fillText('D', D.x, D.y + 25);
+        ctx.fillText('C', C.x, C.y - 15);
+
+        // 6. Draw arrow at D indicating path to infinity
+        ctx.beginPath();
+        ctx.moveTo(D.x + 10, D.y);
+        ctx.lineTo(D.x + 40, D.y);
+        ctx.moveTo(D.x + 40, D.y);
+        ctx.lineTo(D.x + 30, D.y - 5);
+        ctx.moveTo(D.x + 40, D.y);
+        ctx.lineTo(D.x + 30, D.y + 5);
+        ctx.stroke();
+        
+        // 7. Draw dimension lines
+        drawDimensionLine(A.x, A.y, B.x, B.y, '2l');
+        drawDimensionLine(B.x, B.y, D.x, D.y, 'l');
+
+        // 8. Draw the diagram title
+        ctx.font = '20px "KaiTi", "SimSun", serif'; // Use a font that supports Chinese characters
+        ctx.fillText('习题 7-34 图', canvas.width / 2, canvas.height - 30);
+
+    </script>
+</body>
+</html>

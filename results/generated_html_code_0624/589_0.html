@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Doppler Effect on Scattered Light</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="500"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw a line with an arrowhead at the end
+    function drawArrow(ctx, x1, y1, x2, y2, headlen = 10) {
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    // Helper to draw text with a vector arrow above it
+    function drawVectorLabel(ctx, text, x, y) {
+        ctx.fillText(text, x, y);
+        const metrics = ctx.measureText(text);
+        const textWidth = metrics.width;
+        const arrowY = y - 22;
+        const arrowStartX = x;
+        const arrowEndX = x + textWidth;
+        
+        ctx.beginPath();
+        ctx.moveTo(arrowStartX, arrowY);
+        ctx.lineTo(arrowEndX, arrowY);
+        ctx.moveTo(arrowEndX - 5, arrowY - 3);
+        ctx.lineTo(arrowEndX, arrowY);
+        ctx.lineTo(arrowEndX - 5, arrowY + 3);
+        ctx.stroke();
+    }
+
+    const cx = 300;
+    const cy = 250;
+
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.fillStyle = 'black';
+
+    // --- Draw Incident Waves ---
+    
+    // Wave 1 (N1, top-left to bottom-right)
+    const theta1 = -45 * Math.PI / 180;
+    const cos1 = Math.cos(theta1);
+    const sin1 = Math.sin(theta1);
+    const waveLength1 = 280;
+    const spacing1 = 40;
+
+    for (let i = -1; i <= 1; i++) {
+        const shiftX = i * spacing1 * -sin1;
+        const shiftY = i * spacing1 * cos1;
+
+        const startX = cx - waveLength1 / 1.5 * cos1 + shiftX;
+        const startY = cy - waveLength1 / 1.5 * sin1 + shiftY;
+        const endX = cx + waveLength1 / 1.5 * cos1 + shiftX;
+        const endY = cy + waveLength1 / 1.5 * sin1 + shiftY;
+        
+        const arrowStart = 0.65;
+        const arrowStartX = startX + (endX-startX)*arrowStart;
+        const arrowStartY = startY + (endY-startY)*arrowStart;
+        const arrowEndX = arrowStartX + 20 * cos1;
+        const arrowEndY = arrowStartY + 20 * sin1;
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+
+        drawArrow(ctx, arrowStartX, arrowStartY, arrowEndX, arrowEndY, 8);
+    }
+    
+    // Wave 2 (N2, bottom-left to top-right)
+    const theta2 = 45 * Math.PI / 180;
+    const cos2 = Math.cos(theta2);
+    const sin2 = Math.sin(theta2);
+
+    for (let i = -1; i <= 1; i++) {
+        const shiftX = i * spacing1 * -sin2;
+        const shiftY = i * spacing1 * cos2;
+
+        const startX = cx - waveLength1 / 1.5 * cos2 + shiftX;
+        const startY = cy - waveLength1 / 1.5 * sin2 + shiftY;
+        const endX = cx + waveLength1 / 1.5 * cos2 + shiftX;
+        const endY = cy + waveLength1 / 1.5 * sin2 + shiftY;
+        
+        const arrowStart = 0.65;
+        const arrowStartX = startX + (endX-startX)*arrowStart;
+        const arrowStartY = startY + (endY-startY)*arrowStart;
+        const arrowEndX = arrowStartX + 20 * cos2;
+        const arrowEndY = arrowStartY + 20 * sin2;
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+        
+        drawArrow(ctx, arrowStartX, arrowStartY, arrowEndX, arrowEndY, 8);
+    }
+
+    // --- Draw Particle ---
+    ctx.beginPath();
+    ctx.arc(cx, cy, 10, 0, 2 * Math.PI);
+    ctx.fillStyle = '#BDBDBD'; // Grey
+    ctx.fill();
+    ctx.strokeStyle = 'black';
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+
+    // --- Draw Velocity Vector ---
+    drawArrow(ctx, cx, cy-10, cx, cy - 80, 12);
+    ctx.font = 'italic 24px Times New Roman';
+    drawVectorLabel(ctx, 'v', cx + 15, cy - 40);
+
+    // --- Draw Scattered Wave and Detector ---
+    const theta_s = -20 * Math.PI / 180;
+    const cos_s = Math.cos(theta_s);
+    const sin_s = Math.sin(theta_s);
+    const scatterLength = 250;
+
+    const pd_pos_x = cx + scatterLength * cos_s;
+    const pd_pos_y = cy + scatterLength * sin_s;
+    const end_line_x = pd_pos_x - 20 * cos_s;
+    const end_line_y = pd_pos_y - 20 * sin_s;
+
+    // Main scattered line with one arrow at the end
+    drawArrow(ctx, cx + 10 * cos_s, cy + 10 * sin_s, end_line_x, end_line_y, 12);
+
+    // Arrows and labels on scattered wave
+    // ω1
+    const w1_dist = 90;
+    const w1_x = cx + w1_dist * cos_s;
+    const w1_y = cy + w1_dist * sin_s;
+    drawArrow(ctx, w1_x - 10 * cos_s, w1_y - 10 * sin_s, w1_x + 10 * cos_s, w1_y + 10 * sin_s, 6);
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('ω', w1_x + 5, w1_y - 10);
+    ctx.font = '16px Times New Roman';
+    ctx.fillText('1', w1_x + 23, w1_y - 5);
+
+    // ω2
+    const w2_dist = 150;
+    const w2_x = cx + w2_dist * cos_s;
+    const w2_y = cy + w2_dist * sin_s;
+    drawArrow(ctx, w2_x - 10 * cos_s, w2_y - 10 * sin_s, w2_x + 10 * cos_s, w2_y + 10 * sin_s, 6);
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('ω', w2_x + 5, w2_y - 10);
+    ctx.font = '16px Times New Roman';
+    ctx.fillText('2', w2_x + 23, w2_y - 5);
+
+    // Photodetector (PD)
+    const pd_w = 20;
+    const pd_h = 30;
+    ctx.save();
+    ctx.translate(pd_pos_x, pd_pos_y);
+    ctx.rotate(theta_s + Math.PI / 2);
+    ctx.fillStyle = 'black';
+    ctx.fillRect(-pd_h / 2, -pd_w / 2, pd_h, pd_w);
+    ctx.restore();
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText('PD', pd_pos_x + 5, pd_pos_y + 28);
+    
+    // --- Draw All Labels ---
+    ctx.font = 'italic 24px Times New Roman';
+
+    // ω₀ labels
+    ctx.fillText('ω', 80, 150);
+    ctx.font = '16px Times New Roman';
+    ctx.fillText('0', 97, 155);
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('ω', 80, 350);
+    ctx.font = '16px Times New Roman';
+    ctx.fillText('0', 97, 355);
+
+    // N₁, N₂ labels
+    ctx.font = 'italic 24px Times New Roman';
+    drawVectorLabel(ctx, 'N', 200, 100);
+    ctx.font = '16px Times New Roman';
+    ctx.fillText('1', 218, 105);
+    ctx.font = 'italic 24px Times New Roman';
+    drawVectorLabel(ctx, 'N', 200, 420);
+    ctx.font = '16px Times New Roman';
+    ctx.fillText('2', 218, 425);
+
+</script>
+</body>
+</html>

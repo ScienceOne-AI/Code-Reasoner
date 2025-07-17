@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lake Seiche Model</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="450" style="border:1px solid #000;"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Geometry Parameters ---
+        const scale = 1.0;
+        const L_val = 300 * scale;
+        const containerHeight = 250 * scale;
+        const h_val = 180 * scale;
+        const xi_val = 40 * scale;
+
+        const x_center = canvas.width / 2;
+        const x_left = x_center - L_val / 2;
+        const x_right = x_center + L_val / 2;
+
+        const y_bottom = 350 * scale;
+        const y_top = y_bottom - containerHeight;
+        const y_mean = y_bottom - h_val;
+
+        // Coordinates for the tilted water surface
+        const y_surface_left = y_mean + xi_val;
+        const y_surface_right = y_mean - xi_val;
+        
+        // --- Drawing Settings ---
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = `italic ${22 * scale}px Times New Roman`;
+        
+        // --- Helper function to draw arrows ---
+        function drawArrow(x1, y1, x2, y2) {
+            const headlen = 10 * scale;
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        }
+
+        // 1. Draw the container (open top)
+        ctx.beginPath();
+        ctx.moveTo(x_left, y_top);
+        ctx.lineTo(x_left, y_bottom);
+        ctx.lineTo(x_right, y_bottom);
+        ctx.lineTo(x_right, y_top);
+        ctx.stroke();
+
+        // 2. Draw the mean water level (dashed line)
+        ctx.beginPath();
+        ctx.setLineDash([6 * scale, 4 * scale]);
+        ctx.moveTo(x_left, y_mean);
+        ctx.lineTo(x_right, y_mean);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid line style
+
+        // 3. Draw the tilted water surface (solid line)
+        ctx.beginPath();
+        ctx.moveTo(x_left, y_surface_left);
+        ctx.lineTo(x_right, y_surface_right);
+        ctx.stroke();
+        
+        // --- Draw Dimensions ---
+
+        // Dimension L
+        const y_L_dim = y_bottom + 40 * scale;
+        const label_L_gap = 25 * scale;
+        ctx.beginPath();
+        // Extension lines from the container base
+        ctx.moveTo(x_left, y_bottom);
+        ctx.lineTo(x_left, y_L_dim + 5 * scale);
+        ctx.moveTo(x_right, y_bottom);
+        ctx.lineTo(x_right, y_L_dim + 5 * scale);
+        // Dimension line with a gap for the label
+        ctx.moveTo(x_left, y_L_dim);
+        ctx.lineTo(x_center - label_L_gap / 2, y_L_dim);
+        ctx.moveTo(x_center + label_L_gap / 2, y_L_dim);
+        ctx.lineTo(x_right, y_L_dim);
+        // Arrows
+        drawArrow(x_left, y_L_dim, x_right, y_L_dim);
+        drawArrow(x_right, y_L_dim, x_left, y_L_dim);
+        ctx.stroke();
+        // Label
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('L', x_center, y_L_dim);
+
+        // Dimensions h and ξ
+        const x_dim_vertical = x_right + 40 * scale;
+        ctx.textAlign = 'left';
+
+        // Dimension h
+        ctx.beginPath();
+        ctx.moveTo(x_dim_vertical, y_bottom);
+        ctx.lineTo(x_dim_vertical, y_mean);
+        drawArrow(x_dim_vertical, y_bottom, x_dim_vertical, y_mean);
+        drawArrow(x_dim_vertical, y_mean, x_dim_vertical, y_bottom);
+        ctx.stroke();
+        ctx.fillText('h', x_dim_vertical + 10 * scale, (y_bottom + y_mean) / 2);
+
+        // Dimension ξ (xi)
+        ctx.beginPath();
+        ctx.moveTo(x_dim_vertical, y_mean);
+        ctx.lineTo(x_dim_vertical, y_surface_right);
+        drawArrow(x_dim_vertical, y_mean, x_dim_vertical, y_surface_right);
+        drawArrow(x_dim_vertical, y_surface_right, x_dim_vertical, y_mean);
+        ctx.stroke();
+        ctx.fillText('\u03BE', x_dim_vertical + 10 * scale, (y_mean + y_surface_right) / 2); // \u03BE is the Unicode for ξ
+
+    </script>
+</body>
+</html>

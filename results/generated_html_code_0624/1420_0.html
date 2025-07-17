@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws a line from (fromx, fromy) to (tox, toy) with an arrowhead at the 'to' end.
+     * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+     * @param {number} fromx - The x-coordinate of the starting point.
+     * @param {number} fromy - The y-coordinate of the starting point.
+     * @param {number} tox - The x-coordinate of the ending point.
+     * @param {number} toy - The y-coordinate of the ending point.
+     * @param {number} [headlen=10] - The length of the arrowhead's sides.
+     */
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    /**
+     * Draws a dashed line.
+     */
+    function drawDashedLine(ctx, x1, y1, x2, y2, dashLen = 5) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([dashLen, dashLen]);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.restore(); // Resets line dash to solid
+    }
+
+    /**
+     * Draws a dimension line with ticks and a label (including fractions).
+     */
+    function drawDimension(ctx, p1x, p1y, p2x, p2y, options = {}) {
+        const {
+            label = '',
+            offset = 20,
+            labelOffset = 10,
+            tickSize = 10,
+            measuredAngle = 0,
+            isFraction = false,
+            numerator = '',
+            denominator = ''
+        } = options;
+
+        const dx = p2x - p1x;
+        const dy = p2y - p1y;
+        const lineAngle = Math.atan2(dy, dx);
+        const perpAngle = lineAngle + Math.PI / 2;
+
+        const line_p1_x = p1x + offset * Math.cos(perpAngle);
+        const line_p1_y = p1y + offset * Math.sin(perpAngle);
+        const line_p2_x = p2x + offset * Math.cos(perpAngle);
+        const line_p2_y = p2y + offset * Math.sin(perpAngle);
+
+        // Draw the main line with arrows at both ends
+        drawArrow(ctx, line_p1_x, line_p1_y, line_p2_x, line_p2_y, 8);
+        drawArrow(ctx, line_p2_x, line_p2_y, line_p1_x, line_p1_y, 8);
+        
+        // Draw the ticks perpendicular to the measured line
+        const tickAngle = measuredAngle + Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(p1x - tickSize/2 * Math.cos(tickAngle), p1y - tickSize/2 * Math.sin(tickAngle));
+        ctx.lineTo(p1x + tickSize/2 * Math.cos(tickAngle), p1y + tickSize/2 * Math.sin(tickAngle));
+        ctx.moveTo(p2x - tickSize/2 * Math.cos(tickAngle), p2y - tickSize/2 * Math.sin(tickAngle));
+        ctx.lineTo(p2x + tickSize/2 * Math.cos(tickAngle), p2y + tickSize/2 * Math.sin(tickAngle));
+        ctx.stroke();
+
+        // Draw the label
+        const midX = (line_p1_x + line_p2_x) / 2;
+        const midY = (line_p1_y + line_p2_y) / 2;
+        
+        ctx.save();
+        ctx.translate(midX, midY);
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+
+        if (isFraction) {
+            ctx.textBaseline = 'bottom';
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.fillText(numerator, 0, labelOffset - 2);
+            
+            ctx.beginPath();
+            ctx.moveTo(-7, labelOffset);
+            ctx.lineTo(7, labelOffset);
+            ctx.stroke();
+            
+            ctx.textBaseline = 'top';
+            ctx.font = '20px Times New Roman';
+            ctx.fillText(denominator, 0, labelOffset + 2);
+        } else {
+            ctx.textBaseline = 'middle';
+            ctx.font = 'italic 20px Times New Roman';
+            ctx.fillText(label, 0, labelOffset);
+        }
+        ctx.restore();
+    }
+
+    // --- Main Drawing Logic ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+
+    const Ox = 250;
+    const Oy = 220;
+    const L_half = 180; // Represents l/2
+    const rodAngle = Math.PI / 10; // ~18 degrees
+
+    // 1. Dashed horizontal line
+    drawDashedLine(ctx, 40, Oy, 560, Oy, 10);
+
+    // 2. Rod (麦秆)
+    const rodStartX = Ox - L_half * Math.cos(rodAngle);
+    const rodStartY = Oy - L_half * Math.sin(rodAngle);
+    const rodEndX = Ox + L_half * Math.cos(rodAngle);
+    const rodEndY = Oy + L_half * Math.sin(rodAngle);
+    ctx.beginPath();
+    ctx.moveTo(rodStartX, rodStartY);
+    ctx.lineTo(rodEndX, rodEndY);
+    ctx.stroke();
+    
+    // 3. Pivot O
+    ctx.beginPath();
+    ctx.arc(Ox, Oy, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.fillText('O', Ox + 8, Oy - 8);
+
+    // 4. Rod mass label 'm'
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.fillText('m', rodStartX + 20, rodStartY - 10);
+
+    // 5. Falling beetle (甲虫)
+    const beetleInitialX = Ox + L_half / 2; // Position l/4 from center
+    const beetleInitialY = Oy - 100;
+    ctx.beginPath();
+    ctx.arc(beetleInitialX, beetleInitialY, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.fillText('m', beetleInitialX + 10, beetleInitialY);
+    // Arrow for falling beetle
+    drawArrow(ctx, beetleInitialX, beetleInitialY + 10, beetleInitialX, beetleInitialY + 60, 10);
+
+    // 6. Dimension l/4
+    const l4_endX = beetleInitialX;
+    ctx.beginPath(); // Landing point dot
+    ctx.arc(l4_endX, Oy, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    drawDimension(ctx, Ox, Oy, l4_endX, Oy, {
+        offset: -25,      // Place dimension line above the dashed line
+        labelOffset: -12, // Move text further up
+        tickSize: 15,
+        measuredAngle: 0, // Measured line is horizontal
+        isFraction: true,
+        numerator: 'l',
+        denominator: '4'
+    });
+
+    // 7. Beetle on the rod (current position)
+    const r_dist = L_half * 0.7; // An arbitrary distance r along the rod
+    const beetleCurrentX = Ox + r_dist * Math.cos(rodAngle);
+    const beetleCurrentY = Oy + r_dist * Math.sin(rodAngle);
+    ctx.beginPath();
+    ctx.arc(beetleCurrentX, beetleCurrentY, 4, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 8. Dimension r
+    drawDimension(ctx, Ox, Oy, beetleCurrentX, beetleCurrentY, {
+        label: 'r',
+        offset: 35,       // Place dimension line below the rod
+        labelOffset: 15,  // Move text further down
+        tickSize: 15,
+        measuredAngle: rodAngle
+    });
+
+    // 9. Crawling motion arrows
+    const crawl_arrow_len = 15;
+    // Arrow before the beetle point
+    const ca1_start = r_dist - 25;
+    const ca1_start_x = Ox + ca1_start * Math.cos(rodAngle);
+    const ca1_start_y = Oy + ca1_start * Math.sin(rodAngle);
+    const ca1_end_x = Ox + (ca1_start + crawl_arrow_len) * Math.cos(rodAngle);
+    const ca1_end_y = Oy + (ca1_start + crawl_arrow_len) * Math.sin(rodAngle);
+    drawArrow(ctx, ca1_start_x, ca1_start_y, ca1_end_x, ca1_end_y, 8);
+    // Arrow after the beetle point
+    const ca2_start = r_dist + 5;
+    const ca2_start_x = Ox + ca2_start * Math.cos(rodAngle);
+    const ca2_start_y = Oy + ca2_start * Math.sin(rodAngle);
+    const ca2_end_x = Ox + (ca2_start + crawl_arrow_len) * Math.cos(rodAngle);
+    const ca2_end_y = Oy + (ca2_start + crawl_arrow_len) * Math.sin(rodAngle);
+    drawArrow(ctx, ca2_start_x, ca2_start_y, ca2_end_x, ca2_end_y, 8);
+
+    // 10. Rotation arrow
+    const rotArrowRadius = rodEndX - Ox + 20;
+    const rotArrowEndAngle = rodAngle + 0.3;
+    const rotArrowStartAngle = rotArrowEndAngle - 0.5;
+    ctx.beginPath();
+    ctx.arc(Ox, Oy, rotArrowRadius, rotArrowStartAngle, rotArrowEndAngle);
+    ctx.stroke();
+    // Arrowhead for rotation arc
+    const headStartX = Ox + rotArrowRadius * Math.cos(rotArrowEndAngle - 0.01);
+    const headStartY = Oy + rotArrowRadius * Math.sin(rotArrowEndAngle - 0.01);
+    const headEndX = Ox + rotArrowRadius * Math.cos(rotArrowEndAngle);
+    const headEndY = Oy + rotArrowRadius * Math.sin(rotArrowEndAngle);
+    drawArrow(ctx, headStartX, headStartY, headEndX, headEndY, 10);
+
+</script>
+</body>
+</html>

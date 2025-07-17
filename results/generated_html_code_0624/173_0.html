@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spring-Mass System</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a wall with hatch marks.
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} x - The x-coordinate of the wall's vertical line.
+         * @param {number} y - The y-coordinate of the center of the wall.
+         * @param {number} height - The total height of the wall.
+         * @param {number} direction - -1 for left wall (hatches to the left), 1 for right wall (hatches to the right).
+         */
+        function drawWall(ctx, x, y, height, direction) {
+            const hashLength = 10;
+            const numHashes = 8;
+            
+            // Main vertical line
+            ctx.beginPath();
+            ctx.moveTo(x, y - height / 2);
+            ctx.lineTo(x, y + height / 2);
+            ctx.stroke();
+
+            // Hatch marks
+            const y_start = y - height / 2;
+            const y_spacing = height / (numHashes - 1);
+            for (let i = 0; i < numHashes; i++) {
+                const y_pos = y_start + i * y_spacing;
+                ctx.beginPath();
+                ctx.moveTo(x, y_pos);
+                ctx.lineTo(x + direction * hashLength, y_pos + direction * hashLength);
+                ctx.stroke();
+            }
+        }
+
+        /**
+         * Draws a spring (zig-zag representation).
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} x1 - Start x-coordinate.
+         * @param {number} y1 - Start y-coordinate.
+         * @param {number} x2 - End x-coordinate.
+         * @param {number} y2 - End y-coordinate.
+         * @param {number} segments - Number of zig-zag segments.
+         * @param {number} amplitude - The height of the zig-zag.
+         */
+        function drawSpring(ctx, x1, y1, x2, y2, segments, amplitude) {
+            const length = x2 - x1;
+            const lead = 15;
+            const coilLength = length - 2 * lead;
+            const segmentLength = coilLength / segments;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + lead, y1);
+
+            for (let i = 0; i < segments; i++) {
+                const currentX = x1 + lead + i * segmentLength;
+                const nextX = x1 + lead + (i + 1) * segmentLength;
+                const midX = (currentX + nextX) / 2;
+                const y_amp = (i % 2 === 0) ? -amplitude : amplitude;
+                ctx.lineTo(midX, y1 + y_amp);
+                ctx.lineTo(nextX, y1);
+            }
+            
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a mass (filled diamond).
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} x - Center x-coordinate of the mass.
+         * @param {number} y - Center y-coordinate of the mass.
+         * @param {number} size - Half the width/height of the diamond.
+         */
+        function drawMass(ctx, x, y, size) {
+            ctx.beginPath();
+            ctx.moveTo(x, y - size);
+            ctx.lineTo(x + size, y);
+            ctx.lineTo(x, y + size);
+            ctx.lineTo(x - size, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        /**
+         * Draws the displacement indicator 'x'.
+         * @param {CanvasRenderingContext2D} ctx - The rendering context.
+         * @param {number} x1 - Start x-coordinate of the indicator line.
+         * @param {number} x2 - End x-coordinate of the indicator line.
+         * @param {number} y - The y-coordinate for the indicator.
+         */
+        function drawDisplacementIndicator(ctx, x1, x2, y) {
+            const tickHeight = 5;
+            // Horizontal line
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+
+            // Vertical ticks
+            ctx.beginPath();
+            ctx.moveTo(x1, y - tickHeight);
+            ctx.lineTo(x1, y + tickHeight);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x2, y - tickHeight);
+            ctx.lineTo(x2, y + tickHeight);
+            ctx.stroke();
+
+            // Label 'x'
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('x', (x1 + x2) / 2, y + 5);
+        }
+
+        // --- Main Drawing ---
+
+        // Clear canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Style setup
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic bold 20px serif';
+        
+        // Parameters
+        const centerY = 180;
+        const wallLeftX = 60;
+        const wallRightX = 740;
+        const totalLength = wallRightX - wallLeftX;
+        
+        // Equilibrium positions
+        const eq1X = wallLeftX + totalLength / 3;
+        const eq2X = wallRightX - totalLength / 3;
+        
+        // Displacements
+        const displacement = 50;
+        const mass1X = eq1X + displacement;
+        const mass2X = eq2X - displacement;
+        
+        const massSize = 12;
+        const springAmplitude = 15;
+
+        // Draw components
+        // Walls
+        drawWall(ctx, wallLeftX, centerY, 100, -1);
+        drawWall(ctx, wallRightX, centerY, 100, 1);
+        
+        // Springs
+        drawSpring(ctx, wallLeftX, centerY, mass1X, centerY, 12, springAmplitude);
+        drawSpring(ctx, mass1X, centerY, mass2X, centerY, 10, springAmplitude);
+        drawSpring(ctx, mass2X, centerY, wallRightX, centerY, 12, springAmplitude);
+        
+        // Masses
+        drawMass(ctx, mass1X, centerY, massSize);
+        drawMass(ctx, mass2X, centerY, massSize);
+
+        // --- Labels and Indicators ---
+        
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        const labelY = centerY - 30;
+
+        // Spring constant labels
+        ctx.fillText('K', (wallLeftX + mass1X) / 2, labelY);
+        ctx.fillText("K'", (mass1X + mass2X) / 2, labelY);
+        ctx.fillText('K', (mass2X + wallRightX) / 2, labelY);
+        
+        // Mass labels
+        ctx.fillText('m', mass1X, labelY);
+        ctx.fillText('m', mass2X, labelY);
+
+        // Equilibrium position lines (dashed)
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 1;
+
+        ctx.beginPath();
+        ctx.moveTo(eq1X, centerY - 20);
+        ctx.lineTo(eq1X, centerY + 50);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(eq2X, centerY - 20);
+        ctx.lineTo(eq2X, centerY + 50);
+        ctx.stroke();
+
+        ctx.restore(); // Restore solid line style
+
+        // Displacement indicators
+        const indicatorY = centerY + 40;
+        ctx.font = 'italic 18px serif';
+        drawDisplacementIndicator(ctx, eq1X, mass1X, indicatorY);
+        drawDisplacementIndicator(ctx, mass2X, eq2X, indicatorY);
+        
+        // Figure caption
+        ctx.font = '18px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Fig. 1.102.', canvas.width / 2, canvas.height - 20);
+
+    </script>
+</body>
+</html>

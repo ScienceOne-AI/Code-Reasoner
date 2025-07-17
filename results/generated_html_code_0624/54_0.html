@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram Fig. 3.37</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="550" height="350"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Font ---
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        // A font that mimics handwriting
+        ctx.font = '24px "Comic Sans MS", cursive, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // --- Helper functions for components ---
+
+        /**
+         * Draws a vertical zig-zag line, used for resistors and inductors.
+         * @param {CanvasRenderingContext2D} ctx The canvas context.
+         * @param {number} x The x-coordinate of the vertical line.
+         * @param {number} y_start The starting y-coordinate.
+         * @param {number} len The total vertical length of the component.
+         * @param {number} num_zigs The number of "zigs" in the pattern.
+         * @param {number} width The horizontal amplitude of the zigs.
+         */
+        function drawVerticalZigZag(ctx, x, y_start, len, num_zigs, width) {
+            const step = len / num_zigs;
+            ctx.beginPath();
+            ctx.moveTo(x, y_start);
+            for (let i = 0; i < num_zigs; i++) {
+                const y_mid = y_start + (i + 0.5) * step;
+                const x_zig = x + width * ((i % 2 === 0) ? -1 : 1); // Alternating left and right
+                ctx.lineTo(x_zig, y_mid);
+            }
+            ctx.lineTo(x, y_start + len);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a horizontal zig-zag line, used for resistors.
+         * @param {CanvasRenderingContext2D} ctx The canvas context.
+         * @param {number} x_start The starting x-coordinate.
+         * @param {number} y The y-coordinate of the horizontal line.
+         * @param {number} len The total horizontal length of the component.
+         * @param {number} num_zigs The number of "zigs" in the pattern.
+         * @param {number} height The vertical amplitude of the zigs.
+         */
+        function drawHorizontalZigZag(ctx, x_start, y, len, num_zigs, height) {
+            const step = len / num_zigs;
+            ctx.beginPath();
+            ctx.moveTo(x_start, y);
+            for (let i = 0; i < num_zigs; i++) {
+                const x_mid = x_start + (i + 0.5) * step;
+                const y_zig = y + height * ((i % 2 === 0) ? 1 : -1); // Alternating up and down
+                ctx.lineTo(x_mid, y_zig);
+            }
+            ctx.lineTo(x_start + len, y);
+            ctx.stroke();
+        }
+
+        // --- Circuit Coordinates ---
+        const p_left = 100, p_right = 220, p_top = 70, p_bottom = 250;
+        const s_left = 280, s_right = 400, s_top = 70, s_bottom = 250;
+        const mid_y = (p_top + p_bottom) / 2;
+
+        // --- Primary Circuit (Left) ---
+
+        // Capacitor C
+        const cap_y = mid_y;
+        const cap_gap = 12;
+        const cap_plate_len = 30;
+        ctx.beginPath();
+        ctx.moveTo(p_left, p_top);
+        ctx.lineTo(p_left, cap_y - cap_gap);
+        ctx.moveTo(p_left, p_bottom);
+        ctx.lineTo(p_left, cap_y + cap_gap);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(p_left - cap_plate_len / 2, cap_y - cap_gap);
+        ctx.lineTo(p_left + cap_plate_len / 2, cap_y - cap_gap);
+        ctx.moveTo(p_left - cap_plate_len / 2, cap_y + cap_gap);
+        ctx.lineTo(p_left + cap_plate_len / 2, cap_y + cap_gap);
+        ctx.stroke();
+        // Labels for Capacitor
+        ctx.fillText('V', p_left - 35, cap_y);
+        ctx.fillText('C', p_left + 35, cap_y);
+        
+        // Resistor Rp
+        const res_p_len = 80;
+        const res_p_x_start = p_left + (p_right - p_left - res_p_len) / 2;
+        ctx.beginPath();
+        ctx.moveTo(p_left, p_top);
+        ctx.lineTo(res_p_x_start, p_top);
+        ctx.moveTo(res_p_x_start + res_p_len, p_top);
+        ctx.lineTo(p_right, p_top);
+        ctx.stroke();
+        drawHorizontalZigZag(ctx, res_p_x_start, p_top, res_p_len, 6, 10);
+        // Label Rp
+        ctx.fillText('Rp', (p_left + p_right) / 2, p_top - 28);
+        
+        // Primary Coil Np
+        const coil_p_len = 100;
+        const coil_p_y_start = mid_y - coil_p_len / 2;
+        ctx.beginPath();
+        ctx.moveTo(p_right, p_top);
+        ctx.lineTo(p_right, coil_p_y_start);
+        ctx.moveTo(p_right, coil_p_y_start + coil_p_len);
+        ctx.lineTo(p_right, p_bottom);
+        ctx.stroke();
+        drawVerticalZigZag(ctx, p_right, coil_p_y_start, coil_p_len, 6, 10);
+        // Label Np
+        ctx.fillText('Np', p_right - 35, mid_y);
+
+        // Switch
+        const switch_gap = 50;
+        const switch_x_start = p_left + (p_right - p_left - switch_gap) / 2;
+        ctx.beginPath();
+        ctx.moveTo(p_left, p_bottom);
+        ctx.lineTo(switch_x_start, p_bottom);
+        ctx.moveTo(switch_x_start + switch_gap, p_bottom);
+        ctx.lineTo(p_right, p_bottom);
+        // Switch arm
+        ctx.moveTo(switch_x_start, p_bottom);
+        ctx.lineTo(switch_x_start + switch_gap * 0.8, p_bottom - 20);
+        ctx.stroke();
+
+        // --- Transformer Core ---
+        const core_x1 = p_right + 15;
+        const core_x2 = core_x1 + 12;
+        const core_y_start = mid_y - 60;
+        const core_y_end = mid_y + 60;
+        ctx.beginPath();
+        ctx.moveTo(core_x1, core_y_start);
+        ctx.lineTo(core_x1, core_y_end);
+        ctx.moveTo(core_x2, core_y_start);
+        ctx.lineTo(core_x2, core_y_end);
+        ctx.stroke();
+
+        // --- Secondary Circuit (Right) ---
+        
+        // Secondary Coil Ns
+        const coil_s_len = 100;
+        const coil_s_y_start = mid_y - coil_s_len / 2;
+        ctx.beginPath();
+        ctx.moveTo(s_left, s_top);
+        ctx.lineTo(s_left, coil_s_y_start);
+        ctx.moveTo(s_left, coil_s_y_start + coil_s_len);
+        ctx.lineTo(s_left, s_bottom);
+        ctx.stroke();
+        drawVerticalZigZag(ctx, s_left, coil_s_y_start, coil_s_len, 6, 10);
+        // Label Ns
+        ctx.fillText('Ns', s_left + 35, mid_y);
+
+        // Resistor Rs
+        const res_s_len = 100;
+        const res_s_y_start = mid_y - res_s_len / 2;
+        ctx.beginPath();
+        ctx.moveTo(s_right, s_top);
+        ctx.lineTo(s_right, res_s_y_start);
+        ctx.moveTo(s_right, res_s_y_start + res_s_len);
+        ctx.lineTo(s_right, s_bottom);
+        ctx.stroke();
+        drawVerticalZigZag(ctx, s_right, res_s_y_start, res_s_len, 6, 10);
+        // Label Rs
+        ctx.fillText('Rs', s_right + 35, mid_y);
+
+        // Connecting wires for secondary loop
+        ctx.beginPath();
+        ctx.moveTo(s_left, s_top);
+        ctx.lineTo(s_right, s_top);
+        ctx.moveTo(s_left, s_bottom);
+        ctx.lineTo(s_right, s_bottom);
+        ctx.stroke();
+
+        // --- Figure Label ---
+        ctx.fillText('Fig. 3.37', (p_right + s_left) / 2, p_bottom + 45);
+
+    </script>
+</body>
+</html>

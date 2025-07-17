@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Relaxation Oscillator Circuit</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f8f9fa;
+    }
+    canvas {
+      border: 1px solid #dee2e6;
+      background-color: white;
+    }
+  </style>
+</head>
+<body>
+<canvas id="circuitCanvas" width="500" height="480"></canvas>
+<script>
+  const canvas = document.getElementById('circuitCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Style settings to emulate the original image's look
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 3;
+  ctx.font = 'bold 22px "Comic Sans MS", cursive, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Helper function to draw a horizontal resistor
+  function drawResistorH(x, y, length) {
+    const zigWidth = 10;
+    const segments = 8;
+    const segLen = length / segments;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + segLen / 2, y);
+    for (let i = 0; i < segments - 1; i++) {
+        ctx.lineTo(x + segLen * (i + 0.75), y + zigWidth * (i % 2 === 0 ? 1 : -1));
+    }
+    ctx.lineTo(x + length - segLen / 2, y);
+    ctx.lineTo(x + length, y);
+    ctx.stroke();
+  }
+
+  // Helper function to draw a vertical resistor
+  function drawResistorV(x, y, length) {
+    const zigWidth = 10;
+    const segments = 8;
+    const segLen = length / segments;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y + segLen / 2);
+    for (let i = 0; i < segments - 1; i++) {
+        ctx.lineTo(x + zigWidth * (i % 2 === 0 ? 1 : -1), y + segLen * (i + 0.75));
+    }
+    ctx.lineTo(x, y + length - segLen / 2);
+    ctx.lineTo(x, y + length);
+    ctx.stroke();
+  }
+
+  // Helper function to draw a ground symbol
+  function drawGround(x, y) {
+    const h = 15;
+    const w1 = 25, w2 = 16, w3 = 8;
+    const spacing = 6;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y + h);
+    const lineY = y + h;
+    ctx.moveTo(x - w1 / 2, lineY); ctx.lineTo(x + w1 / 2, lineY);
+    ctx.moveTo(x - w2 / 2, lineY + spacing); ctx.lineTo(x + w2 / 2, lineY + spacing);
+    ctx.moveTo(x - w3 / 2, lineY + 2 * spacing); ctx.lineTo(x + w3 / 2, lineY + 2 * spacing);
+    ctx.stroke();
+  }
+
+  // --- Main Drawing Logic ---
+
+  // Component coordinates
+  const cx = 250, cy = 210;
+  const opAmpWidth = 120, opAmpHeight = 100;
+  const inX = cx - opAmpWidth / 2;
+  const inOffsetY = 25;
+  const inAY = cy - inOffsetY;
+  const inBY = cy + inOffsetY;
+  const outX = cx + opAmpWidth / 2;
+  const outY = cy;
+
+  // Op-Amp Body
+  ctx.beginPath();
+  ctx.moveTo(inX, cy - opAmpHeight / 2);
+  ctx.lineTo(outX, cy);
+  ctx.lineTo(inX, cy + opAmpHeight / 2);
+  ctx.closePath();
+  ctx.stroke();
+
+  // Op-Amp Symbols (+/-)
+  ctx.font = 'bold 30px sans-serif';
+  ctx.fillText('-', inX + 20, inAY + 2);
+  ctx.fillText('+', inX + 20, inBY - 2);
+  ctx.font = 'bold 22px "Comic Sans MS", cursive, sans-serif';
+
+  // Output C
+  const outNodeX = 420, outNodeY = outY;
+  ctx.beginPath();
+  ctx.moveTo(outX, outY);
+  ctx.lineTo(outNodeX, outNodeY);
+  ctx.stroke();
+  ctx.fillText('C', outNodeX + 15, outNodeY);
+
+  // Inverting side (Top: R and C)
+  const nodeAX = 150, nodeAY = inAY;
+  ctx.beginPath();
+  ctx.moveTo(nodeAX, nodeAY); ctx.lineTo(inX, inAY); // A to op-amp
+  ctx.stroke();
+  ctx.fillText('A', nodeAX - 20, nodeAY);
+
+  const topWireY = 110;
+  const feedbackRX_end = outX + 50;
+  ctx.beginPath();
+  ctx.moveTo(nodeAX, nodeAY); ctx.lineTo(nodeAX, topWireY); // A up
+  ctx.moveTo(feedbackRX_end, topWireY); ctx.lineTo(feedbackRX_end, outY); // C up
+  ctx.moveTo(outX, outY); ctx.lineTo(feedbackRX_end, outY); // Connect to output
+  ctx.stroke();
+  drawResistorH(nodeAX, topWireY, feedbackRX_end - nodeAX);
+  ctx.fillText('R = 10 kΩ', (nodeAX + feedbackRX_end) / 2, topWireY - 25);
+
+  const capX = 80;
+  ctx.beginPath();
+  ctx.moveTo(nodeAX, nodeAY); ctx.lineTo(capX + 10, nodeAY); // A left to cap
+  ctx.stroke();
+  ctx.beginPath(); // Capacitor plates
+  ctx.moveTo(capX, nodeAY - 13); ctx.lineTo(capX, nodeAY + 13);
+  ctx.moveTo(capX + 10, nodeAY - 13); ctx.lineTo(capX + 10, nodeAY + 13);
+  ctx.stroke();
+  ctx.beginPath(); // To ground
+  ctx.moveTo(capX, nodeAY); ctx.lineTo(capX, nodeAY + 30);
+  ctx.stroke();
+  drawGround(capX, nodeAY + 30);
+  ctx.fillText('C = 2 μF', capX + 35, nodeAY - 30);
+  
+  // Non-inverting side (Bottom: R1, R2)
+  const nodeBX = 150, nodeBY = inBY;
+  const junctionX = nodeBX, junctionY = 320;
+  
+  ctx.beginPath();
+  ctx.moveTo(nodeBX, nodeBY); ctx.lineTo(inX, inBY); // B to op-amp
+  ctx.moveTo(nodeBX, nodeBY); ctx.lineTo(junctionX, junctionY); // Wire from B down to junction
+  ctx.stroke();
+  ctx.fillText('B', nodeBX - 20, nodeBY);
+  
+  // R1
+  const feedbackR1X_end = feedbackRX_end;
+  ctx.beginPath();
+  ctx.moveTo(feedbackR1X_end, outY); ctx.lineTo(feedbackR1X_end, junctionY); // C down
+  ctx.stroke();
+  drawResistorH(junctionX, junctionY, feedbackR1X_end - junctionX);
+  ctx.fillText('R\u2081=20k\u03A9', (junctionX + feedbackR1X_end) / 2, junctionY + 25);
+  
+  // R2
+  const r2Y_end = junctionY + 80;
+  drawResistorV(junctionX, junctionY, r2Y_end - junctionY);
+  drawGround(junctionX, r2Y_end);
+  ctx.textAlign = 'right';
+  ctx.fillText('R\u2082=5k\u03A9', junctionX - 15, (junctionY + r2Y_end) / 2);
+  
+  // Final labels
+  ctx.textAlign = 'center';
+  ctx.fillText('Fig. 3.61', cx, 440);
+</script>
+</body>
+</html>

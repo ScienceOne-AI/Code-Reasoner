@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Optical Path Diagram</title>
+</head>
+<body>
+<canvas id="canvas" width="800" height="500"></canvas>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style and Helper Functions ---
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// Helper function to draw a line with an arrowhead
+function drawArrow(ctx, x1, y1, x2, y2, size = 10) {
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    
+    // Draw the line segment
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    // Draw the arrowhead
+    ctx.save();
+    ctx.beginPath();
+    ctx.translate(x2, y2);
+    ctx.rotate(angle);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, -size/2);
+    ctx.lineTo(-size, size/2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+// --- Parameters and Coordinates ---
+// Based on analysis to create a representative diagram
+const cx = 350; // x-coordinate of the optical element's principal plane
+const cy = 250; // y-coordinate of the optical axis
+const u = 200;  // Object distance
+const h = 80;   // Object height
+const f = 120;  // Focal length (assuming f_u = f_v for simplicity)
+const v = (f * u) / (u - f); // Image distance from lens formula: 1/f = 1/u + 1/v
+const h_prime = h * v / u;   // Image height from magnification: h'/h = v/u
+
+// --- Drawing Canvas Elements ---
+
+// 1. Optical Axis
+ctx.lineWidth = 2;
+ctx.beginPath();
+ctx.moveTo(50, cy);
+ctx.lineTo(750, cy);
+ctx.stroke();
+
+// 2. Principal Plane (Optical Element)
+ctx.save();
+ctx.setLineDash([8, 6]);
+ctx.lineWidth = 1.5;
+ctx.beginPath();
+ctx.moveTo(cx, 40);
+ctx.lineTo(cx, 460);
+ctx.stroke();
+ctx.restore();
+
+// "光具" (Optical Instrument) Label
+ctx.font = '30px "KaiTi"';
+ctx.fillText('光具', cx, 30);
+
+// 3. Object Arrow
+ctx.lineWidth = 2;
+drawArrow(ctx, cx - u, cy, cx - u, cy - h, 12);
+
+// 4. Image Arrow
+drawArrow(ctx, cx + v, cy, cx + v, cy + h_prime, 12);
+
+// 5. Focal Points
+ctx.beginPath();
+ctx.arc(cx - f, cy, 4, 0, 2 * Math.PI); // F_u (Front/Object-side focal point)
+ctx.fill();
+ctx.beginPath();
+ctx.arc(cx + f, cy, 4, 0, 2 * Math.PI); // F_v (Back/Image-side focal point)
+ctx.fill();
+
+// 6. Ray Tracing
+ctx.lineWidth = 1.5;
+const objectTip = { x: cx - u, y: cy - h };
+const imageTip = { x: cx + v, y: cy + h_prime };
+
+// Ray 1: Parallel to axis, then passes through back focal point F_v
+const p_lens_upper = { x: cx, y: cy - h };
+drawArrow(ctx, objectTip.x, objectTip.y, p_lens_upper.x, p_lens_upper.y, 10);
+drawArrow(ctx, p_lens_upper.x, p_lens_upper.y, imageTip.x, imageTip.y, 10);
+
+// Ray 2: Passes through front focal point F_u, then emerges parallel to axis
+const p_lens_lower = { x: cx, y: cy + h_prime };
+drawArrow(ctx, objectTip.x, objectTip.y, p_lens_lower.x, p_lens_lower.y, 10);
+drawArrow(ctx, p_lens_lower.x, p_lens_lower.y, imageTip.x, imageTip.y, 10);
+
+// --- Labels ---
+ctx.font = 'italic 22px "Times New Roman"';
+ctx.fillStyle = 'black';
+
+// Object and Image height labels (h, h')
+ctx.fillText('h', objectTip.x - 25, cy - h / 2);
+ctx.fillText("h'", imageTip.x + 25, cy + h_prime / 2);
+
+// Focal point labels (F_u, F_v)
+ctx.fillText('F', cx - f, cy + 25);
+ctx.font = 'italic 16px "Times New Roman"';
+ctx.fillText('u', cx - f + 8, cy + 28);
+ctx.font = 'italic 22px "Times New Roman"';
+ctx.fillText('F', cx + f, cy + 25);
+ctx.font = 'italic 16px "Times New Roman"';
+ctx.fillText('v', cx + f + 8, cy + 28);
+ctx.font = 'italic 22px "Times New Roman"';
+
+// Refractive index labels (n_u, n_v)
+const nu_pos = { x: cx - u + 80, y: p_lens_upper.y - 20 };
+ctx.fillText('n', nu_pos.x, nu_pos.y);
+ctx.font = 'italic 16px "Times New Roman"';
+ctx.fillText('u', nu_pos.x + 8, nu_pos.y + 3);
+ctx.font = 'italic 22px "Times New Roman"';
+ctx.lineWidth = 1.5;
+drawArrow(ctx, nu_pos.x + 20, nu_pos.y, nu_pos.x + 60, nu_pos.y, 8);
+
+const nv_pos = { x: cx + 100, y: p_lens_upper.y - 30 };
+ctx.fillText('n', nv_pos.x, nv_pos.y);
+ctx.font = 'italic 16px "Times New Roman"';
+ctx.fillText('v', nv_pos.x + 8, nv_pos.y + 3);
+ctx.font = 'italic 22px "Times New Roman"';
+ctx.lineWidth = 1.5;
+drawArrow(ctx, nv_pos.x + 20, nv_pos.y, nv_pos.x + 60, nv_pos.y, 8);
+
+
+// Dimension Lines and Labels
+ctx.lineWidth = 1;
+const dimY_uv = cy + 150; // Y-level for u and v dimensions
+const dimY_f = cy + 50;  // Y-level for f labels
+
+// u dimension
+const u_start = cx - u, u_end = cx;
+ctx.beginPath();
+ctx.moveTo(u_start, dimY_uv - 10); ctx.lineTo(u_start, dimY_uv + 10); ctx.stroke();
+drawArrow(ctx, u_start + (u_end-u_start)/2 + 15, dimY_uv, u_end, dimY_uv, 8);
+drawArrow(ctx, u_start + (u_end-u_start)/2 - 15, dimY_uv, u_start, dimY_uv, 8);
+ctx.fillText('u', u_start + (u_end - u_start) / 2, dimY_uv - 20);
+
+// v dimension
+const v_start = cx, v_end = cx + v;
+ctx.beginPath();
+ctx.moveTo(v_end, dimY_uv - 10); ctx.lineTo(v_end, dimY_uv + 10); ctx.stroke();
+drawArrow(ctx, v_start + (v_end-v_start)/2 + 15, dimY_uv, v_end, dimY_uv, 8);
+drawArrow(ctx, v_start + (v_end-v_start)/2 - 15, dimY_uv, v_start, dimY_uv, 8);
+ctx.fillText('v', v_start + (v_end - v_start) / 2, dimY_uv - 20);
+
+// Bow-tie marker at the center
+ctx.beginPath();
+ctx.moveTo(cx, dimY_uv); ctx.lineTo(cx - 8, dimY_uv - 6); ctx.lineTo(cx - 8, dimY_uv + 6); ctx.closePath(); ctx.fill();
+ctx.beginPath();
+ctx.moveTo(cx, dimY_uv); ctx.lineTo(cx + 8, dimY_uv - 6); ctx.lineTo(cx + 8, dimY_uv + 6); ctx.closePath(); ctx.fill();
+
+// f_u and f_v distance labels
+const fu_pos_x = cx - f / 2;
+const fv_pos_x = cx + f / 2;
+ctx.font = 'italic 22px "Times New Roman"';
+ctx.fillText('f', fu_pos_x, dimY_f);
+ctx.font = 'italic 16px "Times New Roman"';
+ctx.fillText('u', fu_pos_x + 8, dimY_f + 3);
+ctx.font = 'italic 22px "Times New Roman"';
+ctx.fillText('f', fv_pos_x, dimY_f);
+ctx.font = 'italic 16px "Times New Roman"';
+ctx.fillText('v', fv_pos_x + 8, dimY_f + 3);
+
+</script>
+</body>
+</html>

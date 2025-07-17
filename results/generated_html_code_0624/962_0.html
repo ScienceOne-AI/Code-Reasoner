@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electric Potential Graph</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="600"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Configuration ---
+  const padding = { top: 50, right: 50, bottom: 80, left: 70 };
+  const graphWidth = canvas.width - padding.left - padding.right;
+  const graphHeight = canvas.height - padding.top - padding.bottom;
+
+  const xMin = -0.3;
+  const xMax = 0.3;
+  const yMin = -1000;
+  const yMax = 0;
+
+  const xRange = xMax - xMin;
+  const yRange = yMax - yMin;
+
+  // --- Coordinate Transformation Functions ---
+  function toPixelX(x) {
+    return padding.left + ((x - xMin) / xRange) * graphWidth;
+  }
+
+  function toPixelY(v) {
+    return padding.top + ((yMax - v) / yRange) * graphHeight;
+  }
+
+  // --- Drawing Functions ---
+  function drawGrid() {
+    ctx.save();
+    ctx.lineWidth = 0.5;
+
+    // Minor grid lines
+    ctx.strokeStyle = '#d3d3d3'; // Light gray for minor grid
+    ctx.beginPath();
+    // Vertical minor lines (every 0.01)
+    for (let i = 1; i < 60; i++) {
+        if (i % 10 === 0) continue;
+        const x = xMin + i * 0.01;
+        ctx.moveTo(toPixelX(x), toPixelY(yMax));
+        ctx.lineTo(toPixelX(x), toPixelY(yMin));
+    }
+    // Horizontal minor lines (every 50)
+    for (let i = 1; i < 20; i++) {
+        if (i % 5 === 0) continue;
+        const y = yMin + i * 50;
+        ctx.moveTo(toPixelX(xMin), toPixelY(y));
+        ctx.lineTo(toPixelX(xMax), toPixelY(y));
+    }
+    ctx.stroke();
+
+    // Major grid lines
+    ctx.strokeStyle = '#a9a9a9'; // Darker gray for major grid
+    ctx.beginPath();
+    // Vertical major lines (every 0.1)
+    for (let i = 1; i < 6; i++) {
+        const x = xMin + i * 0.1;
+        ctx.moveTo(toPixelX(x), toPixelY(yMax));
+        ctx.lineTo(toPixelX(x), toPixelY(yMin));
+    }
+    // Horizontal major lines (every 250)
+    for (let i = 1; i < 4; i++) {
+        const y = yMin + i * 250;
+        ctx.moveTo(toPixelX(xMin), toPixelY(y));
+        ctx.lineTo(toPixelX(xMax), toPixelY(y));
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawAxes() {
+    ctx.save();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    // X-axis (V=0)
+    ctx.moveTo(toPixelX(xMin), toPixelY(0));
+    ctx.lineTo(toPixelX(xMax), toPixelY(0));
+    // Y-axis (x=0)
+    ctx.moveTo(toPixelX(0), toPixelY(yMax));
+    ctx.lineTo(toPixelX(0), toPixelY(yMin));
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawLabels() {
+    ctx.save();
+    ctx.fillStyle = 'black';
+    ctx.font = '16px Arial';
+
+    // X-axis labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let i = 0; i <= 6; i++) {
+      const x = xMin + i * 0.1;
+      if (Math.abs(x) < 1e-9) continue;
+      ctx.fillText(x.toFixed(1).replace('-0.0', '0'), toPixelX(x), toPixelY(0) + 5);
+    }
+    // Origin '0' label
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('0', toPixelX(0) + 3, toPixelY(0) - 3);
+
+    // X-axis title
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('x / m', toPixelX(0.25), toPixelY(0) - 10);
+
+    // Y-axis labels
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i <= 4; i++) {
+      const v = yMin + i * 250;
+      if (Math.abs(v) < 1e-9) continue;
+      ctx.fillText(v, toPixelX(0) - 8, toPixelY(v));
+    }
+    
+    // Y-axis title
+    ctx.textAlign = 'center';
+    ctx.fillText('V / V', toPixelX(0) - 40, toPixelY(-350));
+
+    // Fig. 5.1 caption
+    ctx.font = '18px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Fig. 5.1', canvas.width / 2, canvas.height - 10);
+    ctx.restore();
+  }
+
+  function drawCurve() {
+    ctx.save();
+    ctx.beginPath();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+
+    const V_surface = -850;
+    const radius = 0.1;
+    const C = V_surface * radius; // C = kQ = -85 V·m
+
+    // Left curved part (x from -0.3 to -0.1)
+    const startX_left = -0.3;
+    const endX_left = -radius;
+    let firstPoint = true;
+    for (let x = startX_left; x <= endX_left; x += 0.001) {
+      const v = C / (-x); // V = C / |x|
+      if (firstPoint) {
+        ctx.moveTo(toPixelX(x), toPixelY(v));
+        firstPoint = false;
+      } else {
+        ctx.lineTo(toPixelX(x), toPixelY(v));
+      }
+    }
+    
+    // Flat central part (x from -0.1 to 0.1)
+    ctx.lineTo(toPixelX(-radius), toPixelY(V_surface));
+    ctx.lineTo(toPixelX(radius), toPixelY(V_surface));
+
+    // Right curved part (x from 0.1 to 0.3)
+    const startX_right = radius;
+    const endX_right = 0.3;
+    for (let x = startX_right; x <= endX_right; x += 0.001) {
+      const v = C / x; // V = C / |x|
+      ctx.lineTo(toPixelX(x), toPixelY(v));
+    }
+    
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // --- Main Execution ---
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawGrid();
+  drawAxes();
+  drawLabels();
+  drawCurve();
+
+</script>
+</body>
+</html>

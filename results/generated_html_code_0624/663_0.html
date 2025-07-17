@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Velocity vs. Time Graph</title>
+</head>
+<body>
+  <canvas id="physicsCanvas" width="550" height="450"></canvas>
+  <script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style and layout parameters
+    const margin = { top: 40, right: 40, bottom: 60, left: 80 };
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const graphWidth = canvasWidth - margin.left - margin.right;
+    const graphHeight = canvasHeight - margin.top - margin.bottom;
+
+    // Graph scale
+    const tMin = 0;
+    const tMax = 6.5; // A bit more to see the 't' label clearly
+    const vMin = -12.5;
+    const vMax = 17.5;
+
+    const tScale = graphWidth / (tMax - tMin);
+    const vScale = graphHeight / (vMax - vMin);
+
+    // Coordinate transformation functions
+    function tx(t) {
+      return margin.left + (t - tMin) * tScale;
+    }
+
+    function ty(v) {
+      return margin.top + graphHeight - (v - vMin) * vScale;
+    }
+
+    // --- Drawing Functions ---
+
+    function drawGrid() {
+      ctx.strokeStyle = '#cccccc';
+      ctx.lineWidth = 1;
+
+      // Vertical grid lines
+      for (let t = 1; t <= 6; t++) {
+        ctx.beginPath();
+        ctx.moveTo(tx(t), ty(vMin));
+        ctx.lineTo(tx(t), ty(vMax));
+        ctx.stroke();
+      }
+
+      // Horizontal grid lines
+      for (let v = -10; v <= 15; v += 5) {
+        if (v === 0) continue; // Skip axis line
+        ctx.beginPath();
+        ctx.moveTo(tx(tMin), ty(v));
+        ctx.lineTo(tx(tMax - 0.5), ty(v));
+        ctx.stroke();
+      }
+    }
+
+    function drawAxes() {
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+
+      // Y-axis (t=0)
+      ctx.beginPath();
+      ctx.moveTo(tx(0), ty(vMin));
+      ctx.lineTo(tx(0), ty(vMax));
+      ctx.stroke();
+
+      // X-axis (v=0)
+      ctx.beginPath();
+      ctx.moveTo(tx(tMin), ty(0));
+      ctx.lineTo(tx(tMax-0.5), ty(0));
+      ctx.stroke();
+    }
+
+    function drawLabels() {
+      ctx.fillStyle = '#000000';
+      ctx.font = '20px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+
+      // X-axis ticks and labels
+      for (let t = 2; t <= 6; t += 2) {
+        ctx.fillText(t, tx(t), ty(0) + 8);
+      }
+      ctx.fillText('Time (s)', tx(3), ty(0) + 35);
+      
+      ctx.font = 'italic 20px serif';
+      ctx.fillText('t', tx(tMax-0.2), ty(0) - 10);
+      
+
+      // Y-axis ticks and labels
+      ctx.font = '20px serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('10', tx(0) - 8, ty(10));
+      ctx.fillText('-10', tx(0) - 8, ty(-10));
+      ctx.fillText('0', tx(0) - 8, ty(0));
+
+      ctx.save();
+      ctx.translate(margin.left - 50, margin.top + graphHeight / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.fillText('Velocity (m/s)', 0, 0);
+      ctx.restore();
+      
+      ctx.font = 'italic 20px serif';
+      ctx.fillText('v', tx(0) + 5, ty(vMax));
+    }
+    
+    function drawCurve() {
+      ctx.strokeStyle = '#696969'; // Dark gray
+      ctx.lineWidth = 3.5;
+      
+      ctx.beginPath();
+      ctx.moveTo(tx(0), ty(0));
+
+      // Curve from t=0 to peak at t=2
+      ctx.bezierCurveTo(tx(0.8), ty(10), tx(1.2), ty(12.5), tx(2), ty(12.5));
+      
+      // Curve from peak at t=2 to trough at t=4
+      ctx.bezierCurveTo(tx(2.8), ty(12.5), tx(3.2), ty(-10), tx(4), ty(-10));
+
+      // Curve from trough at t=4 to end at t=6
+      ctx.bezierCurveTo(tx(4.8), ty(-10), tx(5.2), ty(5), tx(6), ty(7.5));
+      
+      ctx.stroke();
+    }
+
+    // --- Main Drawing Call ---
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    drawGrid();
+    drawAxes();
+    drawCurve();
+    drawLabels();
+
+  </script>
+</body>
+</html>

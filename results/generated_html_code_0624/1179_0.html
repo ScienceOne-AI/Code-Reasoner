@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Optical Path Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+  
+  // Style settings
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 2;
+  ctx.font = 'italic 24px Times New Roman';
+  
+  // Coordinates and Dimensions
+  const y_axis = 225;
+  const lens_left_x = 275;
+  const lens_right_x = 325;
+  const lens_center_x = (lens_left_x + lens_right_x) / 2;
+  const lens_semi_height = 90;
+  const lens_top_y = y_axis - lens_semi_height;
+  const lens_bottom_y = y_axis + lens_semi_height;
+
+  const mount_left_x = lens_right_x;
+  const mount_right_x = mount_left_x + 15;
+  const mount_aperture_radius = 60;
+  const mount_aperture_top_y = y_axis - mount_aperture_radius;
+  const mount_aperture_bottom_y = y_axis + mount_aperture_radius;
+  const mount_outer_semi_height = 95;
+
+  const focal_length = 250;
+  const focal_point_x = mount_right_x + focal_length;
+  const focal_point_y = y_axis;
+
+  // Helper function to draw an arrowhead at the end of a line
+  function drawArrowhead(ctx, fromX, fromY, toX, toY, headLength) {
+    const angle = Math.atan2(toY - fromY, toX - fromX);
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+  }
+  
+  // 1. Draw the lens system
+  // Lens element
+  ctx.beginPath();
+  ctx.moveTo(lens_center_x, lens_top_y);
+  ctx.bezierCurveTo(lens_left_x - 5, y_axis - 40, lens_left_x - 5, y_axis + 40, lens_center_x, lens_bottom_y);
+  ctx.bezierCurveTo(lens_right_x + 5, y_axis + 40, lens_right_x + 5, y_axis - 40, lens_center_x, lens_top_y);
+  ctx.closePath();
+  ctx.fillStyle = '#E0E0E0';
+  ctx.fill();
+  ctx.strokeStyle = 'black';
+  ctx.stroke();
+  
+  // Mount/Aperture
+  ctx.fillStyle = 'black';
+  ctx.fillRect(mount_left_x, y_axis - mount_outer_semi_height, mount_right_x - mount_left_x, mount_outer_semi_height - mount_aperture_radius);
+  ctx.fillRect(mount_left_x, y_axis + mount_aperture_radius, mount_right_x - mount_left_x, mount_outer_semi_height - mount_aperture_radius);
+
+  // 2. Draw incoming parallel rays
+  const ray_y_offset = 50;
+  const ray_start_x = 50;
+  const ray_bend_x = mount_right_x; 
+
+  ctx.beginPath();
+  // Top ray
+  ctx.moveTo(ray_start_x, y_axis - ray_y_offset);
+  ctx.lineTo(ray_bend_x, y_axis - ray_y_offset);
+  drawArrowhead(ctx, ray_start_x, y_axis - ray_y_offset, ray_start_x + 80, y_axis - ray_y_offset, 10);
+  // Middle ray (Principal Axis)
+  ctx.moveTo(ray_start_x, y_axis);
+  ctx.lineTo(ray_bend_x, y_axis);
+  drawArrowhead(ctx, ray_start_x, y_axis, ray_start_x + 80, y_axis, 10);
+  // Bottom ray
+  ctx.moveTo(ray_start_x, y_axis + ray_y_offset);
+  ctx.lineTo(ray_bend_x, y_axis + ray_y_offset);
+  drawArrowhead(ctx, ray_start_x, y_axis + ray_y_offset, ray_start_x + 80, y_axis + ray_y_offset, 10);
+  ctx.stroke();
+
+  // 3. Draw converging and diverging rays
+  const end_diverge_x = 750;
+  ctx.beginPath();
+  // Top ray
+  ctx.moveTo(ray_bend_x, y_axis - ray_y_offset);
+  ctx.lineTo(focal_point_x, focal_point_y);
+  let slope_top = (focal_point_y - (y_axis - ray_y_offset)) / (focal_point_x - ray_bend_x);
+  ctx.lineTo(end_diverge_x, focal_point_y + slope_top * (end_diverge_x - focal_point_x));
+  drawArrowhead(ctx, ray_bend_x, y_axis - ray_y_offset, ray_bend_x + 60, y_axis - ray_y_offset + 60 * slope_top, 10);
+  
+  // Middle ray
+  ctx.moveTo(ray_bend_x, y_axis);
+  ctx.lineTo(end_diverge_x, y_axis);
+  
+  // Bottom ray
+  ctx.moveTo(ray_bend_x, y_axis + ray_y_offset);
+  ctx.lineTo(focal_point_x, focal_point_y);
+  let slope_bottom = (focal_point_y - (y_axis + ray_y_offset)) / (focal_point_x - ray_bend_x);
+  ctx.lineTo(end_diverge_x, focal_point_y + slope_bottom * (end_diverge_x - focal_point_x));
+  drawArrowhead(ctx, ray_bend_x, y_axis + ray_y_offset, ray_bend_x + 60, y_axis + ray_y_offset + 60 * slope_bottom, 10);
+  ctx.stroke();
+  
+  // 4. Draw axes and labels
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 1.5;
+
+  // Focal plane axis
+  ctx.beginPath();
+  ctx.moveTo(focal_point_x, 50);
+  ctx.lineTo(focal_point_x, 400);
+  ctx.stroke();
+  drawArrowhead(ctx, focal_point_x, 400, focal_point_x, 50, 12);
+  
+  // Label F
+  ctx.fillText("F", focal_point_x + 15, y_axis - 60);
+  
+  // Label f (focal length)
+  const f_label_y = y_axis + 150;
+  ctx.beginPath();
+  ctx.moveTo(mount_right_x, f_label_y - 10);
+  ctx.lineTo(mount_right_x, f_label_y + 10);
+  ctx.moveTo(focal_point_x, f_label_y - 10);
+  ctx.lineTo(focal_point_x, f_label_y + 10);
+  ctx.moveTo(mount_right_x, f_label_y);
+  ctx.lineTo(focal_point_x, f_label_y);
+  ctx.stroke();
+  drawArrowhead(ctx, focal_point_x, f_label_y, mount_right_x, f_label_y, 10);
+  drawArrowhead(ctx, mount_right_x, f_label_y, focal_point_x, f_label_y, 10);
+  ctx.fillText("f", (mount_right_x + focal_point_x) / 2 - 10, f_label_y + 30);
+  
+  // Label D
+  const D_label_x_pos = mount_right_x + 40;
+  ctx.beginPath();
+  ctx.moveTo(mount_right_x, mount_aperture_top_y);
+  ctx.lineTo(D_label_x_pos, mount_aperture_top_y);
+  ctx.moveTo(D_label_x_pos, mount_aperture_top_y);
+  ctx.lineTo(D_label_x_pos, mount_aperture_top_y + 30);
+  ctx.stroke();
+  drawArrowhead(ctx, D_label_x_pos, mount_aperture_top_y, D_label_x_pos, mount_aperture_top_y + 30, 10);
+  ctx.fillText("D", D_label_x_pos - 15, mount_aperture_top_y - 8);
+
+  // Unlabeled arrow at bottom
+  const bottom_arrow_x_pos = mount_right_x + 40;
+  ctx.beginPath();
+  ctx.moveTo(mount_right_x, mount_aperture_bottom_y);
+  ctx.lineTo(bottom_arrow_x_pos, mount_aperture_bottom_y);
+  ctx.moveTo(bottom_arrow_x_pos, mount_aperture_bottom_y);
+  ctx.lineTo(bottom_arrow_x_pos, mount_aperture_bottom_y - 30);
+  ctx.stroke();
+  drawArrowhead(ctx, bottom_arrow_x_pos, mount_aperture_bottom_y, bottom_arrow_x_pos, mount_aperture_bottom_y - 30, 10);
+
+</script>
+</body>
+</html>

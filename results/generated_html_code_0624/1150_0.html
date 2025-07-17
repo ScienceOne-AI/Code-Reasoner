@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Spherical Wave Diagram</title>
+</head>
+<body>
+<canvas id="physics-diagram" width="500" height="300" style="border: 1px solid #ccc;"></canvas>
+<script>
+    const canvas = document.getElementById('physics-diagram');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Helper function to draw a line with an arrowhead at the end ---
+    function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+
+        // Draw line
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+
+        // Draw arrowhead
+        ctx.save();
+        ctx.translate(toX, toY);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headLength, headLength / 2.5);
+        ctx.lineTo(-headLength, -headLength / 2.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Helper function to draw a ray with an arrowhead in the middle ---
+    function drawRay(fromX, fromY, toX, toY, headLength = 8, position = 0.6) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        const arrowX = fromX + dx * position;
+        const arrowY = fromY + dy * position;
+
+        // Draw line
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+
+        // Draw arrowhead
+        ctx.save();
+        ctx.translate(arrowX, arrowY);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headLength, headLength / 2.5);
+        ctx.lineTo(-headLength, -headLength / 2.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Define coordinates ---
+    const midY = canvas.height / 2;
+    const sourcePos = { x: 80, y: midY };
+    const originPos = { x: 400, y: midY };
+
+    // --- Draw Axes ---
+    // z-axis
+    drawArrow(20, midY, canvas.width - 20, midY);
+    ctx.fillText('z', canvas.width - 25, midY + 20);
+
+    // x,y-axis
+    drawArrow(originPos.x, canvas.height - 20, originPos.x, 20);
+    ctx.fillText('x,y', originPos.x + 25, 25);
+
+    // --- Draw Source ---
+    ctx.beginPath();
+    ctx.arc(sourcePos.x, sourcePos.y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('S', sourcePos.x, sourcePos.y - 25);
+    
+    // Draw z₀ label
+    const z0_x = sourcePos.x;
+    const z0_y = sourcePos.y + 25;
+    ctx.textAlign = 'start';
+    ctx.fillText('z', z0_x - 5, z0_y);
+    ctx.font = 'italic 15px Times New Roman';
+    ctx.textBaseline = 'hanging';
+    ctx.fillText('0', z0_x + 4, z0_y + 2);
+    // Reset font and alignment for other elements
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Draw Curved Surface ---
+    const curveTopY = midY - 120;
+    const curveBottomY = midY + 120;
+    const curveVertexX = originPos.x;
+    const curveBulge = 30; // How much it curves away from the vertical axis
+    const curveEndX = curveVertexX + curveBulge;
+    const controlPointX = 2 * curveVertexX - curveEndX; // For quadratic Bezier
+
+    ctx.beginPath();
+    ctx.moveTo(curveEndX, curveTopY);
+    ctx.quadraticCurveTo(controlPointX, midY, curveEndX, curveBottomY);
+    ctx.stroke();
+
+    // --- Draw Rays ---
+    // Define hit points on the curve
+    const centralHit = { x: curveVertexX, y: midY };
+
+    // Parabola equation for the curve: x = a*(y-midY)^2 + curveVertexX
+    const a = curveBulge / Math.pow(curveBottomY - midY, 2);
+    
+    const upperRayY = midY - 80;
+    const upperHit = { x: a * Math.pow(upperRayY - midY, 2) + curveVertexX, y: upperRayY };
+    
+    const lowerRayY = midY + 80;
+    const lowerHit = { x: a * Math.pow(lowerRayY - midY, 2) + curveVertexX, y: lowerRayY };
+
+    // Draw the rays
+    drawRay(sourcePos.x, sourcePos.y, centralHit.x, centralHit.y);
+    drawRay(sourcePos.x, sourcePos.y, upperHit.x, upperHit.y);
+    drawRay(sourcePos.x, sourcePos.y, lowerHit.x, lowerHit.y);
+
+</script>
+</body>
+</html>

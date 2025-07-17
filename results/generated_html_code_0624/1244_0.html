@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Análise de Força em Viga</title>
+    <style>
+        canvas {
+            border: 1px solid #d3d3d3;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="beamCanvas" width="650" height="400"></canvas>
+
+<script>
+    const canvas = document.getElementById('beamCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Estilos e configurações globais
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Função auxiliar para desenhar setas
+    function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 10) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    // Função para desenhar hachuras de solo
+    function drawHatching(ctx, x, y, width, height) {
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        for (let i = -width / 2; i <= width / 2; i += 8) {
+            ctx.beginPath();
+            ctx.moveTo(x + i, y);
+            ctx.lineTo(x + i - height, y + height);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    // Parâmetros de Geometria
+    const scale = 80; // pixels por metro
+    const oX = 100;   // Origem X
+    const oY = 200;   // Origem Y (nível da viga)
+
+    const distAB = 3 * scale;
+    const distBC = 2 * scale;
+
+    const Ax = oX;
+    const Bx = Ax + distAB;
+    const Cx = Bx + distBC;
+
+    // 1. Desenhar Eixos Coordenados
+    ctx.lineWidth = 2;
+    ctx.font = 'italic bold 20px serif';
+    // Eixo Y
+    drawArrow(ctx, Ax, oY - 120, Ax, oY - 150);
+    ctx.beginPath();
+    ctx.moveTo(Ax, oY - 150);
+    ctx.lineTo(Ax, oY + 100);
+    ctx.stroke();
+    ctx.fillText('y', Ax - 25, oY - 130);
+    // Eixo X (rótulo)
+    ctx.fillText('x', Cx + 50, oY + 20);
+    
+
+    // 2. Desenhar a Viga
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(Ax, oY);
+    ctx.lineTo(Cx, oY);
+    ctx.stroke();
+    ctx.lineWidth = 2;
+
+    // 3. Desenhar Apoio A (Pino)
+    ctx.font = 'bold 20px serif';
+    ctx.fillText('A', Ax - 35, oY + 10);
+    ctx.beginPath();
+    ctx.moveTo(Ax - 20, oY + 25);
+    ctx.lineTo(Ax, oY + 5);
+    ctx.lineTo(Ax + 20, oY + 25);
+    ctx.closePath();
+    ctx.stroke();
+    // Pino
+    ctx.beginPath();
+    ctx.arc(Ax, oY, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+    // Solo
+    ctx.beginPath();
+    ctx.moveTo(Ax - 30, oY + 25);
+    ctx.lineTo(Ax + 30, oY + 25);
+    ctx.stroke();
+    drawHatching(ctx, Ax + 25, oY + 25, 55, 10);
+    
+    // 4. Desenhar Apoio B (Rolete)
+    ctx.fillText('B', Bx, oY + 50);
+    ctx.beginPath();
+    ctx.moveTo(Bx - 20, oY + 25);
+    ctx.lineTo(Bx, oY + 5);
+    ctx.lineTo(Bx + 20, oY + 25);
+    ctx.stroke();
+    // Pino
+    ctx.beginPath();
+    ctx.arc(Bx, oY, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+    // Roletes
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(Bx - 10, oY + 30, 4, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(Bx + 10, oY + 30, 4, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.lineWidth = 2;
+    // Solo
+    ctx.beginPath();
+    ctx.moveTo(Bx - 30, oY + 35);
+    ctx.lineTo(Bx + 30, oY + 35);
+    ctx.stroke();
+    drawHatching(ctx, Bx + 25, oY + 35, 55, 10);
+
+    // 5. Desenhar Momento (Conjugado)
+    const coupleX = Ax + 1.5 * scale;
+    const coupleYOffset = 25;
+    const coupleArrowLen = 35;
+    ctx.lineWidth = 3;
+    // Haste vertical
+    ctx.beginPath();
+    ctx.moveTo(coupleX, oY - coupleYOffset);
+    ctx.lineTo(coupleX, oY + coupleYOffset);
+    ctx.stroke();
+    // Seta superior (direita)
+    drawArrow(ctx, coupleX, oY - coupleYOffset, coupleX + coupleArrowLen, oY - coupleYOffset, 12);
+    // Seta inferior (esquerda)
+    drawArrow(ctx, coupleX, oY + coupleYOffset, coupleX - coupleArrowLen, oY + coupleYOffset, 12);
+    ctx.lineWidth = 2;
+    // Rótulo
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('6 kN·m', coupleX, oY - coupleYOffset - 20);
+
+    // 6. Desenhar Força Inclinada
+    const forceAngleRad = 240 * Math.PI / 180; // 180 + 60 graus
+    const forceArrowLen = 80;
+    const forceStartX = Cx + forceArrowLen * Math.cos(forceAngleRad);
+    const forceStartY = Cy + forceArrowLen * Math.sin(forceAngleRad);
+    ctx.lineWidth = 3;
+    drawArrow(ctx, forceStartX, forceStartY, Cx, oY, 15);
+    ctx.lineWidth = 2;
+    // Rótulo da força
+    ctx.fillText('4 kN', forceStartX + 10, forceStartY - 20);
+
+    // 7. Desenhar Indicador de Ângulo (reproduzindo o visual do diagrama)
+    const angleRadius = 40;
+    // Linha de referência horizontal (eixo x)
+    ctx.beginPath();
+    ctx.moveTo(Cx, oY);
+    ctx.lineTo(Cx + angleRadius + 10, oY);
+    ctx.stroke();
+    // Arco (no 4º quadrante para corresponder ao visual)
+    ctx.beginPath();
+    ctx.arc(Cx, oY, angleRadius, forceAngleRad, 2 * Math.PI);
+    ctx.stroke();
+    // Seta na ponta do arco (junto à linha de força)
+    const arcArrowX = Cx + angleRadius * Math.cos(forceAngleRad);
+    const arcArrowY = Cy + angleRadius * Math.sin(forceAngleRad);
+    const tangentAngle = forceAngleRad + Math.PI / 2;
+    ctx.save();
+    ctx.translate(arcArrowX, arcArrowY);
+    ctx.rotate(tangentAngle);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(4, -6);
+    ctx.moveTo(0,0);
+    ctx.lineTo(-4, -6);
+    ctx.stroke();
+    ctx.restore();
+    // Traço na outra ponta do arco (no eixo x)
+    ctx.beginPath();
+    ctx.moveTo(Cx + angleRadius, oY - 5);
+    ctx.lineTo(Cx + angleRadius, oY + 5);
+    ctx.stroke();
+    // Rótulo do ângulo
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('60°', Cx + 45, oY + 25);
+    
+    // 8. Desenhar Linhas de Cota
+    const dimY = oY + 80;
+    const tickHeight = 10;
+    ctx.font = '18px sans-serif';
+
+    // Cota 3m
+    ctx.beginPath();
+    ctx.moveTo(Ax, oY);
+    ctx.lineTo(Ax, dimY);
+    ctx.moveTo(Bx, oY);
+    ctx.lineTo(Bx, dimY);
+    ctx.stroke();
+    drawArrow(ctx, Ax, dimY, Bx, dimY, 12);
+    drawArrow(ctx, Bx, dimY, Ax, dimY, 12);
+    ctx.fillText('3 m', (Ax + Bx) / 2, dimY + 15);
+    
+    // Cota 2m
+    ctx.beginPath();
+    ctx.moveTo(Bx, oY + tickHeight); // para evitar sobreposição
+    ctx.lineTo(Bx, dimY);
+    ctx.moveTo(Cx, oY);
+    ctx.lineTo(Cx, dimY);
+    ctx.stroke();
+    drawArrow(ctx, Bx, dimY, Cx, dimY, 12);
+    drawArrow(ctx, Cx, dimY, Bx, dimY, 12);
+    ctx.fillText('2 m', (Bx + Cx) / 2, dimY + 15);
+
+</script>
+
+</body>
+</html>

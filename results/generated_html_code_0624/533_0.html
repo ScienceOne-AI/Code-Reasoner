@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Solenoid and Coil Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="420" style="border:1px solid #000;"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a coil/solenoid.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x_start - The starting x-coordinate.
+         * @param {number} x_end - The ending x-coordinate.
+         * @param {number} y_center - The central y-coordinate.
+         * @param {number} radius - The vertical radius of the coil.
+         * @param {number} num_turns - The number of turns to draw.
+         */
+        function drawCoil(ctx, x_start, x_end, y_center, radius, num_turns) {
+            const turn_width = (x_end - x_start) / num_turns;
+            const y_top = y_center - radius;
+            const y_bottom = y_center + radius;
+
+            // Draw the straight core lines
+            ctx.beginPath();
+            ctx.moveTo(x_start, y_top);
+            ctx.lineTo(x_end, y_top);
+            ctx.moveTo(x_start, y_bottom);
+            ctx.lineTo(x_end, y_bottom);
+            ctx.stroke();
+
+            // Draw the top windings as a series of semi-circles
+            ctx.beginPath();
+            for (let i = 0; i < num_turns; i++) {
+                const x = x_start + i * turn_width;
+                const cx = x + turn_width / 2;
+                ctx.arc(cx, y_top, turn_width / 2, Math.PI, 0);
+            }
+            ctx.stroke();
+
+            // Draw the bottom windings as a series of semi-circles
+            ctx.beginPath();
+            for (let i = 0; i < num_turns; i++) {
+                const x = x_start + i * turn_width;
+                const cx = x + turn_width / 2;
+                ctx.arc(cx, y_bottom, turn_width / 2, 0, Math.PI);
+            }
+            ctx.stroke();
+        }
+
+        /**
+         * Draws an arrow from one point to another.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} fromx - Starting x-coordinate.
+         * @param {number} fromy - Starting y-coordinate.
+         * @param {number} tox - Ending x-coordinate.
+         * @param {number} toy - Ending y-coordinate.
+         */
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 8;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        /**
+         * Draws a vertical double-headed arrow.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x - The x-coordinate of the arrow.
+         * @param {number} y1 - The starting y-coordinate.
+         * @param {number} y2 - The ending y-coordinate.
+         */
+        function drawDoubleArrowV(ctx, x, y1, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, y2);
+            // Arrow head at y2
+            ctx.moveTo(x, y2);
+            ctx.lineTo(x - 4, y2 - 6);
+            ctx.moveTo(x, y2);
+            ctx.lineTo(x + 4, y2 - 6);
+            // Arrow head at y1
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x - 4, y1 + 6);
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x + 4, y1 + 6);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a circular terminal.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x - The x-coordinate of the terminal center.
+         * @param {number} y - The y-coordinate of the terminal center.
+         */
+        function drawTerminal(ctx, x, y) {
+            ctx.save();
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        }
+
+
+        // --- Main Drawing ---
+
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // 1. Draw Solenoid S
+        const s_x_start = 120, s_x_end = 520, s_y_center = 220, s_radius = 60, s_num_turns = 20;
+        drawCoil(ctx, s_x_start, s_x_end, s_y_center, s_radius, s_num_turns);
+
+        // 2. Draw Coil C
+        const c_x_start = 570, c_x_end = 630, c_y_center = 220, c_radius = 45, c_num_turns = 6;
+        drawCoil(ctx, c_x_start, c_x_end, c_y_center, c_radius, c_num_turns);
+        
+        // 3. Draw connections and terminals for Solenoid S
+        ctx.beginPath();
+        ctx.moveTo(s_x_start + 40, s_y_center - s_radius);
+        ctx.lineTo(s_x_start + 40, 80);
+        ctx.lineTo(260, 80);
+        ctx.stroke();
+        drawTerminal(ctx, 260, 80);
+        
+        ctx.beginPath();
+        ctx.moveTo(s_x_end - 40, s_y_center - s_radius);
+        ctx.lineTo(s_x_end - 40, 80);
+        ctx.lineTo(440, 80);
+        ctx.stroke();
+        drawTerminal(ctx, 440, 80);
+        
+        // 4. Draw connections and terminals for Coil C
+        ctx.beginPath();
+        ctx.moveTo(c_x_start, c_y_center - c_radius);
+        ctx.lineTo(c_x_start, 110);
+        ctx.lineTo(700, 110);
+        ctx.stroke();
+        drawTerminal(ctx, 700, 110);
+        
+        ctx.beginPath();
+        ctx.moveTo(c_x_end, c_y_center - c_radius);
+        ctx.lineTo(c_x_end, 130);
+        ctx.lineTo(700, 130);
+        ctx.stroke();
+        drawTerminal(ctx, 700, 130);
+
+        // 5. Draw labels and annotations
+        ctx.fillStyle = 'black';
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        
+        // Solenoid S label
+        ctx.fillText('solenoid S', 40, 160);
+        drawArrow(ctx, 130, 165, 170, 200);
+
+        // Coil C labels
+        ctx.fillText('coil C', 660, 310);
+        ctx.fillText('63 turns', 660, 335);
+        drawArrow(ctx, 650, 305, 620, 255);
+        
+        // Diameter annotation for Coil C
+        const c_y_top = c_y_center - c_radius;
+        const c_y_bottom = c_y_center + c_radius;
+        const arrow_x = 650;
+        
+        ctx.save();
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(c_x_end, c_y_top);
+        ctx.lineTo(arrow_x, c_y_top);
+        ctx.moveTo(c_x_end, c_y_bottom);
+        ctx.lineTo(arrow_x, c_y_bottom);
+        ctx.stroke();
+        ctx.restore();
+        
+        drawDoubleArrowV(ctx, arrow_x, c_y_top, c_y_bottom);
+        
+        ctx.fillText('3.6 × 10⁻² m', arrow_x + 10, c_y_center);
+        
+        // Figure caption
+        ctx.font = 'bold 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 11.1', canvas.width / 2, 390);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings to match the original image
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 3.5;
+        ctx.font = 'bold 30px serif';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // --- Define coordinates ---
+        const baseY = 450;
+        const poleTopY = 80;
+        const poleLeftX = 100;
+        const poleRightX = 700;
+        const poleWidth = 6;
+
+        // Points based on proportions
+        const pA = { x: poleLeftX, y: poleTopY };
+        const pB = { x: poleRightX, y: poleTopY };
+        
+        // Horizontal points R and L on the dashed line
+        const pR = { x: pA.x + (pB.x - pA.x) / 3, y: pA.y };
+        const pL = { x: pA.x + 2 * (pB.x - pA.x) / 3, y: pA.y };
+
+        // Cable attachment points C and D
+        const sag = 40;
+        const pC = { x: pR.x, y: pR.y + sag };
+        const pD = { x: pL.x, y: pL.y + sag };
+        
+        // --- Helper functions ---
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+        
+        function drawDashedLine(x1, y1, x2, y2, dash = [8, 8]) {
+            ctx.save();
+            ctx.setLineDash(dash);
+            drawLine(x1, y1, x2, y2);
+            ctx.restore();
+        }
+
+        function drawCircle(x, y, radius, fill = false) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            if (fill) {
+                ctx.fill();
+            } else {
+                ctx.stroke();
+            }
+        }
+
+        function drawText(text, x, y) {
+            ctx.fillText(text, x, y);
+        }
+
+        // --- Draw the components ---
+
+        // 1. Draw the ground
+        ctx.lineWidth = 4;
+        drawLine(40, baseY, 760, baseY);
+        ctx.lineWidth = 2;
+        for (let i = 45; i < 760; i += 15) {
+            drawLine(i, baseY, i - 15, baseY + 15);
+        }
+        ctx.lineWidth = 3.5;
+
+        // 2. Draw the poles (as double lines)
+        drawLine(poleLeftX - poleWidth / 2, baseY, poleLeftX - poleWidth / 2, poleTopY);
+        drawLine(poleLeftX + poleWidth / 2, baseY, poleLeftX + poleWidth / 2, poleTopY);
+        drawLine(poleRightX - poleWidth / 2, baseY, poleRightX - poleWidth / 2, poleTopY);
+        drawLine(poleRightX + poleWidth / 2, baseY, poleRightX + poleWidth / 2, poleTopY);
+
+        // 3. Draw the dashed reference lines
+        drawDashedLine(pA.x, pA.y, pB.x, pB.y);
+        drawDashedLine(pR.x, pR.y, pC.x, pC.y);
+        drawDashedLine(pL.x, pL.y, pD.x, pD.y);
+
+        // 4. Draw the main cables
+        drawLine(pA.x, pA.y, pC.x, pC.y);
+        drawLine(pC.x, pC.y, pD.x, pD.y);
+        drawLine(pD.x, pD.y, pB.x, pB.y);
+        
+        // 5. Draw the joints/pivots (small circles)
+        const jointRadius = 6;
+        drawCircle(pA.x, pA.y, jointRadius, true);
+        drawCircle(pB.x, pB.y, jointRadius, true);
+        drawCircle(pC.x, pC.y, jointRadius, true);
+        drawCircle(pD.x, pD.y, jointRadius, true);
+        
+        // 6. Draw hanging attachments from C and D
+        const attachmentLength = 35;
+        const attachmentRadius = 8;
+        drawLine(pC.x, pC.y, pC.x, pC.y + attachmentLength);
+        drawCircle(pC.x, pC.y + attachmentLength, attachmentRadius, false);
+        drawLine(pD.x, pD.y, pD.x, pD.y + attachmentLength);
+        drawCircle(pD.x, pD.y + attachmentLength, attachmentRadius, false);
+
+        // 7. Draw the labels
+        drawText('A', pA.x - 30, pA.y - 5);
+        drawText('B', pB.x + 10, pB.y - 5);
+        drawText('C', pC.x - 35, pC.y + 15);
+        drawText('D', pD.x + 15, pD.y + 15);
+        drawText('R', pR.x - 10, pR.y - 15);
+        drawText('L', pL.x - 10, pL.y - 15);
+
+    </script>
+</body>
+</html>

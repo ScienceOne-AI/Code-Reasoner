@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-diagram" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-diagram');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 20px Times New Roman';
+
+        // --- Helper Functions ---
+
+        // Function to draw a dashed line
+        function drawDashedLine(x1, y1, x2, y2, dashLen = 5) {
+            ctx.beginPath();
+            ctx.setLineDash([dashLen, dashLen]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset to solid line
+        }
+        
+        // Function to draw an arc with an arrowhead
+        function drawAngleArc(x, y, radius, startAngle, endAngle, counterClockwise = false, label = '', labelOffset = 20) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, startAngle, endAngle, counterClockwise);
+            ctx.stroke();
+
+            // Arrowhead
+            const arrowAngle = endAngle;
+            const arrowLength = 8;
+            const arrowHeadAngle = Math.PI / 6;
+
+            const direction = counterClockwise ? 1 : -1;
+            const angleToPoint = endAngle + direction * 0.01; // a tiny offset to find the tangent
+            
+            const dx = Math.cos(angleToPoint);
+            const dy = Math.sin(angleToPoint);
+            const tangent = Math.atan2(dy, dx);
+            
+            const arrowX = x + radius * Math.cos(endAngle);
+            const arrowY = y + radius * Math.sin(endAngle);
+
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX - arrowLength * Math.cos(tangent - arrowHeadAngle), arrowY - arrowLength * Math.sin(tangent - arrowHeadAngle));
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX - arrowLength * Math.cos(tangent + arrowHeadAngle), arrowY - arrowLength * Math.sin(tangent + arrowHeadAngle));
+            ctx.stroke();
+
+            // Label
+            if (label) {
+                const labelAngle = (startAngle + endAngle) / 2;
+                const labelX = x + (radius + labelOffset) * Math.cos(labelAngle);
+                const labelY = y + (radius + labelOffset) * Math.sin(labelAngle);
+                ctx.save();
+                ctx.translate(labelX, labelY);
+                if (label.includes('°')) {
+                     ctx.font = '18px Times New Roman'; // slightly smaller for complex labels
+                }
+                ctx.fillText(label, 0, 5); // Adjust for text alignment
+                ctx.restore();
+            }
+        }
+
+        // Function to draw hatching lines
+        function drawHatching(p1, p2, hatchLength = 15, hatchSpacing = 10) {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            const perpAngle = angle + Math.PI / 2;
+            const hdx = hatchLength * Math.cos(perpAngle);
+            const hdy = hatchLength * Math.sin(perpAngle);
+
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= len; i += hatchSpacing) {
+                const px = p1.x + (i / len) * dx;
+                const py = p1.y + (i / len) * dy;
+                ctx.beginPath();
+                ctx.moveTo(px, py);
+                ctx.lineTo(px + hdx, py + hdy);
+                ctx.stroke();
+            }
+            ctx.lineWidth = 2; // Reset
+        }
+
+        // --- Geometric Parameters ---
+        const D = { x: 320, y: 430 };
+        const alpha_deg = 35;
+        const beta_deg = 90 - alpha_deg;
+        const alpha_rad = alpha_deg * Math.PI / 180;
+        const beta_rad = beta_deg * Math.PI / 180;
+
+        // --- Calculate and Draw Slopes ---
+        const len_slope_left = 280;
+        const len_slope_right = 300;
+        
+        const A_point = { x: D.x - len_slope_left * Math.cos(alpha_rad), y: D.y - len_slope_left * Math.sin(alpha_rad) };
+        const B_point = { x: D.x + len_slope_right * Math.cos(beta_rad), y: D.y - len_slope_right * Math.sin(beta_rad) };
+
+        ctx.beginPath();
+        ctx.moveTo(A_point.x, A_point.y);
+        ctx.lineTo(D.x, D.y);
+        ctx.lineTo(B_point.x, B_point.y);
+        ctx.stroke();
+        
+        drawHatching(A_point, D);
+        drawHatching(D, B_point);
+
+        // --- Calculate and Draw Beam ---
+        // Adjust distances to get a visually pleasing theta
+        const dist_DC = 180;
+        const dist_DE = 210;
+
+        const C = { x: D.x - dist_DC * Math.cos(alpha_rad), y: D.y - dist_DC * Math.sin(alpha_rad) };
+        const E = { x: D.x + dist_DE * Math.cos(beta_rad), y: D.y - dist_DE * Math.sin(beta_rad) };
+
+        ctx.save();
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'butt';
+        ctx.beginPath();
+        ctx.moveTo(C.x, C.y);
+        ctx.lineTo(E.x, E.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // --- Draw Angles and Labels ---
+
+        // Angle theta
+        const beam_angle = Math.atan2(C.y - E.y, E.x - C.x);
+        drawDashedLine(C.x, C.y, C.x + 100, C.y);
+        drawAngleArc(C.x, C.y, 40, 0, -beam_angle, false, 'θ', 10);
+        
+        // Angle alpha
+        const alpha_anchor = { x: 100, y: 410 };
+        const left_slope_intersect = { x: A_point.x + (alpha_anchor.y - A_point.y)/Math.tan(alpha_rad), y: alpha_anchor.y };
+        drawDashedLine(alpha_anchor.x, alpha_anchor.y, left_slope_intersect.x + 30, alpha_anchor.y);
+        drawAngleArc(left_slope_intersect.x, left_slope_intersect.y, 30, Math.PI, Math.PI - alpha_rad, true, 'α', 15);
+
+        // Angle 90-alpha
+        const beta_anchor_y = 440;
+        const beta_anchor_point = { x: D.x + (beta_anchor_y - D.y) / Math.tan(beta_rad), y: beta_anchor_y};
+        drawDashedLine(beta_anchor_point.x - 30, beta_anchor_y, beta_anchor_point.x + 150, beta_anchor_y);
+        const arc_arrow_y = beta_anchor_y - 30 * Math.sin(beta_rad/2);
+        ctx.beginPath();
+        ctx.moveTo(beta_anchor_point.x + 30 * Math.cos(beta_rad), beta_anchor_y - 30 * Math.sin(beta_rad));
+        ctx.lineTo(arc_arrow_y + 10, beta_anchor_y - 30);
+        ctx.stroke();
+        drawAngleArc(beta_anchor_point.x, beta_anchor_point.y, 60, 0, -beta_rad, true, '90°-α', 15);
+
+        // --- Draw Point Labels ---
+        ctx.font = '24px Times New Roman';
+        ctx.fillText('C', C.x - 30, C.y + 10);
+        ctx.fillText('E', E.x + 10, E.y - 5);
+        ctx.fillText('D', D.x - 10, D.y + 25);
+        ctx.fillText('A', A_point.x - 20, A_point.y + 15);
+        ctx.fillText('B', B_point.x, B_point.y - 5);
+
+    </script>
+</body>
+</html>

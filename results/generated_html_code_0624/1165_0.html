@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interference Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+            const angle = Math.atan2(toy - fromy, tox - fromx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function drawDashedLine(ctx, x1, y1, x2, y2, dashLen = 5, gapLen = 5) {
+            ctx.beginPath();
+            ctx.setLineDash([dashLen, gapLen]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset to solid line
+        }
+
+        // --- Main Drawing ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = "20px 'Times New Roman'";
+        ctx.fillStyle = 'black';
+
+        // --- Left Part: Interference Setup ---
+
+        // Screen P
+        const screenX = 450;
+        ctx.beginPath();
+        ctx.moveTo(screenX, 70);
+        ctx.lineTo(screenX, 330);
+        ctx.stroke();
+        ctx.fillText("P", screenX - 5, 350);
+
+        // Screen coordinates
+        ctx.fillText("x,y", screenX + 10, 80);
+        drawArrow(ctx, screenX, 85, screenX, 55);
+
+
+        // Bisector (dashed line)
+        const yCenter = 200;
+        drawDashedLine(ctx, 150, yCenter, screenX, yCenter, 5, 3);
+
+        // Light rays with exaggerated convergence for illustration
+        const startX = 50;
+        const convergencePoint1 = { x: screenX, y: 120 };
+        const convergencePoint2 = { x: screenX, y: 280 };
+
+        // Upper beam (lambda1)
+        drawArrow(ctx, startX, 80, convergencePoint1.x, convergencePoint1.y);
+        drawArrow(ctx, startX, 130, convergencePoint1.x, convergencePoint1.y);
+        ctx.fillText("λ₁", startX + 20, 100);
+
+        // Lower beam (lambda2)
+        const lowerRay1_start = { x: startX, y: 270 };
+        const lowerRay2_start = { x: startX, y: 320 };
+        drawArrow(ctx, lowerRay1_start.x, lowerRay1_start.y, convergencePoint2.x, convergencePoint2.y);
+        drawArrow(ctx, lowerRay2_start.x, lowerRay2_start.y, convergencePoint2.x, convergencePoint2.y);
+        ctx.fillText("λ₂", startX + 20, 315);
+        
+        // A middle ray for angle theta definition, as in the original diagram
+        const middleRay_start = { x: startX, y: 180 };
+        const middleRay_end = { x: screenX, y: yCenter };
+        ctx.beginPath();
+        ctx.moveTo(middleRay_start.x, middleRay_start.y);
+        ctx.lineTo(middleRay_end.x, middleRay_end.y);
+        ctx.stroke();
+
+        // Angle theta
+        // As the diagram shows the angle between the middle ray and the top ray of the lower group
+        ctx.beginPath();
+        ctx.arc(150, 225, 50, -0.1, 0.35); // Visually placed arc
+        ctx.stroke();
+        ctx.fillText("θ", 205, 230);
+
+
+        // --- Right Part: Interference Pattern ---
+        const patternCenterX = 650;
+        const patternCenterY = 200;
+        const patternRadius = 90;
+
+        // Coordinate axes for the pattern
+        drawArrow(ctx, patternCenterX - patternRadius - 20, patternCenterY, patternCenterX + patternRadius + 20, patternCenterY);
+        ctx.fillText("x", patternCenterX + patternRadius + 25, patternCenterY + 5);
+        drawArrow(ctx, patternCenterX, patternCenterY + patternRadius + 20, patternCenterX, patternCenterY - patternRadius - 20);
+        ctx.fillText("y", patternCenterX - 10, patternCenterY - patternRadius - 25);
+
+        // Circular view of the pattern
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(patternCenterX, patternCenterY, patternRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = '#f0f0f0'; // Light gray background for fringes
+        ctx.fill();
+        ctx.clip(); // Clip subsequent drawings to the circle
+
+        // Interference Fringes (horizontal lines)
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 12;
+        const fringeSpacing = 30;
+        for (let i = -3; i <= 3; i++) {
+            const y = patternCenterY + i * fringeSpacing;
+            ctx.beginPath();
+            ctx.moveTo(patternCenterX - patternRadius, y);
+            ctx.lineTo(patternCenterX + patternRadius, y);
+            ctx.stroke();
+        }
+        ctx.restore(); // Remove clipping
+        
+        // Redraw circle border on top
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(patternCenterX, patternCenterY, patternRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Period Lambda
+        ctx.lineWidth = 1.5;
+        const lambdaX = patternCenterX - patternRadius - 30;
+        ctx.beginPath();
+        ctx.moveTo(lambdaX - 5, patternCenterY - fringeSpacing / 2);
+        ctx.lineTo(lambdaX + 5, patternCenterY - fringeSpacing / 2);
+        ctx.moveTo(lambdaX - 5, patternCenterY + fringeSpacing / 2);
+        ctx.lineTo(lambdaX + 5, patternCenterY + fringeSpacing / 2);
+        ctx.moveTo(lambdaX, patternCenterY - fringeSpacing / 2);
+        ctx.lineTo(lambdaX, patternCenterY + fringeSpacing / 2);
+        ctx.stroke();
+        ctx.fillText("Λ", lambdaX - 25, patternCenterY + 8);
+        
+        // Lines from circle to Lambda indicator
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(patternCenterX-patternRadius, patternCenterY - fringeSpacing / 2);
+        ctx.lineTo(lambdaX-5, patternCenterY - fringeSpacing / 2);
+        ctx.moveTo(patternCenterX-patternRadius, patternCenterY + fringeSpacing / 2);
+        ctx.lineTo(lambdaX-5, patternCenterY + fringeSpacing / 2);
+        ctx.stroke();
+
+
+        // Velocity vector v
+        ctx.lineWidth = 2;
+        drawArrow(ctx, patternCenterX, patternCenterY, patternCenterX, patternCenterY - 60);
+        ctx.fillText("v\u0305", patternCenterX + 10, patternCenterY - 25);
+
+    </script>
+</body>
+</html>

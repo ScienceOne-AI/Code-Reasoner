@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Fresnel Zones Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="500"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style settings ---
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = 1.5;
+const baseFont = 'italic 22px Times New Roman';
+const subFont = 'italic 16px Times New Roman';
+
+// --- Helper Functions ---
+
+/**
+ * Draws an arrowhead at a given point and angle.
+ * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+ * @param {number} x - The x-coordinate of the arrowhead tip.
+ * @param {number} y - The y-coordinate of the arrowhead tip.
+ * @param {number} angle - The angle of the arrowhead in radians.
+ * @param {number} size - The length of the arrowhead's legs.
+ */
+function drawArrowhead(ctx, x, y, angle, size = 8) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, -size / 2.5);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, size / 2.5);
+    ctx.stroke();
+    ctx.restore();
+}
+
+/**
+ * Draws a ray (line segment) with an arrowhead in the middle.
+ * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+ * @param {number} x1 - The starting x-coordinate.
+ * @param {number} y1 - The starting y-coordinate.
+ * @param {number} x2 - The ending x-coordinate.
+ * @param {number} y2 - The ending y-coordinate.
+ * @param {boolean} withArrow - Whether to draw an arrowhead.
+ * @param {boolean} dashed - Whether the line should be dashed.
+ */
+function drawRay(ctx, x1, y1, x2, y2, withArrow, dashed = false) {
+    ctx.save();
+    if (dashed) {
+        ctx.setLineDash([7, 5]);
+    }
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.restore();
+
+    if (withArrow) {
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        drawArrowhead(ctx, midX, midY, angle);
+    }
+}
+
+/**
+ * Draws a dimension line with inward-pointing arrows and a label.
+ * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+ * @param {number} x1 - The starting x-coordinate of the dimension.
+ * @param {number} y - The y-coordinate of the dimension line.
+ * @param {number} x2 - The ending x-coordinate of the dimension.
+ * @param {string} label - The text label for the dimension.
+ * @param {number} labelYOffset - The vertical offset for the label.
+ */
+function drawDimension(ctx, x1, y, x2, y, label, labelYOffset = 25) {
+    ctx.save();
+    ctx.lineWidth = 1;
+
+    // Horizontal line
+    ctx.beginPath();
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x2, y);
+    ctx.stroke();
+
+    // Arrowheads (filled triangles)
+    const h = 4; // half height
+    const w = 8; // width
+    ctx.fillStyle = 'black';
+    // Left arrow
+    ctx.beginPath();
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x1 + w, y - h);
+    ctx.lineTo(x1 + w, y + h);
+    ctx.closePath();
+    ctx.fill();
+    // Right arrow
+    ctx.beginPath();
+    ctx.moveTo(x2, y);
+    ctx.lineTo(x2 - w, y - h);
+    ctx.lineTo(x2 - w, y + h);
+    ctx.closePath();
+    ctx.fill();
+
+    // Label
+    ctx.font = baseFont;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'black';
+    ctx.fillText(label, (x1 + x2) / 2, y + labelYOffset);
+    ctx.restore();
+}
+
+// --- Coordinates and Parameters ---
+const cy = 250;
+const O = { x: 200, y: cy }; // Vertex of the wavefront
+const a_val = 250; // Radius of curvature of the wavefront
+const b_val = 500; // Distance to observation point
+const S = { x: O.x + a_val, y: cy };
+const P = { x: O.x + b_val, y: cy };
+
+// Calculate points on the wavefront for drawing
+const arc_half_angle = Math.PI / 7; // Controls how wide the wavefront arc is
+const r_m_val = a_val * Math.sin(arc_half_angle);
+const sagitta = a_val * (1 - Math.cos(arc_half_angle)); // Horizontal distance from vertex to edge
+const M_x = O.x + sagitta;
+
+const M_top = { x: M_x, y: cy - r_m_val };
+const M_bottom = { x: M_x, y: cy + r_m_val };
+const ray_start_x = 50;
+
+// --- Drawing Scene ---
+
+// 1. Principal axis
+ctx.beginPath();
+ctx.moveTo(ray_start_x - 20, cy);
+ctx.lineTo(P.x + 50, cy);
+ctx.stroke();
+
+// 2. Wavefront
+ctx.beginPath();
+const startAngle = Math.atan2(M_bottom.y - S.y, M_bottom.x - S.x);
+const endAngle = Math.atan2(M_top.y - S.y, M_top.x - S.x);
+ctx.arc(S.x, S.y, a_val, startAngle, endAngle);
+ctx.stroke();
+
+// 3. Rays
+// Solid Rays converging to S
+drawRay(ctx, ray_start_x, cy, S.x, cy, true);
+drawRay(ctx, S.x, cy, P.x, cy, true);
+drawRay(ctx, ray_start_x, M_top.y, M_top.x, M_top.y, true);
+drawRay(ctx, M_top.x, M_top.y, S.x, S.y, true);
+drawRay(ctx, ray_start_x, M_bottom.y, M_bottom.x, M_bottom.y, true);
+drawRay(ctx, M_bottom.x, M_bottom.y, S.x, S.y, true);
+// Dashed Rays to P
+drawRay(ctx, M_top.x, M_top.y, P.x, P.y, true, true);
+drawRay(ctx, M_bottom.x, M_bottom.y, P.x, P.y, true, true);
+
+// 4. Points S and P
+ctx.beginPath();
+ctx.arc(S.x, S.y, 3.5, 0, 2 * Math.PI);
+ctx.fill();
+ctx.font = baseFont;
+ctx.textAlign = 'left';
+ctx.fillText('S', S.x + 8, S.y - 10);
+
+ctx.beginPath();
+ctx.arc(P.x, P.y, 3.5, 0, 2 * Math.PI);
+ctx.fill();
+ctx.fillText('P', P.x + 8, P.y - 10);
+
+// 5. r_m label
+// Vertical line for r_m
+ctx.beginPath();
+ctx.moveTo(M_top.x, M_top.y);
+ctx.lineTo(M_top.x, cy);
+ctx.stroke();
+// Curved line for the label, as in the original image
+ctx.beginPath();
+ctx.moveTo(O.x, O.y);
+ctx.quadraticCurveTo(O.x, M_top.y, M_top.x, M_top.y);
+ctx.stroke();
+// Text label r_m with subscript
+ctx.textAlign = 'right';
+ctx.font = baseFont;
+ctx.fillText('r', O.x + 35, (M_top.y + cy) / 2 + 10);
+ctx.font = subFont;
+ctx.fillText('m', O.x + 44, (M_top.y + cy) / 2 + 15);
+
+// 6. Measurement lines 'a' and 'b'
+const y_a = cy + 80;
+const y_b = cy + 120;
+const measure_line_y_end = y_b + 40;
+
+// Vertical helper lines
+ctx.save();
+ctx.lineWidth = 1;
+ctx.strokeStyle = '#333';
+ctx.beginPath();
+ctx.moveTo(O.x, cy);
+ctx.lineTo(O.x, measure_line_y_end);
+ctx.moveTo(S.x, cy);
+ctx.lineTo(S.x, y_a);
+ctx.moveTo(P.x, cy);
+ctx.lineTo(P.x, y_b);
+ctx.stroke();
+ctx.restore();
+
+// Dimension lines using the helper function
+drawDimension(ctx, O.x, y_a, S.x, y_a, 'a');
+drawDimension(ctx, O.x, y_b, P.x, y_b, 'b');
+
+</script>
+</body>
+</html>

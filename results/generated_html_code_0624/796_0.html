@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Thermodynamics p-V Diagram</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+    canvas {
+        border: 1px solid #eee;
+    }
+</style>
+</head>
+<body>
+<canvas id="thermo-diagram" width="550" height="550"></canvas>
+<script>
+    const canvas = document.getElementById('thermo-diagram');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const Ox = 80;
+    const Oy = 470;
+    
+    // Function to transform logical coordinates to canvas coordinates
+    function T(p) {
+        return { x: Ox + p.x, y: Oy - p.y };
+    }
+
+    // --- Styles ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    
+    // --- Draw Axes ---
+    ctx.beginPath();
+    // p-axis
+    ctx.moveTo(Ox, Oy);
+    ctx.lineTo(Ox, Oy - 450);
+    ctx.lineTo(Ox - 5, Oy - 440);
+    ctx.moveTo(Ox, Oy - 450);
+    ctx.lineTo(Ox + 5, Oy - 440);
+    // V-axis
+    ctx.moveTo(Ox, Oy);
+    ctx.lineTo(Ox + 450, Oy);
+    ctx.lineTo(Ox + 440, Oy - 5);
+    ctx.moveTo(Ox + 450, Oy);
+    ctx.lineTo(Ox + 440, Oy + 5);
+    ctx.stroke();
+
+    // Axis Labels
+    ctx.font = "italic 22px 'Times New Roman'";
+    ctx.fillText('p', Ox - 30, Oy - 440);
+    ctx.fillText('V', Ox + 450, Oy + 20);
+    ctx.font = "20px 'Times New Roman'";
+    ctx.fillText('O', Ox - 25, Oy + 20);
+    
+    // --- Define Points (Logical Coordinates) ---
+    // These points are chosen to lie on lines through the origin
+    // and to approximate the shape of adiabatic curves.
+    const p = {
+        p1: { x: 100, y: 300 },
+        p3: { x: 160, y: 220 },
+        p5: { x: 250, y: 150 },
+        p2: { x: 125, y: 375 },
+        p4: { x: 200, y: 275 },
+        p6: { x: 312.5, y: 187.5 }
+    };
+    
+    // Transform all points to canvas coordinates
+    const t = {};
+    for (const key in p) {
+        t[key] = T(p[key]);
+    }
+
+    // --- Draw Dashed Lines ---
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+
+    // Dashed lines from origin to points on the lower adiabat
+    ctx.beginPath();
+    ctx.moveTo(Ox, Oy);
+    ctx.lineTo(t.p1.x, t.p1.y);
+    ctx.moveTo(Ox, Oy);
+    ctx.lineTo(t.p3.x, t.p3.y);
+    ctx.moveTo(Ox, Oy);
+    ctx.lineTo(t.p5.x, t.p5.y);
+    ctx.stroke();
+
+    // Dashed lines for coordinates
+    // Point 1 (corresponding to p3 on the axis)
+    ctx.beginPath();
+    ctx.moveTo(t.p1.x, t.p1.y);
+    ctx.lineTo(Ox, t.p1.y);
+    ctx.moveTo(t.p1.x, t.p1.y);
+    ctx.lineTo(t.p1.x, Oy);
+    ctx.stroke();
+
+    // Point 3 (corresponding to p2 on the axis)
+    ctx.beginPath();
+    ctx.moveTo(t.p3.x, t.p3.y);
+    ctx.lineTo(Ox, t.p3.y);
+    ctx.moveTo(t.p3.x, t.p3.y);
+    ctx.lineTo(t.p3.x, Oy);
+    ctx.stroke();
+
+    ctx.restore();
+
+    // --- Draw Adiabatic Curves ---
+    ctx.lineWidth = 2.5;
+    // Lower adiabat (passing near 1, 3, 5)
+    ctx.beginPath();
+    ctx.moveTo(T({x: 80, y: 350}).x, T({x: 80, y: 350}).y);
+    ctx.bezierCurveTo(T({x:110, y:280}).x, T({x:110, y:280}).y, T({x:210, y:140}).x, T({x:210, y:140}).y, T({x:350, y:105}).x, T({x:350, y:105}).y);
+    ctx.stroke();
+
+    // Upper adiabat (passing near 2, 4, 6)
+    ctx.beginPath();
+    ctx.moveTo(T({x: 100, y: 420}).x, T({x: 100, y: 420}).y);
+    ctx.bezierCurveTo(T({x:140, y:350}).x, T({x:140, y:350}).y, T({x:260, y:180}).x, T({x:260, y:180}).y, T({x:380, y:150}).x, T({x:380, y:150}).y);
+    ctx.stroke();
+    
+    // --- Draw Straight Process Lines ---
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(t.p1.x, t.p1.y);
+    ctx.lineTo(t.p2.x, t.p2.y);
+    ctx.moveTo(t.p3.x, t.p3.y);
+    ctx.lineTo(t.p4.x, t.p4.y);
+    ctx.moveTo(t.p5.x, t.p5.y);
+    ctx.lineTo(t.p6.x, t.p6.y);
+    ctx.stroke();
+
+    // --- Add Point Labels ---
+    ctx.font = "bold 18px Arial";
+    ctx.fillText("1", t.p1.x - 20, t.p1.y + 5);
+    ctx.fillText("2", t.p2.x - 20, t.p2.y - 5);
+    ctx.fillText("3", t.p3.x - 20, t.p3.y + 5);
+    ctx.fillText("4", t.p4.x - 20, t.p4.y - 5);
+    ctx.fillText("5", t.p5.x - 20, t.p5.y + 5);
+    ctx.fillText("6", t.p6.x - 5, t.p6.y - 15);
+    
+    // --- Add Text Labels ---
+    ctx.font = "20px 'SimSun', 'STSong'";
+    ctx.fillText("绝热线", T({x: 390, y: 150}).x, T({x: 390, y: 150}).y);
+    ctx.fillText("绝热线", T({x: 360, y: 105}).x, T({x: 360, y: 105}).y + 5);
+    
+    ctx.font = "18px Arial";
+    ctx.fillText("热图 2.18.1", canvas.width / 2 - 60, Oy + 40);
+
+    // --- p-axis tick labels ---
+    const pLabelX = Ox - 45;
+    
+    // Label for p at point 1 (labeled p₃ in image)
+    ctx.font = "italic 16px 'Times New Roman'";
+    ctx.fillText("p", pLabelX, t.p1.y + 5);
+    ctx.font = "12px 'Times New Roman'";
+    ctx.fillText("3", pLabelX + 8, t.p1.y + 10);
+    ctx.beginPath(); ctx.arc(pLabelX - 5, t.p1.y, 2, 0, 2 * Math.PI); ctx.fill();
+
+    // Label for p at point 3 (labeled p₂ in image)
+    ctx.font = "italic 16px 'Times New Roman'";
+    ctx.fillText("p", pLabelX, t.p3.y + 5);
+    ctx.font = "12px 'Times New Roman'";
+    ctx.fillText("2", pLabelX + 8, t.p3.y + 10);
+    ctx.beginPath(); ctx.arc(pLabelX - 5, t.p3.y, 2, 0, 2 * Math.PI); ctx.fill();
+
+    // Label for p₁ (lowest on the axis)
+    const p1_y_coord = 200;
+    ctx.font = "italic 16px 'Times New Roman'";
+    ctx.fillText("p", pLabelX, Oy - p1_y_coord + 5);
+    ctx.font = "12px 'Times New Roman'";
+    ctx.fillText("1", pLabelX + 8, Oy - p1_y_coord + 10);
+    ctx.beginPath(); ctx.arc(pLabelX - 5, Oy - p1_y_coord, 2, 0, 2 * Math.PI); ctx.fill();
+
+</script>
+</body>
+</html>

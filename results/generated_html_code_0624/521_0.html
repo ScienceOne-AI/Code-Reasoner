@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Define coordinates and dimensions
+    const centerX = 250;
+    const groundY = 200;
+    const wireWidth = 12;
+    const wireHeight = 160;
+    const semicircleRadius = 100;
+
+    // Set common styles
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = '20px Arial';
+    
+    // --- Helper function to draw an arrow ---
+    function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // 1. Draw the ground surface
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    ctx.lineTo(canvas.width, groundY);
+    ctx.stroke();
+
+    // 2. Draw ground hatching
+    ctx.lineWidth = 1;
+    for (let x = -20; x < canvas.width + 20; x += 10) {
+        ctx.beginPath();
+        ctx.moveTo(x, groundY);
+        ctx.lineTo(x - 20, groundY + 20);
+        ctx.stroke();
+    }
+    ctx.lineWidth = 1.5;
+
+    // 3. Draw the wire
+    const wireX = centerX - wireWidth / 2;
+    const wireY = groundY - wireHeight;
+    ctx.beginPath();
+    ctx.rect(wireX, wireY, wireWidth, wireHeight);
+    ctx.stroke();
+    
+    // Add cross-hatching to the wire
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(wireX, wireY, wireWidth, wireHeight);
+    ctx.clip(); // Clip to the wire rectangle
+    ctx.lineWidth = 0.7;
+    for(let i = -wireHeight; i < wireHeight; i += 5) {
+        ctx.beginPath();
+        ctx.moveTo(wireX, wireY + i);
+        ctx.lineTo(wireX + wireWidth + 5, wireY + i + wireWidth + 5);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(wireX + wireWidth, wireY + i);
+        ctx.lineTo(wireX - 5, wireY + i + wireWidth + 5);
+        ctx.stroke();
+    }
+    ctx.restore();
+    ctx.lineWidth = 1.5;
+
+    // 4. Draw the current arrow and label 'I'
+    const arrowX = centerX + 25;
+    const arrowStartY = groundY - 120;
+    const arrowEndY = groundY - 90;
+    
+    ctx.beginPath();
+    ctx.moveTo(arrowX, arrowStartY);
+    ctx.lineTo(arrowX, arrowEndY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(arrowX, arrowEndY);
+    ctx.lineTo(arrowX - 5, arrowEndY - 8);
+    ctx.moveTo(arrowX, arrowEndY);
+    ctx.lineTo(arrowX + 5, arrowEndY - 8);
+    ctx.stroke();
+
+    ctx.font = 'italic bold 22px Times New Roman';
+    ctx.fillText('I', arrowX + 10, arrowStartY + 15);
+
+
+    // 5. Draw the semi-circle and radial field lines
+    // Semi-circle arc
+    ctx.beginPath();
+    ctx.arc(centerX, groundY, semicircleRadius, 0, Math.PI, false);
+    ctx.stroke();
+
+    // Radial lines with arrows
+    const numLines = 10;
+    for (let i = 1; i < numLines; i++) {
+        const angle = (i * Math.PI) / numLines;
+        const startX = centerX;
+        const startY = groundY;
+        const endX = centerX + semicircleRadius * Math.cos(angle);
+        const endY = groundY + semicircleRadius * Math.sin(angle);
+        
+        drawArrow(startX, startY, endX, endY, 12);
+    }
+
+    // 6. Add labels 'a' and 'b'
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.fillText('a', centerX - 70, groundY - 8);
+    ctx.fillText('b', centerX - 120, groundY - 8);
+    
+    // 7. Add the title at the bottom
+    ctx.font = '22px "Songti SC", "SimSun", serif';
+    ctx.fillText('习题 8-4 图', centerX, canvas.height - 25);
+
+</script>
+</body>
+</html>

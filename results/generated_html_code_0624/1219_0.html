@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="900" height="350"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Global Settings ---
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineCap = 'round';
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws a hinge (a small open circle).
+     * @param {number} x - The x-coordinate of the center.
+     * @param {number} y - The y-coordinate of the center.
+     */
+    function drawHinge(x, y) {
+        const oldFillStyle = ctx.fillStyle;
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = oldFillStyle;
+    }
+
+    /**
+     * Draws the hanging weight Q.
+     * @param {number} cx - The x-coordinate of the suspension point.
+     * @param {number} cy - The y-coordinate of the suspension point.
+     * @param {string} label - The label for the weight (e.g., 'Q').
+     */
+    function drawWeight(cx, cy, label) {
+        const boxSize = 30;
+        const suspensionLength = 15;
+        const loopRadius = 4;
+        
+        const hookY = cy + suspensionLength;
+        const boxTopY = hookY + loopRadius;
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx, hookY);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.arc(cx, hookY, loopRadius, Math.PI, 2 * Math.PI);
+        ctx.stroke();
+        
+        ctx.strokeRect(cx - boxSize / 2, boxTopY, boxSize, boxSize);
+
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.fillText(label, cx + boxSize / 2 + 10, boxTopY + boxSize * 0.75);
+    }
+
+    /**
+     * Draws an arrowhead at a point, pointing in a specific direction.
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {number} x - The x-coordinate of the arrow tip.
+     * @param {number} y - The y-coordinate of the arrow tip.
+     * @param {number} angle - The angle of the tangent line at the point (direction of the arrow).
+     * @param {number} size - The size of the arrowhead.
+     */
+    function drawArrowhead(ctx, x, y, angle, size) {
+        const angle1 = angle - Math.PI / 6;
+        const angle2 = angle + Math.PI / 6;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - size * Math.cos(angle1), y - size * Math.sin(angle1));
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - size * Math.cos(angle2), y - size * Math.sin(angle2));
+        ctx.stroke();
+    }
+
+    // --- Diagram (a) ---
+    function drawDiagramA() {
+        const ax = 80, ay = 60;
+        const cx = 220, cy = 60;
+        const bx = 150, by = 140;
+
+        // Ceiling
+        ctx.beginPath();
+        ctx.moveTo(ax - 40, ay);
+        ctx.lineTo(cx + 40, cy);
+        ctx.stroke();
+        // Hatching for ceiling
+        for (let i = ax - 40; i <= cx + 40; i += 10) {
+            ctx.beginPath();
+            ctx.moveTo(i, ay);
+            ctx.lineTo(i - 10, ay - 10);
+            ctx.stroke();
+        }
+
+        // Rods
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(bx, by);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(bx, by);
+        ctx.stroke();
+
+        // Hinges
+        drawHinge(ax, ay);
+        drawHinge(cx, cy);
+        drawHinge(bx, by);
+
+        // Weight
+        drawWeight(bx, by, 'Q');
+
+        // Angles
+        // Angle alpha (at A, CCW)
+        const angle_a_rod = Math.atan2(by - ay, bx - ax);
+        ctx.beginPath();
+        ctx.arc(ax, ay, 25, 0, angle_a_rod, false);
+        ctx.stroke();
+        let arrowX = ax + 25 * Math.cos(angle_a_rod);
+        let arrowY = ay + 25 * Math.sin(angle_a_rod);
+        let tangentAngle = angle_a_rod + Math.PI / 2;
+        drawArrowhead(ctx, arrowX, arrowY, tangentAngle, 7);
+
+        // Angle beta (at C, CW)
+        const angle_b_rod = Math.atan2(by - cy, bx - cx);
+        ctx.beginPath();
+        ctx.arc(cx, cy, 25, angle_b_rod, Math.PI, false);
+        ctx.stroke();
+        arrowX = cx + 25 * Math.cos(angle_b_rod);
+        arrowY = cy + 25 * Math.sin(angle_b_rod);
+        tangentAngle = angle_b_rod - Math.PI / 2; // CW tangent
+        drawArrowhead(ctx, arrowX, arrowY, tangentAngle, 7);
+
+        // Labels
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('A', ax - 20, ay + 5);
+        ctx.fillText('C', cx + 10, cy + 5);
+        ctx.fillText('B', bx + 5, by + 20);
+        ctx.fillText('1', (ax + bx) / 2 - 15, (ay + by) / 2);
+        ctx.fillText('2', (cx + bx) / 2 + 5, (cy + by) / 2);
+
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('α', ax + 30, ay + 20);
+        ctx.fillText('β', cx - 35, cy + 20);
+
+        ctx.font = 'bold 20px Times New Roman';
+        ctx.fillText('(a)', 145, 280);
+    }
+
+    // --- Diagram (b) ---
+    function drawDiagramB() {
+        const wallX = 350;
+        const dx = wallX, dy = 80;
+        const ex = wallX, ey = 230;
+        const fx = 480, fy = 80;
+
+        // Wall
+        ctx.beginPath();
+        ctx.moveTo(wallX, dy - 40);
+        ctx.lineTo(wallX, ey + 40);
+        ctx.stroke();
+        // Hatching for wall
+        for (let i = dy - 40; i <= ey + 40; i += 10) {
+            ctx.beginPath();
+            ctx.moveTo(wallX, i);
+            ctx.lineTo(wallX - 10, i);
+            ctx.stroke();
+        }
+        
+        // Rods
+        ctx.beginPath();
+        ctx.moveTo(dx, dy);
+        ctx.lineTo(fx, fy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(ex, ey);
+        ctx.lineTo(fx, fy);
+        ctx.stroke();
+
+        // Hinges
+        drawHinge(dx, dy);
+        drawHinge(ex, ey);
+        drawHinge(fx, fy);
+        
+        // Weight
+        drawWeight(fx, fy, 'Q');
+
+        // Angles
+        // Angle alpha (at E, CCW)
+        const angle_ef = Math.atan2(fy - ey, fx - ex);
+        ctx.beginPath();
+        ctx.arc(ex, ey, 30, -Math.PI / 2, angle_ef, false);
+        ctx.stroke();
+        let arrowX = ex + 30 * Math.cos(angle_ef);
+        let arrowY = ey + 30 * Math.sin(angle_ef);
+        let tangentAngle = angle_ef + Math.PI / 2;
+        drawArrowhead(ctx, arrowX, arrowY, tangentAngle, 7);
+        
+        // Angle beta (at F, CCW)
+        ctx.beginPath();
+        ctx.arc(fx, fy, 25, angle_ef, Math.PI, false);
+        ctx.stroke();
+        arrowX = fx + 25 * Math.cos(angle_ef);
+        arrowY = fy + 25 * Math.sin(angle_ef);
+        tangentAngle = angle_ef + Math.PI / 2;
+        drawArrowhead(ctx, arrowX, arrowY, tangentAngle, 7);
+        
+        // Labels
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('D', dx + 10, dy - 5);
+        ctx.fillText('E', dx + 10, ey + 5);
+        ctx.fillText('F', fx + 10, fy);
+        ctx.fillText('1', (dx + fx) / 2, fy - 10);
+        ctx.fillText('2', (ex + fx) / 2 + 5, (ey + fy) / 2);
+        
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('α', ex + 35, ey - 5);
+        ctx.fillText('β', fx - 35, fy + 25);
+        
+        ctx.font = 'bold 20px Times New Roman';
+        ctx.fillText('(b)', 410, 280);
+    }
+
+    // --- Diagram (c) ---
+    function drawDiagramC() {
+        const wallX = 800;
+        const mx = wallX, my = 70;
+        const nx = wallX, ny = 210;
+        const kx = 650, ky = 210;
+        
+        // Wall
+        ctx.beginPath();
+        ctx.moveTo(wallX, my - 30);
+        ctx.lineTo(wallX, ny + 30);
+        ctx.stroke();
+        // Hatching for wall
+        for (let i = my - 30; i <= ny + 30; i += 10) {
+            ctx.beginPath();
+            ctx.moveTo(wallX, i);
+            ctx.lineTo(wallX + 10, i);
+            ctx.stroke();
+        }
+        
+        // Rods
+        ctx.beginPath();
+        ctx.moveTo(kx, ky);
+        ctx.lineTo(nx, ny);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(kx, ky);
+        ctx.lineTo(mx, my);
+        ctx.stroke();
+        
+        // Hinges
+        drawHinge(mx, my);
+        drawHinge(nx, ny);
+        drawHinge(kx, ky);
+        
+        // Weight
+        drawWeight(kx, ky, 'Q');
+
+        // Angles
+        // Angle alpha (at K, CW)
+        const angle_km = Math.atan2(my - ky, mx - kx);
+        ctx.beginPath();
+        ctx.arc(kx, ky, 30, angle_km, 0, false);
+        ctx.stroke();
+        let arrowX = kx + 30 * Math.cos(angle_km);
+        let arrowY = ky + 30 * Math.sin(angle_km);
+        let tangentAngle = angle_km - Math.PI / 2;
+        drawArrowhead(ctx, arrowX, arrowY, tangentAngle, 7);
+
+        // Angle beta (at M, CCW)
+        const angle_km_at_m = angle_km + Math.PI;
+        ctx.beginPath();
+        ctx.arc(mx, my, 25, Math.PI / 2, angle_km_at_m, false);
+        ctx.stroke();
+        arrowX = mx + 25 * Math.cos(angle_km_at_m);
+        arrowY = my + 25 * Math.sin(angle_km_at_m);
+        tangentAngle = angle_km_at_m + Math.PI / 2;
+        drawArrowhead(ctx, arrowX, arrowY, tangentAngle, 7);
+
+        // Labels
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('M', mx - 25, my + 5);
+        ctx.fillText('N', mx - 25, ny + 5);
+        ctx.fillText('K', kx - 20, ky + 5);
+        ctx.fillText('1', (kx + nx) / 2, ky + 20);
+        ctx.fillText('2', (kx + mx) / 2, (ky + my) / 2 + 15);
+
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('α', kx + 35, ky - 5);
+        ctx.fillText('β', mx - 20, my + 35);
+        
+        ctx.font = 'bold 20px Times New Roman';
+        ctx.fillText('(c)', 720, 280);
+    }
+
+    // --- Main Drawing ---
+    drawDiagramA();
+    drawDiagramB();
+    drawDiagramC();
+
+</script>
+</body>
+</html>

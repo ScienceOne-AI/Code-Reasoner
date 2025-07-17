@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Elliptical Orbit</title>
+</head>
+<body>
+
+<canvas id="physics-canvas" width="600" height="450" style="border:1px solid #ccc;"></canvas>
+
+<script>
+    const canvas = document.getElementById('physics-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Canvas dimensions
+    const width = canvas.width;
+    const height = canvas.height;
+
+    // Center of the canvas
+    const cx = width / 2;
+    const cy = height / 2;
+
+    // Ellipse parameters (in pixels)
+    const A = width * 0.4;  // Semi-major axis
+    const B = height * 0.3; // Semi-minor axis
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = "italic 18px 'Times New Roman'";
+    
+    // Translate origin to the center of the canvas
+    ctx.translate(cx, cy);
+
+    // --- Helper function to draw an arrow ---
+    function drawArrow(fromx, fromy, tox, toy, headlen = 8) {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    // --- Helper function for drawing tangent arrows on the ellipse ---
+    function drawPathArrow(x, y, angle, length = 20, arrowHeadSize = 8) {
+        const startX = x - (length / 2) * Math.cos(angle);
+        const startY = y - (length / 2) * Math.sin(angle);
+        const endX = x + (length / 2) * Math.cos(angle);
+        const endY = y + (length / 2) * Math.sin(angle);
+        
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        drawArrow(startX, startY, endX, endY, arrowHeadSize);
+        ctx.restore();
+    }
+
+
+    // --- 1. Draw Axes ---
+    ctx.beginPath();
+    // X-axis
+    drawArrow(-width / 2 + 20, 0, width / 2 - 20, 0);
+    // Y-axis
+    drawArrow(0, height / 2 - 20, 0, -height / 2 + 20);
+    ctx.stroke();
+
+    // --- 2. Draw Ellipse ---
+    ctx.beginPath();
+    ctx.ellipse(0, 0, A, B, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // --- 3. Draw Labels ---
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Axis labels
+    ctx.fillText('x', width / 2 - 30, 15);
+    ctx.fillText('y', 15, -height / 2 + 30);
+    ctx.fillText('O', -12, 12);
+    
+    // Ellipse vertex labels
+    ctx.fillText('A', A, 20);
+    ctx.fillText('-A', -A, 20);
+    ctx.fillText('B', 20, -B);
+    ctx.fillText('-B', 20, B);
+
+    // --- 4. Draw Points and Dashed Lines ---
+    
+    // Point m at x1
+    const x1 = -A * 0.5;
+    const y1 = -B * Math.sqrt(1 - (x1 / A)**2); // y is negative for upper half in canvas
+    
+    ctx.beginPath();
+    ctx.arc(x1, y1, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('m', x1 - 15, y1 - 10);
+    
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1, 0);
+    ctx.stroke();
+    ctx.restore();
+    
+    // Label x1
+    ctx.font = "italic 18px 'Times New Roman'";
+    ctx.fillText('x', x1 - 5, 20);
+    ctx.font = "italic 12px 'Times New Roman'";
+    ctx.fillText('1', x1 + 5, 24);
+    
+    // Point at x2
+    const x2 = A * 0.7;
+    const y2 = -B * Math.sqrt(1 - (x2 / A)**2);
+
+    ctx.beginPath();
+    ctx.arc(x2, y2, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2, 0);
+    ctx.stroke();
+    ctx.restore();
+    
+    // Label x2
+    ctx.font = "italic 18px 'Times New Roman'";
+    ctx.fillText('x', x2 - 5, 20);
+    ctx.font = "italic 12px 'Times New Roman'";
+    ctx.fillText('2', x2 + 5, 24);
+
+    // Point M (focus)
+    ctx.font = "italic 18px 'Times New Roman'";
+    const M_x = A * 0.3;
+    ctx.beginPath();
+    ctx.arc(M_x, 0, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('M', M_x, 20);
+
+    // --- 5. Draw Arrows on Ellipse Path (Counter-Clockwise) ---
+    const arrowAngles = [Math.PI / 3, 2 * Math.PI / 3, 4 * Math.PI / 3, 5 * Math.PI / 3];
+    arrowAngles.forEach(t => {
+        // Parametric position
+        const px = A * Math.cos(t);
+        // y is flipped for canvas coordinates
+        const py = -B * Math.sin(t);
+        
+        // Parametric velocity vector for CCW motion
+        const vx = -A * Math.sin(t);
+        const vy = B * Math.cos(t);
+        
+        // Canvas y-velocity is flipped
+        const canvas_vy = -vy;
+        
+        // Angle of the tangent vector
+        const tangentAngle = Math.atan2(canvas_vy, vx);
+        
+        drawPathArrow(px, py, tangentAngle);
+    });
+    
+    // --- 6. Draw Caption ---
+    ctx.font = "16px 'SimSun'";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('图 1', 0, height / 2 - 10);
+</script>
+
+</body>
+</html>

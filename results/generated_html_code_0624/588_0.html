@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Helper function to draw a line
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        // Helper function to draw a filled circle for terminals
+        function drawTerminal(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        
+        // Helper function to draw the switch arm with an arrowhead
+        function drawSwitchArm(x1, y1, x2, y2) {
+            ctx.beginPath();
+            // Line
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            
+            // Arrowhead
+            const headlen = 10;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + headlen * Math.cos(angle + Math.PI / 6), y1 + headlen * Math.sin(angle + Math.PI / 6));
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + headlen * Math.cos(angle - Math.PI / 6), y1 + headlen * Math.sin(angle - Math.PI / 6));
+
+            ctx.stroke();
+        }
+        
+        // --- Main Drawing ---
+
+        // Component coordinates
+        const pivot = { x: 250, y: 150 };
+        const contactX = { x: 320, y: 100 };
+        const contactY = { x: 320, y: 200 };
+        const cap = { x: 150, y_top: 190, y_bot: 210 };
+        const resR = { x: 380, y: 100, w: 80, h: 20 };
+        const resS = { x: 380, y: 200, w: 80, h: 20 };
+        const supply = { x: 480, y_top: 170, y_bot: 190 };
+        const groundY = 300;
+
+        // 1. Draw Capacitor branch
+        drawLine(cap.x, groundY, cap.x, cap.y_bot); // Wire from ground to capacitor
+        drawLine(cap.x - 20, cap.y_bot, cap.x + 20, cap.y_bot); // Bottom plate
+        drawLine(cap.x - 20, cap.y_top, cap.x + 20, cap.y_top); // Top plate
+        drawLine(cap.x, cap.y_top, cap.x, pivot.y); // Wire from capacitor to pivot
+        drawLine(cap.x, pivot.y, pivot.x, pivot.y);
+        ctx.fillText('C', cap.x - 40, (cap.y_top + cap.y_bot) / 2);
+
+        // 2. Draw Switch
+        drawTerminal(pivot.x, pivot.y);
+        drawTerminal(contactX.x, contactX.y);
+        drawTerminal(contactY.x, contactY.y);
+        ctx.fillText('X', contactX.x + 20, contactX.y);
+        ctx.fillText('Y', contactY.x + 20, contactY.y);
+        drawSwitchArm(pivot.x, pivot.y, contactY.x, contactY.y); // Switch connected to Y
+
+        // 3. Draw Charging Circuit (R and Power Supply)
+        drawLine(contactX.x, contactX.y, resR.x, resR.y); // Wire from X to R
+        ctx.strokeRect(resR.x, resR.y - resR.h / 2, resR.w, resR.h); // Resistor R
+        ctx.fillText('R', resR.x + resR.w / 2, resR.y - 25);
+        drawLine(resR.x + resR.w, resR.y, supply.x, resR.y); // Wire from R to vertical wire
+        drawLine(supply.x, resR.y, supply.x, supply.y_top - 20); // Top vertical wire
+        // Power Supply
+        drawLine(supply.x, supply.y_top - 20, supply.x, supply.y_top);
+        drawLine(supply.x - 20, supply.y_top, supply.x + 20, supply.y_top); // Long plate (+)
+        drawLine(supply.x - 10, supply.y_bot, supply.x + 10, supply.y_bot); // Short plate (-)
+        drawLine(supply.x, supply.y_bot, supply.x, groundY); // Wire from supply to ground
+        ctx.fillText('8.0 V', supply.x + 45, (supply.y_top + supply.y_bot) / 2);
+
+        // 4. Draw Discharging Circuit (S)
+        drawLine(contactY.x, contactY.y, resS.x, resS.y); // Wire from Y to S
+        ctx.strokeRect(resS.x, resS.y - resS.h / 2, resS.w, resS.h); // Resistor S
+        ctx.fillText('S', resS.x + resS.w / 2, resS.y - 25);
+        drawLine(resS.x + resS.w, resS.y, supply.x, resS.y); // Wire from S to vertical wire
+        drawLine(supply.x, resS.y, supply.x, groundY); // This connects S to ground via the supply's ground wire
+
+        // 5. Draw Ground line
+        drawLine(cap.x, groundY, supply.x, groundY);
+
+        // 6. Figure Label
+        ctx.font = 'bold 18px Arial';
+        ctx.fillText('Fig. 5.2', canvas.width / 2, 350);
+
+    </script>
+</body>
+</html>

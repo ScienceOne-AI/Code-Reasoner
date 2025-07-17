@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Pendulum Collision</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-canvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Define parameters
+        const L = 200; // Pendulum length
+        const rA = 28; // Radius of ball A
+        const rB = 35; // Radius of ball B
+        const theta1_deg = 40;
+        const theta1_rad = theta1_deg * Math.PI / 180;
+
+        // Suspension points
+        const sup_y = 70;   // y-coordinate for suspension points
+        const sup_A_x = 220; // x-coordinate for A's suspension
+        const sup_B_x = sup_A_x + rA + rB; // x-coordinate for B's suspension
+
+        // Resting positions (centers of the balls)
+        const center_A_x = sup_A_x;
+        const center_A_y = sup_y + L;
+        const center_B_x = sup_B_x;
+        const center_B_y = sup_y + L;
+
+        // Initial position of ball A (center)
+        const center_A_initial_x = sup_A_x - L * Math.sin(theta1_rad);
+        const center_A_initial_y = sup_y + L * Math.cos(theta1_rad);
+
+        // --- Drawing functions ---
+
+        function drawBall(x, y, radius, label) {
+            // Ball
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = 'lightgray';
+            ctx.fill();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Label
+            if (label) {
+                ctx.fillStyle = 'black';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(label, x, y - radius - 5);
+            }
+        }
+
+        function drawString(from_x, from_y, to_x, to_y) {
+            ctx.beginPath();
+            ctx.moveTo(from_x, from_y);
+            ctx.lineTo(to_x, to_y);
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+
+        // --- Start Drawing ---
+
+        // 1. Draw Support Bar
+        ctx.fillStyle = '#E0E0E0';
+        ctx.fillRect(150, 50, 250, 20);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(150, 50, 250, 20);
+
+        // 2. Draw Pendulum B (at rest)
+        drawString(sup_B_x, sup_y, center_B_x, center_B_y);
+        drawBall(center_B_x, center_B_y, rB, 'B');
+
+        // 3. Draw Pendulum A (at rest)
+        drawString(sup_A_x, sup_y, center_A_x, center_A_y);
+        drawBall(center_A_x, center_A_y, rA, 'A');
+
+        // 4. Draw Pendulum A (initial position, dashed)
+        drawString(sup_A_x, sup_y, center_A_initial_x, center_A_initial_y);
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([5, 3]);
+        ctx.arc(center_A_initial_x, center_A_initial_y, rA, 0, 2 * Math.PI);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+        ctx.restore();
+
+        // 5. Draw Annotations
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+
+        // Angle theta1 (θ₁)
+        const arcRadius = 45;
+        const angle_start = Math.PI / 2 - theta1_rad;
+        const angle_end = Math.PI / 2;
+        ctx.beginPath();
+        ctx.arc(sup_A_x, sup_y, arcRadius, angle_start, angle_end);
+        ctx.stroke();
+        
+        ctx.font = 'italic 18px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('θ\u2081', sup_A_x - 30, sup_y + 35); // \u2081 is subscript 1
+
+        // Height h1 (h₁)
+        const h1_line_x = center_A_initial_x - rA - 20;
+        // Horizontal lines
+        ctx.beginPath();
+        ctx.moveTo(h1_line_x, center_A_initial_y);
+        ctx.lineTo(center_A_initial_x, center_A_initial_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(h1_line_x, center_A_y);
+        ctx.lineTo(center_A_x, center_A_y);
+        ctx.stroke();
+        // Vertical arrow line
+        ctx.beginPath();
+        ctx.moveTo(h1_line_x, center_A_initial_y);
+        ctx.lineTo(h1_line_x, center_A_y);
+        // Arrowheads
+        ctx.lineTo(h1_line_x - 4, center_A_initial_y + 6);
+        ctx.moveTo(h1_line_x, center_A_initial_y);
+        ctx.lineTo(h1_line_x + 4, center_A_initial_y + 6);
+        ctx.moveTo(h1_line_x, center_A_y);
+        ctx.lineTo(h1_line_x - 4, center_A_y - 6);
+        ctx.moveTo(h1_line_x, center_A_y);
+        ctx.lineTo(h1_line_x + 4, center_A_y - 6);
+        ctx.stroke();
+        
+        // Text for h1
+        ctx.fillText('h\u2081', h1_line_x - 15, (center_A_initial_y + center_A_y) / 2);
+
+        // 6. Draw Bottom Text
+        ctx.font = '22px "KaiTi", "STKaiti", serif';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 2-28 图', canvas.width / 2, canvas.height - 30);
+    </script>
+</body>
+</html>

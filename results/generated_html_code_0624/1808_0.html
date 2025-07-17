@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f0f0; }
+  canvas { background-color: white; }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="450" height="400"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Drawing parameters
+  const cx = canvas.width / 2;
+  const cy = 200;
+  const diskRx = 160;
+  const diskRy = 45;
+  const thickness = 25;
+
+  const r1_dist = 70;
+  const r2_dist = 110;
+  const m1_x = cx - r1_dist;
+  const m2_x = cx + r2_dist;
+  const massRadius = 5;
+
+  // --- Draw Disk ---
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1.5;
+
+  // Bottom edge (visible arc)
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + thickness, diskRx, diskRy, 0, 0, Math.PI);
+  ctx.stroke();
+
+  // Side lines connecting top and bottom edges
+  ctx.beginPath();
+  ctx.moveTo(cx - diskRx, cy);
+  ctx.lineTo(cx - diskRx, cy + thickness);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx + diskRx, cy);
+  ctx.lineTo(cx + diskRx, cy + thickness);
+  ctx.stroke();
+
+  // Top surface with gradient for a metallic look
+  const gradient = ctx.createRadialGradient(cx, cy, 5, cx, cy, diskRx * 1.1);
+  gradient.addColorStop(0, '#e8e8e8'); // Lighter center
+  gradient.addColorStop(1, '#b0b0b0'); // Darker edge
+  ctx.fillStyle = gradient;
+
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, diskRx, diskRy, 0, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.stroke();
+
+  // --- Draw Axis of Rotation ---
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - diskRy - 90);
+  ctx.lineTo(cx, cy + thickness + 90);
+  ctx.stroke();
+
+  // --- Draw Angular Velocity Arrow (ω) ---
+  const omegaCenterY = cy - diskRy - 50;
+  const omegaRx = 30;
+  const omegaRy = 12;
+
+  // The arc (counter-clockwise)
+  ctx.beginPath();
+  ctx.ellipse(cx, omegaCenterY, omegaRx, omegaRy, 0, Math.PI * 1.2, Math.PI * 0.2, true);
+  ctx.stroke();
+
+  // The arrowhead at the end of the arc
+  const arrowAngle = 0.2 * Math.PI;
+  const arrowX = cx + omegaRx * Math.cos(arrowAngle);
+  const arrowY = omegaCenterY + omegaRy * Math.sin(arrowAngle);
+  
+  ctx.save();
+  ctx.translate(arrowX, arrowY);
+  // Calculate the tangent angle for the ellipse at the arrow's position
+  // The derivative of (a*cos(t), b*sin(t)) is (-a*sin(t), b*cos(t))
+  // The angle is atan2(dy, dx)
+  let tangentAngle = Math.atan2(omegaRy * Math.cos(arrowAngle), -omegaRx * Math.sin(arrowAngle));
+  ctx.rotate(tangentAngle);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(-10, 5); // Arrowhead primitive pointing along negative x-axis of the rotated context
+  ctx.lineTo(-10, -5);
+  ctx.closePath();
+  ctx.fillStyle = 'black';
+  ctx.fill();
+  ctx.restore();
+
+  // ω label
+  ctx.font = 'italic 20px Times New Roman';
+  ctx.fillStyle = 'black';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('ω', cx + omegaRx + 10, omegaCenterY);
+
+  // --- Draw Masses, Rope, and Labels ---
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'black';
+
+  // Center point
+  ctx.beginPath();
+  ctx.arc(cx, cy, 2.5, 0, 2 * Math.PI);
+  ctx.fillStyle = 'black';
+  ctx.fill();
+
+  // Rope
+  ctx.beginPath();
+  ctx.moveTo(m1_x, cy);
+  ctx.lineTo(m2_x, cy);
+  ctx.stroke();
+
+  // Mass m1
+  ctx.beginPath();
+  ctx.arc(m1_x, cy, massRadius, 0, 2 * Math.PI);
+  ctx.fill();
+  
+  // Mass m2
+  ctx.beginPath();
+  ctx.arc(m2_x, cy, massRadius, 0, 2 * Math.PI);
+  ctx.fill();
+
+  // Labels m1, m2
+  ctx.font = 'italic 18px Times New Roman';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  const labelY = cy - massRadius - 4;
+  ctx.fillText('m', m1_x, labelY);
+  ctx.fillText('m', m2_x, labelY);
+
+  ctx.font = 'italic 12px Times New Roman';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('1', m1_x + 8, labelY);
+  ctx.fillText('2', m2_x + 8, labelY);
+
+  // Labels r1, r2
+  ctx.font = 'italic 18px Times New Roman';
+  ctx.textBaseline = 'top';
+  const rLabelY = cy + 5;
+  ctx.fillText('r', (cx + m1_x) / 2, rLabelY);
+  ctx.fillText('r', (cx + m2_x) / 2, rLabelY);
+  
+  ctx.font = 'italic 12px Times New Roman';
+  ctx.textBaseline = 'top';
+  ctx.fillText('1', (cx + m1_x) / 2 + 5, rLabelY + 2);
+  ctx.fillText('2', (cx + m2_x) / 2 + 5, rLabelY + 2);
+
+  // --- Draw Caption ---
+  ctx.font = '18px "SimSun", "Songti SC", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillStyle = 'black';
+  ctx.fillText('习题 1-34 图', cx, canvas.height - 10);
+
+</script>
+</body>
+</html>

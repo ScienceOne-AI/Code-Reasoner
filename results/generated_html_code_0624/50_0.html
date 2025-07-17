@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Betatron Schematic</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="400" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById("physicsCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Clear canvas with a white background
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // --- Global Drawing Settings ---
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "black";
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round"; // For a softer, hand-drawn feel
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws a line with an arrowhead at the end.
+     * @param {number} x1 - Start x-coordinate.
+     * @param {number} y1 - Start y-coordinate.
+     * @param {number} x2 - End x-coordinate.
+     * @param {number} y2 - End y-coordinate.
+     * @param {number} headLength - Length of the arrowhead sides.
+     */
+    function drawArrow(x1, y1, x2, y2, headLength = 10) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke(); // Draw the line part first
+        ctx.beginPath(); // Start a new path for the head
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    /**
+     * Draws text with a subscript character.
+     * @param {string} mainText - The main part of the text.
+     * @param {string} subText - The subscript text.
+     * @param {number} x - The x-coordinate for the main text.
+     * @param {number} y - The y-coordinate for the main text.
+     * @param {string} mainFont - The font for the main text.
+     * @param {string} subFont - The font for the subscript text.
+     */
+    function drawTextWithSub(mainText, subText, x, y, mainFont = "bold 20px sans-serif", subFont = "bold 14px sans-serif") {
+        ctx.font = mainFont;
+        const mainWidth = ctx.measureText(mainText).width;
+        const mainHeight = parseInt(mainFont.match(/\d+/), 10);
+        ctx.fillText(mainText, x, y);
+        
+        ctx.font = subFont;
+        ctx.textBaseline = "top"; // Align subscript to the top
+        ctx.fillText(subText, x + mainWidth * 0.6, y + mainHeight * 0.1);
+        ctx.textBaseline = "middle"; // Reset baseline
+    }
+
+    // --- Main Drawing Functions ---
+
+    function drawBetatron() {
+        const cx = 220;
+        const cy = 200;
+        const R = 140;
+        const halfR = R / 2;
+        const coreTop = cy - 8;
+        const coreBottom = cy + 8;
+        const xStart = cx - halfR;
+        const xEnd = cx + halfR;
+
+        // Central core lines
+        ctx.beginPath();
+        ctx.moveTo(xStart, coreTop);
+        ctx.lineTo(xEnd, coreTop);
+        ctx.moveTo(xStart, coreBottom);
+        ctx.lineTo(xEnd, coreBottom);
+        ctx.stroke();
+
+        // B1 field lines
+        ctx.lineWidth = 2;
+        const numArrows = 7;
+        for (let i = 0; i < numArrows; i++) {
+            const x = xStart + (i / (numArrows - 1)) * R;
+            drawArrow(x, coreBottom, x, coreTop - 15, 8);
+        }
+        ctx.lineWidth = 2.5;
+
+        // B1 brace and label
+        ctx.beginPath();
+        ctx.moveTo(xStart, coreTop - 20);
+        ctx.lineTo(xStart, coreTop - 25);
+        ctx.lineTo(xEnd, coreTop - 25);
+        ctx.lineTo(xEnd, coreTop - 20);
+        ctx.stroke();
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        drawTextWithSub("B", "1", cx, coreTop - 40);
+
+        // R dimension line and label
+        ctx.beginPath();
+        ctx.moveTo(xStart, cy + 30);
+        ctx.lineTo(xStart, cy + 40);
+        ctx.moveTo(xEnd, cy + 30);
+        ctx.lineTo(xEnd, cy + 40);
+        ctx.moveTo(xStart, cy + 35);
+        ctx.lineTo(xEnd, cy + 35);
+        ctx.stroke();
+        ctx.font = "bold 20px sans-serif";
+        ctx.fillText("R", cx, cy + 55);
+
+        // Yokes and B2 fields
+        const yokeOuterX = 35;
+        const yokeInnerHeight = 15;
+        const yokeOuterHeight = 35;
+
+        // Left Yoke
+        ctx.beginPath();
+        ctx.moveTo(xStart, coreTop);
+        ctx.bezierCurveTo(xStart - 5, coreTop, xStart - 20, coreTop, xStart - yokeOuterX, coreTop - yokeInnerHeight);
+        ctx.lineTo(xStart - yokeOuterX, coreTop - yokeOuterHeight);
+        ctx.moveTo(xStart, coreBottom);
+        ctx.bezierCurveTo(xStart - 5, coreBottom, xStart - 20, coreBottom, xStart - yokeOuterX, coreBottom + yokeInnerHeight);
+        ctx.lineTo(xStart - yokeOuterX, coreBottom + yokeOuterHeight);
+        ctx.stroke();
+        
+        // Right Yoke
+        ctx.beginPath();
+        ctx.moveTo(xEnd, coreTop);
+        ctx.bezierCurveTo(xEnd + 5, coreTop, xEnd + 20, coreTop, xEnd + yokeOuterX, coreTop - yokeInnerHeight);
+        ctx.lineTo(xEnd + yokeOuterX, coreTop - yokeOuterHeight);
+        ctx.moveTo(xEnd, coreBottom);
+        ctx.bezierCurveTo(xEnd + 5, coreBottom, xEnd + 20, coreBottom, xEnd + yokeOuterX, coreBottom + yokeInnerHeight);
+        ctx.lineTo(xEnd + yokeOuterX, coreBottom + yokeOuterHeight);
+        ctx.stroke();
+
+        // B2 field lines and labels
+        ctx.lineWidth = 2;
+        drawArrow(xStart - yokeOuterX, cy + 10, xStart - yokeOuterX, cy - 10, 8);
+        drawArrow(xEnd + yokeOuterX, cy + 10, xEnd + yokeOuterX, cy - 10, 8);
+        ctx.lineWidth = 2.5;
+
+        drawTextWithSub("B", "2", xStart - yokeOuterX + 25, cy - 30);
+        drawTextWithSub("B", "2", xEnd + yokeOuterX - 25, cy - 30);
+        
+        // Beam label
+        ctx.font = "bold 20px sans-serif";
+        ctx.textAlign = "left";
+        drawArrow(xEnd + yokeOuterX + 50, cy, xEnd + yokeOuterX + 15, cy, 10);
+        ctx.fillText("beam", xEnd + yokeOuterX + 15, cy - 25);
+    }
+
+    function drawCoords() {
+        const cx = 580;
+        const cy = 220;
+        
+        // Axes
+        ctx.lineWidth = 2;
+        drawArrow(cx, cy, cx, cy - 100, 12); // Z-axis
+        drawArrow(cx, cy, cx + 140, cy, 12); // Y-axis
+        drawArrow(cx, cy, cx - 80, cy + 50, 12); // X-axis
+        
+        // Axes labels
+        ctx.font = "bold 20px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("z", cx, cy - 115);
+        ctx.fillText("y", cx + 150, cy);
+        ctx.fillText("x", cx - 90, cy + 55);
+
+        // Orbit ellipse
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        const rx = 100, ry = 30;
+        ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Vectors on orbit
+        const t = Math.PI / 4; // Angle to get the point in the correct visual quadrant
+        const px = cx + rx * Math.cos(t);
+        const py = cy + ry * Math.sin(t);
+        
+        ctx.lineWidth = 2;
+        const vec_len = 40;
+
+        // e_r vector (radial)
+        const er_dx = rx * Math.cos(t);
+        const er_dy = ry * Math.sin(t);
+        const er_len = Math.sqrt(er_dx*er_dx + er_dy*er_dy);
+        const er_ux = er_dx / er_len;
+        const er_uy = er_dy / er_len;
+        const er_end_x = px + vec_len * er_ux;
+        const er_end_y = py + vec_len * er_uy;
+        drawArrow(px, py, er_end_x, er_end_y, 10);
+        drawTextWithSub("e", "r", er_end_x - 5, er_end_y + 10);
+
+        // e_theta vector (tangential for CCW motion)
+        const eth_dx = -rx * Math.sin(t);
+        const eth_dy = ry * Math.cos(t);
+        const eth_len = Math.sqrt(eth_dx*eth_dx + eth_dy*eth_dy);
+        const eth_ux = eth_dx / eth_len;
+        const eth_uy = eth_dy / eth_len;
+        const eth_end_x = px + vec_len * eth_ux;
+        const eth_end_y = py + vec_len * eth_uy;
+        drawArrow(px, py, eth_end_x, eth_end_y, 10);
+        drawTextWithSub("e", "\u03B8", eth_end_x, eth_end_y + 10);
+        
+        ctx.lineWidth = 2.5;
+    }
+
+    function drawCaption() {
+        ctx.font = "bold 22px serif";
+        ctx.textAlign = "center";
+        ctx.fillText("Fig. 2.80", 400, 370);
+    }
+
+    // --- Execute Drawing ---
+    drawBetatron();
+    drawCoords();
+    drawCaption();
+
+</script>
+</body>
+</html>

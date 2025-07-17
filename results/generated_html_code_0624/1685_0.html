@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram of a Rotating Cone</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="450" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Style and font settings
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 2;
+  ctx.font = 'italic 18px Times New Roman';
+  ctx.textAlign = 'center';
+
+  // Core parameters for the cone geometry
+  const cx = 225;
+  const apexY = 100;
+  const h = 200;
+  const R = 100;
+  const baseY = apexY + h;
+  const baseLeftX = cx - R;
+  const baseRightX = cx + R;
+  const baseEllipseRy = 30; // Vertical radius for the base ellipse perspective
+
+  // 1. Draw the central axis of rotation
+  ctx.beginPath();
+  ctx.moveTo(cx, apexY - 40);
+  ctx.lineTo(cx, baseY + 20);
+  ctx.stroke();
+
+  // 2. Draw the cone's base (an ellipse for 3D perspective)
+  // Dashed back half of the ellipse
+  ctx.beginPath();
+  ctx.setLineDash([4, 4]);
+  ctx.ellipse(cx, baseY, R, baseEllipseRy, 0, Math.PI, 2 * Math.PI);
+  ctx.stroke();
+  
+  // Solid front half of the ellipse
+  ctx.beginPath();
+  ctx.setLineDash([]);
+  ctx.ellipse(cx, baseY, R, baseEllipseRy, 0, 0, Math.PI);
+  ctx.stroke();
+
+  // The original image has a dashed line for the diameter as well.
+  ctx.beginPath();
+  ctx.setLineDash([4, 4]);
+  ctx.moveTo(baseLeftX, baseY);
+  ctx.lineTo(baseRightX, baseY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 3. Draw the sides of the cone (slant heights)
+  ctx.beginPath();
+  ctx.moveTo(cx, apexY);
+  ctx.lineTo(baseLeftX, baseY);
+  ctx.moveTo(cx, apexY);
+  ctx.lineTo(baseRightX, baseY);
+  ctx.stroke();
+
+  // 4. Draw the groove and the bead of mass 'm'
+  const groove_end_x = cx - R * 0.45; // A point on the base diameter
+  ctx.beginPath();
+  ctx.moveTo(cx, apexY);
+  ctx.lineTo(groove_end_x, baseY);
+  ctx.stroke();
+  
+  const bead_t = 0.4; // Fractional position of the bead along the groove
+  const bead_x = cx + bead_t * (groove_end_x - cx);
+  const bead_y = apexY + bead_t * (baseY - apexY);
+  ctx.beginPath();
+  ctx.arc(bead_x, bead_y, 4, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.fillText('m', bead_x + 12, bead_y + 6);
+
+  // 5. Draw the dimension line for radius 'R'
+  ctx.beginPath();
+  ctx.moveTo(cx, baseY);
+  ctx.lineTo(baseRightX, baseY);
+  ctx.stroke();
+  ctx.fillText('R', cx + R / 2, baseY + 25);
+  // Add the subtle right-angle marker shown in the image
+  ctx.beginPath();
+  ctx.lineWidth = 1.5;
+  ctx.moveTo(cx, baseY - 10);
+  ctx.lineTo(cx + 10, baseY - 10);
+  ctx.lineTo(cx + 10, baseY);
+  ctx.stroke();
+  ctx.lineWidth = 2;
+
+  // 6. Draw the dimension line for height 'h'
+  const h_dim_x = 90;
+  // Vertical dimension line with ticks
+  ctx.beginPath();
+  ctx.moveTo(h_dim_x, apexY);
+  ctx.lineTo(h_dim_x, baseY);
+  ctx.moveTo(h_dim_x - 5, apexY);
+  ctx.lineTo(h_dim_x + 5, apexY);
+  ctx.moveTo(h_dim_x - 5, baseY);
+  ctx.lineTo(h_dim_x + 5, baseY);
+  ctx.stroke();
+  // Horizontal guide lines
+  ctx.beginPath();
+  ctx.moveTo(h_dim_x + 5, apexY);
+  ctx.lineTo(cx, apexY);
+  ctx.moveTo(h_dim_x + 5, baseY);
+  ctx.lineTo(cx, baseY);
+  ctx.stroke();
+  ctx.fillText('h', h_dim_x - 20, apexY + h / 2);
+
+  // 7. Draw the gravity vector 'g'
+  const g_arrow_x = 60;
+  ctx.beginPath();
+  ctx.moveTo(g_arrow_x, apexY - 20);
+  ctx.lineTo(g_arrow_x, apexY + 30);
+  // Arrowhead
+  ctx.moveTo(g_arrow_x, apexY + 30);
+  ctx.lineTo(g_arrow_x - 6, apexY + 22);
+  ctx.moveTo(g_arrow_x, apexY + 30);
+  ctx.lineTo(g_arrow_x + 6, apexY + 22);
+  ctx.stroke();
+  ctx.fillText('g', g_arrow_x - 20, apexY + 5);
+
+  // 8. Draw the angular velocity symbol 'ω₀'
+  const rot_arrow_y = apexY - 10;
+  ctx.beginPath();
+  ctx.arc(cx, rot_arrow_y, 28, -Math.PI * 0.85, -Math.PI * 0.15);
+  ctx.stroke();
+  // Arrowhead
+  const arrowhead_x = cx + 28 * Math.cos(-Math.PI * 0.15);
+  const arrowhead_y = rot_arrow_y + 28 * Math.sin(-Math.PI * 0.15);
+  ctx.save();
+  ctx.translate(arrowhead_x, arrowhead_y);
+  ctx.rotate(-Math.PI * 0.15 + Math.PI / 2);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(5, -8);
+  ctx.lineTo(-5, -8);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  
+  ctx.fillText('ω', cx + 40, apexY);
+  ctx.font = 'italic 14px Times New Roman';
+  ctx.fillText('0', cx + 40 + 13, apexY + 5);
+  
+  // 9. Draw the figure caption
+  ctx.font = '16px Times New Roman';
+  ctx.fillText('Fig. 1.141.', cx, baseY + 80);
+
+</script>
+</body>
+</html>

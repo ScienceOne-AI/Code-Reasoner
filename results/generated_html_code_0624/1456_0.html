@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electromagnetic Field Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="400"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  const cx = 230;
+  const cy = 200;
+  const R = 80;
+
+  // Function to draw a cross
+  function drawCross(x, y, size) {
+    ctx.beginPath();
+    ctx.moveTo(x - size, y - size);
+    ctx.lineTo(x + size, y + size);
+    ctx.moveTo(x + size, y - size);
+    ctx.lineTo(x - size, y + size);
+    ctx.stroke();
+  }
+  
+  // Function to draw an arrow
+  function drawArrow(fromX, fromY, toX, toY, headLength) {
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+  }
+
+  // 1. Draw Magnetic Field
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1;
+  const spacing = 70;
+  const crossSize = 5;
+  for (let x = 40; x < canvas.width; x += spacing) {
+    for (let y = 45; y < canvas.height; y += spacing) {
+        // Skip the cross at the center O to avoid overlap
+        if (Math.abs(x - cx) < 15 && Math.abs(y - cy) < 15) {
+            continue;
+        }
+        drawCross(x, y, crossSize);
+    }
+  }
+
+  // 2. Draw the conductor arc
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 2;
+  const startAngle = Math.PI / 4; // 45 degrees
+  const endAngle = 7 * Math.PI / 4; // 315 degrees
+  
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, startAngle, endAngle);
+  ctx.stroke();
+
+  // 3. Draw dashed lines and center point
+  const a_x = cx + R * Math.cos(startAngle);
+  const a_y = cy - R * Math.sin(startAngle); // - because canvas y is inverted
+  const d_x = cx + R * Math.cos(endAngle);
+  const d_y = cy - R * Math.sin(endAngle);
+
+  ctx.setLineDash([5, 3]);
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(a_x, a_y);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(d_x, d_y);
+  ctx.stroke();
+  
+  // Draw hash marks on dashed lines (as crosses)
+  const hash_a_x = cx + (R * 0.6) * Math.cos(startAngle);
+  const hash_a_y = cy - (R * 0.6) * Math.sin(startAngle);
+  const hash_d_x = cx + (R * 0.6) * Math.cos(endAngle);
+  const hash_d_y = cy - (R * 0.6) * Math.sin(endAngle);
+  const hashSize = 4;
+  
+  ctx.save();
+  ctx.translate(hash_a_x, hash_a_y);
+  ctx.rotate(-startAngle);
+  drawCross(0, 0, hashSize);
+  ctx.restore();
+  
+  ctx.save();
+  ctx.translate(hash_d_x, hash_d_y);
+  ctx.rotate(-endAngle);
+  drawCross(0, 0, hashSize);
+  ctx.restore();
+
+  ctx.setLineDash([]);
+
+  // Draw center point O
+  ctx.beginPath();
+  ctx.arc(cx, cy, 2.5, 0, 2 * Math.PI);
+  ctx.fillStyle = 'black';
+  ctx.fill();
+
+  // 4. Draw velocity vector
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 2;
+  drawArrow(cx, cy, cx + 120, cy, 10);
+
+  // 5. Add Labels
+  ctx.fillStyle = 'black';
+  ctx.font = 'italic 22px Times New Roman';
+  
+  // Label B
+  ctx.fillText('B', 60, 50);
+
+  // Label O
+  ctx.fillText('O', cx - 22, cy + 7);
+  
+  // Label v
+  ctx.fillText('v', cx + 125, cy + 8);
+
+  // Labels a, b, c, d
+  ctx.font = 'italic 18px Times New Roman';
+  ctx.fillText('a', a_x + 3, a_y - 3);
+  ctx.fillText('d', d_x + 3, d_y + 14);
+  
+  const b_angle = 3 * Math.PI / 4; // 135 degrees
+  const c_angle = 5 * Math.PI / 4; // 225 degrees
+  const b_x = cx + R * Math.cos(b_angle);
+  const b_y = cy - R * Math.sin(b_angle);
+  const c_x = cx + R * Math.cos(c_angle);
+  const c_y = cy - R * Math.sin(c_angle);
+  
+  ctx.fillText('b', b_x - 15, b_y);
+  ctx.fillText('c', c_x - 15, c_y + 15);
+
+  // Label "题 3 图"
+  ctx.font = '16px "KaiTi", "SimSun"';
+  ctx.textAlign = 'center';
+  ctx.fillText('题 3 图', canvas.width / 2, canvas.height - 15);
+
+</script>
+</body>
+</html>

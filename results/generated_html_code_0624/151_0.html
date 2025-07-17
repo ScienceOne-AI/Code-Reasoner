@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Babinet Compensator Diagram</title>
+    <style>
+        body {
+            font-family: "Times New Roman", serif;
+            text-align: center;
+        }
+        canvas {
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="babinetCanvas" width="500" height="550"></canvas>
+
+<script>
+    const canvas = document.getElementById('babinetCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper function to draw an arrow with a filled head ---
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10, color = 'black') {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 1.5;
+        // Line
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        // Arrowhead
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Drawing Parameters ---
+    const originX = 200;
+    const originY = 250;
+    const L_half = 150;
+    const d = 80;
+    const light_x_pos = 75; // The vertical position of the light beam (physics coordinate)
+
+    // --- Coordinate Transformation ---
+    // Convert physics coordinates (px, py) to canvas coordinates (cx, cy)
+    // where physics X-axis is vertical (up) and Y-axis is horizontal (right).
+    function p2c(px, py) {
+        return { x: originX + py, y: originY - px };
+    }
+
+    // --- Clear canvas and set defaults ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = '16px "Times New Roman"';
+    ctx.fillStyle = 'black';
+    ctx.strokeStyle = 'black';
+    ctx.textAlign = 'center';
+
+    // --- 1. Draw Coordinate Axes ---
+    const axisLengthX = 170;
+    const axisLengthY = 150;
+    drawArrow(ctx, originX, originY, originX + axisLengthY, originY);
+    ctx.fillText('Y', originX + axisLengthY + 10, originY + 5);
+    drawArrow(ctx, originX, originY, originX, originY - axisLengthX);
+    ctx.fillText('X', originX - 15, originY - axisLengthX - 5);
+
+
+    // --- 2. Draw Compensator Body ---
+    ctx.lineWidth = 2;
+    const cTopLeft = p2c(L_half, 0);
+    const cTopRight = p2c(L_half, d);
+    const cBottomLeft = p2c(-L_half, 0);
+    const cBottomRight = p2c(-L_half, d);
+
+    // Draw rectangle outline
+    ctx.beginPath();
+    ctx.moveTo(cTopLeft.x, cTopLeft.y);
+    ctx.lineTo(cTopRight.x, cTopRight.y);
+    ctx.lineTo(cBottomRight.x, cBottomRight.y);
+    ctx.lineTo(cBottomLeft.x, cBottomLeft.y);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Draw diagonal interface
+    ctx.beginPath();
+    ctx.moveTo(cBottomLeft.x, cBottomLeft.y);
+    ctx.lineTo(cTopRight.x, cTopRight.y);
+    ctx.stroke();
+
+    // --- 3. Draw Light Beam ---
+    ctx.lineWidth = 1.5;
+    const lightCanvasY = p2c(light_x_pos, 0).y;
+    drawArrow(ctx, 40, lightCanvasY, cTopLeft.x, lightCanvasY);
+    ctx.textAlign = 'left';
+    ctx.fillText('narrow beam', 50, lightCanvasY - 20);
+    ctx.fillText('of laser light', 50, lightCanvasY - 4);
+    ctx.textAlign = 'center';
+    
+    // Extend line through compensator
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cTopLeft.x, lightCanvasY);
+    ctx.lineTo(cTopRight.x, lightCanvasY);
+    ctx.stroke();
+    ctx.restore();
+
+    // --- 4. Add Dimensions and Labels ---
+    ctx.lineWidth = 1;
+    
+    // Dimension 'd'
+    const dim_d_y = cTopLeft.y - 15;
+    ctx.beginPath();
+    ctx.moveTo(cTopLeft.x, dim_d_y + 5); ctx.lineTo(cTopLeft.x, dim_d_y - 5);
+    ctx.moveTo(cTopRight.x, dim_d_y + 5); ctx.lineTo(cTopRight.x, dim_d_y - 5);
+    ctx.moveTo(cTopLeft.x, dim_d_y); ctx.lineTo(cTopRight.x, dim_d_y);
+    ctx.stroke();
+    ctx.fillText('d', cTopLeft.x + d / 2, dim_d_y - 8);
+
+    // Dimension 'L/2'
+    const dim_L_x = cTopRight.x + 20;
+    // Top L/2
+    ctx.beginPath();
+    ctx.moveTo(dim_L_x - 5, cTopRight.y); ctx.lineTo(dim_L_x + 5, cTopRight.y);
+    ctx.moveTo(dim_L_x - 5, originY); ctx.lineTo(dim_L_x + 5, originY);
+    ctx.moveTo(dim_L_x, cTopRight.y); ctx.lineTo(dim_L_x, originY);
+    ctx.stroke();
+    const top_L2_y = originY - L_half / 2;
+    ctx.fillText('L', dim_L_x + 15, top_L2_y - 5);
+    ctx.beginPath(); ctx.moveTo(dim_L_x + 10, top_L2_y); ctx.lineTo(dim_L_x + 20, top_L2_y); ctx.stroke();
+    ctx.fillText('2', dim_L_x + 15, top_L2_y + 12);
+    // Bottom L/2
+    ctx.beginPath();
+    ctx.moveTo(dim_L_x - 5, cBottomRight.y); ctx.lineTo(dim_L_x + 5, cBottomRight.y);
+    ctx.moveTo(dim_L_x, cBottomRight.y); ctx.lineTo(dim_L_x, originY);
+    ctx.stroke();
+    const bot_L2_y = originY + L_half / 2;
+    ctx.fillText('L', dim_L_x + 15, bot_L2_y - 5);
+    ctx.beginPath(); ctx.moveTo(dim_L_x + 10, bot_L2_y); ctx.lineTo(dim_L_x + 20, bot_L2_y); ctx.stroke();
+    ctx.fillText('2', dim_L_x + 15, bot_L2_y + 12);
+
+    // Dimension 'x'
+    const dim_x_y_start = originY;
+    const dim_x_y_end = lightCanvasY;
+    ctx.beginPath();
+    ctx.moveTo(originX - 5, dim_x_y_start); ctx.lineTo(originX + 5, dim_x_y_start);
+    ctx.moveTo(originX - 5, dim_x_y_end); ctx.lineTo(originX + 5, dim_x_y_end);
+    ctx.moveTo(originX - 10, dim_x_y_start); ctx.lineTo(originX - 10, dim_x_y_end);
+    ctx.stroke();
+    ctx.fillText('x', originX - 25, dim_x_y_start - (dim_x_y_start - dim_x_y_end) / 2 + 5);
+
+    // Dimensions 'd1', 'd2'
+    const m = (cTopRight.y - cBottomLeft.y) / (cTopRight.x - cBottomLeft.x);
+    const b = cBottomLeft.y - m * cBottomLeft.x;
+    const intersectX = (lightCanvasY - b) / m;
+    ctx.beginPath();
+    ctx.moveTo(intersectX, lightCanvasY - 10);
+    ctx.lineTo(intersectX, lightCanvasY + 10);
+    ctx.stroke();
+    
+    ctx.fillText('d', (cTopLeft.x + intersectX) / 2 - 3, lightCanvasY - 10);
+    ctx.font = '12px "Times New Roman"';
+    ctx.fillText('1', (cTopLeft.x + intersectX) / 2 + 4, lightCanvasY - 8);
+    ctx.font = '16px "Times New Roman"';
+    
+    ctx.fillText('d', (intersectX + cTopRight.x) / 2 - 3, lightCanvasY - 10);
+    ctx.font = '12px "Times New Roman"';
+    ctx.fillText('2', (intersectX + cTopRight.x) / 2 + 4, lightCanvasY - 8);
+    ctx.font = '16px "Times New Roman"';
+
+
+    // --- 5. Add Optic Axis (OA) Labels ---
+    // Top half: ↑ OA
+    const oa_top_pos = p2c(L_half * 0.6, d / 2);
+    drawArrow(ctx, oa_top_pos.x, oa_top_pos.y + 12, oa_top_pos.x, oa_top_pos.y - 12, 6);
+    ctx.textAlign = 'left';
+    ctx.fillText('OA', oa_top_pos.x + 8, oa_top_pos.y + 5);
+    
+    // Bottom half: OA
+    const oa_bottom_pos = p2c(-L_half * 0.6, d / 2);
+    ctx.fillText('OA', oa_bottom_pos.x, oa_bottom_pos.y + 5);
+    ctx.textAlign = 'center';
+
+    // --- 6. Add Text Block Below ---
+    const text_start_y = 440;
+    const text_start_x = 40;
+    ctx.textAlign = 'left';
+    
+    // Line 1: ↑ OA= ...
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(text_start_x, text_start_y + 2); ctx.lineTo(text_start_x, text_start_y - 10);
+    ctx.moveTo(text_start_x, text_start_y - 10); ctx.lineTo(text_start_x - 3, text_start_y - 6);
+    ctx.moveTo(text_start_x, text_start_y - 10); ctx.lineTo(text_start_x + 3, text_start_y - 6);
+    ctx.stroke();
+    ctx.fillText('OA= Optic axis in the plane of the paper and parallel to X-axis', text_start_x + 10, text_start_y);
+
+    // Line 2: ● OA= ...
+    const line2_y = text_start_y + 25;
+    ctx.beginPath();
+    ctx.arc(text_start_x, line2_y - 4, 2.5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('OA= Optic axis perpendicular to the plane of the paper and parallel', text_start_x + 10, line2_y);
+    ctx.fillText('to Z-axis', text_start_x + 35, line2_y + 18);
+    
+    // Line 3: d << L
+    const line3_y = line2_y + 40;
+    ctx.font = 'italic 16px "Times New Roman"';
+    ctx.fillText('d << L', text_start_x, line3_y);
+
+    // Figure caption
+    ctx.font = '16px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 2.76', canvas.width / 2, canvas.height - 15);
+
+</script>
+
+</body>
+</html>

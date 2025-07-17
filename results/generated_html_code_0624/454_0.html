@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Photoelectric Effect Graph</title>
+</head>
+<body>
+    <canvas id="physics-graph" width="700" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-graph');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Layout Parameters ---
+        const font = "16px Arial";
+        const smallFont = "12px Arial";
+        const gridColor = '#d3d3d3';
+        const axisColor = '#000000';
+        const lineColor = '#000000';
+
+        const margin = { top: 30, right: 30, bottom: 70, left: 80 };
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const plotWidth = canvasWidth - margin.left - margin.right;
+        const plotHeight = canvasHeight - margin.top - margin.bottom;
+
+        // --- Graph Data Range ---
+        const xMin = 5.0;
+        const xMax = 7.5;
+        const yMin = 0.0;
+        const yMax = 1.4;
+
+        // --- Scaling Factors ---
+        const xScale = plotWidth / (xMax - xMin);
+        const yScale = plotHeight / (yMax - yMin);
+
+        // --- Coordinate Transformation Functions ---
+        function tx(graphX) {
+            return margin.left + (graphX - xMin) * xScale;
+        }
+
+        function ty(graphY) {
+            return margin.top + plotHeight - (graphY - yMin) * yScale;
+        }
+
+        // --- Drawing ---
+
+        // 1. Clear canvas with a white background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        // 2. Draw Grid
+        ctx.strokeStyle = gridColor;
+        ctx.lineWidth = 0.5;
+
+        // Minor vertical grid lines (every 0.05)
+        for (let i = 0; i <= Math.round((xMax - xMin) / 0.05); i++) {
+            const x = xMin + i * 0.05;
+            ctx.beginPath();
+            ctx.moveTo(tx(x), ty(yMin));
+            ctx.lineTo(tx(x), ty(yMax));
+            ctx.stroke();
+        }
+
+        // Minor horizontal grid lines (every 0.02)
+        for (let i = 0; i <= Math.round((yMax - yMin) / 0.02); i++) {
+            const y = yMin + i * 0.02;
+            ctx.beginPath();
+            ctx.moveTo(tx(xMin), ty(y));
+            ctx.lineTo(tx(xMax), ty(y));
+            ctx.stroke();
+        }
+
+        // Major grid lines (every 0.5 for x, 0.2 for y)
+        ctx.strokeStyle = axisColor;
+        ctx.lineWidth = 1;
+
+        // Major vertical grid lines
+        for (let i = 0; i <= Math.round((xMax - xMin) / 0.5); i++) {
+            const x = xMin + i * 0.5;
+            ctx.beginPath();
+            ctx.moveTo(tx(x), ty(yMin));
+            ctx.lineTo(tx(x), ty(yMax));
+            ctx.stroke();
+        }
+
+        // Major horizontal grid lines
+        for (let i = 0; i <= Math.round((yMax - yMin) / 0.2); i++) {
+            const y = yMin + i * 0.2;
+            ctx.beginPath();
+            ctx.moveTo(tx(xMin), ty(y));
+            ctx.lineTo(tx(xMax), ty(y));
+            ctx.stroke();
+        }
+
+        // 3. Draw Axes
+        // X-axis and Y-axis are already drawn as part of the major grid lines.
+
+        // 4. Draw Axis Labels and Numbers
+        ctx.fillStyle = axisColor;
+        ctx.textAlign = 'center';
+        
+        // X-axis numbers
+        ctx.font = font;
+        ctx.textBaseline = 'top';
+        for (let i = 0; i <= (xMax - xMin) / 0.5; i++) {
+            const xVal = xMin + i * 0.5;
+            ctx.fillText(xVal.toFixed(1), tx(xVal), ty(yMin) + 8);
+        }
+
+        // Y-axis numbers
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let i = 0; i <= yMax / 0.2; i++) {
+            const yVal = yMin + i * 0.2;
+            ctx.fillText(yVal.toFixed(1), tx(xMin) - 8, ty(yVal));
+        }
+
+        // X-axis Label: f / 10^14 Hz
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const xLabelXPos = margin.left + plotWidth / 2;
+        const xLabelYPos = ty(yMin) + 35;
+        
+        ctx.font = font;
+        const fText = "f / 10";
+        const hzText = " Hz";
+        const fTextWidth = ctx.measureText(fText).width;
+        const totalXLabelWidth = fTextWidth + 12 + ctx.measureText(hzText).width; // 12 is approx width of superscript
+        const xLabelStart = xLabelXPos - totalXLabelWidth / 2;
+
+        ctx.fillText(fText, xLabelStart + fTextWidth/2, xLabelYPos);
+        ctx.font = smallFont;
+        ctx.fillText("14", xLabelStart + fTextWidth - 2, xLabelYPos - 4);
+        ctx.font = font;
+        ctx.fillText(hzText, xLabelStart + fTextWidth + 12 + ctx.measureText(hzText).width/2, xLabelYPos);
+
+        // Y-axis Label: E_MAX / 10^-19 J
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const yLabelXPos = margin.left - 60;
+        const yLabelYPos = margin.top + plotHeight / 2;
+        ctx.translate(yLabelXPos, yLabelYPos);
+        ctx.rotate(-Math.PI / 2);
+        
+        // Draw parts relative to new origin (0,0), arranged from left to right after rotation
+        ctx.font = font;
+        ctx.fillText("E", -65, 0);
+        ctx.font = smallFont;
+        ctx.fillText("MAX", -52, 5);
+        ctx.font = font;
+        ctx.fillText("/ 10", -25, 0);
+        ctx.font = smallFont;
+        ctx.fillText("-19", -2, -5);
+        ctx.font = font;
+        ctx.fillText("J", 15, 0);
+        ctx.restore();
+
+        // 5. Draw the Data Line
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const startPoint = { x: 6.2, y: 0.52 };
+        const endPoint = { x: 7.5, y: 1.30 };
+        ctx.moveTo(tx(startPoint.x), ty(startPoint.y));
+        ctx.lineTo(tx(endPoint.x), ty(endPoint.y));
+        ctx.stroke();
+
+        // 6. Draw Figure Caption
+        ctx.fillStyle = axisColor;
+        ctx.font = font;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText("Fig. 10.1", margin.left + plotWidth / 2, canvasHeight - 25);
+
+    </script>
+</body>
+</html>

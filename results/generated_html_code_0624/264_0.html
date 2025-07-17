@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Torsion Pendulums</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="400"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+ctx.strokeStyle = 'black';
+ctx.lineWidth = 1.5;
+ctx.font = '18px Arial';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// Helper function to draw an ellipse or a part of it
+function drawEllipse(x, y, rx, ry, frontOnly = false) {
+    ctx.beginPath();
+    if (frontOnly) {
+        // Draws the front (bottom) half-arc
+        ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI);
+    } else {
+        ctx.ellipse(x, y, rx, ry, 0, 0, 2 * Math.PI);
+    }
+    ctx.stroke();
+}
+
+// Helper function to draw fractional labels
+function drawFraction(ctx, numerator, denominator, x, y, size) {
+    const originalFont = ctx.font;
+    ctx.font = `${size}px Arial`;
+    const yOffset = size * 0.6;
+    const numWidth = ctx.measureText(numerator).width;
+    const denWidth = ctx.measureText(denominator).width;
+    const lineWidth = Math.max(numWidth, denWidth);
+
+    ctx.fillText(numerator, x, y - yOffset);
+    ctx.beginPath();
+    ctx.moveTo(x - lineWidth / 2 - 2, y);
+    ctx.lineTo(x + lineWidth / 2 + 2, y);
+    ctx.stroke();
+    ctx.fillText(denominator, x, y + yOffset);
+
+    ctx.font = originalFont; // Restore original font settings
+}
+
+// 1. Draw the top support surface
+const topY = 50;
+const topX1 = 20;
+const topX2 = 580;
+ctx.beginPath();
+ctx.moveTo(topX1, topY);
+ctx.lineTo(topX2, topY);
+ctx.stroke();
+
+// Draw hatches for the support
+const hatchLength = 10;
+const hatchSpacing = 15;
+for (let i = topX1 + 5; i <= topX2; i += hatchSpacing) {
+    ctx.beginPath();
+    ctx.moveTo(i, topY);
+    ctx.lineTo(i - hatchLength, topY - hatchLength);
+    ctx.stroke();
+}
+
+// --- 2. Draw Pendulum 1 (Left) ---
+const x1 = 170;
+const discCenterY1 = 280;
+const discRx = 100;
+const discRy = 30;
+
+// Suspension wire
+ctx.beginPath();
+ctx.moveTo(x1, topY);
+ctx.lineTo(x1, discCenterY1);
+ctx.stroke();
+
+// Disc
+drawEllipse(x1, discCenterY1, discRx, discRy);
+
+// Radius line with arrowhead
+ctx.beginPath();
+ctx.moveTo(x1, discCenterY1);
+ctx.lineTo(x1 - discRx, discCenterY1);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(x1 - discRx, discCenterY1);
+ctx.lineTo(x1 - discRx + 6, discCenterY1 - 4);
+ctx.moveTo(x1 - discRx, discCenterY1);
+ctx.lineTo(x1 - discRx + 6, discCenterY1 + 4);
+ctx.stroke();
+
+// Labels for Pendulum 1
+ctx.fillText('M', x1 + 10, discCenterY1 - 5);
+ctx.fillText('R', x1 - discRx / 2, discCenterY1 + 18);
+
+// --- 3. Draw Pendulum 2 (Right) ---
+const x2 = 430;
+const discCenterY2 = 280;
+
+// Suspension wire
+ctx.beginPath();
+ctx.moveTo(x2, topY);
+ctx.lineTo(x2, discCenterY2);
+ctx.stroke();
+
+// Disc
+drawEllipse(x2, discCenterY2, discRx, discRy);
+
+// Radius line with arrowhead
+ctx.beginPath();
+ctx.moveTo(x2, discCenterY2);
+ctx.lineTo(x2 - discRx, discCenterY2);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(x2 - discRx, discCenterY2);
+ctx.lineTo(x2 - discRx + 6, discCenterY2 - 4);
+ctx.moveTo(x2 - discRx, discCenterY2);
+ctx.lineTo(x2 - discRx + 6, discCenterY2 + 4);
+ctx.stroke();
+
+// Labels for Disc on Pendulum 2
+ctx.fillText('M', x2, discCenterY2 - 5);
+ctx.fillText('R', x2 - discRx / 2, discCenterY2 + 18);
+
+// Cylinders on Pendulum 2
+const cylDist = 0.75 * discRx;
+const cylRx = 0.25 * discRx;
+const cylRy = 0.25 * discRy;
+const cylH = 80;
+
+// Y position calculation for cylinder bases on the disc's top surface
+const yOnDiscTop = discCenterY2 - discRy * Math.sqrt(1 - Math.pow(cylDist / discRx, 2));
+const yCylBottom = yOnDiscTop;
+const yCylTop = yCylBottom - cylH;
+
+// Left Cylinder
+const xCylL = x2 - cylDist;
+ctx.beginPath();
+ctx.moveTo(xCylL - cylRx, yCylTop);
+ctx.lineTo(xCylL - cylRx, yCylBottom);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(xCylL + cylRx, yCylTop);
+ctx.lineTo(xCylL + cylRx, yCylBottom);
+ctx.stroke();
+drawEllipse(xCylL, yCylTop, cylRx, cylRy);
+drawEllipse(xCylL, yCylBottom, cylRx, cylRy, true); // Visible front arc
+ctx.fillText('M', xCylL, yCylTop + cylH / 2);
+
+// Right Cylinder
+const xCylR = x2 + cylDist;
+ctx.beginPath();
+ctx.moveTo(xCylR - cylRx, yCylTop);
+ctx.lineTo(xCylR - cylRx, yCylBottom);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(xCylR + cylRx, yCylTop);
+ctx.lineTo(xCylR + cylRx, yCylBottom);
+ctx.stroke();
+drawEllipse(xCylR, yCylTop, cylRx, cylRy);
+drawEllipse(xCylR, yCylBottom, cylRx, cylRy, true); // Visible front arc
+ctx.fillText('M', xCylR, yCylTop + cylH / 2);
+
+// --- 4. Dimension Lines and Labels for Pendulum 2 ---
+
+// Dimension for 3/4 R
+const yDim1 = yCylTop - 30;
+ctx.beginPath();
+ctx.moveTo(x2, yDim1);
+ctx.lineTo(xCylR, yDim1);
+ctx.stroke();
+// Ticks
+ctx.beginPath();
+ctx.moveTo(x2, yDim1 - 4);
+ctx.lineTo(x2, yDim1 + 4);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(xCylR, yDim1 - 4);
+ctx.lineTo(xCylR, yDim1 + 4);
+ctx.stroke();
+// Label 3/4 R
+const xFrac1 = x2 + cylDist / 2;
+drawFraction(ctx, '3', '4', xFrac1, yDim1, 16);
+ctx.fillText('R', xFrac1 + 20, yDim1);
+
+// Dimension for R/4
+const R4_label_pos = {x: 555, y: 155};
+const R4_leader_end = {x: xCylR + cylRx, y: yCylTop}; // Top-right edge of cylinder
+const R4_leader_ctrl = {x: R4_leader_end.x + 10, y: R4_leader_end.y - 20};
+// Curved leader line
+ctx.beginPath();
+ctx.moveTo(R4_label_pos.x, R4_label_pos.y);
+ctx.quadraticCurveTo(R4_leader_ctrl.x, R4_leader_ctrl.y, R4_leader_end.x, R4_leader_end.y);
+ctx.stroke();
+// Arrowhead
+const angle = Math.atan2(R4_leader_end.y - R4_leader_ctrl.y, R4_leader_end.x - R4_leader_ctrl.x);
+const arrowLen = 8;
+ctx.beginPath();
+ctx.moveTo(R4_leader_end.x, R4_leader_end.y);
+ctx.lineTo(R4_leader_end.x - arrowLen * Math.cos(angle - Math.PI / 7), R4_leader_end.y - arrowLen * Math.sin(angle - Math.PI / 7));
+ctx.moveTo(R4_leader_end.x, R4_leader_end.y);
+ctx.lineTo(R4_leader_end.x - arrowLen * Math.cos(angle + Math.PI / 7), R4_leader_end.y - arrowLen * Math.sin(angle + Math.PI / 7));
+ctx.stroke();
+// Label R/4
+drawFraction(ctx, 'R', '4', R4_label_pos.x, R4_label_pos.y, 16);
+
+// --- 5. Figure Label ---
+ctx.font = '16px Arial';
+ctx.fillText('Fig. 1.130.', 300, 380);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="600" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // Helper function to draw a resistor
+    function drawResistor(x, y, isHorizontal, label, labelPos) {
+        const w = isHorizontal ? 60 : 20;
+        const h = isHorizontal ? 20 : 60;
+        const x_rect = x - w / 2;
+        const y_rect = y - h / 2;
+        ctx.strokeRect(x_rect, y_rect, w, h);
+
+        ctx.font = '16px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        let lx = x, ly = y;
+        const offset = 25;
+        const v_offset = 12;
+        switch (labelPos) {
+            case 'top':    ly -= h / 2 + v_offset; break;
+            case 'bottom': ly += h / 2 + v_offset; break;
+            case 'left':   lx -= w / 2 + offset; ctx.textAlign = 'left'; break;
+            case 'right':  lx += w / 2 + offset; ctx.textAlign = 'right'; break;
+        }
+        
+        // Handle complex labels for R_i
+        if (label.startsWith('Rᵢ')) {
+            const base = 'R';
+            const sub = label.substring(1);
+            ctx.font = '16px "Times New Roman"';
+            const baseWidth = ctx.measureText(base).width;
+            ctx.fillText(base, lx, ly);
+
+            ctx.font = 'italic 12px "Times New Roman"';
+            const subIWidth = ctx.measureText(sub.charAt(0)).width;
+            ctx.fillText(sub.charAt(0), lx + baseWidth, ly + 4);
+            
+            ctx.font = '12px "Times New Roman"';
+            ctx.fillText(sub.substring(1), lx + baseWidth + subIWidth, ly + 4);
+        } else {
+            ctx.fillText(label, lx, ly);
+        }
+    }
+    
+    // Helper function to draw a battery symbol
+    function drawBatterySymbol(x, y, isHorizontal, isPositiveRightOrUp) {
+        const longLine = 20;
+        const shortLine = 12;
+        const plateDist = 5;
+
+        ctx.beginPath();
+        if (isHorizontal) {
+            const x_long = isPositiveRightOrUp ? x + plateDist : x - plateDist;
+            ctx.moveTo(x_long, y - longLine / 2);
+            ctx.lineTo(x_long, y + longLine / 2);
+
+            const x_short = isPositiveRightOrUp ? x - plateDist : x + plateDist;
+            ctx.moveTo(x_short, y - shortLine / 2);
+            ctx.lineTo(x_short, y + shortLine / 2);
+        }
+        ctx.stroke();
+    }
+
+    // Main coordinates
+    const x_left = 100;
+    const x_right = 500;
+    const y_top = 100;
+    const y_mid = 225;
+    const y_bottom = 350;
+    const resistor_v_h = 60;
+    const resistor_h_w = 60;
+
+    // --- Draw Components and Labels ---
+    
+    // Left Branch
+    const r1_y = (y_top + y_mid) / 2;
+    const r2_y = (y_mid + y_bottom) / 2;
+    drawResistor(x_left, r1_y, false, 'R₁', 'left');
+    drawResistor(x_left, r2_y, false, 'R₂', 'left');
+    ctx.font = '16px "Times New Roman"';
+    ctx.textAlign = 'right';
+    ctx.fillText('a', x_left - 15, y_mid);
+
+    // Right Branch
+    const r3_y = (y_top + y_mid) / 2;
+    const r4_y = (y_mid + y_bottom) / 2;
+    drawResistor(x_right, r3_y, false, 'R₃', 'right');
+    drawResistor(x_right, r4_y, false, 'R₄', 'right');
+    ctx.font = '16px "Times New Roman"';
+    ctx.textAlign = 'left';
+    ctx.fillText('b', x_right + 15, y_mid);
+
+    // Top Branch
+    const e1_x = 280;
+    const ri1_x = 340;
+    drawBatterySymbol(e1_x, y_top, true, true); // pos right
+    drawResistor(ri1_x, y_top, true, 'Rᵢ₁', 'top');
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.fillText('ℰ₁', e1_x - 30, y_top);
+
+    // Bottom Branch
+    const e3_x = 320;
+    const ri3_x = 260;
+    drawBatterySymbol(e3_x, y_bottom, true, false); // pos left
+    drawResistor(ri3_x, y_bottom, true, 'Rᵢ₃', 'bottom');
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.fillText('ℰ₃', e3_x + 35, y_bottom);
+
+    // Middle Branch
+    const c_x = 160;
+    const d_x = 210;
+    const e2_x = 270;
+    const ri2_x = 330;
+    const r5_x = 420;
+
+    // Terminals c, d
+    ctx.beginPath();
+    ctx.arc(c_x, y_mid, 4, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(d_x, y_mid, 4, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.font = '16px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.fillText('c', c_x, y_mid + 20);
+    ctx.fillText('d', d_x, y_mid + 20);
+
+    // E2, Ri2, R5
+    drawBatterySymbol(e2_x, y_mid, true, true); // pos right
+    drawResistor(ri2_x, y_mid, true, 'Rᵢ₂', 'top');
+    drawResistor(r5_x, y_mid, true, 'R₅', 'top');
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.fillText('ℰ₂', e2_x - 30, y_mid);
+
+    // --- Draw Wires ---
+    ctx.beginPath();
+    // Left vertical wires
+    ctx.moveTo(x_left, y_top);
+    ctx.lineTo(x_left, r1_y - resistor_v_h / 2);
+    ctx.moveTo(x_left, r1_y + resistor_v_h / 2);
+    ctx.lineTo(x_left, r2_y - resistor_v_h / 2);
+    ctx.moveTo(x_left, r2_y + resistor_v_h / 2);
+    ctx.lineTo(x_left, y_bottom);
+
+    // Right vertical wires
+    ctx.moveTo(x_right, y_top);
+    ctx.lineTo(x_right, r3_y - resistor_v_h / 2);
+    ctx.moveTo(x_right, r3_y + resistor_v_h / 2);
+    ctx.lineTo(x_right, r4_y - resistor_v_h / 2);
+    ctx.moveTo(x_right, r4_y + resistor_v_h / 2);
+    ctx.lineTo(x_right, y_bottom);
+
+    // Top horizontal wires
+    ctx.moveTo(x_left, y_top);
+    ctx.lineTo(e1_x - 5, y_top);
+    ctx.moveTo(e1_x + 5, y_top);
+    ctx.lineTo(ri1_x - resistor_h_w / 2, y_top);
+    ctx.moveTo(ri1_x + resistor_h_w / 2, y_top);
+    ctx.lineTo(x_right, y_top);
+    
+    // Bottom horizontal wires
+    ctx.moveTo(x_left, y_bottom);
+    ctx.lineTo(ri3_x - resistor_h_w / 2, y_bottom);
+    ctx.moveTo(ri3_x + resistor_h_w / 2, y_bottom);
+    ctx.lineTo(e3_x - 5, y_bottom);
+    ctx.moveTo(e3_x + 5, y_bottom);
+    ctx.lineTo(x_right, y_bottom);
+
+    // Middle horizontal wires
+    ctx.moveTo(x_left, y_mid);
+    ctx.lineTo(c_x - 4, y_mid); // line to terminal
+    ctx.moveTo(d_x + 4, y_mid); // line from terminal
+    ctx.lineTo(e2_x - 5, y_mid);
+    ctx.moveTo(e2_x + 5, y_mid);
+    ctx.lineTo(ri2_x - resistor_h_w / 2, y_mid);
+    ctx.moveTo(ri2_x + resistor_h_w / 2, y_mid);
+    ctx.lineTo(r5_x - resistor_h_w / 2, y_mid);
+    ctx.moveTo(r5_x + resistor_h_w / 2, y_mid);
+    ctx.lineTo(x_right, y_mid);
+    
+    ctx.stroke();
+    
+    // Bottom caption
+    ctx.font = '18px "SimSun", "Songti SC"'; // Use a font that supports Chinese characters
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 8-3 图', canvas.width / 2, canvas.height - 20);
+
+</script>
+</body>
+</html>

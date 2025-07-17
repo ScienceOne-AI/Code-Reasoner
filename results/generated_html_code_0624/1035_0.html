@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Thermodynamics Diagram 4.6.1</title>
+</head>
+<body>
+<canvas id="thermo-diagram" width="600" height="520"></canvas>
+<script>
+    const canvas = document.getElementById('thermo-diagram');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Font Settings ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Helper Function for Hatching ---
+    function drawHatching(x, y, width, height, spacing = 8) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, width, height);
+        ctx.clip(); // Clip the hatching to the specified rectangle
+
+        ctx.lineWidth = 1;
+        for (let i = y + spacing/2; i < y + height; i += spacing) {
+            ctx.beginPath();
+            ctx.moveTo(x, i);
+            ctx.lineTo(x + width, i);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+    
+    // --- Drawing Coordinates ---
+    const beakerWidth = 160;
+    const beakerHeight = 100;
+    const liquidLevelY = 320;
+    
+    const beaker1X = 50;
+    const beaker2X = 390;
+
+    const tubeOuterWidth = 24;
+    const tubeInnerWidth = 18;
+    const tubeCenter1X = beaker1X + beakerWidth / 2;
+    const tubeCenter2X = beaker2X + beakerWidth / 2;
+
+    const tubeTopY = 100;
+    const bendRadiusOuter = 40;
+    const bendRadiusInner = bendRadiusOuter - tubeOuterWidth;
+
+    const h1 = 130;
+    const h2 = 160;
+    const liquidTop1Y = liquidLevelY - h1;
+    const liquidTop2Y = liquidLevelY - h2;
+
+    // --- 1. Draw Beakers ---
+    ctx.beginPath();
+    // Left Beaker
+    ctx.moveTo(beaker1X, liquidLevelY);
+    ctx.lineTo(beaker1X, liquidLevelY + beakerHeight);
+    ctx.lineTo(beaker1X + beakerWidth, liquidLevelY + beakerHeight);
+    ctx.lineTo(beaker1X + beakerWidth, liquidLevelY);
+    // Right Beaker
+    ctx.moveTo(beaker2X, liquidLevelY);
+    ctx.lineTo(beaker2X, liquidLevelY + beakerHeight);
+    ctx.lineTo(beaker2X + beakerWidth, liquidLevelY + beakerHeight);
+    ctx.lineTo(beaker2X + beakerWidth, liquidLevelY);
+    ctx.stroke();
+
+    // --- 2. Draw Liquid in Beakers ---
+    drawHatching(beaker1X, liquidLevelY, beakerWidth, beakerHeight);
+    drawHatching(beaker2X, liquidLevelY, beakerWidth, beakerHeight);
+    // Draw top liquid surface line
+    ctx.beginPath();
+    ctx.moveTo(beaker1X, liquidLevelY);
+    ctx.lineTo(beaker1X + beakerWidth, liquidLevelY);
+    ctx.moveTo(beaker2X, liquidLevelY);
+    ctx.lineTo(beaker2X + beakerWidth, liquidLevelY);
+    ctx.stroke();
+
+    // --- 3. Draw U-Tube ---
+    ctx.beginPath();
+    // Outer path
+    const outerLeft = tubeCenter1X - tubeOuterWidth / 2;
+    const outerRight = tubeCenter2X + tubeOuterWidth / 2;
+    const outerTop = tubeTopY - tubeOuterWidth / 2;
+    ctx.moveTo(outerLeft, 380);
+    ctx.lineTo(outerLeft, tubeTopY + bendRadiusOuter);
+    ctx.arcTo(outerLeft, outerTop, outerLeft + bendRadiusOuter, outerTop, bendRadiusOuter);
+    ctx.lineTo(outerRight - bendRadiusOuter, outerTop);
+    ctx.arcTo(outerRight, outerTop, outerRight, outerTop + bendRadiusOuter, bendRadiusOuter);
+    ctx.lineTo(outerRight, 380);
+    
+    // Inner path
+    const innerLeft = tubeCenter1X + tubeOuterWidth / 2;
+    const innerRight = tubeCenter2X - tubeOuterWidth / 2;
+    const innerTop = tubeTopY + tubeOuterWidth / 2;
+    ctx.moveTo(innerLeft, 380);
+    ctx.lineTo(innerLeft, tubeTopY + bendRadiusInner);
+    ctx.arcTo(innerLeft, innerTop, innerLeft + bendRadiusInner, innerTop, bendRadiusInner);
+    ctx.lineTo(innerRight - bendRadiusInner, innerTop);
+    ctx.arcTo(innerRight, innerTop, innerRight, innerTop + bendRadiusInner, bendRadiusInner);
+    ctx.lineTo(innerRight, 380);
+    ctx.stroke();
+
+    // --- 4. Draw Liquid Columns ---
+    const colX1 = tubeCenter1X - tubeInnerWidth / 2;
+    const colX2 = tubeCenter2X - tubeInnerWidth / 2;
+
+    // Left Column
+    drawHatching(colX1, liquidTop1Y, tubeInnerWidth, h1);
+    ctx.strokeRect(colX1, liquidTop1Y, tubeInnerWidth, h1);
+    // Right Column
+    drawHatching(colX2, liquidTop2Y, tubeInnerWidth, h2);
+    ctx.strokeRect(colX2, liquidTop2Y, tubeInnerWidth, h2);
+
+    // Draw tick marks
+    ctx.lineWidth = 1;
+    // Ticks for h1
+    for(let y = liquidLevelY; y > liquidTop1Y; y -= 15) {
+        ctx.beginPath();
+        ctx.moveTo(colX1, y);
+        ctx.lineTo(colX1 + tubeInnerWidth, y);
+        ctx.stroke();
+    }
+    // Ticks for h2
+    for(let y = liquidLevelY; y > liquidTop2Y; y -= 15) {
+        ctx.beginPath();
+        ctx.moveTo(colX2, y);
+        ctx.lineTo(colX2 + tubeInnerWidth, y);
+        ctx.stroke();
+    }
+
+    // --- 5. Draw Labels ---
+    ctx.lineWidth = 2;
+    ctx.textAlign = 'left';
+    
+    // h1 and h2
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('h', 160, liquidTop1Y + h1 / 2);
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText('1', 174, liquidTop1Y + h1 / 2 + 8);
+    
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('h', 495, liquidTop2Y + h2 / 2);
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText('2', 509, liquidTop2Y + h2 / 2 + 8);
+
+    // p0
+    ctx.textAlign = 'center';
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('p', 300, 150);
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText('0', 312, 150 + 8);
+
+    // ρ₁, α₁ and ρ₂, α₂
+    ctx.textAlign = 'left';
+    // Left Label
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('ρ', beaker1X + 30, 460);
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText('1', beaker1X + 45, 468);
+    ctx.font = '24px "Times New Roman"';
+    ctx.fillText(',', beaker1X + 55, 460);
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('α', beaker1X + 68, 460);
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText('1', beaker1X + 83, 468);
+
+    // Right Label
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('ρ', beaker2X + 30, 460);
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText('2', beaker2X + 45, 468);
+    ctx.font = '24px "Times New Roman"';
+    ctx.fillText(',', beaker2X + 55, 460);
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.fillText('α', beaker2X + 68, 460);
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText('2', beaker2X + 83, 468);
+
+    // --- 6. Draw Caption ---
+    ctx.textAlign = 'center';
+    ctx.font = '20px "SimSun", "Songti SC"';
+    ctx.fillText('热图 4.6.1', 300, 500);
+
+</script>
+</body>
+</html>

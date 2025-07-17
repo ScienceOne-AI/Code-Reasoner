@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Geometric Parameters ---
+        const centerX = 180;
+        const centerY = 225;
+        const radius = 80;
+        const angle = 0.8; // Angle in radians
+
+        // Points on the circle
+        const Ax = centerX + radius * Math.cos(-angle);
+        const Ay = centerY + radius * Math.sin(-angle);
+        const Bx = centerX + radius * Math.cos(angle);
+        const By = centerY + radius * Math.sin(angle);
+
+        // Battery connection points
+        const batteryX = 500;
+        const batteryTopY = 100;
+        const batteryBottomY = 350;
+
+        // Function to draw an arrow
+        function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        }
+
+        // --- Drawing ---
+
+        // 1. Draw the circle
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 2. Draw labels O, A, B
+        ctx.fillText('O', centerX - 20, centerY);
+        ctx.fillText('A', Ax + 15, Ay - 15);
+        ctx.fillText('B', Bx + 15, By + 15);
+
+        // 3. Draw dashed radial lines from O to A and B
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(Ax, Ay);
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(Bx, By);
+        ctx.stroke();
+
+        // 4. Draw dashed wires to the battery circuit
+        ctx.beginPath();
+        ctx.moveTo(Ax, Ay);
+        ctx.lineTo(batteryX, batteryTopY);
+        ctx.moveTo(Bx, By);
+        ctx.lineTo(batteryX, batteryBottomY);
+        ctx.stroke();
+        
+        // Reset to solid lines
+        ctx.setLineDash([]);
+        
+        // 5. Draw the battery
+        // Connecting line
+        ctx.beginPath();
+        ctx.moveTo(batteryX, batteryTopY);
+        ctx.lineTo(batteryX, batteryBottomY);
+        ctx.stroke();
+        // Positive terminal (long line)
+        ctx.beginPath();
+        ctx.moveTo(batteryX - 20, batteryTopY);
+        ctx.lineTo(batteryX + 20, batteryTopY);
+        ctx.stroke();
+        // Negative terminal (short, thick line)
+        ctx.beginPath();
+        const originalLineWidth = ctx.lineWidth;
+        ctx.lineWidth = 4;
+        ctx.moveTo(batteryX - 12, batteryBottomY);
+        ctx.lineTo(batteryX + 12, batteryBottomY);
+        ctx.stroke();
+        ctx.lineWidth = originalLineWidth; // Reset line width
+
+
+        // 6. Draw current arrows and labels 'I'
+        ctx.font = 'italic 20px Arial';
+
+        // Arrow for current into A
+        const arrowA_to_x = Ax + (batteryX - Ax) * 0.2;
+        const arrowA_to_y = Ay + (batteryTopY - Ay) * 0.2;
+        const arrowA_from_x = Ax + (batteryX - Ax) * 0.3;
+        const arrowA_from_y = Ay + (batteryTopY - Ay) * 0.3;
+        ctx.beginPath();
+        ctx.moveTo(arrowA_from_x, arrowA_from_y);
+        ctx.lineTo(arrowA_to_x, arrowA_to_y);
+        drawArrow(arrowA_from_x, arrowA_from_y, arrowA_to_x, arrowA_to_y);
+        ctx.stroke();
+        ctx.fillText('I', arrowA_from_x + 15, arrowA_from_y - 15);
+
+        // Arrow for current out of B
+        const arrowB_from_x = Bx + (batteryX - Bx) * 0.2;
+        const arrowB_from_y = By + (batteryBottomY - By) * 0.2;
+        const arrowB_to_x = Bx + (batteryX - Bx) * 0.3;
+        const arrowB_to_y = By + (batteryBottomY - By) * 0.3;
+        ctx.beginPath();
+        ctx.moveTo(arrowB_from_x, arrowB_from_y);
+        ctx.lineTo(arrowB_to_x, arrowB_to_y);
+        drawArrow(arrowB_from_x, arrowB_from_y, arrowB_to_x, arrowB_to_y);
+        ctx.stroke();
+        ctx.fillText('I', arrowB_to_x + 15, arrowB_to_y + 15);
+
+        // 7. Draw the caption
+        ctx.font = '24px "KaiTi", "STKaiti", serif';
+        ctx.fillText('习题 8-13 图', canvas.width / 2 - 100, canvas.height - 30);
+
+    </script>
+</body>
+</html>

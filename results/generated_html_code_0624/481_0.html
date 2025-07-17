@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Graph Redrawing</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="420"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Chart parameters
+        const margin = { top: 30, right: 20, bottom: 60, left: 60 };
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const graphWidth = canvasWidth - margin.left - margin.right;
+        const graphHeight = canvasHeight - margin.top - margin.bottom;
+
+        // Data range
+        const tMin = 0;
+        const tMax = 25.0;
+        const eMin = -60;
+        const eMax = 60;
+
+        // Coordinate transformation functions
+        function t_to_x(t) {
+            return margin.left + (t / tMax) * graphWidth;
+        }
+
+        function e_to_y(e) {
+            return margin.top + graphHeight - ((e - eMin) / (eMax - eMin)) * graphHeight;
+        }
+
+        // --- Drawing ---
+
+        // Clear canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        // Draw grid lines
+        ctx.strokeStyle = '#dcdcdc'; // Light gray for minor grid
+        ctx.lineWidth = 0.5;
+
+        // Minor horizontal grid lines (every 2V)
+        for (let e = eMin + 2; e < eMax; e += 2) {
+            if (e % 20 !== 0) {
+                ctx.beginPath();
+                ctx.moveTo(margin.left, e_to_y(e));
+                ctx.lineTo(margin.left + graphWidth, e_to_y(e));
+                ctx.stroke();
+            }
+        }
+
+        // Minor vertical grid lines (every 0.5ms)
+        for (let t = tMin + 0.5; t < tMax; t += 0.5) {
+             if (t % 5 !== 0) {
+                ctx.beginPath();
+                ctx.moveTo(t_to_x(t), margin.top);
+                ctx.lineTo(t_to_x(t), margin.top + graphHeight);
+                ctx.stroke();
+            }
+        }
+        
+        // Major grid lines
+        ctx.strokeStyle = '#a9a9a9'; // Darker gray for major grid
+        ctx.lineWidth = 1;
+
+        // Major horizontal grid lines (every 20V)
+        for (let e = eMin; e <= eMax; e += 20) {
+            if (e !== 0) { // Axis will be drawn thicker
+                ctx.beginPath();
+                ctx.moveTo(margin.left, e_to_y(e));
+                ctx.lineTo(margin.left + graphWidth, e_to_y(e));
+                ctx.stroke();
+            }
+        }
+
+        // Major vertical grid lines (every 5ms)
+        for (let t = tMin; t <= tMax; t += 5) {
+             if (t !== 0) { // Axis will be drawn thicker
+                ctx.beginPath();
+                ctx.moveTo(t_to_x(t), margin.top);
+                ctx.lineTo(t_to_x(t), margin.top + graphHeight);
+                ctx.stroke();
+            }
+        }
+        
+        // Draw axes
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // X-axis (E=0)
+        ctx.beginPath();
+        ctx.moveTo(margin.left, e_to_y(0));
+        ctx.lineTo(margin.left + graphWidth, e_to_y(0));
+        ctx.stroke();
+
+        // Y-axis (t=0)
+        ctx.beginPath();
+        ctx.moveTo(t_to_x(0), margin.top);
+        ctx.lineTo(t_to_x(0), margin.top + graphHeight);
+        ctx.stroke();
+        
+        // Draw labels and ticks
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+
+        // Y-axis ticks and labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let e = eMin; e <= eMax; e += 20) {
+            ctx.fillText(e, margin.left - 8, e_to_y(e));
+        }
+        ctx.save();
+        ctx.translate(margin.left - 40, margin.top + graphHeight / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.fillText('E / V', 0, 0);
+        ctx.restore();
+
+        // X-axis ticks and labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let t = tMin; t <= tMax; t += 5) {
+            ctx.fillText(t.toFixed(1), t_to_x(t), margin.top + graphHeight + 5);
+        }
+        ctx.fillText('t / ms', margin.left + graphWidth / 2, margin.top + graphHeight + 25);
+
+        // Draw the sinusoidal curve
+        ctx.beginPath();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        
+        const amplitude = 52;
+        const period = 16.0;
+        const omega = (2 * Math.PI) / period;
+        const tEnd = 22.0;
+
+        let firstPoint = true;
+        for (let t = 0; t <= tEnd; t += 0.05) {
+            const e = amplitude * Math.sin(omega * t);
+            const x = t_to_x(t);
+            const y = e_to_y(e);
+            if (firstPoint) {
+                ctx.moveTo(x, y);
+                firstPoint = false;
+            } else {
+                ctx.lineTo(x, y);
+            }
+        }
+        ctx.stroke();
+
+        // Draw figure caption
+        ctx.font = 'bold 16px Arial';
+        ctx.fillText('Fig. 9.2', margin.left + graphWidth / 2, canvasHeight - 15);
+
+    </script>
+</body>
+</html>

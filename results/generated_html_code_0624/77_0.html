@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coaxial Cylinders Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Parameters for the drawing
+        const cx = canvas.width / 2;
+        const cy = 150;
+        const rx_a = 130; // Outer horizontal radius
+        const ry_a = 55;  // Outer vertical radius
+        const rx_b = 65;  // Inner horizontal radius
+        const ry_b = 27.5;// Inner vertical radius
+        const cylinderHeight = 200;
+        const bottomY = cy + cylinderHeight;
+
+        // General drawing styles
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+
+        // --- Main Drawing Functions ---
+
+        function drawCylinderBody() {
+            // Draw outer and inner ellipses for the top surface
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, rx_a, ry_a, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, rx_b, ry_b, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Draw the vertical sides of the cylinder
+            ctx.beginPath();
+            ctx.moveTo(cx - rx_a, cy);
+            ctx.lineTo(cx - rx_a, bottomY);
+            ctx.moveTo(cx + rx_a, cy);
+            ctx.lineTo(cx + rx_a, bottomY);
+            ctx.stroke();
+
+            // Draw the wavy bottom edge
+            ctx.beginPath();
+            const startX = cx - rx_a;
+            const endX = cx + rx_a;
+            const width = endX - startX;
+            ctx.moveTo(startX, bottomY);
+            ctx.quadraticCurveTo(startX + width * 0.125, bottomY + 12, startX + width * 0.25, bottomY);
+            ctx.quadraticCurveTo(startX + width * 0.375, bottomY - 12, startX + width * 0.5, bottomY);
+            ctx.quadraticCurveTo(startX + width * 0.625, bottomY + 12, startX + width * 0.75, bottomY);
+            ctx.quadraticCurveTo(startX + width * 0.875, bottomY - 12, startX + width, bottomY);
+            ctx.stroke();
+        }
+
+        function drawHatching() {
+            ctx.save();
+            ctx.lineWidth = 1.8;
+
+            // Create a clipping path for the annulus (the area to be hatched)
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, rx_a, ry_a, 0, 0, 2 * Math.PI);
+            ctx.ellipse(cx, cy, rx_b, ry_b, 0, 0, 2 * Math.PI, true); // counter-clockwise for the hole
+            ctx.clip();
+
+            // Draw diagonal hatching lines that cover the clipped area
+            ctx.beginPath();
+            const k_min = cx + cy - rx_a - ry_a - 20;
+            const k_max = cx + cy + rx_a + ry_a + 20;
+            const hatchSpacing = 14;
+
+            for (let k = k_min; k < k_max; k += hatchSpacing) {
+                // Lines have equation x + y = k
+                // We draw them from beyond one edge of the canvas to beyond another
+                // to ensure they cover the clipped area completely.
+                ctx.moveTo(-50, k + 50);
+                ctx.lineTo(k + 50, -50);
+            }
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawLabels() {
+            ctx.font = 'italic 24px Times New Roman';
+
+            // Draw radius 'a'
+            const angle_a = -10 * Math.PI / 180;
+            const x_a = cx + rx_a * Math.cos(angle_a);
+            const y_a = cy + ry_a * Math.sin(angle_a);
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(x_a, y_a);
+            ctx.stroke();
+            ctx.fillText('a', x_a + 5, y_a + 5);
+
+            // Draw radius 'b'
+            const angle_b = 135 * Math.PI / 180;
+            const x_b = cx + rx_b * Math.cos(angle_b);
+            const y_b = cy + ry_b * Math.sin(angle_b);
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(x_b, y_b);
+            ctx.stroke();
+            ctx.fillText('b', x_b - 5, y_b - 12);
+
+            // Draw dielectric constant 'ε'
+            const angle_eps = 215 * Math.PI / 180;
+            const r_eps_x = (rx_a + rx_b) / 2;
+            const r_eps_y = (ry_a + ry_b) / 2;
+            const x_eps = cx + r_eps_x * Math.cos(angle_eps);
+            const y_eps = cy + r_eps_y * Math.sin(angle_eps);
+            ctx.fillText('ε', x_eps - 10, y_eps + 8);
+        }
+
+        function drawCaption() {
+            ctx.font = '22px "Times New Roman"';
+            ctx.textAlign = 'center';
+            ctx.fillText('Fig. 1.19', cx, bottomY + 60);
+        }
+
+        // --- Execution ---
+        drawHatching();
+        drawCylinderBody();
+        drawLabels();
+        drawCaption();
+
+    </script>
+</body>
+</html>

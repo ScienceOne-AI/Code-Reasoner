@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electric Field Graph</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid black;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="physics-graph" width="600" height="700"></canvas>
+<script>
+const canvas = document.getElementById('physics-graph');
+const ctx = canvas.getContext('2d');
+
+// --- Layout and Scaling ---
+const marginLeft = 90;
+const marginRight = 30;
+const marginTop = 40;
+const marginBottom = 100;
+
+const plotWidth = canvas.width - marginLeft - marginRight;
+const plotHeight = canvas.height - marginTop - marginBottom;
+
+const rMin = 0, rMax = 6;
+const EMin = 0, EMax = 1.3;
+
+// --- Coordinate Transformation Functions ---
+function tx(r) {
+  return marginLeft + (r - rMin) / (rMax - rMin) * plotWidth;
+}
+
+function ty(E) {
+  return marginTop + plotHeight - (E - EMin) / (EMax - EMin) * plotHeight;
+}
+
+// --- Drawing Functions ---
+
+function drawGrid() {
+  ctx.save();
+  ctx.strokeStyle = '#e0e0e0'; // Lighter color for minor grid
+  ctx.lineWidth = 0.5;
+
+  // Minor vertical lines (every 0.1)
+  for (let i = 0; i <= (rMax - rMin) * 10; i++) {
+    const r = rMin + i * 0.1;
+    ctx.beginPath();
+    ctx.moveTo(tx(r), ty(EMin));
+    ctx.lineTo(tx(r), ty(EMax));
+    ctx.stroke();
+  }
+
+  // Minor horizontal lines (every 0.01)
+  for (let i = 0; i <= (EMax - EMin) * 100; i++) {
+    const E = EMin + i * 0.01;
+    ctx.beginPath();
+    ctx.moveTo(tx(rMin), ty(E));
+    ctx.lineTo(tx(rMax), ty(E));
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = '#a9a9a9'; // Darker color for major grid
+  ctx.lineWidth = 1;
+
+  // Major vertical lines (every 1)
+  for (let r = rMin; r <= rMax; r += 1) {
+    ctx.beginPath();
+    ctx.moveTo(tx(r), ty(EMin));
+    ctx.lineTo(tx(r), ty(EMax));
+    ctx.stroke();
+  }
+
+  // Major horizontal lines (every 0.1)
+  for (let i = 0; i <= (EMax - EMin) * 10; i++) {
+    const E = EMin + i * 0.1;
+    ctx.beginPath();
+    ctx.moveTo(tx(rMin), ty(E));
+    ctx.lineTo(tx(rMax), ty(E));
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawAxes() {
+  ctx.save();
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 1.5;
+
+  // X-Axis
+  ctx.beginPath();
+  ctx.moveTo(tx(rMin), ty(EMin));
+  ctx.lineTo(tx(rMax), ty(EMin));
+  ctx.stroke();
+
+  // Y-Axis
+  ctx.beginPath();
+  ctx.moveTo(tx(rMin), ty(EMin));
+  ctx.lineTo(tx(rMin), ty(EMax));
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawLabelsAndTicks() {
+    ctx.save();
+    ctx.fillStyle = 'black';
+    ctx.font = '14px Arial';
+
+    // X-axis ticks and labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let r = rMin; r <= rMax; r += 1) {
+        ctx.fillText(r, tx(r), ty(EMin) + 8);
+    }
+    ctx.font = '16px Arial';
+    ctx.fillText('r / cm', tx(rMin + (rMax - rMin) / 2), ty(EMin) + 35);
+
+    // Y-axis ticks and labels
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.font = '14px Arial';
+    for (let i = 0; i <= (EMax - EMin) * 10; i++) {
+        const E = EMin + i * 0.1;
+        ctx.fillText(E.toFixed(1), tx(rMin) - 8, ty(E));
+    }
+
+    // Y-axis Title
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.save();
+    ctx.translate(marginLeft / 2 - 20, marginTop + plotHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    // Using Unicode for superscripts for better rendering: E / 10⁵ V m⁻¹
+    const yLabel = 'E / 10\u2075 V m\u207B\u00B9';
+    ctx.fillText(yLabel, 0, 0);
+    ctx.restore();
+    
+    // Figure caption
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 6.1', canvas.width / 2, canvas.height - 35);
+
+    ctx.restore();
+}
+
+function drawCurve() {
+  ctx.save();
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 2.0;
+  
+  // Set a clipping region to the plot area
+  ctx.beginPath();
+  ctx.rect(marginLeft, marginTop, plotWidth, plotHeight);
+  ctx.clip();
+
+  ctx.beginPath();
+  // The curve follows the equation E' * (r')^2 = constant.
+  // From the graph, at r=5cm, E'=0.2. So const = 0.2 * 5^2 = 5.0.
+  // The function is E' = 5.0 / (r')^2, where E' is E/10^5 Vm^-1 and r' is r/cm.
+  const r_start = Math.sqrt(5.0 / EMax); // r where E' is EMax
+  const r_end = rMax;
+  const steps = 200;
+  const dr = (r_end - r_start) / steps;
+  
+  // Start plotting from the top edge of the graph
+  ctx.moveTo(tx(r_start), ty(EMax));
+  for (let i = 1; i <= steps; i++) {
+    const r = r_start + i * dr;
+    const E = 5.0 / (r * r);
+    if (E <= EMax) {
+        ctx.lineTo(tx(r), ty(E));
+    }
+  }
+  
+  ctx.stroke();
+  ctx.restore();
+}
+
+// --- Main Drawing Call ---
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+drawGrid();
+drawAxes(); // Draw axes on top of grid
+drawLabelsAndTicks();
+drawCurve();
+
+</script>
+</body>
+</html>

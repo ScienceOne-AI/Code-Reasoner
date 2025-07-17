@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Redrawing</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General settings
+        ctx.lineWidth = 2;
+        ctx.font = '20px Arial';
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineCap = 'round';
+
+        // --- Helper functions ---
+        function drawArrow(fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function drawDashedLine(x1, y1, x2, y2, dashLen = 5, gapLen = 5) {
+            ctx.beginPath();
+            ctx.setLineDash([dashLen, gapLen]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset to solid line
+        }
+
+        // --- Draw Figure 2.24 ---
+        const cx1 = 200;
+        const cy1 = 220;
+        const radius1 = 80;
+
+        // Main circle
+        ctx.beginPath();
+        ctx.arc(cx1, cy1, radius1, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Z-axis
+        drawArrow(cx1, cy1 - radius1 - 50, cx1, cy1 - radius1 - 20);
+        ctx.beginPath();
+        ctx.moveTo(cx1, cy1 - radius1 - 40);
+        ctx.lineTo(cx1, cy1 + radius1 + 40);
+        ctx.stroke();
+        ctx.fillText('+z', cx1 + 10, cy1 - radius1 - 25);
+        ctx.fillText('-z', cx1 + 10, cy1 + radius1 + 35);
+
+        // Rotation arrow
+        ctx.beginPath();
+        ctx.arc(cx1, cy1 - radius1, 20, Math.PI * 0.9, Math.PI * 0.1, true);
+        ctx.stroke();
+        drawArrow(cx1 + 20 * Math.cos(Math.PI*0.1), cy1 - radius1 - 20*Math.sin(Math.PI*0.1), cx1 + 20 * Math.cos(Math.PI*0.1) + 1, cy1 - radius1 - 20*Math.sin(Math.PI*0.1));
+        ctx.fillText('ω', cx1 + 30, cy1 - radius1);
+
+        // Inner circle and point P
+        const px = cx1 - 10;
+        const py = cy1 + 20;
+        const innerRadius = 30;
+        ctx.beginPath();
+        ctx.arc(px, py, innerRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(px, py, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('P', px - 25, py + 10);
+        
+        // Radius R
+        const r_end_y = py - innerRadius;
+        ctx.beginPath();
+        ctx.moveTo(cx1, cy1);
+        ctx.lineTo(px, r_end_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx1, cy1, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('R', (cx1 + px) / 2 - 5, (cy1 + r_end_y) / 2 - 10);
+
+        // Figure caption
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('Fig. 2.24', cx1 - 40, cy1 + radius1 + 80);
+
+        // --- Draw Figure 2.25 ---
+        ctx.font = '20px Arial';
+        const cx2 = 580;
+        const cy2 = 220;
+        const radius2 = 100;
+        
+        // Sphere
+        ctx.beginPath();
+        ctx.arc(cx2, cy2, radius2, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Z-axis
+        drawArrow(cx2, cy2 - radius2 - 50, cx2, cy2 - radius2 - 20);
+        ctx.fillText('z', cx2 - 15, cy2 - radius2 - 25);
+        drawDashedLine(cx2, cy2 - radius2 - 30, cx2, cy2 + radius2 + 40);
+
+        // Rotation arrow
+        ctx.beginPath();
+        ctx.ellipse(cx2, cy2 - radius2, 30, 10, 0, Math.PI, 0, true);
+        ctx.stroke();
+        drawArrow(cx2 + 30, cy2 - radius2, cx2 + 31, cy2 - radius2);
+        ctx.fillText('ω', cx2 + 40, cy2 - radius2 + 5);
+
+        // Center O and Point P
+        ctx.beginPath();
+        ctx.arc(cx2, cy2, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('O', cx2 - 25, cy2 + 5);
+
+        ctx.fillText('P', cx2 - 25, cy2 + 80);
+
+        // Small ellipse
+        ctx.beginPath();
+        ctx.ellipse(cx2, cy2 + 45, 25, 8, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fillText('o', cx2 - 5, cy2 + 50);
+
+
+        // Ring on sphere
+        const angle_theta = Math.PI / 4;
+        const ring_y = cy2 - radius2 * Math.cos(angle_theta);
+        const ring_rx = radius2 * Math.sin(angle_theta);
+        const ring_ry = ring_rx * 0.2;
+        const ring_width = 12;
+
+        ctx.beginPath();
+        ctx.ellipse(cx2, ring_y, ring_rx, ring_ry, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(cx2, ring_y + ring_width, ring_rx * ((radius2 * Math.cos(angle_theta) - ring_width) / (radius2 * Math.cos(angle_theta))), ring_ry, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Vector r
+        const r_end_x = cx2 + ring_rx;
+        const r_end_y = ring_y;
+        drawArrow(cx2, cy2, r_end_x, r_end_y);
+        ctx.fillText('r', r_end_x - 5, r_end_y - 10);
+        
+        // Angle theta
+        ctx.beginPath();
+        ctx.arc(cx2, cy2, 30, -Math.PI/2, -Math.PI/2 + angle_theta);
+        ctx.stroke();
+        ctx.fillText('θ', cx2 + 15, cy2 - 25);
+        
+        // Label Rdθ
+        const rdtheta_x = cx2 - ring_rx * 0.8;
+        const rdtheta_y = ring_y + ring_width * 0.5;
+        ctx.save();
+        ctx.translate(rdtheta_x, rdtheta_y);
+        ctx.rotate(-angle_theta);
+        ctx.fillText('Rdθ', 10, 0);
+        ctx.beginPath();
+        ctx.moveTo(5, -5); ctx.lineTo(5, 5);
+        ctx.moveTo(5, -12); ctx.lineTo(5, -7);
+        ctx.stroke();
+        ctx.restore();
+
+        // Label dl
+        const dl_x = cx2 + ring_rx;
+        const dl_y = ring_y;
+        ctx.fillText('dl', dl_x + 20, dl_y + 10);
+        drawArrow(dl_x + 5, dl_y + 5, dl_x + 18, dl_y + 8);
+        
+        // Figure caption
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('Fig. 2.25', cx2 - 40, cy2 + radius2 + 80);
+
+    </script>
+</body>
+</html>

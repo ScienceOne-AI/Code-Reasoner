@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Extension-Load Graph</title>
+</head>
+<body>
+<canvas id="myCanvas" width="550" height="450"></canvas>
+<script>
+const canvas = document.getElementById('myCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Configuration ---
+const padding = { top: 30, right: 30, bottom: 60, left: 60 };
+const graphWidth = canvas.width - padding.left - padding.right;
+const graphHeight = canvas.height - padding.top - padding.bottom;
+const xMax = 30; // load in N
+const yMax = 200; // extension in mm
+
+// --- Coordinate mapping functions ---
+function mapX(value) {
+    return padding.left + (value / xMax) * graphWidth;
+}
+
+function mapY(value) {
+    // y-axis is inverted in canvas coordinates
+    return padding.top + graphHeight - (value / yMax) * graphHeight;
+}
+
+// --- Drawing functions ---
+
+// Draw the grid system
+function drawGrid() {
+    ctx.lineWidth = 1;
+
+    // Minor grid lines (thin)
+    ctx.strokeStyle = '#dcdcdc'; // Light grey
+
+    // Minor vertical lines (every 1 N)
+    for (let i = 1; i <= xMax; i++) {
+        if (i % 5 !== 0) { // Don't redraw over major lines
+            ctx.beginPath();
+            ctx.moveTo(mapX(i), mapY(0));
+            ctx.lineTo(mapX(i), mapY(yMax));
+            ctx.stroke();
+        }
+    }
+
+    // Minor horizontal lines (every 10 mm)
+    for (let i = 10; i <= yMax; i += 10) {
+        if (i % 50 !== 0) { // Don't redraw over major lines
+            ctx.beginPath();
+            ctx.moveTo(mapX(0), mapY(i));
+            ctx.lineTo(mapX(xMax), mapY(i));
+            ctx.stroke();
+        }
+    }
+    
+    // Major grid lines (thicker/darker)
+    ctx.strokeStyle = '#a9a9a9'; // Darker grey
+
+    // Major vertical lines (every 5 N)
+    for (let i = 5; i <= xMax; i += 5) {
+        ctx.beginPath();
+        ctx.moveTo(mapX(i), mapY(0));
+        ctx.lineTo(mapX(i), mapY(yMax));
+        ctx.stroke();
+    }
+
+    // Major horizontal lines (every 50 mm)
+    for (let i = 50; i <= yMax; i += 50) {
+        ctx.beginPath();
+        ctx.moveTo(mapX(0), mapY(i));
+        ctx.lineTo(mapX(xMax), mapY(i));
+        ctx.stroke();
+    }
+}
+
+// Draw the main X and Y axes
+function drawAxes() {
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    // Y-axis
+    ctx.beginPath();
+    ctx.moveTo(mapX(0), mapY(0));
+    ctx.lineTo(mapX(0), mapY(yMax));
+    ctx.stroke();
+
+    // X-axis
+    ctx.beginPath();
+    ctx.moveTo(mapX(0), mapY(0));
+    ctx.lineTo(mapX(xMax), mapY(0));
+    ctx.stroke();
+}
+
+// Draw axis labels and numeric ticks
+function drawLabels() {
+    ctx.fillStyle = 'black';
+    ctx.font = '16px Arial';
+    
+    // Y-axis label
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.translate(padding.left / 2.5, padding.top + graphHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('extension / mm', 0, 0);
+    ctx.restore();
+
+    // X-axis label
+    ctx.textAlign = 'center';
+    ctx.fillText('load / N', padding.left + graphWidth / 2, canvas.height - padding.bottom / 2);
+
+    // Y-axis ticks and numbers
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let i = 100; i <= yMax; i += 100) {
+        ctx.fillText(i, mapX(0) - 8, mapY(i));
+    }
+
+    // X-axis ticks and numbers
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let i = 0; i <= xMax; i += 10) {
+        ctx.fillText(i, mapX(i), mapY(0) + 8);
+    }
+}
+
+// Draw the extension-load curve
+function drawCurve() {
+    ctx.beginPath();
+    ctx.moveTo(mapX(0), mapY(0));
+    
+    // The curve is linear up to approximately load = 18 N, extension = 90 mm.
+    ctx.lineTo(mapX(18), mapY(90));
+    
+    // The curve then bends upwards, passing through approximately (23, 200).
+    // A quadratic Bezier curve is used for the non-linear part.
+    // P0 = (18, 90), End = (23, 200). A control point at (20.5, 105) creates a visually similar curve.
+    ctx.quadraticCurveTo(mapX(20.5), mapY(105), mapX(23), mapY(200));
+
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+}
+
+// Draw the figure caption
+function drawCaption() {
+    ctx.fillStyle = 'black';
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 2.1', canvas.width / 2, canvas.height - 15);
+}
+
+// --- Main drawing execution ---
+// Clear canvas with a white background
+ctx.fillStyle = 'white';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+drawGrid();
+drawAxes();
+drawLabels();
+drawCurve();
+drawCaption();
+
+</script>
+</body>
+</html>

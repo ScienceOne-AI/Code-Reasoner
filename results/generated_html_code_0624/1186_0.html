@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interference and Diffraction Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="850" height="450" style="border:1px solid #d3d3d3;"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws an arrow from (fromx, fromy) to (tox, toy).
+     */
+    function drawArrow(ctx, fromx, fromy, tox, toy) {
+        const headlen = 8;
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    /**
+     * Draws a dashed line from (x1, y1) to (x2, y2).
+     */
+    function drawDashedLine(ctx, x1, y1, x2, y2, dashLen) {
+        ctx.beginPath();
+        ctx.setLineDash([dashLen, dashLen]);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid lines
+    }
+
+    /**
+     * Draws a jagged line to represent a broken-off section.
+     */
+    function drawJaggedLine(ctx, x, yStart, yEnd, numJags, jagSize, isLeftEdge) {
+        const dy = (yEnd - yStart) / numJags;
+        ctx.moveTo(x, yStart);
+        for (let i = 0; i < numJags; i++) {
+            const y = yStart + i * dy;
+            const jagX = x + (Math.random() - 0.5) * jagSize * (isLeftEdge ? -1 : 1);
+            ctx.lineTo(jagX, y + dy / 2);
+        }
+        ctx.lineTo(x, yEnd);
+    }
+    
+    /**
+     * Draws a biconcave shape.
+     */
+    function drawBiconcave(ctx, x, y, width, height, fill) {
+        const w2 = width / 2;
+        ctx.beginPath();
+        ctx.moveTo(x, y - w2);
+        ctx.quadraticCurveTo(x + height, y, x, y + w2);
+        ctx.quadraticCurveTo(x - height, y, x, y - w2);
+        ctx.closePath();
+        if (fill) {
+             ctx.fill();
+        }
+        ctx.stroke();
+    }
+    
+    /**
+     * Draws a horizontal dimension line with ticks.
+     */
+    function drawDimensionH(ctx, x1, y, x2) {
+        const tick = 5;
+        ctx.beginPath();
+        ctx.moveTo(x1, y - tick);
+        ctx.lineTo(x1, y + tick);
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x2, y);
+        ctx.moveTo(x2, y - tick);
+        ctx.lineTo(x2, y + tick);
+        ctx.stroke();
+    }
+    
+    /**
+     * Draws a vertical dimension line with arrows.
+     */
+    function drawDimensionV(ctx, x, y1, y2) {
+        const tick = 4;
+        ctx.beginPath();
+        ctx.moveTo(x - tick, y1);
+        ctx.lineTo(x + tick, y1);
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, y2);
+        ctx.moveTo(x - tick, y2);
+        ctx.lineTo(x + tick, y2);
+        ctx.stroke();
+        // Arrows
+        drawArrow(ctx, x, y1 + (y2-y1)/2, x, y1);
+        drawArrow(ctx, x, y1 + (y2-y1)/2, x, y2);
+    }
+
+
+    // --- Main Drawing Functions ---
+
+    function drawLeftDiagram(ctx) {
+        ctx.save();
+        ctx.translate(25, 0);
+
+        // --- Plate ---
+        const plateX = 200;
+        const plateW = 50;
+        const plateY1 = 40;
+        const plateY2 = 410;
+        ctx.fillStyle = '#e0e0e0';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        ctx.beginPath();
+        ctx.moveTo(plateX, plateY2);
+        ctx.lineTo(plateX, plateY1);
+        drawJaggedLine(ctx, plateX, plateY1, plateY2, 25, 5, true);
+        ctx.moveTo(plateX+plateW, plateY1);
+        ctx.lineTo(plateX+plateW, plateY2);
+        drawJaggedLine(ctx, plateX+plateW, plateY2, plateY1, 25, 5, false);
+        ctx.fillStyle = '#e0e0e0';
+        ctx.fillRect(plateX, plateY1, plateW, plateY2 - plateY1);
+        ctx.stroke();
+
+        // --- Focus Regions ---
+        const focusX = plateX + plateW / 2;
+        const focusY1 = 150;
+        const focusY2 = 300;
+        ctx.fillStyle = 'rgba(128, 128, 128, 0.5)';
+        drawBiconcave(ctx, focusX, focusY1, 30, 10, false);
+        drawBiconcave(ctx, focusX, focusY2, 30, 10, false);
+        
+        // --- Dashed Lines ---
+        ctx.lineWidth = 1;
+        drawDashedLine(ctx, 40, focusY1, 420, focusY1, 5);
+        drawDashedLine(ctx, 40, focusY2, 420, focusY2, 5);
+
+        // --- Rays ---
+        ctx.lineWidth = 1.5;
+        const startX = 40;
+        const endX = 420;
+        
+        const topRay1_y1 = 80, topRay1_y2 = 250;
+        const topRay2_y1 = 100, topRay2_y2 = 270;
+        const botRay1_y1 = 370, botRay1_y2 = 120;
+        const botRay2_y1 = 350, botRay2_y2 = 100;
+        
+        drawArrow(ctx, startX, topRay1_y1, endX, topRay1_y2);
+        drawArrow(ctx, startX, topRay2_y1, endX, topRay2_y2);
+        drawArrow(ctx, startX, botRay1_y1, endX, botRay1_y2);
+        drawArrow(ctx, startX, botRay2_y1, endX, botRay2_y2);
+        
+        // --- Labels ---
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 22px Times New Roman';
+        // λ₁
+        ctx.fillText('λ', 60, 130);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('1', 72, 138);
+        
+        // h
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText('h', plateX + plateW/2 - 8, 435);
+        ctx.lineWidth = 1;
+        drawDimensionH(ctx, plateX, 425, plateX + plateW);
+
+        // 2θ₁
+        ctx.font = 'italic 22px Times New Roman';
+        const angleX = 140;
+        const topRayY = (topRay2_y2 - topRay2_y1)/(endX-startX) * (angleX-startX) + topRay2_y1;
+        const botRayY = (botRay2_y2 - botRay2_y1)/(endX-startX) * (angleX-startX) + botRay2_y1;
+        
+        ctx.beginPath();
+        ctx.arc(angleX, (topRayY + botRayY) / 2, (botRayY - topRayY) / 2, -Math.PI/2, Math.PI/2);
+        ctx.stroke();
+        
+        ctx.fillText('2θ', 100, 225);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('1', 128, 230);
+
+        ctx.restore();
+    }
+
+    function drawRightDiagram(ctx) {
+        ctx.save();
+        ctx.translate(425, 0);
+
+        // --- Grating Plate ---
+        const plateX = 175;
+        const plateW = 50;
+        const plateY1 = 40;
+        const plateY2 = 410;
+        ctx.fillStyle = '#e0e0e0';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        ctx.fillRect(plateX, plateY1, plateW, plateY2 - plateY1);
+
+        // --- Grating Lines ---
+        ctx.lineWidth = 2.5;
+        for (let y = plateY1 + 10; y < plateY2; y += 20) {
+            ctx.beginPath();
+            ctx.moveTo(plateX, y);
+            ctx.lineTo(plateX + plateW, y);
+            ctx.stroke();
+        }
+
+        // --- Plate Outline ---
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(plateX, plateY2);
+        ctx.lineTo(plateX, plateY1);
+        drawJaggedLine(ctx, plateX, plateY1, plateY2, 25, 5, true);
+        ctx.moveTo(plateX+plateW, plateY1);
+        ctx.lineTo(plateX+plateW, plateY2);
+        drawJaggedLine(ctx, plateX+plateW, plateY2, plateY1, 25, 5, false);
+        ctx.stroke();
+        
+        // --- Biconcave Regions ---
+        const focusX = plateX + plateW / 2;
+        const focusY1 = 150;
+        const focusY2 = 300;
+        ctx.fillStyle = '#333333';
+        drawBiconcave(ctx, focusX, focusY1, 25, 8, true);
+        drawBiconcave(ctx, focusX, focusY2, 25, 8, true);
+
+        // --- Dashed Lines ---
+        ctx.lineWidth = 1;
+        drawDashedLine(ctx, 40, focusY1, 420, focusY1, 5);
+        drawDashedLine(ctx, 40, focusY2, 420, focusY2, 5);
+
+        // --- Rays ---
+        ctx.lineWidth = 1.5;
+        const startX = 40;
+        const endX = 420;
+        
+        // Incident
+        drawArrow(ctx, startX, 110, plateX, focusY1);
+        drawArrow(ctx, startX, 260, plateX, focusY2);
+
+        // Reflected
+        drawArrow(ctx, plateX, focusY1, startX, 110);
+        drawArrow(ctx, plateX, focusY2, startX, 260);
+
+        // Transmitted
+        drawArrow(ctx, plateX + plateW, focusY1, endX, 170); // straight-ish
+        drawArrow(ctx, plateX + plateW, focusY1, endX, 300); // crossed
+        drawArrow(ctx, plateX + plateW, focusY2, endX, 320); // straight-ish
+
+        // --- Labels ---
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 22px Times New Roman';
+        // λ₂
+        ctx.fillText('λ', 60, 180);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('2', 72, 188);
+        
+        // θ₂
+        ctx.font = 'italic 22px Times New Roman';
+        const angleX_t2 = 100;
+        const incidentRayY = 110 + (focusY1 - 110) * (angleX_t2 - startX) / (plateX - startX);
+        ctx.beginPath();
+        ctx.arc(angleX_t2, focusY1, focusY1 - incidentRayY, Math.PI, 1.5 * Math.PI);
+        ctx.stroke();
+        ctx.fillText('θ', 115, 135);
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('2', 128, 140);
+
+        // Λ
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText('Λ', 100, 248);
+        ctx.lineWidth = 1;
+        drawDimensionV(ctx, 125, 230, 250);
+
+        ctx.restore();
+    }
+
+    // --- Clear canvas and draw everything ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawLeftDiagram(ctx);
+    drawRightDiagram(ctx);
+
+</script>
+
+</body>
+</html>

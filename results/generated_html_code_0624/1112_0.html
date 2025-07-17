@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Orbital Transfer Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+        const cw = canvas.width;
+        const ch = canvas.height;
+
+        // --- Style and parameter setup ---
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+
+        // Drawing parameters
+        const R_draw = 150;
+        const h_draw = 40;
+        const R_outer_draw = R_draw + h_draw;
+
+        // Move origin to center and leave space at bottom for caption
+        ctx.translate(cw / 2, ch / 2 - 20);
+
+        // --- Helper functions ---
+        function drawPoint(x, y, radius = 4) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        // --- Main Drawing ---
+
+        // 1. Circles (Moon and Orbit)
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, R_draw, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(0, 0, R_outer_draw, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 2. Points
+        const O = { x: 0, y: 0 };
+        const A = { x: R_outer_draw, y: 0 };
+        const B = { x: -R_draw, y: 0 };
+        drawPoint(O.x, O.y);
+        drawPoint(A.x, A.y);
+        drawPoint(B.x, B.y);
+
+        // 3. Dashed line A-O-B
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.setLineDash([6, 4]);
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(A.x, A.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 4. Trajectories from A
+        // Main Ellipse (A->B)
+        const a_ellipse = (R_outer_draw + R_draw) / 2;
+        const c_ellipse_x = (R_outer_draw - R_draw) / 2;
+        const b_ellipse = Math.sqrt(R_outer_draw * R_draw);
+
+        ctx.save();
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.ellipse(c_ellipse_x, 0, a_ellipse, b_ellipse, 0, 0, -Math.PI, false); // Clockwise for top half
+        ctx.stroke();
+        ctx.restore();
+
+        // Other two trajectories
+        // Path 2
+        const end_angle_2 = 130 * Math.PI / 180;
+        const end_pt_2 = { x: R_draw * Math.cos(end_angle_2), y: -R_draw * Math.sin(end_angle_2) };
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.bezierCurveTo(A.x * 0.7, -90, end_pt_2.x + 90, end_pt_2.y - 15, end_pt_2.x, end_pt_2.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Path 3
+        const end_angle_3 = 110 * Math.PI / 180;
+        const end_pt_3 = { x: R_draw * Math.cos(end_angle_3), y: -R_draw * Math.sin(end_angle_3) };
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.bezierCurveTo(A.x * 0.85, -55, end_pt_3.x + 50, end_pt_3.y - 10, end_pt_3.x, end_pt_3.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // 5. Point C and dashed line OC
+        const t_C = 120 * Math.PI / 180;
+        const C_pt = {
+            x: c_ellipse_x + a_ellipse * Math.cos(t_C),
+            y: -b_ellipse * Math.sin(t_C)
+        };
+        ctx.beginPath();
+        ctx.setLineDash([6, 4]);
+        ctx.moveTo(O.x, O.y);
+        ctx.lineTo(C_pt.x, C_pt.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // 6. Labels
+        ctx.font = '24px serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('A', A.x + 10, A.y + 5);
+        ctx.fillText('B', B.x - 25, B.y + 5);
+        ctx.fillText('C', C_pt.x - 15, C_pt.y - 20);
+        
+        ctx.textAlign = 'center';
+        ctx.fillText('O', O.x, O.y + 20);
+        
+        // Braces for R and h
+        const brace_y = 45;
+        const tick_height = 5;
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.font = '24px serif';
+        // R
+        ctx.beginPath();
+        ctx.moveTo(B.x, brace_y);
+        ctx.lineTo(O.x, brace_y);
+        ctx.moveTo(B.x, brace_y - tick_height);
+        ctx.lineTo(B.x, brace_y + tick_height);
+        ctx.moveTo(O.x, brace_y - tick_height);
+        ctx.lineTo(O.x, brace_y + tick_height);
+        ctx.stroke();
+        ctx.fillText('R', (B.x + O.x) / 2, brace_y + 18);
+
+        // h
+        const h_start_x = R_draw;
+        const h_end_x = R_outer_draw;
+        ctx.beginPath();
+        ctx.moveTo(h_start_x, brace_y);
+        ctx.lineTo(h_end_x, brace_y);
+        ctx.moveTo(h_start_x, brace_y - tick_height);
+        ctx.lineTo(h_start_x, brace_y + tick_height);
+        ctx.moveTo(h_end_x, brace_y - tick_height);
+        ctx.lineTo(h_end_x, brace_y + tick_height);
+        ctx.stroke();
+        ctx.fillText('h', (h_start_x + h_end_x) / 2, brace_y + 18);
+        ctx.restore();
+
+        // 7. Caption
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+        ctx.font = '24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('力图 4.5.1', cw / 2, ch - 30);
+        ctx.restore();
+
+    </script>
+</body>
+</html>

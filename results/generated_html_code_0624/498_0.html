@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="physics_canvas" width="600" height="600"></canvas>
+<script>
+    const canvas = document.getElementById('physics_canvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Parameters ---
+    const cx = 300;
+    const cy = 250;
+    const R = 60;
+    const r1 = R;       // Radius of inner sphere
+    const r2 = 2 * R;   // Inner radius of outer shell
+    const r3 = 3 * R;   // Outer radius of outer shell
+
+    // --- Helper function for drawing hatching ---
+    function drawDiagonalLines() {
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 0.75;
+        const spacing = 6;
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        // Make sure lines are long enough to cover the clipped area
+        const lineLength = canvasWidth + canvasHeight;
+
+        for (let i = -canvasWidth; i < canvasWidth; i += spacing) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i + lineLength, lineLength);
+            ctx.stroke();
+        }
+    }
+
+    // --- Helper function for drawing dimension lines with arrows ---
+    function drawDoubleArrowLine(y, startX, endX, label) {
+        const arrowSize = 8;
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // Main horizontal line
+        ctx.beginPath();
+        ctx.moveTo(startX, y);
+        ctx.lineTo(endX, y);
+        ctx.stroke();
+
+        // Left arrow head
+        ctx.beginPath();
+        ctx.moveTo(startX + arrowSize, y - arrowSize / 2);
+        ctx.lineTo(startX, y);
+        ctx.lineTo(startX + arrowSize, y + arrowSize / 2);
+        ctx.stroke();
+
+        // Right arrow head
+        ctx.beginPath();
+        ctx.moveTo(endX - arrowSize, y - arrowSize / 2);
+        ctx.lineTo(endX, y);
+        ctx.lineTo(endX - arrowSize, y + arrowSize / 2);
+        ctx.stroke();
+
+        // Label above the line
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(label, (startX + endX) / 2, y - 5);
+    }
+    
+    // --- Main Drawing ---
+
+    // 1. Draw hatched area for the inner sphere
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r1, 0, 2 * Math.PI);
+    ctx.clip(); // Restrict drawing to the circle path
+    drawDiagonalLines();
+    ctx.restore(); // Remove the clipping mask
+
+    // 2. Draw hatched area for the outer shell
+    ctx.save();
+    ctx.beginPath();
+    // Create a path for the annulus (a ring shape)
+    ctx.arc(cx, cy, r3, 0, 2 * Math.PI, false); // Outer path
+    ctx.arc(cx, cy, r2, 0, 2 * Math.PI, true);  // Inner path (hole), counter-clockwise
+    ctx.clip(); // Restrict drawing to the annulus path
+    drawDiagonalLines();
+    ctx.restore(); // Remove the clipping mask
+
+    // 3. Draw the outlines of the circles on top for a clean look
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'black';
+    
+    ctx.beginPath();
+    ctx.arc(cx, cy, r1, 0, 2 * Math.PI);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.arc(cx, cy, r2, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r3, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 4. Draw and label the points A, B, C, D
+    ctx.fillStyle = 'black';
+    ctx.font = 'bold 24px Arial';
+    const pointRadius = 4;
+    // Angle for placing points B, C, D radially, similar to the original image
+    const pointAngle = -Math.PI / 7; // Approx -25.7 degrees
+
+    // Point A (inside the inner sphere)
+    const pA = { x: cx - r1 / 2.5, y: cy - r1 / 4 };
+    ctx.beginPath();
+    ctx.arc(pA.x, pA.y, pointRadius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('A', pA.x - 8, pA.y);
+
+    // Point B (on the surface of the inner sphere)
+    const pB = { x: cx + r1 * Math.cos(pointAngle), y: cy + r1 * Math.sin(pointAngle) };
+    ctx.beginPath();
+    ctx.arc(pB.x, pB.y, pointRadius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('B', pB.x + 8, pB.y);
+
+    // Point C (on the inner surface of the outer shell)
+    const pC = { x: cx + r2 * Math.cos(pointAngle), y: cy + r2 * Math.sin(pointAngle) };
+    ctx.beginPath();
+    ctx.arc(pC.x, pC.y, pointRadius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('C', pC.x + 8, pC.y);
+
+    // Point D (on the outer surface of the outer shell)
+    const pD = { x: cx + r3 * Math.cos(pointAngle), y: cy + r3 * Math.sin(pointAngle) };
+    ctx.beginPath();
+    ctx.arc(pD.x, pD.y, pointRadius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('D', pD.x + 8, pD.y);
+
+    // 5. Draw the dimension lines at the bottom of the canvas
+    const y_base = cy + r3 + 60; // Starting y-position for the first line
+    const y_gap = 35; // Vertical gap between dimension lines
+    
+    // Line representing length 'R'
+    drawDoubleArrowLine(y_base, cx - R / 2, cx + R / 2, 'R');
+    
+    // Line representing length '2R'
+    drawDoubleArrowLine(y_base + y_gap, cx - R, cx + R, '2R');
+
+    // Line representing length '3R'
+    drawDoubleArrowLine(y_base + 2 * y_gap, cx - (3*R)/2, cx + (3*R)/2, '3R');
+
+</script>
+</body>
+</html>

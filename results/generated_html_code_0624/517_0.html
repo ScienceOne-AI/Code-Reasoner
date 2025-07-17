@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Otto Cycle P-V Diagram</title>
+</head>
+<body>
+<canvas id="ottoCycleCanvas" width="550" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('ottoCycleCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#333333';
+    ctx.fillStyle = '#333333';
+    ctx.font = 'italic 22px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Helper function to draw an arrow head
+    function drawArrow(ctx, x, y, angle, size = 10) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2.5);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2.5);
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // Helper function to draw an arrow on a path
+    function drawArrowOnPath(ctx, x, y, angle, size = 8, lineWidth = 2) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(-size/2, 0); // Center the arrow on the point
+        ctx.lineTo(size/2, 0);   // Draw a small line segment
+        ctx.moveTo(size/2, 0);
+        ctx.lineTo(size/2 - size, -size / 2);
+        ctx.moveTo(size/2, 0);
+        ctx.lineTo(size/2 - size, size / 2);
+        ctx.lineWidth = lineWidth-0.5;
+        ctx.stroke();
+        ctx.restore();
+    }
+
+
+    // --- Main Drawing Function ---
+
+    // 1. Define Coordinates
+    const origin = { x: 70, y: 450 };
+    const p_axis_end = { x: origin.x, y: 40 };
+    const v_axis_end = { x: 500, y: origin.y };
+
+    const a = { x: 420, y: 350 };
+    const b = { x: 150, y: 220 };
+    const c = { x: 150, y: 80 };
+    const d = { x: 420, y: 150 };
+    
+    // Control points for the Bezier curves
+    const cp_ab = { x: 280, y: 380 }; // Control point for a -> b
+    const cp_cd = { x: 270, y: 50 };  // Control point for c -> d
+
+
+    // 2. Draw Coordinate System
+    ctx.beginPath();
+    // P-axis (vertical)
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(p_axis_end.x, p_axis_end.y);
+    drawArrow(ctx, p_axis_end.x, p_axis_end.y, -Math.PI / 2);
+    // V-axis (horizontal)
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(v_axis_end.x, v_axis_end.y);
+    drawArrow(ctx, v_axis_end.x, v_axis_end.y, 0);
+    ctx.stroke();
+
+    // Axis Labels
+    ctx.fillText('O', origin.x - 20, origin.y + 20);
+    ctx.fillText('p', p_axis_end.x - 25, p_axis_end.y + 10);
+    ctx.fillText('V', v_axis_end.x - 10, v_axis_end.y + 25);
+
+    // 3. Draw the Otto Cycle Path
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.quadraticCurveTo(cp_ab.x, cp_ab.y, b.x, b.y); // a -> b (Adiabatic compression)
+    ctx.lineTo(c.x, c.y);                              // b -> c (Isochoric heating)
+    ctx.quadraticCurveTo(cp_cd.x, cp_cd.y, d.x, d.y); // c -> d (Adiabatic expansion)
+    ctx.closePath();                                   // d -> a (Isochoric cooling)
+    ctx.stroke();
+
+    // 4. Draw Arrows on the Cycle Path
+    // Arrow on b -> c (up)
+    drawArrowOnPath(ctx, b.x, (b.y + c.y) / 2, -Math.PI/2);
+    // Arrow on d -> a (down)
+    drawArrowOnPath(ctx, d.x, (d.y + a.y) / 2, Math.PI/2);
+    
+    // Arrow on c -> d (curve)
+    let t_cd = 0.5;
+    let p_cd_x = (1 - t_cd) ** 2 * c.x + 2 * (1 - t_cd) * t_cd * cp_cd.x + t_cd ** 2 * d.x;
+    let p_cd_y = (1 - t_cd) ** 2 * c.y + 2 * (1 - t_cd) * t_cd * cp_cd.y + t_cd ** 2 * d.y;
+    let tangent_cd_dx = 2 * (1 - t_cd) * (cp_cd.x - c.x) + 2 * t_cd * (d.x - cp_cd.x);
+    let tangent_cd_dy = 2 * (1 - t_cd) * (cp_cd.y - c.y) + 2 * t_cd * (d.y - cp_cd.y);
+    let angle_cd = Math.atan2(tangent_cd_dy, tangent_cd_dx);
+    drawArrowOnPath(ctx, p_cd_x, p_cd_y, angle_cd);
+
+    // Arrow on a -> b (curve)
+    let t_ab = 0.5;
+    let p_ab_x = (1 - t_ab) ** 2 * a.x + 2 * (1 - t_ab) * t_ab * cp_ab.x + t_ab ** 2 * b.x;
+    let p_ab_y = (1 - t_ab) ** 2 * a.y + 2 * (1 - t_ab) * t_ab * cp_ab.y + t_ab ** 2 * b.y;
+    let tangent_ab_dx = 2 * (1 - t_ab) * (cp_ab.x - a.x) + 2 * t_ab * (b.x - cp_ab.x);
+    let tangent_ab_dy = 2 * (1 - t_ab) * (cp_ab.y - a.y) + 2 * t_ab * (b.y - cp_ab.y);
+    let angle_ab = Math.atan2(tangent_ab_dy, tangent_ab_dx);
+    drawArrowOnPath(ctx, p_ab_x, p_ab_y, angle_ab);
+
+
+    // 5. Draw Dashed Lines and Volume Labels
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1.5;
+    // Line for V1
+    ctx.beginPath();
+    ctx.moveTo(c.x, c.y);
+    ctx.lineTo(c.x, origin.y);
+    ctx.stroke();
+    // Line for V2
+    ctx.beginPath();
+    ctx.moveTo(d.x, d.y);
+    ctx.lineTo(d.x, origin.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // Volume Labels with Subscripts
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.fillText('V', c.x - 7, origin.y + 25);
+    ctx.save();
+    ctx.font = 'italic 16px "Times New Roman"';
+    ctx.fillText('1', c.x + 6, origin.y + 30);
+    ctx.restore();
+
+    ctx.fillText('V', d.x - 7, origin.y + 25);
+    ctx.save();
+    ctx.font = 'italic 16px "Times New Roman"';
+    ctx.fillText('2', d.x + 8, origin.y + 30);
+    ctx.restore();
+
+
+    // 6. Draw Heat Transfer Arrows and Labels
+    // Q1 (Heat in)
+    let q1_y = (b.y + c.y) / 2;
+    ctx.beginPath();
+    ctx.moveTo(c.x - 50, q1_y);
+    ctx.lineTo(c.x, q1_y);
+    drawArrow(ctx, c.x, q1_y, 0, 8);
+    ctx.stroke();
+    
+    ctx.font = 'italic 22px "Times New Roman"';
+    ctx.fillText('Q', c.x - 70, q1_y);
+    ctx.save();
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText('1', c.x - 57, q1_y + 7);
+    ctx.restore();
+
+    // Q2 (Heat out)
+    let q2_y = (d.y + a.y) / 2;
+    ctx.beginPath();
+    ctx.moveTo(d.x, q2_y);
+    ctx.lineTo(d.x + 50, q2_y);
+    drawArrow(ctx, d.x + 50, q2_y, 0, 8);
+    ctx.stroke();
+
+    ctx.font = 'italic 22px "Times New Roman"';
+    ctx.fillText('Q', d.x + 70, q2_y);
+    ctx.save();
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText('2', d.x + 83, q2_y + 7);
+    ctx.restore();
+
+    // 7. Label points a, b, c, d
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.fillText('a', a.x + 15, a.y);
+    ctx.fillText('b', b.x - 15, b.y + 5);
+    ctx.fillText('c', c.x - 15, c.y - 5);
+    ctx.fillText('d', d.x + 15, d.y - 5);
+
+</script>
+</body>
+</html>

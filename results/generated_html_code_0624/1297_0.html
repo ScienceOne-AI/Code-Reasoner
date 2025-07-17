@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="450" height="350"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw a line
+        function line(x1, y1, x2, y2, dashed = false) {
+            ctx.beginPath();
+            if (dashed) {
+                ctx.setLineDash([5, 5]);
+            }
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            if (dashed) {
+                ctx.setLineDash([]);
+            }
+        }
+
+        // Helper function to draw a capacitor
+        function drawCapacitor(x1, y1, x2, y2, label, crossed = false) {
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const len = 15; // length of the capacitor plates
+            const gap = 6; // gap between plates
+            const plate_w = 10; // half-width of plates
+
+            ctx.save();
+            ctx.translate(midX, midY);
+            ctx.rotate(angle);
+
+            // Lines to the capacitor
+            line(-len / 2, 0, -gap / 2, 0);
+            line(gap / 2, 0, len / 2, 0);
+
+            // Plates
+            line(-gap / 2, -plate_w, -gap / 2, plate_w);
+            line(gap / 2, -plate_w, gap / 2, plate_w);
+
+            if (crossed) {
+                line(-gap/2, -plate_w, gap/2, plate_w);
+                line(-gap/2, plate_w, gap/2, -plate_w);
+            }
+            
+            ctx.restore();
+
+            // Label
+            ctx.font = 'italic 18px Times New Roman';
+            const labelOffset = 20;
+            const labelX = midX + labelOffset * Math.sin(angle);
+            const labelY = midY - labelOffset * Math.cos(angle);
+            ctx.fillText(label, labelX, labelY);
+        }
+
+        // Helper function to draw an EMF source (battery)
+        function drawEMF(x1, y1, x2, y2, label) {
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const len = 20;
+            const gap = 4;
+            const short_h = 8;
+            const long_h = 14;
+
+            ctx.save();
+            ctx.translate(midX, midY);
+            ctx.rotate(angle);
+
+            // Lines to the source
+            line(-len / 2, 0, -gap / 2, 0);
+            line(gap / 2, 0, len / 2, 0);
+
+            // Plates
+            line(-gap / 2, -short_h / 2, -gap / 2, short_h / 2); // Negative pole
+            line(gap / 2, -long_h / 2, gap / 2, long_h / 2); // Positive pole
+
+            ctx.restore();
+            
+            // Label
+            ctx.font = 'italic 18px Times New Roman';
+            const labelOffset = 20;
+            const labelX = midX + labelOffset * Math.sin(angle);
+            const labelY = midY - labelOffset * Math.cos(angle);
+            ctx.fillText(label.char, labelX, labelY);
+            ctx.font = 'italic 12px Times New Roman';
+            ctx.fillText(label.sub, labelX + 10, labelY + 5);
+        }
+
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '20px Times New Roman';
+
+        // Cube vertices coordinates
+        const A_top_back = { x: 90, y: 60 };
+        const B_top_back = { x: 360, y: 60 };
+        const A_top_front = { x: 120, y: 90 };
+        const B_top_front = { x: 390, y: 90 };
+
+        const A_bot_back = { x: 50, y: 260 };
+        const B_bot_back = { x: 320, y: 260 };
+        const A_bot_front = { x: 80, y: 290 };
+        const B_bot_front = { x: 350, y: 290 };
+
+        // Draw solid lines (visible edges)
+        line(A_top_back.x, A_top_back.y, B_top_back.x, B_top_back.y);
+        line(B_top_back.x, B_top_back.y, B_top_front.x, B_top_front.y);
+        line(A_top_back.x, A_top_back.y, A_top_front.x, A_top_front.y);
+        line(A_top_front.x, A_top_front.y, B_top_front.x, B_top_front.y);
+        
+        line(B_top_back.x, B_top_back.y, B_bot_back.x, B_bot_back.y);
+        line(B_bot_back.x, B_bot_back.y, B_bot_front.x, B_bot_front.y);
+        line(B_bot_front.x, B_bot_front.y, B_top_front.x, B_top_front.y);
+        line(A_bot_front.x, A_bot_front.y, B_bot_front.x, B_bot_front.y);
+        line(A_top_front.x, A_top_front.y, A_bot_front.x, A_bot_front.y);
+
+        // Draw dashed lines (hidden edges)
+        line(A_top_back.x, A_top_back.y, A_bot_back.x, A_bot_back.y, true);
+        line(A_bot_back.x, A_bot_back.y, B_bot_back.x, B_bot_back.y, true);
+        line(A_bot_back.x, A_bot_back.y, A_bot_front.x, A_bot_front.y, true);
+
+        // Labels for vertices
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('A', A_top_back.x - 20, A_top_back.y + 5);
+        ctx.fillText('B', B_top_front.x + 10, B_top_front.y);
+        ctx.fillText("A'", A_bot_front.x - 25, A_bot_front.y + 5);
+        ctx.fillText("B'", B_bot_front.x + 5, B_bot_front.y + 15);
+
+        // Component points
+        const x1 = { x: 105, y: 155 };
+        const y1 = { x: 375, y: 155 };
+        const x2 = { x: 140, y: 230 };
+        const y2 = { x: 320, y: 230 };
+        
+        // --- Place components ---
+        
+        // Capacitor C on left vertical edge
+        const cap1_start = { x: x1.x, y: x1.y + 10 };
+        const cap1_end = { x: A_bot_front.x + (x1.x - A_top_front.x) , y: A_bot_front.y - 45 };
+        line(x1.x, x1.y, cap1_start.x, cap1_start.y); // Line to cap
+        drawCapacitor(cap1_start.x, cap1_start.y, cap1_end.x, cap1_end.y, 'C');
+        line(cap1_end.x, cap1_end.y, A_top_front.x + (x1.x - A_top_front.x), A_bot_front.y);
+        line(A_top_front.x, A_top_front.y, x1.x, x1.y); // Line from top
+        
+        // Capacitor C on A'B' edge
+        drawCapacitor(A_bot_front.x, A_bot_front.y, B_bot_front.x, B_bot_front.y, 'C');
+        
+        // Capacitor C on B' to back edge
+        drawCapacitor(B_bot_front.x, B_bot_front.y, B_bot_back.x, B_bot_back.y, 'C');
+        
+        // Capacitor C on right vertical edge (y1-y2)
+        const cap_y1y2_start = {x: B_top_front.x + (y1.x-B_top_front.x), y: y1.y};
+        const cap_y1y2_end = {x: B_top_front.x + (y2.x-B_top_front.x), y: y2.y};
+        line(B_top_front.x, B_top_front.y, B_top_front.x, y1.y);
+        drawCapacitor(B_top_front.x, y1.y, B_top_front.x, y2.y, 'C');
+        line(B_top_front.x, y2.y, B_bot_front.x, B_bot_front.y);
+
+        // Capacitor C on diagonal A' to x2 (dashed)
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(A_bot_front.x, A_bot_front.y);
+        ctx.lineTo(x2.x, x2.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        drawCapacitor(A_bot_front.x, A_bot_front.y, x2.x, x2.y, 'C', true);
+
+        // Capacitor C on diagonal B' to y2
+        drawCapacitor(B_bot_front.x, B_bot_front.y, B_top_front.x, y2.y, 'C');
+
+        // EMF ε1
+        line(x1.x, x1.y, y1.x, y1.y);
+        drawEMF(x1.x, x1.y, y1.x, y1.y, {char: 'ε', sub: '1'});
+        
+        // EMF ε2 (dashed)
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(x2.x, x2.y);
+        ctx.lineTo(B_top_front.x, y2.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        drawEMF(x2.x, x2.y, B_top_front.x, y2.y, {char: 'ε', sub: '2'});
+
+        // Labels for internal points
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText('x₁', x1.x - 15, x1.y);
+        ctx.fillText('y₁', y1.x + 8, y1.y);
+        ctx.beginPath();
+        ctx.arc(x2.x, x2.y, 2, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('x₂', x2.x - 15, x2.y);
+        ctx.fillText('y₂', B_top_front.x + 8, y2.y);
+    </script>
+</body>
+</html>

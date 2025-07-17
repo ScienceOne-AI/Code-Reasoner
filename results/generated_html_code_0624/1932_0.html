@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>U-tube Oscillation Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="850" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Geometry Constants ---
+    const TUBE_STROKE_COLOR = '#000000';
+    const LIQUID_FILL_COLOR = '#cccccc';
+    const LINE_WIDTH = 2;
+    const FONT_REGULAR = '18px Arial';
+    const FONT_ITALIC = 'italic 20px Arial';
+    const FONT_BOLD = 'bold 18px Arial';
+
+    // Fig 1 Geometry
+    const CX1 = 220;
+    const CY1 = 320;
+    const R_IN = 50;
+    const R_OUT = 60;
+    const TOP_Y = 100;
+    const LIQUID_Y_1 = 180;
+
+    // Fig 2 Geometry
+    const CX2 = 620;
+    const CY2 = 320;
+    const EQ_Y_2 = 180;
+    const DISPLACEMENT = 40;
+    const LEFT_Y_2 = EQ_Y_2 + DISPLACEMENT;
+    const RIGHT_Y_2 = EQ_Y_2 - DISPLACEMENT;
+
+    // --- Helper Functions ---
+    function drawArrow(ctx, x1, y1, x2, y2, headlen = 8) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    function drawDoubleVArrow(ctx, x, y1, y2, headlen = 8) {
+        ctx.beginPath();
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x, y2);
+        // Arrow head at top (y1)
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x - headlen / 2, y1 + headlen);
+        ctx.moveTo(x, y1);
+        ctx.lineTo(x + headlen / 2, y1 + headlen);
+        // Arrow head at bottom (y2)
+        ctx.moveTo(x, y2);
+        ctx.lineTo(x - headlen / 2, y2 - headlen);
+        ctx.moveTo(x, y2);
+        ctx.lineTo(x + headlen / 2, y2 - headlen);
+        ctx.stroke();
+    }
+
+    function drawUTube(ctx, cx, cy, r_in, r_out, topY) {
+        ctx.beginPath();
+        // Outer wall
+        ctx.moveTo(cx - r_out, topY);
+        ctx.lineTo(cx - r_out, cy);
+        ctx.arc(cx, cy, r_out, Math.PI, 0, false);
+        ctx.lineTo(cx + r_out, topY);
+        // Inner wall
+        ctx.moveTo(cx + r_in, topY);
+        ctx.lineTo(cx + r_in, cy);
+        ctx.arc(cx, cy, r_in, 0, Math.PI, true);
+        ctx.lineTo(cx - r_in, topY);
+        ctx.stroke();
+    }
+
+    function drawLiquid(ctx, cx, cy, r_in, r_out, leftY, rightY) {
+        ctx.fillStyle = LIQUID_FILL_COLOR;
+        ctx.strokeStyle = TUBE_STROKE_COLOR;
+        ctx.lineWidth = LINE_WIDTH;
+        
+        // Bottom U-part
+        ctx.beginPath();
+        ctx.moveTo(cx - r_out, cy);
+        ctx.arc(cx, cy, r_out, Math.PI, 0, false);
+        ctx.lineTo(cx + r_in, cy);
+        ctx.arc(cx, cy, r_in, 0, Math.PI, true);
+        ctx.closePath();
+        ctx.fill();
+
+        // Left arm
+        if (leftY < cy) {
+            ctx.fillRect(cx - r_out, leftY, r_out - r_in, cy - leftY);
+        }
+        // Right arm
+        if (rightY < cy) {
+            ctx.fillRect(cx + r_in, rightY, r_out - r_in, cy - rightY);
+        }
+
+        // Meniscus (curved surface)
+        ctx.beginPath();
+        ctx.moveTo(cx - r_out, leftY);
+        ctx.quadraticCurveTo(cx - (r_out + r_in) / 2, leftY - 5, cx - r_in, leftY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(cx + r_in, rightY);
+        ctx.quadraticCurveTo(cx + (r_in + r_out) / 2, rightY - 5, cx + r_out, rightY);
+        ctx.stroke();
+    }
+
+    // --- Main Drawing ---
+    ctx.lineWidth = LINE_WIDTH;
+    ctx.strokeStyle = TUBE_STROKE_COLOR;
+
+    // === Draw Fig 3.1 ===
+    drawLiquid(ctx, CX1, CY1, R_IN, R_OUT, LIQUID_Y_1, LIQUID_Y_1);
+    drawUTube(ctx, CX1, CY1, R_IN, R_OUT, TOP_Y);
+    
+    // Fig 1 Labels
+    ctx.fillStyle = TUBE_STROKE_COLOR;
+    ctx.font = FONT_REGULAR;
+    ctx.textAlign = 'left';
+    ctx.fillText('liquid', 70, 190);
+    drawArrow(ctx, 120, 195, CX1 - R_OUT, 205);
+
+    // Fig 1 Dashed line for L
+    const center_r = (R_IN + R_OUT) / 2;
+    ctx.beginPath();
+    ctx.setLineDash([5, 3]);
+    ctx.moveTo(CX1 - center_r, LIQUID_Y_1);
+    ctx.lineTo(CX1 - center_r, CY1);
+    ctx.arc(CX1, CY1, center_r, Math.PI, 0, false);
+    ctx.lineTo(CX1 + center_r, LIQUID_Y_1);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Fig 1 'L' label
+    ctx.font = FONT_ITALIC;
+    ctx.fillText('L', CX1 + center_r + 15, CY1 - 40);
+
+    // Fig 1 Caption
+    ctx.font = FONT_BOLD;
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 3.1', CX1, 420);
+
+    // === Draw Fig 3.2 ===
+    drawLiquid(ctx, CX2, CY2, R_IN, R_OUT, LEFT_Y_2, RIGHT_Y_2);
+    drawUTube(ctx, CX2, CY2, R_IN, R_OUT, TOP_Y);
+    
+    // Fig 2 Labels
+    ctx.strokeStyle = TUBE_STROKE_COLOR;
+    // Equilibrium line
+    ctx.beginPath();
+    ctx.setLineDash([5, 3]);
+    ctx.moveTo(CX2 - R_OUT - 40, EQ_Y_2);
+    ctx.lineTo(CX2 + R_OUT + 40, EQ_Y_2);
+    ctx.stroke();
+
+    // 'x' indicators
+    // Right side
+    const x_pos_right = CX2 + 30;
+    ctx.beginPath();
+    ctx.moveTo(x_pos_right, RIGHT_Y_2);
+    ctx.lineTo(CX2 + R_IN, RIGHT_Y_2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    drawDoubleVArrow(ctx, x_pos_right, RIGHT_Y_2, EQ_Y_2);
+    ctx.fillStyle = TUBE_STROKE_COLOR;
+    ctx.font = FONT_ITALIC;
+    ctx.textAlign = 'left';
+    ctx.fillText('x', x_pos_right + 8, EQ_Y_2 - DISPLACEMENT / 2 + 7);
+
+    // Left side
+    const x_pos_left = CX2 - 30;
+    ctx.beginPath();
+    ctx.setLineDash([5, 3]);
+    ctx.moveTo(x_pos_left, LEFT_Y_2);
+    ctx.lineTo(CX2 - R_IN, LEFT_Y_2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    drawDoubleVArrow(ctx, x_pos_left, EQ_Y_2, LEFT_Y_2);
+    ctx.font = FONT_ITALIC;
+    ctx.textAlign = 'right';
+    ctx.fillText('x', x_pos_left - 8, EQ_Y_2 + DISPLACEMENT / 2 + 7);
+
+    // 'liquid' label
+    ctx.fillStyle = TUBE_STROKE_COLOR;
+    ctx.font = FONT_REGULAR;
+    ctx.textAlign = 'left';
+    ctx.fillText('liquid', CX2 + R_OUT + 50, 270);
+    drawArrow(ctx, CX2 + R_OUT + 50, 265, CX2 + R_OUT - 5, 240);
+
+    // Fig 2 Caption
+    ctx.font = FONT_BOLD;
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 3.2', CX2, 420);
+
+</script>
+</body>
+</html>

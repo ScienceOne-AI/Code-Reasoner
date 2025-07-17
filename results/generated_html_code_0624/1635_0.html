@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Circuit Diagram Fig 3.48</title>
+<style>
+  body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+  canvas { border: 1px solid #ccc; background-color: #fff; }
+</style>
+</head>
+<body>
+<canvas id="circuitCanvas" width="550" height="420"></canvas>
+<script>
+  const canvas = document.getElementById('circuitCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Style settings
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 2;
+  ctx.fillStyle = 'black';
+  ctx.lineCap = 'round';
+
+  // --- Helper function for Arrow ---
+  function drawArrow(ctx, fromx, fromy, tox, toy) {
+    const headlen = 10; // length of head in pixels
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+  }
+
+  // --- Draw the Capacitor-like device ---
+  const cx = 330;
+  const cy_top = 150;
+  const h_val = 80;
+  const cy_bottom = cy_top + h_val;
+
+  // Top plate
+  const rx_top = 80;
+  const ry_top = 30;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy_top, rx_top, ry_top, 0, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  // Cylinder body
+  const rx_cyl = 55;
+  ctx.beginPath();
+  ctx.moveTo(cx - rx_cyl, cy_top);
+  ctx.lineTo(cx - rx_cyl, cy_bottom);
+  ctx.moveTo(cx + rx_cyl, cy_top);
+  ctx.lineTo(cx + rx_cyl, cy_bottom);
+  ctx.stroke();
+
+  // Bottom plate (flange)
+  const rx_bottom = 90;
+  const ry_bottom = 35;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy_bottom, rx_bottom, ry_bottom, 0, 0, Math.PI);
+  ctx.stroke();
+  
+  // Details on the top plate
+  // Dashed inner circle for radius 'b'
+  ctx.beginPath();
+  ctx.setLineDash([4, 4]);
+  const rx_b = 60;
+  const ry_b = 22;
+  ctx.ellipse(cx, cy_top, rx_b, ry_b, 0, 0, 2 * Math.PI);
+  ctx.stroke();
+  ctx.setLineDash([]); // Reset line dash
+
+  // Radius lines and labels 'a' and 'b'
+  ctx.font = 'italic 18px Times New Roman';
+  ctx.beginPath();
+  // Line for 'a'
+  const angle_a = -0.4;
+  ctx.moveTo(cx, cy_top);
+  ctx.lineTo(cx + rx_top * Math.cos(angle_a), cy_top + ry_top * Math.sin(angle_a));
+  ctx.stroke();
+  ctx.fillText('a', cx + 45, cy_top + 5);
+
+  // Line for 'b'
+  const angle_b = 2.4;
+  ctx.moveTo(cx, cy_top);
+  ctx.lineTo(cx + rx_b * Math.cos(angle_b), cy_top + ry_b * Math.sin(angle_b));
+  ctx.stroke();
+  ctx.fillText('b', cx - 35, cy_top - 5);
+
+
+  // --- Draw the circuit (left side) ---
+  const v_x = 100;
+  const v_y = 200;
+  const switch_y = 80;
+  
+  // Wires
+  ctx.beginPath();
+  // From capacitor top to switch
+  const top_wire_x_cap = cx - rx_top * Math.cos(Math.PI/6);
+  const top_wire_y_cap = cy_top - ry_top * Math.sin(Math.PI/6);
+  ctx.moveTo(top_wire_x_cap, top_wire_y_cap);
+  const switch_x_right = top_wire_x_cap;
+  ctx.lineTo(switch_x_right, switch_y);
+  
+  // Switch
+  const switch_x_left = 150;
+  ctx.lineTo(switch_x_right, switch_y); // wire to switch
+  // Switch lever (open)
+  ctx.moveTo(switch_x_right, switch_y);
+  ctx.lineTo(switch_x_left + 20, switch_y - 20);
+  
+  // From switch to V0
+  ctx.moveTo(switch_x_left, switch_y);
+  ctx.lineTo(v_x, switch_y);
+  ctx.lineTo(v_x, v_y - 15);
+
+  // From V0 to capacitor bottom
+  const bottom_wire_x_cap = cx - 30;
+  ctx.moveTo(v_x, v_y + 15);
+  ctx.lineTo(v_x, cy_bottom + ry_bottom + 20);
+  ctx.lineTo(bottom_wire_x_cap, cy_bottom + ry_bottom + 20);
+  ctx.lineTo(bottom_wire_x_cap, cy_bottom);
+  ctx.stroke();
+  
+  // Voltage source V0
+  ctx.beginPath();
+  ctx.moveTo(v_x - 20, v_y - 15); // Positive plate (long)
+  ctx.lineTo(v_x + 20, v_y - 15);
+  ctx.moveTo(v_x - 10, v_y + 15);  // Negative plate (short)
+  ctx.lineTo(v_x + 10, v_y + 15);
+  // A small dot artifact is visible in the source image
+  ctx.moveTo(v_x - 28, v_y);
+  ctx.lineTo(v_x - 28, v_y+1);
+  ctx.stroke();
+
+  // Label V0
+  ctx.font = 'italic 20px Times New Roman';
+  ctx.fillText('V', v_x + 30, v_y + 8);
+  ctx.font = 'italic 14px Times New Roman';
+  ctx.fillText('0', v_x + 40, v_y + 13);
+  
+  
+  // --- Draw Dimensions and Axes (right side) ---
+  const dim_x = cx + rx_bottom + 40;
+  
+  // Dimension 'h'
+  ctx.beginPath();
+  ctx.moveTo(dim_x, cy_top);
+  ctx.lineTo(dim_x, cy_bottom);
+  // Ticks
+  ctx.moveTo(dim_x - 5, cy_top);
+  ctx.lineTo(dim_x + 5, cy_top);
+  ctx.moveTo(dim_x - 5, cy_bottom);
+  ctx.lineTo(dim_x + 5, cy_bottom);
+  ctx.stroke();
+  ctx.font = 'italic 20px Times New Roman';
+  ctx.fillText('h', dim_x - 25, cy_top + h_val/2 + 5);
+
+  // Axis 'z'
+  ctx.beginPath();
+  const z_axis_x = dim_x + 40;
+  drawArrow(ctx, z_axis_x, cy_top, z_axis_x, cy_bottom + 20);
+  ctx.stroke();
+  ctx.fillText('z', z_axis_x + 10, cy_bottom + 20);
+  
+  // --- Figure Caption ---
+  ctx.font = '16px Times New Roman';
+  ctx.fillText('Fig. 3.48', cx - 40, canvas.height - 20);
+
+</script>
+</body>
+</html>

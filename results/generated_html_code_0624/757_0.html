@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="physicsCanvas" width="500" height="350" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    // Helper function to draw a line with an arrow at the end
+    function drawArrow(x1, y1, x2, y2) {
+        const headlen = 8;
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // Helper to draw an arrow in the middle of a line
+    function drawArrowOnLine(x1, y1, x2, y2) {
+        const midX = (x1 + x2) * 0.4 + x1 * 0.6; // place arrow closer to start
+        const midY = (y1 + y2) * 0.4 + y1 * 0.6;
+        const headlen = 8;
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(midX, midY);
+        ctx.lineTo(midX - headlen * Math.cos(angle - Math.PI / 6), midY - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(midX, midY);
+        ctx.lineTo(midX - headlen * Math.cos(angle + Math.PI / 6), midY - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // Acousto-Optic Cell
+    const cellX = 220;
+    const cellWidth = 70;
+    const cellTopY = 50;
+    const cellBottomY = 250;
+    
+    // Grey body
+    ctx.fillStyle = '#E0E0E0';
+    ctx.beginPath();
+    ctx.moveTo(cellX, cellBottomY);
+    ctx.lineTo(cellX + cellWidth, cellBottomY);
+    ctx.lineTo(cellX + cellWidth, cellTopY + 20);
+    ctx.lineTo(cellX, cellTopY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Black top
+    ctx.fillStyle = 'black';
+    ctx.beginPath();
+    ctx.moveTo(cellX, cellTopY);
+    ctx.lineTo(cellX + cellWidth, cellTopY + 20);
+    ctx.lineTo(cellX + cellWidth, cellTopY + 10);
+    ctx.lineTo(cellX, cellTopY - 10);
+    ctx.closePath();
+    ctx.fill();
+
+    // Internal waves
+    ctx.save();
+    ctx.lineWidth = 1;
+    for (let y = 80; y < 250; y += 12) {
+        ctx.beginPath();
+        ctx.moveTo(cellX + 5, y);
+        ctx.lineTo(cellX + cellWidth - 5, y);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // Piezoelectric Transducer (PET) and signal
+    ctx.fillStyle = 'black';
+    ctx.fillRect(cellX + 15, cellBottomY, 40, 15);
+    
+    ctx.fillStyle = 'white';
+    ctx.fillRect(cellX - 25, cellBottomY + 2, 40, 11);
+    ctx.strokeRect(cellX - 25, cellBottomY + 2, 40, 11);
+
+    ctx.fillStyle = 'black';
+    ctx.fillRect(cellX - 25, cellBottomY + 2, 5, 11);
+
+    ctx.font = '24px Arial';
+    ctx.fillText('~', 155, 267);
+
+    ctx.font = 'italic 20px Arial';
+    ctx.fillText('f', 175, 285);
+    ctx.font = 'italic 14px Arial';
+    ctx.fillText('s', 185, 290);
+
+    // PET label
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText('PET', 300, 275);
+    
+    // Laser Beams
+    const x_start = 40;
+    const x_in_end = 220; // End of incoming rays (cell entrance)
+    const x_out_start = 290; // Start of outgoing rays (cell exit)
+    const x_end = 460;
+    
+    // Incoming rays
+    drawArrowOnLine(x_start, 130, x_in_end, 130);
+    drawArrowOnLine(x_start, 150, x_in_end, 150);
+    
+    // This part reproduces the specific crossing pattern seen in the schematic.
+    // It's a simplification and may not be perfectly accurate ray-tracing.
+    
+    // Undiffracted rays
+    ctx.beginPath();
+    ctx.moveTo(x_in_end, 130);
+    ctx.lineTo(x_out_start, 130);
+    ctx.stroke();
+    drawArrow(x_out_start, 130, x_end, 130);
+
+    ctx.beginPath();
+    ctx.moveTo(x_in_end, 150);
+    ctx.lineTo(x_out_start, 150);
+    ctx.stroke();
+    drawArrow(x_out_start, 150, x_end, 150);
+    
+    // Diffracted rays, creating the crossing pattern
+    const angle_deg = 20; // Visual angle for the diagram
+    const angle_rad = angle_deg * Math.PI / 180;
+    const slope = Math.tan(angle_rad);
+
+    ctx.beginPath();
+    ctx.moveTo(x_in_end, 130); // From top incoming
+    ctx.lineTo(x_out_start, 150 + 20); // To bottom diffracted
+    ctx.stroke();
+    drawArrow(x_out_start, 170, x_end, 170 + (x_end - x_out_start) * slope);
+
+    ctx.beginPath();
+    ctx.moveTo(x_in_end, 150); // From bottom incoming
+    ctx.lineTo(x_out_start, 130 + 20); // To top diffracted
+    ctx.stroke();
+    drawArrow(x_out_start, 150, x_end, 150 + (x_end - x_out_start) * slope);
+
+
+    // Angle alpha
+    ctx.font = 'italic 20px Arial';
+    
+    // The angle is drawn between the bottom undiffracted ray and a line parallel to the diffracted rays
+    const arc_center_x = 330;
+    const arc_center_y = 150; // Y of the bottom undiffracted ray
+    const arc_radius = 40;
+    
+    // Draw the arc
+    ctx.beginPath();
+    ctx.arc(arc_center_x, arc_center_y, arc_radius, 0, angle_rad);
+    ctx.stroke();
+    
+    // Draw the vertical part of the angle marker, as in the original image
+    ctx.beginPath();
+    ctx.moveTo(arc_center_x, arc_center_y - 5);
+    ctx.lineTo(arc_center_x, arc_center_y + 15);
+    ctx.stroke();
+
+    ctx.fillText('\u03B1', arc_center_x + 15, arc_center_y + 30);
+
+</script>
+</body>
+</html>

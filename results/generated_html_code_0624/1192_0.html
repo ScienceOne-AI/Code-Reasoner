@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interferometer with Diffraction Grating</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="650" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw a line with an arrowhead
+    function drawArrow(fromx, fromy, tox, toy, size = 8) {
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        ctx.save();
+        ctx.translate(tox, toy);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // Helper function to place an arrow on a line
+    function placeArrowOnLine(x1, y1, x2, y2, fraction, size = 8) {
+        const tox = x1 + fraction * (x2 - x1);
+        const toy = y1 + fraction * (y2 - y1);
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        
+        ctx.save();
+        ctx.translate(tox, toy);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+
+    // --- Main Drawing ---
+    
+    // Define coordinates
+    const dg_x = 150, dg_y = 250;
+    const m1_x = 400, m1_y = 100;
+    const bs_x = 400, bs_y = 250;
+    const m2_x = 550;
+    const pd_y = 420;
+    const extra_m_x = 240, extra_m_y = 330;
+
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Draw Light Paths ---
+    ctx.lineWidth = 1;
+
+    // 1. Incoming beam
+    ctx.beginPath();
+    ctx.moveTo(40, dg_y - 5); ctx.lineTo(dg_x, dg_y - 5);
+    ctx.moveTo(40, dg_y + 5); ctx.lineTo(dg_x, dg_y + 5);
+    ctx.stroke();
+    placeArrowOnLine(40, dg_y - 5, dg_x, dg_y - 5, 0.5);
+    placeArrowOnLine(40, dg_y + 5, dg_x, dg_y + 5, 0.5);
+    
+    // 2. M1 Arm Path
+    ctx.beginPath();
+    ctx.moveTo(dg_x, dg_y);
+    ctx.lineTo(m1_x, m1_y);
+    ctx.lineTo(bs_x, bs_y);
+    ctx.lineTo(bs_x, pd_y - 20); // Path towards PD
+    ctx.stroke();
+    placeArrowOnLine(dg_x, dg_y, m1_x, m1_y, 0.5);
+    placeArrowOnLine(m1_x, m1_y, bs_x, bs_y, 0.5);
+    placeArrowOnLine(bs_x, bs_y, bs_x, pd_y-20, 0.5);
+    placeArrowOnLine(bs_x, bs_y, bs_x, pd_y-20, 0.7);
+
+
+    // 3. M2 Arm Path
+    // Path DG -> BS
+    ctx.beginPath();
+    ctx.moveTo(dg_x, dg_y);
+    ctx.lineTo(bs_x, bs_y);
+    ctx.stroke();
+    placeArrowOnLine(dg_x, dg_y, bs_x, bs_y, 0.7);
+
+    // Path BS <-> M2 (pinched beam representation)
+    const mid_x = (bs_x + m2_x) / 2;
+    ctx.beginPath();
+    ctx.moveTo(bs_x, dg_y - 1);
+    ctx.quadraticCurveTo(mid_x, dg_y - 5, m2_x, dg_y - 1);
+    ctx.moveTo(bs_x, dg_y + 1);
+    ctx.quadraticCurveTo(mid_x, dg_y + 5, m2_x, dg_y + 1);
+    ctx.stroke();
+    // Arrows for BS -> M2
+    placeArrowOnLine(bs_x, dg_y-1, mid_x, dg_y-5, 0.5);
+    placeArrowOnLine(bs_x, dg_y+1, mid_x, dg_y+5, 0.5);
+    // Arrows for M2 -> BS
+    placeArrowOnLine(m2_x, dg_y-1, mid_x, dg_y-5, 0.5);
+    placeArrowOnLine(m2_x, dg_y+1, mid_x, dg_y+5, 0.5);
+
+    // Path BS -> PD (reflected from M2 path)
+    ctx.beginPath();
+    ctx.moveTo(bs_x, bs_y);
+    ctx.lineTo(bs_x, pd_y - 20);
+    ctx.stroke();
+    // This path overlaps with the M1 path, arrows already drawn
+
+    // 4. Extra diffracted beam
+    ctx.beginPath();
+    const refl_x = extra_m_x + 50;
+    const refl_y = extra_m_y;
+    ctx.moveTo(dg_x, dg_y);
+    ctx.lineTo(extra_m_x, extra_m_y);
+    ctx.lineTo(refl_x, refl_y);
+    ctx.stroke();
+    placeArrowOnLine(dg_x, dg_y, extra_m_x, extra_m_y, 0.5);
+    placeArrowOnLine(extra_m_x, extra_m_y, refl_x, refl_y, 0.5);
+    
+    // --- Draw Components ---
+    ctx.lineWidth = 2;
+
+    // Diffraction Grating (DG)
+    ctx.fillStyle = '#d3d3d3';
+    ctx.fillRect(dg_x - 2, dg_y - 70, 4, 140);
+    ctx.strokeRect(dg_x - 2, dg_y - 70, 4, 140);
+    ctx.fillStyle = 'black';
+    ctx.fillText("DG", dg_x, dg_y + 85);
+
+    // Mirror M1
+    ctx.save();
+    ctx.translate(m1_x, m1_y);
+    ctx.rotate(124 * Math.PI / 180); // Angle to reflect beam down
+    ctx.fillStyle = '#333';
+    ctx.fillRect(-35, -3, 70, 6);
+    ctx.restore();
+    ctx.fillText("M", m1_x - 15, m1_y - 25);
+    ctx.font = "italic 14px 'Times New Roman'";
+    ctx.fillText("1", m1_x - 7, m1_y - 22);
+    ctx.font = "italic 20px 'Times New Roman'";
+
+    // Beam Splitter (BS)
+    ctx.save();
+    ctx.translate(bs_x, bs_y);
+    ctx.rotate(45 * Math.PI / 180);
+    ctx.fillStyle = 'rgba(173, 216, 230, 0.5)'; // Light blue for glass
+    ctx.fillRect(-35, -2.5, 70, 5);
+    ctx.strokeStyle = '#a0a0a0';
+    ctx.strokeRect(-35, -2.5, 70, 5);
+    ctx.restore();
+    ctx.fillStyle = 'black';
+    ctx.fillText("BS", bs_x + 35, bs_y - 25);
+
+    // Mirror M2
+    ctx.fillStyle = '#333';
+    ctx.fillRect(m2_x, dg_y - 30, 5, 60);
+    ctx.fillStyle = 'black';
+    ctx.fillText("M", m2_x + 20, dg_y - 40);
+    ctx.font = "italic 14px 'Times New Roman'";
+    ctx.fillText("2", m2_x + 28, dg_y - 37);
+    ctx.font = "italic 20px 'Times New Roman'";
+
+    // Extra small mirror
+    ctx.save();
+    ctx.translate(extra_m_x, extra_m_y);
+    ctx.rotate(45 * Math.PI / 180);
+    ctx.fillStyle = '#333';
+    ctx.fillRect(-15, -2, 30, 4);
+    ctx.restore();
+
+    // Photodetector (PD)
+    ctx.fillStyle = '#222';
+    ctx.fillRect(bs_x - 30, pd_y - 20, 60, 20);
+    ctx.fillStyle = 'black';
+    ctx.fillText("PD", bs_x - 50, pd_y - 10);
+
+    // Output Signal
+    ctx.beginPath();
+    ctx.moveTo(bs_x, pd_y);
+    ctx.lineTo(bs_x, pd_y + 20);
+    ctx.lineTo(bs_x + 80, pd_y + 20);
+    ctx.stroke();
+    drawArrow(bs_x, pd_y, bs_x + 100, pd_y + 20);
+
+    // --- Draw Labels and Vectors ---
+    // λ₀
+    ctx.fillText("λ", 90, dg_y - 25);
+    ctx.font = "italic 14px 'Times New Roman'";
+    ctx.fillText("0", 98, dg_y - 21);
+    ctx.font = "italic 20px 'Times New Roman'";
+
+    // v₁ vector
+    drawArrow(dg_x, dg_y - 70, dg_x, dg_y - 100);
+    ctx.fillText("v", dg_x - 20, dg_y - 85);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(dg_x - 24, dg_y - 95); ctx.lineTo(dg_x - 16, dg_y - 95);
+    ctx.moveTo(dg_x - 20, dg_y - 95); ctx.lineTo(dg_x - 22, dg_y - 98);
+    ctx.moveTo(dg_x - 20, dg_y - 95); ctx.lineTo(dg_x - 22, dg_y - 92);
+    ctx.stroke();
+    ctx.font = "italic 14px 'Times New Roman'";
+    ctx.fillText("1", dg_x - 12, dg_y - 82);
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.lineWidth = 2;
+
+    // v₂ vector
+    drawArrow(m2_x + 10, dg_y + 40, m2_x + 40, dg_y + 40);
+    ctx.fillText("v", m2_x + 55, dg_y + 40);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(m2_x + 51, dg_y + 30); ctx.lineTo(m2_x + 59, dg_y + 30);
+    ctx.moveTo(m2_x + 55, dg_y + 30); ctx.lineTo(m2_x + 53, dg_y + 33);
+    ctx.moveTo(m2_x + 55, dg_y + 30); ctx.lineTo(m2_x + 53, dg_y + 27);
+    ctx.stroke();
+    ctx.font = "italic 14px 'Times New Roman'";
+    ctx.fillText("2", m2_x + 63, dg_y + 43);
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.lineWidth = 2;
+    
+    // ũ_p(t) label
+    const u_x = bs_x + 130;
+    const u_y = pd_y + 20;
+    ctx.fillText("u", u_x, u_y);
+    // Draw tilde ~
+    ctx.beginPath();
+    ctx.moveTo(u_x - 7, u_y - 12);
+    ctx.quadraticCurveTo(u_x - 3, u_y - 16, u_x, u_y - 12);
+    ctx.quadraticCurveTo(u_x + 3, u_y - 8, u_x + 7, u_y - 12);
+    ctx.stroke();
+    // Subscript and (t)
+    ctx.font = "italic 14px 'Times New Roman'";
+    ctx.fillText("p", u_x + 6, u_y + 5);
+    ctx.font = "italic 20px 'Times New Roman'";
+    ctx.fillText("(t)", u_x + 25, u_y);
+
+</script>
+</body>
+</html>

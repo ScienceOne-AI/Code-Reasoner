@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prism Refraction Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-canvas" width="500" height="380"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow on a line segment
+        function drawArrow(ctx, x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            const headlen = 10;
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx);
+            ctx.save();
+            ctx.translate(x2, y2);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headlen, headlen / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headlen, -headlen / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // Prism parameters and coordinates
+        const cx = 250;
+        const apexY = 60;
+        const baseY = 250;
+        const height = baseY - apexY;
+        const halfBase = height / Math.sqrt(3);
+
+        const apex = { x: cx, y: apexY };
+        const pLeft = { x: cx - halfBase, y: baseY };
+        const pRight = { x: cx + halfBase, y: baseY };
+
+        // 1. Draw the Prism outline
+        ctx.beginPath();
+        ctx.moveTo(apex.x, apex.y);
+        ctx.lineTo(pLeft.x, pLeft.y);
+        ctx.lineTo(pRight.x, pRight.y);
+        ctx.closePath();
+        ctx.stroke();
+
+        // 2. Draw the dots inside the prism
+        const dotRadius = 2.5;
+        function drawDot(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, dotRadius, 0, 2 * Math.PI, false);
+            ctx.fill();
+        }
+        // Dot positions are placed manually to match the visual arrangement in the original image.
+        drawDot(235, 110); drawDot(250, 110); drawDot(265, 110);
+        drawDot(225, 135); drawDot(240, 135); drawDot(255, 135); drawDot(270, 135);
+        drawDot(205, 185); drawDot(225, 185); drawDot(250, 185); drawDot(275, 185); drawDot(295, 185);
+        drawDot(190, 215); drawDot(210, 215); drawDot(230, 215); drawDot(250, 215); drawDot(270, 215); drawDot(290, 215);
+
+
+        // 3. Draw the ray path (e-ray)
+        const rayY = 160; // Y-coordinate of the horizontal ray
+        
+        // Calculate intersection points based on geometry
+        const p1 = { x: cx - (rayY - apexY) / Math.sqrt(3), y: rayY }; // Incidence point
+        const p2 = { x: cx + (rayY - apexY) / Math.sqrt(3), y: rayY }; // Emergence point
+
+        // Calculate ray angles based on physics (Snell's Law at min deviation)
+        // n1*sin(i) = n2*sin(r). For min deviation, r = A/2 = 30 deg.
+        // sin(i) = 1.49 * sin(30) = 0.745. i = arcsin(0.745)
+        const i_rad = Math.asin(1.49 * Math.sin(Math.PI / 6)); // Angle of incidence
+        const normalAngle1_rad = Math.PI / 6; // Normal to left face (30 deg from horizontal)
+        const incidentAngle_rad = normalAngle1_rad - i_rad;
+
+        const normalAngle2_rad = -Math.PI / 6; // Normal to right face (-30 deg)
+        const emergentAngle_rad = normalAngle2_rad + i_rad;
+
+        // Define start and end points for the rays outside the prism
+        const rayStart = {
+            x: p1.x - 120 * Math.cos(incidentAngle_rad),
+            y: p1.y - 120 * Math.sin(incidentAngle_rad)
+        };
+        const rayEnd = {
+            x: p2.x + 120 * Math.cos(emergentAngle_rad),
+            y: p2.y + 120 * Math.sin(emergentAngle_rad)
+        };
+
+        // Draw the three segments of the ray path
+        ctx.lineWidth = 1.5;
+        drawArrow(ctx, rayStart.x, rayStart.y, p1.x, p1.y);
+        drawArrow(ctx, p1.x, p1.y, p2.x, p2.y);
+        drawArrow(ctx, p2.x, p2.y, rayEnd.x, rayEnd.y);
+
+        // 4. Draw normals and other dashed lines
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1;
+
+        // Normal at incidence point
+        const n1_start = { x: p1.x - 50 * Math.cos(normalAngle1_rad), y: p1.y - 50 * Math.sin(normalAngle1_rad) };
+        const n1_end = { x: p1.x + 40 * Math.cos(normalAngle1_rad), y: p1.y + 40 * Math.sin(normalAngle1_rad) };
+        ctx.beginPath();
+        ctx.moveTo(n1_start.x, n1_start.y);
+        ctx.lineTo(n1_end.x, n1_end.y);
+        ctx.stroke();
+
+        // Normal at emergence point
+        const n2_start = { x: p2.x - 40 * Math.cos(normalAngle2_rad), y: p2.y - 40 * Math.sin(normalAngle2_rad) };
+        const n2_end = { x: p2.x + 50 * Math.cos(normalAngle2_rad), y: p2.y + 50 * Math.sin(normalAngle2_rad) };
+        ctx.beginPath();
+        ctx.moveTo(n2_start.x, n2_start.y);
+        ctx.lineTo(n2_end.x, n2_end.y);
+        ctx.stroke();
+
+        // Dashed V-shape inside the prism
+        ctx.beginPath();
+        ctx.moveTo(235, rayY);
+        ctx.lineTo(225, 185); // Connects to a dot
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(265, rayY);
+        ctx.lineTo(275, 185); // Connects to another dot
+        ctx.stroke();
+
+        ctx.restore();
+
+        // 5. Add angles and labels
+        ctx.lineWidth = 1;
+        ctx.font = '20px "Times New Roman"';
+        
+        // Angle of incidence 'i'
+        ctx.beginPath();
+        ctx.arc(p1.x, p1.y, 35, incidentAngle_rad, normalAngle1_rad, false);
+        ctx.stroke();
+        ctx.fillText('i', p1.x - 48, p1.y - 15);
+
+        // Apex angle '60°'
+        ctx.beginPath();
+        ctx.arc(apex.x, apex.y, 25, 60 * Math.PI / 180, 120 * Math.PI / 180, false);
+        ctx.stroke();
+        ctx.font = '18px "Times New Roman"';
+        ctx.fillText('60°', apex.x + 12, apex.y + 12);
+        
+        // Label 'e' for the e-ray
+        ctx.font = 'italic 20px "Times New Roman"';
+        ctx.fillText('e', 245, rayY - 10);
+
+        // Bottom descriptive text
+        ctx.font = '22px KaiTi'; // Use a font that supports Chinese characters
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 12-54 图', canvas.width / 2, canvas.height - 20);
+
+    </script>
+</body>
+</html>

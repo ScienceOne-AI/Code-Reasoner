@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nuclear Shell Model Energy Levels</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="650"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Data from the figure ---
+        const levels = [
+            // Neutron Unoccupied
+            { label: 'd_{3/2}', type: 'n', calc: 1.7, obs: 1.8 },
+            { label: 'g_{7/2}', type: 'n', calc: 1.9, obs: 2.0 },
+            { label: 's_{1/2}', type: 'n', calc: 2.0, obs: 2.1 },
+            { label: 'j_{15/2}', type: 'n', calc: 2.2, obs: 2.4 },
+            { label: 'd_{5/2}', type: 'n', calc: 2.4, obs: 2.5 },
+            { label: 'i_{11/2}', type: 'n', calc: 3.2, obs: 3.0 },
+            { label: 'g_{9/2}', type: 'n', calc: 4.1, obs: 3.9 },
+            // Neutron Occupied
+            { label: 'p_{1/2}', type: 'n', calc: 7.2, obs: 7.4 },
+            { label: 'f_{5/2}', type: 'n', calc: 7.8, obs: 7.9 },
+            { label: 'p_{3/2}', type: 'n', calc: 8.1, obs: 8.3 },
+            { label: 'i_{13/2}', type: 'n', calc: 8.8, obs: 9.0 },
+            { label: 'f_{7/2}', type: 'n', calc: 10.0, obs: 9.7 },
+            { label: 'h_{9/2}', type: 'n', calc: 10.8, obs: 10.8 },
+            // Proton Unoccupied
+            { label: 'i_{13/2}', type: 'p', calc: 1.9, obs: 2.0 },
+            { label: 'f_{7/2}', type: 'p', calc: 2.8, obs: 2.9 },
+            { label: 'h_{9/2}', type: 'p', calc: 4.0, obs: 3.8 },
+            // Proton Occupied
+            { label: 's_{1/2}', type: 'p', calc: 7.8, obs: 8.0 },
+            { label: 'd_{3/2}', type: 'p', calc: 8.1, obs: 8.4 },
+            { label: 'h_{11/2}', type: 'p', calc: 9.2, obs: 9.3 },
+            { label: 'd_{5/2}', type: 'p', calc: 9.8, obs: 9.7 },
+            { label: 'g_{7/2}', type: 'p', calc: 11.5, obs: 11.5 }
+        ];
+
+        // --- Drawing parameters ---
+        const config = {
+            marginTop: 50,
+            marginBottom: 100,
+            marginLeft: 90,
+            marginRight: 50,
+            energyMin: 0,
+            energyMax: 12,
+            font: '16px Times New Roman',
+            subFont: '12px Times New Roman',
+            labelFont: '18px Times New Roman',
+            color: '#000',
+        };
+
+        const plotWidth = canvas.width - config.marginLeft - config.marginRight;
+        const plotHeight = canvas.height - config.marginTop - config.marginBottom;
+
+        const neutronX = {
+            label: config.marginLeft + 30,
+            calc_start: config.marginLeft + 70,
+            calc_end: config.marginLeft + 120,
+            obs_start: config.marginLeft + 200,
+            obs_end: config.marginLeft + 250,
+        };
+
+        const protonX = {
+            label: neutronX.obs_end + 130,
+            calc_start: neutronX.obs_end + 180,
+            calc_end: neutronX.obs_end + 230,
+            obs_start: neutronX.obs_end + 310,
+            obs_end: neutronX.obs_end + 360,
+        };
+
+        // --- Helper functions ---
+        function energyToY(E) {
+            return config.marginTop + (E / config.energyMax) * plotHeight;
+        }
+        
+        function drawSubscriptText(text, x, y) {
+            ctx.save();
+            ctx.font = config.font;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            
+            const parts = text.split(/[{_}]/); // Split by '_', '{', '}'
+            const base = parts[0];
+            const sub = parts[1];
+
+            ctx.fillText(base, x, y);
+            const baseWidth = ctx.measureText(base).width;
+
+            if (sub) {
+                ctx.font = config.subFont;
+                ctx.fillText(sub, x - (baseWidth/2) + (ctx.measureText(sub).width/2) + 2 , y + 6);
+            }
+            ctx.restore();
+        }
+        
+        function drawSuperscriptText(base, sup, x, y) {
+            ctx.save();
+            ctx.font = config.font;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(base, x, y);
+            
+            const baseWidth = ctx.measureText(base).width;
+            
+            ctx.font = config.subFont; // small font for superscript
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(sup, x + baseWidth, y - 2);
+            ctx.restore();
+        }
+
+        // --- Main drawing function ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = config.color;
+            ctx.strokeStyle = config.color;
+            ctx.lineWidth = 1.5;
+
+            // Draw Y-axis and labels
+            ctx.beginPath();
+            ctx.moveTo(config.marginLeft, config.marginTop);
+            ctx.lineTo(config.marginLeft, config.marginTop + plotHeight);
+            ctx.stroke();
+
+            ctx.font = config.font;
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let E = 2; E <= 10; E += 2) {
+                const y = energyToY(E);
+                ctx.fillText(E.toString(), config.marginLeft - 10, y);
+                ctx.beginPath();
+                ctx.moveTo(config.marginLeft, y);
+                ctx.lineTo(config.marginLeft - 5, y);
+                ctx.stroke();
+            }
+
+            // Draw Y-axis title
+            ctx.save();
+            ctx.translate(30, canvas.height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.font = config.labelFont;
+            ctx.textAlign = 'center';
+            ctx.fillText('Binding Energy (MeV)', 0, 0);
+            ctx.restore();
+
+            // Draw energy levels
+            levels.forEach(level => {
+                const y_calc = energyToY(level.calc);
+                const y_obs = energyToY(level.obs);
+                
+                let x_coords;
+                if (level.type === 'n') {
+                    x_coords = neutronX;
+                } else {
+                    x_coords = protonX;
+                }
+                
+                drawSubscriptText(level.label, x_coords.label, y_calc);
+
+                ctx.beginPath();
+                ctx.moveTo(x_coords.calc_start, y_calc);
+                ctx.lineTo(x_coords.calc_end, y_calc);
+                ctx.lineTo(x_coords.obs_start, y_obs);
+                ctx.lineTo(x_coords.obs_end, y_obs);
+                ctx.stroke();
+            });
+
+            // Draw Fermi level
+            const fermiEnergy = 5.9;
+            const y_fermi = energyToY(fermiEnergy);
+            ctx.save();
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.moveTo(neutronX.calc_start, y_fermi);
+            ctx.lineTo(protonX.obs_end, y_fermi);
+            ctx.stroke();
+            ctx.restore();
+            
+            drawSuperscriptText('Pb', '208', protonX.obs_end + 10, y_fermi)
+            
+
+            // Draw section labels
+            ctx.font = config.labelFont;
+            ctx.textAlign = 'center';
+            const titleY = canvas.height - 60;
+            ctx.fillText('NEUTRON STATE', (neutronX.calc_start + neutronX.obs_end) / 2, titleY);
+            ctx.fillText('PROTON STATE', (protonX.calc_start + protonX.obs_end) / 2, titleY);
+
+            const subtitleY = titleY + 20;
+            ctx.font = config.font;
+            ctx.fillText('calc.', (neutronX.calc_start + neutronX.calc_end) / 2, subtitleY);
+            ctx.fillText('obs.', (neutronX.obs_start + neutronX.obs_end) / 2, subtitleY);
+            ctx.fillText('calc.', (protonX.calc_start + protonX.calc_end) / 2, subtitleY);
+            ctx.fillText('obs.', (protonX.obs_start + protonX.obs_end) / 2, subtitleY);
+
+            // Draw Occupancy labels
+            ctx.save();
+            const occupancyX = (neutronX.obs_end + protonX.label) / 2 - 20;
+            ctx.font = config.labelFont;
+            ctx.translate(occupancyX, canvas.height/2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText('Unoccupied', -(energyToY(3)), 0);
+            ctx.fillText('Occupied', energyToY(2.5), 0);
+            ctx.restore();
+            
+            // Draw figure caption
+            ctx.font = config.labelFont;
+            ctx.textAlign = 'center';
+            ctx.fillText('Fig. 2.13', canvas.width / 2, canvas.height - 15);
+
+        }
+
+        draw();
+    </script>
+</body>
+</html>

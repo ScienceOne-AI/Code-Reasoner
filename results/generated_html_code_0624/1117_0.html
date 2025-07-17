@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Force Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, label, labelPos) {
+            const headlen = 10; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            
+            // Draw line
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+
+            // Draw arrowhead
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw label
+            if (label) {
+                ctx.save();
+                ctx.font = 'italic 20px Times New Roman';
+                ctx.fillStyle = 'black';
+                ctx.textAlign = labelPos.align || 'center';
+                ctx.textBaseline = labelPos.baseline || 'middle';
+                ctx.fillText(label, labelPos.x, labelPos.y);
+                ctx.restore();
+            }
+        }
+
+        // Parameters
+        const cx = 300; // Center x of the full circle
+        const cy = 200; // y-coordinate of the top edge of the bowl
+        const R = 150;  // Radius of the hemisphere
+        const alpha = 30 * Math.PI / 180; // Angle alpha in radians
+
+        // --- Calculate key points based on geometry ---
+        // B is on the rim
+        const B = { x: cx + R, y: cy };
+        // A is on the arc
+        const A = { 
+            x: cx - R * Math.cos(2 * alpha), 
+            y: cy + R * Math.sin(2 * alpha) 
+        };
+        // E is the point of concurrency of forces
+        const E = {
+            x: cx + R * Math.cos(2 * alpha),
+            y: cy - R * Math.sin(2 * alpha)
+        };
+        // The rod's line equation: y - B.y = m * (x - B.x)
+        const rodSlope = (A.y - B.y) / (A.x - B.x);
+        // C is the center of gravity of the rod, on the vertical line through E
+        const C = {
+            x: E.x,
+            y: B.y + rodSlope * (E.x - B.x)
+        };
+        // D is the other end of the rod
+        const rodLengthOut = 100;
+        const vec_AB = { x: B.x - A.x, y: B.y - A.y };
+        const mag_AB = Math.sqrt(vec_AB.x**2 + vec_AB.y**2);
+        const D = {
+            x: B.x + vec_AB.x / mag_AB * rodLengthOut,
+            y: B.y + vec_AB.y / mag_AB * rodLengthOut
+        };
+
+        // --- Start Drawing ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 1. Draw the bowl
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        // Rectangular base
+        ctx.strokeRect(cx - R - 40, cy, 2 * R + 80, R + 40);
+        // Semicircular arc
+        ctx.beginPath();
+        ctx.arc(cx, cy, R, 0, Math.PI);
+        ctx.stroke();
+
+        // 2. Draw the rod AD
+        ctx.save();
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(D.x, D.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // 3. Draw forces
+        ctx.lineWidth = 1.5;
+        ctx.fillStyle = 'black';
+
+        // mg
+        drawArrow(ctx, C.x, C.y, C.x, C.y + 80, 'mg', {x: C.x - 30, y: C.y + 40, align: 'right'});
+
+        // N1
+        const N1_len = 100;
+        const vec_AE = { x: E.x - A.x, y: E.y - A.y };
+        const mag_AE = Math.sqrt(vec_AE.x**2 + vec_AE.y**2);
+        const N1_end = {
+            x: A.x + vec_AE.x / mag_AE * N1_len,
+            y: A.y + vec_AE.y / mag_AE * N1_len
+        };
+        drawArrow(ctx, A.x, A.y, N1_end.x, N1_end.y, 'N₁', {x: N1_end.x - 20, y: N1_end.y - 20});
+        
+        // N2
+        const N2_len = 100;
+        const vec_BE = { x: E.x - B.x, y: E.y - B.y };
+        const mag_BE = Math.sqrt(vec_BE.x**2 + vec_BE.y**2);
+        const N2_end = {
+            x: B.x + vec_BE.x / mag_BE * N2_len,
+            y: B.y + vec_BE.y / mag_BE * N2_len
+        };
+        drawArrow(ctx, B.x, B.y, N2_end.x, N2_end.y, 'N₂', {x: N2_end.x + 25, y: N2_end.y, align: 'left'});
+
+        // 4. Draw construction lines and angles
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 1;
+        // Line AE
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(E.x, E.y);
+        ctx.stroke();
+        // Line BE
+        ctx.beginPath();
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(E.x, E.y);
+        ctx.stroke();
+        // Horizontal line from A's vertical projection to B
+        const projA_x = {x: A.x, y: cy};
+        ctx.beginPath();
+        ctx.moveTo(projA_x.x, projA_x.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+        // Vertical line from E
+        ctx.beginPath();
+        ctx.moveTo(E.x, E.y);
+        ctx.lineTo(E.x, B.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw angles
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        
+        // Angle alpha at A
+        ctx.beginPath();
+        const angleA_start = Math.atan2(A.y - E.y, A.x - E.x); // N1 direction
+        const angleA_end = Math.atan2(B.y - A.y, B.x - A.x); // Rod direction
+        ctx.arc(A.x, A.y, 30, angleA_start, angleA_end);
+        ctx.stroke();
+
+        // Angle alpha at B
+        ctx.beginPath();
+        ctx.arc(B.x, B.y, 30, Math.PI, Math.PI + alpha);
+        ctx.stroke();
+
+        // Angle alpha at E
+        ctx.beginPath();
+        ctx.arc(E.x, E.y, 25, Math.PI/2, Math.PI/2 - Math.atan2(B.y - E.y, B.x - E.x), true);
+        ctx.stroke();
+
+        // 5. Draw labels
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Points
+        ctx.fillText('A', A.x - 20, A.y);
+        ctx.fillText('B', B.x + 15, B.y + 10);
+        ctx.fillText('C', C.x + 15, C.y);
+        ctx.fillText('D', D.x + 10, D.y - 10);
+        ctx.fillText('E', E.x, E.y - 15);
+
+        // Lengths
+        ctx.fillText('R', (projA_x.x + B.x)/2 + 50, projA_x.y - 15);
+        ctx.save();
+        ctx.translate((A.x + B.x)/2, (A.y + B.y)/2);
+        ctx.rotate(alpha);
+        ctx.fillText('l', -30, -15);
+        ctx.restore();
+        
+        // Angles
+        ctx.fillText('α', A.x + 25, A.y - 25);
+        ctx.fillText('α', B.x - 40, B.y + 10);
+        ctx.fillText('α', E.x + 10, E.y + 30);
+        
+        // Caption
+        ctx.font = '20px SimHei';
+        ctx.fillText('力图 5.4.1', canvas.width / 2, canvas.height - 30);
+    </script>
+</body>
+</html>

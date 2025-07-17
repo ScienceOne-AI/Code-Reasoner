@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="myCanvas" width="600" height="450" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw a double-headed arrow line for measurements
+    function drawDoubleArrowLine(ctx, x1, y, x2, label, labelYOffset = 25) {
+        const headlen = 8;
+        ctx.beginPath();
+        // Line
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x2, y);
+        // Arrowhead 1 (points to x2)
+        const angle1 = Math.atan2(0, x2 - x1);
+        ctx.moveTo(x2, y);
+        ctx.lineTo(x2 - headlen * Math.cos(angle1 - Math.PI / 6), y - headlen * Math.sin(angle1 - Math.PI / 6));
+        ctx.moveTo(x2, y);
+        ctx.lineTo(x2 - headlen * Math.cos(angle1 + Math.PI / 6), y - headlen * Math.sin(angle1 + Math.PI / 6));
+        // Arrowhead 2 (points to x1)
+        const angle2 = Math.atan2(0, x1 - x2);
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x1 - headlen * Math.cos(angle2 - Math.PI / 6), y - headlen * Math.sin(angle2 - Math.PI / 6));
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x1 - headlen * Math.cos(angle2 + Math.PI / 6), y - headlen * Math.sin(angle2 + Math.PI / 6));
+        ctx.stroke();
+        // Label
+        ctx.fillText(label, (x1 + x2) / 2 - ctx.measureText(label).width / 2, y + labelYOffset);
+    }
+    
+    // Helper for single-headed arrow
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // Parameters
+    const l = 100;
+    const Bx = 320;
+    const By = 200;
+
+    // Point coordinates
+    const B = { x: Bx, y: By };
+    const A = { x: B.x - 2 * l, y: B.y };
+    const O = { x: B.x - l, y: B.y };
+    const D = { x: B.x + l, y: B.y };
+    const C = { x: B.x, y: B.y - l };
+
+    // --- Drawing ---
+    ctx.strokeStyle = '#000000';
+    ctx.fillStyle = '#000000';
+    ctx.lineWidth = 1.5;
+    ctx.font = 'italic 20px Times New Roman';
+
+    // 1. Draw dashed line (axis)
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.moveTo(A.x - 40, A.y);
+    ctx.lineTo(D.x + 60, D.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 2. Draw semicircle OCD
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+    ctx.arc(B.x, B.y, l, Math.PI, 0, false); // From O to D, clockwise
+    ctx.stroke();
+
+    // 3. Draw arrow on the semicircle path
+    const arrowAngle = 3 * Math.PI / 4; // Position of the arrow on the arc (between O and C)
+    const arrowPointX = B.x + l * Math.cos(arrowAngle);
+    const arrowPointY = B.y - l * Math.sin(arrowAngle); // Canvas Y is inverted
+    const tangentAngle = Math.PI / 4; // Direction of clockwise motion at this point
+    const headSize = 10;
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+    ctx.moveTo(arrowPointX, arrowPointY); // Tip of the arrow
+    ctx.lineTo(arrowPointX - headSize * Math.cos(tangentAngle - Math.PI / 6), arrowPointY - headSize * Math.sin(tangentAngle - Math.PI / 6));
+    ctx.moveTo(arrowPointX, arrowPointY);
+    ctx.lineTo(arrowPointX - headSize * Math.cos(tangentAngle + Math.PI / 6), arrowPointY - headSize * Math.sin(tangentAngle + Math.PI / 6));
+    ctx.stroke();
+
+    // 4. Draw point charges and labels
+    ctx.lineWidth = 1.5;
+    // Point A (+q)
+    ctx.beginPath();
+    ctx.arc(A.x, A.y, 5, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.fillText('A', A.x - 25, A.y + 8);
+    ctx.fillText('+q', A.x - 10, A.y - 15);
+    
+    // Point B (-q)
+    ctx.beginPath();
+    ctx.arc(B.x, B.y, 5, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.fillText('B', B.x + 10, B.y + 25);
+    ctx.fillText('-q', B.x - 8, B.y - 15);
+
+    // 5. Other Labels
+    ctx.fillText('O', O.x - 5, O.y - 10);
+    ctx.fillText('C', C.x - 5, C.y - 10);
+    ctx.fillText('D', D.x + 10, D.y);
+    
+    // 6. Arrow at D, indicating axis direction
+    drawArrow(ctx, D.x, D.y, D.x + 40, D.y, 10);
+
+    // 7. Distance markers
+    ctx.lineWidth = 1;
+    // Marker for 2l (A to B)
+    const markerY_AB = B.y + 50;
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y);
+    ctx.lineTo(A.x, markerY_AB);
+    ctx.moveTo(B.x, B.y);
+    ctx.lineTo(B.x, markerY_AB);
+    ctx.stroke();
+    drawDoubleArrowLine(ctx, A.x, markerY_AB, B.x, '2l', 25);
+
+    // Marker for l (B to D)
+    const markerY_BD = B.y + 80;
+    ctx.beginPath();
+    ctx.moveTo(B.x, B.y);
+    ctx.lineTo(B.x, markerY_BD);
+    ctx.moveTo(D.x, D.y);
+    ctx.lineTo(D.x, markerY_BD);
+    ctx.stroke();
+    drawDoubleArrowLine(ctx, B.x, markerY_BD, D.x, 'l', 25);
+
+    // 8. Caption
+    ctx.font = '20px "SimSun", "Songti SC"';
+    ctx.fillText('习题 7-34 图', canvas.width / 2 - 60, canvas.height - 20);
+
+</script>
+</body>
+</html>

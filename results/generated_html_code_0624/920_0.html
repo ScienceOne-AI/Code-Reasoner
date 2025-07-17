@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Digital Transmission of Speech</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    canvas {
+        background-color: #fff;
+    }
+</style>
+</head>
+<body>
+<canvas id="myCanvas" width="850" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = 'bold 22px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const y_center = 180;
+
+    // --- Component positions (calculated from left to right) ---
+    const mic_x_center = 60;
+    const amp1_x_start = 100;
+    const amp_width = 50;
+    const amp_h = 35;
+    const p_offset = 25;
+    const adc_x_start = amp1_x_start + amp_width + 30; // 180
+    const box_w = 90;
+    const box_h = 70;
+    const channel_length = 220;
+    const dac_x_start = adc_x_start + box_w + channel_length; // 180 + 90 + 220 = 490
+    const amp2_x_start = dac_x_start + box_w + 20; // 490 + 90 + 20 = 600
+    const speaker_x_start = amp2_x_start + amp_width + 20; // 600 + 50 + 20 = 670
+    
+    // --- Draw Components ---
+
+    // 1. Microphone
+    const mic_r = 20;
+    // Circle
+    ctx.beginPath();
+    ctx.arc(mic_x_center, y_center, mic_r, 0, 2 * Math.PI);
+    ctx.stroke();
+    // Vertical Bar
+    ctx.beginPath();
+    ctx.moveTo(mic_x_center - mic_r - 5, y_center - mic_r);
+    ctx.lineTo(mic_x_center - mic_r - 5, y_center + mic_r);
+    ctx.stroke();
+    // Connecting line to amplifier
+    ctx.beginPath();
+    ctx.moveTo(mic_x_center + mic_r, y_center);
+    ctx.lineTo(amp1_x_start, y_center);
+    ctx.stroke();
+
+    // 2. Preamplifier
+    const amp1_x_end = amp1_x_start + amp_width;
+    ctx.beginPath();
+    ctx.moveTo(amp1_x_start, y_center - amp_h);
+    ctx.lineTo(amp1_x_end, y_center);
+    ctx.lineTo(amp1_x_start, y_center + amp_h);
+    ctx.closePath();
+    ctx.stroke();
+
+    // 3. Line to ADC and Point P
+    // Line
+    ctx.beginPath();
+    ctx.moveTo(amp1_x_end, y_center);
+    ctx.lineTo(adc_x_start, y_center);
+    ctx.stroke();
+    // Dot for P
+    const p_x = amp1_x_end + p_offset;
+    ctx.beginPath();
+    ctx.arc(p_x, y_center, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    // Label P
+    ctx.font = 'italic 22px Arial';
+    ctx.fillText('P', p_x, y_center + 25);
+    ctx.font = 'bold 22px Arial'; // Reset font
+
+    // 4. ADC (Analogue-to-Digital Converter)
+    // Box
+    ctx.strokeRect(adc_x_start, y_center - box_h / 2, box_w, box_h);
+    // Text
+    ctx.fillText('ADC', adc_x_start + box_w / 2, y_center);
+
+    // 5. Digital Transmission Channel
+    const channel_start_x = adc_x_start + box_w;
+    const solid_segment_len = 20;
+    // First solid segment
+    ctx.beginPath();
+    ctx.moveTo(channel_start_x, y_center);
+    ctx.lineTo(channel_start_x + solid_segment_len, y_center);
+    ctx.stroke();
+    // Dashed segment
+    const dashed_start_x = channel_start_x + solid_segment_len;
+    const dashed_end_x = dac_x_start - solid_segment_len;
+    ctx.beginPath();
+    ctx.setLineDash([10, 8]);
+    ctx.moveTo(dashed_start_x, y_center);
+    ctx.lineTo(dashed_end_x, y_center);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line
+    // Final solid segment
+    ctx.beginPath();
+    ctx.moveTo(dashed_end_x, y_center);
+    ctx.lineTo(dac_x_start, y_center);
+    ctx.stroke();
+
+    // 6. DAC (Digital-to-Analogue Converter)
+    // Box
+    ctx.strokeRect(dac_x_start, y_center - box_h / 2, box_w, box_h);
+    // Text
+    ctx.fillText('DAC', dac_x_start + box_w / 2, y_center);
+
+    // 7. Power Amplifier
+    const amp2_x_end = amp2_x_start + amp_width;
+    // Connecting line
+    ctx.beginPath();
+    ctx.moveTo(dac_x_start + box_w, y_center);
+    ctx.lineTo(amp2_x_start, y_center);
+    ctx.stroke();
+    // Triangle
+    ctx.beginPath();
+    ctx.moveTo(amp2_x_start, y_center - amp_h);
+    ctx.lineTo(amp2_x_end, y_center);
+    ctx.lineTo(amp2_x_start, y_center + amp_h);
+    ctx.closePath();
+    ctx.stroke();
+
+    // 8. Loudspeaker
+    const speaker_rect_w = 15;
+    const speaker_rect_h = 40;
+    const speaker_cone_w = 20;
+    const speaker_cone_h = 60;
+    // Connecting line
+    ctx.beginPath();
+    ctx.moveTo(amp2_x_end, y_center);
+    ctx.lineTo(speaker_x_start, y_center);
+    ctx.stroke();
+    // Rectangle part
+    ctx.strokeRect(speaker_x_start, y_center - speaker_rect_h / 2, speaker_rect_w, speaker_rect_h);
+    // Cone part
+    const cone_base_x = speaker_x_start + speaker_rect_w;
+    const cone_tip_x = cone_base_x + speaker_cone_w;
+    ctx.beginPath();
+    ctx.moveTo(cone_base_x, y_center - speaker_rect_h / 2);
+    ctx.lineTo(cone_tip_x, y_center - speaker_cone_h / 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cone_base_x, y_center + speaker_rect_h / 2);
+    ctx.lineTo(cone_tip_x, y_center + speaker_cone_h / 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cone_tip_x, y_center - speaker_cone_h / 2);
+    ctx.lineTo(cone_tip_x, y_center + speaker_cone_h / 2);
+    ctx.stroke();
+
+    // 9. Figure Label
+    const label_y = canvas.height - 60;
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText('Fig. 6.1', canvas.width / 2 , label_y);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+
+        // --- Cube Coordinates ---
+        // Using an oblique projection to create the 3D effect
+        const cx = 240; // center x
+        const cy = 200; // center y
+        const s = 180;  // side length
+        const dx = -80; // perspective x-offset
+        const dy = -40; // perspective y-offset
+
+        const vertices = {
+            // Front face
+            ftr: { x: cx + s / 2, y: cy - s / 2 }, // front-top-right
+            fbr: { x: cx + s / 2, y: cy + s / 2 }, // front-bottom-right
+            ftl: { x: cx - s / 2, y: cy - s / 2 }, // front-top-left
+            fbl: { x: cx - s / 2, y: cy + s / 2 }, // front-bottom-left
+            // Back face
+            btr: { x: cx + s / 2 + dx, y: cy - s / 2 + dy }, // back-top-right
+            bbr: { x: cx + s / 2 + dx, y: cy + s / 2 + dy }, // back-bottom-right
+            btl: { x: cx - s / 2 + dx, y: cy - s / 2 + dy }, // back-top-left
+            bbl: { x: cx - s / 2 + dx, y: cy + s / 2 + dy }, // back-bottom-left (hidden corner)
+        };
+
+        // --- Drawing ---
+
+        // 1. Shaded Face (Right Face)
+        ctx.fillStyle = '#E0E0E0';
+        ctx.beginPath();
+        ctx.moveTo(vertices.ftr.x, vertices.ftr.y);
+        ctx.lineTo(vertices.fbr.x, vertices.fbr.y);
+        ctx.lineTo(vertices.bbr.x, vertices.bbr.y);
+        ctx.lineTo(vertices.btr.x, vertices.btr.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke(); // re-stroke the outline to keep it sharp
+
+        // 2. Dashed Lines (Hidden Edges)
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        // from hidden corner bbl
+        ctx.moveTo(vertices.bbl.x, vertices.bbl.y);
+        ctx.lineTo(vertices.fbl.x, vertices.fbl.y);
+        ctx.moveTo(vertices.bbl.x, vertices.bbl.y);
+        ctx.lineTo(vertices.bbr.x, vertices.bbr.y);
+        ctx.moveTo(vertices.bbl.x, vertices.bbl.y);
+        ctx.lineTo(vertices.btl.x, vertices.btl.y);
+        ctx.stroke();
+
+        // 3. Solid Lines (Visible Edges)
+        ctx.beginPath();
+        ctx.setLineDash([]); // solid line
+        // Top face
+        ctx.moveTo(vertices.ftl.x, vertices.ftl.y);
+        ctx.lineTo(vertices.btl.x, vertices.btl.y);
+        ctx.lineTo(vertices.btr.x, vertices.btr.y);
+        ctx.lineTo(vertices.ftr.x, vertices.ftr.y);
+        ctx.lineTo(vertices.ftl.x, vertices.ftl.y);
+        // Front face
+        ctx.moveTo(vertices.ftl.x, vertices.ftl.y);
+        ctx.lineTo(vertices.fbl.x, vertices.fbl.y);
+        ctx.lineTo(vertices.fbr.x, vertices.fbr.y);
+        ctx.lineTo(vertices.ftr.x, vertices.ftr.y);
+        // Right edge already drawn with shaded face
+        ctx.stroke();
+
+
+        // 4. Molecule and its velocity vector
+        const molecule_center = {
+             x: (vertices.fbl.x + vertices.btr.x) / 2,
+             y: (vertices.fbl.y + vertices.btr.y) / 2
+        };
+
+        // Molecule circle
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(molecule_center.x, molecule_center.y, 6, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Velocity arrow 'u'
+        const arrow_start_x = molecule_center.x + 8;
+        const arrow_end_x = molecule_center.x + 80;
+        const arrow_y = molecule_center.y;
+        
+        ctx.beginPath();
+        ctx.moveTo(arrow_start_x, arrow_y);
+        ctx.lineTo(arrow_end_x, arrow_y);
+        // Arrowhead
+        ctx.moveTo(arrow_end_x, arrow_y);
+        ctx.lineTo(arrow_end_x - 10, arrow_y - 5);
+        ctx.moveTo(arrow_end_x, arrow_y);
+        ctx.lineTo(arrow_end_x - 10, arrow_y + 5);
+        ctx.stroke();
+
+        // Label 'u'
+        ctx.font = 'italic 20px Arial';
+        ctx.fillText('u', arrow_start_x + 30, arrow_y - 10);
+
+        // 5. Labels
+        // "molecule" label
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'right';
+        const label_molecule_pos = {x: molecule_center.x - 70, y: molecule_center.y - 30};
+        ctx.fillText('molecule', label_molecule_pos.x, label_molecule_pos.y);
+        // Line from label to molecule
+        ctx.beginPath();
+        ctx.moveTo(label_molecule_pos.x + 5, label_molecule_pos.y - 5);
+        ctx.lineTo(molecule_center.x - 8, molecule_center.y);
+        ctx.stroke();
+
+
+        // Length 'L' label
+        const L_line_x = vertices.btr.x + 50;
+        const L_top_y = vertices.btr.y;
+        const L_bottom_y = vertices.bbr.y;
+
+        // Dashed helper lines
+        ctx.beginPath();
+        ctx.setLineDash([3, 3]);
+        ctx.moveTo(vertices.btr.x, vertices.btr.y);
+        ctx.lineTo(L_line_x, L_top_y);
+        ctx.moveTo(vertices.bbr.x, vertices.bbr.y);
+        ctx.lineTo(L_line_x, L_bottom_y);
+        ctx.stroke();
+        
+        // Solid L-line with arrows
+        ctx.beginPath();
+        ctx.setLineDash([]);
+        ctx.moveTo(L_line_x, L_top_y);
+        ctx.lineTo(L_line_x, L_bottom_y);
+        // Arrowheads
+        ctx.moveTo(L_line_x, L_top_y);
+        ctx.lineTo(L_line_x - 4, L_top_y + 8);
+        ctx.moveTo(L_line_x, L_top_y);
+        ctx.lineTo(L_line_x + 4, L_top_y + 8);
+        ctx.moveTo(L_line_x, L_bottom_y);
+        ctx.lineTo(L_line_x - 4, L_bottom_y - 8);
+        ctx.moveTo(L_line_x, L_bottom_y);
+        ctx.lineTo(L_line_x + 4, L_bottom_y - 8);
+        ctx.stroke();
+
+        // 'L' text
+        ctx.textAlign = 'left';
+        ctx.fillText('L', L_line_x + 15, (L_top_y + L_bottom_y) / 2 + 8);
+
+        // Figure caption
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 3.1', canvas.width / 2, 420);
+
+    </script>
+</body>
+</html>

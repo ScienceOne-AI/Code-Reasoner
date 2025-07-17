@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electromagnetic Damping Apparatus</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    canvas {
+        border: 1px solid #ccc;
+        background-color: white;
+    }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="450" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and General Settings ---
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = "16px sans-serif";
+    
+    // --- Component Coordinates & Dimensions ---
+    const centerX = 200;
+    const supportY = 50;
+    const springTopY = 50;
+    const springBottomY = 170;
+    const magnetTopY = 170;
+    const magnetWidth = 30;
+    const magnetHeight = 120;
+    
+    const coilTopY = 220;
+    const coilTurns = 8;
+    const coilTurnHeight = 15;
+    const coilBottomY = coilTopY + coilTurns * coilTurnHeight;
+    const formerWidth = 90;
+    const formerLeftX = centerX - formerWidth/2;
+    const formerRightX = centerX + formerWidth/2;
+    const coilArcRadius = 10;
+    
+    const circuitXStart = formerRightX + coilArcRadius;
+
+    // 1. Draw Support
+    ctx.beginPath();
+    ctx.moveTo(centerX - 120, supportY);
+    ctx.lineTo(centerX + 120, supportY);
+    // Hatching
+    for (let i = centerX - 120; i <= centerX + 120; i += 12) {
+        ctx.moveTo(i, supportY);
+        ctx.lineTo(i - 12, supportY - 12);
+    }
+    ctx.stroke();
+
+    // 2. Draw Spring
+    ctx.beginPath();
+    // Top straight part
+    ctx.moveTo(centerX, springTopY);
+    ctx.lineTo(centerX, 70);
+    // Coiled part
+    const springRadius = 20;
+    const springLoops = 8;
+    const springCoilTotalHeight = springBottomY - 80;
+    const springLoopHeight = springCoilTotalHeight / springLoops;
+    let y = 70;
+    for (let i = 0; i < springLoops; i++) {
+        ctx.bezierCurveTo(centerX - springRadius * 1.5, y + springLoopHeight / 3, 
+                          centerX + springRadius * 1.5, y + springLoopHeight * 2 / 3, 
+                          centerX, y + springLoopHeight);
+        y += springLoopHeight;
+    }
+    // Bottom straight part
+    ctx.lineTo(centerX, springBottomY);
+    ctx.stroke();
+
+    // 3. Draw Magnet
+    ctx.fillStyle = '#cccccc';
+    ctx.fillRect(centerX - magnetWidth / 2, magnetTopY, magnetWidth, magnetHeight);
+    ctx.strokeStyle = 'black';
+    ctx.strokeRect(centerX - magnetWidth / 2, magnetTopY, magnetWidth, magnetHeight);
+
+    // 4. Draw Coil
+    // Former vertical lines
+    ctx.beginPath();
+    ctx.moveTo(formerLeftX, coilTopY - 5);
+    ctx.lineTo(formerLeftX, coilBottomY + 5);
+    ctx.moveTo(formerRightX, coilTopY - 5);
+    ctx.lineTo(formerRightX, coilBottomY + 5);
+    ctx.stroke();
+
+    // Windings (the visible wire path)
+    ctx.beginPath();
+    ctx.moveTo(circuitXStart, coilTopY); // Connect to circuit
+    ctx.lineTo(formerRightX, coilTopY);
+    for (let i = 0; i < coilTurns; i++) {
+        let y_center = coilTopY + i * coilTurnHeight + coilTurnHeight / 2;
+        ctx.arc(formerRightX, y_center, coilArcRadius, -Math.PI / 2, Math.PI / 2);
+    }
+    ctx.lineTo(circuitXStart, coilBottomY); // Connect to circuit
+    ctx.stroke();
+
+    // 5. Draw Circuit
+    const circuitX2 = circuitXStart + 50;
+    const switchGap = 15;
+    const circuitX3 = circuitX2 + switchGap + 50;
+    const resistorWidth = 40;
+    const resistorHeight = 15;
+
+    ctx.beginPath();
+    // Top wire to switch
+    ctx.moveTo(circuitXStart, coilTopY);
+    ctx.lineTo(circuitX2, coilTopY);
+    // Switch (open)
+    ctx.moveTo(circuitX2, coilTopY);
+    ctx.lineTo(circuitX2 + switchGap, coilTopY - 10);
+    // Wire from switch
+    ctx.moveTo(circuitX2 + switchGap, coilTopY);
+    ctx.lineTo(circuitX3, coilTopY);
+    // Vertical wire
+    ctx.moveTo(circuitX3, coilTopY);
+    ctx.lineTo(circuitX3, coilBottomY);
+    // Bottom wire
+    ctx.lineTo(circuitXStart + resistorWidth + 10, coilBottomY);
+    // Resistor
+    ctx.strokeRect(circuitXStart + 10, coilBottomY - resistorHeight / 2, resistorWidth, resistorHeight);
+    // Wire from resistor to coil
+    ctx.moveTo(circuitXStart + 10, coilBottomY);
+    ctx.lineTo(circuitXStart, coilBottomY);
+    ctx.stroke();
+
+    // 6. Add Labels
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'left';
+    
+    // Spring label
+    ctx.fillText("spring", 50, 100);
+    ctx.beginPath();
+    ctx.moveTo(100, 104);
+    ctx.lineTo(centerX - springRadius - 5, 120);
+    ctx.stroke();
+
+    // Magnet label
+    ctx.fillText("magnet", 50, 220);
+    ctx.beginPath();
+    ctx.moveTo(104, 224);
+    ctx.lineTo(centerX - magnetWidth / 2 - 5, 230);
+    ctx.stroke();
+
+    // Coil label
+    ctx.fillText("coil", 50, 310);
+    ctx.beginPath();
+    ctx.moveTo(80, 314);
+    ctx.lineTo(formerLeftX - 5, 300);
+    ctx.stroke();
+
+    // 7. Add Caption
+    ctx.textAlign = "center";
+    ctx.fillText("Fig. 2.1", centerX + 50, coilBottomY + 80);
+
+</script>
+</body>
+</html>

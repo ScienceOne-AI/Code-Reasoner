@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Wave Propagation Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="700" height="400"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Helper function to draw a line with an open arrowhead at the end
+  function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 8) {
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    
+    // Draw the line shaft
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.stroke();
+    
+    // Draw the arrowhead
+    ctx.beginPath();
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+  }
+
+  // General settings
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  
+  // --- Draw Horizontal Wave Lines ---
+  const y_lines = [140, 170, 200];
+  const x_start = 50;
+  const x_end = 650;
+  
+  ctx.lineWidth = 1.5;
+  y_lines.forEach(y => {
+    ctx.beginPath();
+    ctx.moveTo(x_start, y);
+    ctx.lineTo(x_end, y);
+    ctx.stroke();
+  });
+
+  // --- Draw Arrows on Horizontal Lines ---
+  const arrow_x_left = 180;
+  const arrow_x_right = 580;
+  y_lines.forEach(y => {
+      // Create a small gap for the arrow body
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(arrow_x_left - 10, y, 12, 0, 2 * Math.PI);
+      ctx.arc(arrow_x_right - 10, y, 12, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.restore();
+      // Draw the arrows
+      drawArrow(ctx, arrow_x_left - 20, y, arrow_x_left, y, 10); // Left arrows
+      drawArrow(ctx, arrow_x_right - 20, y, arrow_x_right, y, 10); // Right arrows
+  });
+
+  // --- Draw Vertical Grating Lines ---
+  ctx.lineWidth = 3;
+  const num_verticals = 6;
+  const x_grating_start = 280;
+  const grating_spacing = 50;
+  const y_grating_top = y_lines[0] - 10;
+  const y_grating_bottom = y_lines[2] + 10;
+  
+  for (let i = 0; i < num_verticals; i++) {
+    const x = x_grating_start + i * grating_spacing;
+    ctx.beginPath();
+    ctx.moveTo(x, y_grating_top);
+    ctx.lineTo(x, y_grating_bottom);
+    ctx.stroke();
+  }
+
+  // --- Draw Labels ---
+  // E₁(z, t)
+  ctx.font = 'italic 30px serif';
+  ctx.fillText('E', 120, 120);
+  ctx.font = 'italic 20px serif';
+  ctx.fillText('1', 142, 125);
+  ctx.font = 'italic 30px serif';
+  ctx.fillText('(z, t)', 155, 120);
+
+  // E₂(z, t)
+  ctx.font = 'italic 30px serif';
+  ctx.fillText('E', 550, 120);
+  ctx.font = 'italic 20px serif';
+  ctx.fillText('2', 572, 125);
+  ctx.font = 'italic 30px serif';
+  ctx.fillText('(z, t)', 585, 120);
+
+  // z-axis
+  ctx.lineWidth = 1.5;
+  const z_axis_y = 230;
+  const z_axis_x_start = 550;
+  const z_axis_x_end = 630;
+  drawArrow(ctx, z_axis_x_start, z_axis_y, z_axis_x_end, z_axis_y, 10);
+  ctx.font = 'italic 24px serif';
+  ctx.fillText('z', z_axis_x_end - 40, z_axis_y + 25);
+  
+  // Lambda (Λ) dimension
+  const x_dim_1 = x_grating_start + 2 * grating_spacing; // 3rd line
+  const x_dim_2 = x_grating_start + 3 * grating_spacing; // 4th line
+  const y_dim = y_grating_bottom + 40;
+  const gap = 20;
+  const arrow_line_len = (x_dim_2 - x_dim_1 - gap) / 2;
+
+  ctx.lineWidth = 1;
+  // Left arrow, points right
+  drawArrow(ctx, x_dim_1, y_dim, x_dim_1 + arrow_line_len, y_dim, 8);
+  // Right arrow, points left
+  drawArrow(ctx, x_dim_2, y_dim, x_dim_2 - arrow_line_len, y_dim, 8);
+
+  ctx.font = '30px serif';
+  ctx.fillText('Λ', (x_dim_1 + x_dim_2) / 2 - 10, y_dim + 10);
+
+</script>
+</body>
+</html>

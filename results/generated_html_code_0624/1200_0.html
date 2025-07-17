@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jib Crane Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="500" height="550"></canvas>
+    <script>
+        window.onload = function() {
+            const canvas = document.getElementById('myCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // --- Helper Functions ---
+            function drawArrow(ctx, fromx, fromy, tox, toy, text) {
+                const headlen = 10; // length of head in pixels
+                const dx = tox - fromx;
+                const dy = toy - fromy;
+                const angle = Math.atan2(dy, dx);
+                ctx.moveTo(fromx, fromy);
+                ctx.lineTo(tox, toy);
+                ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+                ctx.moveTo(tox, toy);
+                ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            }
+            
+            function drawAngleArc(ctx, x, y, radius, startAngle, endAngle, counterClockwise, addArrow) {
+                ctx.beginPath();
+                ctx.arc(x, y, radius, startAngle, endAngle, counterClockwise);
+                ctx.stroke();
+
+                if (addArrow) {
+                    const arrowAngle = counterClockwise ? startAngle : endAngle;
+                    const arrowX = x + radius * Math.cos(arrowAngle);
+                    const arrowY = y + radius * Math.sin(arrowAngle);
+                    const tangentAngle = arrowAngle + (counterClockwise ? -Math.PI / 2 : Math.PI / 2);
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(arrowX, arrowY);
+                    ctx.lineTo(arrowX - 8 * Math.cos(tangentAngle - Math.PI / 6), arrowY - 8 * Math.sin(tangentAngle - Math.PI / 6));
+                    ctx.moveTo(arrowX, arrowY);
+                    ctx.lineTo(arrowX - 8 * Math.cos(tangentAngle + Math.PI / 6), arrowY - 8 * Math.sin(tangentAngle + Math.PI / 6));
+                    ctx.stroke();
+                }
+            }
+
+
+            // --- Coordinates and Parameters ---
+            const A = { x: 180, y: 450 };
+            const C = { x: 180, y: 200 };
+            
+            // From geometric analysis:
+            // Angle of AB relative to horizontal is -75 deg
+            // Angle of CB relative to horizontal is -45 deg
+            const angleAB_rad = -75 * Math.PI / 180;
+            const angleCB_rad = -45 * Math.PI / 180;
+            
+            // Solving for intersection point B
+            // Line AB: y - A.y = tan(angleAB_rad) * (x - A.x)
+            // Line CB: y - C.y = tan(angleCB_rad) * (x - C.x)
+            // tan(-45) = -1. So y = -x + C.x + C.y
+            // ( -x + C.x + C.y ) - A.y = tan(angleAB_rad) * (x - A.x)
+            // -x + C.x + C.y - A.y = tan(angleAB_rad)*x - tan(angleAB_rad)*A.x
+            // C.x + C.y - A.y + tan(angleAB_rad)*A.x = x * (1 + tan(angleAB_rad))
+            const tanAB = Math.tan(angleAB_rad);
+            const Bx = (C.x + C.y - A.y + tanAB * A.x) / (1 + tanAB);
+            const By = -Bx + C.x + C.y;
+            const B = { x: Bx, y: By };
+            
+            const P_pos = { x: B.x, y: B.y + 100 };
+            const P_size = 50;
+
+            ctx.strokeStyle = 'black';
+            ctx.fillStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.font = '24px serif';
+
+            // --- Draw Wall and Supports ---
+            const wallX = 140;
+            ctx.beginPath();
+            ctx.moveTo(wallX, C.y - 50);
+            ctx.lineTo(wallX, A.y + 50);
+            ctx.stroke();
+
+            // Hatching
+            ctx.lineWidth = 1;
+            for (let y = C.y - 50; y < A.y + 50; y += 15) {
+                ctx.beginPath();
+                ctx.moveTo(wallX, y);
+                ctx.lineTo(wallX - 15, y + 15);
+                ctx.stroke();
+            }
+            ctx.lineWidth = 2;
+
+            // Hinge supports
+            // Support at C
+            ctx.beginPath();
+            ctx.moveTo(wallX, C.y - 12);
+            ctx.lineTo(C.x, C.y);
+            ctx.lineTo(wallX, C.y + 12);
+            ctx.stroke();
+            // Support at A
+            ctx.beginPath();
+            ctx.moveTo(wallX, A.y - 12);
+            ctx.lineTo(A.x, A.y);
+            ctx.lineTo(wallX, A.y + 12);
+            ctx.stroke();
+
+
+            // --- Draw Structural Members ---
+            // Arm AB (thicker)
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(A.x, A.y);
+            ctx.lineTo(B.x, B.y);
+            ctx.stroke();
+
+            // Cable CB (thinner)
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(C.x, C.y);
+            ctx.lineTo(B.x, B.y);
+            ctx.stroke();
+            
+            // --- Draw Hinges (circles) ---
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(A.x, A.y, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(C.x, C.y, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(B.x, B.y, 6, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            // --- Draw Weight P ---
+            ctx.beginPath();
+            ctx.moveTo(B.x, B.y);
+            ctx.lineTo(P_pos.x, P_pos.y);
+            ctx.stroke();
+
+            ctx.lineWidth = 3;
+            ctx.strokeRect(P_pos.x - P_size/2, P_pos.y, P_size, P_size);
+            ctx.fillStyle = 'black';
+            ctx.fillText('P', P_pos.x + P_size, P_pos.y + P_size/2 + 8);
+            ctx.lineWidth = 2;
+
+
+            // --- Draw Angles and Guidelines ---
+            // Vertical guideline
+            ctx.save();
+            ctx.setLineDash([8, 3, 2, 3]); // Dash-dot pattern
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(C.x, C.y - 30);
+            ctx.lineTo(A.x, A.y + 30);
+            ctx.stroke();
+            ctx.restore();
+
+            // Angle at C (135°)
+            const radiusC = 40;
+            const angleCA_rad = Math.atan2(A.y - C.y, A.x - C.x); // Should be PI/2
+            drawAngleArc(ctx, C.x, C.y, radiusC, angleCA_rad, angleCB_rad, true, true);
+            ctx.fillText('135°', C.x + 25, C.y + 5);
+
+            // Angle at A (15°)
+            const radiusA = 40;
+            const angleAC_rad = Math.atan2(C.y - A.y, C.x - A.x); // Should be -PI/2
+            drawAngleArc(ctx, A.x, A.y, radiusA, angleAB_rad, angleAC_rad, false, true);
+            ctx.fillText('15°', A.x + 30, A.y - 45);
+
+
+            // --- Draw Labels A, B, C ---
+            ctx.font = 'bold 28px serif';
+            ctx.fillText('A', A.x - 35, A.y + 10);
+            ctx.fillText('B', B.x + 15, B.y - 5);
+            ctx.fillText('C', C.x - 30, C.y);
+
+        };
+    </script>
+</body>
+</html>

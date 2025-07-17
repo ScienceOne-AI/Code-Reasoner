@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Acceleration vs. Time Graph</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f8f9fa;
+  }
+  canvas {
+    border: 1px solid #dee2e6;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="600" height="450"></canvas>
+
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Configuration ---
+const margin = { top: 40, right: 20, bottom: 60, left: 80 };
+const plotWidth = canvas.width - margin.left - margin.right;
+const plotHeight = canvas.height - margin.top - margin.bottom;
+
+const tMin = 0;
+const tMax = 10;
+const aMin = -10;
+const aMax = 10;
+
+// --- Coordinate mapping functions ---
+function mapX(t) {
+    return margin.left + (t - tMin) / (tMax - tMin) * plotWidth;
+}
+
+function mapY(a) {
+    // Y-axis is inverted in canvas coordinates
+    return margin.top + plotHeight - (a - aMin) / (aMax - aMin) * plotHeight;
+}
+
+// --- Drawing ---
+
+// 1. Clear canvas
+ctx.fillStyle = 'white';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// 2. Draw Grid
+ctx.strokeStyle = '#e9ecef'; // A light grey for grid lines
+ctx.lineWidth = 1;
+
+// Vertical grid lines
+for (let t = tMin; t <= tMax; t++) {
+    const x = mapX(t);
+    ctx.beginPath();
+    ctx.moveTo(x, margin.top);
+    ctx.lineTo(x, margin.top + plotHeight);
+    ctx.stroke();
+}
+
+// Horizontal grid lines
+for (let a = aMin; a <= aMax; a += 2) {
+    const y = mapY(a);
+    ctx.beginPath();
+    ctx.moveTo(margin.left, y);
+    ctx.lineTo(margin.left + plotWidth, y);
+    ctx.stroke();
+}
+
+// 3. Draw Axes (thicker than grid)
+ctx.strokeStyle = 'black';
+ctx.lineWidth = 1.5;
+
+// X-axis (where acceleration a=0)
+const yZero = mapY(0);
+ctx.beginPath();
+ctx.moveTo(margin.left, yZero);
+ctx.lineTo(margin.left + plotWidth, yZero);
+ctx.stroke();
+
+// Y-axis (where time t=0)
+const xZero = mapX(0);
+ctx.beginPath();
+ctx.moveTo(xZero, margin.top);
+ctx.lineTo(xZero, margin.top + plotHeight);
+ctx.stroke();
+
+// 4. Draw Ticks and Labels
+ctx.fillStyle = 'black';
+ctx.font = 'bold 16px Arial';
+
+// X-axis labels
+ctx.textAlign = 'center';
+ctx.textBaseline = 'top';
+for (let t = tMin; t <= tMax; t++) {
+    const x = mapX(t);
+    // Avoid drawing the '0' label directly on top of the y-axis '0'
+    if (t !== 0) {
+        ctx.fillText(t.toString(), x, yZero + 5);
+    }
+}
+
+// Y-axis labels
+ctx.textAlign = 'right';
+ctx.textBaseline = 'middle';
+const yLabels = [-10, 0, 10];
+yLabels.forEach(a => {
+    const y = mapY(a);
+    ctx.fillText(a.toString(), margin.left - 10, y);
+});
+
+// Axis Titles
+ctx.font = 'bold 20px Arial';
+
+// X-axis Title
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+ctx.fillText('Time (s)', margin.left + plotWidth / 2, canvas.height - 15);
+
+// Y-axis Title
+ctx.save();
+ctx.translate(30, margin.top + plotHeight / 2);
+ctx.rotate(-Math.PI / 2);
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+// Use Unicode for superscript '²' (U+00B2) for simplicity and accuracy
+ctx.fillText('acceleration (m/s²)', 0, 0);
+ctx.restore();
+
+// 5. Draw the function curve: a(t) = 9 * sin( (pi/2) * t )
+ctx.strokeStyle = 'black';
+ctx.lineWidth = 2.5;
+ctx.beginPath();
+
+const amplitude = 9;
+const period = 4;
+const omega = (2 * Math.PI) / period;
+
+const timeStep = 0.01; // Use a small step for a smooth curve
+for (let t = tMin; t <= tMax; t += timeStep) {
+    const a = amplitude * Math.sin(omega * t);
+    const x = mapX(t);
+    const y = mapY(a);
+    if (t === tMin) {
+        ctx.moveTo(x, y);
+    } else {
+        ctx.lineTo(x, y);
+    }
+}
+ctx.stroke();
+
+</script>
+
+</body>
+</html>

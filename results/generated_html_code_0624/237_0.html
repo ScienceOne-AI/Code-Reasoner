@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram Fig. 3.24</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="550" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style to mimic the hand-drawn look
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 22px "Comic Sans MS", cursive, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        /**
+         * Draws a resistor between two points.
+         * @param {CanvasRenderingContext2D} ctx The canvas context.
+         * @param {number} x1 The starting x-coordinate.
+         * @param {number} y1 The starting y-coordinate.
+         * @param {number} x2 The ending x-coordinate.
+         * @param {number} y2 The ending y-coordinate.
+         */
+        function drawResistor(ctx, x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            const segments = 7;
+            const segLen = len / segments;
+            const h = 12; // height of zigzag
+
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(segLen, 0);
+            ctx.lineTo(segLen * 1.5, -h);
+            ctx.lineTo(segLen * 2.5, h);
+            ctx.lineTo(segLen * 3.5, -h);
+            ctx.lineTo(segLen * 4.5, h);
+            ctx.lineTo(segLen * 5.5, -h);
+            ctx.lineTo(segLen * 6, 0);
+            ctx.lineTo(len, 0);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        /**
+         * Draws a vertical inductor.
+         * @param {CanvasRenderingContext2D} ctx The canvas context.
+         * @param {number} x The x-coordinate.
+         * @param {number} y The starting y-coordinate.
+         * @param {number} length The total length of the component.
+         */
+        function drawInductor(ctx, x, y, length) {
+            const loops = 4;
+            const radius = 10;
+            const lead = (length - 2 * radius * (loops-1) - radius) / 2;
+            
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + lead);
+            for (let i = 0; i < loops; i++) {
+                 ctx.arc(x, y + lead + radius + 2 * radius * i, radius, -Math.PI / 2, Math.PI / 2, false);
+            }
+            ctx.moveTo(x, y + lead + 2 * radius * loops);
+            ctx.lineTo(x, y + length);
+            ctx.stroke();
+        }
+        
+        /**
+         * Draws an arrow.
+         * @param {CanvasRenderingContext2D} ctx The canvas context.
+         * @param {number} fromx Starting x-coordinate.
+         * @param {number} fromy Starting y-coordinate.
+         * @param {number} tox Ending x-coordinate.
+         * @param {number} toy Ending y-coordinate.
+         */
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 10;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Logic ---
+
+        // Coordinates
+        const x_vs = 100;
+        const x_r_parallel = 280;
+        const x_l = 420;
+        const y_top = 100;
+        const y_bot = 350;
+
+        // Component positions
+        const y_comp_start = 150;
+        const y_comp_end = 270;
+        const comp_len = y_comp_end - y_comp_start;
+        const x_switch_end = 200;
+        const x_r_series_end = x_r_parallel;
+
+        // Draw Wires
+        ctx.beginPath();
+        // Bottom wire
+        ctx.moveTo(x_vs, y_bot);
+        ctx.lineTo(x_l, y_bot);
+        // Top parallel wire
+        ctx.moveTo(x_r_parallel, y_top);
+        ctx.lineTo(x_l, y_top);
+        // VS branch
+        ctx.moveTo(x_vs, y_bot);
+        ctx.lineTo(x_vs, 260); // To bottom of VS
+        ctx.moveTo(x_vs, 140); // From top of VS
+        ctx.lineTo(x_vs, y_top);
+        // Wire from switch to series resistor
+        ctx.moveTo(x_switch_end, y_top);
+        ctx.lineTo(x_r_parallel - 70, y_top);
+        // Parallel Resistor branch
+        ctx.moveTo(x_r_parallel, y_top);
+        ctx.lineTo(x_r_parallel, y_comp_start);
+        ctx.moveTo(x_r_parallel, y_comp_end);
+        ctx.lineTo(x_r_parallel, y_bot);
+        // Inductor branch
+        ctx.moveTo(x_l, y_top);
+        ctx.lineTo(x_l, y_comp_start);
+        ctx.moveTo(x_l, y_comp_end);
+        ctx.lineTo(x_l, y_bot);
+        ctx.stroke();
+
+        // Draw Components
+        // Voltage Source
+        const y_plus = 170;
+        const y_minus = 230;
+        ctx.beginPath();
+        ctx.moveTo(x_vs - 20, y_plus); ctx.lineTo(x_vs + 20, y_plus); // long line +
+        ctx.moveTo(x_vs - 10, y_plus + 20); ctx.lineTo(x_vs + 10, y_plus + 20); // short line
+        ctx.moveTo(x_vs - 20, y_plus + 40); ctx.lineTo(x_vs + 20, y_plus + 40); // long line
+        ctx.moveTo(x_vs - 10, y_minus); ctx.lineTo(x_vs + 10, y_minus); // short line -
+        // Ground symbol
+        ctx.moveTo(x_vs, y_minus + 10); ctx.lineTo(x_vs, y_minus + 20);
+        ctx.moveTo(x_vs - 20, y_minus + 20); ctx.lineTo(x_vs + 20, y_minus + 20);
+        ctx.moveTo(x_vs - 12, y_minus + 27); ctx.lineTo(x_vs + 12, y_minus + 27);
+        ctx.moveTo(x_vs - 6, y_minus + 34); ctx.lineTo(x_vs + 6, y_minus + 34);
+        ctx.stroke();
+        ctx.fillText('+', x_vs + 30, y_plus);
+        ctx.fillText('-', x_vs + 30, y_minus);
+        ctx.fillText('10 V', x_vs + 45, (y_plus + y_minus) / 2);
+        
+        // Switch S
+        ctx.beginPath();
+        ctx.arc(x_vs, y_top, 4, 0, 2 * Math.PI); // terminal 1
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x_switch_end, y_top, 4, 0, 2 * Math.PI); // terminal 2
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(x_vs, y_top);
+        ctx.lineTo(x_switch_end - 10, y_top - 20); // open switch arm
+        ctx.stroke();
+        ctx.fillText('S', (x_vs + x_switch_end) / 2, y_top - 25);
+        
+        // Series Resistor
+        drawResistor(ctx, x_switch_end, y_top, x_r_series_end, y_top);
+        ctx.fillText('200 Ω', (x_switch_end + x_r_series_end) / 2, y_top - 30);
+        
+        // Parallel Resistor
+        drawResistor(ctx, x_r_parallel, y_comp_start, x_r_parallel, y_comp_end);
+        ctx.fillText('200 Ω', x_r_parallel - 50, (y_comp_start + y_comp_end) / 2);
+
+        // Inductor
+        drawInductor(ctx, x_l, y_comp_start, comp_len);
+        
+        // Inductor Label (10^-5 H)
+        ctx.font = 'bold 22px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('10', x_l - 60, 210);
+        ctx.font = 'bold 16px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('-5', x_l - 42, 200);
+        ctx.font = 'bold 22px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('H', x_l - 25, 210);
+
+        // Current I_L
+        const x_arrow = x_l + 30;
+        drawArrow(ctx, x_arrow, 180, x_arrow, 240);
+        ctx.font = 'bold 22px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('I', x_arrow + 20, 210);
+        ctx.font = 'bold 16px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('L', x_arrow + 28, 218);
+        
+        // Figure Caption
+        ctx.font = '20px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('Fig. 3.24', 275, 420);
+
+    </script>
+</body>
+</html>

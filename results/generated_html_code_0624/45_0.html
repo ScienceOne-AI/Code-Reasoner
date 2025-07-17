@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Circuit Diagram Fig. 3.23</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    canvas {
+        border: 1px solid #ccc;
+        background-color: white;
+    }
+</style>
+</head>
+<body>
+<canvas id="circuitCanvas" width="550" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style Settings ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    // --- Helper Functions ---
+    function drawHorizontalResistor(x, y, len) {
+        const h = 12; // height of zig-zag
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + len * 0.1, y);
+        ctx.lineTo(x + len * 0.25, y - h);
+        ctx.lineTo(x + len * 0.5, y + h);
+        ctx.lineTo(x + len * 0.75, y - h);
+        ctx.lineTo(x + len * 0.9, y);
+        ctx.lineTo(x + len, y);
+        ctx.stroke();
+    }
+
+    function drawVerticalResistor(x, y, len) {
+        const w = 12; // width of zig-zag
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y + len * 0.1);
+        ctx.lineTo(x - w, y + len * 0.25);
+        ctx.lineTo(x + w, y + len * 0.5);
+        ctx.lineTo(x - w, y + len * 0.75);
+        ctx.lineTo(x, y + len * 0.9);
+        ctx.lineTo(x, y + len);
+        ctx.stroke();
+    }
+
+    function drawVerticalInductor(x, y, h, loops) {
+        const loopHeight = h / loops;
+        const radius = 10;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        let currentY = y;
+        for (let i = 0; i < loops; i++) {
+            // Draws a smooth semi-circular loop to the left
+            ctx.arcTo(x - 2 * radius, currentY + loopHeight / 2, x, currentY + loopHeight, radius);
+            currentY += loopHeight;
+        }
+        ctx.stroke();
+    }
+    
+    // --- Circuit Coordinates & Dimensions ---
+    const x_start = 80;
+    const y_top = 80;
+    const y_bottom = 280;
+    const x_r1_start = 220;
+    const x_r1_len = 80;
+    const x_junction_start = x_r1_start + x_r1_len + 30;
+    const x_inductor = x_junction_start + 30;
+    const x_r2 = x_inductor + 70;
+    
+    const y_vsource = 180;
+    const vsource_h = 40;
+    
+    const component_y_start = 120;
+    const component_len = 100;
+
+    // --- Draw Wires ---
+    ctx.beginPath();
+    // Bottom wire
+    ctx.moveTo(x_start, y_bottom);
+    ctx.lineTo(x_r2, y_bottom);
+    // Left wire
+    ctx.moveTo(x_start, y_bottom);
+    ctx.lineTo(x_start, y_vsource + vsource_h/2);
+    ctx.moveTo(x_start, y_vsource - vsource_h/2);
+    ctx.lineTo(x_start, y_top);
+    // Top wire
+    ctx.moveTo(x_start, y_top);
+    ctx.lineTo(120, y_top); // to switch
+    ctx.moveTo(180, y_top); // from switch
+    ctx.lineTo(x_r1_start, y_top);
+    ctx.moveTo(x_r1_start + x_r1_len, y_top);
+    ctx.lineTo(x_r2, y_top); // junction point and top bar over parallel branch
+    // Parallel branch wires
+    ctx.moveTo(x_inductor, y_top);
+    ctx.lineTo(x_inductor, component_y_start);
+    ctx.moveTo(x_inductor, component_y_start + component_len);
+    ctx.lineTo(x_inductor, y_bottom);
+    
+    ctx.moveTo(x_r2, y_top);
+    ctx.lineTo(x_r2, component_y_start);
+    ctx.moveTo(x_r2, component_y_start + component_len);
+    ctx.lineTo(x_r2, y_bottom);
+    ctx.stroke();
+
+    // --- Draw Components ---
+    
+    // Voltage Source (V)
+    ctx.beginPath();
+    ctx.moveTo(x_start - 20, y_vsource - 15);
+    ctx.lineTo(x_start + 20, y_vsource - 15);
+    ctx.moveTo(x_start - 10, y_vsource + 15);
+    ctx.lineTo(x_start + 10, y_vsource + 15);
+    ctx.stroke();
+    ctx.font = '24px serif';
+    ctx.fillText('+', x_start - 8, y_vsource - 25);
+    ctx.fillText('−', x_start - 8, y_vsource + 25);
+    ctx.font = 'italic 24px serif';
+    ctx.fillText('V', x_start - 35, y_vsource + 8);
+    
+    // Switch (open)
+    ctx.beginPath();
+    ctx.moveTo(120, y_top);
+    ctx.lineTo(165, y_top - 25);
+    ctx.stroke();
+    // a small circle for hinge and contact
+    ctx.beginPath();
+    ctx.arc(120, y_top, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(180, y_top, 3, 0, 2 * Math.PI);
+    ctx.stroke();
+    
+    // Resistor R1
+    drawHorizontalResistor(x_r1_start, y_top, x_r1_len);
+    ctx.font = 'italic 24px serif';
+    ctx.fillText('R', x_r1_start + x_r1_len/2 - 5, y_top - 20);
+    ctx.font = 'italic 18px serif';
+    ctx.fillText('1', x_r1_start + x_r1_len/2 + 10, y_top - 15);
+    
+    // Inductor L
+    drawVerticalInductor(x_inductor, component_y_start, component_len, 4);
+    ctx.font = 'italic 24px serif';
+    ctx.fillText('L', x_inductor + 20, component_y_start + component_len/2 + 8);
+
+    // Resistor R2
+    drawVerticalResistor(x_r2, component_y_start, component_len);
+    ctx.font = 'italic 24px serif';
+    ctx.fillText('R', x_r2 + 20, component_y_start + component_len/2 + 8);
+    ctx.font = 'italic 18px serif';
+    ctx.fillText('2', x_r2 + 32, component_y_start + component_len/2 + 13);
+    
+    // --- Draw Text Block ---
+    ctx.textAlign = 'left';
+    ctx.font = '22px serif';
+    const text_x_pos = x_start + 40;
+    const text_y_pos = 140;
+    const line_height = 30;
+    ctx.fillText('V = 100 V', text_x_pos, text_y_pos);
+    ctx.fillText('R₁ = 10 \u03A9', text_x_pos, text_y_pos + line_height); // Subscript 1, Ohm symbol
+    ctx.fillText('R₂ = 100 \u03A9', text_x_pos, text_y_pos + 2 * line_height); // Subscript 2, Ohm symbol
+    ctx.fillText('L = 10 H', text_x_pos, text_y_pos + 3 * line_height);
+
+    // --- Draw Figure Caption ---
+    ctx.font = '22px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 3.23', canvas.width / 2, y_bottom + 60);
+
+</script>
+</body>
+</html>

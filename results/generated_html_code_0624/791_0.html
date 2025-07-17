@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Thermodynamics Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="thermoCanvas" width="520" height="380"></canvas>
+<script>
+  const canvas = document.getElementById('thermoCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Configuration ---
+  const config = {
+    // Container dimensions
+    outer: { x: 50, y: 50, w: 420, h: 220 },
+    thickness: 10,
+    // Colors and styles
+    lineColor: 'black',
+    lineWidth: 2,
+    hatchColor: 'black',
+    hatchWidth: 1,
+    gasDotColor: '#999999',
+    // Text
+    labelFont: '24px Arial',
+    captionFont: '22px "KaiTi", "STKaiti", "SimSun", sans-serif'
+  };
+
+  // Calculated inner dimensions
+  const inner = {
+    x: config.outer.x + config.thickness,
+    y: config.outer.y + config.thickness,
+    w: config.outer.w - 2 * config.thickness,
+    h: config.outer.h - 2 * config.thickness,
+  };
+
+  // Piston position
+  const pistonX = inner.x + inner.w / 2;
+
+  /**
+   * Draws hatching lines inside the walls of the container.
+   */
+  function drawWallsAndHatching() {
+    ctx.save();
+    ctx.strokeStyle = config.hatchColor;
+    ctx.lineWidth = config.hatchWidth;
+
+    // Create a clipping region for the walls
+    ctx.beginPath();
+    // Outer rectangle
+    ctx.rect(config.outer.x, config.outer.y, config.outer.w, config.outer.h);
+    // Inner rectangle (counter-clockwise to create a hole)
+    ctx.moveTo(inner.x, inner.y);
+    ctx.lineTo(inner.x + inner.w, inner.y);
+    ctx.lineTo(inner.x + inner.w, inner.y + inner.h);
+    ctx.lineTo(inner.x, inner.y + inner.h);
+    ctx.closePath();
+    ctx.clip();
+
+    // Draw a pattern of diagonal lines that covers the clipped area
+    const hatchSpacing = 8;
+    for (let i = 0; i < canvas.width + canvas.height; i += hatchSpacing) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i - canvas.height, canvas.height);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Draw the main borders of the container
+    ctx.strokeStyle = config.lineColor;
+    ctx.lineWidth = config.lineWidth / 2;
+    ctx.strokeRect(config.outer.x, config.outer.y, config.outer.w, config.outer.h);
+    ctx.strokeRect(inner.x, inner.y, inner.w, inner.h);
+  }
+
+  /**
+   * Fills the inside of the container with a stipple pattern to represent gas.
+   */
+  function drawGasStipple() {
+    ctx.save();
+    // Clip to the inner container area
+    ctx.beginPath();
+    ctx.rect(inner.x, inner.y, inner.w, inner.h);
+    ctx.clip();
+
+    // Draw random dots
+    ctx.fillStyle = config.gasDotColor;
+    const numDots = (inner.w * inner.h) / 20; // Adjust density
+    for (let i = 0; i < numDots; i++) {
+      const dotX = inner.x + Math.random() * inner.w;
+      const dotY = inner.y + Math.random() * inner.h;
+      ctx.fillRect(dotX, dotY, 1, 1);
+    }
+    ctx.restore();
+  }
+
+  /**
+   * Draws the movable piston in the middle.
+   */
+  function drawPiston() {
+    ctx.strokeStyle = config.lineColor;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(pistonX, inner.y);
+    ctx.lineTo(pistonX, inner.y + inner.h);
+    ctx.stroke();
+  }
+  
+  /**
+   * Draws the heater coil in compartment A.
+   */
+  function drawHeater() {
+    const hx = inner.x + 25;
+    const hy_start = inner.y + 60;
+    const hy_end = inner.y + inner.h - 60;
+    const hy_mid1 = hy_start + (hy_end - hy_start) / 3;
+    const hy_mid2 = hy_start + 2 * (hy_end - hy_start) / 3;
+    const amplitude = 15;
+
+    ctx.strokeStyle = config.lineColor;
+    ctx.lineWidth = config.lineWidth - 0.5;
+    
+    // Draw the coil
+    ctx.beginPath();
+    ctx.moveTo(hx, hy_start);
+    ctx.quadraticCurveTo(hx - amplitude, (hy_start + hy_mid1) / 2, hx, hy_mid1);
+    ctx.quadraticCurveTo(hx + amplitude, (hy_mid1 + hy_mid2) / 2, hx, hy_mid2);
+    ctx.quadraticCurveTo(hx - amplitude, (hy_mid2 + hy_end) / 2, hx, hy_end);
+    ctx.stroke();
+
+    // Draw pointers
+    ctx.lineWidth = 1;
+    const pointerX = 20;
+    ctx.beginPath();
+    ctx.moveTo(pointerX, hy_start);
+    ctx.lineTo(hx, hy_start);
+    ctx.moveTo(pointerX, hy_end);
+    ctx.lineTo(hx, hy_end);
+    ctx.stroke();
+
+    // Draw label "加热器"
+    ctx.fillStyle = config.lineColor;
+    ctx.font = '20px "KaiTi", "STKaiti", "SimSun", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('加', pointerX - 10, hy_start + 20);
+    ctx.fillText('热', pointerX - 10, hy_start + 45);
+    ctx.fillText('器', pointerX - 10, hy_start + 70);
+  }
+  
+  /**
+   * Draws all text labels (A, B, and the caption).
+   */
+  function drawLabels() {
+    ctx.fillStyle = config.lineColor;
+    ctx.textAlign = 'center';
+    
+    // Compartment labels
+    ctx.font = config.labelFont;
+    const labelY = inner.y + inner.h / 2 + 8;
+    const labelA_X = inner.x + inner.w / 4;
+    const labelB_X = inner.x + 3 * inner.w / 4;
+    ctx.fillText('A', labelA_X, labelY);
+    ctx.fillText('B', labelB_X, labelY);
+    
+    // Caption
+    ctx.font = config.captionFont;
+    const captionY = config.outer.y + config.outer.h + 50;
+    const captionX = config.outer.x + config.outer.w / 2;
+    ctx.fillText('习题 6-12 图', captionX, captionY);
+  }
+
+  // --- Main Drawing ---
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawGasStipple();
+  drawWallsAndHatching();
+  drawPiston();
+  drawHeater();
+  drawLabels();
+
+</script>
+</body>
+</html>

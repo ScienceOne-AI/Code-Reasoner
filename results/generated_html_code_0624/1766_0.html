@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Redrawing</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #999;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Parameters
+        const centerX = 250;
+        const centerY = 260;
+        const R = 100;
+        const defaultLineWidth = 2.5;
+
+        // Styles
+        ctx.lineWidth = defaultLineWidth;
+        ctx.font = 'bold 22px serif';
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        ctx.lineCap = 'round';
+
+        // 1. Draw the main sphere/loop
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, R, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 2. Draw the axis of rotation (z-axis, PQ)
+        // Solid part (top with arrow)
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY - R - 50);
+        ctx.lineTo(centerX, centerY - R);
+        ctx.stroke();
+        // Arrowhead for z
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY - R - 50);
+        ctx.lineTo(centerX - 7, centerY - R - 40);
+        ctx.moveTo(centerX, centerY - R - 50);
+        ctx.lineTo(centerX + 7, centerY - R - 40);
+        ctx.stroke();
+
+        // Solid part (bottom)
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY + R);
+        ctx.lineTo(centerX, centerY + R + 40);
+        ctx.stroke();
+
+        // Dashed part inside the sphere
+        ctx.beginPath();
+        ctx.setLineDash([6, 6]);
+        ctx.moveTo(centerX, centerY - R);
+        ctx.lineTo(centerX, centerY + R);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 3. Draw labels for axis and poles (z, P, Q, o, C)
+        ctx.fillText('z', centerX + 12, centerY - R - 40);
+        ctx.fillText('P', centerX + 10, centerY - R - 5);
+        ctx.fillText('Q', centerX + 10, centerY + R + 25);
+        ctx.fillText('o', centerX - 28, centerY + 8);
+        ctx.fillText('C', centerX + R + 10, centerY + 8);
+        // Draw points for center o and point C
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(centerX + R, centerY, 3, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 4. Draw the rotation indicator (ω)
+        ctx.beginPath();
+        ctx.arc(centerX, centerY - R - 15, 25, Math.PI * 1.3, Math.PI * 1.95);
+        ctx.stroke();
+        // Arrowhead for rotation (manually placed to match the image)
+        const omegaArrowX = centerX + 25 * Math.cos(Math.PI * 1.95);
+        const omegaArrowY = centerY - R - 15 + 25 * Math.sin(Math.PI * 1.95);
+        ctx.beginPath();
+        ctx.moveTo(omegaArrowX, omegaArrowY);
+        ctx.lineTo(omegaArrowX - 10, omegaArrowY - 2);
+        ctx.moveTo(omegaArrowX, omegaArrowY);
+        ctx.lineTo(omegaArrowX - 2, omegaArrowY - 10);
+        ctx.stroke();
+        ctx.fillText('ω', centerX + 35, centerY - R - 10);
+
+        // 5. Define and draw the point on the loop
+        const theta = Math.PI / 4; // 45 degrees
+        const pointOnLoopX = centerX + R * Math.sin(theta);
+        const pointOnLoopY = centerY - R * Math.cos(theta);
+        ctx.beginPath();
+        ctx.arc(pointOnLoopX, pointOnLoopY, 3, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 6. Draw dashed lines (latitude path and projection)
+        ctx.setLineDash([5, 5]);
+        // Latitude path (perspective ellipse arc)
+        const ellipseRadiusX = R * Math.sin(theta);
+        const ellipseRadiusY = 15;
+        ctx.beginPath();
+        ctx.ellipse(centerX, pointOnLoopY, ellipseRadiusX, ellipseRadiusY, 0, Math.PI, 0, true);
+        ctx.stroke();
+        // Horizontal projection line
+        ctx.beginPath();
+        ctx.moveTo(centerX, pointOnLoopY);
+        ctx.lineTo(pointOnLoopX, pointOnLoopY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 7. Draw the right angle symbol
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(centerX + 9, pointOnLoopY);
+        ctx.lineTo(centerX + 9, pointOnLoopY + 9);
+        ctx.lineTo(centerX, pointOnLoopY + 9);
+        ctx.stroke();
+        ctx.lineWidth = defaultLineWidth;
+
+        // 8. Draw the radius vector from o to the point
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(pointOnLoopX, pointOnLoopY);
+        ctx.stroke();
+
+        // 9. Draw the angle θ
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 25, -Math.PI / 2, -Math.PI / 2 + theta, false);
+        ctx.stroke();
+        const angleTextX = centerX + 35 * Math.sin(theta / 2);
+        const angleTextY = centerY - 35 * Math.cos(theta / 2);
+        ctx.fillText('θ', angleTextX - 5, angleTextY + 10);
+
+        // 10. Draw velocity vector v
+        const vEndX = pointOnLoopX + 45;
+        const vEndY = pointOnLoopY - 25;
+        ctx.beginPath();
+        ctx.moveTo(pointOnLoopX, pointOnLoopY);
+        ctx.lineTo(vEndX, vEndY);
+        // Arrowhead for v
+        ctx.moveTo(vEndX, vEndY);
+        ctx.lineTo(vEndX - 12, vEndY + 1);
+        ctx.moveTo(vEndX, vEndY);
+        ctx.lineTo(vEndX - 4, vEndY + 10);
+        ctx.stroke();
+        ctx.fillText('v', vEndX + 8, vEndY + 5);
+
+        // 11. Draw magnetic moment M
+        ctx.save();
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX, centerY + 28);
+        ctx.stroke();
+        // Arrowhead for M
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY + 28);
+        ctx.lineTo(centerX - 6, centerY + 20);
+        ctx.moveTo(centerX, centerY + 28);
+        ctx.lineTo(centerX + 6, centerY + 20);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillText('M', centerX + 15, centerY + 22);
+
+        // 12. Draw Figure label
+        ctx.font = 'bold 24px serif';
+        ctx.fillText('Fig. 2.29', centerX - 50, centerY + R + 70);
+
+    </script>
+</body>
+</html>

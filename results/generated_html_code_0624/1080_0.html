@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram 4.35.1</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="550" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style Configuration ---
+        ctx.lineWidth = 1.5;
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a line between two points.
+         * @param {object} p1 - Start point {x, y}.
+         * @param {object} p2 - End point {x, y}.
+         * @param {boolean} dashed - If true, draw a dashed line.
+         */
+        function drawLine(p1, p2, dashed = false) {
+            ctx.beginPath();
+            if (dashed) {
+                ctx.setLineDash([5, 4]);
+            }
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+            if (dashed) {
+                ctx.setLineDash([]); // Reset to solid
+            }
+        }
+        
+        /**
+         * Draws a component on a line segment.
+         * @param {function} drawComponentFunc - The function to draw the component symbol.
+         * @param {object} p1 - Start point {x, y}.
+         * @param {object} p2 - End point {x, y}.
+         * @param {object} options - Drawing options.
+         */
+        function drawComponentOnLine(drawComponentFunc, p1, p2, options) {
+            const { dashed = false, label = '', labelOffset = { x: 0, y: 0 }, pos = 0.5 } = options;
+            
+            const mid = { x: p1.x + (p2.x - p1.x) * pos, y: p1.y + (p2.y - p1.y) * pos };
+            const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+            const gap = 10;
+            const p1_end = { x: mid.x - gap * Math.cos(angle), y: mid.y - gap * Math.sin(angle) };
+            const p2_start = { x: mid.x + gap * Math.cos(angle), y: mid.y + gap * Math.sin(angle) };
+
+            drawLine(p1, p1_end, dashed);
+            drawLine(p2_start, p2, dashed);
+            
+            drawComponentFunc(mid, angle, label, labelOffset);
+        }
+
+        /**
+         * Draws a capacitor symbol.
+         */
+        function drawCapacitorSymbol(mid, angle, label, labelOffset) {
+            const plateLen = 18;
+            const plateGap = 4;
+            const perpAngle = angle + Math.PI / 2;
+
+            const p_cos = Math.cos(perpAngle);
+            const p_sin = Math.sin(perpAngle);
+
+            const plate1_p1 = { x: mid.x - plateGap * Math.cos(angle) + plateLen / 2 * p_cos, y: mid.y - plateGap * Math.sin(angle) + plateLen / 2 * p_sin };
+            const plate1_p2 = { x: mid.x - plateGap * Math.cos(angle) - plateLen / 2 * p_cos, y: mid.y - plateGap * Math.sin(angle) - plateLen / 2 * p_sin };
+            drawLine(plate1_p1, plate1_p2);
+
+            const plate2_p1 = { x: mid.x + plateGap * Math.cos(angle) + plateLen / 2 * p_cos, y: mid.y + plateGap * Math.sin(angle) + plateLen / 2 * p_sin };
+            const plate2_p2 = { x: mid.x + plateGap * Math.cos(angle) - plateLen / 2 * p_cos, y: mid.y + plateGap * Math.sin(angle) - plateLen / 2 * p_sin };
+            drawLine(plate2_p1, plate2_p2);
+            
+            if (label) {
+                ctx.fillText(label, mid.x + labelOffset.x, mid.y + labelOffset.y);
+            }
+        }
+        
+        /**
+         * Draws a battery symbol.
+         */
+        function drawBatterySymbol(mid, angle, label, labelOffset) {
+             const longPlateLen = 18;
+             const shortPlateLen = 9;
+             const plateGap = 4;
+             const perpAngle = angle + Math.PI / 2;
+
+             const p_cos = Math.cos(perpAngle);
+             const p_sin = Math.sin(perpAngle);
+             
+             // Short plate (negative) - thicker
+             ctx.lineWidth = 3.5;
+             const short_p1 = { x: mid.x - plateGap * Math.cos(angle) + shortPlateLen / 2 * p_cos, y: mid.y - plateGap * Math.sin(angle) + shortPlateLen / 2 * p_sin };
+             const short_p2 = { x: mid.x - plateGap * Math.cos(angle) - shortPlateLen / 2 * p_cos, y: mid.y - plateGap * Math.sin(angle) - shortPlateLen / 2 * p_sin };
+             drawLine(short_p1, short_p2);
+             ctx.lineWidth = 1.5;
+
+             // Long plate (positive)
+             const long_p1 = { x: mid.x + plateGap * Math.cos(angle) + longPlateLen / 2 * p_cos, y: mid.y + plateGap * Math.sin(angle) + longPlateLen / 2 * p_sin };
+             const long_p2 = { x: mid.x + plateGap * Math.cos(angle) - longPlateLen / 2 * p_cos, y: mid.y + plateGap * Math.sin(angle) - longPlateLen / 2 * p_sin };
+             drawLine(long_p1, long_p2);
+
+             if (label) {
+                ctx.fillText(label, mid.x + labelOffset.x, mid.y + labelOffset.y);
+             }
+        }
+
+        // --- Main Drawing Logic ---
+
+        // Define cube vertices to match the perspective
+        const A = { x: 170, y: 120 };
+        const B = { x: 420, y: 120 };
+        const D_front = { x: 120, y: 170 }; // Vertex at X1
+        const C_front = { x: 470, y: 170 }; // Vertex at Y1
+        
+        const A_prime = { x: 170, y: 370 };
+        const B_prime = { x: 420, y: 370 };
+        const D_prime_front = { x: 120, y: 420 }; // Vertex below X1
+        const C_prime_front = { x: 470, y: 420 }; // Vertex below Y1
+
+        // Edges that are simple resistors (drawn as lines)
+        drawLine(A, B);
+        drawLine(A, D_front);
+        drawLine(B, C_front);
+        drawLine(B, B_prime);
+        drawLine(A, A_prime, true);
+        
+        // Edges with capacitors
+        drawComponentOnLine(drawCapacitorSymbol, D_front, D_prime_front, { label: 'C', labelOffset: { x: -20, y: 0 } });
+        drawComponentOnLine(drawCapacitorSymbol, C_front, C_prime_front, { label: 'C', labelOffset: { x: 20, y: 0 } });
+        drawComponentOnLine(drawCapacitorSymbol, A_prime, D_prime_front, { dashed: true, label: 'C', labelOffset: { x: -20, y: 20 }, pos: 0.3 });
+        drawComponentOnLine(drawCapacitorSymbol, B_prime, C_prime_front, { label: 'C', labelOffset: { x: 20, y: 20 }, pos: 0.3 });
+        drawComponentOnLine(drawCapacitorSymbol, A_prime, B_prime, { label: 'C', labelOffset: { x: 0, y: 25 } });
+
+        // Edge with Battery E1
+        drawComponentOnLine(drawBatterySymbol, D_front, C_front, { label: '\u{1D4B6}\u2081', labelOffset: { x: 0, y: 25 } });
+
+        // Special line for Battery E2
+        const X2 = { x: D_prime_front.x + 40, y: D_prime_front.y - 30 };
+        const Y2 = { x: C_prime_front.x - 40, y: C_prime_front.y - 30 };
+        drawComponentOnLine(drawBatterySymbol, X2, Y2, { dashed: true, label: '\u{1D4B6}\u2082', labelOffset: { x: 0, y: 25 } });
+
+        // Add vertex and point labels
+        ctx.font = '24px Times New Roman';
+        ctx.fillStyle = 'black';
+        ctx.fillText('A', A.x, A.y - 15);
+        ctx.fillText('B', B.x, B.y - 15);
+        ctx.fillText("A'", A_prime.x, A_prime.y + 20);
+        ctx.fillText("B'", B_prime.x, B_prime.y + 20);
+
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('X\u2081', D_front.x - 20, D_front.y);
+        ctx.fillText('Y\u2081', C_front.x + 20, C_front.y);
+        ctx.fillText('X\u2082', X2.x - 20, X2.y);
+        ctx.fillText('Y\u2082', Y2.x + 20, Y2.y);
+        
+        // Add caption
+        ctx.font = '22px KaiTi';
+        ctx.fillText('电图 4.35.1', canvas.width / 2, 500);
+
+    </script>
+</body>
+</html>

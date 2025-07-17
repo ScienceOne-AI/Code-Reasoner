@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        // Clear canvas
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Parameters
+        const cx = 280;
+        const cy = 80;
+        const L = 250;
+        const r = 90;
+        const L_prime = L - r;
+        const alpha_deg = 40;
+        const beta_deg = 18;
+        const theta_deg = 55;
+        const bob_radius = 8;
+        const nail_radius = 5;
+
+        // Convert angles to radians
+        const alpha_rad = alpha_deg * Math.PI / 180;
+        const beta_rad = beta_deg * Math.PI / 180;
+        const theta_rad = theta_deg * Math.PI / 180;
+
+        // --- Drawing Start ---
+
+        // 1. Draw Ceiling
+        ctx.beginPath();
+        ctx.moveTo(cx - 200, cy);
+        ctx.lineTo(cx + 200, cy);
+        ctx.stroke();
+        // Hatching
+        ctx.lineWidth = 1;
+        for (let i = cx - 200; i < cx + 200; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(i, cy);
+            ctx.lineTo(i - 10, cy - 10);
+            ctx.stroke();
+        }
+        ctx.lineWidth = 1.5;
+
+
+        // 2. Draw initial position (left)
+        const P_bob1 = {
+            x: cx - L * Math.sin(alpha_rad),
+            y: cy + L * Math.cos(alpha_rad)
+        };
+        // String L
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(P_bob1.x, P_bob1.y);
+        ctx.stroke();
+        // Bob m
+        ctx.beginPath();
+        ctx.arc(P_bob1.x, P_bob1.y, bob_radius, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        // Label m
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('m', P_bob1.x - 30, P_bob1.y + 10);
+        // Label L
+        ctx.save();
+        ctx.translate((cx + P_bob1.x) / 2, (cy + P_bob1.y) / 2);
+        ctx.rotate(-alpha_rad);
+        ctx.fillText('L', -30, 5);
+        ctx.restore();
+
+        // 3. Draw vertical dashed line from suspension
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx, cy + L + 40);
+        ctx.stroke();
+        
+
+        // 4. Draw angle alpha
+        ctx.beginPath();
+        ctx.arc(cx, cy, 40, Math.PI / 2 - alpha_rad, Math.PI / 2);
+        ctx.stroke();
+        ctx.fillText('α', cx - 40, cy + 45);
+
+        // 5. Draw Nail
+        const P_nail = {
+            x: cx + r * Math.sin(beta_rad),
+            y: cy + r * Math.cos(beta_rad)
+        };
+        // Nail circle
+        ctx.beginPath();
+        ctx.arc(P_nail.x, P_nail.y, nail_radius, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Label "钉子"
+        ctx.font = '20px STKaiti, "Kaiti TC", "Kaiti SC", Kai, serif';
+        ctx.fillText('钉子', P_nail.x + 15, P_nail.y + 5);
+
+        // 6. Draw angle beta
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 60, Math.PI / 2, Math.PI / 2 + beta_rad);
+        ctx.stroke();
+        ctx.fillText('β', cx + 20, cy + 60);
+
+        // 7. Draw second position (right)
+        const P_bob2 = {
+            x: P_nail.x + L_prime * Math.sin(theta_rad),
+            y: P_nail.y + L_prime * Math.cos(theta_rad)
+        };
+        // String r
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(P_nail.x, P_nail.y);
+        ctx.stroke();
+        // String L-r
+        ctx.beginPath();
+        ctx.moveTo(P_nail.x, P_nail.y);
+        ctx.lineTo(P_bob2.x, P_bob2.y);
+        ctx.stroke();
+        // Bob m
+        ctx.beginPath();
+        ctx.arc(P_bob2.x, P_bob2.y, bob_radius, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        
+        // 8. Labels for right side
+        // Label r
+        ctx.save();
+        ctx.translate((cx + P_nail.x) / 2, (cy + P_nail.y) / 2);
+        ctx.rotate(beta_rad);
+        ctx.fillText('r', 10, 5);
+        ctx.restore();
+        // Label L-r
+        ctx.save();
+        ctx.translate((P_nail.x + P_bob2.x) / 2, (P_nail.y + P_bob2.y) / 2);
+        ctx.rotate(theta_rad);
+        ctx.fillText('L–r', -15, -5);
+        ctx.restore();
+        // Label m
+        ctx.fillText('m', P_bob2.x + 18, P_bob2.y);
+
+        // 9. Draw vertical dashed line from nail
+        ctx.beginPath();
+        ctx.moveTo(P_nail.x, P_nail.y);
+        ctx.lineTo(P_nail.x, P_nail.y + L_prime + 20);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset
+
+        // 10. Draw angle theta
+        ctx.beginPath();
+        ctx.arc(P_nail.x, P_nail.y, 40, Math.PI / 2, Math.PI / 2 + theta_rad);
+        ctx.stroke();
+        ctx.fillText('θ', P_nail.x + 20, P_nail.y + 40);
+
+        // 11. Draw vectors at P_bob2
+        ctx.lineWidth = 2;
+        // Tension T
+        const T_len = 70;
+        const T_vec = { x: -Math.sin(theta_rad), y: -Math.cos(theta_rad) };
+        drawArrow(ctx, P_bob2.x, P_bob2.y, P_bob2.x + T_len * T_vec.x, P_bob2.y + T_len * T_vec.y);
+        ctx.font = 'italic bold 20px Times New Roman';
+        ctx.fillText('T', P_bob2.x + T_len * T_vec.x / 2 - 25, P_bob2.y + T_len * T_vec.y / 2 + 15);
+
+        // Gravity mg
+        const mg_len = 60;
+        drawArrow(ctx, P_bob2.x, P_bob2.y, P_bob2.x, P_bob2.y + mg_len);
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('mg', P_bob2.x + 10, P_bob2.y + mg_len + 15);
+        
+        // Velocity v
+        const v_len = 70;
+        const v_dir = { x: Math.cos(theta_rad), y: -Math.sin(theta_rad) };
+        drawArrow(ctx, P_bob2.x, P_bob2.y, P_bob2.x + v_len * v_dir.x, P_bob2.y + v_len * v_dir.y);
+        ctx.font = 'italic bold 20px Times New Roman';
+        ctx.fillText('v', P_bob2.x + v_len * v_dir.x + 5, P_bob2.y + v_len * v_dir.y);
+
+        // 12. Draw Caption
+        ctx.font = '24px STKaiti, "Kaiti TC", "Kaiti SC", Kai, serif';
+        ctx.fillStyle = 'black';
+        ctx.fillText('力图 3.5.1', canvas.width / 2 - 60, canvas.height - 30);
+
+    </script>
+</body>
+</html>

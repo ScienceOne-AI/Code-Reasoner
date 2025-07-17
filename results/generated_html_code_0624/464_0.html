@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electromagnetic Field Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="650" height="480"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Helper Functions ---
+
+function drawArrow(ctx, fromx, fromy, tox, toy) {
+    const headlen = 8;
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+}
+
+// --- Drawing Functions ---
+
+function drawMagneticField(ctx) {
+    ctx.save();
+    ctx.font = '18px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'black';
+
+    const textX = 100;
+    const textY = 195;
+    ctx.fillText('uniform', textX, textY - 20);
+    ctx.fillText('magnetic field', textX, textY);
+    ctx.fillText('flux density', textX, textY + 20);
+    ctx.save();
+    ctx.font = 'italic 18px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('B', textX + 60, textY + 20);
+    ctx.restore();
+
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'black';
+    ctx.beginPath();
+    const fieldStartX = 40;
+    const fieldEndX = 250;
+    const fieldYStart = 185;
+    const fieldYSpacing = 20;
+
+    for (let i = 0; i < 5; i++) {
+        const y = fieldYStart + i * fieldYSpacing;
+        drawArrow(ctx, fieldStartX, y, fieldEndX, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawCoil(ctx) {
+    ctx.save();
+    const coilCenterX = 390;
+    const coilCenterY = 225;
+    const coilDiameter = 144;
+    const coilRadius = coilDiameter / 2;
+    const coilLength = 180;
+    const numWindings = 15;
+    const windingSpacing = coilLength / numWindings;
+    const slant = 8;
+
+    const yTop = coilCenterY - coilRadius;
+    const yBottom = coilCenterY + coilRadius;
+    const xStart = coilCenterX - coilLength / 2;
+    const xEnd = coilCenterX + coilLength / 2;
+
+    ctx.lineWidth = 1.0;
+    ctx.strokeStyle = 'black';
+
+    // Draw the main vertical slanted windings
+    ctx.beginPath();
+    for (let i = 0; i <= numWindings; i++) {
+        const x_top = xStart + i * windingSpacing;
+        const x_bottom = x_top - slant;
+        ctx.moveTo(x_top, yTop);
+        ctx.lineTo(x_bottom, yBottom);
+    }
+    ctx.stroke();
+
+    // Draw the top and bottom connecting wires (sawtooth)
+    const toothHeight = 5;
+    ctx.beginPath();
+    // Top
+    for (let i = 0; i < numWindings; i++) {
+        const x1 = xStart + i * windingSpacing;
+        const x2 = xStart + (i + 1) * windingSpacing;
+        ctx.moveTo(x1, yTop);
+        ctx.lineTo((x1 + x2) / 2, yTop - toothHeight);
+        ctx.lineTo(x2, yTop);
+    }
+    // Bottom
+    for (let i = 0; i < numWindings; i++) {
+        const x1_bottom = xStart + i * windingSpacing - slant;
+        const x2_bottom = xStart + (i + 1) * windingSpacing - slant;
+        ctx.moveTo(x1_bottom, yBottom);
+        ctx.lineTo((x1_bottom + x2_bottom) / 2, yBottom + toothHeight);
+        ctx.lineTo(x2_bottom, yBottom);
+    }
+    ctx.stroke();
+
+    // Draw lead wires
+    const leadTurnIndex = 12;
+    const leadX1 = xStart + leadTurnIndex * windingSpacing - slant;
+    const leadX2 = xStart + (leadTurnIndex + 1) * windingSpacing - slant;
+    const leadYEnd = yBottom + 70;
+    ctx.beginPath();
+    ctx.moveTo(leadX1, yBottom);
+    ctx.lineTo(leadX1, leadYEnd);
+    ctx.moveTo(leadX2, yBottom);
+    ctx.lineTo(leadX2, leadYEnd);
+    ctx.stroke();
+    
+    ctx.restore();
+    
+    return { yTop, yBottom, xEnd };
+}
+
+function drawLabels(ctx, coilGeom) {
+    const { yTop, yBottom, xEnd } = coilGeom;
+    
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = '18px Arial';
+    
+    // Dimension for 3.6 cm
+    const dimX = xEnd + 40;
+    const dimTextX = dimX + 15;
+    
+    // Dashed lines
+    ctx.beginPath();
+    ctx.setLineDash([5, 3]);
+    ctx.moveTo(xEnd, yTop);
+    ctx.lineTo(dimX, yTop);
+    ctx.moveTo(xEnd, yBottom);
+    ctx.lineTo(dimX, yBottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Vertical dimension line with arrows
+    ctx.beginPath();
+    drawArrow(ctx, dimX, yBottom, dimX, yTop);
+    drawArrow(ctx, dimX, yTop, dimX, yBottom);
+    ctx.stroke();
+
+    // Dimension text
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('3.6 cm', dimTextX, (yTop + yBottom) / 2);
+
+    // Label for coil
+    const labelX = xEnd - 20;
+    const labelY = yBottom + 45;
+    const pointerEndX = xEnd - 40;
+    const pointerEndY = yBottom - 20;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('coil, 350 turns', labelX, labelY);
+
+    // Pointer line
+    ctx.beginPath();
+    ctx.moveTo(labelX + 5, labelY - 15);
+    ctx.lineTo(pointerEndX, pointerEndY);
+    ctx.stroke();
+
+    // Fig. 9.1 label
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Fig. 9.1', 350, canvas.height - 10);
+    ctx.restore();
+}
+
+// --- Main execution ---
+ctx.fillStyle = "white";
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+drawMagneticField(ctx);
+const coilGeometry = drawCoil(ctx);
+drawLabels(ctx, coilGeometry);
+
+</script>
+</body>
+</html>

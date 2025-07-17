@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lissajous Figure</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="lissajousCanvas" width="500" height="550"></canvas>
+
+<script>
+    const canvas = document.getElementById('lissajousCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Drawing parameters
+    const centerX = 250;
+    const centerY = 250;
+    const size = 350;
+    const amplitude = size / 2; // Amplitude A in pixels
+
+    const left = centerX - amplitude;
+    const top = centerY - amplitude;
+    const right = centerX + amplitude;
+    const bottom = centerY + amplitude;
+
+    // Set line styles
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    // 1. Draw the square frame and axes
+    ctx.strokeRect(left, top, size, size);
+    ctx.beginPath();
+    ctx.moveTo(left, centerY); // Horizontal axis
+    ctx.lineTo(right, centerY);
+    ctx.moveTo(centerX, top); // Vertical axis
+    ctx.lineTo(centerX, bottom);
+    ctx.stroke();
+
+    // 2. Draw the Lissajous curve
+    // Based on the analysis of the problem: ω_x = 2ω_y and specific phase shifts.
+    // Parametric equations (where u is a parameter from 0 to PI):
+    // x(u) = -A * cos(2u)
+    // y(u) = -A * cos(u)
+    // Canvas coordinates:
+    // xc = centerX + x(u)
+    // yc = centerY - y(u)  (y-axis is inverted in canvas)
+    
+    ctx.beginPath();
+    ctx.lineWidth = 2.5;
+    const steps = 200;
+    for (let i = 0; i <= steps; i++) {
+        const u = (i / steps) * Math.PI;
+        const xp = -amplitude * Math.cos(2 * u);
+        const yp = -amplitude * Math.cos(u);
+        
+        const xc = centerX + xp;
+        const yc = centerY - yp;
+
+        if (i === 0) {
+            ctx.moveTo(xc, yc);
+        } else {
+            ctx.lineTo(xc, yc);
+        }
+    }
+    ctx.stroke();
+
+    // 3. Draw the arrows indicating direction
+    
+    // Helper function to draw an arrow
+    // angle is the direction of the tangent
+    function drawArrow(x, y, angle) {
+        const arrowSize = 12;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(-arrowSize, -arrowSize / 2.5);
+        ctx.lineTo(0, 0);
+        ctx.lineTo(-arrowSize, arrowSize / 2.5);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Positions for the arrows (as parameter u)
+    const arrowUValues = [
+        Math.PI / 6,      // Lower left part
+        Math.PI / 3,      // Lower right part
+        2 * Math.PI / 3,  // Upper right part
+        5 * Math.PI / 6   // Upper left part
+    ];
+
+    arrowUValues.forEach(u => {
+        // Position on curve
+        const xp = -amplitude * Math.cos(2 * u);
+        const yp = -amplitude * Math.cos(u);
+        const xc = centerX + xp;
+        const yc = centerY - yp;
+
+        // Tangent vector components (derivatives with respect to u)
+        // d(xc)/du = dx_p/du = 2 * A * sin(2u)
+        // d(yc)/du = -dy_p/du = -A * sin(u)
+        const d_xc = 2 * amplitude * Math.sin(2 * u);
+        const d_yc = -amplitude * Math.sin(u);
+
+        // Angle of the tangent vector
+        const angle = Math.atan2(d_yc, d_xc);
+        
+        drawArrow(xc, yc, angle);
+    });
+
+    // 4. Draw the text label
+    ctx.fillStyle = 'black';
+    ctx.font = '30px KaiTi'; // Using KaiTi font for a handwritten feel
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 10-29 图', centerX, bottom + 60);
+
+</script>
+
+</body>
+</html>

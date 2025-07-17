@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Doppler Effect</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="400" style="border:1px solid #000000;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.fillStyle = 'black';
+
+    // --- Drawing Functions ---
+
+    function drawWall(x, y_start, y_end, width, brickHeight) {
+        ctx.beginPath();
+        // Vertical lines
+        ctx.moveTo(x, y_start);
+        ctx.lineTo(x, y_end);
+        ctx.moveTo(x - width, y_start);
+        ctx.lineTo(x - width, y_end);
+        // Horizontal lines (mortar joints)
+        for (let y = y_start; y <= y_end; y += brickHeight) {
+            ctx.moveTo(x - width, y);
+            ctx.lineTo(x, y);
+        }
+        // Staggered vertical joints
+        for (let i = 0; i < (y_end - y_start) / brickHeight; i++) {
+            const y = y_start + i * brickHeight;
+            if (i % 2 === 0) {
+                ctx.moveTo(x - width / 2, y);
+                ctx.lineTo(x - width / 2, y + brickHeight);
+            }
+        }
+        ctx.stroke();
+    }
+
+    function drawCar(x_base, y_base) {
+        const car_height = 60;
+        const car_length = 140;
+
+        // Wheels
+        ctx.beginPath();
+        ctx.arc(x_base + 30, y_base - 18, 18, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x_base + 110, y_base - 18, 18, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Car Body
+        ctx.beginPath();
+        ctx.moveTo(x_base, y_base - 18);
+        ctx.lineTo(x_base, y_base - 40);
+        ctx.lineTo(x_base + 10, y_base - car_height);
+        ctx.lineTo(x_base + 85, y_base - car_height); // Roof line
+        ctx.lineTo(x_base + 115, y_base - 50); // Windshield
+        ctx.lineTo(x_base + car_length - 5, y_base - 50); // Hood
+        ctx.lineTo(x_base + car_length, y_base - 40); // Front
+        ctx.lineTo(x_base + car_length, y_base - 18);
+        ctx.stroke();
+        
+        // Window
+        ctx.beginPath();
+        ctx.moveTo(x_base + 20, y_base - 55);
+        ctx.lineTo(x_base + 70, y_base - 55);
+        ctx.lineTo(x_base + 70, y_base - 42);
+        ctx.lineTo(x_base + 20, y_base - 42);
+        ctx.stroke();
+
+        // Speaker on roof
+        const speaker_center_x = x_base + 55;
+        const speaker_center_y = y_base - car_height - 5;
+        ctx.beginPath();
+        // Back part
+        ctx.moveTo(speaker_center_x, speaker_center_y);
+        ctx.lineTo(speaker_center_x - 20, speaker_center_y - 10);
+        ctx.moveTo(speaker_center_x, speaker_center_y);
+        ctx.lineTo(speaker_center_x - 20, speaker_center_y + 10);
+        ctx.moveTo(speaker_center_x - 20, speaker_center_y - 10);
+        ctx.quadraticCurveTo(speaker_center_x - 15, speaker_center_y, speaker_center_x - 20, speaker_center_y + 10);
+        // Front part
+        ctx.moveTo(speaker_center_x, speaker_center_y);
+        ctx.lineTo(speaker_center_x + 20, speaker_center_y - 10);
+        ctx.moveTo(speaker_center_x, speaker_center_y);
+        ctx.lineTo(speaker_center_x + 20, speaker_center_y + 10);
+        ctx.moveTo(speaker_center_x + 20, speaker_center_y - 10);
+        ctx.quadraticCurveTo(speaker_center_x + 25, speaker_center_y, speaker_center_x + 20, speaker_center_y + 10);
+        ctx.stroke();
+    }
+    
+    function drawVelocityArrow(x_start, y, length) {
+        const x_end = x_start + length;
+        const arrow_head_size = 10;
+        ctx.beginPath();
+        ctx.moveTo(x_start, y);
+        ctx.lineTo(x_end, y);
+        // Arrowhead
+        ctx.lineTo(x_end - arrow_head_size, y - arrow_head_size / 2);
+        ctx.moveTo(x_end, y);
+        ctx.lineTo(x_end - arrow_head_size, y + arrow_head_size / 2);
+        ctx.stroke();
+    }
+
+    function drawSoundWaves() {
+        // Waves between wall and car (from back speaker and reflection)
+        const wave_y_center = 230;
+        
+        // From back speaker (moving left)
+        const back_speaker_x = 350;
+        ctx.beginPath();
+        ctx.arc(back_speaker_x, wave_y_center, 60, Math.PI * 0.65, Math.PI * 1.35);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(back_speaker_x, wave_y_center, 80, Math.PI * 0.65, Math.PI * 1.35);
+        ctx.stroke();
+
+        // Reflected from wall (moving right)
+        const wall_x = 120;
+        ctx.beginPath();
+        ctx.arc(wall_x, wave_y_center, 70, -Math.PI * 0.35, Math.PI * 0.35);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(wall_x, wave_y_center, 90, -Math.PI * 0.35, Math.PI * 0.35);
+        ctx.stroke();
+        
+        // Representing interference in the middle
+        ctx.beginPath();
+        ctx.moveTo(240, 180);
+        ctx.quadraticCurveTo(230, 230, 240, 280);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(245, 175);
+        ctx.quadraticCurveTo(255, 230, 245, 285);
+        ctx.stroke();
+
+        // Waves from front speaker (moving right)
+        const front_speaker_x = 450;
+        ctx.beginPath();
+        ctx.arc(front_speaker_x, wave_y_center, 20, -Math.PI * 0.35, Math.PI * 0.35);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(front_speaker_x, wave_y_center, 40, -Math.PI * 0.35, Math.PI * 0.35);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(front_speaker_x, wave_y_center, 60, -Math.PI * 0.35, Math.PI * 0.35);
+        ctx.stroke();
+    }
+
+    // --- Main Drawing Execution ---
+    
+    // Draw ground line
+    ctx.beginPath();
+    ctx.moveTo(0, 320);
+    ctx.lineTo(600, 320);
+    ctx.stroke();
+    
+    // Draw the brick wall
+    drawWall(120, 120, 320, 70, 40);
+
+    // Draw the car
+    drawCar(350, 320);
+    
+    // Draw the velocity arrow
+    drawVelocityArrow(495, 280, 70);
+
+    // Draw the sound waves
+    drawSoundWaves();
+
+    // Draw the figure label
+    ctx.font = '24px serif';
+    ctx.fillText('Fig. 1.230.', 240, 370);
+
+</script>
+</body>
+</html>

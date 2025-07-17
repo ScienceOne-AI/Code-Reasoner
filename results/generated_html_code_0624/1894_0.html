@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Piston and Cylinder Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Adjust canvas size for better resolution
+        const canvasWidth = 800;
+        const canvasHeight = 500;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a U-shaped cylinder.
+         * @param {number} x The top-left x-coordinate.
+         * @param {number} y The top-left y-coordinate.
+         * @param {number} width The total width of the cylinder.
+         * @param {number} height The total height of the cylinder.
+         * @param {number} wall The thickness of the cylinder walls.
+         */
+        function drawCylinder(x, y, width, height, wall) {
+            // Fill the gray part
+            ctx.fillStyle = '#D3D3D3'; // Light gray
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + height);
+            ctx.lineTo(x + width, y + height);
+            ctx.lineTo(x + width, y);
+            ctx.lineTo(x + width - wall, y);
+            ctx.lineTo(x + width - wall, y + height - wall);
+            ctx.lineTo(x + wall, y + height - wall);
+            ctx.lineTo(x + wall, y);
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw the black outline
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + height);
+            ctx.lineTo(x + width, y + height);
+            ctx.lineTo(x + width, y);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(x + wall, y);
+            ctx.lineTo(x + wall, y + height - wall);
+            ctx.lineTo(x + width - wall, y + height - wall);
+            ctx.lineTo(x + width - wall, y);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a piston with rings.
+         * @param {number} x The top-left x-coordinate of the piston.
+         * @param {number} y The top-left y-coordinate of the piston.
+         * @param {number} width The width of the piston.
+         * @param {number} height The height of the piston.
+         */
+        function drawPiston(x, y, width, height) {
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.fillRect(x, y, width, height);
+            ctx.strokeRect(x, y, width, height);
+            
+            // Piston rings
+            ctx.lineWidth = 1;
+            const numRings = 3;
+            const ringSpacing = height / (numRings + 1);
+            for (let i = 1; i <= numRings; i++) {
+                ctx.beginPath();
+                ctx.moveTo(x, y + i * ringSpacing);
+                ctx.lineTo(x + width, y + i * ringSpacing);
+                ctx.stroke();
+            }
+        }
+
+        /**
+         * Draws a vertical double-headed arrow.
+         * @param {number} x The x-coordinate of the arrow shaft.
+         * @param {number} y1 The starting y-coordinate.
+         * @param {number} y2 The ending y-coordinate.
+         * @param {number} headSize The size of the arrowheads.
+         */
+        function drawVerticalDoubleArrow(x, y1, y2, headSize) {
+            ctx.beginPath();
+            // Shaft
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, y2);
+            // Top head
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x - headSize, y1 + headSize);
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x + headSize, y1 + headSize);
+            // Bottom head
+            ctx.moveTo(x, y2);
+            ctx.lineTo(x - headSize, y2 - headSize);
+            ctx.moveTo(x, y2);
+            ctx.lineTo(x + headSize, y2 - headSize);
+            ctx.stroke();
+        }
+
+        // --- Drawing Parameters ---
+        ctx.font = '18px Arial';
+        const cylWidth = 180;
+        const cylHeight = 300;
+        const wallThick = 20;
+        const pistonWidth = cylWidth - 2 * wallThick;
+        const pistonHeight = 45;
+        const travelDist = 150; // Visual representation of 9.8 cm
+
+        const xLeft = 100;
+        const yTop = 80;
+        const pistonYMax = yTop + 30;
+
+        const xRight = xLeft + cylWidth + 200;
+        const pistonYMin = pistonYMax + travelDist;
+
+        // --- Draw Left Diagram (Maximum Height) ---
+        drawCylinder(xLeft, yTop, cylWidth, cylHeight, wallThick);
+        drawPiston(xLeft + wallThick, pistonYMax, pistonWidth, pistonHeight);
+
+        // Labels for Left Diagram
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1;
+        
+        ctx.textAlign = 'right';
+        ctx.fillText('cylinder', xLeft - 15, yTop + 50);
+        ctx.beginPath();
+        ctx.moveTo(xLeft - 10, yTop + 45);
+        ctx.lineTo(xLeft, yTop + 45);
+        ctx.stroke();
+
+        ctx.fillText('piston', xLeft - 15, pistonYMax + 20);
+        ctx.beginPath();
+        ctx.moveTo(xLeft - 10, pistonYMax + 15);
+        ctx.lineTo(xLeft + wallThick, pistonYMax + 15);
+        ctx.stroke();
+
+        ctx.textAlign = 'center';
+        ctx.fillText('maximum height', xLeft + cylWidth / 2, yTop + cylHeight + 40);
+
+        // --- Draw Right Diagram (Minimum Height) ---
+        drawCylinder(xRight, yTop, cylWidth, cylHeight, wallThick);
+        drawPiston(xRight + wallThick, pistonYMin, pistonWidth, pistonHeight);
+
+        // Labels for Right Diagram
+        ctx.textAlign = 'left';
+        ctx.fillText('cylinder', xRight + cylWidth + 15, yTop + 50);
+        ctx.beginPath();
+        ctx.moveTo(xRight + cylWidth + 10, yTop + 45);
+        ctx.lineTo(xRight + cylWidth, yTop + 45);
+        ctx.stroke();
+        
+        ctx.fillText('piston', xRight + cylWidth + 15, pistonYMin + pistonHeight - 10);
+        ctx.beginPath();
+        ctx.moveTo(xRight + cylWidth + 10, pistonYMin + pistonHeight - 15);
+        ctx.lineTo(xRight + cylWidth, pistonYMin + pistonHeight - 15);
+        ctx.stroke();
+        
+        ctx.textAlign = 'center';
+        ctx.fillText('minimum height', xRight + cylWidth / 2, yTop + cylHeight + 40);
+        
+        // --- Draw Measurement Elements ---
+        const measurementX = xLeft + cylWidth + 100;
+        const lineStartX = xLeft + cylWidth - wallThick;
+        const lineEndX = xRight + wallThick;
+
+        // Dashed lines connecting the two piston positions
+        ctx.setLineDash([6, 4]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(lineStartX, pistonYMax);
+        ctx.lineTo(lineEndX, pistonYMax);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(lineStartX, pistonYMin);
+        ctx.lineTo(lineEndX, pistonYMin);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid line
+
+        // Vertical double arrow for distance
+        ctx.lineWidth = 1.5;
+        drawVerticalDoubleArrow(measurementX, pistonYMax, pistonYMin, 8);
+
+        // Measurement text
+        ctx.textAlign = 'left';
+        ctx.fillText('9.8 cm', measurementX + 15, pistonYMax + travelDist / 2 + 5);
+
+        // --- Draw Figure Caption ---
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 3.1', canvasWidth / 2, canvasHeight - 30);
+    </script>
+</body>
+</html>

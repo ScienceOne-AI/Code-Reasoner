@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f8f9fa;
+        }
+        canvas {
+            border: 1px solid #dee2e6;
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="600" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Configuration ---
+    ctx.strokeStyle = '#000';
+    ctx.fillStyle = '#000';
+    ctx.lineWidth = 1.5;
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws a dashed line.
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {number} x1 - Start x.
+     * @param {number} y1 - Start y.
+     * @param {number} x2 - End x.
+     * @param {number} y2 - End y.
+     * @param {number[]} dashArray - Array of dash and gap lengths.
+     */
+    function drawDashedLine(ctx, x1, y1, x2, y2, dashArray = [8, 4]) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash(dashArray);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid line
+        ctx.restore();
+    }
+
+    /**
+     * Draws an arrowhead.
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {number} x - Tip x.
+     * @param {number} y - Tip y.
+     * @param {number} angle - Angle of the arrow in radians.
+     */
+    function drawArrowhead(ctx, x, y, angle) {
+        const headLength = 8;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headLength, -headLength / 2.5);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headLength, headLength / 2.5);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    /**
+     * Draws a dimension line with arrows and a label.
+     */
+    function drawDimensionLine(ctx, x1, y1, x2, y2, label, options = {}) {
+        const { isFraction = false, labelOffset = 15, tickSize = 4 } = options;
+        const isHorizontal = Math.abs(y2 - y1) < 1;
+        ctx.save();
+        ctx.lineWidth = 1;
+
+        // Main dimension line
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Arrowheads (pointing outwards)
+        if (isHorizontal) {
+            drawArrowhead(ctx, x1, y1, Math.PI);
+            drawArrowhead(ctx, x2, y2, 0);
+        } else { // Vertical
+            drawArrowhead(ctx, x1, y1, -Math.PI / 2);
+            drawArrowhead(ctx, x2, y2, Math.PI / 2);
+        }
+
+        // Ticks at the ends
+        ctx.beginPath();
+        if (isHorizontal) {
+            ctx.moveTo(x1, y1 - tickSize); ctx.lineTo(x1, y1 + tickSize);
+            ctx.moveTo(x2, y2 - tickSize); ctx.lineTo(x2, y2 + tickSize);
+        } else {
+            ctx.moveTo(x1 - tickSize, y1); ctx.lineTo(x1 + tickSize, y1);
+            ctx.moveTo(x2 - tickSize, y2); ctx.lineTo(x2 + tickSize, y2);
+        }
+        ctx.stroke();
+
+        // Label
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        let labelX, labelY;
+
+        if (isHorizontal) {
+            labelX = (x1 + x2) / 2;
+            labelY = y1 - labelOffset;
+        } else {
+            labelX = x1 + labelOffset;
+            labelY = (y1 + y2) / 2;
+        }
+
+        if (isFraction) {
+            const [numerator, denominator] = label.split('/');
+            const numMetrics = ctx.measureText(numerator);
+            const denMetrics = ctx.measureText(denominator);
+            const fracLineWidth = Math.max(numMetrics.width, denMetrics.width) + 6;
+            ctx.fillText(numerator, labelX, labelY - 8);
+            ctx.beginPath();
+            ctx.moveTo(labelX - fracLineWidth / 2, labelY);
+            ctx.lineTo(labelX + fracLineWidth / 2, labelY);
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+            ctx.fillText(denominator, labelX, labelY + 12);
+        } else {
+            ctx.fillText(label, labelX, labelY);
+        }
+        ctx.restore();
+    }
+
+
+    // --- Main Drawing ---
+
+    // Define dimensions and positions
+    const l = 180;
+    const b = 90;
+    const topMargin = 80;
+
+    // --- Figure (a) ---
+    const ax_start = 60;
+    const ay_top = topMargin;
+    
+    // Wire
+    drawDashedLine(ctx, ax_start, ay_top - 40, ax_start, ay_top + l + 40);
+    
+    // Rectangle
+    ctx.strokeRect(ax_start + b, ay_top, b, l);
+
+    // Dimensions
+    const dimY_a = ay_top - 25;
+    drawDimensionLine(ctx, ax_start, dimY_a, ax_start + b, dimY_a, 'b');
+    drawDimensionLine(ctx, ax_start + b, dimY_a, ax_start + 2 * b, dimY_a, 'b');
+    const dimX_a = ax_start + 2 * b + 25;
+    drawDimensionLine(ctx, dimX_a, ay_top, dimX_a, ay_top + l, 'l', { labelOffset: 20 });
+    
+    // Label
+    ctx.font = '20px Times New Roman';
+    ctx.fillText('(a)', ax_start + 1.5 * b, ay_top + l + 40);
+
+
+    // --- Figure (b) ---
+    const bx_center = ax_start + 2 * b + 120;
+    const by_top = topMargin;
+
+    // Wire
+    drawDashedLine(ctx, bx_center, by_top - 40, bx_center, by_top + l + 40);
+    
+    // Rectangle
+    ctx.strokeRect(bx_center - b / 2, by_top, b, l);
+    
+    // Dimensions
+    const dimY_b = by_top - 25;
+    drawDimensionLine(ctx, bx_center, dimY_b, bx_center + b / 2, dimY_b, 'b/2', { isFraction: true });
+    const dimX_b = bx_center + b / 2 + 25;
+    drawDimensionLine(ctx, dimX_b, by_top, dimX_b, by_top + l, 'l', { labelOffset: 20 });
+
+    // Label
+    ctx.font = '20px Times New Roman';
+    ctx.fillText('(b)', bx_center, by_top + l + 40);
+
+
+    // --- Bottom Caption ---
+    ctx.font = '20px "SimSun", "Songti SC", serif'; // Use a font that supports Chinese characters
+    const captionX = (ax_start + 1.5 * b + bx_center) / 2;
+    const captionY = by_top + l + 90;
+    ctx.fillText('习题 9-24 图', captionX, captionY);
+
+</script>
+</body>
+</html>

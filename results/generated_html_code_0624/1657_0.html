@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #999;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="700" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawArrowHead(ctx, x, y, angle, headLength = 10) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headLength, -headLength / 2.5);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headLength, headLength / 2.5);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawWheel(ctx, x, y, radius, axleRadius, spokeAngle) {
+            // Rim
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Spokes
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(spokeAngle);
+            ctx.beginPath();
+            ctx.moveTo(-radius, 0);
+            ctx.lineTo(radius, 0);
+            ctx.moveTo(0, -radius);
+            ctx.lineTo(0, radius);
+            ctx.stroke();
+            ctx.restore();
+
+            // Axle
+            ctx.beginPath();
+            ctx.arc(x, y, axleRadius, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function drawBrush(ctx, x, y, size) {
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            // Inverted U shape
+            ctx.arc(x, y - size / 2, size / 2, 0, Math.PI, false);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawCross(ctx, x, y, size) {
+            ctx.save();
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(x - size / 2, y - size / 2);
+            ctx.lineTo(x + size / 2, y + size / 2);
+            ctx.moveTo(x + size / 2, y - size / 2);
+            ctx.lineTo(x - size / 2, y + size / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Parameters
+        const centerX1 = 200;
+        const centerX2 = 500;
+        const centerY = 250;
+        const radius = 90;
+        const axleRadius = 6;
+        const spokeAngle = Math.PI / 10;
+
+        // Draw wheels
+        drawWheel(ctx, centerX1, centerY, radius, axleRadius, spokeAngle);
+        drawWheel(ctx, centerX2, centerY, radius, axleRadius, spokeAngle);
+
+        // Draw labels 1 and 2
+        ctx.font = '24px serif';
+        ctx.fillText('1', centerX1, centerY + radius + 30);
+        ctx.fillText('2', centerX2, centerY + radius + 30);
+
+        // Draw connections
+        const brushSize = 10;
+        // Top connection
+        const topY = centerY - radius;
+        ctx.beginPath();
+        const wireStart = {x: centerX1, y: topY};
+        const wireEnd = {x: centerX2, y: topY};
+        const cp1 = {x: centerX1 + 80, y: topY - 60};
+        const cp2 = {x: centerX2 - 80, y: topY - 60};
+        ctx.moveTo(wireStart.x, wireStart.y);
+        ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, wireEnd.x, wireEnd.y);
+        ctx.stroke();
+        drawBrush(ctx, wireStart.x, wireStart.y, brushSize);
+        drawBrush(ctx, wireEnd.x, wireEnd.y, brushSize);
+
+        // Bottom connection
+        const connDist = 25;
+        const p1_bot = {x: centerX1 + connDist * Math.cos(spokeAngle), y: centerY + connDist * Math.sin(spokeAngle)};
+        const p2_bot = {x: centerX2 + connDist * Math.cos(Math.PI + spokeAngle), y: centerY + connDist * Math.sin(Math.PI + spokeAngle)};
+        ctx.beginPath();
+        ctx.moveTo(p1_bot.x, p1_bot.y);
+        ctx.lineTo(p2_bot.x, p2_bot.y);
+        ctx.stroke();
+        drawBrush(ctx, p1_bot.x, p1_bot.y, brushSize);
+        drawBrush(ctx, p2_bot.x, p2_bot.y, brushSize);
+
+        // Rotation ω1
+        ctx.beginPath();
+        const w1_rad = radius + 15;
+        const w1_startAngle = Math.PI * 1.3;
+        const w1_endAngle = Math.PI * 0.7;
+        ctx.arc(centerX1, centerY, w1_rad, w1_startAngle, w1_endAngle, true); // counter-clockwise
+        ctx.stroke();
+        const w1_arrow_x = centerX1 + w1_rad * Math.cos(w1_endAngle);
+        const w1_arrow_y = centerY + w1_rad * Math.sin(w1_endAngle);
+        drawArrowHead(ctx, w1_arrow_x, w1_arrow_y, w1_endAngle - Math.PI / 2);
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('ω', centerX1 - w1_rad - 20, centerY);
+        ctx.font = 'italic 16px serif';
+        ctx.fillText('1', centerX1 - w1_rad - 10, centerY + 6);
+
+        // Rotation ω2
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        const w2_rad = radius * 0.7;
+        const w2_startAngle = Math.PI * 0.8;
+        const w2_endAngle = Math.PI * 0.2;
+        ctx.beginPath();
+        ctx.arc(centerX2, centerY, w2_rad, w2_startAngle, w2_endAngle, true); // clockwise
+        ctx.stroke();
+        const w2_arrow_x = centerX2 + w2_rad * Math.cos(w2_endAngle);
+        const w2_arrow_y = centerY + w2_rad * Math.sin(w2_endAngle);
+        drawArrowHead(ctx, w2_arrow_x, w2_arrow_y, w2_endAngle + Math.PI / 2);
+        ctx.restore();
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('ω', centerX2 - radius * 0.5, centerY + radius * 0.85);
+        ctx.font = 'italic 16px serif';
+        ctx.fillText('2', centerX2 - radius * 0.5 + 10, centerY + radius * 0.85 + 6);
+
+        // Brake system
+        const brakeBlockX = centerX2 + radius;
+        const brakeBlockY = centerY - 25;
+        const brakeW = 30;
+        const brakeH = 50;
+        ctx.strokeRect(brakeBlockX, brakeBlockY, brakeW, brakeH);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(brakeBlockX, brakeBlockY, brakeW, brakeH);
+        ctx.clip();
+        ctx.lineWidth = 1;
+        for (let i = -brakeH; i < brakeW; i += 6) {
+            ctx.moveTo(brakeBlockX + i, brakeBlockY);
+            ctx.lineTo(brakeBlockX + i + brakeH, brakeBlockY + brakeH);
+        }
+        ctx.stroke();
+        ctx.restore();
+        
+        // Force F arrow
+        const f_startAngle = -Math.PI / 8;
+        const f_endAngle = Math.PI / 4;
+        ctx.beginPath();
+        ctx.arc(centerX2, centerY, radius, f_startAngle, f_endAngle, false);
+        ctx.stroke();
+        const f_arrow_x = centerX2 + radius * Math.cos(f_endAngle);
+        const f_arrow_y = centerY + radius * Math.sin(f_endAngle);
+        drawArrowHead(ctx, f_arrow_x, f_arrow_y, f_endAngle + Math.PI / 2);
+        ctx.font = 'italic 24px serif';
+        ctx.fillText('F', f_arrow_x + 20, f_arrow_y + 15);
+
+        // Magnetic Field
+        const crossX = (centerX1 + centerX2) / 2;
+        drawCross(ctx, crossX, topY - 70, 12);
+        drawCross(ctx, crossX, centerY + radius + 60, 12);
+        ctx.font = 'italic 24px serif';
+        ctx.fillText('B', crossX + 25, centerY + radius + 60);
+
+    </script>
+</body>
+</html>

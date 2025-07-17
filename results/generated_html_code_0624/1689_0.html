@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="650"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 22px serif';
+
+        // Geometric parameters (proportions based on the image)
+        const r = 180; // Radius of the sphere
+        const d = 120; // Distance AC
+        const l = 210; // Length of the rope AB
+
+        // Coordinates of key points
+        const O = { x: canvas.width / 2, y: 500 };
+        const A = { x: O.x, y: O.y - r - d };
+        const C = { x: O.x, y: O.y - r };
+
+        // Calculate coordinates of B using the law of cosines in triangle OAB
+        // Sides are OA = r + d, OB = r, AB = l
+        const OA_len = r + d;
+        const cos_theta = (OA_len**2 + r**2 - l**2) / (2 * OA_len * r);
+        const theta = Math.acos(cos_theta); // Angle COB
+        const sin_theta = Math.sin(theta);
+
+        const B = {
+            x: O.x + r * sin_theta,
+            y: O.y - r * cos_theta
+        };
+
+        // --- Drawing Functions ---
+
+        function drawArrowHead(ctx, fromX, fromY, toX, toY, headLength = 10) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Logic ---
+
+        // 1. Draw the spherical surface (arc)
+        const arcStartAngle = -Math.PI / 2 - 0.7;
+        const arcEndAngle = -Math.PI / 2 + theta + 0.3;
+        ctx.beginPath();
+        ctx.arc(O.x, O.y, r, arcStartAngle, arcEndAngle, false);
+        ctx.stroke();
+
+        // 2. Draw the hatching on the sphere
+        ctx.save();
+        ctx.lineWidth = 1;
+        const hatchLength = 20;
+        const hatchAngle = Math.PI * 1.25; // 225 degrees
+        for (let angle = arcStartAngle; angle < arcEndAngle; angle += 0.12) {
+            const p1x = O.x + r * Math.cos(angle);
+            const p1y = O.y + r * Math.sin(angle);
+            const p2x = p1x + hatchLength * Math.cos(hatchAngle);
+            const p2y = p1y + hatchLength * Math.sin(hatchAngle);
+            ctx.beginPath();
+            ctx.moveTo(p1x, p1y);
+            ctx.lineTo(p2x, p2y);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // 3. Draw lines
+        // Line AO (dash-dotted)
+        ctx.save();
+        ctx.setLineDash([10, 4, 3, 4]);
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(O.x, O.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Line OB (dashed)
+        ctx.save();
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(O.x, O.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+        ctx.restore();
+        
+        // Line AB (solid)
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+
+        // 4. Draw points
+        // Point O (small filled circle)
+        ctx.beginPath();
+        ctx.arc(O.x, O.y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Point B (circle on surface)
+        ctx.beginPath();
+        ctx.arc(B.x, B.y, 9, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'black';
+
+        // Point A (suspension point with double ring)
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, 9, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, 4, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+
+        // 5. Draw dimensions and labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Dimension 'd'
+        const d_line_x = A.x - 40;
+        ctx.beginPath();
+        ctx.moveTo(d_line_x, A.y);
+        ctx.lineTo(d_line_x, C.y);
+        ctx.stroke();
+        // T-ends for d
+        ctx.beginPath();
+        ctx.moveTo(d_line_x - 5, A.y);
+        ctx.lineTo(d_line_x + 5, A.y);
+        ctx.moveTo(d_line_x - 5, C.y);
+        ctx.lineTo(d_line_x + 5, C.y);
+        ctx.stroke();
+        ctx.fillText('d', d_line_x - 15, (A.y + C.y) / 2);
+
+        // Dimension 'l'
+        const offset_l = 25;
+        const u_AB = { x: (B.x - A.x) / l, y: (B.y - A.y) / l };
+        const n_AB = { x: -u_AB.y, y: u_AB.x }; // Normal vector
+        const A_dim = { x: A.x + offset_l * n_AB.x, y: A.y + offset_l * n_AB.y };
+        const B_dim = { x: B.x + offset_l * n_AB.x, y: B.y + offset_l * n_AB.y };
+        // Extension lines (dashed)
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(A_dim.x, A_dim.y);
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(B_dim.x, B_dim.y);
+        ctx.stroke();
+        ctx.restore();
+        // Dimension line with arrows
+        ctx.beginPath();
+        ctx.moveTo(A_dim.x, A_dim.y);
+        ctx.lineTo(B_dim.x, B_dim.y);
+        ctx.stroke();
+        drawArrowHead(ctx, B_dim.x, B_dim.y, A_dim.x, A_dim.y);
+        drawArrowHead(ctx, A_dim.x, A_dim.y, B_dim.x, B_dim.y);
+        // Label 'l'
+        const l_label_pos = {
+            x: (A_dim.x + B_dim.x) / 2 + 10 * n_AB.x,
+            y: (A_dim.y + B_dim.y) / 2 + 10 * n_AB.y
+        };
+        ctx.save();
+        ctx.translate(l_label_pos.x, l_label_pos.y);
+        ctx.rotate(Math.atan2(u_AB.y, u_AB.x));
+        ctx.fillText('l', 0, 0);
+        ctx.restore();
+
+        // Label 'r'
+        const r_label_pos = {
+            x: (O.x + B.x) / 2 - 20 * sin_theta,
+            y: (O.y + B.y) / 2 + 20 * cos_theta
+        };
+        ctx.fillText('r', r_label_pos.x, r_label_pos.y);
+
+        // Point labels
+        ctx.font = 'bold 24px sans-serif';
+        ctx.fillText('A', A.x + 25, A.y + 5);
+        ctx.fillText('B', B.x + 25, B.y + 5);
+        ctx.fillText('C', C.x + 20, C.y);
+        ctx.fillText('O', O.x - 20, O.y);
+
+    </script>
+</body>
+</html>

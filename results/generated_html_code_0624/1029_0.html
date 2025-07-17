@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Projectile Motion Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Parameters ---
+        const padding = 60;
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        const originX = padding;
+        const originY = canvasHeight - padding;
+
+        const R_pixels = 480;
+        const H_pixels = 300;
+
+        // Physics derived values
+        const xp_pixels = R_pixels / 2;
+        const h_pixels = 3 * H_pixels / 4;
+        
+        // --- Helper Functions ---
+
+        /**
+         * Draws an arrow from (x1, y1) to (x2, y2) with a filled triangular head.
+         */
+        function drawArrow(ctx, x1, y1, x2, y2, headlen = 10) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx);
+            
+            // Line part
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.save();
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        /**
+         * Draws a double-headed arrow.
+         */
+        function drawDoubleArrow(ctx, x1, y1, x2, y2) {
+            const headlen = 8;
+            drawArrow(ctx, x1, y1, x2, y2, headlen);
+            drawArrow(ctx, x2, y2, x1, y1, headlen);
+        }
+        
+        /**
+         * Draws a label with a subscript, e.g., v_1
+         */
+        function drawSubscript(ctx, text, sub, x, y) {
+            const originalFont = ctx.font;
+            const fontSize = parseInt(originalFont.match(/\d+/)[0]);
+            const subFontSize = Math.round(fontSize * 0.7);
+
+            ctx.fillText(text, x, y);
+            const textWidth = ctx.measureText(text).width;
+            
+            ctx.save();
+            ctx.font = `${subFontSize}px "Times New Roman"`;
+            ctx.fillText(sub, x + textWidth * 0.9, y + subFontSize * 0.5);
+            ctx.restore();
+        }
+
+        /**
+         * Draws a fraction label, e.g., (1/3)R
+         */
+        function drawFractionLabel(ctx, num, den, variable, x, y) {
+            const originalAlign = ctx.textAlign;
+            const originalBaseline = ctx.textBaseline;
+            const originalFont = ctx.font;
+            const mainFontSize = parseInt(originalFont.match(/\d+/)[0]);
+            const fracFontSize = Math.round(mainFontSize * 0.9);
+
+            ctx.textAlign = 'center';
+            
+            ctx.save();
+            ctx.font = `${fracFontSize}px "Times New Roman"`;
+            const fracWidth = Math.max(ctx.measureText(num).width, ctx.measureText(den).width);
+
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(num, x, y - 2);
+            
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x - fracWidth / 2 - 2, y);
+            ctx.lineTo(x + fracWidth / 2 + 2, y);
+            ctx.stroke();
+            ctx.restore();
+            
+            ctx.textBaseline = 'top';
+            ctx.fillText(den, x, y + 2);
+            ctx.restore();
+            
+            ctx.save();
+            ctx.font = originalFont;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(variable, x + fracWidth / 2 + 5, y);
+            ctx.restore();
+            
+            ctx.textAlign = originalAlign;
+            ctx.textBaseline = originalBaseline;
+        }
+
+        // --- Main Drawing ---
+        
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '20px "Times New Roman"';
+
+        // 1. Draw Axes
+        drawArrow(ctx, originX, originY + 10, originX, originY - H_pixels - 30); // y-axis
+        drawArrow(ctx, originX - 10, originY, originX + R_pixels + 30, originY); // x-axis
+        ctx.fillText('y', originX - 25, originY - H_pixels - 20);
+        ctx.fillText('x', originX + R_pixels + 20, originY + 25);
+        ctx.fillText('O', originX - 25, originY + 20);
+
+        // 2. Draw Trajectories
+        ctx.save();
+        ctx.lineWidth = 2;
+        // Trajectory 1: y(x) = H * (1 - x^2 / R^2)
+        ctx.beginPath();
+        ctx.moveTo(originX, originY - H_pixels);
+        for (let px = 1; px <= R_pixels; px++) {
+            let py = H_pixels * (1 - (px * px) / (R_pixels * R_pixels));
+            ctx.lineTo(originX + px, originY - py);
+        }
+        ctx.stroke();
+        
+        // Trajectory 2: part 1 -> y(x) = H * (1 - 9x^2 / R^2)
+        ctx.beginPath();
+        ctx.moveTo(originX, originY - H_pixels);
+        for (let px = 1; px <= R_pixels / 3; px++) {
+             let py = H_pixels * (1 - 9 * (px * px) / (R_pixels * R_pixels));
+            ctx.lineTo(originX + px, originY - py);
+        }
+        ctx.stroke();
+
+        // Trajectory 2: part 2 (bounce) -> y(x) = H - (9H/R^2) * (x - 2R/3)^2
+        ctx.beginPath();
+        ctx.moveTo(originX + R_pixels / 3, originY);
+        // Using quadraticCurveTo for a smooth parabola
+        const controlX = originX + 2 * R_pixels / 3;
+        const controlY = originY - 2 * H_pixels; // Control point for a parabola from (R/3,0) to (R,0) with peak H
+        ctx.quadraticCurveTo(controlX, controlY, originX + R_pixels, originY);
+        ctx.stroke();
+        ctx.restore();
+
+        // 3. Draw Rod
+        const rodWidth = 8;
+        const rodX = originX + xp_pixels;
+        const rodY = originY - h_pixels;
+        // Draw hatching pattern
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(rodX - rodWidth/2, rodY, rodWidth, h_pixels);
+        ctx.clip();
+        ctx.fillStyle = '#444';
+        ctx.fillRect(rodX - rodWidth/2, rodY, rodWidth, h_pixels);
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 1;
+        for (let i = -h_pixels; i < rodWidth; i += 4) {
+             ctx.beginPath();
+             ctx.moveTo(rodX - rodWidth/2 + i, rodY);
+             ctx.lineTo(rodX - rodWidth/2 + i + h_pixels, rodY + h_pixels);
+             ctx.stroke();
+        }
+        ctx.restore();
+        // Draw rod outline
+        ctx.strokeRect(rodX - rodWidth/2, rodY, rodWidth, h_pixels);
+
+        // 4. Draw dashed line
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(originX + 2 * R_pixels / 3, originY);
+        ctx.lineTo(originX + 2 * R_pixels / 3, originY - H_pixels);
+        ctx.stroke();
+        ctx.restore();
+
+        // 5. Draw Labels
+        // H label
+        ctx.save();
+        ctx.lineWidth = 1;
+        drawDoubleArrow(ctx, originX - 10, originY, originX - 10, originY - H_pixels);
+        ctx.fillText('H', originX - 35, originY - H_pixels / 2 + 8);
+        ctx.restore();
+
+        // h label
+        ctx.save();
+        ctx.lineWidth = 1;
+        const h_label_x = rodX + rodWidth / 2 + 15;
+        // draw vertical line for h
+        ctx.beginPath();
+        ctx.moveTo(h_label_x, originY);
+        ctx.lineTo(h_label_x, originY - h_pixels);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillText('h', h_label_x + 8, originY - h_pixels / 2 + 8);
+
+        // Velocity vectors
+        const startX = originX + 5;
+        const startY = originY - H_pixels;
+        ctx.save();
+        ctx.lineWidth = 2.5;
+        drawArrow(ctx, startX, startY, startX + 120, startY, 12);
+        ctx.restore();
+        drawSubscript(ctx, 'v', '1', startX + 60, startY - 15);
+        
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        drawArrow(ctx, startX, startY, startX + 70, startY, 9);
+        ctx.restore();
+        drawSubscript(ctx, 'v', '2', startX + 25, startY - 15);
+        
+        // x-axis labels
+        const labelY = originY + 28;
+        ctx.textAlign = 'center';
+        drawFractionLabel(ctx, '1', '3', 'R', originX + R_pixels / 3, labelY);
+        drawFractionLabel(ctx, '2', '3', 'R', originX + 2 * R_pixels / 3, labelY);
+        drawSubscript(ctx, 'x', 'P', originX + xp_pixels, labelY - 5);
+        ctx.fillText('R', originX + R_pixels, labelY);
+        
+        // Caption
+        ctx.font = '18px "SimSun"';
+        ctx.textAlign = 'center';
+        ctx.fillText('力图 1.7.1', canvasWidth / 2, canvasHeight - 15);
+
+    </script>
+</body>
+</html>

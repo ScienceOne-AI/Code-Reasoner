@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="400" height="400" style="border:1px solid #000;"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style settings to match the original image ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 4;
+    ctx.font = "bold 26px serif";
+    ctx.lineCap = 'round';
+
+    // --- Define coordinates for the block's corners ---
+    const ax = 80,  ay = 80;
+    const bx = 280, by = 80;
+    const cx = 80,  cy = 280;
+    const dx = 280, dy = 280;
+
+    // 1. Draw the main block (stone base)
+    ctx.beginPath();
+    ctx.moveTo(ax, ay); // Corner A
+    ctx.lineTo(cx, cy); // Corner C
+    ctx.lineTo(dx, dy); // Corner D
+    ctx.lineTo(bx, by); // Corner B
+    ctx.closePath();
+    ctx.stroke();
+
+    // 2. Draw the ground surface line
+    ctx.beginPath();
+    ctx.moveTo(40, cy);
+    ctx.lineTo(dx, dy);
+    ctx.lineTo(dx, dy + 20);
+    ctx.lineTo(dx + 80, dy + 20);
+    ctx.stroke();
+
+    // 3. Draw the hatching for the ground using a clipping path
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(40, cy);
+    ctx.lineTo(dx, dy);
+    ctx.lineTo(dx, dy + 20);
+    ctx.lineTo(dx + 80, dy + 20);
+    ctx.lineTo(dx + 80, dy + 60);
+    ctx.lineTo(10, dy + 60);
+    ctx.lineTo(10, cy);
+    ctx.closePath();
+    ctx.clip();
+    
+    // Draw the diagonal lines for the hatching pattern
+    ctx.lineWidth = 1.5;
+    for (let i = -50; i < 500; i += 12) {
+        ctx.beginPath();
+        ctx.moveTo(i, 400);
+        ctx.lineTo(i + 100, 300); // Lines with a slope of -1
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // Reset line width for subsequent elements
+    ctx.lineWidth = 4;
+    
+    // 4. Draw the cable rod
+    // The rod lies on the diagonal from C to B. It starts inside the block.
+    const startRodX = cx + 0.2 * (bx - cx);
+    const startRodY = cy + 0.2 * (by - cy);
+    
+    ctx.beginPath();
+    ctx.moveTo(startRodX, startRodY);
+    ctx.lineTo(bx, by);
+    ctx.lineWidth = 14; // Make the rod thick
+    ctx.stroke();
+    
+    // 5. Draw the anchor at the bottom of the rod
+    ctx.save();
+    ctx.translate(startRodX, startRodY);
+    // Rotate the context to align with the rod's angle
+    const angle = Math.atan2(by - cy, bx - cx);
+    ctx.rotate(angle);
+    
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    // Draw a rectangle and inner lines to represent the anchor
+    ctx.rect(-20, -11, 22, 22);
+    ctx.moveTo(-16, -11);
+    ctx.lineTo(-16, 11);
+    ctx.moveTo(-10, -11);
+    ctx.lineTo(-10, 11);
+    ctx.moveTo(-4, -11);
+    ctx.lineTo(-4, 11);
+    ctx.stroke();
+    ctx.restore();
+    
+    // 6. Draw the tension force arrow (T)
+    // The arrow continues from corner B along the rod's direction
+    // Calculate vector and normalized unit vector for direction
+    const vecX = bx - cx;
+    const vecY = by - cy;
+    const mag = Math.sqrt(vecX*vecX + vecY*vecY);
+    const unitX = vecX / mag;
+    const unitY = vecY / mag;
+    const arrowShaftLength = 45;
+    
+    const arrowTox = bx + unitX * arrowShaftLength;
+    const arrowToy = by + unitY * arrowShaftLength;
+    
+    // Draw the arrow shaft extending from B
+    ctx.beginPath();
+    ctx.moveTo(bx, by);
+    ctx.lineTo(arrowTox, arrowToy);
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Draw the arrowhead
+    const headlen = 25;
+    const arrowAngle = Math.atan2(arrowToy - by, arrowTox - bx);
+    ctx.beginPath();
+    ctx.moveTo(arrowTox, arrowToy);
+    ctx.lineTo(arrowTox - headlen * Math.cos(arrowAngle - Math.PI / 7), arrowToy - headlen * Math.sin(arrowAngle - Math.PI / 7));
+    ctx.moveTo(arrowTox, arrowToy);
+    ctx.lineTo(arrowTox - headlen * Math.cos(arrowAngle + Math.PI / 7), arrowToy - headlen * Math.sin(arrowAngle + Math.PI / 7));
+    ctx.stroke();
+
+    // 7. Add all the text labels
+    ctx.fillText("A", ax - 30, ay + 10);
+    ctx.fillText("B", bx + 5, by + 25);
+    ctx.fillText("C", cx - 5, cy + 30);
+    ctx.fillText("D", dx - 35, dy - 8);
+    ctx.fillText("T", bx - 15, by - 25);
+
+</script>
+
+</body>
+</html>

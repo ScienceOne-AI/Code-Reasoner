@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Delta-Wye Capacitor Networks</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="550" height="320"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Global Settings ---
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        
+        // --- Helper Functions ---
+
+        /**
+         * Draws text with a subscript.
+         * @param {string} base - The main text.
+         * @param {string} sub - The subscript text.
+         * @param {number} x - The x-coordinate to start drawing.
+         * @param {number} y - The y-coordinate for the baseline of the main text.
+         * @param {number} size - The font size for the main text.
+         */
+        function drawSubscriptLabel(base, sub, x, y, size = 20) {
+            const originalAlign = ctx.textAlign;
+            ctx.textAlign = "left";
+            const baseFont = `italic ${size}px Times New Roman`;
+            const subFont = `italic ${size * 0.7}px Times New Roman`;
+            
+            // Draw base text
+            ctx.font = baseFont;
+            ctx.fillText(base, x, y);
+            
+            const baseWidth = ctx.measureText(base).width;
+            
+            // Draw subscript text
+            ctx.font = subFont;
+            ctx.fillText(sub, x + baseWidth * 0.85, y + 4);
+            
+            ctx.textAlign = originalAlign; // Restore original alignment
+        }
+
+        /**
+         * Draws a capacitor symbol rotated at a specific angle.
+         * @param {number} cx - Center x-coordinate of the capacitor.
+         * @param {number} cy - Center y-coordinate of the capacitor.
+         * @param {number} angle - Rotation angle in radians.
+         * @param {number} plateLen - Length of the capacitor plates.
+         * @param {number} plateGap - Gap between the capacitor plates.
+         */
+        function drawCapacitorSymbol(cx, cy, angle, plateLen = 16, plateGap = 8) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angle);
+            
+            // Plate 1
+            ctx.beginPath();
+            ctx.moveTo(-plateGap / 2, -plateLen / 2);
+            ctx.lineTo(-plateGap / 2, plateLen / 2);
+            ctx.stroke();
+
+            // Plate 2
+            ctx.beginPath();
+            ctx.moveTo(plateGap / 2, -plateLen / 2);
+            ctx.lineTo(plateGap / 2, plateLen / 2);
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        /**
+         * Draws a line between two points with a capacitor in the middle.
+         * @param {object} p1 - Start point {x, y}.
+         * @param {object} p2 - End point {x, y}.
+         * @param {number} capSize - The total size of the capacitor gap.
+         */
+        function drawLineWithCapacitor(p1, p2, capSize = 18) {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const angle = Math.atan2(dy, dx);
+            
+            const mid = { x: p1.x + dx / 2, y: p1.y + dy / 2 };
+            
+            // Wire 1
+            const w1_end = {
+                x: mid.x - (capSize / 2) * Math.cos(angle),
+                y: mid.y - (capSize / 2) * Math.sin(angle)
+            };
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(w1_end.x, w1_end.y);
+            ctx.stroke();
+            
+            // Wire 2
+            const w2_start = {
+                x: mid.x + (capSize / 2) * Math.cos(angle),
+                y: mid.y + (capSize / 2) * Math.sin(angle)
+            };
+            ctx.beginPath();
+            ctx.moveTo(w2_start.x, w2_start.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+            
+            // Capacitor Symbol
+            drawCapacitorSymbol(mid.x, mid.y, angle + Math.PI / 2);
+        }
+
+        // --- Draw Delta (Δ) Circuit ---
+        function drawDeltaCircuit() {
+            const pA = { x: 80, y: 100 };
+            const pB = { x: 220, y: 100 };
+            const pC = { x: 150, y: 200 };
+            
+            // Draw triangle with capacitors
+            drawLineWithCapacitor(pA, pB);
+            drawLineWithCapacitor(pB, pC);
+            drawLineWithCapacitor(pC, pA);
+            
+            // Draw terminal lines
+            ctx.beginPath(); ctx.moveTo(50, 80); ctx.lineTo(pA.x, pA.y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(250, 80); ctx.lineTo(pB.x, pB.y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(150, 230); ctx.lineTo(pC.x, pC.y); ctx.stroke();
+            
+            // Draw labels
+            ctx.font = "italic 22px Times New Roman";
+            ctx.textAlign = "center";
+            ctx.fillText("A", 40, 70);
+            ctx.fillText("B", 260, 70);
+            ctx.fillText("C", 150, 245);
+            
+            drawSubscriptLabel("C", "AB", 140, 75);
+            drawSubscriptLabel("C", "BC", 200, 150);
+            drawSubscriptLabel("C", "CA", 75, 150);
+        }
+
+        // --- Draw Wye (Y) Circuit ---
+        function drawWyeCircuit() {
+            const pJ = { x: 420, y: 135 };
+            const pA = { x: 380, y: 95 };
+            const pB = { x: 460, y: 95 };
+            const pC = { x: 420, y: 200 };
+
+            // Draw Y-branches with capacitors
+            drawLineWithCapacitor(pJ, pA);
+            drawLineWithCapacitor(pJ, pB);
+            drawLineWithCapacitor(pJ, pC);
+            
+            // Draw terminal lines
+            ctx.beginPath(); ctx.moveTo(350, 75); ctx.lineTo(pA.x, pA.y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(490, 75); ctx.lineTo(pB.x, pB.y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(420, 230); ctx.lineTo(pC.x, pC.y); ctx.stroke();
+
+            // Draw labels
+            ctx.font = "italic 22px Times New Roman";
+            ctx.textAlign = "center";
+            ctx.fillText("a", 345, 65);
+            ctx.fillText("b", 495, 65);
+            ctx.fillText("c", 420, 245);
+
+            drawSubscriptLabel("C", "a", 380, 100);
+            drawSubscriptLabel("C", "b", 465, 100);
+            drawSubscriptLabel("C", "c", 430, 170);
+        }
+
+        // --- Draw Caption ---
+        function drawCaption() {
+            ctx.font = "20px 'SimSun', 'STSong'";
+            ctx.fillStyle = "black";
+            ctx.textAlign = "center";
+            ctx.fillText("电图 4.31.1", canvas.width / 2, 285);
+        }
+
+        // --- Main Drawing Execution ---
+        drawDeltaCircuit();
+        drawWyeCircuit();
+        drawCaption();
+
+    </script>
+</body>
+</html>

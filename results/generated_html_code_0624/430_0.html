@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram: Bullet hitting a Rod</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Drawing parameters ---
+        const cx = canvas.width / 2;
+        const topMargin = 60;
+        const l_pixels = 400; // Pixel length for 'l'
+        const rodWidth = 14;
+
+        // --- Helper function for dimension line arrows ---
+        function drawDimensionArrow(ctx, x, y, direction) {
+            const headlen = 8;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            if (direction === 'up') {
+                ctx.lineTo(x - headlen / 2, y + headlen);
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + headlen / 2, y + headlen);
+            } else { // 'down'
+                ctx.lineTo(x - headlen / 2, y - headlen);
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + headlen / 2, y - headlen);
+            }
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Logic ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        
+        // 1. Draw Ceiling/Support
+        const supportY = topMargin - 25;
+        const supportWidth = 180;
+        ctx.lineWidth = 1;
+        ctx.fillStyle = '#f7f7f7';
+        ctx.fillRect(cx - supportWidth / 2, supportY - 20, supportWidth, 20);
+        ctx.strokeRect(cx - supportWidth / 2, supportY - 20, supportWidth, 20);
+        ctx.beginPath();
+        for (let i = cx - supportWidth / 2 + 10; i < cx + supportWidth / 2; i += 15) {
+            ctx.moveTo(i, supportY - 20);
+            ctx.lineTo(i - 15, supportY);
+        }
+        ctx.stroke();
+
+        // 2. Draw Pivot (O)
+        ctx.lineWidth = 1.5;
+        const pivotX = cx;
+        const pivotY = topMargin;
+        ctx.beginPath();
+        ctx.moveTo(pivotX - 12, supportY);
+        ctx.lineTo(pivotX, pivotY);
+        ctx.lineTo(pivotX + 12, supportY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(pivotX, pivotY, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'black';
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText('O', pivotX - 35, pivotY + 10);
+
+        // 3. Draw Rod
+        const rodTopY = pivotY;
+        const rodBottomY = rodTopY + l_pixels;
+        ctx.beginPath();
+        ctx.rect(pivotX - rodWidth / 2, rodTopY, rodWidth, l_pixels);
+        ctx.stroke();
+
+        // 4. Draw Point A and Bullet
+        const pointAY = rodTopY + (3/4) * l_pixels;
+        const pointAX = pivotX;
+        ctx.beginPath();
+        ctx.arc(pointAX, pointAY, 4, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        ctx.fillText('A', pointAX + rodWidth / 2 + 8, pointAY + 6);
+        
+        // Bullet, velocity, and mass labels
+        const bulletShapeX = pivotX - 80;
+        const bulletShapeY = pointAY;
+        const bulletShapeWidth = 20;
+        const bulletShapeHeight = 10;
+        ctx.strokeRect(bulletShapeX - bulletShapeWidth / 2, bulletShapeY - bulletShapeHeight / 2, bulletShapeWidth, bulletShapeHeight);
+
+        const labelClusterX = pivotX - 130;
+        ctx.fillText('v', labelClusterX, bulletShapeY - 5);
+        ctx.fillText('m', labelClusterX, bulletShapeY + 25);
+
+        ctx.beginPath();
+        ctx.lineWidth = 2;
+        ctx.moveTo(labelClusterX + 25, bulletShapeY);
+        ctx.lineTo(bulletShapeX - bulletShapeWidth / 2 - 5, bulletShapeY);
+        const arrowEnd = bulletShapeX - bulletShapeWidth / 2 - 5;
+        ctx.moveTo(arrowEnd, bulletShapeY);
+        ctx.lineTo(arrowEnd - 8, bulletShapeY - 4);
+        ctx.moveTo(arrowEnd, bulletShapeY);
+        ctx.lineTo(arrowEnd - 8, bulletShapeY + 4);
+        ctx.stroke();
+
+        // 5. Draw Dimension Lines
+        ctx.lineWidth = 1;
+        // Dimension for 'l'
+        const dimLX = pivotX + 80;
+        ctx.beginPath();
+        ctx.moveTo(dimLX, rodTopY);
+        ctx.lineTo(dimLX, rodBottomY);
+        ctx.stroke();
+        drawDimensionArrow(ctx, dimLX, rodTopY, 'down');
+        drawDimensionArrow(ctx, dimLX, rodBottomY, 'up');
+        ctx.beginPath();
+        ctx.moveTo(pivotX + rodWidth / 2, rodTopY);
+        ctx.lineTo(dimLX, rodTopY);
+        ctx.moveTo(pivotX - rodWidth / 2, rodBottomY);
+        ctx.lineTo(dimLX, rodBottomY);
+        ctx.stroke();
+        ctx.fillText('l', dimLX + 15, rodTopY + l_pixels / 2 + 8);
+
+        // Dimension for '3/4 l'
+        const dimAX = pivotX - 160;
+        const dimAY = pointAY;
+        ctx.beginPath();
+        ctx.moveTo(dimAX, rodTopY);
+        ctx.lineTo(dimAX, dimAY);
+        ctx.stroke();
+        drawDimensionArrow(ctx, dimAX, rodTopY, 'down');
+        drawDimensionArrow(ctx, dimAX, dimAY, 'up');
+        ctx.beginPath();
+        ctx.moveTo(pivotX - rodWidth / 2, rodTopY);
+        ctx.lineTo(dimAX, rodTopY);
+        ctx.moveTo(labelClusterX - 15, dimAY);
+        ctx.lineTo(dimAX, dimAY);
+        ctx.stroke();
+
+        // Fraction label '3/4 l'
+        const fracX = dimAX - 35;
+        const fracY = rodTopY + (dimAY - rodTopY) / 2;
+        ctx.font = '22px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.fillText('3', fracX, fracY - 5);
+        ctx.beginPath();
+        ctx.lineWidth = 1;
+        ctx.moveTo(fracX - 10, fracY + 1);
+        ctx.lineTo(fracX + 10, fracY + 1);
+        ctx.stroke();
+        ctx.fillText('4', fracX, fracY + 20);
+        ctx.textAlign = 'start';
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.fillText('l', fracX + 18, fracY + 8);
+
+        // 6. Draw Bottom Caption
+        ctx.font = '24px "KaiTi", "SimSun", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 3-22 图', cx, canvas.height - 20);
+        ctx.textAlign = 'start';
+
+    </script>
+</body>
+</html>

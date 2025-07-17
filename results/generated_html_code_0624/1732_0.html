@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pendulum Diagram</title>
+</head>
+<body>
+<canvas id="pendulumCanvas" width="600" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('pendulumCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Define parameters
+    const pivotX = canvas.width / 2;
+    const pivotY = 60;
+    const length = 280;
+    const bobRadius = 22;
+    const maxAngle = Math.PI / 4.5; // ~40 degrees
+
+    // --- Draw the support structure ---
+    ctx.fillStyle = 'black';
+    ctx.fillRect(pivotX - 180, pivotY - 10, 360, 10);
+    // small attachment point
+    ctx.beginPath();
+    ctx.moveTo(pivotX, pivotY);
+    ctx.lineTo(pivotX, pivotY + 5);
+    ctx.stroke();
+
+
+    // --- Helper function to draw a bob ---
+    function drawBob(x, y, isSolid) {
+        ctx.beginPath();
+        ctx.arc(x, y, bobRadius, 0, 2 * Math.PI);
+        
+        if (isSolid) {
+            ctx.fillStyle = 'black';
+            ctx.fill();
+        } else {
+            // Draw the crosshatch pattern for other bobs
+            ctx.save();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1.5;
+            
+            // Draw the outer circle
+            ctx.stroke();
+            
+            // Clip the drawing region to the circle
+            ctx.clip();
+            
+            const spacing = 4.5;
+            // Draw vertical lines
+            for (let i = x - bobRadius; i <= x + bobRadius; i += spacing) {
+                ctx.beginPath();
+                ctx.moveTo(i, y - bobRadius);
+                ctx.lineTo(i, y + bobRadius);
+                ctx.stroke();
+            }
+            // Draw horizontal lines
+            for (let j = y - bobRadius; j <= y + bobRadius; j += spacing) {
+                ctx.beginPath();
+                ctx.moveTo(x - bobRadius, j);
+                ctx.lineTo(x + bobRadius, j);
+                ctx.stroke();
+            }
+            ctx.restore(); // Remove clipping
+        }
+    }
+
+    // --- Helper function to draw a label ---
+    function drawLabel(text, x, y) {
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 30px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, x, y);
+    }
+
+    // --- Define the positions ---
+    const positions = {
+        'A': { angle: -maxAngle, labelOffset: { x: -45, y: 0 } },
+        'B': { angle: -maxAngle / 2, labelOffset: { x: -40, y: 15 } },
+        'C': { angle: 0, labelOffset: { x: 0, y: 45 } },
+        'D': { angle: maxAngle / 2, labelOffset: { x: 40, y: 15 } },
+        'E': { angle: maxAngle, labelOffset: { x: 45, y: 0 } }
+    };
+
+    // --- Draw each position (string, bob, label) ---
+    for (const key in positions) {
+        const pos = positions[key];
+        const angle = pos.angle;
+
+        // Calculate bob coordinates using sine for x and cosine for y
+        const bobX = pivotX + length * Math.sin(angle);
+        const bobY = pivotY + length * Math.cos(angle);
+
+        // Draw the string
+        ctx.beginPath();
+        ctx.moveTo(pivotX, pivotY);
+        ctx.lineTo(bobX, bobY);
+        ctx.strokeStyle = 'black';
+        
+        if (key === 'C') {
+            ctx.setLineDash([]); // Solid line
+            ctx.lineWidth = 2;
+        } else {
+            ctx.setLineDash([7, 4]); // Dashed line
+            ctx.lineWidth = 1.5;
+        }
+        ctx.stroke();
+
+        // Draw the bob
+        drawBob(bobX, bobY, key === 'C');
+        
+        // Draw the label
+        drawLabel(key, bobX + pos.labelOffset.x, bobY + pos.labelOffset.y);
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Rochon Prism</title>
+</head>
+<body>
+<canvas id="rochonPrismCanvas" width="800" height="500" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('rochonPrismCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow
+    function drawArrow(fromX, fromY, toX, toY) {
+        const headlen = 10; // length of head in pixels
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+    }
+
+    // Parameters from the problem and calculations
+    const alpha_deg = 20;
+    const beta_deg = 3.61; // Calculated value
+    const gamma_deg = 2.43; // Calculated intermediate angle
+
+    const alpha_rad = alpha_deg * Math.PI / 180;
+    const beta_rad = beta_deg * Math.PI / 180;
+    const gamma_rad = gamma_deg * Math.PI / 180;
+
+    // Geometric parameters for drawing
+    const y_center = 250;
+    const prism_h = 300;
+    const prism_y1 = y_center - prism_h / 2; // 100
+    const prism_y2 = y_center + prism_h / 2; // 400
+    const prism_x1 = 300;
+    const prism_w = prism_h * Math.tan(alpha_rad); // ~109.2
+    const prism_x2 = prism_x1 + prism_w;
+
+    const interface_slope = (prism_y2 - prism_y1) / (prism_x2 - prism_x1); // cot(alpha)
+
+    // Ray intersection points
+    const ray_y_start = y_center;
+    const incident_ray_x_start = 100;
+    const incident_ray_x_end = prism_x1;
+
+    // Intersection with diagonal interface
+    const p_int_x = prism_x1 + (ray_y_start - prism_y1) / interface_slope;
+    const p_int_y = ray_y_start;
+
+    // Exit point of e-ray
+    const p_exit_e_x = prism_x2;
+    const p_exit_e_y = p_int_y + (p_exit_e_x - p_int_x) * Math.tan(gamma_rad);
+
+    // Final point for e-ray (for drawing)
+    const final_ray_length = 200;
+    const final_e_ray_x = p_exit_e_x + final_ray_length * Math.cos(-beta_rad);
+    const final_e_ray_y = p_exit_e_y + final_ray_length * Math.sin(-beta_rad);
+    
+    // Final point for o-ray (for drawing)
+    const final_o_ray_x = p_exit_e_x + final_ray_length;
+    const final_o_ray_y = ray_y_start;
+
+    // --- Drawing starts here ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = '#EAEAEA';
+    ctx.lineWidth = 2;
+
+    // Draw Prism Body (two triangles) and fill
+    // Left triangle (Prism 1)
+    ctx.beginPath();
+    ctx.moveTo(prism_x1, prism_y1);
+    ctx.lineTo(prism_x1, prism_y2);
+    ctx.lineTo(prism_x2, prism_y2);
+    ctx.closePath();
+    ctx.fill();
+
+    // Right triangle (Prism 2)
+    ctx.beginPath();
+    ctx.moveTo(prism_x1, prism_y1);
+    ctx.lineTo(prism_x2, prism_y1);
+    ctx.lineTo(prism_x2, prism_y2);
+    ctx.closePath();
+    ctx.fill();
+
+    // Draw Optic Axis markings
+    // Dashed horizontal lines in Prism 1 (lower section)
+    ctx.save();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    for (let y = ray_y_start + 40; y < prism_y2 - 20; y += 20) {
+        const x_start = prism_x1;
+        const x_end = prism_x1 + (y - prism_y1) / interface_slope;
+        ctx.beginPath();
+        ctx.moveTo(x_start, y);
+        ctx.lineTo(x_end, y);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // Dotted grid in Prism 2 (upper section)
+    ctx.fillStyle = 'black';
+    for (let x = prism_x1 + 15; x < prism_x2; x += 15) {
+        for (let y = prism_y1 + 15; y < prism_y2; y += 15) {
+            if (y < p_int_y - 40 && y < prism_y1 + interface_slope * (x - prism_x1)) {
+                ctx.beginPath();
+                ctx.arc(x, y, 1, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+    }
+
+    // Draw Prism Outline
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.beginPath();
+    ctx.rect(prism_x1, prism_y1, prism_w, prism_h);
+    ctx.moveTo(prism_x1, prism_y1);
+    ctx.lineTo(prism_x2, prism_y2);
+    ctx.stroke();
+
+    // Draw Rays
+    ctx.lineWidth = 1.5;
+    
+    // Incident Ray
+    ctx.beginPath();
+    drawArrow(incident_ray_x_start, ray_y_start, incident_ray_x_end, ray_y_start);
+    ctx.stroke();
+
+    // Ray inside prism 1
+    ctx.beginPath();
+    ctx.moveTo(incident_ray_x_end, ray_y_start);
+    ctx.lineTo(p_int_x, p_int_y);
+    ctx.stroke();
+    
+    // O-ray (undeviated)
+    ctx.beginPath();
+    ctx.moveTo(p_int_x, p_int_y);
+    drawArrow(p_int_x, p_int_y, final_o_ray_x, final_o_ray_y);
+    ctx.stroke();
+    
+    // E-ray (deviated)
+    ctx.beginPath();
+    ctx.moveTo(p_int_x, p_int_y);
+    ctx.lineTo(p_exit_e_x, p_exit_e_y);
+    drawArrow(p_exit_e_x, p_exit_e_y, final_e_ray_x, final_e_ray_y);
+    ctx.stroke();
+    
+    // Draw normal to the interface (dashed line)
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    const normal_angle = Math.atan2(prism_x1-prism_x2, prism_y2-prism_y1); // Angle of normal
+    const normal_len = 30;
+    ctx.beginPath();
+    ctx.moveTo(p_int_x - normal_len * Math.cos(normal_angle), p_int_y - normal_len * Math.sin(normal_angle));
+    ctx.lineTo(p_int_x + normal_len * Math.cos(normal_angle), p_int_y + normal_len * Math.sin(normal_angle));
+    ctx.stroke();
+    ctx.restore();
+
+    // Draw Polarization Markers
+    // O-ray polarization (vertical double arrows)
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= 2; i++) {
+        const x_pos = p_exit_e_x + i * 50;
+        const y_pos = final_o_ray_y;
+        const arrow_size = 8;
+        ctx.beginPath();
+        ctx.moveTo(x_pos, y_pos - arrow_size);
+        ctx.lineTo(x_pos, y_pos + arrow_size);
+        ctx.moveTo(x_pos, y_pos - arrow_size);
+        ctx.lineTo(x_pos - 3, y_pos - arrow_size + 4);
+        ctx.moveTo(x_pos, y_pos - arrow_size);
+        ctx.lineTo(x_pos + 3, y_pos - arrow_size + 4);
+        ctx.moveTo(x_pos, y_pos + arrow_size);
+        ctx.lineTo(x_pos - 3, y_pos + arrow_size - 4);
+        ctx.moveTo(x_pos, y_pos + arrow_size);
+        ctx.lineTo(x_pos + 3, y_pos + arrow_size - 4);
+        ctx.stroke();
+    }
+    
+    // E-ray polarization (dots)
+    ctx.fillStyle = 'black';
+    for (let i = 1; i <= 3; i++) {
+        const frac = i / 4.5;
+        const x_pos = p_exit_e_x * (1 - frac) + final_e_ray_x * frac;
+        const y_pos = p_exit_e_y * (1 - frac) + final_e_ray_y * frac;
+        ctx.beginPath();
+        ctx.arc(x_pos, y_pos, 2.5, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+    
+    // Draw Angles and Labels
+    ctx.lineWidth = 1;
+    ctx.font = '24px serif';
+    ctx.fillStyle = 'black';
+
+    // Angle alpha
+    ctx.fillText('α', prism_x1 - 45, prism_y1 + 50);
+    ctx.beginPath();
+    ctx.arc(prism_x1, prism_y1, 35, Math.PI / 2 - alpha_rad, Math.PI / 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(prism_x1, prism_y1, 40, Math.PI / 2 - alpha_rad, Math.PI / 2);
+    ctx.stroke();
+    
+    // Angle beta
+    ctx.fillText('β', p_exit_e_x + 65, p_exit_e_y + 35);
+    ctx.beginPath();
+    ctx.arc(p_exit_e_x, p_exit_e_y, 50, -beta_rad, 0);
+    ctx.stroke();
+
+</script>
+</body>
+</html>

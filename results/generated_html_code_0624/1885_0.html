@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Projectile Motion Diagram</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+        canvas { border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws an arrow with a filled head. Used for the velocity vector.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x1 - Start x-coordinate.
+         * @param {number} y1 - Start y-coordinate.
+         * @param {number} x2 - End x-coordinate.
+         * @param {number} y2 - End y-coordinate.
+         * @param {number} headLength - The length of the arrowhead.
+         */
+        function drawFilledArrow(ctx, x1, y1, x2, y2, headLength = 10) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            ctx.save();
+            ctx.translate(x2, y2);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headLength, headLength / 2);
+            ctx.lineTo(-headLength, -headLength / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        /**
+         * Draws an open-line arrowhead for dimension lines.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x - The x-coordinate of the arrow tip.
+         * @param {number} y - The y-coordinate of the arrow tip.
+         * @param {string} direction - 'left', 'right', 'up', or 'down'.
+         * @param {number} headLength - The length of the arrowhead lines.
+         */
+        function drawDimArrow(ctx, x, y, direction, headLength = 8) {
+            ctx.beginPath();
+            if (direction === 'left') {
+                ctx.moveTo(x + headLength, y - headLength / 2);
+                ctx.lineTo(x, y);
+                ctx.lineTo(x + headLength, y + headLength / 2);
+            } else if (direction === 'right') {
+                ctx.moveTo(x - headLength, y - headLength / 2);
+                ctx.lineTo(x, y);
+                ctx.lineTo(x - headLength, y + headLength / 2);
+            } else if (direction === 'up') {
+                ctx.moveTo(x - headLength / 2, y + headLength);
+                ctx.lineTo(x, y);
+                ctx.lineTo(x + headLength / 2, y + headLength);
+            } else if (direction === 'down') {
+                ctx.moveTo(x - headLength / 2, y - headLength);
+                ctx.lineTo(x, y);
+                ctx.lineTo(x + headLength / 2, y - headLength);
+            }
+            ctx.stroke();
+        }
+
+        /**
+         * Draws text with a subscript.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {string} text - The main text (e.g., 'v').
+         * @param {string} sub - The subscript text (e.g., '0').
+         * @param {number} x - The x-coordinate.
+         * @param {number} y - The y-coordinate.
+         * @param {number} baseFontSize - The font size for the main text.
+         */
+        function drawTextWithSubscript(ctx, text, sub, x, y, baseFontSize = 24) {
+            ctx.save();
+            const mainFont = `italic ${baseFontSize}px Times New Roman`;
+            const subFont = `normal ${baseFontSize * 0.7}px Times New Roman`;
+            
+            ctx.font = mainFont;
+            ctx.textBaseline = 'alphabetic';
+            const textMetrics = ctx.measureText(text);
+            ctx.fillText(text, x, y);
+            
+            ctx.font = subFont;
+            ctx.fillText(sub, x + textMetrics.width * 0.85, y + baseFontSize * 0.1);
+            ctx.restore();
+        }
+
+        // --- Main Drawing Logic ---
+        
+        // Physical parameters
+        const h_phys = 1.0;
+        const a_phys = 2.0;
+        const b_phys = 0.5;
+
+        // Canvas scaling and positioning
+        const scale = 140; // pixels per meter
+        const y_ground = 350;
+        const x_launch = 100;
+
+        const h_px = h_phys * scale;
+        const a_px = a_phys * scale;
+        const b_px = b_phys * scale;
+
+        const y_table = y_ground - h_px;
+        const x_table_right = x_launch + a_px;
+        const x_land = x_table_right + b_px;
+        
+        // 1. Draw Ground
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        ctx.beginPath();
+        ctx.moveTo(20, y_ground);
+        ctx.lineTo(canvas.width - 20, y_ground);
+        ctx.stroke();
+
+        // 2. Draw Table
+        const table_thickness = 15;
+        ctx.fillStyle = 'black';
+        ctx.fillRect(x_launch, y_table, a_px, table_thickness);
+
+        // Table legs
+        ctx.lineWidth = 4;
+        const leg_inset = 20;
+        const leg_spread = 40;
+        ctx.beginPath();
+        ctx.moveTo(x_launch + leg_inset, y_table + table_thickness);
+        ctx.lineTo(x_launch + leg_inset - leg_spread, y_ground);
+        ctx.moveTo(x_launch + leg_inset + 8, y_table + table_thickness);
+        ctx.lineTo(x_launch + leg_inset - leg_spread + 8, y_ground);
+        ctx.moveTo(x_table_right - leg_inset, y_table + table_thickness);
+        ctx.lineTo(x_table_right - leg_inset + leg_spread, y_ground);
+        ctx.moveTo(x_table_right - leg_inset - 8, y_table + table_thickness);
+        ctx.lineTo(x_table_right - leg_inset + leg_spread - 8, y_ground);
+        ctx.stroke();
+        
+        // 3. Trajectory
+        const C1 = a_phys * h_phys / (b_phys * (a_phys + b_phys));
+        const C2 = h_phys / (b_phys * (a_phys + b_phys));
+        
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(x_launch, y_table);
+        const total_dist_phys = a_phys + b_phys;
+        for (let i = 1; i <= 100; i++) {
+            let x_phys = (i / 100) * total_dist_phys;
+            let y_phys = C1 * x_phys - C2 * x_phys * x_phys;
+            let cx = x_launch + x_phys * scale;
+            let cy = y_table - y_phys * scale; // y is inverted in canvas
+            ctx.lineTo(cx, cy);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // 4. Ball
+        const ball_radius = 9;
+        ctx.beginPath();
+        ctx.arc(x_launch, y_table, ball_radius, 0, 2 * Math.PI);
+        ctx.fillStyle = 'gray';
+        ctx.fill();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        
+        // 5. Annotations
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        
+        // v0 vector
+        const theta0 = Math.atan(C1);
+        const vec_len = 60;
+        const vx_end = x_launch + vec_len * Math.cos(theta0);
+        const vy_end = y_table - vec_len * Math.sin(theta0);
+        ctx.lineWidth = 1.5;
+        drawFilledArrow(ctx, x_launch, y_table, vx_end, vy_end, 10);
+        drawTextWithSubscript(ctx, 'v', '0', vx_end - 35, vy_end - 15, 24);
+        
+        // theta0 angle arc
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(x_launch, y_table, 30, 0, -theta0, true);
+        ctx.stroke();
+        const angle_label_rad = -theta0 / 2;
+        const angle_label_r = 38;
+        drawTextWithSubscript(ctx, 'θ', '0', x_launch + angle_label_r * Math.cos(angle_label_rad) - 5, y_table + angle_label_r * Math.sin(angle_label_rad) + 15, 24);
+
+        // Dimension lines (h, a, b)
+        ctx.lineWidth = 1;
+        ctx.font = 'italic 20px Times New Roman';
+        
+        // h
+        const h_line_x = x_table_right + 40;
+        ctx.beginPath();
+        ctx.moveTo(h_line_x, y_table); ctx.lineTo(h_line_x, y_ground);
+        ctx.moveTo(x_table_right, y_table); ctx.lineTo(h_line_x, y_table);
+        ctx.moveTo(x_table_right, y_ground); ctx.lineTo(h_line_x, y_ground);
+        ctx.stroke();
+        drawDimArrow(ctx, h_line_x, y_table, 'down', 6);
+        drawDimArrow(ctx, h_line_x, y_ground, 'up', 6);
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('h', h_line_x + 8, (y_table + y_ground) / 2);
+        
+        // a and b
+        const dim_line_y = y_ground + 40;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        
+        // a
+        ctx.beginPath();
+        ctx.moveTo(x_launch, y_ground); ctx.lineTo(x_launch, dim_line_y);
+        ctx.moveTo(x_table_right, y_ground); ctx.lineTo(x_table_right, dim_line_y);
+        ctx.moveTo(x_launch, dim_line_y); ctx.lineTo(x_table_right, dim_line_y);
+        ctx.stroke();
+        drawDimArrow(ctx, x_launch, dim_line_y, 'right', 6);
+        drawDimArrow(ctx, x_table_right, dim_line_y, 'left', 6);
+        ctx.fillText('a', (x_launch + x_table_right) / 2, dim_line_y + 5);
+
+        // b
+        ctx.beginPath();
+        ctx.moveTo(x_land, y_ground); ctx.lineTo(x_land, dim_line_y);
+        ctx.moveTo(x_table_right, dim_line_y); ctx.lineTo(x_land, dim_line_y);
+        ctx.stroke();
+        drawDimArrow(ctx, x_table_right, dim_line_y, 'right', 6);
+        drawDimArrow(ctx, x_land, dim_line_y, 'left', 6);
+        ctx.fillText('b', (x_table_right + x_land) / 2, dim_line_y + 5);
+
+        // 6. Caption
+        ctx.font = '24px "KaiTi", "SimSun"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('习题 1-15 图', canvas.width / 2, canvas.height - 5);
+
+    </script>
+</body>
+</html>

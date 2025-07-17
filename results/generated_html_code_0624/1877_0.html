@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Graph Reproduction</title>
+</head>
+<body>
+<canvas id="fig1_2" width="720" height="580"></canvas>
+
+<script>
+    const canvas = document.getElementById('fig1_2');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const margin = { top: 40, right: 40, bottom: 90, left: 90 };
+    const graphWidth = canvas.width - margin.left - margin.right;
+    const graphHeight = canvas.height - margin.top - margin.bottom;
+
+    // Graph scale based on the image
+    const xMax = 6.0;
+    const yMax = 4.5; // The grid extends to 4.5
+
+    const xUnit = graphWidth / xMax; // Pixels per unit on x-axis
+    const yUnit = graphHeight / yMax; // Pixels per unit on y-axis
+
+    // --- Helper Functions ---
+    function getCanvasX(graphX) {
+        return margin.left + graphX * xUnit;
+    }
+
+    function getCanvasY(graphY) {
+        return margin.top + graphHeight - graphY * yUnit;
+    }
+
+    // --- Drawing Functions ---
+
+    function drawGrid() {
+        ctx.strokeStyle = '#cccccc'; // Light grey for minor grid
+        ctx.lineWidth = 0.5;
+
+        // Minor vertical lines
+        for (let i = 0; i <= xMax * 10; i++) {
+            if (i % 10 !== 0) {
+                const x = getCanvasX(i / 10);
+                ctx.beginPath();
+                ctx.moveTo(x, margin.top);
+                ctx.lineTo(x, margin.top + graphHeight);
+                ctx.stroke();
+            }
+        }
+
+        // Minor horizontal lines
+        for (let i = 0; i <= yMax * 10; i++) {
+            if (i % 10 !== 0) {
+                const y = getCanvasY(i / 10);
+                ctx.beginPath();
+                ctx.moveTo(margin.left, y);
+                ctx.lineTo(margin.left + graphWidth, y);
+                ctx.stroke();
+            }
+        }
+
+        ctx.strokeStyle = '#999999'; // Darker grey for major grid
+        ctx.lineWidth = 1;
+
+        // Major vertical lines
+        for (let i = 0; i <= xMax; i++) {
+            const x = getCanvasX(i);
+            ctx.beginPath();
+            ctx.moveTo(x, margin.top);
+            ctx.lineTo(x, margin.top + graphHeight);
+            ctx.stroke();
+        }
+
+        // Major horizontal lines
+        for (let i = 0; i <= Math.floor(yMax); i++) {
+            const y = getCanvasY(i);
+            ctx.beginPath();
+            ctx.moveTo(margin.left, y);
+            ctx.lineTo(margin.left + graphWidth, y);
+            ctx.stroke();
+        }
+    }
+
+    function drawAxes() {
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // X-axis
+        ctx.beginPath();
+        ctx.moveTo(margin.left, getCanvasY(0));
+        ctx.lineTo(margin.left + graphWidth, getCanvasY(0));
+        ctx.stroke();
+
+        // Y-axis
+        ctx.beginPath();
+        ctx.moveTo(getCanvasX(0), margin.top);
+        ctx.lineTo(getCanvasX(0), margin.top + graphHeight);
+        ctx.stroke();
+
+        // Axis ticks and labels
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+
+        // X-axis labels
+        for (let i = 0; i <= xMax; i++) {
+            ctx.fillText(i, getCanvasX(i), getCanvasY(0) + 8);
+        }
+
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        // Y-axis labels
+        for (let i = 0; i <= Math.floor(yMax); i++) {
+            ctx.fillText(i, getCanvasX(0) - 8, getCanvasY(i));
+        }
+    }
+
+    function drawAxisTitles() {
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+
+        // Y-axis Title: r³ / 10²³ m³
+        ctx.save();
+        ctx.translate(margin.left - 60, margin.top + graphHeight / 2);
+        ctx.rotate(-Math.PI / 2);
+        
+        ctx.font = '18px Arial';
+        ctx.fillText('r', -25, 0);
+        ctx.font = '12px Arial';
+        ctx.fillText('3', -18, -6);
+        
+        ctx.font = '18px Arial';
+        ctx.fillText('/ 10', 8, 0);
+        ctx.font = '12px Arial';
+        ctx.fillText('23', 28, -6);
+
+        ctx.font = '18px Arial';
+        ctx.fillText('m', 45, 0);
+        ctx.font = '12px Arial';
+        ctx.fillText('3', 53, -6);
+
+        ctx.restore();
+
+        // X-axis Title: 1/ω² / 10⁷ rad⁻² s²
+        const xLabelY = margin.top + graphHeight + 55;
+        const xLabelX = margin.left + graphWidth / 2;
+
+        // Draw fraction part: 1/ω²
+        ctx.font = '18px Arial';
+        ctx.fillText('1', xLabelX - 90, xLabelY - 10);
+        
+        ctx.beginPath();
+        ctx.moveTo(xLabelX - 100, xLabelY);
+        ctx.lineTo(xLabelX - 70, xLabelY);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+
+        ctx.fillText('ω', xLabelX - 85, xLabelY + 18);
+        ctx.font = '12px Arial';
+        ctx.fillText('2', xLabelX - 76, xLabelY + 12);
+
+        // Draw the rest of the unit
+        ctx.font = '18px Arial';
+        let currentX = xLabelX - 55;
+        ctx.textAlign = 'left';
+        ctx.fillText('/ 10', currentX, xLabelY + 10);
+        currentX += ctx.measureText('/ 10').width;
+        
+        ctx.font = '12px Arial';
+        ctx.fillText('7', currentX, xLabelY + 4);
+        currentX += ctx.measureText('7').width - 2;
+
+        ctx.font = '18px Arial';
+        ctx.fillText('rad', currentX, xLabelY + 10);
+        currentX += ctx.measureText('rad').width;
+
+        ctx.font = '12px Arial';
+        ctx.fillText('-2', currentX, xLabelY + 4);
+        currentX += ctx.measureText('-2').width - 2;
+
+        ctx.font = '18px Arial';
+        ctx.fillText('s', currentX, xLabelY + 10);
+        currentX += ctx.measureText('s').width;
+
+        ctx.font = '12px Arial';
+        ctx.fillText('2', currentX, xLabelY + 4);
+    }
+
+    function drawDataLine() {
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Dashed part of the line: from (0, 0) to (1, 0.7)
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(getCanvasX(0), getCanvasY(0));
+        ctx.lineTo(getCanvasX(1), getCanvasY(0.7));
+        ctx.stroke();
+
+        // Solid part of the line: from (1, 0.7) to (6, 4.2)
+        ctx.beginPath();
+        ctx.setLineDash([]); // Reset to solid line
+        ctx.moveTo(getCanvasX(1), getCanvasY(0.7));
+        ctx.lineTo(getCanvasX(6), getCanvasY(4.2));
+        ctx.stroke();
+    }
+    
+    function drawCaption() {
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 1.2', canvas.width / 2, canvas.height - 20);
+    }
+
+    // --- Main Drawing Execution ---
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    drawGrid();
+    drawAxes();
+    drawAxisTitles();
+    drawDataLine();
+    drawCaption();
+
+</script>
+
+</body>
+</html>

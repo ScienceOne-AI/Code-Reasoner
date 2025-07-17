@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Simple Harmonic Motion v-x Graph</title>
+</head>
+<body>
+<canvas id="shmCanvas" width="700" height="600"></canvas>
+<script>
+const canvas = document.getElementById('shmCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style settings
+const colors = {
+    background: '#FFFFFF',
+    lightGrid: '#E0E0E0',
+    majorGrid: '#B0B0B0',
+    axis: '#000000',
+    curve: '#000000',
+    text: '#000000'
+};
+const font = '18px Arial';
+const fontSmall = '14px Arial';
+
+// Clear canvas
+ctx.fillStyle = colors.background;
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// Graph dimensions and scales
+const margin = { top: 40, right: 40, bottom: 60, left: 60 };
+const graphWidth = canvas.width - margin.left - margin.right;
+const graphHeight = canvas.height - margin.top - margin.bottom;
+
+const xMin = -0.06, xMax = 0.06;
+const vMin = -0.45, vMax = 0.45;
+
+// Coordinate transformation functions
+function toCanvasX(x) {
+    return margin.left + (x - xMin) / (xMax - xMin) * graphWidth;
+}
+function toCanvasY(v) {
+    return margin.top + (vMax - v) / (vMax - vMin) * graphHeight;
+}
+
+// --- Drawing ---
+
+// 1. Draw Grid
+ctx.lineWidth = 0.5;
+ctx.strokeStyle = colors.lightGrid;
+
+// Minor vertical lines (every 0.002)
+const xMinorStep = 0.002;
+for (let i = 0; i <= (xMax - xMin) / xMinorStep; i++) {
+    const x = xMin + i * xMinorStep;
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(x), margin.top);
+    ctx.lineTo(toCanvasX(x), margin.top + graphHeight);
+    ctx.stroke();
+}
+
+// Minor horizontal lines (every 0.01)
+const vMinorStep = 0.01;
+// Adjust vMin to align with grid
+const startV = Math.ceil(vMin / vMinorStep) * vMinorStep;
+for (let v = startV; v <= vMax; v += vMinorStep) {
+    ctx.beginPath();
+    ctx.moveTo(margin.left, toCanvasY(v));
+    ctx.lineTo(margin.left + graphWidth, toCanvasY(v));
+    ctx.stroke();
+}
+
+// Major Grid lines
+ctx.lineWidth = 1.0;
+ctx.strokeStyle = colors.majorGrid;
+
+// Major vertical lines (every 0.02)
+for (let x = xMin; x <= xMax + 1e-9; x += 0.02) {
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(x), margin.top);
+    ctx.lineTo(toCanvasX(x), margin.top + graphHeight);
+    ctx.stroke();
+}
+
+// Major horizontal lines (every 0.1)
+for (let v = -0.4; v <= 0.4 + 1e-9; v += 0.1) {
+    ctx.beginPath();
+    ctx.moveTo(margin.left, toCanvasY(v));
+    ctx.lineTo(margin.left + graphWidth, toCanvasY(v));
+    ctx.stroke();
+}
+
+// 2. Draw Axes
+ctx.lineWidth = 1.5;
+ctx.strokeStyle = colors.axis;
+
+// X-axis
+ctx.beginPath();
+ctx.moveTo(toCanvasX(xMin), toCanvasY(0));
+ctx.lineTo(toCanvasX(xMax), toCanvasY(0));
+ctx.stroke();
+
+// Y-axis
+ctx.beginPath();
+ctx.moveTo(toCanvasX(0), toCanvasY(vMax));
+ctx.lineTo(toCanvasX(0), toCanvasY(vMin));
+ctx.stroke();
+
+// 3. Draw Labels and Ticks
+ctx.fillStyle = colors.text;
+ctx.font = fontSmall;
+
+// X-axis ticks
+ctx.textAlign = 'center';
+ctx.textBaseline = 'top';
+for (let x = -0.06; x <= 0.06 + 1e-9; x += 0.02) {
+    if (Math.abs(x) > 1e-9) { // Don't draw 0.00 at origin
+        ctx.fillText(x.toFixed(2), toCanvasX(x), toCanvasY(0) + 5);
+    }
+}
+
+// Y-axis ticks
+ctx.textAlign = 'right';
+ctx.textBaseline = 'middle';
+for (let v = -0.4; v <= 0.4 + 1e-9; v += 0.1) {
+    if (Math.abs(v) > 1e-9) { // Don't draw 0.0 at origin
+        ctx.fillText(v.toFixed(1), toCanvasX(0) - 5, toCanvasY(v));
+    }
+}
+
+// Origin Label '0'
+ctx.textAlign = 'right';
+ctx.textBaseline = 'top';
+ctx.fillText('0', toCanvasX(0) - 3, toCanvasY(0) + 3);
+
+// Axis labels
+ctx.font = font;
+// Y-axis label: v / m s⁻¹
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('v / m s⁻¹', toCanvasX(-0.02), toCanvasY(0.35));
+
+// X-axis label: x / m
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('x / m', toCanvasX(0.045), toCanvasY(-0.2));
+
+// 4. Draw the Ellipse
+const A = 0.05; // amplitude, semi-axis on x
+const v_max = 0.41; // max velocity, semi-axis on v
+
+const xScale_pixels_per_unit = graphWidth / (xMax - xMin);
+const yScale_pixels_per_unit = graphHeight / (vMax - vMin);
+
+const rx_pixels = A * xScale_pixels_per_unit;
+const ry_pixels = v_max * yScale_pixels_per_unit;
+
+ctx.beginPath();
+ctx.ellipse(toCanvasX(0), toCanvasY(0), rx_pixels, ry_pixels, 0, 0, 2 * Math.PI);
+ctx.lineWidth = 2.5;
+ctx.strokeStyle = colors.curve;
+ctx.stroke();
+
+// 5. Draw Figure Caption
+ctx.textAlign = 'center';
+ctx.textBaseline = 'top';
+ctx.font = font;
+ctx.fillText('Fig. 3.1', canvas.width / 2, canvas.height - 35);
+
+</script>
+</body>
+</html>

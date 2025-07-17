@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Inverting Amplifier Circuit Diagram</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="600" height="420"></canvas>
+<script>
+const canvas = document.getElementById('circuitCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style Settings ---
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = 1.5;
+ctx.font = '18px Arial';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// --- Helper Functions ---
+
+function drawResistor(x, y, width, height, label) {
+    ctx.strokeRect(x - width / 2, y - height / 2, width, height);
+    if (label) {
+        // Custom subscript handling for R1 and R2
+        if (label === "R1") {
+            ctx.fillText("R", x - 5, y - height / 2 - 12);
+            ctx.font = '12px Arial';
+            ctx.fillText("1", x + 5, y - height / 2 - 9);
+            ctx.font = '18px Arial';
+        } else if (label === "R2") {
+            ctx.fillText("R", x - 5, y - height / 2 - 12);
+            ctx.font = '12px Arial';
+            ctx.fillText("2", x + 5, y - height / 2 - 9);
+            ctx.font = '18px Arial';
+        } else {
+            ctx.fillText(label, x, y - height / 2 - 12);
+        }
+    }
+}
+
+function drawOpAmp(x_in, y_inv, y_noninv, tip_x, p_top, p_bot) {
+    const y_center = (y_inv + y_noninv) / 2;
+    const base_y_top = y_center - 60;
+    const base_y_bot = y_center + 60;
+    const power_x = x_in + 25;
+
+    // Triangle Body
+    ctx.beginPath();
+    ctx.moveTo(x_in, base_y_top);
+    ctx.lineTo(x_in, base_y_bot);
+    ctx.lineTo(tip_x, y_center);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Inputs
+    ctx.font = '24px Arial';
+    ctx.fillText('-', x_in + 15, y_inv);
+    ctx.fillText('+', x_in + 15, y_noninv);
+    ctx.font = '18px Arial';
+    
+    // Power Supplies
+    ctx.beginPath();
+    ctx.moveTo(power_x, base_y_top);
+    ctx.lineTo(power_x, base_y_top - 20);
+    ctx.stroke();
+    ctx.fillText(p_top, power_x, base_y_top - 32);
+    
+    ctx.beginPath();
+    ctx.moveTo(power_x, base_y_bot);
+    ctx.lineTo(power_x, base_y_bot + 20);
+    ctx.stroke();
+    ctx.fillText(p_bot, power_x, base_y_bot + 32);
+}
+
+function drawTerminal(x, y) {
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'black';
+}
+
+function drawDot(x, y) {
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, 2 * Math.PI);
+    ctx.fill();
+}
+
+function drawGround(x, y, size) {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y + 10);
+    ctx.moveTo(x - size, y + 10);
+    ctx.lineTo(x + size, y + 10);
+    ctx.moveTo(x - size * 0.6, y + 15);
+    ctx.lineTo(x + size * 0.6, y + 15);
+    ctx.moveTo(x - size * 0.3, y + 20);
+    ctx.lineTo(x + size * 0.3, y + 20);
+    ctx.stroke();
+}
+
+function drawVerticalArrow(x, y1, y2, label) {
+    const arrowHeadSize = 8;
+    const toY = y2 > y1 ? y2 - 2 : y2 + 2; // Shorten line slightly for arrowhead
+    const fromY = y1;
+    ctx.beginPath();
+    ctx.moveTo(x, fromY);
+    ctx.lineTo(x, toY);
+    ctx.stroke();
+    // Arrowhead
+    ctx.beginPath();
+    ctx.moveTo(x, y2);
+    ctx.lineTo(x - arrowHeadSize / 2, y2 - arrowHeadSize * Math.sign(y2 - y1));
+    ctx.moveTo(x, y2);
+    ctx.lineTo(x + arrowHeadSize / 2, y2 - arrowHeadSize * Math.sign(y2 - y1));
+    ctx.stroke();
+    
+    // Label with subscript
+    ctx.textAlign = 'right';
+    ctx.fillText("V", x - 10, (y1 + y2) / 2);
+    ctx.font = '12px Arial';
+    if (label === "VIN") {
+        ctx.fillText("IN", x, (y1 + y2) / 2 + 3);
+    } else if (label === "VOUT") {
+        ctx.fillText("OUT", x + 12, (y1 + y2) / 2 + 3);
+    }
+    ctx.font = '18px Arial';
+    ctx.textAlign = 'center';
+}
+
+// --- Main Drawing ---
+
+const groundY = 350;
+const invInputY = 190;
+const nonInvInputY = 250;
+const opampInX = 300;
+const opampOutX = 420;
+const opampCenterY = (invInputY + nonInvInputY) / 2;
+
+// Ground line
+ctx.beginPath();
+ctx.moveTo(50, groundY);
+ctx.lineTo(550, groundY);
+ctx.stroke();
+drawGround(150, groundY, 20);
+drawDot(150, groundY); // Add dot at ground symbol connection as in original
+
+// Op-Amp
+drawOpAmp(opampInX, invInputY, nonInvInputY, opampOutX, "+9.0 V", "–9.0 V");
+
+// Input circuit (Vin, R1)
+const vinX = 80;
+drawTerminal(vinX, invInputY);
+drawVerticalArrow(vinX, groundY, invInputY, "VIN");
+drawDot(vinX, groundY);
+
+const R1X = 180;
+const nodeP_X = 260;
+ctx.beginPath();
+ctx.moveTo(vinX, invInputY);
+ctx.lineTo(R1X - 40, invInputY);
+drawResistor(R1X, invInputY, 80, 30, "R1");
+ctx.moveTo(R1X + 40, invInputY);
+ctx.lineTo(nodeP_X, invInputY);
+ctx.stroke();
+
+// Node P
+drawDot(nodeP_X, invInputY);
+ctx.fillText("P", nodeP_X, invInputY - 15);
+
+// Connection from P to inverting input
+ctx.beginPath();
+ctx.moveTo(nodeP_X, invInputY);
+ctx.lineTo(opampInX, invInputY);
+ctx.stroke();
+
+// Non-inverting input to ground
+const nonInvGndX = opampInX + 20;
+ctx.beginPath();
+ctx.moveTo(opampInX, nonInvInputY);
+ctx.lineTo(nonInvGndX, nonInvInputY);
+ctx.lineTo(nonInvGndX, groundY);
+ctx.stroke();
+drawDot(nonInvGndX, groundY);
+
+// Feedback loop (R2)
+const feedbackY = 100;
+const R2X = 360;
+const outputNodeX = 450;
+ctx.beginPath();
+ctx.moveTo(nodeP_X, invInputY);
+ctx.lineTo(nodeP_X, feedbackY);
+ctx.lineTo(R2X - 40, feedbackY);
+drawResistor(R2X, feedbackY, 80, 30, "R2");
+ctx.moveTo(R2X + 40, feedbackY);
+ctx.lineTo(outputNodeX, feedbackY);
+ctx.lineTo(outputNodeX, opampCenterY);
+ctx.stroke();
+
+// Output circuit (Vout)
+const voutX = 520;
+ctx.beginPath();
+ctx.moveTo(opampOutX, opampCenterY);
+ctx.lineTo(voutX, opampCenterY);
+ctx.stroke();
+drawDot(outputNodeX, opampCenterY);
+drawTerminal(voutX, opampCenterY);
+drawVerticalArrow(voutX, groundY, opampCenterY, "VOUT");
+drawDot(voutX, groundY);
+
+// Figure Caption
+ctx.font = 'bold 18px Arial';
+ctx.fillText("Fig. 7.1", 300, 395);
+
+</script>
+</body>
+</html>

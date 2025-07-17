@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Compton Scattering Diagram</title>
+</head>
+<body>
+<canvas id="comptonCanvas" width="600" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('comptonCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'black';
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = 'italic 20px serif';
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws an arrow from a starting point to an ending point.
+     * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+     * @param {number} fromx - The x-coordinate of the starting point.
+     * @param {number} fromy - The y-coordinate of the starting point.
+     * @param {number} tox - The x-coordinate of the ending point.
+     * @param {number} toy - The y-coordinate of the ending point.
+     * @param {number} [headlen=10] - The length of the arrowhead.
+     */
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 12) {
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 7), toy - headlen * Math.sin(angle - Math.PI / 7));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 7), toy - headlen * Math.sin(angle + Math.PI / 7));
+        ctx.stroke();
+    }
+
+    /**
+     * Draws a wavy line along a straight path.
+     * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+     * @param {number} x1 - The starting x-coordinate.
+     * @param {number} y1 - The starting y-coordinate.
+     * @param {number} x2 - The ending x-coordinate.
+     * @param {number} y2 - The ending y-coordinate.
+     * @param {number} [amplitude=4] - The amplitude of the wave.
+     * @param {number} [frequency=0.3] - The frequency of the wave.
+     */
+    function drawWavyLine(ctx, x1, y1, x2, y2, amplitude = 4, frequency = 0.3) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
+        const step = 1;
+
+        ctx.save();
+        ctx.translate(x1, y1);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+
+        for (let d = step; d <= distance; d += step) {
+            const y_offset = amplitude * Math.sin((d - distance) * frequency);
+            ctx.lineTo(d, y_offset);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    /**
+     * Draws a wavy arrow by combining a wavy line and an arrowhead.
+     */
+    function drawWavyArrow(ctx, x1, y1, x2, y2, headlen = 12, amplitude = 4, frequency = 0.3) {
+        drawWavyLine(ctx, x1, y1, x2, y2, amplitude, frequency);
+        
+        // Draw arrowhead
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 7), y2 - headlen * Math.sin(angle - Math.PI / 7));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 7), y2 - headlen * Math.sin(angle + Math.PI / 7));
+        ctx.stroke();
+    }
+
+
+    // --- Main Drawing ---
+
+    const centerX = 300;
+    const centerY = 200;
+
+    // 1. Draw horizontal reference line
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(centerX - 250, centerY);
+    ctx.lineTo(centerX + 250, centerY);
+    ctx.stroke();
+    ctx.restore();
+
+    // 2. Draw incoming photon
+    const incomingWaveStart = centerX - 180;
+    const incomingWaveEnd = centerX - 80;
+    const incomingArrowEnd = centerX - 5; // End just before the particle
+    drawWavyLine(ctx, incomingWaveStart, centerY, incomingWaveEnd, centerY, 4, 0.3);
+    drawArrow(ctx, incomingWaveEnd, centerY, incomingArrowEnd, centerY);
+
+    // 3. Draw collision particle (electron at rest)
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 4. Draw scattered photon
+    const theta = -Math.PI / 4; // 45 degrees, negative for upward direction in canvas
+    const scatteredLength = 150;
+    const scatteredEndX = centerX + scatteredLength * Math.cos(theta);
+    const scatteredEndY = centerY + scatteredLength * Math.sin(theta);
+    drawWavyArrow(ctx, centerX, centerY, scatteredEndX, scatteredEndY);
+
+    // 5. Draw recoiling electron
+    const phi = Math.PI / 5; // 36 degrees
+    const recoilLength = 160;
+    const recoilEndX = centerX + recoilLength * Math.cos(phi);
+    const recoilEndY = centerY + recoilLength * Math.sin(phi);
+    drawArrow(ctx, centerX, centerY, recoilEndX, recoilEndY);
+    
+    // 6. Draw angles
+    ctx.save();
+    ctx.lineWidth = 1;
+    // Angle theta
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 40, 0, theta, true); // counter-clockwise
+    ctx.stroke();
+    // Angle phi
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 60, 0, phi, false); // clockwise
+    ctx.stroke();
+    ctx.restore();
+
+    // --- Add Labels ---
+
+    ctx.textAlign = 'center';
+    
+    // Incoming photon label: (hν₀/c) n₀
+    const labelX1 = centerX - 150;
+    const labelY1 = centerY - 55;
+    ctx.font = 'italic 20px serif';
+    ctx.fillText('hν', labelX1, labelY1);
+    ctx.fillText('c', labelX1, labelY1 + 30);
+    ctx.fillText('n', labelX1 + 50, labelY1 + 15);
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(labelX1 - 18, labelY1 + 8);
+    ctx.lineTo(labelX1 + 18, labelY1 + 8);
+    ctx.stroke();
+    ctx.restore();
+    ctx.font = 'italic 14px serif';
+    ctx.fillText('0', labelX1 + 14, labelY1 + 3);
+    ctx.fillText('0', labelX1 + 60, labelY1 + 18);
+
+    // Scattered photon label: (hν/c) n
+    const labelX2 = scatteredEndX - 10;
+    const labelY2 = scatteredEndY - 55;
+    ctx.font = 'italic 20px serif';
+    ctx.fillText('hν', labelX2, labelY2);
+    ctx.fillText('c', labelX2, labelY2 + 30);
+    ctx.fillText('n', labelX2 + 40, labelY2 + 15);
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(labelX2 - 18, labelY2 + 8);
+    ctx.lineTo(labelX2 + 18, labelY2 + 8);
+    ctx.stroke();
+    ctx.restore();
+
+    // Recoiling electron label: mv
+    ctx.font = 'italic 20px serif';
+    ctx.fillText('mv', recoilEndX + 20, recoilEndY + 5);
+
+    // Particle label: m₀
+    ctx.fillText('m', centerX, centerY + 25);
+    ctx.font = 'italic 14px serif';
+    ctx.fillText('0', centerX + 10, centerY + 28);
+    
+    // Angle labels: θ and φ
+    ctx.font = 'italic 20px serif';
+    ctx.fillText('θ', centerX + 45 * Math.cos(theta/2), centerY + 45 * Math.sin(theta/2) -5);
+    ctx.fillText('φ', centerX + 65 * Math.cos(phi/2), centerY + 65 * Math.sin(phi/2) + 10);
+
+</script>
+</body>
+</html>

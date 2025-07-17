@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Beam with Loads</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="beamCanvas" width="750" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('beamCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Helper function to draw hatching for ground
+        function drawHatching(ctx, x, y, width, height, spacing = 5, angle = -Math.PI / 4) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(x, y, width, height);
+            ctx.clip();
+
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            const startX = x - height * sin;
+            const startY = y;
+            const endX = x + width;
+            const endY = y + height;
+            
+            ctx.beginPath();
+            for (let i = startX; i < endX + height; i += spacing) {
+                const p1x = i;
+                const p1y = startY;
+                const p2x = i - height * sin * 2;
+                const p2y = endY;
+                ctx.moveTo(p1x, p1y);
+                ctx.lineTo(p2x, p2y);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        // --- Main Drawing ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 18px sans-serif';
+
+        // --- Define Geometry ---
+        const scale = 80; // pixels per meter
+        const yBeam = 220;
+        const xStart = 60;
+        
+        const len_q = 2 * scale;  // 160
+        const len_B_F8 = 1 * scale; // 80
+        const len_F8_F6 = 1 * scale; // 80
+        const len_F6_A = 2 * scale; // 160
+
+        const x_B = xStart + len_q;
+        const x_F8 = x_B + len_B_F8;
+        const x_F6 = x_F8 + len_F8_F6;
+        const x_A = x_F6 + len_F6_A;
+        const xEnd = x_A;
+
+        // --- Draw Beam ---
+        ctx.beginPath();
+        ctx.moveTo(xStart, yBeam);
+        ctx.lineTo(xEnd, yBeam);
+        ctx.stroke();
+        
+        // --- Draw Supports ---
+        // Support A (Pin) at x_A
+        ctx.beginPath();
+        ctx.arc(x_A, yBeam, 6, 0, 2 * Math.PI); // Pin circle
+        ctx.moveTo(x_A, yBeam + 6);
+        ctx.lineTo(x_A - 20, yBeam + 40);
+        ctx.lineTo(x_A + 20, yBeam + 40);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x_A - 30, yBeam + 40);
+        ctx.lineTo(x_A + 30, yBeam + 40);
+        ctx.stroke();
+        drawHatching(ctx, x_A - 30, yBeam + 40, 60, 10);
+        ctx.fillText('A', x_A + 10, yBeam - 5);
+
+        // Support B (Roller) at x_B
+        ctx.beginPath();
+        ctx.arc(x_B, yBeam, 6, 0, 2 * Math.PI); // Pin circle
+        ctx.moveTo(x_B, yBeam + 6);
+        ctx.lineTo(x_B - 20, yBeam + 40);
+        ctx.lineTo(x_B + 20, yBeam + 40);
+        ctx.closePath();
+        ctx.stroke();
+        // Rollers
+        const rollerRadius = 4;
+        const rollerY = yBeam + 40 + rollerRadius;
+        ctx.beginPath();
+        ctx.arc(x_B - 10, rollerY, rollerRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x_B, rollerY, rollerRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x_B + 10, rollerY, rollerRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Ground for roller
+        const groundY = rollerY + rollerRadius;
+        ctx.beginPath();
+        ctx.moveTo(x_B - 30, groundY);
+        ctx.lineTo(x_B + 30, groundY);
+        ctx.stroke();
+        drawHatching(ctx, x_B - 30, groundY, 60, 10);
+        ctx.fillText('B', x_B - 25, yBeam - 10);
+
+
+        // --- Draw Loads ---
+        // Distributed Load q
+        const q_height = 50;
+        const q_y_top = yBeam - q_height;
+        ctx.beginPath();
+        ctx.rect(xStart, q_y_top, len_q, q_height);
+        ctx.stroke();
+        // Arrows for distributed load
+        for (let x = xStart + 15; x < x_B; x += 20) {
+            drawArrow(ctx, x, q_y_top, x, yBeam, 8);
+        }
+        ctx.textAlign = 'center';
+        ctx.fillText('q = 3 kN/m', xStart + len_q / 2, q_y_top - 20);
+
+        // Angled Force 6 kN
+        const force_6_len = 100;
+        const angle_45 = Math.PI / 4;
+        const f6_startX = x_F6 + force_6_len * Math.sin(angle_45);
+        const f6_startY = yBeam - force_6_len * Math.cos(angle_45);
+        drawArrow(ctx, f6_startX, f6_startY, x_F6, yBeam, 15);
+        ctx.textAlign = 'left';
+        ctx.fillText('6 kN', f6_startX - 30, f6_startY - 15);
+        // Angle arc and label
+        ctx.beginPath();
+        ctx.moveTo(x_F6, yBeam);
+        ctx.lineTo(x_F6, yBeam - 40); // Vertical line
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x_F6, yBeam, 30, -Math.PI/2, -Math.PI/4);
+        ctx.stroke();
+        ctx.fillText('45°', x_F6 + 25, yBeam - 35);
+        
+        // Vertical Force 8 kN
+        const f8_y_start = yBeam;
+        const f8_y_end = yBeam + 150;
+        ctx.beginPath();
+        ctx.moveTo(x_F8, f8_y_start);
+        ctx.lineTo(x_F8, f8_y_start + 40); // Vertical member
+        ctx.stroke();
+        drawArrow(ctx, x_F8, f8_y_start + 40, x_F8, f8_y_end, 15);
+        ctx.fillText('8 kN', x_F8 + 10, f8_y_end);
+        
+
+        // --- Draw Dimensions ---
+        const dim_y = yBeam + 100;
+        const tick_height = 5;
+        ctx.lineWidth = 1;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+
+        // Dimension line helper
+        function drawDimension(x1, x2, y, text) {
+            ctx.beginPath();
+            // Horizontal line
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            // Ticks
+            ctx.moveTo(x1, y - tick_height);
+            ctx.lineTo(x1, y + tick_height);
+            ctx.moveTo(x2, y - tick_height);
+            ctx.lineTo(x2, y + tick_height);
+            ctx.stroke();
+            ctx.fillText(text, (x1 + x2) / 2, y + 5);
+        }
+
+        // Vertical guide lines
+        const dim_y_bottom = dim_y + 20;
+        ctx.beginPath();
+        ctx.moveTo(xStart, yBeam);
+        ctx.lineTo(xStart, dim_y_bottom);
+        ctx.moveTo(x_B, yBeam);
+        ctx.lineTo(x_B, dim_y_bottom);
+        ctx.moveTo(x_F8, yBeam);
+        ctx.lineTo(x_F8, dim_y_bottom); // This line is drawn over by the 8kN force, which is correct
+        ctx.moveTo(x_F6, yBeam);
+        ctx.lineTo(x_F6, dim_y_bottom);
+        ctx.moveTo(x_A, yBeam);
+        ctx.lineTo(x_A, dim_y_bottom);
+        ctx.setLineDash([2, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Dimension lines and text
+        drawDimension(xStart, x_B, dim_y, '2 m');
+        drawDimension(x_B, x_F8, dim_y, '1 m');
+        drawDimension(x_F8, x_F6, dim_y, '1 m');
+        drawDimension(x_F6, x_A, dim_y, '2 m');
+
+        // Reset style for axes
+        ctx.lineWidth = 2;
+        ctx.textBaseline = 'alphabetic';
+        ctx.textAlign = 'left';
+
+        // --- Draw Coordinate System at A ---
+        // x-axis (up)
+        drawArrow(ctx, x_A, yBeam, x_A, yBeam - 80, 10);
+        ctx.fillText('x', x_A + 10, yBeam - 75);
+        // y-axis (left)
+        drawArrow(ctx, x_A, yBeam, x_A - 80, yBeam, 10);
+        ctx.fillText('y', x_A - 80, yBeam - 10);
+
+    </script>
+</body>
+</html>

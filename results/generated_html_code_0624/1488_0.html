@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Circuit Diagram Fig. 10.1</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="620" height="380"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Configuration ---
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = 'bold 18px Arial';
+
+    // --- Helper function to draw a resistor ---
+    function drawResistor(x, y, width, height, numDividers, label, labelPos) {
+        const x1 = x;
+        const x2 = x + width;
+        const y1 = y - height / 2;
+        const y2 = y + height / 2;
+
+        // Draw rectangle
+        ctx.strokeRect(x1, y1, width, height);
+
+        // Draw dividers
+        const dividerSpacing = width / (numDividers + 1);
+        for (let i = 1; i <= numDividers; i++) {
+            const divX = x1 + i * dividerSpacing;
+            ctx.beginPath();
+            ctx.moveTo(divX, y1);
+            ctx.lineTo(divX, y2);
+            ctx.stroke();
+        }
+
+        // Draw label
+        ctx.textAlign = 'center';
+        if (labelPos === 'above') {
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(label, x1 + width / 2, y1 - 5);
+        } else if (labelPos === 'below') {
+            ctx.textBaseline = 'top';
+            ctx.fillText(label, x1 + width / 2, y2 + 5);
+        }
+    }
+    
+    // --- Helper function for terminals with labels ---
+    function drawTerminalWithLabel(x, y, label, labelX, labelY) {
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, labelX, labelY);
+    }
+
+    // --- Main Drawing Logic ---
+
+    // Coordinates
+    const yTop = 80;
+    const ySwitchPivot = 170;
+    const yBranchX = 170;
+    const yBranchYZ = 250;
+    
+    const xLeft = 50;
+    const xSwitchPivot = 130;
+    const xSwitchContactA = 180;
+    const ySwitchContactA = 140;
+    const xSwitchContactB = 200;
+    const ySwitchContactB = 170;
+    const xSwitchContactC = 180;
+    const ySwitchContactC = 250;
+
+    const xJunction = 530;
+    const yJunctionPoint = 210;
+    
+    // 1. Top Power Supply Line
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('240 V', 310, yTop - 20);
+    ctx.beginPath();
+    ctx.moveTo(xLeft, yTop);
+    ctx.lineTo(270, yTop); // Line to source
+    ctx.stroke();
+    // Source symbol
+    ctx.beginPath(); // Left circle
+    ctx.arc(280, yTop, 4, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath(); // Tilde
+    ctx.moveTo(290, yTop);
+    ctx.bezierCurveTo(300, yTop - 10, 310, yTop + 10, 320, yTop);
+    ctx.stroke();
+    ctx.beginPath(); // Right circle
+    ctx.arc(330, yTop, 4, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.beginPath(); // Line from source
+    ctx.moveTo(340, yTop);
+    ctx.lineTo(xJunction, yTop);
+    ctx.stroke();
+
+    // 2. Right Return Path
+    ctx.beginPath();
+    ctx.moveTo(xJunction, yTop);
+    ctx.lineTo(xJunction, yJunctionPoint);
+    ctx.stroke();
+    // Junction dot
+    ctx.beginPath();
+    ctx.arc(xJunction, yJunctionPoint, 5, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 3. Left Switch
+    ctx.beginPath();
+    ctx.moveTo(xLeft, yTop);
+    ctx.lineTo(xLeft, ySwitchPivot);
+    ctx.lineTo(xSwitchPivot, ySwitchPivot);
+    ctx.stroke();
+    // Switch Arm (to A)
+    ctx.beginPath();
+    ctx.moveTo(xSwitchPivot, ySwitchPivot);
+    ctx.lineTo(xSwitchContactA, ySwitchContactA);
+    ctx.stroke();
+    // Terminals
+    drawTerminalWithLabel(xSwitchContactA, ySwitchContactA, 'A', 170, 130);
+    drawTerminalWithLabel(xSwitchContactB, ySwitchContactB, 'B', 180, 170);
+    drawTerminalWithLabel(xSwitchContactC, ySwitchContactC, 'C', 170, 260);
+
+    // 4. Branch X
+    const resistorX_x = 220;
+    const resistorX_w = 180;
+    ctx.beginPath();
+    ctx.moveTo(xSwitchContactB, ySwitchContactB);
+    ctx.lineTo(resistorX_x, yBranchX);
+    ctx.stroke();
+    drawResistor(resistorX_x, yBranchX, resistorX_w, 16, 3, 'X', 'above');
+    ctx.beginPath();
+    ctx.moveTo(resistorX_x + resistorX_w, yBranchX);
+    ctx.lineTo(xJunction, yBranchX);
+    ctx.stroke();
+    // Connector to junction
+    ctx.beginPath();
+    ctx.moveTo(xJunction, yBranchX);
+    ctx.lineTo(xJunction, yJunctionPoint);
+    ctx.stroke();
+
+    // 5. Branch YZ
+    const resistorY_x = 200;
+    const resistorY_w = 120;
+    ctx.beginPath();
+    ctx.moveTo(xSwitchContactC, yBranchYZ);
+    ctx.lineTo(resistorY_x, yBranchYZ);
+    ctx.stroke();
+    drawResistor(resistorY_x, yBranchYZ, resistorY_w, 16, 3, 'Y', 'below');
+    
+    const resistorZ_x = resistorY_x + resistorY_w + 20;
+    const resistorZ_w = 120;
+    ctx.beginPath();
+    ctx.moveTo(resistorY_x + resistorY_w, yBranchYZ);
+    ctx.lineTo(resistorZ_x, yBranchYZ);
+    ctx.stroke();
+    drawResistor(resistorZ_x, yBranchYZ, resistorZ_w, 16, 3, 'Z', 'below');
+    
+    ctx.beginPath();
+    ctx.moveTo(resistorZ_x + resistorZ_w, yBranchYZ);
+    ctx.lineTo(xJunction, yBranchYZ);
+    ctx.stroke();
+    // Connector to junction
+    ctx.beginPath();
+    ctx.moveTo(xJunction, yBranchYZ);
+    ctx.lineTo(xJunction, yJunctionPoint);
+    ctx.stroke();
+
+    // 6. Figure Caption
+    ctx.font = 'bold 20px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Fig. 10.1', canvas.width / 2, canvas.height - 10);
+
+</script>
+</body>
+</html>

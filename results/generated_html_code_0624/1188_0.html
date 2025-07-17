@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fiber Optic Gyroscope Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gyroscopeCanvas" width="600" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('gyroscopeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrowhead
+        function drawArrowhead(x, y, angle, size = 8) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        // Helper function for drawing text with subscript
+        function drawSubscriptedText(baseText, subText, afterText, x, y, baseFont, subFont) {
+            ctx.save();
+            
+            // Draw base text
+            ctx.font = baseFont;
+            ctx.fillText(baseText, x, y);
+            const baseWidth = ctx.measureText(baseText).width;
+
+            // Draw subscript
+            ctx.font = subFont;
+            ctx.fillText(subText, x + baseWidth - 2, y + 6);
+            const subWidth = ctx.measureText(subText).width;
+            
+            // Draw text after subscript
+            ctx.font = baseFont;
+            ctx.fillText(afterText, x + baseWidth + subWidth - 4, y);
+            
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+        const centerX = 310;
+        const centerY = 270;
+        const platformRadius = 230;
+
+        // 1. Draw the rotating platform
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, platformRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = '#EBEBEB';
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+
+        // 2. Draw the fiber coil (as two ellipses)
+        const ellipseRX = 150;
+        const ellipseRY = 110;
+        const ellipseInnerRX = 135;
+        const ellipseInnerRY = 95;
+        ctx.lineWidth = 1.5;
+
+        // Outer loop
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY, ellipseRX, ellipseRY, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Inner loop
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY, ellipseInnerRX, ellipseInnerRY, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 3. Draw arrows on the fiber coils
+        // Outer loop (CCW)
+        for (let i = 0; i < 8; i++) {
+            const angle = (i * Math.PI / 4) + Math.PI/16;
+            const x = centerX + ellipseRX * Math.cos(angle);
+            const y = centerY + ellipseRY * Math.sin(angle);
+            const tangentAngle = Math.atan2(ellipseRY * Math.cos(angle), -ellipseRX * Math.sin(angle));
+            drawArrowhead(x, y, tangentAngle);
+        }
+        // Inner loop (CW)
+        for (let i = 0; i < 8; i++) {
+            const angle = (i * Math.PI / 4) + Math.PI/16;
+            const x = centerX + ellipseInnerRX * Math.cos(angle);
+            const y = centerY + ellipseInnerRY * Math.sin(angle);
+            const tangentAngle = Math.atan2(-ellipseInnerRY * Math.cos(angle), ellipseInnerRX * Math.sin(angle));
+            drawArrowhead(x, y, tangentAngle);
+        }
+
+        // 4. Draw components (S, BS, PD)
+        ctx.fillStyle = '#cccccc';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Source (S)
+        ctx.fillRect(80, 180, 30, 20);
+        ctx.strokeRect(80, 180, 30, 20);
+
+        // Beam Splitter (BS)
+        ctx.fillRect(130, 180, 40, 20);
+        ctx.strokeRect(130, 180, 40, 20);
+
+        // Photodetector (PD)
+        ctx.fillRect(110, 250, 30, 20);
+        ctx.strokeRect(110, 250, 30, 20);
+
+        // 5. Draw the light paths
+        ctx.beginPath();
+        // S to BS
+        ctx.moveTo(110, 190);
+        ctx.lineTo(130, 190);
+        drawArrowhead(120, 190, 0);
+
+        // BS to Outer Loop (CCW path)
+        ctx.moveTo(170, 190);
+        ctx.quadraticCurveTo(180, 170, 190, 163);
+        drawArrowhead(183, 168, -0.6);
+
+        // BS to Inner Loop (CW path) & Inner loop return to BS
+        ctx.moveTo(170, 190);
+        ctx.quadraticCurveTo(185, 230, 195, 245); // This path overlaps with the returning path in the original drawing
+        ctx.moveTo(195, 205);
+        ctx.quadraticCurveTo(180, 185, 170, 190);
+        drawArrowhead(199, 235, 1.2); // Arrow going into inner loop
+        drawArrowhead(188, 193, 2.8); // Arrow returning from inner loop
+
+        // Outer loop return path that combines with path to PD
+        ctx.moveTo(200, 355);
+        ctx.quadraticCurveTo(160, 290, 135, 240);
+        drawArrowhead(160, 284, -1.9);
+
+        // BS to PD path
+        ctx.moveTo(150, 200);
+        ctx.quadraticCurveTo(130, 220, 125, 250);
+        drawArrowhead(132, 230, -2.1);
+        
+        ctx.stroke();
+
+        // 6. Draw output signal line
+        ctx.beginPath();
+        ctx.moveTo(125, 270);
+        ctx.lineTo(40, 270);
+        drawArrowhead(40, 270, Math.PI);
+        ctx.stroke();
+        
+        // 7. Draw the rotation indicator
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, platformRadius + 20, -Math.PI / 4, Math.PI / 4);
+        ctx.stroke();
+        drawArrowhead(centerX + (platformRadius + 20) * Math.cos(Math.PI / 4), centerY + (platformRadius + 20) * Math.sin(Math.PI / 4), 3 * Math.PI / 4);
+
+        // 8. Add all labels
+        // Component labels
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillText('S', 85, 175);
+        ctx.fillText('BS', 133, 175);
+        ctx.fillText('PD', 145, 265);
+        
+        // Output signal label
+        drawSubscriptedText('u', 'P', '(t)', 50, 295, 'italic 22px serif', 'italic 16px serif');
+
+        // Rotation label
+        ctx.font = 'italic 24px serif';
+        ctx.fillText('Ω(t)', centerX + platformRadius + 10, centerY + 50);
+
+    </script>
+</body>
+</html>

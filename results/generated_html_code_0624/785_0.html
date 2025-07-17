@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Heating Curve Graph</title>
+</head>
+<body>
+<canvas id="physics-graph" width="650" height="550"></canvas>
+
+<script>
+    const canvas = document.getElementById('physics-graph');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const margin = { top: 30, right: 30, bottom: 70, left: 70 };
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+
+    const plotWidth = canvasWidth - margin.left - margin.right;
+    const plotHeight = canvasHeight - margin.top - margin.bottom;
+
+    const timeMin = 0, timeMax = 10;
+    const tempMin = -120, tempMax = 90; // Extend y-axis slightly for visual balance
+    const timeRange = timeMax - timeMin;
+    const tempRange = tempMax - tempMin;
+
+    // --- Helper Functions ---
+    function mapX(t) {
+        return margin.left + (t - timeMin) / timeRange * plotWidth;
+    }
+
+    function mapY(T) {
+        return margin.top + plotHeight - (T - tempMin) / tempRange * plotHeight;
+    }
+
+    // --- Drawing ---
+
+    // 1. Grid
+    ctx.beginPath();
+    ctx.strokeStyle = '#e0e0e0'; // Lighter gray for minor grid
+    ctx.lineWidth = 0.5;
+
+    // Minor vertical lines (every 0.2 min)
+    for (let t = timeMin; t <= timeMax; t += 0.2) {
+        const x = mapX(t);
+        ctx.moveTo(x, margin.top);
+        ctx.lineTo(x, margin.top + plotHeight);
+    }
+
+    // Minor horizontal lines (every 2 °C)
+    for (let T = tempMin; T <= tempMax; T += 2) {
+        const y = mapY(T);
+        ctx.moveTo(margin.left, y);
+        ctx.lineTo(margin.left + plotWidth, y);
+    }
+    ctx.stroke();
+
+    // Major Grid
+    ctx.beginPath();
+    ctx.strokeStyle = '#cccccc'; // Darker gray for major grid
+    ctx.lineWidth = 1;
+
+    // Major vertical lines (every 1 min)
+    for (let t = timeMin; t <= timeMax; t += 1) {
+        const x = mapX(t);
+        ctx.moveTo(x, margin.top);
+        ctx.lineTo(x, margin.top + plotHeight);
+    }
+
+    // Major horizontal lines (every 20 °C)
+    for (let T = tempMin; T <= tempMax - 10; T += 20) {
+        const y = mapY(T);
+        ctx.moveTo(margin.left, y);
+        ctx.lineTo(margin.left + plotWidth, y);
+    }
+    ctx.stroke();
+
+
+    // 2. Axes
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    // Y-axis
+    ctx.beginPath();
+    ctx.moveTo(margin.left, margin.top);
+    ctx.lineTo(margin.left, margin.top + plotHeight);
+    ctx.stroke();
+    // X-axis
+    ctx.beginPath();
+    ctx.moveTo(margin.left, margin.top + plotHeight);
+    ctx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+    ctx.stroke();
+
+
+    // 3. Axis Labels & Ticks
+    ctx.fillStyle = 'black';
+    ctx.font = '16px Arial';
+    
+    // Y-axis ticks and labels
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let T = tempMin; T <= tempMax - 10; T += 20) {
+        if (T <= 80) { // Only draw labels up to 80
+            ctx.fillText(T, margin.left - 8, mapY(T));
+        }
+    }
+    
+    // X-axis ticks and labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let t = timeMin; t <= timeMax; t += 1) {
+        ctx.fillText(t, mapX(t), margin.top + plotHeight + 8);
+    }
+    
+    // Axis titles
+    ctx.font = '18px Arial';
+    ctx.fillText('time / min', margin.left + plotWidth / 2, margin.top + plotHeight + 40);
+    
+    ctx.save();
+    ctx.translate(margin.left - 50, margin.top + plotHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText('temperature / \u00B0C', 0, 0); // \u00B0 is the degree symbol
+    ctx.restore();
+
+    // 4. Graph Line
+    const points = [
+        { t: 0.4, T: -120 },
+        { t: 0.6, T: -100 },
+        { t: 1.0, T: -100 },
+        { t: 3.4, T: 65 },
+        { t: 8.4, T: 65 },
+        { t: 9.4, T: 85 }
+    ];
+
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(mapX(points[0].t), mapY(points[0].T));
+    for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(mapX(points[i].t), mapY(points[i].T));
+    }
+    ctx.stroke();
+
+    // 5. Point Labels on the graph (P, Q)
+    ctx.font = 'bold 18px Arial';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Label P at (t=2.0, T=-30)
+    ctx.fillText('P', mapX(2.0) - 10, mapY(-30));
+    
+    // Label Q at (t=8.8, T=73)
+    ctx.fillText('Q', mapX(8.8) + 10, mapY(73) - 5);
+
+    // 6. Figure Caption
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 3.1', margin.left + plotWidth / 2, canvasHeight - 10);
+
+</script>
+</body>
+</html>

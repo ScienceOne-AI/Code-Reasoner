@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Block on an Accelerating Wedge</title>
+    <style>
+        canvas {
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="400"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow
+    function drawArrow(ctx, fromX, fromY, toX, toY) {
+        const headlen = 10;
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // --- 1. Draw Ground ---
+    const groundY = 320;
+    ctx.beginPath();
+    ctx.moveTo(20, groundY);
+    ctx.lineTo(580, groundY);
+    ctx.stroke();
+
+    // Hatching for the ground
+    ctx.lineWidth = 1;
+    for (let i = 30; i < 580; i += 20) {
+        ctx.beginPath();
+        ctx.moveTo(i, groundY);
+        ctx.lineTo(i - 10, groundY + 10);
+        ctx.stroke();
+    }
+    ctx.lineWidth = 2;
+
+    // --- 2. Draw Wedge and Angle ---
+    const theta = 30 * Math.PI / 180;
+    const wedgeRightX = 550;
+    const wedgeBase = 420;
+    const wedgeLeftX = wedgeRightX - wedgeBase;
+    const wedgeHeight = wedgeBase * Math.tan(theta);
+    const wedgeTopY = groundY - wedgeHeight;
+
+    // Draw wedge triangle
+    ctx.beginPath();
+    ctx.moveTo(wedgeLeftX, wedgeTopY);
+    ctx.lineTo(wedgeLeftX, groundY);
+    ctx.lineTo(wedgeRightX, groundY);
+    ctx.closePath(); // This also draws the slope
+    ctx.stroke();
+
+    // Draw angle arc for theta
+    ctx.beginPath();
+    ctx.arc(wedgeRightX, groundY, 60, Math.PI, Math.PI - theta, true);
+    ctx.stroke();
+    
+    // Draw angle label 'θ'
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('θ', wedgeRightX - 85, groundY - 20);
+
+
+    // --- 3. Draw Block and Connection ---
+    const blockWidth = 80;
+    const blockHeight = 60;
+    // Position the block on the slope. Let's find the coordinates for its top-left ("uphill") corner.
+    // Place it roughly in the middle of the slope.
+    const distFromTop = 150; // Distance along the slope from the top point
+    const blockCornerX = wedgeLeftX + distFromTop * Math.cos(theta);
+    const blockCornerY = wedgeTopY + distFromTop * Math.sin(theta);
+
+    ctx.save();
+    // Translate and rotate the coordinate system to align with the slope
+    ctx.translate(blockCornerX, blockCornerY);
+    ctx.rotate(theta);
+
+    // Draw the connecting rod/string and the stopper
+    const connectionLength = 60;
+    const stopperHeight = 20;
+    const stopperWidth = 20;
+    // The string is attached to the middle of the uphill face of the block
+    const attachPointY = blockHeight / 2;
+    ctx.beginPath();
+    ctx.moveTo(0, attachPointY);
+    ctx.lineTo(-connectionLength, attachPointY);
+    // Draw the T-stopper
+    ctx.moveTo(-connectionLength, attachPointY - stopperHeight/2);
+    ctx.lineTo(-connectionLength, attachPointY + stopperHeight/2);
+    ctx.stroke();
+
+    // Draw the block
+    ctx.strokeRect(0, 0, blockWidth, blockHeight);
+
+    // Draw mass label 'm'
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('m', blockWidth + 10, blockHeight / 2 + 8);
+
+    ctx.restore();
+
+
+    // --- 4. Draw Acceleration Arrow ---
+    const arrowY = groundY - wedgeHeight / 2;
+    const arrowStartX = wedgeLeftX;
+    const arrowEndX = wedgeLeftX - 70;
+    drawArrow(ctx, arrowStartX, arrowY, arrowEndX, arrowY);
+
+    // Draw acceleration label 'a'
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('a', (arrowStartX + arrowEndX) / 2 - 5, arrowY - 15);
+
+
+    // --- 5. Draw Bottom Text Label ---
+    ctx.font = '24px KaiTi'; // A common Chinese font
+    ctx.textAlign = 'center';
+    ctx.fillText('题 1 图', canvas.width / 2, groundY + 50);
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Helper function to draw an arrow ---
+function drawArrow(fromx, fromy, tox, toy, lw = 2) {
+    const headlen = 10; // length of head in pixels
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    ctx.save();
+    ctx.lineWidth = lw;
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+    ctx.restore();
+}
+
+// --- Main Drawing ---
+
+// Set default styles
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.font = '18px Arial';
+ctx.textAlign = 'left';
+ctx.textBaseline = 'alphabetic';
+
+// 1. Draw top text
+ctx.fillText('Fig. 3.1 shows a boat that has been lifted out of a river. The boat is suspended by two ropes.', 10, 30);
+ctx.fillText('It is stationary.', 10, 55);
+
+// Define coordinates and scale
+const y_boat_top = 200;
+const y_boat_bottom = 250;
+const x_T1 = 150;
+const scale = 100; // pixels per meter
+const dist_T1_C = 1.20 * scale;
+const dist_C_P = 0.40 * scale;
+const x_C = x_T1 + dist_T1_C;
+const x_P = x_C + dist_C_P; // T2 is applied at P
+
+// 2. Draw the boat
+ctx.beginPath();
+ctx.lineWidth = 2;
+// Stern (right side)
+const stern_x = x_P + 40;
+ctx.moveTo(stern_x, y_boat_top);
+ctx.lineTo(stern_x, y_boat_bottom);
+// Bottom
+const bow_straight_part_end_x = x_T1 - 20;
+ctx.lineTo(bow_straight_part_end_x, y_boat_bottom);
+// Bow (left side)
+const bow_control_x = x_T1 - 90;
+const bow_control_y = y_boat_bottom - 25;
+ctx.quadraticCurveTo(bow_control_x, bow_control_y, bow_straight_part_end_x, y_boat_top);
+// Top
+ctx.lineTo(stern_x, y_boat_top);
+ctx.stroke();
+
+
+// 3. Draw forces and labels
+const arrow_len_up = 80;
+const arrow_len_down = 100;
+
+// Force T1
+drawArrow(x_T1, y_boat_top, x_T1, y_boat_top - arrow_len_up);
+ctx.font = 'italic 20px Times New Roman';
+ctx.fillText('T', x_T1 - 25, y_boat_top - arrow_len_up + 20);
+ctx.font = 'italic 14px Times New Roman';
+ctx.fillText('1', x_T1 - 15, y_boat_top - arrow_len_up + 25);
+
+// Force T2
+drawArrow(x_P, y_boat_top, x_P, y_boat_top - arrow_len_up);
+ctx.font = 'italic 20px Times New Roman';
+ctx.fillText('T', x_P + 10, y_boat_top - arrow_len_up + 20);
+ctx.font = 'italic 14px Times New Roman';
+ctx.fillText('2', x_P + 20, y_boat_top - arrow_len_up + 25);
+
+// Weight
+const y_C = y_boat_top + 15;
+drawArrow(x_C, y_C, x_C, y_C + arrow_len_down);
+ctx.font = '18px Arial';
+ctx.fillText('24 kN', x_C + 10, y_C + arrow_len_down);
+
+// 4. Draw points C and P
+// Point C
+ctx.beginPath();
+ctx.arc(x_C, y_C, 2.5, 0, 2 * Math.PI);
+ctx.fill();
+ctx.font = 'italic 20px Times New Roman';
+ctx.fillText('C', x_C + 10, y_C + 5);
+
+// Point P
+ctx.lineWidth = 1.5;
+ctx.beginPath();
+ctx.moveTo(x_P - 4, y_C - 4);
+ctx.lineTo(x_P + 4, y_C + 4);
+ctx.moveTo(x_P + 4, y_C - 4);
+ctx.lineTo(x_P - 4, y_C + 4);
+ctx.stroke();
+ctx.font = 'bold 20px Times New Roman';
+ctx.fillText('P', x_P + 10, y_C + 8);
+
+
+// 5. Draw dimension lines
+const y_dim_horiz = y_boat_bottom + 25;
+
+// Vertical dashed lines
+ctx.save();
+ctx.setLineDash([4, 4]);
+ctx.lineWidth = 1;
+ctx.beginPath();
+ctx.moveTo(x_T1, y_boat_top);
+ctx.lineTo(x_T1, y_dim_horiz);
+// The weight arrow line serves for point C.
+ctx.moveTo(x_P, y_boat_top);
+ctx.lineTo(x_P, y_dim_horiz);
+ctx.stroke();
+ctx.restore();
+
+// Horizontal dimension line helper function
+function drawHorizontalDimensionLine(x1, x2, y, label) {
+    const headlen = 7;
+    ctx.save();
+    ctx.lineWidth = 1;
+    // Line
+    ctx.beginPath();
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x2, y);
+    // Arrowhead at x1 (points left)
+    ctx.moveTo(x1 + headlen, y - 4);
+    ctx.lineTo(x1, y);
+    ctx.lineTo(x1 + headlen, y + 4);
+    // Arrowhead at x2 (points right)
+    ctx.moveTo(x2 - headlen, y - 4);
+    ctx.lineTo(x2, y);
+    ctx.lineTo(x2 - headlen, y + 4);
+    ctx.stroke();
+    ctx.restore();
+
+    // Label
+    ctx.font = '18px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(label, (x1 + x2) / 2, y - 3);
+}
+
+// Draw the two dimension lines
+drawHorizontalDimensionLine(x_T1, x_C, y_dim_horiz, '1.20 m');
+drawHorizontalDimensionLine(x_C, x_P, y_dim_horiz, '0.40 m');
+
+// 6. Draw bottom caption
+ctx.textAlign = 'center';
+ctx.font = 'bold 16px Arial';
+ctx.fillText('Fig. 3.1 (not to scale)', canvas.width / 2 - 50, 430);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="600" height="400" style="border:1px solid #000;"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.lineWidth = 2;
+        ctx.font = "20px 'Times New Roman'";
+
+        // Helper function to draw a resistor (horizontal)
+        function drawResistor(x, y, len, label) {
+            const zigzags = 8;
+            const h = 10;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            for (let i = 0; i < zigzags; i++) {
+                ctx.lineTo(x + (i + 0.25) * len / zigzags, y + ((i % 2 === 0) ? -h : h));
+            }
+            ctx.lineTo(x + len, y);
+            ctx.stroke();
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(label, x + len / 2, y + 25);
+        }
+
+        // Helper function to draw a battery (vertical)
+        function drawBattery(x, y, h, label, labelPos) {
+            const shortLineWidth = 20;
+            const longLineWidth = 40;
+            // Negative terminal (short line)
+            ctx.beginPath();
+            ctx.moveTo(x - shortLineWidth / 2, y + h / 2);
+            ctx.lineTo(x + shortLineWidth / 2, y + h / 2);
+            ctx.stroke();
+            // Positive terminal (long line)
+            ctx.beginPath();
+            ctx.moveTo(x - longLineWidth / 2, y - h / 2);
+            ctx.lineTo(x + longLineWidth / 2, y - h / 2);
+            ctx.stroke();
+
+            // Label
+            ctx.textAlign = labelPos.align;
+            ctx.textBaseline = "middle";
+            if (label.includes('/')) {
+                const parts = label.split('/');
+                const num = parts[0];
+                const den = parts[1];
+                const numMetrics = ctx.measureText(num);
+                const denMetrics = ctx.measureText(den);
+                const maxWidth = Math.max(numMetrics.width, denMetrics.width);
+                ctx.fillText(num, labelPos.x, y - 8);
+                ctx.beginPath();
+                ctx.moveTo(labelPos.x - maxWidth/2 - 2, y);
+                ctx.lineTo(labelPos.x + maxWidth/2 + 2, y);
+                ctx.stroke();
+                ctx.fillText(den, labelPos.x, y + 10);
+            } else {
+                 ctx.fillText(label, labelPos.x, y);
+            }
+        }
+
+        // Helper function to draw a capacitor (vertical)
+        function drawCapacitor(x, y, gap, label) {
+            const plateWidth = 40;
+            // Top plate
+            ctx.beginPath();
+            ctx.moveTo(x - plateWidth / 2, y);
+            ctx.lineTo(x + plateWidth / 2, y);
+            ctx.stroke();
+            // Bottom plate
+            ctx.beginPath();
+            ctx.moveTo(x - plateWidth / 2, y + gap);
+            ctx.lineTo(x + plateWidth / 2, y + gap);
+            ctx.stroke();
+            // Label
+            ctx.textAlign = "left";
+            ctx.textBaseline = "middle";
+            ctx.fillText(label, x + plateWidth/2 + 10, y + gap/2);
+        }
+
+        // --- Main Drawing ---
+
+        const x_left = 100;
+        const x_cap = 300;
+        const x_right = 500;
+        const y_top = 70;
+        const y_bottom = 330;
+
+        // --- Left Branch ---
+        drawBattery(x_left, 200, 40, 'ξ/3', {x: 70, align: 'center'});
+        ctx.beginPath();
+        ctx.moveTo(x_left, y_top);
+        ctx.lineTo(x_left, 180); // wire to battery
+        ctx.moveTo(x_left, 220); // wire from battery
+        ctx.lineTo(x_left, y_bottom);
+        ctx.stroke();
+
+        // --- Top Branch ---
+        drawResistor(160, y_top, 80, 'R');
+        ctx.beginPath();
+        ctx.moveTo(x_left, y_top);
+        ctx.lineTo(160, y_top); // wire to R
+        ctx.moveTo(240, y_top); // wire from R
+        ctx.lineTo(x_right, y_top);
+        ctx.stroke();
+
+        // --- Middle Branch (Capacitor) ---
+        drawCapacitor(x_cap, 170, 60, 'C');
+        ctx.beginPath();
+        ctx.moveTo(x_cap, y_top);
+        ctx.lineTo(x_cap, 170); // wire to C
+        ctx.moveTo(x_cap, 230); // wire from C
+        ctx.lineTo(x_cap, y_bottom);
+        ctx.stroke();
+        
+        // --- Right Branch ---
+        drawBattery(x_right, 200, 40, 'ξ', {x: 525, align: 'left'});
+        ctx.beginPath();
+        ctx.moveTo(x_right, y_top);
+        ctx.lineTo(x_right, 180); // wire to battery
+        ctx.moveTo(x_right, 220); // wire from battery
+        ctx.lineTo(x_right, y_bottom);
+        ctx.stroke();
+        
+        // --- Bottom Branch ---
+        drawResistor(360, y_bottom, 80, '2R');
+        ctx.beginPath();
+        ctx.moveTo(x_left, y_bottom);
+        ctx.lineTo(360, y_bottom); // wire to 2R
+        ctx.moveTo(440, y_bottom); // wire from 2R
+        ctx.lineTo(x_right, y_bottom);
+        ctx.stroke();
+    </script>
+</body>
+</html>

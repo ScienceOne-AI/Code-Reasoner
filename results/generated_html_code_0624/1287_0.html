@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px Arial';
+
+        // Parameters
+        const origin = { x: 120, y: 300 };
+        const theta_deg = 25;
+        const theta_rad = theta_deg * Math.PI / 180;
+        const cos_t = Math.cos(theta_rad);
+        const sin_t = Math.sin(theta_rad);
+        const a = 80; // Side length of the magnet and track spacing
+
+        // --- 1. Draw Horizontal Plane and Angle ---
+        ctx.beginPath();
+        ctx.setLineDash([6, 6]);
+        ctx.moveTo(origin.x - 80, origin.y);
+        ctx.lineTo(origin.x + 450, origin.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.font = '20px "Songti SC", "SimSun", serif';
+        ctx.fillText('水平面', origin.x + 380, origin.y + 25);
+
+        ctx.font = 'italic 24px Times New Roman';
+        ctx.beginPath();
+        ctx.arc(origin.x, origin.y, 50, 0, -theta_rad, true);
+        ctx.stroke();
+        ctx.fillText('θ', origin.x + 60, origin.y - 15);
+
+        // --- 2. Draw Inclined Rails ---
+        const trackLength = 4.5 * a;
+        
+        // Lower rail
+        const rail1_start = { x: origin.x, y: origin.y };
+        const rail1_end = { x: origin.x + trackLength * cos_t, y: origin.y - trackLength * sin_t };
+        ctx.beginPath();
+        ctx.moveTo(rail1_start.x, rail1_start.y);
+        ctx.lineTo(rail1_end.x, rail1_end.y);
+        ctx.stroke();
+
+        // Upper rail
+        const rail2_start = { x: origin.x - a * sin_t, y: origin.y - a * cos_t };
+        const rail2_end = { x: rail2_start.x + trackLength * cos_t, y: rail2_start.y - trackLength * sin_t };
+        ctx.beginPath();
+        ctx.moveTo(rail2_start.x, rail2_start.y);
+        ctx.lineTo(rail2_end.x, rail2_end.y);
+        ctx.stroke();
+
+        // Draw rungs
+        for (let i = 1; i <= 4; i++) {
+            const rung_dist = i * a;
+            const rung1 = {
+                x: origin.x + rung_dist * cos_t,
+                y: origin.y - rung_dist * sin_t
+            };
+            const rung2 = {
+                x: rung1.x - a * sin_t,
+                y: rung1.y - a * cos_t
+            };
+            ctx.beginPath();
+            ctx.moveTo(rung1.x, rung1.y);
+            ctx.lineTo(rung2.x, rung2.y);
+            ctx.stroke();
+        }
+
+        // --- 3. Draw the Magnet Block ---
+        // Let's define the 8 corners of the cube in a 3D-like projection
+        const magnet_pos_prime = 1.8 * a; // Position along the track
+
+        // Vector definitions for the cube
+        const v_length = { x: a * cos_t, y: -a * sin_t }; // Along the incline
+        const v_width = { x: -a * sin_t, y: -a * cos_t }; // Across the track
+        const v_height = { x: 0, y: -a }; // Vertical
+
+        // Front-bottom-left corner (on the upper rail)
+        const p0 = {
+            x: rail2_start.x + magnet_pos_prime * cos_t,
+            y: rail2_start.y - magnet_pos_prime * sin_t
+        };
+
+        const p1 = { x: p0.x + v_height.x, y: p0.y + v_height.y }; // front-top-left
+        const p2 = { x: p0.x + v_length.x, y: p0.y + v_length.y }; // back-bottom-left
+        const p3 = { x: p0.x + v_width.x, y: p0.y + v_width.y };   // front-bottom-right
+        const p4 = { x: p1.x + v_length.x, y: p1.y + v_length.y }; // back-top-left
+        const p5 = { x: p1.x + v_width.x, y: p1.y + v_width.y };   // front-top-right
+        const p6 = { x: p2.x + v_width.x, y: p2.y + v_width.y };   // back-bottom-right
+        const p7 = { x: p4.x + v_width.x, y: p4.y + v_width.y };   // back-top-right
+
+        // Draw visible solid edges
+        ctx.beginPath();
+        // Left face
+        ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y);
+        ctx.lineTo(p4.x, p4.y); ctx.lineTo(p2.x, p2.y);
+        ctx.closePath();
+        // Top face
+        ctx.moveTo(p1.x, p1.y); ctx.lineTo(p5.x, p5.y);
+        ctx.lineTo(p7.x, p7.y); ctx.lineTo(p4.x, p4.y);
+        // Front face
+        ctx.moveTo(p0.x, p0.y); ctx.lineTo(p3.x, p3.y);
+        ctx.lineTo(p5.x, p5.y);
+        ctx.stroke();
+
+        // Draw dashed internal lines
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        // Top face diagonal
+        ctx.moveTo(p1.x, p1.y); ctx.lineTo(p7.x, p7.y);
+        // Body diagonal
+        ctx.moveTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // --- 4. Add Labels and Arrow ---
+        ctx.font = '24px Arial';
+        // 'S' on top face
+        const s_pos = { x: p1.x + 0.5 * v_length.x + 0.5 * v_width.x - 5, y: p1.y + 0.5 * v_length.y + 0.5 * v_width.y + 10 };
+        ctx.fillText('S', s_pos.x, s_pos.y);
+
+        // 'N' on front face (the one facing right)
+        const n_pos = { x: p0.x + 0.5 * v_width.x + 0.5 * v_height.x + 10, y: p0.y + 0.5 * v_width.y + 0.5 * v_height.y + 10 };
+        ctx.fillText('N', n_pos.x, n_pos.y);
+        
+        // Arrow for velocity
+        const cube_center = { x: p0.x + 0.5*(v_length.x + v_width.x + v_height.x), y: p0.y + 0.5*(v_length.y + v_width.y + v_height.y)};
+        const arrow_start = { x: cube_center.x + 0.5 * v_length.x, y: cube_center.y + 0.5*v_length.y };
+        const arrow_end = { x: arrow_start.x - 1.5 * a * cos_t, y: arrow_start.y + 1.5 * a * sin_t };
+
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.moveTo(arrow_start.x, arrow_start.y);
+        ctx.lineTo(arrow_end.x, arrow_end.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Arrowhead
+        const arrow_head_len = 12;
+        ctx.beginPath();
+        ctx.moveTo(arrow_end.x, arrow_end.y);
+        ctx.lineTo(arrow_end.x + arrow_head_len * Math.cos(-theta_rad + Math.PI / 6), arrow_end.y - arrow_head_len * Math.sin(-theta_rad + Math.PI / 6));
+        ctx.moveTo(arrow_end.x, arrow_end.y);
+        ctx.lineTo(arrow_end.x + arrow_head_len * Math.cos(-theta_rad - Math.PI / 6), arrow_end.y - arrow_head_len * Math.sin(-theta_rad - Math.PI / 6));
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        ctx.stroke();
+
+    </script>
+</body>
+</html>

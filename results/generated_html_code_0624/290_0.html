@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Not-so-parallel plate capacitor</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+<canvas id="capacitorCanvas" width="650" height="550"></canvas>
+<script>
+    const canvas = document.getElementById('capacitorCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    const regularFont = '22px serif';
+    const italicFont = 'italic 24px serif';
+
+    // Helper function to draw an arrow
+    function drawArrow(ctx, fromX, fromY, toX, toY, size = 10) {
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - size * Math.cos(angle - Math.PI / 6), toY - size * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(toX - size * Math.cos(angle + Math.PI / 6), toY - size * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    // Helper function to draw a diamond shape (for the '+' symbol)
+    function drawDiamond(ctx, x, y, size) {
+        ctx.beginPath();
+        ctx.moveTo(x, y - size);
+        ctx.lineTo(x + size, y);
+        ctx.lineTo(x, y + size);
+        ctx.lineTo(x - size, y);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    // --- Main Drawing ---
+
+    // Plate coordinates
+    const p1 = { x: 150, y: 400 }; // bottom-front-left
+    const p2 = { x: 450, y: 400 }; // bottom-front-right
+    const p3 = { x: 100, y: 350 }; // bottom-back-left
+    const p4 = { x: 400, y: 350 }; // bottom-back-right
+
+    const p1_top = { x: 150, y: 280 }; // top-front-left
+    const p2_top = { x: 450, y: 250 }; // top-front-right
+    const p3_top = { x: 100, y: 230 }; // top-back-left
+    const p4_top = { x: 400, y: 200 }; // top-back-right
+
+    // Draw Bottom Plate
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.lineTo(p4.x, p4.y);
+    ctx.lineTo(p3.x, p3.y);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Draw Top Plate
+    ctx.beginPath();
+    ctx.moveTo(p1_top.x, p1_top.y);
+    ctx.lineTo(p2_top.x, p2_top.y);
+    ctx.lineTo(p4_top.x, p4_top.y);
+    ctx.lineTo(p3_top.x, p3_top.y);
+    ctx.closePath();
+    ctx.stroke();
+    
+    // Draw vertical connection lines from top plate corners to indicate height
+    ctx.beginPath();
+    ctx.moveTo(p1_top.x, p1_top.y);
+    ctx.lineTo(p1_top.x, p1_top.y+5); // Small line down from corner
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(p2_top.x, p2_top.y);
+    ctx.lineTo(p2_top.x, p2_top.y+5); // Small line down from corner
+    ctx.stroke();
+    
+
+    // --- Draw Dimension Lines and Labels ---
+
+    // Dimension 'd'
+    ctx.beginPath();
+    ctx.moveTo(p1_top.x, p1_top.y);
+    ctx.lineTo(p1.x, p1.y);
+    ctx.stroke();
+    ctx.font = italicFont;
+    ctx.fillText('d', 120, 340);
+
+    // Dimension 'd + a'
+    ctx.beginPath();
+    ctx.moveTo(p2_top.x, p2_top.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.stroke();
+    ctx.font = italicFont;
+    ctx.fillText('d', 465, 325);
+    drawDiamond(ctx, 488, 322, 4);
+    ctx.fillText('a', 500, 325);
+
+    // Dimension 'b'
+    const b_y = 425;
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p1.x, b_y);
+    ctx.moveTo(p2.x, p2.y);
+    ctx.lineTo(p2.x, b_y);
+    ctx.moveTo(p1.x, b_y);
+    ctx.lineTo(p2.x, b_y);
+    ctx.stroke();
+    ctx.font = italicFont;
+    ctx.textAlign = 'center';
+    ctx.fillText('b', (p1.x + p2.x) / 2, b_y + 25);
+    ctx.textAlign = 'start'; // Reset alignment
+
+    // Dimension 'w'
+    ctx.font = italicFont;
+    ctx.fillText('w', 435, 385);
+
+
+    // --- Draw Coordinate System ---
+    const axisOrigin = { x: 530, y: 140 };
+    const axisLength = 50;
+
+    // Y-axis
+    drawArrow(ctx, axisOrigin.x, axisOrigin.y, axisOrigin.x, axisOrigin.y - axisLength);
+    ctx.fillText('y', axisOrigin.x - 20, axisOrigin.y - axisLength - 5);
+
+    // X-axis
+    drawArrow(ctx, axisOrigin.x, axisOrigin.y, axisOrigin.x + axisLength, axisOrigin.y);
+    ctx.fillText('x', axisOrigin.x + axisLength + 5, axisOrigin.y + 10);
+
+    // Z-axis (dashed)
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    const z_end = { x: axisOrigin.x - 35, y: axisOrigin.y - 35 };
+    drawArrow(ctx, axisOrigin.x, axisOrigin.y, z_end.x, z_end.y);
+    ctx.fillText('z', z_end.x - 20, z_end.y);
+    ctx.restore();
+
+
+    // --- Draw Figure Caption ---
+    ctx.font = regularFont;
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 1.25', canvas.width / 2, 520);
+
+</script>
+</body>
+</html>

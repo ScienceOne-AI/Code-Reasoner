@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spring-Trolley System Diagram</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    canvas {
+        border: 1px solid #ccc;
+        background-color: #fff;
+    }
+</style>
+</head>
+<body>
+
+<canvas id="physicsCanvas" width="700" height="420"></canvas>
+
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style and Configuration ---
+ctx.lineWidth = 1.5;
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.font = '18px Arial';
+
+// --- Coordinate Definitions ---
+const canvasCenterY = canvas.height / 2;
+const benchY = 280;
+const springY = 240;
+const supportLeftX = 50;
+const supportRightX = 650;
+const trolleyStartX = 220;
+const trolleyEndX = 480;
+const trolleyWidth = trolleyEndX - trolleyStartX;
+const trolleyBodyY = 220;
+const trolleyBodyHeight = 40;
+const wheelRadius = 18;
+
+// --- Drawing Helper Functions ---
+
+/**
+ * Draws a support wall with hatching.
+ * @param {number} x - The x-coordinate of the support's vertical line.
+ * @param {number} y1 - The top y-coordinate.
+ * @param {number} y2 - The bottom y-coordinate.
+ */
+function drawSupport(x, y1, y2) {
+    ctx.beginPath();
+    ctx.moveTo(x, y1);
+    ctx.lineTo(x, y2);
+    ctx.stroke();
+    // Hatching lines
+    const hatchSpacing = 8;
+    ctx.save();
+    ctx.lineWidth = 1;
+    for (let y = y1 + hatchSpacing / 2; y < y2; y += hatchSpacing) {
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - 10, y + 10);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+/**
+ * Draws a spring as a series of connected loops.
+ * @param {number} x1 - The starting x-coordinate.
+ * @param {number} y - The central y-coordinate.
+ * @param {number} x2 - The ending x-coordinate.
+ * @param {number} coils - The number of coils.
+ */
+function drawSpring(x1, y, x2, coils) {
+    const length = x2 - x1;
+    const coilWidth = length / coils;
+    const radius = coilWidth / 2;
+    let currentX = x1;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y);
+    // Draw a sequence of connected semi-circles (top and bottom)
+    for (let i = 0; i < coils; i++) {
+        // Upper semi-circle
+        ctx.arc(currentX + radius, y, radius, Math.PI, 0);
+        // Lower semi-circle
+        ctx.arc(currentX + radius, y, radius, 0, Math.PI);
+        currentX += coilWidth;
+    }
+    // Connect to the end point
+    ctx.lineTo(x2, y);
+    ctx.stroke();
+}
+
+
+/**
+ * Draws text with a pointer line.
+ * @param {string} text - The text to draw.
+ * @param {number} textX - The x-coordinate for the text.
+ * @param {number} textY - The y-coordinate for the text.
+ * @param {number} pointFromX - The start x of the pointer.
+ * @param {number} pointFromY - The start y of the pointer.
+ * @param {number} pointToX - The end x of the pointer.
+ * @param {number} pointToY - The end y of the pointer.
+ */
+function drawLabel(text, textX, textY, pointFromX, pointFromY, pointToX, pointToY) {
+    ctx.textAlign = 'start';
+    ctx.fillText(text, textX, textY);
+    ctx.beginPath();
+    ctx.moveTo(pointFromX, pointFromY);
+    ctx.lineTo(pointToX, pointToY);
+    ctx.stroke();
+}
+
+/**
+ * Draws a dimension line with arrows and text.
+ * @param {string} text - The dimension text.
+ * @param {number} x1 - The start x-coordinate.
+ * @param {number} x2 - The end x-coordinate.
+ * @param {number} y - The y-coordinate of the dimension line.
+ * @param {number} extentY - The y-coordinate for the vertical extension lines.
+ */
+function drawDimensionLine(text, x1, x2, y, extentY) {
+    // Dimension text
+    ctx.textAlign = 'center';
+    ctx.fillText(text, (x1 + x2) / 2, y - 10);
+
+    // Vertical extension lines (dashed)
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash([4, 3]);
+    ctx.moveTo(x1, extentY);
+    ctx.lineTo(x1, y);
+    ctx.moveTo(x2, extentY);
+    ctx.lineTo(x2, y);
+    ctx.stroke();
+    ctx.restore();
+
+    // Horizontal line with arrows
+    ctx.beginPath();
+    const arrowSize = 6;
+    // Main line
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x2, y);
+    // Left arrow
+    ctx.moveTo(x1 + arrowSize, y - arrowSize / 2);
+    ctx.lineTo(x1, y);
+    ctx.lineTo(x1 + arrowSize, y + arrowSize / 2);
+    // Right arrow
+    ctx.moveTo(x2 - arrowSize, y - arrowSize / 2);
+    ctx.lineTo(x2, y);
+    ctx.lineTo(x2 - arrowSize, y + arrowSize / 2);
+    ctx.stroke();
+}
+
+// --- Main Drawing Logic ---
+
+// 1. Draw the Bench
+ctx.beginPath();
+ctx.moveTo(0, benchY);
+ctx.lineTo(canvas.width, benchY);
+ctx.stroke();
+
+// 2. Draw Supports
+drawSupport(supportLeftX, 210, benchY);
+drawSupport(supportRightX, 210, benchY);
+
+// 3. Draw Trolley
+// Body
+ctx.beginPath();
+ctx.rect(trolleyStartX, trolleyBodyY, trolleyWidth, trolleyBodyHeight);
+ctx.stroke();
+// Wheels
+ctx.beginPath();
+ctx.arc(trolleyStartX + trolleyWidth * 0.25, benchY, wheelRadius, 0, 2 * Math.PI);
+ctx.stroke();
+ctx.beginPath();
+ctx.arc(trolleyEndX - trolleyWidth * 0.25, benchY, wheelRadius, 0, 2 * Math.PI);
+ctx.stroke();
+
+// 4. Draw Springs
+const springCoils = 9;
+drawSpring(supportLeftX, springY, trolleyStartX, springCoils);
+drawSpring(trolleyEndX, springY, supportRightX, springCoils);
+
+// 5. Draw Dimension Line
+drawDimensionLine("18.0 cm", supportLeftX, trolleyStartX, 150, springY);
+
+// 6. Draw Labels
+drawLabel('support', 80, 80, 110, 95, supportLeftX + 5, 215);
+drawLabel('support', 530, 80, 560, 95, supportRightX - 5, 215);
+drawLabel('spring', 100, 360, 120, 350, 150, springY + 15);
+drawLabel('spring', 550, 360, 570, 350, 540, springY + 15);
+drawLabel('bench', 180, 330, 205, 320, 205, benchY + 5);
+drawLabel('trolley', 335, 330, 355, 320, 355, trolleyBodyY + trolleyBodyHeight);
+
+// 7. Draw Figure Caption
+ctx.textAlign = 'center';
+ctx.font = 'bold 18px Arial';
+ctx.fillText('Fig. 4.1', canvas.width / 2, 400);
+
+</script>
+
+</body>
+</html>

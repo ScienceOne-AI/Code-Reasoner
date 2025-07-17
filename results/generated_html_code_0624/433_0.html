@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coupled Oscillator System</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-diagram" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-diagram');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const config = {
+            yBase: 250,
+            xWall: 100,
+            blockSize: 70,
+            springLength: 180,
+            springCoils: 7,
+            springAmplitude: 25,
+            lineWidth: 2,
+            hatchSpacing: 10,
+            hatchLength: 15
+        };
+
+        // --- Drawing Functions ---
+
+        /**
+         * Draws hatching for a surface.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x1 - Start x of the surface line.
+         * @param {number} y1 - Start y of the surface line.
+         * @param {number} x2 - End x of the surface line.
+         * @param {number} y2 - End y of the surface line.
+         * @param {boolean} isWall - True for vertical wall, false for horizontal ground.
+         */
+        function drawHatching(ctx, x1, y1, x2, y2, isWall) {
+            ctx.save();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            const spacing = config.hatchSpacing;
+            const len = config.hatchLength;
+            if (isWall) { // Hatching for a vertical wall (to the left)
+                for (let y = y1; y < y2; y += spacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y);
+                    ctx.lineTo(x1 - len, y + len);
+                    ctx.stroke();
+                }
+            } else { // Hatching for a horizontal ground (below)
+                for (let x = x1; x < x2; x += spacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, y1);
+                    ctx.lineTo(x - len, y1 + len);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+
+        /**
+         * Draws a spring as a series of coils.
+         * @param {CanvasRenderingContext2D} ctx - The canvas context.
+         * @param {number} x_start - The starting x-coordinate.
+         * @param {number} y_center - The y-coordinate of the spring's axis.
+         * @param {number} length - The total length of the spring.
+         * @param {number} coils - The number of coils.
+         * @param {number} amplitude - The radius of the coils.
+         */
+        function drawSpring(ctx, x_start, y_center, length, coils, amplitude) {
+            ctx.beginPath();
+            ctx.moveTo(x_start, y_center);
+            const dx = length / coils;
+            for (let i = 0; i < coils; i++) {
+                const cx = x_start + i * dx;
+                ctx.bezierCurveTo(cx + dx * 0.25, y_center - amplitude, cx + dx * 0.75, y_center - amplitude, cx + dx, y_center);
+            }
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Logic ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'black';
+            ctx.fillStyle = 'black';
+            ctx.lineWidth = config.lineWidth;
+
+            // 1. Draw Wall and Ground
+            const groundStartX = config.xWall;
+            const groundEndX = 750;
+            ctx.beginPath();
+            ctx.moveTo(groundStartX, config.yBase);
+            ctx.lineTo(groundEndX, config.yBase);
+            ctx.stroke();
+            drawHatching(ctx, groundStartX, config.yBase, groundEndX, config.yBase, false);
+
+            const wallTopY = config.yBase - config.blockSize - 40;
+            ctx.beginPath();
+            ctx.moveTo(config.xWall, config.yBase);
+            ctx.lineTo(config.xWall, wallTopY);
+            ctx.stroke();
+            drawHatching(ctx, config.xWall, wallTopY, config.xWall, config.yBase, true);
+
+            // 2. Define positions
+            const spring_y = config.yBase - config.blockSize / 2;
+            const block_y = config.yBase - config.blockSize;
+
+            const spring1_x_start = config.xWall;
+            const block1_x_start = spring1_x_start + config.springLength;
+            const spring2_x_start = block1_x_start + config.blockSize;
+            const block2_x_start = spring2_x_start + config.springLength;
+            
+            // 3. Draw Spring 1 (from wall to m1)
+            drawSpring(ctx, spring1_x_start, spring_y, config.springLength, config.springCoils, config.springAmplitude);
+            ctx.font = 'italic 24px Times New Roman';
+            ctx.fillText('k', spring1_x_start + config.springLength / 2 - 10, spring_y - config.springAmplitude - 10);
+
+            // 4. Draw Block 1 (m1)
+            ctx.strokeRect(block1_x_start, block_y, config.blockSize, config.blockSize);
+            ctx.font = 'italic 28px Times New Roman';
+            ctx.fillText('m', block1_x_start + config.blockSize / 2 - 22, block_y + config.blockSize / 2 + 10);
+            ctx.font = '20px Times New Roman';
+            ctx.fillText('1', block1_x_start + config.blockSize / 2 - 3, block_y + config.blockSize / 2 + 15);
+
+            // 5. Draw Spring 2 (from m1 to m2)
+            drawSpring(ctx, spring2_x_start, spring_y, config.springLength, config.springCoils, config.springAmplitude);
+            ctx.font = 'italic 24px Times New Roman';
+            ctx.fillText('k', spring2_x_start + config.springLength / 2 - 10, spring_y - config.springAmplitude - 10);
+
+            // 6. Draw Block 2 (m2)
+            ctx.strokeRect(block2_x_start, block_y, config.blockSize, config.blockSize);
+            ctx.font = 'italic 28px Times New Roman';
+            ctx.fillText('m', block2_x_start + config.blockSize / 2 - 22, block_y + config.blockSize / 2 + 10);
+            ctx.font = '20px Times New Roman';
+            ctx.fillText('2', block2_x_start + config.blockSize / 2 - 3, block_y + config.blockSize / 2 + 15);
+
+            // 7. Draw Caption
+            ctx.font = '28px "KaiTi", "SimSun"';
+            ctx.textAlign = 'center';
+            ctx.fillText('习题 10-30 图', canvas.width / 2, config.yBase + 100);
+        }
+
+        // Execute the drawing
+        draw();
+    </script>
+</body>
+</html>

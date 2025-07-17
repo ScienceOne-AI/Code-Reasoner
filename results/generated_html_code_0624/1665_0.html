@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Optical Path Diagram</title>
+</head>
+<body>
+  <canvas id="opticalCanvas" width="550" height="400" style="border: 1px solid #ccc;"></canvas>
+  <script>
+    window.onload = function() {
+      const canvas = document.getElementById('opticalCanvas');
+      const ctx = canvas.getContext('2d');
+
+      // --- Style and General Parameters ---
+      ctx.strokeStyle = '#000';
+      ctx.fillStyle = '#000';
+      ctx.lineWidth = 1.5;
+      ctx.font = 'italic 18px Times New Roman';
+
+      // --- Helper Functions ---
+
+      /**
+       * Draws a line from (x1, y1) to (x2, y2).
+       */
+      function drawLine(x1, y1, x2, y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+
+      /**
+       * Draws an arrow from (fromx, fromy) to (tox, toy).
+       */
+      function drawArrow(fromx, fromy, tox, toy) {
+        const headlen = 10; // length of head in pixels
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+      }
+
+      /**
+       * Draws a dashed line.
+       */
+      function drawDashedLine(x1, y1, x2, y2, dashLen = 5) {
+        ctx.beginPath();
+        ctx.setLineDash([dashLen, dashLen]);
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid line
+      }
+
+      /**
+       * Draws a dimension line with arrows, ticks, and a label.
+       */
+      function drawDimension(x1, x2, y, label, is_above, align = 'center') {
+        const headlen = 8;
+        const tick_height = 5;
+
+        // Main line with arrowheads
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x2, y);
+        // Left arrowhead
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x1 + headlen, y - headlen / 2);
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x1 + headlen, y + headlen / 2);
+        // Right arrowhead
+        ctx.moveTo(x2, y);
+        ctx.lineTo(x2 - headlen, y - headlen / 2);
+        ctx.moveTo(x2, y);
+        ctx.lineTo(x2 - headlen, y + headlen / 2);
+        
+        // Vertical Ticks
+        ctx.moveTo(x1, y - tick_height);
+        ctx.lineTo(x1, y + tick_height);
+        ctx.moveTo(x2, y - tick_height);
+        ctx.lineTo(x2, y + tick_height);
+        ctx.stroke();
+        
+        // Text Label
+        ctx.font = '14px Times New Roman';
+        ctx.textAlign = 'center';
+        const text_y = is_above ? y - 8 : y + 18;
+        let text_x;
+        if (align === 'center') {
+            text_x = (x1 + x2) / 2;
+        } else if (align === 'left') {
+            text_x = x1 + (x2-x1) * 0.25;
+        }
+        ctx.fillText(label, text_x, text_y);
+      }
+
+
+      // --- Coordinates and Layout ---
+      const y_axis = 200;
+      const scale = 6; // pixels per cm
+
+      // Horizontal positions
+      const x_P = 50;
+      const x_L1 = x_P + 20 * scale;
+      const dist_L1_LB = 12 * scale;
+      const x_LB = x_L1 + dist_L1_LB;
+      const x_M1 = x_LB + 30 * scale;
+      const x_M2 = x_M1 - 10 * scale;
+
+      // Vertical dimensions
+      const object_height = 50;
+      const lens_half_height = 80;
+
+
+      // --- Drawing Scene ---
+
+      // 1. Draw Optical Axis
+      drawLine(10, y_axis, canvas.width - 10, y_axis);
+
+      // 2. Draw Object P
+      drawArrow(x_P, y_axis, x_P, y_axis - object_height);
+      ctx.font = 'italic 20px Times New Roman';
+      ctx.textAlign = 'center';
+      ctx.fillText("P", x_P - 20, y_axis - object_height / 2 + 5);
+      ctx.font = '16px Times New Roman';
+      ctx.fillText("1cm", x_P + 25, y_axis - object_height / 2);
+
+      // 3. Draw Lens L1 (Diverging)
+      drawLine(x_L1, y_axis - lens_half_height, x_L1, y_axis + lens_half_height);
+      drawArrow(x_L1, y_axis - lens_half_height, x_L1, y_axis - lens_half_height -1); // Top arrowhead
+      drawArrow(x_L1, y_axis + lens_half_height, x_L1, y_axis + lens_half_height +1); // Bottom arrowhead
+      ctx.font = 'italic 18px Times New Roman';
+      ctx.fillText("L₁", x_L1, y_axis - lens_half_height - 15);
+
+      // 4. Draw Lens LB (Converging)
+      drawLine(x_LB, y_axis - lens_half_height, x_LB, y_axis + lens_half_height);
+      const arrowhead_len_L2 = 10;
+      ctx.beginPath();
+      ctx.moveTo(x_LB, y_axis - lens_half_height);
+      ctx.lineTo(x_LB - arrowhead_len_L2/2, y_axis - lens_half_height + arrowhead_len_L2);
+      ctx.moveTo(x_LB, y_axis - lens_half_height);
+      ctx.lineTo(x_LB + arrowhead_len_L2/2, y_axis - lens_half_height + arrowhead_len_L2);
+      ctx.moveTo(x_LB, y_axis + lens_half_height);
+      ctx.lineTo(x_LB - arrowhead_len_L2/2, y_axis + lens_half_height - arrowhead_len_L2);
+      ctx.moveTo(x_LB, y_axis + lens_half_height);
+      ctx.lineTo(x_LB + arrowhead_len_L2/2, y_axis + lens_half_height - arrowhead_len_L2);
+      ctx.stroke();
+      ctx.font = 'italic 18px Times New Roman';
+      ctx.fillText("L", x_LB - 5, y_axis - lens_half_height - 15);
+      ctx.font = 'italic 14px Times New Roman';
+      ctx.fillText("B", x_LB + 5, y_axis - lens_half_height - 12);
+
+      // 5. Draw Plane M2
+      drawDashedLine(x_M2, y_axis - lens_half_height, x_M2, y_axis + lens_half_height);
+      ctx.font = 'italic 18px Times New Roman';
+      ctx.fillText("M₂", x_M2, y_axis - lens_half_height - 15);
+
+      // 6. Draw Plane M1
+      drawDashedLine(x_M1, y_axis - lens_half_height, x_M1, y_axis + lens_half_height);
+      ctx.font = 'italic 18px Times New Roman';
+      ctx.fillText("M₁", x_M1, y_axis - lens_half_height - 15);
+
+      // 7. Draw Dimensions
+      // 20cm dimension
+      drawDimension(x_P, x_L1, y_axis - 20, "20cm", true, 'left');
+      
+      // 30cm dimension
+      drawDimension(x_LB, x_M1, y_axis + 60, "30cm", false, 'center');
+
+      // 10cm dimension
+      drawDimension(x_M2, x_M1, y_axis + 30, "10cm", false, 'center');
+
+    };
+  </script>
+</body>
+</html>

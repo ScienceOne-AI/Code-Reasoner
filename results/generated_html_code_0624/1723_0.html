@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Birefringent Crystal Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrowhead
+        function drawArrowhead(ctx, x, y, angle, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        // Helper function to draw a double-headed arrow
+        function drawDoubleArrow(ctx, x, y, length, angle) {
+            const angleRad = angle * Math.PI / 180;
+            const dx = (length / 2) * Math.cos(angleRad);
+            const dy = (length / 2) * Math.sin(angleRad);
+            
+            const x1 = x - dx;
+            const y1 = y - dy;
+            const x2 = x + dx;
+            const y2 = y + dy;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // Arrowheads
+            drawArrowhead(ctx, x1, y1, angleRad + Math.PI, 8);
+            drawArrowhead(ctx, x2, y2, angleRad, 8);
+        }
+
+        // Helper function to draw an asterisk
+        function drawAsterisk(ctx, x, y, size) {
+            ctx.beginPath();
+            for (let i = 0; i < 3; i++) {
+                const angle = (i * 60) * Math.PI / 180;
+                const startX = x - size * Math.cos(angle);
+                const startY = y - size * Math.sin(angle);
+                const endX = x + size * Math.cos(angle);
+                const endY = y + size * Math.sin(angle);
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+            }
+            ctx.stroke();
+        }
+
+
+        // --- Main Drawing ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = '20px serif';
+        
+        const centerY = 220;
+
+        // 1. Light Ray Path
+        ctx.beginPath();
+        ctx.moveTo(50, centerY);
+        ctx.lineTo(550, centerY);
+        ctx.stroke();
+        drawArrowhead(ctx, 550, centerY, 0, 10);
+        
+        // 2. Incoming Polarized Light
+        const incomingXCoords = [100, 140, 180, 220];
+        incomingXCoords.forEach(x => {
+            drawDoubleArrow(ctx, x, centerY, 30, 135);
+        });
+
+        // 3. Birefringent Crystal Plate
+        const plate = {
+            frontLeftX: 270,
+            frontRightX: 310,
+            topY: 140,
+            bottomY: 300,
+            perspectiveX: 20,
+            perspectiveY: 20
+        };
+
+        ctx.beginPath();
+        // Front face
+        ctx.moveTo(plate.frontLeftX, plate.topY);
+        ctx.lineTo(plate.frontLeftX, plate.bottomY);
+        // Side face
+        ctx.moveTo(plate.frontRightX, plate.topY);
+        ctx.lineTo(plate.frontRightX, plate.bottomY);
+        ctx.lineTo(plate.frontRightX + plate.perspectiveX, plate.bottomY - plate.perspectiveY);
+        ctx.lineTo(plate.frontRightX + plate.perspectiveX, plate.topY - plate.perspectiveY);
+        ctx.lineTo(plate.frontRightX, plate.topY);
+        // Top face
+        ctx.moveTo(plate.frontLeftX, plate.topY);
+        ctx.lineTo(plate.frontLeftX + plate.perspectiveX, plate.topY - plate.perspectiveY);
+        ctx.lineTo(plate.frontRightX + plate.perspectiveX, plate.topY - plate.perspectiveY);
+        ctx.stroke();
+
+        // 4. Markings inside the plate
+        const impactX = plate.frontLeftX;
+        const impactY = centerY;
+        
+        // Dashed line for vertical reference
+        ctx.save();
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.moveTo(impactX, impactY - 30);
+        ctx.lineTo(impactX, impactY + 30);
+        ctx.stroke();
+        ctx.restore();
+
+        // Optic axis arrow
+        const opticAxisAngle = -60 * Math.PI / 180; // Angle from horizontal
+        const opticAxisLength = 40;
+        const opticAxisEndX = impactX + opticAxisLength * Math.cos(opticAxisAngle);
+        const opticAxisEndY = impactY + opticAxisLength * Math.sin(opticAxisAngle);
+        ctx.beginPath();
+        ctx.moveTo(impactX, impactY);
+        ctx.lineTo(opticAxisEndX, opticAxisEndY);
+        ctx.stroke();
+        drawArrowhead(ctx, opticAxisEndX, opticAxisEndY, opticAxisAngle, 8);
+
+        // Angle α
+        ctx.beginPath();
+        ctx.arc(impactX, impactY, 20, -90 * Math.PI / 180, opticAxisAngle, false);
+        ctx.stroke();
+        ctx.fillText('α', impactX + 10, impactY - 22);
+
+        // 5. Outgoing Light
+        const outgoingXCoords = [400, 450];
+        outgoingXCoords.forEach(x => {
+            drawAsterisk(ctx, x, centerY, 10);
+        });
+
+        // 6. Thickness label 'd'
+        const d_y = plate.bottomY + 30;
+        ctx.beginPath();
+        ctx.moveTo(plate.frontRightX, d_y);
+        ctx.lineTo(plate.frontRightX + plate.perspectiveX, d_y);
+        // Ticks
+        ctx.moveTo(plate.frontRightX, d_y - 5);
+        ctx.lineTo(plate.frontRightX, d_y + 5);
+        ctx.moveTo(plate.frontRightX + plate.perspectiveX, d_y - 5);
+        ctx.lineTo(plate.frontRightX + plate.perspectiveX, d_y + 5);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.fillText('d', plate.frontRightX + plate.perspectiveX / 2, d_y + 20);
+
+        // 7. Bottom Text Label
+        ctx.font = "24px 'KaiTi', 'SimSun', serif";
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 12-56 图', canvas.width / 2, 420);
+
+    </script>
+</body>
+</html>

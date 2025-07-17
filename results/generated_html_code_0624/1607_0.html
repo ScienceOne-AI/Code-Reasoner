@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Reconstruction</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Parameters and Style ---
+        const a = 30; // Base unit 'a' in pixels
+        const big_R = 3 * a;
+        const small_r = a;
+        const big_cx = 240;
+        const big_cy = 160;
+        const small_cx = big_cx + a;
+        const small_cy = big_cy;
+        const lineWidth = 2;
+        const fontSize = 16;
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = lineWidth;
+        ctx.font = `italic ${fontSize}px 'Times New Roman', serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- 1. Draw Coordinate Axes (on the left) ---
+        const axis_origin_x = 80;
+        const axis_origin_y = 160;
+        const axis_len = 50;
+        // Y-axis
+        ctx.beginPath();
+        ctx.moveTo(axis_origin_x, axis_origin_y + 20); // start below origin
+        ctx.lineTo(axis_origin_x, axis_origin_y - axis_len); // line up
+        // Arrowhead
+        ctx.moveTo(axis_origin_x, axis_origin_y - axis_len);
+        ctx.lineTo(axis_origin_x - 5, axis_origin_y - axis_len + 10);
+        ctx.moveTo(axis_origin_x, axis_origin_y - axis_len);
+        ctx.lineTo(axis_origin_x + 5, axis_origin_y - axis_len + 10);
+        ctx.stroke();
+        ctx.fillText('y', axis_origin_x, axis_origin_y - axis_len - 12);
+
+        // X-axis
+        ctx.beginPath();
+        ctx.moveTo(axis_origin_x - 20, axis_origin_y); // start left of origin
+        ctx.lineTo(axis_origin_x + axis_len, axis_origin_y); // line right
+        // Arrowhead
+        ctx.moveTo(axis_origin_x + axis_len, axis_origin_y);
+        ctx.lineTo(axis_origin_x + axis_len - 10, axis_origin_y - 5);
+        ctx.moveTo(axis_origin_x + axis_len, axis_origin_y);
+        ctx.lineTo(axis_origin_x + axis_len - 10, axis_origin_y + 5);
+        ctx.stroke();
+        ctx.fillText('x', axis_origin_x + axis_len + 12, axis_origin_y);
+
+        // --- 2. Draw Shaded Area (Cylinder Cross-Section) ---
+        // Create a pattern for the hatching
+        const patternCanvas = document.createElement('canvas');
+        const patternCtx = patternCanvas.getContext('2d');
+        patternCanvas.width = 10;
+        patternCanvas.height = 10;
+        patternCtx.strokeStyle = 'black';
+        patternCtx.lineWidth = 1.5;
+        patternCtx.beginPath();
+        patternCtx.moveTo(0, 10);
+        patternCtx.lineTo(10, 0);
+        patternCtx.stroke();
+        const hatchPattern = ctx.createPattern(patternCanvas, 'repeat');
+
+        // Draw the shape to be filled
+        ctx.beginPath();
+        // Outer circle (clockwise)
+        ctx.arc(big_cx, big_cy, big_R, 0, 2 * Math.PI, false);
+        // Inner circle (counter-clockwise to create a hole)
+        ctx.arc(small_cx, small_cy, small_r, 0, 2 * Math.PI, true);
+        ctx.fillStyle = hatchPattern;
+        ctx.fill();
+
+        // --- 3. Draw Outlines and Centerline ---
+        // Large circle outline
+        ctx.beginPath();
+        ctx.arc(big_cx, big_cy, big_R, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Small circle (hole) outline
+        ctx.beginPath();
+        ctx.arc(small_cx, small_cy, small_r, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Dashed horizontal line through center
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.moveTo(big_cx - big_R - 50, big_cy);
+        ctx.lineTo(big_cx + big_R + 30, big_cy);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset to solid lines
+
+        // --- 4. Draw Labels and Symbols ---
+        // Label 'P'
+        ctx.fillText('P', big_cx + big_R + 45, big_cy);
+
+        // Symbol 'T' inside the hole
+        ctx.beginPath();
+        ctx.moveTo(small_cx, small_cy - 7);
+        ctx.lineTo(small_cx, small_cy + 7);
+        ctx.moveTo(small_cx - 7, small_cy - 7);
+        ctx.lineTo(small_cx + 7, small_cy - 7);
+        ctx.stroke();
+
+        // --- 5. Draw Dimension Lines ---
+        const dimY = big_cy + big_R + 30;
+        const tickH = 5;
+
+        // x-coordinates for dimension points
+        const x_start_dim = small_cx;
+        const x_mid_dim = small_cx + small_r;
+        const x_end_dim = big_cx + big_R;
+
+        // Dashed projection lines from features down to the dimension line
+        ctx.beginPath();
+        ctx.setLineDash([3, 3]);
+        // From center of hole
+        ctx.moveTo(x_start_dim, small_cy);
+        ctx.lineTo(x_start_dim, dimY + tickH);
+        // From right edge of hole
+        ctx.moveTo(x_mid_dim, small_cy);
+        ctx.lineTo(x_mid_dim, dimY + tickH);
+        // From right edge of large circle
+        ctx.moveTo(x_end_dim, big_cy);
+        ctx.lineTo(x_end_dim, dimY + tickH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Horizontal dimension line with ticks
+        ctx.beginPath();
+        ctx.moveTo(x_start_dim, dimY);
+        ctx.lineTo(x_end_dim, dimY);
+        // Ticks
+        ctx.moveTo(x_start_dim, dimY - tickH); ctx.lineTo(x_start_dim, dimY + tickH);
+        ctx.moveTo(x_mid_dim, dimY - tickH); ctx.lineTo(x_mid_dim, dimY + tickH);
+        ctx.moveTo(x_end_dim, dimY - tickH); ctx.lineTo(x_end_dim, dimY + tickH);
+        ctx.stroke();
+
+        // Dimension labels
+        ctx.font = `${fontSize}px 'Times New Roman', serif`;
+        ctx.textBaseline = 'top';
+        ctx.fillText('a', (x_start_dim + x_mid_dim) / 2, dimY + 8);
+        ctx.fillText('2a', (x_mid_dim + x_end_dim) / 2, dimY + 8);
+
+        // --- 6. Draw Figure Caption ---
+        ctx.font = `bold ${fontSize}px 'Times New Roman', serif`;
+        ctx.fillText('Fig. 2.21', big_cx, big_cy + big_R + 75);
+
+    </script>
+</body>
+</html>

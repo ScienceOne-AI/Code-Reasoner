@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Birefringence Diagram</title>
+<style>
+  body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+  canvas { border: 1px solid #999; }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="400"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // --- Helper Functions ---
+
+  /**
+   * Draws a line with an arrowhead at the end.
+   * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+   * @param {number} fromX - The starting x-coordinate.
+   * @param {number} fromY - The starting y-coordinate.
+   * @param {number} toX - The ending x-coordinate.
+   * @param {number} toY - The ending y-coordinate.
+   * @param {number} [headLength=10] - The length of the arrowhead wings.
+   */
+  function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 8) {
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+  }
+
+  /**
+   * Draws a double-headed vertical arrow for polarization.
+   * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+   * @param {number} x - The x-coordinate of the arrow's center.
+   * @param {number} y - The y-coordinate of the arrow's center.
+   * @param {number} size - The total height of the arrow.
+   */
+  function drawDoubleArrow(ctx, x, y, size) {
+    const halfSize = size / 2;
+    const wingSize = 6;
+    ctx.beginPath();
+    // Vertical line
+    ctx.moveTo(x, y - halfSize);
+    ctx.lineTo(x, y + halfSize);
+    // Top arrowhead wings
+    ctx.moveTo(x, y - halfSize);
+    ctx.lineTo(x - wingSize, y - halfSize + wingSize);
+    ctx.moveTo(x, y - halfSize);
+    ctx.lineTo(x + wingSize, y - halfSize + wingSize);
+    // Bottom arrowhead wings
+    ctx.moveTo(x, y + halfSize);
+    ctx.lineTo(x - wingSize, y + halfSize - wingSize);
+    ctx.moveTo(x, y + halfSize);
+    ctx.lineTo(x + wingSize, y + halfSize - wingSize);
+    ctx.stroke();
+  }
+
+  // --- Drawing Parameters ---
+  const rectX = 250;
+  const rectY = 50;
+  const rectWidth = 150;
+  const rectHeight = 300;
+  
+  const topRayY = 120;
+  const bottomRayY = 280;
+  
+  const deflectionE = 40; // Vertical deflection of the extraordinary ray
+  const opticAxisAngleRad = Math.atan(0.75); // Corresponds to a slope of 3/4
+
+  // --- Main Drawing Logic ---
+
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+
+  // 1. Draw the birefringent block
+  ctx.fillStyle = '#EBEBEB'; // Light gray fill
+  ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
+  ctx.strokeStyle = 'black';
+  ctx.strokeRect(rectX, rectY, rectWidth, rectHeight);
+
+  // 2. Draw incoming rays and polarization symbols
+  drawArrow(ctx, 50, topRayY, rectX, topRayY);
+  drawArrow(ctx, 50, bottomRayY, rectX, bottomRayY);
+  
+  drawDoubleArrow(ctx, 120, topRayY, 30);
+  drawDoubleArrow(ctx, 120, bottomRayY, 30);
+  
+  // 3. Draw rays inside the block
+  // Ordinary rays (o-rays)
+  ctx.beginPath();
+  ctx.moveTo(rectX, topRayY);
+  ctx.lineTo(rectX + rectWidth, topRayY);
+  ctx.moveTo(rectX, bottomRayY);
+  ctx.lineTo(rectX + rectWidth, bottomRayY);
+  ctx.stroke();
+  
+  // Extraordinary rays (e-rays)
+  ctx.beginPath();
+  ctx.moveTo(rectX, topRayY);
+  ctx.lineTo(rectX + rectWidth, topRayY + deflectionE);
+  ctx.moveTo(rectX, bottomRayY);
+  ctx.lineTo(rectX + rectWidth, bottomRayY + deflectionE);
+  ctx.stroke();
+
+  // 4. Draw optic axes (dashed lines)
+  ctx.save();
+  ctx.setLineDash([5, 5]);
+  const opticAxisLength = 100;
+  const opticAxisEndX1 = rectX + opticAxisLength * Math.cos(opticAxisAngleRad);
+  const opticAxisEndY1 = topRayY + opticAxisLength * Math.sin(opticAxisAngleRad);
+  ctx.beginPath();
+  ctx.moveTo(rectX, topRayY);
+  ctx.lineTo(opticAxisEndX1, opticAxisEndY1);
+  ctx.stroke();
+
+  const opticAxisEndX2 = rectX + opticAxisLength * Math.cos(opticAxisAngleRad);
+  const opticAxisEndY2 = bottomRayY + opticAxisLength * Math.sin(opticAxisAngleRad);
+  ctx.beginPath();
+  ctx.moveTo(rectX, bottomRayY);
+  ctx.lineTo(opticAxisEndX2, opticAxisEndY2);
+  ctx.stroke();
+  ctx.restore(); // Restore solid line style
+
+  // 5. Draw angle and labels
+  // Angle Beta (β)
+  ctx.beginPath();
+  ctx.arc(rectX, topRayY, 40, 0, opticAxisAngleRad);
+  ctx.stroke();
+  ctx.font = 'italic 24px "Times New Roman"';
+  ctx.fillStyle = 'black';
+  ctx.fillText('β', rectX + 45, topRayY + 28);
+
+  // Label O-O' and leader line
+  ctx.font = '20px "Times New Roman"';
+  const labelOOText = "O-O'";
+  const labelOOX = 180;
+  const labelOOY = 350;
+  ctx.fillText(labelOOText, labelOOX, labelOOY);
+  
+  const leaderStartX = labelOOX + ctx.measureText(labelOOText).width - 5;
+  const leaderStartY = labelOOY - 8;
+  const leaderTargetX = rectX + 30;
+  const leaderTargetY = bottomRayY + 30 * Math.tan(opticAxisAngleRad);
+  
+  ctx.beginPath();
+  ctx.moveTo(leaderStartX, leaderStartY);
+  ctx.lineTo(leaderTargetX, leaderTargetY);
+  ctx.stroke();
+
+  // 6. Draw outgoing rays
+  // o-rays
+  drawArrow(ctx, rectX + rectWidth, topRayY, 550, topRayY);
+  drawArrow(ctx, rectX + rectWidth, bottomRayY, 550, bottomRayY);
+  // e-rays
+  drawArrow(ctx, rectX + rectWidth, topRayY + deflectionE, 550, topRayY + deflectionE);
+  drawArrow(ctx, rectX + rectWidth, bottomRayY + deflectionE, 550, bottomRayY + deflectionE);
+  
+  // 7. Add outgoing ray labels (o, e)
+  ctx.font = 'italic 24px "Times New Roman"';
+  // Top set
+  ctx.fillText('o', 560, topRayY + 8);
+  ctx.fillText('e', 560, topRayY + deflectionE + 8);
+  // Bottom set
+  ctx.fillText('o', 560, bottomRayY + 8);
+  ctx.fillText('e', 560, bottomRayY + deflectionE + 8);
+
+</script>
+</body>
+</html>

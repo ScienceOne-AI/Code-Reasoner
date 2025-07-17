@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Precessing Orbit Diagram</title>
+</head>
+<body>
+    <canvas id="myCanvas" width="500" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const cx = canvas.width / 2;
+        const cy = 250; // Center Y, leaving space for text below
+
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.fillStyle = 'black';
+
+        // Helper function to rotate a point around another point
+        function rotatePoint(p, angle, origin) {
+            const ox = origin.x;
+            const oy = origin.y;
+            const px = p.x;
+            const py = p.y;
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            return {
+                x: ox + (px - ox) * cos - (py - oy) * sin,
+                y: oy + (px - ox) * sin + (py - oy) * cos
+            };
+        }
+
+        // Helper function to draw an arrowhead
+        function drawArrowhead(ctx, to, angle, size) {
+            ctx.save();
+            ctx.translate(to.x, to.y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        // Helper functions for Bezier curves to find a point and its tangent
+        function getBezierPoint(t, p0, p1, p2, p3) {
+            const cX = 3 * (p1.x - p0.x);
+            const bX = 3 * (p2.x - p1.x) - cX;
+            const aX = p3.x - p0.x - cX - bX;
+        
+            const cY = 3 * (p1.y - p0.y);
+            const bY = 3 * (p2.y - p1.y) - cY;
+            const aY = p3.y - p0.y - cY - bY;
+        
+            const x = aX * t * t * t + bX * t * t + cX * t + p0.x;
+            const y = aY * t * t * t + bY * t * t + cY * t + p0.y;
+            return { x: x, y: y };
+        }
+        
+        function getBezierTangent(t, p0, p1, p2, p3) {
+            const cX = 3 * (p1.x - p0.x);
+            const bX = 3 * (p2.x - p1.x) - cX;
+            const aX = p3.x - p0.x - cX - bX;
+        
+            const cY = 3 * (p1.y - p0.y);
+            const bY = 3 * (p2.y - p1.y) - cY;
+            const aY = p3.y - p0.y - cY - bY;
+
+            const tx = 3 * aX * t * t + 2 * bX * t + cX;
+            const ty = 3 * aY * t * t + 2 * bY * t + cY;
+            return Math.atan2(ty, tx);
+        }
+
+        // --- Main Drawing ---
+        
+        const R_outer = 210;
+        const R_inner = 15;
+
+        // Draw outer circle
+        ctx.beginPath();
+        ctx.arc(cx, cy, R_outer, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Draw center point
+        ctx.beginPath();
+        ctx.arc(cx, cy, 6, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Family 1: Orbits with arrows (spiraling inwards, counter-clockwise)
+        const num_orbits = 8;
+        const orbit_angle_step = 2 * Math.PI / num_orbits;
+
+        // Base curve definition (these points will be rotated)
+        let p0_o = { x: R_outer * Math.cos(5 * Math.PI / 6), y: R_outer * Math.sin(5 * Math.PI / 6) }; // 150 deg
+        let p3_o = { x: R_inner * Math.cos(-Math.PI / 6), y: R_inner * Math.sin(-Math.PI / 6) };     // -30 deg
+        let p1_o = { x: -132, y: 192 };
+        let p2_o = { x: -17, y: -60 };
+
+        for (let i = 0; i < num_orbits; i++) {
+            const angle = i * orbit_angle_step;
+            
+            const rp0 = rotatePoint(p0_o, angle, {x:0, y:0});
+            const rp1 = rotatePoint(p1_o, angle, {x:0, y:0});
+            const rp2 = rotatePoint(p2_o, angle, {x:0, y:0});
+            const rp3 = rotatePoint(p3_o, angle, {x:0, y:0});
+
+            ctx.beginPath();
+            ctx.moveTo(cx + rp0.x, cy + rp0.y);
+            ctx.bezierCurveTo(cx + rp1.x, cy + rp1.y, cx + rp2.x, cy + rp2.y, cx + rp3.x, cy + rp3.y);
+            ctx.stroke();
+            
+            // Add arrow to the curve
+            const t_arrow = 0.45;
+            const arrow_pos = getBezierPoint(t_arrow, rp0, rp1, rp2, rp3);
+            const arrow_angle = getBezierTangent(t_arrow, rp0, rp1, rp2, rp3);
+            drawArrowhead(ctx, { x: cx + arrow_pos.x, y: cy + arrow_pos.y }, arrow_angle, 12);
+        }
+
+        // Family 2: Orthogonal curves (spiraling outwards, clockwise)
+        const num_ortho = 12;
+        const ortho_angle_step = 2 * Math.PI / num_ortho;
+        
+        // Base curve definition
+        let p0_q = { x: R_inner * Math.cos(Math.PI), y: R_inner * Math.sin(Math.PI) }; // 180 deg
+        let p3_q = { x: R_outer * Math.cos(2 * Math.PI / 3), y: R_outer * Math.sin(2 * Math.PI / 3) }; // 120 deg
+        let p1_q = { x: -15, y: -50 };
+        let p2_q = { x: -192, y: 132 };
+
+        for (let i = 0; i < num_ortho; i++) {
+            const angle = i * ortho_angle_step;
+            
+            const rp0 = rotatePoint(p0_q, angle, {x:0, y:0});
+            const rp1 = rotatePoint(p1_q, angle, {x:0, y:0});
+            const rp2 = rotatePoint(p2_q, angle, {x:0, y:0});
+            const rp3 = rotatePoint(p3_q, angle, {x:0, y:0});
+
+            ctx.beginPath();
+            ctx.moveTo(cx + rp0.x, cy + rp0.y);
+            ctx.bezierCurveTo(cx + rp1.x, cy + rp1.y, cx + rp2.x, cy + rp2.y, cx + rp3.x, cy + rp3.y);
+            ctx.stroke();
+        }
+
+        // Draw extra radial line from top (as seen in the original image)
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - R_outer);
+        ctx.lineTo(cx, cy - R_inner - 20);
+        ctx.stroke();
+
+        // Draw angle φ notation in the bottom-left quadrant
+        const angle_start = 180 * Math.PI / 180;
+        const angle_end = 210 * Math.PI / 180;
+        const arc_radius = 160;
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, arc_radius, angle_start, angle_end);
+        ctx.stroke();
+
+        // T-shaped markers for the angle arc
+        ctx.lineWidth = 1.5;
+        const marker_len = 10;
+        // Marker 1 at start of arc
+        let p_start = {x: cx + arc_radius * Math.cos(angle_start), y: cy + arc_radius * Math.sin(angle_start)};
+        ctx.beginPath();
+        ctx.moveTo(p_start.x - marker_len * Math.sin(angle_start), p_start.y + marker_len * Math.cos(angle_start));
+        ctx.lineTo(p_start.x + marker_len * Math.sin(angle_start), p_start.y - marker_len * Math.cos(angle_start));
+        ctx.stroke();
+        // Marker 2 at end of arc
+        let p_end = {x: cx + arc_radius * Math.cos(angle_end), y: cy + arc_radius * Math.sin(angle_end)};
+        ctx.beginPath();
+        ctx.moveTo(p_end.x - marker_len * Math.sin(angle_end), p_end.y + marker_len * Math.cos(angle_end));
+        ctx.lineTo(p_end.x + marker_len * Math.sin(angle_end), p_end.y - marker_len * Math.cos(angle_end));
+        ctx.stroke();
+        ctx.lineWidth = 2; // Reset line width
+
+        // Label for angle φ
+        ctx.font = "italic 24px Times New Roman";
+        const phi_label_angle = (angle_start + angle_end) / 2;
+        const phi_label_radius = arc_radius - 25; // Position inside the arc
+        const phi_x = cx + phi_label_radius * Math.cos(phi_label_angle);
+        const phi_y = cy + phi_label_radius * Math.sin(phi_label_angle);
+        ctx.fillText("\u03C6", phi_x - 5, phi_y + 8);
+
+        // Draw Figure label
+        ctx.font = "bold 24px serif";
+        ctx.fillText("Fig. 1.47.", cx - 50, cy + R_outer + 50);
+
+    </script>
+</body>
+</html>

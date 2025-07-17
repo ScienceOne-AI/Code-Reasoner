@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Truss Structure Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="trussCanvas" width="850" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('trussCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const scale = 45; // pixels per meter
+        const originX = 250;
+        const originY = 350;
+
+        // --- Helper Functions ---
+        function map(x, y) {
+            return {
+                x: originX + x * scale,
+                y: originY - y * scale
+            };
+        }
+
+        function drawLine(p1, p2, style = 'black', lineWidth = 2) {
+            ctx.beginPath();
+            ctx.strokeStyle = style;
+            ctx.lineWidth = lineWidth;
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+        }
+
+        function drawNode(p, radius = 5, color = 'black') {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        function drawText(text, p, dx = 0, dy = 0, font = "20px Arial", align = 'center') {
+            ctx.font = font;
+            ctx.fillStyle = 'black';
+            ctx.textAlign = align;
+            ctx.fillText(text, p.x + dx, p.y + dy);
+        }
+
+        function drawDimensionLine(p1, p2, text, offset, direction = 'horizontal') {
+            ctx.beginPath();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1;
+
+            if (direction === 'horizontal') {
+                const y = p1.y + offset;
+                ctx.moveTo(p1.x, p1.y + 5);
+                ctx.lineTo(p1.x, y);
+                ctx.moveTo(p2.x, p2.y + 5);
+                ctx.lineTo(p2.x, y);
+                ctx.moveTo(p1.x, y);
+                ctx.lineTo(p2.x, y);
+            } else { // vertical or sloped
+                const midX = (p1.x + p2.x) / 2;
+                const midY = (p1.y + p2.y) / 2;
+                const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+                const perpAngle = angle + Math.PI / 2;
+                const textX = midX + offset * Math.cos(perpAngle);
+                const textY = midY + offset * Math.sin(perpAngle);
+                
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                
+                // Ticks
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p1.x - 5*Math.sin(angle), p1.y + 5*Math.cos(angle));
+                ctx.moveTo(p2.x, p2.y);
+                ctx.lineTo(p2.x - 5*Math.sin(angle), p2.y + 5*Math.cos(angle));
+
+                ctx.save();
+                ctx.translate(textX, textY);
+                ctx.rotate(angle > Math.PI/2 || angle < -Math.PI/2 ? angle + Math.PI : angle);
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                drawText(text, {x:0, y:0}, 0, 0);
+                ctx.restore();
+            }
+            ctx.stroke();
+            if (direction === 'horizontal') {
+                drawText(text, {x: (p1.x+p2.x)/2, y: p1.y + offset}, 0, -5);
+            }
+        }
+        
+        function drawHatching(p1, p2, numLines, length, angle) {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            const lineAngle = Math.atan2(dy, dx);
+            const hatchAngle = lineAngle + angle;
+
+            for (let i = 0; i <= numLines; i++) {
+                const startX = p1.x + (dx * i) / numLines;
+                const startY = p1.y + (dy * i) / numLines;
+                const endX = startX + length * Math.cos(hatchAngle);
+                const endY = startY + length * Math.sin(hatchAngle);
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+            }
+        }
+
+        // --- Coordinates of Points (in meters) ---
+        const A = { x: 0, y: 3 };
+        const B = { x: 0, y: 0 };
+        const C = { x: 3, y: 0 };
+        const C2 = { x: 6, y: 0 };
+        const D = { x: 9, y: 0 };
+        
+        const A1 = { x: 3, y: 3 };
+        const A2 = { x: 6, y: 3 };
+        const A3 = { x: 9, y: 3 };
+
+        const E = { x: -1.5, y: 0 };
+        const F = { x: 1.5, y: -3 };
+        const H = { x: -2.25, y: 0.75 };
+
+        const G = { x: 3, y: -1.5 };
+
+        // --- Map Coordinates to Canvas ---
+        const pA = map(A.x, A.y);
+        const pB = map(B.x, B.y);
+        const pC = map(C.x, C.y);
+        const pC2 = map(C2.x, C2.y);
+        const pD = map(D.x, D.y);
+        const pA1 = map(A1.x, A1.y);
+        const pA2 = map(A2.x, A2.y);
+        const pA3 = map(A3.x, A3.y);
+        const pE = map(E.x, E.y);
+        const pF = map(F.x, F.y);
+        const pH = map(H.x, H.y);
+        const pG = map(G.x, G.y);
+
+        // --- Drawing ---
+        ctx.lineWidth = 3;
+        
+        // Truss Members
+        drawLine(pA, pA3); // Top chord
+        drawLine(pB, pD); // Bottom chord
+        
+        // Simplified Warren Truss from image
+        const pT1 = map(1.5, 3);
+        const pT2 = map(4.5, 3);
+        const pT3 = map(7.5, 3);
+        drawLine(pA, pT1);
+        drawLine(pT1, pT2);
+        drawLine(pT2, pT3);
+        drawLine(pT3, pA3);
+        
+        drawLine(pA, pB);
+        drawLine(pA, pC);
+        drawLine(pB, pT1);
+        drawLine(pC, pT1);
+        drawLine(pC, pT2);
+        drawLine(pC2, pT2);
+        drawLine(pC2, pT3);
+        drawLine(pD, pT3);
+
+        // Support Rods
+        drawLine(pA, pE);
+        drawLine(pB, pF);
+
+        // Dashed line AH
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        drawLine(pA, pH, 'black', 1.5);
+        ctx.restore();
+
+        // Nodes
+        drawNode(pA); drawText("A", pA, -15, -8);
+        drawNode(pB); drawText("B", pB, -15, 15);
+        drawNode(pC); drawText("C", pC, 0, 25);
+        drawNode(pD); drawText("D", pD, 15, 0);
+        drawNode(pE); drawText("E", pE, -15, -8);
+        drawNode(pF); drawText("F", pF, -15, 5);
+        drawText("H", pH, -15, 0);
+        
+        // Intermediate truss nodes
+        drawNode(pC2);
+        drawNode(pA1);
+        drawNode(pA2);
+        drawNode(pA3);
+        drawNode(pT1);
+        drawNode(pT2);
+        drawNode(pT3);
+
+        // Load
+        drawLine(pC, {x:pG.x, y:pG.y-25});
+        drawNode(pG, 20);
+        drawText("G", pG, 0, 45);
+
+        // Supports
+        // Roller at D
+        const pD_base = {x: pD.x, y: pD.y + 10};
+        const pD_roller1 = {x: pD.x-15, y: pD.y + 20};
+        const pD_roller2 = {x: pD.x+15, y: pD.y + 20};
+        const pD_ground = {x: pD.x, y: pD.y + 28};
+        drawLine(pD, pD_roller1);
+        drawLine(pD, pD_roller2);
+        drawLine(pD_roller1, pD_roller2);
+        drawNode(pD_roller1, 4);
+        drawNode(pD_roller2, 4);
+        drawLine({x:pD_ground.x-40, y:pD_ground.y}, {x:pD_ground.x+40, y:pD_ground.y});
+        drawHatching({x:pD_ground.x-40, y:pD_ground.y}, {x:pD_ground.x+40, y:pD_ground.y}, 10, 15, Math.PI * 1.25);
+        
+        // Slanted wall at E, F
+        const pWall1 = map(-3, 1.5);
+        const pWall2 = map(2.5, -4);
+        drawLine(pWall1, pWall2);
+        drawHatching(pWall1, pWall2, 20, 20, Math.PI * 0.75);
+
+        // Dimensions and Angles
+        drawDimensionLine(pB, pC, "3 m", 30);
+        drawDimensionLine(pC, pD, "6 m", 50);
+
+        drawDimensionLine(pF, pE, "3√2 m", 20, 'sloped');
+        drawDimensionLine(pA, pH, "2.25√2 m", -20, 'sloped');
+
+        // 45 degree angle
+        ctx.beginPath();
+        const pAngleCenter = map(7.5, 0);
+        ctx.arc(pD.x, pD.y, 40, Math.PI, Math.PI * 1.25);
+        ctx.stroke();
+        drawText("45°", {x:pD.x - 45, y: pD.y - 20});
+    </script>
+</body>
+</html>

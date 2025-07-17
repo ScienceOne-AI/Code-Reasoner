@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Electromagnetism Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="450" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw a line with a V-shaped arrowhead
+    function drawVArrow(ctx, fromx, fromy, tox, toy, headlen = 10, angle_offset = Math.PI / 8) {
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        // Draw the main line
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        
+        // Draw the arrowhead
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - angle_offset), toy - headlen * Math.sin(angle - angle_offset));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + angle_offset), toy - headlen * Math.sin(angle + angle_offset));
+        ctx.stroke();
+    }
+
+    // Helper function to draw a line with V-shaped arrowheads at both ends
+    function drawDoubleVArrow(ctx, x1, y1, x2, y2, headlen = 8, angle_offset = Math.PI / 8) {
+        // Main line
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Head at x2, y2
+        let angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle - angle_offset), y2 - headlen * Math.sin(angle - angle_offset));
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headlen * Math.cos(angle + angle_offset), y2 - headlen * Math.sin(angle + angle_offset));
+        ctx.stroke();
+
+        // Head at x1, y1
+        angle = Math.atan2(y1 - y2, x1 - x2);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 - headlen * Math.cos(angle - angle_offset), y1 - headlen * Math.sin(angle - angle_offset));
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 - headlen * Math.cos(angle + angle_offset), y1 - headlen * Math.sin(angle + angle_offset));
+        ctx.stroke();
+    }
+
+    // --- Configuration ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // --- Coordinates & Dimensions ---
+    const wireX = 80;
+    const wireTopY = 40;
+    const wireBottomY = 360;
+    const b = 80;
+    const a = 120;
+
+    const Ax = wireX + b;
+    const Ay = 280;
+    const Bx = Ax;
+    const By = Ay - a;
+    const Cx = Ax + a;
+    const Cy = Ay;
+
+    // --- Drawing ---
+
+    // 1. Long straight wire (I₁)
+    ctx.beginPath();
+    ctx.moveTo(wireX, wireTopY);
+    ctx.lineTo(wireX, wireBottomY);
+    ctx.stroke();
+    drawVArrow(ctx, wireX, wireBottomY * 0.45, wireX, wireTopY + 10, 10);
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.fillText('I\u2081', wireX - 25, 90);
+
+    // 2. Triangle loop (ABC)
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay);
+    ctx.lineTo(Bx, By);
+    ctx.lineTo(Cx, Cy);
+    ctx.closePath();
+    ctx.stroke();
+    
+    // Labels for vertices
+    ctx.font = '20px "Times New Roman"';
+    ctx.fillText('A', Ax - 15, Ay + 10);
+    ctx.fillText('B', Bx - 15, By - 5);
+    ctx.fillText('C', Cx + 10, Cy + 10);
+    
+    // Current I₂
+    drawVArrow(ctx, Ax, Ay - a/2 + 20, Bx, By + 20, 10);
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.fillText('I\u2082', Ax - 25, By + a/2);
+
+    // 3. Angle theta (θ)
+    const angleRadius = 25;
+    const angleStart = Math.PI; // from C to A
+    const angleEnd = 1.25 * Math.PI; // from C to B
+    ctx.beginPath();
+    ctx.arc(Cx, Cy, angleRadius, angleStart, angleEnd);
+    ctx.stroke();
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.fillText('θ', Cx - 18, Cy - 18);
+
+    // 4. Dimension lines (a, b)
+    const dimY = Ay + 40;
+    ctx.font = 'italic 20px "Times New Roman"';
+    // Delimiter lines and ticks
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay); // Line from vertex A
+    ctx.lineTo(Ax, dimY + 5);
+    ctx.moveTo(Cx, dimY - 5); // Tick at C
+    ctx.lineTo(Cx, dimY + 5);
+    ctx.moveTo(wireX, dimY - 5); // Tick at wire position
+    ctx.lineTo(wireX, dimY + 5);
+    ctx.stroke();
+    // Double arrows
+    drawDoubleVArrow(ctx, wireX, dimY, Ax, dimY);
+    drawDoubleVArrow(ctx, Ax, dimY, Cx, dimY);
+    
+    // Labels a and b
+    ctx.fillText('b', wireX + b/2, dimY - 15);
+    ctx.fillText('a', Ax + a/2, dimY - 15);
+
+    // 5. Velocity vector (v)
+    const v_y = By + a / 2;
+    const v_x_start = Cx + 20;
+    const v_x_end = v_x_start + 70;
+    drawVArrow(ctx, v_x_start, v_y, v_x_end, v_y, 12);
+    ctx.fillText('v', (v_x_start + v_x_end) / 2, v_y - 20);
+
+    // 6. Caption
+    ctx.font = '22px "SimSun", "Songti SC"';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 8-49 图', canvas.width/2, dimY + 60);
+
+</script>
+</body>
+</html>

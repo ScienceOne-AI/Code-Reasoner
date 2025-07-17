@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Michelson Interferometer Schematic</title>
+</head>
+<body>
+<canvas id="michelsonCanvas" width="550" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('michelsonCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper function for labels with subscripts ---
+    function drawSub(text, sub, x, y) {
+        // Measure the main text width to position the subscript correctly.
+        const textMetrics = ctx.measureText(text);
+        const textWidth = textMetrics.width;
+        ctx.fillText(text, x, y);
+
+        // Save current font settings, change for subscript, draw, then restore.
+        ctx.save();
+        ctx.font = 'italic 16px Times New Roman';
+        ctx.fillText(sub, x + textWidth / 2 + 1, y + 6);
+        ctx.restore();
+    }
+
+    // --- Helper function to draw an arrowhead on a line ---
+    function addArrow(x, y, direction) {
+        const headlen = 8; // length of arrowhead
+        const angle = direction;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - headlen * Math.cos(angle - Math.PI / 6), y - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - headlen * Math.cos(angle + Math.PI / 6), y - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // --- Drawing Parameters ---
+    const cx = 260; // Center X
+    const cy = 225; // Center Y
+    const armL = 170; // Length of the arms
+    const raySpace = 30; // Spacing between parallel rays
+    const mirrorWidth = 100;
+    const mirrorThickness = 16;
+    const bsSize = 80; // Size of the beam splitter graphic
+    const plateWidth = 25;
+    const plateHeight = 110;
+    const plateX = cx + 70; // X position of the glass plate
+    const rayStartX = 40;
+    const rayEndY = 430;
+
+    // --- Draw Components and Labels ---
+
+    // Set default styles
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Labels
+    ctx.font = 'italic 22px Times New Roman';
+    drawSub('M', '1', cx, cy - armL - mirrorThickness - 25);
+    drawSub('M', '2', cx + armL + mirrorThickness + 25, cy);
+    drawSub('L', '1', cx - 60, cy - 60);
+    drawSub('L', '2', cx + 60, cy + 100);
+    ctx.font = '22px Times New Roman';
+    ctx.fillText('BS', cx - bsSize - 15, cy + bsSize - 45);
+
+    // Mirror M1 (top)
+    ctx.fillStyle = '#E0E0E0'; // Light gray fill for the mirror block
+    ctx.fillRect(cx - mirrorWidth / 2, cy - armL - mirrorThickness, mirrorWidth, mirrorThickness);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cx - mirrorWidth / 2, cy - armL);
+    ctx.lineTo(cx + mirrorWidth / 2, cy - armL);
+    ctx.stroke();
+
+    // Mirror M2 (right)
+    ctx.fillStyle = '#E0E0E0';
+    ctx.fillRect(cx + armL, cy - mirrorWidth / 2, mirrorThickness, mirrorWidth);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cx + armL, cy - mirrorWidth / 2);
+    ctx.lineTo(cx + armL, cy + mirrorWidth / 2);
+    ctx.stroke();
+
+    // Glass Plate
+    ctx.fillStyle = 'rgba(211, 211, 211, 0.8)'; // Semi-transparent fill
+    ctx.fillRect(plateX, cy - plateHeight / 2, plateWidth, plateHeight);
+    ctx.save();
+    ctx.setLineDash([5, 5]); // Dashed outline
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(plateX, cy - plateHeight / 2, plateWidth, plateHeight);
+    ctx.restore();
+
+    // Label 'n' for refractive index
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.fillText('n', plateX - 12, cy - plateHeight / 2 - 12);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(plateX - 5, cy - plateHeight / 2 - 12);
+    ctx.lineTo(plateX + 5, cy - plateHeight / 2);
+    ctx.stroke();
+
+    // Dimension 'd' for thickness
+    const d_line_y_start = cy + plateHeight / 2 + 5;
+    const d_line_y_end = cy + plateHeight / 2 + 25;
+    ctx.beginPath();
+    ctx.moveTo(plateX, d_line_y_start); ctx.lineTo(plateX, d_line_y_end);
+    ctx.moveTo(plateX + plateWidth, d_line_y_start); ctx.lineTo(plateX + plateWidth, d_line_y_end);
+    ctx.moveTo(plateX, d_line_y_end); ctx.lineTo(plateX + plateWidth, d_line_y_end);
+    // T-ends for dimension line
+    ctx.moveTo(plateX, d_line_y_end - 4); ctx.lineTo(plateX, d_line_y_end + 4);
+    ctx.moveTo(plateX + plateWidth, d_line_y_end - 4); ctx.lineTo(plateX + plateWidth, d_line_y_end + 4);
+    ctx.stroke();
+    ctx.fillText('d', plateX + plateWidth / 2, d_line_y_end + 18);
+
+    // --- Draw Ray Paths ---
+    // The diagram is schematic, showing rays crossing. So we draw the lines first.
+    ctx.lineWidth = 1.5;
+    for (let i = -1; i <= 1; i++) {
+        const offset = i * raySpace;
+        // Draw the full horizontal line segment
+        ctx.beginPath();
+        ctx.moveTo(rayStartX, cy + offset);
+        ctx.lineTo(cx + armL, cy + offset);
+        ctx.stroke();
+        // Draw the full vertical line segment
+        ctx.beginPath();
+        ctx.moveTo(cx + offset, cy - armL);
+        ctx.lineTo(cx + offset, rayEndY);
+        ctx.stroke();
+    }
+
+    // --- Draw Beam Splitter on Top of Rays ---
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = 'black';
+    ctx.beginPath();
+    ctx.moveTo(cx - bsSize, cy + bsSize);
+    ctx.lineTo(cx + bsSize, cy - bsSize);
+    ctx.stroke();
+
+    // --- Add Arrows to Indicate Direction ---
+    // Define angles for arrow directions
+    const RIGHT = 0;
+    const LEFT = Math.PI;
+    const UP = -Math.PI / 2;
+    const DOWN = Math.PI / 2;
+
+    ctx.lineWidth = 1.5;
+    for (let i = -1; i <= 1; i++) {
+        const h_offset = i * raySpace; // Offset for horizontal rays
+        const v_offset = i * raySpace; // Offset for vertical rays
+
+        // Arrows for horizontal path
+        addArrow(cx - 100, cy + h_offset, RIGHT);   // Incoming
+        addArrow(cx + 40, cy + h_offset, RIGHT);    // To M2
+        addArrow(cx + 40, cy + h_offset, LEFT);     // From M2
+
+        // Arrows for vertical path
+        addArrow(cx + v_offset, cy - 80, UP);       // To M1
+        addArrow(cx + v_offset, cy - 80, DOWN);     // From M1
+        addArrow(cx + v_offset, cy + 80, DOWN);     // To Detector
+    }
+
+</script>
+</body>
+</html>

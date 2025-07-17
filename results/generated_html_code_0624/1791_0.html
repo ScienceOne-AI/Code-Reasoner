@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Physics Diagram - Gyroscope</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      background-color: white;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="700" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Helper function to draw an arrowhead
+  function drawArrowHead(ctx, x, y, angle, length) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-length, -length / 2.5);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-length, length / 2.5);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // --- Drawing Parameters ---
+  const yAxle = 210;
+  const axleLength = 400;
+  const xA = (canvas.width - axleLength) / 2;
+  const xB = xA + axleLength;
+  const xO = xA + axleLength / 2;
+  
+  const wheelRadiusY = 100; // Major radius of ellipse (vertical)
+  const wheelRadiusX = 35;  // Minor radius of ellipse (horizontal)
+  const wheelThickness = 25;
+
+  // --- Start Drawing ---
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.font = '20px Arial';
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+
+  // 1. Ceiling Support
+  ctx.fillStyle = '#e0e0e0';
+  ctx.fillRect(0, 40, canvas.width, 15);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(0, 40, canvas.width, 15);
+
+  // 2. Chain
+  ctx.lineWidth = 2;
+  const chainTopY = 55;
+  const chainLinkHeight = 22;
+  const chainLinkWidth = 16;
+  let currentY = chainTopY;
+  for (let i = 0; i < 6; i++) {
+    ctx.strokeRect(xA - chainLinkWidth / 2, currentY, chainLinkWidth, chainLinkHeight);
+    currentY += chainLinkHeight;
+  }
+  // Connect chain to axle A
+  ctx.beginPath();
+  ctx.moveTo(xA, currentY);
+  ctx.lineTo(xA, yAxle);
+  ctx.stroke();
+
+  // 3. Axle AB
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(xA, yAxle);
+  ctx.lineTo(xB, yAxle);
+  ctx.stroke();
+  
+  // 4. Wheel
+  // Draw the wheel with 3D effect
+  // Fill the "thickness" part first
+  ctx.lineWidth = 1.5;
+  ctx.fillStyle = '#cccccc'; // Darker gray for thickness
+  ctx.beginPath();
+  ctx.moveTo(xO, yAxle - wheelRadiusY);
+  ctx.lineTo(xO - wheelThickness, yAxle - wheelRadiusY);
+  ctx.ellipse(xO - wheelThickness, yAxle, wheelRadiusX, wheelRadiusY, 0, -Math.PI / 2, Math.PI / 2, false);
+  ctx.lineTo(xO, yAxle + wheelRadiusY);
+  ctx.ellipse(xO, yAxle, wheelRadiusX, wheelRadiusY, 0, Math.PI / 2, -Math.PI / 2, true);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  
+  // Fill the front face
+  ctx.fillStyle = '#f0f0f0'; // Lighter gray for face
+  ctx.beginPath();
+  ctx.ellipse(xO, yAxle, wheelRadiusX, wheelRadiusY, 0, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.stroke();
+
+  // Draw the patterns on the wheel face
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#555';
+  // Top pattern section
+  for (let i = 1; i <= 7; i++) {
+    ctx.beginPath();
+    ctx.arc(xO - 10, yAxle, wheelRadiusY * (0.2 + i * 0.1), Math.PI * 1.6, Math.PI * 1.9);
+    ctx.stroke();
+  }
+  // Bottom pattern section
+  for (let i = 1; i <= 7; i++) {
+    ctx.beginPath();
+    ctx.arc(xO - 10, yAxle, wheelRadiusY * (0.2 + i * 0.1), Math.PI * 0.1, Math.PI * 0.4);
+    ctx.stroke();
+  }
+  
+  // Re-draw the axle part that goes through the wheel
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'black';
+  ctx.beginPath();
+  ctx.moveTo(xO - wheelThickness - 2, yAxle);
+  ctx.lineTo(xO, yAxle);
+  ctx.stroke();
+
+  // 5. Labels and Dimensions
+  ctx.fillStyle = 'black';
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 1.5;
+  ctx.font = 'italic 22px Times New Roman';
+
+  // Labels A, B, O
+  ctx.fillText('A', xA - 25, yAxle + 8);
+  ctx.fillText('B', xB + 10, yAxle + 8);
+  ctx.fillText('O', xO - 20, yAxle - 10);
+  
+  // Radius R
+  const rAngle = 1.25 * Math.PI; // Position for the radius line
+  const rLineEndX = xO + wheelRadiusX * Math.cos(rAngle);
+  const rLineEndY = yAxle + wheelRadiusY * Math.sin(rAngle);
+  ctx.beginPath();
+  ctx.moveTo(xO, yAxle);
+  ctx.lineTo(rLineEndX, rLineEndY);
+  ctx.stroke();
+  ctx.fillText('R', xO - 40, yAxle + 40);
+
+  // Dimension line for l
+  ctx.font = 'italic 22px Times New Roman';
+  const dimY = yAxle + 90;
+  ctx.lineWidth = 1;
+  // Vertical guides
+  ctx.beginPath();
+  ctx.moveTo(xA, yAxle + 5);
+  ctx.lineTo(xA, dimY + 5);
+  ctx.moveTo(xB, yAxle + 5);
+  ctx.lineTo(xB, dimY + 5);
+  ctx.stroke();
+  // Horizontal line with arrows
+  ctx.beginPath();
+  ctx.moveTo(xA, dimY);
+  ctx.lineTo(xB, dimY);
+  ctx.stroke();
+  drawArrowHead(ctx, xA, dimY, Math.PI, 10);
+  drawArrowHead(ctx, xB, dimY, 0, 10);
+  ctx.fillText('l', xO - 5, dimY + 25);
+
+  // 6. Rotation Arrow
+  ctx.lineWidth = 2;
+  const arrowRadius = wheelRadiusY * 0.95;
+  const startAngle = 1.1 * Math.PI;
+  const endAngle = 1.5 * Math.PI;
+  ctx.beginPath();
+  ctx.arc(xO - 15, yAxle, arrowRadius, startAngle, endAngle);
+  ctx.stroke();
+  
+  // Arrowhead for rotation
+  const headAngle = endAngle;
+  const headX = xO - 15 + arrowRadius * Math.cos(headAngle);
+  const headY = yAxle + arrowRadius * Math.sin(headAngle);
+  const tangentAngle = headAngle - Math.PI / 2; // Direction of motion
+  drawArrowHead(ctx, headX, headY, tangentAngle, 12);
+
+  // 7. Caption Text
+  ctx.fillStyle = 'black';
+  ctx.font = '24px "KaiTi", "STKaiti", serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('习题 3-25 图', canvas.width / 2, canvas.height - 20);
+
+</script>
+</body>
+</html>

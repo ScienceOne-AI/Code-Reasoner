@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>T-S Diagram for a Paramagnetic Substance</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="tsDiagram" width="650" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('tsDiagram');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const margin = { top: 60, right: 50, bottom: 60, left: 80 };
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const plotWidth = canvasWidth - margin.left - margin.right;
+        const plotHeight = canvasHeight - margin.top - margin.bottom;
+
+        const T_max = 1.2;
+        const SR_max = 2.0;
+
+        // --- Coordinate mapping functions ---
+        function mapX(sr) {
+            return margin.left + (sr / SR_max) * plotWidth;
+        }
+
+        function mapY(t) {
+            return margin.top + plotHeight - (t / T_max) * plotHeight;
+        }
+
+        // --- Drawing Functions ---
+
+        function drawAxesAndGrid() {
+            ctx.strokeStyle = '#000';
+            ctx.fillStyle = '#000';
+            ctx.lineWidth = 1.5;
+            ctx.font = '16px "Times New Roman"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Y-Axis (T)
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, margin.top + plotHeight);
+            ctx.stroke();
+
+            // X-Axis (S/R)
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top + plotHeight);
+            ctx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+            ctx.stroke();
+
+            // Y-Axis Ticks and Labels
+            const yTicks = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
+            yTicks.forEach(t => {
+                const y = mapY(t);
+                ctx.beginPath();
+                ctx.moveTo(margin.left - 5, y);
+                ctx.lineTo(margin.left, y);
+                ctx.stroke();
+                if (t > 0) {
+                    ctx.textAlign = 'right';
+                    ctx.fillText(t.toFixed(1), margin.left - 10, y);
+                }
+            });
+            ctx.fillText('0', margin.left - 10, mapY(0));
+            
+            // Y-Axis Title
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 20px "Times New Roman"';
+            ctx.translate(margin.left - 50, margin.top + plotHeight / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('T (K)', 0, 0);
+            ctx.restore();
+
+            // X-Axis Ticks and Labels
+            const xTicks = [0, 0.5, 1.0, 1.5, 2.0];
+            xTicks.forEach(sr => {
+                const x = mapX(sr);
+                ctx.beginPath();
+                ctx.moveTo(x, margin.top + plotHeight);
+                ctx.lineTo(x, margin.top + plotHeight + 5);
+                ctx.stroke();
+                if (sr > 0) {
+                    ctx.textAlign = 'center';
+                    ctx.fillText(sr.toFixed(1), x, margin.top + plotHeight + 20);
+                }
+            });
+
+            // X-Axis Title
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 20px "Times New Roman"';
+            ctx.fillText('S/R', margin.left + plotWidth / 2 + 100, margin.top + plotHeight + 40);
+
+
+            // Grid lines
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 0.5;
+            yTicks.slice(1).forEach(t => {
+                const y = mapY(t);
+                ctx.beginPath();
+                ctx.moveTo(margin.left, y);
+                ctx.lineTo(margin.left + plotWidth, y);
+                ctx.stroke();
+            });
+            xTicks.slice(1, -1).forEach(sr => {
+                const x = mapX(sr);
+                ctx.beginPath();
+                ctx.moveTo(x, margin.top);
+                ctx.lineTo(x, margin.top + plotHeight);
+                ctx.stroke();
+            });
+        }
+        
+        function drawCurve(points) {
+            if (points.length < 2) return;
+            ctx.beginPath();
+            ctx.moveTo(mapX(points[0][0]), mapY(points[0][1]));
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(mapX(points[i][0]), mapY(points[i][1]));
+            }
+            ctx.stroke();
+        }
+
+        function drawCurves() {
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#000';
+
+            const curves = {
+                "20kg": [[0,0], [0.1, 0.6], [0.2, 0.8], [0.26, 1.0], [0.3, 1.15]],
+                "15":   [[0,0], [0.2, 0.65], [0.3, 0.85], [0.36, 1.0], [0.43, 1.15]],
+                "10":   [[0,0], [0.3, 0.65], [0.4, 0.8], [0.5, 1.0], [0.6, 1.18]],
+                "7":    [[0,0], [0.4, 0.6], [0.55, 0.8], [0.7, 1.0], [0.82, 1.18]],
+                "5":    [[0,0], [0.55, 0.55], [0.75, 0.8], [0.9, 1.0], [1.05, 1.18]],
+                "4":    [[0,0], [0.65, 0.55], [0.9, 0.8], [1.1, 1.0], [1.28, 1.18]],
+                "3":    [[0,0], [0.75, 0.5], [1.05, 0.75], [1.3, 1.0], [1.5, 1.18]],
+                "2":    [[0,0], [0.95, 0.5], [1.3, 0.75], [1.55, 1.0], [1.75, 1.15]],
+                "H=0":  [[0,0], [0.5, 0.15], [1.35, 0.2], [1.5, 0.4], [1.6, 0.6], [1.7, 0.8], [1.8, 1.0], [1.85, 1.15]],
+                "unlabeled1": [[0,0], [1.2, 0.5], [1.5, 0.75], [1.7, 0.95], [1.8, 1.08]],
+                "unlabeled2": [[0,0], [1.5, 0.3], [1.7, 0.5], [1.85, 0.7]],
+                "unlabeled3": [[0,0], [1.7, 0.2], [1.8, 0.3], [1.9, 0.45]]
+            };
+
+            for (const key in curves) {
+                drawCurve(curves[key]);
+            }
+            
+            // Curve Labels
+            ctx.font = '16px "Times New Roman"';
+            ctx.fillStyle = '#000';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            
+            ctx.save();
+            ctx.translate(mapX(0.2), mapY(1.05));
+            ctx.rotate(-Math.PI / 3);
+            ctx.fillText("20 kg", 0, 0);
+            ctx.restore();
+
+            ctx.save();
+            ctx.translate(mapX(0.3), mapY(1.1));
+            ctx.rotate(-Math.PI / 3.5);
+            ctx.fillText("15", 0, 0);
+            ctx.restore();
+
+            ctx.fillText("10", mapX(0.55), mapY(1.0));
+            ctx.fillText("7", mapX(0.75), mapY(1.0));
+            ctx.fillText("5", mapX(0.95), mapY(0.95));
+            ctx.fillText("4", mapX(1.15), mapY(0.8));
+            ctx.fillText("3", mapX(1.35), mapY(0.7));
+            ctx.fillText("2", mapX(1.55), mapY(0.6));
+            ctx.fillText("H=0", mapX(1.0), mapY(0.1));
+        }
+
+        function drawPathElements() {
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#000';
+            ctx.fillStyle = '#000';
+
+            // Points A, B, C, D
+            const A = { sr: 0.5, t: 1.0 };
+            const B = { sr: 0.45, t: 0.2 };
+            const C = { sr: 1.35, t: 0.2 };
+            const D = { sr: 1.3, t: 1.0 };
+
+            // Point labels
+            ctx.font = 'bold 18px "Times New Roman"';
+            ctx.textAlign = 'center';
+            ctx.fillText('A', mapX(A.sr), mapY(A.t + 0.05));
+            ctx.fillText('B', mapX(B.sr + 0.1), mapY(B.t - 0.05));
+            ctx.fillText('C', mapX(C.sr + 0.1), mapY(C.t + 0.05));
+            ctx.fillText('D', mapX(D.sr - 0.05), mapY(D.t - 0.1));
+
+            // Vertical line from A
+            const p1 = { sr: A.sr, t: 0.6 };
+            ctx.beginPath();
+            ctx.moveTo(mapX(A.sr), mapY(A.t));
+            ctx.lineTo(mapX(p1.sr), mapY(p1.t));
+            ctx.stroke();
+
+            // Dot at the end of the line
+            ctx.beginPath();
+            ctx.arc(mapX(p1.sr), mapY(p1.t), 3, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Arrow on the vertical line
+            const arrowY = mapY(0.75);
+            const arrowX = mapX(A.sr);
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX - 5, arrowY - 5);
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX + 5, arrowY - 5);
+            ctx.stroke();
+            
+            // Horizontal line from B to C
+            ctx.beginPath();
+            ctx.moveTo(mapX(B.sr), mapY(B.t));
+            ctx.lineTo(mapX(C.sr), mapY(C.t));
+            ctx.stroke();
+        }
+        
+        function drawFigureLabel() {
+            ctx.font = '18px "Times New Roman"';
+            ctx.fillStyle = '#000';
+            ctx.textAlign = 'center';
+            ctx.fillText('Fig. 1.24.', canvasWidth / 2, canvasHeight - 20);
+        }
+
+        // --- Main Drawing ---
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        drawAxesAndGrid();
+        drawCurves();
+        drawPathElements();
+        drawFigureLabel();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Optical Path Diagram</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    canvas {
+        border: 1px solid #ccc;
+        background-color: white;
+    }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="420"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// Style settings
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = 1.5;
+ctx.font = 'bold 18px "Times New Roman", serif';
+
+// --- Helper Functions ---
+
+// Draws a single-headed arrow
+function drawArrow(fromX, fromY, toX, toY) {
+    const headlen = 8;
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+}
+
+// Draws a dimension line with arrowheads at both ends (for 'l')
+function drawDoubleArrowDim(x1, y1, x2, y2, label) {
+    const headlen = 6;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    // Left arrowhead
+    const angleL = Math.atan2(y1 - y2, x1 - x2);
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - headlen * Math.cos(angleL - Math.PI / 6), y1 - headlen * Math.sin(angleL - Math.PI / 6));
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - headlen * Math.cos(angleL + Math.PI / 6), y1 - headlen * Math.sin(angleL + Math.PI / 6));
+    // Right arrowhead
+    const angleR = Math.atan2(y2 - y1, x2 - x1);
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angleR - Math.PI / 6), y2 - headlen * Math.sin(angleR - Math.PI / 6));
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - headlen * Math.cos(angleR + Math.PI / 6), y2 - headlen * Math.sin(angleR + Math.PI / 6));
+    ctx.stroke();
+
+    // Label
+    ctx.save();
+    ctx.font = 'italic 18px "Times New Roman", serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, (x1 + x2) / 2, y1 - 8);
+    ctx.restore();
+}
+
+// Draws a dimension line with perpendicular ticks at the ends (for 'd')
+function drawTickDim(x1, y1, x2, y2, label) {
+    const tickLength = 5;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.moveTo(x1 - tickLength, y1);
+    ctx.lineTo(x1 + tickLength, y1);
+    ctx.moveTo(x2 - tickLength, y2);
+    ctx.lineTo(x2 + tickLength, y2);
+    ctx.stroke();
+
+    // Label
+    ctx.save();
+    ctx.font = 'italic 18px "Times New Roman", serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x1 + 10, (y1 + y2) / 2);
+    ctx.restore();
+}
+
+// --- Main drawing logic ---
+const opticalAxisY = 200;
+
+// 1. Light source text and arrows
+ctx.textAlign = 'left';
+ctx.font = 'bold 18px "Times New Roman", serif';
+ctx.fillText('light', 50, 60);
+ctx.fillText('Polarized', 50, 85);
+ctx.fillText('at 45° to', 50, 110);
+ctx.fillText('z-direction', 50, 135);
+
+const arrowYPositions = [opticalAxisY - 40, opticalAxisY - 20, opticalAxisY, opticalAxisY + 20, opticalAxisY + 40];
+const arrowStartX = 50;
+const arrowEndX = 180;
+arrowYPositions.forEach(y => {
+    drawArrow(arrowStartX, y, arrowEndX, y);
+});
+
+// 2. Kerr Cell
+const kerrCellX = 220;
+const kerrCellWidth = 40;
+const kerrCellHeight = 60;
+const kerrCellTop = opticalAxisY - kerrCellHeight / 2; // 170
+const kerrCellBottom = opticalAxisY + kerrCellHeight / 2; // 230
+
+ctx.beginPath();
+ctx.rect(kerrCellX, kerrCellTop, kerrCellWidth, kerrCellHeight);
+ctx.moveTo(kerrCellX, opticalAxisY);
+ctx.lineTo(kerrCellX + kerrCellWidth, opticalAxisY);
+ctx.stroke();
+
+// Label 'l' for Kerr cell length
+drawDoubleArrowDim(kerrCellX, kerrCellTop - 15, kerrCellX + kerrCellWidth, kerrCellTop - 15, 'l');
+
+// Content of Kerr Cell
+ctx.textAlign = 'center';
+ctx.font = '18px "Times New Roman", serif';
+// Top part
+ctx.fillText('E', kerrCellX + kerrCellWidth / 2, kerrCellTop + 18);
+drawArrow(kerrCellX + kerrCellWidth / 2, kerrCellTop + 28, kerrCellX + kerrCellWidth / 2, kerrCellTop + 16);
+// Bottom part
+ctx.fillText('E=0', kerrCellX + kerrCellWidth / 2, opticalAxisY + 20);
+
+// Label "kerr cell"
+ctx.font = '18px "Times New Roman", serif';
+ctx.fillText('kerr', kerrCellX + kerrCellWidth / 2, kerrCellBottom + 25);
+ctx.fillText('cell', kerrCellX + kerrCellWidth / 2, kerrCellBottom + 45);
+
+// 3. Slits
+const slitX = 300;
+const slitOpeningHeight = kerrCellHeight;
+const slitTopY = opticalAxisY - slitOpeningHeight / 2; // 170
+const slitBottomY = opticalAxisY + slitOpeningHeight / 2; // 230
+
+ctx.beginPath();
+ctx.moveTo(slitX, 50);
+ctx.lineTo(slitX, slitTopY);
+ctx.moveTo(slitX, slitBottomY);
+ctx.lineTo(slitX, 350);
+ctx.stroke();
+
+// Label 'd' for slit opening
+drawTickDim(slitX + 15, slitTopY, slitX + 15, slitBottomY, 'd');
+
+// Label "slits"
+ctx.fillText('slits', slitX, slitBottomY + 30);
+
+// 4. Propagation line from slits to screen
+const screenX = 620;
+ctx.beginPath();
+ctx.moveTo(slitX + 1, opticalAxisY);
+ctx.lineTo(screenX, opticalAxisY);
+ctx.stroke();
+
+// 5. Screen
+ctx.beginPath();
+ctx.moveTo(screenX, 50);
+ctx.lineTo(screenX, 350);
+ctx.stroke();
+ctx.fillText('screen', screenX, 370);
+
+// 6. Coordinate System
+const coordOriginX = 680;
+const coordOriginY = 130;
+const axisLength = 70;
+ctx.font = 'italic bold 18px "Times New Roman", serif';
+// z-axis
+drawArrow(coordOriginX, coordOriginY, coordOriginX + axisLength, coordOriginY);
+ctx.fillText('z', coordOriginX + axisLength + 10, coordOriginY + 5);
+// x-axis
+drawArrow(coordOriginX, coordOriginY, coordOriginX, coordOriginY - axisLength);
+ctx.fillText('x', coordOriginX - 5, coordOriginY - axisLength - 10);
+
+// 7. Figure Caption
+ctx.font = '18px "Times New Roman", serif';
+ctx.textAlign = 'center';
+ctx.fillText('Fig. 2.80', 450, 400);
+
+</script>
+</body>
+</html>

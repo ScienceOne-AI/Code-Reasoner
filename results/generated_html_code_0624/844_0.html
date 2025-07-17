@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Waveform Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="550" height="400" style="border:1px solid #000;"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const origin = { x: 80, y: 200 };
+    const scale = { x: 9, y: 12 };
+
+    // --- Coordinate Transformation Functions ---
+    function toCanvasX(x) {
+        return origin.x + x * scale.x;
+    }
+    function toCanvasY(y) {
+        return origin.y - y * scale.y;
+    }
+
+    // --- Drawing Helper Functions ---
+    function drawArrow(x1, y1, x2, y2, size = 8) {
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        
+        ctx.save();
+        ctx.translate(x2, y2);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawDoubleArrow(x1, y1, x2, y2, size = 8) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+
+        // Arrowhead at (x2, y2)
+        ctx.save();
+        ctx.translate(x2, y2);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.stroke();
+        ctx.restore();
+        
+        // Arrowhead at (x1, y1)
+        ctx.save();
+        ctx.translate(x1, y1);
+        ctx.rotate(angle + Math.PI);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Main Drawing Functions ---
+    function drawAxes() {
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '16px "Times New Roman"';
+        ctx.lineWidth = 1;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // X-axis
+        drawArrow(toCanvasX(-8), toCanvasY(0), toCanvasX(50), toCanvasY(0));
+        ctx.fillText('x/cm', toCanvasX(50), toCanvasY(0) + 20);
+
+        // Y-axis
+        drawArrow(toCanvasX(0), toCanvasY(-15), toCanvasX(0), toCanvasY(15));
+        ctx.fillText('y/cm', toCanvasX(0) - 30, toCanvasY(15));
+        
+        // Origin
+        ctx.fillText('0', toCanvasX(0) - 10, toCanvasY(0) + 10);
+
+        // Ticks and labels
+        ctx.textAlign = 'right';
+        ctx.fillText('10', toCanvasX(0) - 5, toCanvasY(10));
+        ctx.fillText('-5', toCanvasX(0) - 5, toCanvasY(-5));
+    }
+
+    function drawWave() {
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+
+        const A = 10;
+        const lambda = 40;
+        const k = Math.PI * 2 / lambda;
+        // From problem analysis, snapshot can be described by y = 10*sin(k*(x - 10/3))
+        // x_0 where y=0 is 10/3
+        const phaseShiftX = 10 / 3;
+
+        ctx.beginPath();
+        for (let x = -2; x <= 48; x += 0.1) {
+            const y = A * Math.sin(k * (x - phaseShiftX));
+            if (x === -2) {
+                ctx.moveTo(toCanvasX(x), toCanvasY(y));
+            } else {
+                ctx.lineTo(toCanvasX(x), toCanvasY(y));
+            }
+        }
+        ctx.stroke();
+    }
+
+    function drawAnnotations() {
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1;
+        
+        // --- Dashed line for amplitude ---
+        const x_peak = 10 / 3 + 40 / 4; // x_0 + lambda/4
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(toCanvasX(0), toCanvasY(10));
+        ctx.lineTo(toCanvasX(x_peak), toCanvasY(10));
+        ctx.stroke();
+        ctx.restore();
+
+        // --- Point P ---
+        const x_p = 10 / 3 + 20; // x_0 + lambda/2
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText('P', toCanvasX(x_p) + 10, toCanvasY(0) - 10);
+
+        // --- Distance marker "20" ---
+        const x_start = 10 / 3;
+        const x_end = 10 / 3 + 20;
+        const y_level = 5;
+        
+        ctx.beginPath();
+        ctx.moveTo(toCanvasX(x_start), toCanvasY(0));
+        ctx.lineTo(toCanvasX(x_start), toCanvasY(y_level));
+        ctx.moveTo(toCanvasX(x_end), toCanvasY(0));
+        ctx.lineTo(toCanvasX(x_end), toCanvasY(y_level));
+        ctx.stroke();
+
+        drawDoubleArrow(toCanvasX(x_start), toCanvasY(y_level), toCanvasX(x_end), toCanvasY(y_level));
+        
+        ctx.font = '16px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.fillText('20', toCanvasX((x_start + x_end) / 2), toCanvasY(y_level) - 15);
+
+        // --- Propagation velocity u ---
+        ctx.font = 'italic 16px "Times New Roman"';
+        drawArrow(toCanvasX(5), toCanvasY(14), toCanvasX(15), toCanvasY(14));
+        drawArrow(toCanvasX(5), toCanvasY(12), toCanvasX(12), toCanvasY(12));
+        ctx.fillText('u', toCanvasX(10), toCanvasY(15) - 5);
+        
+        // --- Bottom label ---
+        ctx.font = '18px "SimSun"';
+        ctx.textAlign = 'center';
+        ctx.fillText('习题 11-5 图', canvas.width / 2, canvas.height - 20);
+    }
+
+    // --- Clear and Draw Everything ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawAxes();
+    drawWave();
+    drawAnnotations();
+
+</script>
+</body>
+</html>

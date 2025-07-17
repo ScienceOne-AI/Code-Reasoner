@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="800" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper Functions ---
+
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        function drawResistor(x, y, width, height, label, labelPos = 'right') {
+            ctx.strokeRect(x - width / 2, y - height / 2, width, height);
+            ctx.beginPath();
+            if (labelPos === 'right') {
+                ctx.textAlign = 'left';
+                ctx.fillText(label, x + width / 2 + 5, y);
+            } else if (labelPos === 'left') {
+                ctx.textAlign = 'right';
+                ctx.fillText(label, x - width / 2 - 5, y);
+            } else if (labelPos === 'top') {
+                ctx.textAlign = 'center';
+                ctx.fillText(label, x, y - height / 2 - 10);
+            } else if (labelPos === 'bottom') {
+                 ctx.textAlign = 'center';
+                ctx.fillText(label, x, y + height / 2 + 10);
+            }
+            ctx.textAlign = 'center'; // Reset
+        }
+        
+        function drawThermistor(x, y, width, height, label) {
+            ctx.strokeRect(x - width / 2, y - height / 2, width, height);
+            drawLine(x - width / 2 - 4, y + height / 2 + 4, x + width / 2 + 4, y - height / 2 - 4);
+            ctx.textAlign = 'center';
+            ctx.fillText(label, x, y - height / 2 - 12);
+        }
+
+        function drawBattery(x, y, label) {
+            const shortLen = 10;
+            const longLen = 20;
+            const gap = 8;
+            drawLine(x, y - 25, x, y - gap/2); // Top wire
+            drawLine(x - shortLen, y + gap/2, x + shortLen, y + gap/2); // Short line (-)
+            drawLine(x - longLen, y - gap/2, x + longLen, y - gap/2); // Long line (+)
+            drawLine(x, y + gap/2, x, y + 25); // Bottom wire
+
+            ctx.textAlign = 'right';
+            ctx.fillText(label, x - longLen - 5, y);
+            ctx.textAlign = 'center'; // Reset
+        }
+        
+        function drawOpAmp(x_in, y_inv, y_noninv, tip_x) {
+            const y_mid = (y_inv + y_noninv) / 2;
+            const tri_h = Math.abs(y_noninv - y_inv) * 1.5;
+            
+            ctx.beginPath();
+            ctx.moveTo(x_in, y_mid - tri_h / 2);
+            ctx.lineTo(tip_x, y_mid);
+            ctx.lineTo(x_in, y_mid + tri_h / 2);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Input connections
+            drawLine(x_in, y_inv, x_in - 20, y_inv); // Inverting
+            drawLine(x_in, y_noninv, x_in - 20, y_noninv); // Non-inverting
+            
+            // +/- symbols
+            ctx.font = '20px Arial';
+            ctx.fillText('-', x_in + 12, y_inv);
+            ctx.fillText('+', x_in + 12, y_noninv);
+            ctx.font = '16px Arial'; // Reset font
+        }
+        
+        function drawVoltmeter(x, y, radius) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.fillText('V', x, y);
+        }
+
+        function drawGround(x, y) {
+            drawLine(x, y, x, y + 15);
+            drawLine(x - 20, y + 15, x + 20, y + 15);
+            drawLine(x - 12, y + 22, x + 12, y + 22);
+            drawLine(x - 6, y + 29, x + 6, y + 29);
+        }
+
+        function drawDot(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        // --- Main Drawing Logic ---
+        
+        // Coordinates
+        const x_batt = 100;
+        const x_divider = 220;
+        const x_input_res = 330;
+        const x_opamp_in = 480;
+        const x_opamp_tip = 580;
+        const x_output = 680;
+        
+        const y_top = 100;
+        const y_q = 220;
+        const y_opamp_inv = 220;
+        const y_opamp_noninv = 300;
+        const y_voltmeter = 370;
+        const y_gnd = 450;
+        
+        // Draw Ground Line
+        drawLine(x_batt, y_gnd, x_output, y_gnd);
+        drawGround(450, y_gnd);
+        
+        // Left side: Voltage Source and Divider
+        drawBattery(x_batt, 275, '1.5 V');
+        drawLine(x_batt, 100, x_batt, 250); // Top wire from battery
+        drawLine(x_batt, 300, x_batt, y_gnd); // Bottom wire to ground
+        
+        drawLine(x_batt, 100, x_divider, 100); // Wire to divider
+        drawResistor(x_divider, 160, 30, 80, '110 Ω');
+        drawLine(x_divider, 100, x_divider, 120);
+        drawLine(x_divider, 200, x_divider, y_q);
+        
+        drawDot(x_divider, y_q);
+        ctx.textAlign = 'left';
+        ctx.fillText('Q', x_divider + 8, y_q - 8);
+
+        drawResistor(x_divider, 320, 30, 80, '40 Ω');
+        drawLine(x_divider, y_q, x_divider, 280);
+        drawLine(x_divider, 360, x_divider, y_gnd);
+        
+        // Op-Amp and its connections
+        drawLine(x_divider, y_q, x_input_res - 40, y_q);
+        drawResistor(x_input_res, y_q, 80, 30, '150 kΩ', 'top');
+        drawLine(x_input_res + 40, y_q, x_opamp_in - 20, y_q);
+        
+        drawDot(x_opamp_in - 20, y_q);
+        ctx.textAlign = 'center';
+        ctx.fillText('P', x_opamp_in - 20, y_q - 15);
+        
+        drawOpAmp(x_opamp_in, y_opamp_inv, y_opamp_noninv, x_opamp_tip);
+        
+        // Non-inverting input to ground
+        drawLine(x_opamp_in - 20, y_opamp_noninv, 400, y_opamp_noninv);
+        drawLine(400, y_opamp_noninv, 400, y_gnd);
+        drawDot(400, y_gnd);
+        
+        // Feedback loop
+        const y_feedback = y_top;
+        drawLine(x_opamp_in - 20, y_q, x_opamp_in - 20, y_feedback); // Wire up from P
+        drawLine(x_opamp_in - 20, y_feedback, x_opamp_tip + 100, y_feedback); // Top horizontal wire
+        
+        drawResistor(520, y_feedback, 80, 30, '100 kΩ', 'top');
+        drawThermistor(630, y_feedback, 40, 30, 'T');
+        
+        const y_output = (y_opamp_inv + y_opamp_noninv) / 2;
+        drawLine(x_opamp_tip + 100, y_feedback, x_opamp_tip + 100, y_output); // Wire down to output
+        drawLine(x_opamp_tip, y_output, x_opamp_tip + 100, y_output); // Wire from op-amp tip
+        
+        drawDot(x_opamp_tip + 100, y_output);
+        
+        // Output voltmeter
+        drawLine(x_opamp_tip + 100, y_output, x_output, y_output);
+        drawLine(x_output, y_output, x_output, y_voltmeter - 25);
+        drawVoltmeter(x_output, y_voltmeter, 25);
+        drawLine(x_output, y_voltmeter + 25, x_output, y_gnd);
+        
+        // Figure caption
+        ctx.font = 'bold 16px Arial';
+        ctx.fillText('Fig. 8.1', canvas.width / 2, 520);
+
+    </script>
+</body>
+</html>

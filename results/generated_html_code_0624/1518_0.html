@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Graph of Bouncing</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="350"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style and setup
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+
+        // Coordinate system parameters
+        const originX = 50;
+        const originY = 300;
+        const axisWidth = 630;
+        const axisHeight = 250;
+
+        // Scaling factors
+        // Time (t) axis: max value shown is around 2/3 s. Let's scale up to 0.8s.
+        const tMax = 0.8;
+        const scaleX = axisWidth / tMax;
+
+        // Height (h) axis: max value is 0.09m. Let's scale up to 0.12m.
+        const hMax = 0.12;
+        const scaleY = axisHeight / hMax;
+
+        // Coordinate transformation functions
+        function x(t) {
+            return originX + t * scaleX;
+        }
+
+        function y(h) {
+            return originY - h * scaleY;
+        }
+        
+        // Helper function to draw fractions
+        function drawFraction(numerator, denominator, xPos, yPos) {
+            const originalAlign = ctx.textAlign;
+            const originalBaseline = ctx.textBaseline;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const numStr = String(numerator);
+            const denStr = String(denominator);
+            const numWidth = ctx.measureText(numStr).width;
+            const denWidth = ctx.measureText(denStr).width;
+            const maxWidth = Math.max(numWidth, denWidth);
+            
+            const fontSize = 20;
+            const lineHeight = 2;
+            const yOffset = fontSize * 0.4;
+
+            // Numerator
+            ctx.fillText(numStr, xPos, yPos - yOffset);
+            // Denominator
+            ctx.fillText(denStr, xPos, yPos + yOffset);
+            // Fraction line
+            ctx.beginPath();
+            ctx.moveTo(xPos - maxWidth / 2 - 3, yPos);
+            ctx.lineTo(xPos + maxWidth / 2 + 3, yPos);
+            ctx.stroke();
+
+            ctx.textAlign = originalAlign;
+            ctx.textBaseline = originalBaseline;
+        }
+
+        // --- Drawing Start ---
+
+        // 1. Draw Axes
+        ctx.beginPath();
+        // H-axis
+        ctx.moveTo(originX, originY + 10);
+        ctx.lineTo(originX, originY - axisHeight - 10);
+        ctx.lineTo(originX - 5, originY - axisHeight);
+        ctx.moveTo(originX, originY - axisHeight - 10);
+        ctx.lineTo(originX + 5, originY - axisHeight);
+        // T-axis
+        ctx.moveTo(originX - 10, originY);
+        ctx.lineTo(originX + axisWidth + 10, originY);
+        ctx.lineTo(originX + axisWidth, originY - 5);
+        ctx.moveTo(originX + axisWidth + 10, originY);
+        ctx.lineTo(originX + axisWidth, originY + 5);
+        ctx.stroke();
+
+        // 2. Draw Axis Labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText('h', originX, originY - axisHeight - 15);
+        ctx.fillText('t', originX + axisWidth + 20, originY + 8);
+        ctx.fillText('O', originX - 15, originY + 20);
+
+        // 3. Draw the curves
+        const h_peak = 0.09;
+
+        // First jump: t from 0 to 4/15
+        const t1_start = 0;
+        const t1_end = 4 / 15;
+        const t1_peak = (t1_start + t1_end) / 2;
+        ctx.beginPath();
+        ctx.moveTo(x(t1_start), y(0));
+        ctx.quadraticCurveTo(x(t1_peak), y(h_peak), x(t1_end), y(0));
+        ctx.stroke();
+
+        // Second jump: t from 1/3 to 9/15
+        const t2_start = 1 / 3; // 5/15
+        const t2_end = 9 / 15;
+        const t2_peak = (t2_start + t2_end) / 2; // 7/15
+        ctx.beginPath();
+        ctx.moveTo(x(t2_start), y(0));
+        ctx.quadraticCurveTo(x(t2_peak), y(h_peak), x(t2_end), y(0));
+        ctx.stroke();
+        
+        // Third jump (partial): t starts from 2/3
+        const t3_start = 2 / 3; // 10/15
+        const jump_duration = 4 / 15;
+        const t3_end_full = t3_start + jump_duration; // 14/15
+        const t3_peak = (t3_start + t3_end_full) / 2; // 12/15
+        const t3_end_partial = t3_start + jump_duration * 0.4; // Draw up to this time
+        
+        // Parabola equation for the jump: h(t) = -k(t - t_peak)^2 + h_peak
+        // Find k using h(t_start) = 0: 0 = -k(t3_start - t3_peak)^2 + h_peak
+        const k = h_peak / Math.pow(t3_start - t3_peak, 2);
+
+        ctx.beginPath();
+        ctx.moveTo(x(t3_start), y(0));
+        for (let t = t3_start; t < t3_end_partial; t += 0.001) {
+             const h = -k * Math.pow(t - t3_peak, 2) + h_peak;
+             ctx.lineTo(x(t), y(h));
+        }
+        ctx.stroke();
+
+        // 4. Draw labels and markings
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+
+        // Max height label and line
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(originX, y(h_peak));
+        ctx.lineTo(x(t1_peak), y(h_peak));
+        ctx.stroke();
+        ctx.restore();
+        
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('0.09m', originX - 10, y(h_peak));
+
+        // Time labels
+        const labelY = originY + 15;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        
+        drawFraction(4, 15, x(4/15), labelY + 10);
+        ctx.fillText('s', x(4/15) + 28, labelY + 10);
+
+        drawFraction(1, 3, x(1/3), labelY + 10);
+        ctx.fillText('s', x(1/3) + 20, labelY + 10);
+        
+        drawFraction(9, 15, x(9/15), labelY + 10);
+        ctx.fillText('s', x(9/15) + 28, labelY + 10);
+        
+        drawFraction(2, 3, x(2/3), labelY + 10);
+        ctx.fillText('s', x(2/3) + 20, labelY + 10);
+
+    </script>
+</body>
+</html>

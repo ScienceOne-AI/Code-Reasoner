@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Induction Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="480"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Helper function to draw an arrow
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    // Helper function to draw a dimension line with vertical ticks
+    function drawDimLineWithTicks(ctx, x1, x2, y, label) {
+        ctx.beginPath();
+        // Horizontal line
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x2, y);
+        // Ticks
+        ctx.moveTo(x1, y - 4);
+        ctx.lineTo(x1, y + 4);
+        ctx.moveTo(x2, y - 4);
+        ctx.lineTo(x2, y + 4);
+        ctx.stroke();
+        // Label
+        ctx.fillText(label, (x1 + x2) / 2, y + 15);
+    }
+    
+    // --- Main Drawing ---
+    
+    // General styles
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.font = '16px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Define coordinates and scale
+    const scale = 320; // pixels per meter
+    const origin = { x: 120, y: 220 };
+    
+    // 1. Draw the long straight wire
+    const wireWidth = 18;
+    ctx.fillStyle = '#D3D3D3'; // Light gray fill for the wire
+    ctx.fillRect(origin.x - wireWidth / 2, 40, wireWidth, 360);
+    ctx.strokeRect(origin.x - wireWidth / 2, 40, wireWidth, 360);
+    
+    // Dashed lines for the infinite wire
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(origin.x, 40);
+    ctx.lineTo(origin.x, 20);
+    ctx.moveTo(origin.x, 400);
+    ctx.lineTo(origin.x, 420);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid lines
+
+    // 2. Draw the current arrow (I)
+    ctx.lineWidth = 1.5;
+    drawArrow(ctx, origin.x - 40, 180, origin.x - 40, 120);
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.fillText('I', origin.x - 40, 195);
+    ctx.font = '16px "Times New Roman"';
+    ctx.lineWidth = 1;
+
+    // 3. Draw the x-axis and the rod AB
+    const rodY = origin.y;
+    const rodHeight = 8;
+    const distOA = 0.1 * scale;
+    const lenAB = 1.0 * scale;
+    const xA = origin.x + distOA;
+    const xB = xA + lenAB;
+
+    // x-axis line
+    drawArrow(ctx, origin.x, rodY, xB + 80, rodY);
+    ctx.font = 'italic 18px "Times New Roman"';
+    ctx.fillText('x', xB + 95, rodY);
+    ctx.font = '16px "Times New Roman"';
+
+    // Rod AB
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(xA, rodY - rodHeight / 2, lenAB, rodHeight);
+    ctx.lineWidth = 1;
+    
+    // Labels for O, A, B
+    ctx.fillText('O', origin.x, rodY + 20);
+    ctx.fillText('A', xA, rodY - 20);
+    ctx.fillText('B', xB, rodY - 20);
+
+    // 4. Draw dimension lines
+    const dimY = rodY + 40;
+    // Dashed vertical connectors
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(origin.x, rodY);
+    ctx.lineTo(origin.x, dimY);
+    ctx.moveTo(xA, rodY + rodHeight / 2);
+    ctx.lineTo(xA, dimY);
+    ctx.moveTo(xB, rodY + rodHeight / 2);
+    ctx.lineTo(xB, dimY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Horizontal dimension lines with labels
+    drawDimLineWithTicks(ctx, origin.x, xA, dimY, '0.1m');
+    drawDimLineWithTicks(ctx, xA, xB, dimY, '1.0m');
+
+    // 5. Draw the velocity vector (v)
+    const vX = xA + lenAB * 0.4;
+    ctx.lineWidth = 1.5;
+    drawArrow(ctx, vX, rodY - 80, vX, rodY - 140);
+    ctx.font = 'italic 20px "Times New Roman"';
+    ctx.fillText('v', vX + 15, rodY - 110);
+    ctx.font = '16px "Times New Roman"';
+    ctx.lineWidth = 1;
+
+    // 6. Draw the dx element
+    const dx_center_x = xA + lenAB * 0.6;
+    const dx_width = 25;
+    const dx_dim_y = rodY - 25;
+    
+    // Vertical lines on the rod
+    ctx.beginPath();
+    ctx.moveTo(dx_center_x - dx_width / 2, rodY - rodHeight / 2);
+    ctx.lineTo(dx_center_x - dx_width / 2, rodY + rodHeight / 2);
+    ctx.moveTo(dx_center_x + dx_width / 2, rodY - rodHeight / 2);
+    ctx.lineTo(dx_center_x + dx_width / 2, rodY + rodHeight / 2);
+    ctx.stroke();
+    
+    // Dimension line with arrows for dx
+    ctx.beginPath();
+    // left arrow
+    ctx.moveTo(dx_center_x - dx_width / 2 + 6, dx_dim_y - 3);
+    ctx.lineTo(dx_center_x - dx_width / 2, dx_dim_y);
+    ctx.lineTo(dx_center_x - dx_width / 2 + 6, dx_dim_y + 3);
+    // right arrow
+    ctx.moveTo(dx_center_x + dx_width / 2 - 6, dx_dim_y - 3);
+    ctx.lineTo(dx_center_x + dx_width / 2, dx_dim_y);
+    ctx.lineTo(dx_center_x + dx_width / 2 - 6, dx_dim_y + 3);
+    // line
+    ctx.moveTo(dx_center_x - dx_width / 2, dx_dim_y);
+    ctx.lineTo(dx_center_x + dx_width / 2, dx_dim_y);
+    ctx.stroke();
+    ctx.fillText('dx', dx_center_x, dx_dim_y - 12);
+
+    // 7. Draw the caption
+    ctx.font = '20px "SimSun", "STSong"';
+    ctx.fillText('题 5 图', 300, 450);
+
+</script>
+</body>
+</html>

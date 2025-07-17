@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Semiconductor Density of States</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="600" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  // Global style settings
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 2;
+  const handDrawnFont = '"Comic Sans MS", cursive, sans-serif';
+
+  // --- Helper Functions ---
+
+  // Draws an arrowhead at a given point and angle
+  function drawArrowHead(x, y, angle, headlen = 10) {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - headlen * Math.cos(angle - Math.PI / 6), y - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - headlen * Math.cos(angle + Math.PI / 6), y - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+  }
+
+  // Creates a path for a rounded rectangle
+  function roundedRectPath(x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  }
+
+  // --- Main Drawing ---
+
+  // Axes
+  const axisOriginX = 80;
+  const axisOriginY = 380;
+  const axisXEnd = 560;
+  const axisYEnd = 80;
+
+  // Y-axis (N(E))
+  ctx.beginPath();
+  ctx.moveTo(axisOriginX, axisOriginY);
+  ctx.lineTo(axisOriginX, axisYEnd);
+  ctx.stroke();
+  drawArrowHead(axisOriginX, axisYEnd, -Math.PI / 2);
+  ctx.font = `24px ${handDrawnFont}`;
+  ctx.textAlign = 'center';
+  ctx.fillText('N(E)', axisOriginX - 40, axisYEnd + 10);
+  
+  // X-axis (E)
+  ctx.beginPath();
+  ctx.moveTo(axisOriginX, axisOriginY);
+  ctx.lineTo(axisXEnd, axisOriginY);
+  ctx.stroke();
+  drawArrowHead(axisXEnd, axisOriginY, 0);
+  ctx.fillText('E', axisXEnd + 20, axisOriginY + 8);
+  
+  // Band parameters
+  const bandY = 270;
+  const bandHeight = 100;
+  const bandRadius = 15;
+  const vbX = 120;
+  const vbWidth = 120;
+  const cbX = 350;
+  const cbWidth = 120;
+  
+  // --- Valence Band ---
+  ctx.save();
+  roundedRectPath(vbX, bandY, vbWidth, bandHeight, bandRadius);
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Hatching for Valence Band
+  ctx.clip(); // Clip to the rounded rect path
+  ctx.lineWidth = 1.5;
+  const hatchSpacing = 8;
+  for (let i = vbX - bandHeight; i < vbX + vbWidth; i += hatchSpacing) {
+    ctx.beginPath();
+    ctx.moveTo(i, bandY);
+    ctx.lineTo(i + bandHeight, bandY + bandHeight);
+    ctx.stroke();
+  }
+  ctx.restore();
+  ctx.lineWidth = 2; // Reset line width
+
+  // Valence Band Labels
+  ctx.font = `22px ${handDrawnFont}`;
+  ctx.fillText('Valence', vbX + vbWidth / 2, 220);
+  ctx.fillText('band', vbX + vbWidth / 2, 245);
+  // Arrow
+  ctx.beginPath();
+  ctx.moveTo(vbX + vbWidth / 2, 255);
+  ctx.lineTo(vbX + vbWidth / 2, 270);
+  ctx.stroke();
+  drawArrowHead(vbX + vbWidth / 2, 270, Math.PI / 2, 8);
+  
+  // Energy Label
+  ctx.font = `20px ${handDrawnFont}`;
+  ctx.fillText('-6.5 eV', 210, 405);
+  ctx.beginPath();
+  ctx.moveTo(210, 380);
+  ctx.lineTo(210, 370);
+  ctx.stroke();
+
+  // --- Conduction Band ---
+  roundedRectPath(cbX, bandY, cbWidth, bandHeight, bandRadius);
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  
+  // Conduction Band Labels
+  ctx.font = `22px ${handDrawnFont}`;
+  ctx.fillText('Conduction', cbX + cbWidth / 2, 220);
+  ctx.fillText('band', cbX + cbWidth / 2, 245);
+  // Arrow
+  ctx.beginPath();
+  ctx.moveTo(cbX + cbWidth / 2, 255);
+  ctx.lineTo(cbX + cbWidth / 2, 270);
+  ctx.stroke();
+  drawArrowHead(cbX + cbWidth / 2, 270, Math.PI / 2, 8);
+
+  // Energy Label
+  ctx.font = `20px ${handDrawnFont}`;
+  ctx.fillText('-3 eV', 370, 405);
+  ctx.beginPath();
+  ctx.moveTo(370, 380);
+  ctx.lineTo(370, 370);
+  ctx.stroke();
+
+  // --- Band Gap ---
+  const gapY = 340;
+  const gapStartX = vbX + vbWidth;
+  const gapEndX = cbX;
+  const gapMidX = (gapStartX + gapEndX) / 2;
+
+  // Horizontal line with ticks and arrows
+  ctx.beginPath();
+  ctx.moveTo(gapStartX, gapY);
+  ctx.lineTo(gapEndX, gapY);
+  ctx.moveTo(gapStartX, gapY - 10);
+  ctx.lineTo(gapStartX, gapY + 10);
+  ctx.moveTo(gapEndX, gapY - 10);
+  ctx.lineTo(gapEndX, gapY + 10);
+  ctx.stroke();
+  drawArrowHead(gapStartX, gapY, Math.PI, 8);
+  drawArrowHead(gapEndX, gapY, 0, 8);
+
+  // Label
+  ctx.fillStyle = 'white'; // Clear space for text
+  ctx.fillRect(gapMidX - 35, gapY - 12, 70, 24);
+  ctx.fillStyle = 'black';
+  ctx.font = `20px ${handDrawnFont}`;
+  ctx.fillText('1.5 eV', gapMidX, gapY + 7);
+  
+  // --- n₀ Label ---
+  const n0_text = 'n\u2080 = 2 x 10\u00B2\u00B9 (cm\u00B3 eV)\u207B\u00B9';
+  ctx.font = `21px ${handDrawnFont}`;
+  ctx.textAlign = 'left';
+  ctx.fillText(n0_text, 360, 255);
+
+  // Dashed arrow from conduction band top
+  const dashedLineStartX = cbX + cbWidth;
+  const dashedLineEndX = dashedLineStartX + 70;
+  ctx.beginPath();
+  ctx.setLineDash([5, 5]);
+  ctx.moveTo(dashedLineStartX, bandY);
+  ctx.lineTo(dashedLineEndX, bandY);
+  ctx.stroke();
+  ctx.setLineDash([]); // Reset dash
+  drawArrowHead(dashedLineEndX, bandY, 0);
+  
+  // --- Figure Caption ---
+  ctx.font = `20px ${handDrawnFont}`;
+  ctx.textAlign = 'center';
+  ctx.fillText('Fig. 1.23', canvas.width / 2, 435);
+</script>
+</body>
+</html>

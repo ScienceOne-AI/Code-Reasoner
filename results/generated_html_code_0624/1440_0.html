@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Physics Diagram - Surface Tension</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="400" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  /**
+   * Draws an arrow on a canvas context.
+   * @param {CanvasRenderingContext2D} ctx The canvas context.
+   * @param {number} fromx The x-coordinate of the arrow's start point.
+   * @param {number} fromy The y-coordinate of the arrow's start point.
+   * @param {number} tox The x-coordinate of the arrow's end point.
+   * @param {number} toy The y-coordinate of the arrow's end point.
+   * @param {number} [headlen=10] The length of the arrowhead.
+   */
+  function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+    const angle = Math.atan2(toy - fromy, tox - fromx);
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    // Draw arrowhead
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+  }
+
+  // Center the coordinate system. In canvas, +y is downwards.
+  ctx.translate(canvas.width / 2, 170);
+
+  // Define geometric parameters
+  const R = 100; // Radius of the spherical caps
+  const r = 80;  // Radius of the central circular film
+  // Calculate the horizontal distance of the sphere centers from the origin
+  const x0 = Math.sqrt(R * R - r * r); // This gives 60 for R=100, r=80
+
+  // --- Draw the main film outlines (solid, thick lines) ---
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 2.5;
+
+  // The y-axis points down. The top junction is at y=-r, bottom junction is at y=r.
+  // The angle to the top point (y=-r) is asin(-r/R) = -angle.
+  // The angle to the bottom point (y=r) is asin(r/R) = angle.
+  const angle = Math.asin(r / R);
+
+  // Draw the left spherical cap (center at -x0, 0)
+  ctx.beginPath();
+  ctx.arc(-x0, 0, R, -angle, angle, false);
+  ctx.stroke();
+
+  // Draw the right spherical cap (center at x0, 0)
+  ctx.beginPath();
+  ctx.arc(x0, 0, R, Math.PI - angle, Math.PI + angle, false);
+  ctx.stroke();
+  
+  // --- Draw the central film and helper lines ---
+  ctx.lineWidth = 1.5;
+
+  // Draw the central vertical film line (solid, thin)
+  // from the top junction (0, -r) to the bottom junction (0, r)
+  ctx.beginPath();
+  ctx.moveTo(0, -r);
+  ctx.lineTo(0, r);
+  ctx.stroke();
+
+  // Set line style to dashed for helper lines
+  ctx.setLineDash([6, 4]);
+
+  // Draw the horizontal dashed line connecting the centers of the spheres
+  ctx.beginPath();
+  ctx.moveTo(-x0, 0);
+  ctx.lineTo(x0, 0);
+  ctx.stroke();
+
+  // Draw the dashed lines for the radii R, connecting centers to the TOP junction (0, -r)
+  ctx.beginPath();
+  ctx.moveTo(-x0, 0);
+  ctx.lineTo(0, -r);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(x0, 0);
+  ctx.lineTo(0, -r);
+  ctx.stroke();
+
+  // Reset line style to solid
+  ctx.setLineDash([]);
+
+  // --- Draw labels ---
+  ctx.fillStyle = 'black';
+  ctx.font = "italic 24px 'Times New Roman'";
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Label R on the left, inside the dashed triangle
+  ctx.fillText('R', -x0 / 2 - 5, -r / 2);
+
+  // Label R on the right, inside the dashed triangle
+  ctx.fillText('R', x0 / 2 + 5, -r / 2);
+
+  // Label r, next to the bottom half of the vertical line
+  ctx.textAlign = 'left';
+  ctx.fillText('r', 10, r / 2);
+  
+  // --- Draw the arrow and descriptive text ---
+  ctx.lineWidth = 2;
+  
+  // Define arrow coordinates. It points UP towards the bottom junction (0, r).
+  const arrowStartY = r + 50;
+  const arrowEndY = r + 5;
+  drawArrow(ctx, 0, arrowStartY, 0, arrowEndY, 10);
+  
+  // Draw the Chinese text below the arrow's starting point
+  ctx.font = "28px 'KaiTi'"; // A common font for Chinese script
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('匀质柔软细线', 0, arrowStartY + 10);
+
+</script>
+</body>
+</html>

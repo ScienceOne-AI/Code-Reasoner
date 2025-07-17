@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Experiment Setup</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-canvas" width="550" height="520"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = "16px sans-serif";
+        
+        // Helper function for drawing simple line arrows
+        function drawArrowLine(ctx, fromx, fromy, tox, toy) {
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+        }
+
+        // --- Main Components ---
+
+        // 1. Balance
+        const pan_x = 150;
+        const pan_y = 400;
+        const pan_width = 250;
+        const pan_center_x = pan_x + pan_width / 2;
+        // Pan
+        ctx.strokeRect(pan_x, pan_y, pan_width, 10);
+        // Stand
+        ctx.beginPath();
+        ctx.moveTo(pan_center_x - 10, pan_y + 10);
+        ctx.lineTo(pan_center_x - 10, pan_y + 40);
+        ctx.moveTo(pan_center_x + 10, pan_y + 10);
+        ctx.lineTo(pan_center_x + 10, pan_y + 40);
+        // Jagged break line
+        ctx.moveTo(pan_center_x - 15, pan_y + 40);
+        ctx.lineTo(pan_center_x - 5, pan_y + 50);
+        ctx.lineTo(pan_center_x - 15, pan_y + 60);
+        ctx.moveTo(pan_center_x + 5, pan_y + 40);
+        ctx.lineTo(pan_center_x + 15, pan_y + 50);
+        ctx.lineTo(pan_center_x + 5, pan_y + 60);
+        ctx.stroke();
+
+        // 2. Beaker
+        const beaker_left = 180;
+        const beaker_right = 370;
+        ctx.beginPath();
+        ctx.moveTo(beaker_left, pan_y); // base left
+        ctx.lineTo(beaker_left, 200); // left wall
+        ctx.moveTo(beaker_right, 200); // right wall top
+        ctx.lineTo(beaker_right, pan_y); // right wall
+        ctx.stroke();
+
+        // 3. Liquid
+        const liquid_level = 250;
+        // Surface with meniscus
+        ctx.beginPath();
+        ctx.moveTo(beaker_left, liquid_level);
+        ctx.quadraticCurveTo(beaker_left + 5, liquid_level - 5, beaker_left + 10, liquid_level);
+        ctx.lineTo(beaker_right - 10, liquid_level);
+        ctx.quadraticCurveTo(beaker_right - 5, liquid_level - 5, beaker_right, liquid_level);
+        ctx.stroke();
+        // Liquid fill (dashed lines)
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([3, 3]);
+        ctx.lineWidth = 1;
+        for (let y = liquid_level + 15; y < pan_y; y += 15) {
+            ctx.moveTo(beaker_left + 5, y);
+            ctx.lineTo(beaker_right - 5, y);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // 4. Heater and its support rods
+        const heater_rod_left_x = 220;
+        const heater_rod_right_x = 330;
+        const heater_top_y = 330;
+        const heater_height = 30;
+        const heater_width = heater_rod_right_x - heater_rod_left_x;
+        // Rods
+        ctx.beginPath();
+        ctx.moveTo(heater_rod_left_x, 100);
+        ctx.lineTo(heater_rod_left_x, heater_top_y);
+        ctx.moveTo(heater_rod_right_x, 50);
+        ctx.lineTo(heater_rod_right_x, heater_top_y);
+        ctx.stroke();
+        // Heating element
+        ctx.strokeRect(heater_rod_left_x, heater_top_y, heater_width, heater_height);
+        // Divisions in heater (3 lines for 4 segments)
+        ctx.beginPath();
+        for (let i = 1; i < 4; i++) {
+            const x = heater_rod_left_x + i * heater_width / 4;
+            ctx.moveTo(x, heater_top_y);
+            ctx.lineTo(x, heater_top_y + heater_height);
+        }
+        ctx.stroke();
+
+        // 5. Circuit
+        const term_p_y = 50;
+        const term_n_y = 100;
+        const v_center = { x: 380, y: 75 };
+        const v_radius = 20;
+        const a_center = { x: 440, y: 100 };
+        const a_radius = 20;
+        const junction_p = { x: v_center.x, y: term_p_y };
+        const junction_n = { x: v_center.x, y: term_n_y };
+
+        // Wires
+        ctx.beginPath();
+        // Positive line
+        ctx.moveTo(520, term_p_y);
+        ctx.lineTo(junction_p.x, term_p_y);
+        ctx.lineTo(heater_rod_right_x, term_p_y);
+        // Negative line
+        ctx.moveTo(520, term_n_y);
+        ctx.lineTo(a_center.x + a_radius, term_n_y);
+        ctx.moveTo(a_center.x - a_radius, term_n_y);
+        ctx.lineTo(junction_n.x, term_n_y);
+        ctx.lineTo(heater_rod_left_x, term_n_y);
+        // Voltmeter wires
+        ctx.moveTo(junction_p.x, junction_p.y);
+        ctx.lineTo(junction_p.x, v_center.y - v_radius);
+        ctx.moveTo(junction_n.x, junction_n.y);
+        ctx.lineTo(junction_n.x, v_center.y + v_radius);
+        ctx.stroke();
+
+        // Meters
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        // Voltmeter
+        ctx.beginPath();
+        ctx.arc(v_center.x, v_center.y, v_radius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fillText("V", v_center.x, v_center.y);
+        // Ammeter
+        ctx.beginPath();
+        ctx.arc(a_center.x, a_center.y, a_radius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fillText("A", a_center.x, a_center.y);
+
+        // Junction dots
+        ctx.beginPath();
+        ctx.arc(junction_p.x, junction_p.y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(junction_n.x, junction_n.y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Terminals
+        ctx.beginPath();
+        ctx.arc(530, term_p_y, 4, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(530, term_n_y, 4, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 6. Labels and Arrows
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        // "+" and "-"
+        ctx.fillText("+", 540, term_p_y + 5);
+        ctx.fillText("−", 540, term_n_y + 5);
+
+        // liquid
+        ctx.fillText("liquid", 100, 250);
+        drawArrowLine(ctx, 150, 252, 185, 265);
+
+        // heater
+        ctx.fillText("heater", 100, 345);
+        drawArrowLine(ctx, 155, 345, 215, 345);
+
+        // pan of balance
+        ctx.fillText("pan of balance", 405, 425);
+        drawArrowLine(ctx, 400, 420, 370, 405);
+
+        // Fig. 3.1
+        ctx.textAlign = 'center';
+        ctx.fillText("Fig. 3.1", pan_center_x, 490);
+
+    </script>
+</body>
+</html>

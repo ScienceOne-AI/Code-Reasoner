@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Force Vector Diagram</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    #canvas-container {
+      border: 2px solid #4682B4; /* blue border */
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container">
+    <canvas id="physicsCanvas" width="500" height="400"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const scale = 1.5; // pixels per Newton
+    const vectorColor = '#FF0000'; // red
+    const axisColor = '#FF0000'; // red
+    const textColor = '#000000'; // black
+    const particleColor = '#000000'; // black
+    const backgroundColor = '#e9f5e2'; // light green
+
+    // --- Helper Function to draw an arrow (line + arrowhead) ---
+    function drawArrow(ctx, fromX, fromY, toX, toY) {
+      const headlen = 10; // length of head in pixels
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+      const angle = Math.atan2(dy, dx);
+      
+      // Draw the line
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(toX, toY);
+      ctx.stroke();
+
+      // Draw the arrowhead
+      ctx.beginPath();
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+      ctx.stroke();
+    }
+    
+    // --- Helper Function for drawing text with subscript ---
+    function drawSubscriptText(ctx, text, sub, x, y) {
+        const baseFont = ctx.font;
+        const baseAlign = ctx.textAlign;
+        ctx.textAlign = 'left';
+        
+        ctx.fillText(text, x, y);
+        const textMetrics = ctx.measureText(text);
+
+        // Subscript settings
+        const subFontsize = parseInt(baseFont) * 0.7;
+        ctx.font = `${subFontsize}px Arial`;
+        ctx.fillText(sub, x + textMetrics.width, y + subFontsize * 0.3);
+
+        // Restore original settings
+        ctx.font = baseFont;
+        ctx.textAlign = baseAlign;
+
+        // Return the x-position after the subscript for chaining
+        const subMetrics = ctx.measureText(sub);
+        return x + textMetrics.width + subMetrics.width;
+    }
+
+
+    // 1. Draw Background
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 2. Draw Coordinate Axes
+    ctx.strokeStyle = axisColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, cy);
+    ctx.lineTo(canvas.width, cy); // x-axis
+    ctx.moveTo(cx, 0);
+    ctx.lineTo(cx, canvas.height); // y-axis
+    ctx.stroke();
+
+    // 3. Draw the particle at the origin
+    ctx.fillStyle = particleColor;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 6, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // --- Draw Force Vectors ---
+    ctx.strokeStyle = vectorColor;
+    ctx.lineWidth = 2;
+
+    // Vector F1: 80 N at 35 degrees with negative x-axis (180 - 35 = 145 degrees)
+    const mag1 = 80;
+    const angle1_rad = (180 - 35) * Math.PI / 180;
+    const endX1 = cx + (mag1 * scale) * Math.cos(angle1_rad);
+    const endY1 = cy - (mag1 * scale) * Math.sin(angle1_rad); // y is inverted in canvas
+    drawArrow(ctx, cx, cy, endX1, endY1);
+
+    // Vector F2: 60 N along positive x-axis (0 degrees)
+    const mag2 = 60;
+    const endX2 = cx + (mag2 * scale);
+    const endY2 = cy;
+    drawArrow(ctx, cx, cy, endX2, endY2);
+
+    // Vector F3: 40 N at 45 degrees below positive x-axis (-45 or 315 degrees)
+    const mag3 = 40;
+    const angle3_rad = -45 * Math.PI / 180;
+    const endX3 = cx + (mag3 * scale) * Math.cos(angle3_rad);
+    const endY3 = cy - (mag3 * scale) * Math.sin(angle3_rad);
+    drawArrow(ctx, cx, cy, endX3, endY3);
+
+
+    // --- Add Labels and Annotations ---
+    ctx.fillStyle = textColor;
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    
+    // y-axis label
+    ctx.fillText('y', cx + 10, 20);
+
+    // F1 label
+    let currentX = drawSubscriptText(ctx, 'F', '1', 80, 90);
+    ctx.fillText('= 80 N', currentX + 2, 90);
+
+    // F2 label
+    currentX = drawSubscriptText(ctx, 'F', '2', 350, 180);
+    ctx.fillText('= 60 N', currentX + 2, 180);
+
+    // F3 label
+    currentX = drawSubscriptText(ctx, 'F', '3', 350, 275);
+    ctx.fillText('= 40 N', currentX + 2, 275);
+    
+    // Angle labels
+    ctx.font = '18px Arial';
+    ctx.fillText('35°', 205, 185);
+    ctx.fillText('45°', 280, 235);
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Circuit Diagram Fig. 3.26</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="circuitCanvas" width="500" height="450"></canvas>
+<script>
+const canvas = document.getElementById('circuitCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style and Font Settings ---
+ctx.lineWidth = 2;
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+// Using a font that mimics handwriting
+const baseFont = '"Comic Sans MS", cursive, sans-serif';
+ctx.font = `18px ${baseFont}`;
+
+// --- Helper Functions ---
+
+// Draws a vertical resistor
+function drawResistor(x, y, h) {
+    const w = 12; // width of zig-zag
+    const lead = h * 0.1;
+    const zigzagH = h * 0.8;
+    const n = 6;
+    const segmentH = zigzagH / n;
+
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y + lead);
+    let currentY = y + lead;
+    for (let i = 0; i < n; i++) {
+        ctx.lineTo(x + w * ((i % 2 === 0) ? 1 : -1), currentY + segmentH * (i + 0.5));
+    }
+    ctx.lineTo(x, y + lead + zigzagH);
+    ctx.lineTo(x, y + h);
+    ctx.stroke();
+}
+
+// Draws a horizontal inductor (coil)
+function drawInductor(x, y, w) {
+    const n = 4; // number of loops
+    const r = w / (n * 2); // radius of each loop
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    for (let i = 0; i < n; i++) {
+        ctx.arc(x + r + i * 2 * r, y, r, Math.PI, 0, false);
+    }
+    // The arc command doesn't draw the initial moveTo line, so we trace it back
+    ctx.moveTo(x,y);
+    ctx.lineTo(x+w,y);
+    ctx.stroke();
+}
+
+// Draws an arrowhead at a point with a given angle
+function drawArrowhead(x, y, angle) {
+    const size = 8;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, -size / 2);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, size / 2);
+    ctx.stroke();
+    ctx.restore();
+}
+
+// --- Main Drawing ---
+
+// Define coordinates for layout
+const groundY = 350;
+const topY = 100;
+const leftX = 100;
+const middleX = 220;
+const inductorStartX = 280;
+const inductorEndX = 400;
+const rightX = inductorEndX;
+
+// --- Draw Components and Wires ---
+
+// Ground line
+ctx.beginPath();
+ctx.moveTo(leftX, groundY);
+ctx.lineTo(rightX, groundY);
+ctx.stroke();
+
+// Ground symbol
+const groundSymbolX = middleX + 30;
+ctx.beginPath();
+ctx.moveTo(groundSymbolX, groundY);
+ctx.lineTo(groundSymbolX, groundY + 15);
+ctx.moveTo(groundSymbolX - 15, groundY + 15);
+ctx.lineTo(groundSymbolX + 15, groundY + 15);
+ctx.moveTo(groundSymbolX - 10, groundY + 22);
+ctx.lineTo(groundSymbolX + 10, groundY + 22);
+ctx.moveTo(groundSymbolX - 5, groundY + 29);
+ctx.lineTo(groundSymbolX + 5, groundY + 29);
+ctx.stroke();
+
+
+// Left Branch (Source, 1 Ohm Resistor, Terminal A)
+const batteryCenterY = 300;
+const batteryH = 40;
+const res1Y = 180;
+const res1H = 60;
+const termAY = 140;
+
+// Wires
+ctx.beginPath();
+ctx.moveTo(leftX, groundY);
+ctx.lineTo(leftX, batteryCenterY + batteryH/2);
+ctx.moveTo(leftX, batteryCenterY - batteryH/2);
+ctx.lineTo(leftX, res1Y + res1H);
+ctx.moveTo(leftX, res1Y);
+ctx.lineTo(leftX, termAY);
+ctx.stroke();
+
+// Battery (Voltage Source)
+ctx.beginPath();
+ctx.moveTo(leftX - 15, batteryCenterY + batteryH/2); // Negative terminal
+ctx.lineTo(leftX + 15, batteryCenterY + batteryH/2);
+ctx.moveTo(leftX - 25, batteryCenterY - batteryH/2); // Positive terminal
+ctx.lineTo(leftX + 25, batteryCenterY - batteryH/2);
+ctx.stroke();
+ctx.fillText('1V', leftX + 35, batteryCenterY + 5);
+
+// 1 Ohm Resistor
+drawResistor(leftX, res1Y, res1H);
+ctx.fillText('1 \u03A9', leftX + 20, res1Y + 35);
+
+
+// Middle Branch (Resistor R, Terminal B)
+const res2Y = 180;
+const res2H = 80;
+const termBY = 140;
+
+// Wires
+ctx.beginPath();
+ctx.moveTo(middleX, termBY);
+ctx.lineTo(middleX, res2Y);
+ctx.moveTo(middleX, res2Y + res2H);
+ctx.lineTo(middleX, groundY);
+ctx.stroke();
+
+// Resistor R
+drawResistor(middleX, res2Y, res2H);
+// Label for R = 10^4 Ohm
+ctx.fillText('R = 10', middleX + 20, res2Y + 45);
+const textMetrics = ctx.measureText('R = 10');
+ctx.save();
+ctx.font = `12px ${baseFont}`;
+ctx.fillText('4', middleX + 20 + textMetrics.width - 2, res2Y + 35);
+ctx.restore();
+ctx.fillText('\u03A9', middleX + 20 + textMetrics.width + 12, res2Y + 45);
+
+
+// Right Branch (Inductor L)
+ctx.beginPath();
+ctx.moveTo(rightX, topY);
+ctx.lineTo(rightX, groundY);
+ctx.stroke();
+// Inductor
+const inductorW = inductorEndX - inductorStartX;
+drawInductor(inductorStartX, topY, inductorW);
+ctx.fillText('L = 1H', inductorStartX + inductorW/2 - 30, topY - 20);
+
+// Switch S
+const switchPivotX = 160;
+const switchPivotY = 100;
+// Wire from pivot to inductor
+ctx.beginPath();
+ctx.moveTo(switchPivotX, switchPivotY);
+ctx.lineTo(inductorStartX, topY);
+// Switch Arm (connected to A)
+ctx.moveTo(switchPivotX, switchPivotY);
+ctx.lineTo(leftX, termAY);
+ctx.stroke();
+
+// Terminals A and B
+ctx.beginPath();
+ctx.arc(leftX, termAY, 3.5, 0, 2 * Math.PI);
+ctx.fill();
+ctx.beginPath();
+ctx.arc(middleX, termBY, 3.5, 0, 2 * Math.PI);
+ctx.fill();
+
+// Labels for Switch, A, B
+ctx.fillText('S', switchPivotX - 10, switchPivotY - 15);
+ctx.fillText('A', leftX - 25, termAY + 5);
+ctx.fillText('B', middleX, termBY - 15);
+
+
+// Current Arrow in RL loop
+const arrowCenterX = (middleX + rightX) / 2 + 5;
+const arrowCenterY = (topY + groundY) / 2;
+const arrowRadius = 75;
+const startAngle = -0.45 * Math.PI;
+const endAngle = 0.45 * Math.PI;
+ctx.beginPath();
+ctx.arc(arrowCenterX, arrowCenterY, arrowRadius, startAngle, endAngle, false); // Clockwise arc
+ctx.stroke();
+const arrowTipX = arrowCenterX + arrowRadius * Math.cos(endAngle);
+const arrowTipY = arrowCenterY + arrowRadius * Math.sin(endAngle);
+drawArrowhead(arrowTipX, arrowTipY, endAngle + Math.PI / 2);
+
+// Figure Caption
+ctx.fillText('Fig. 3.26', canvas.width / 2 - 40, 420);
+
+</script>
+</body>
+</html>

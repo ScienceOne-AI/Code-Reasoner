@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Atomic Beam Setup</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Style settings
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  // Use a sans-serif font to mimic clean, blocky handwriting
+  ctx.font = '20px sans-serif'; 
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // --- Helper functions ---
+
+  // Function to draw an arrowhead
+  function drawArrowhead(fromX, fromY, toX, toY, angle, length) {
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const headAngle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - length * Math.cos(headAngle - angle), toY - length * Math.sin(headAngle - angle));
+    ctx.lineTo(toX - length * Math.cos(headAngle + angle), toY - length * Math.sin(headAngle + angle));
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke(); // also stroke to match line style
+  }
+
+  // Function to draw hatching pattern in a rectangle
+  function drawHatching(x, y, w, h) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip(); // Clip subsequent drawing to this rectangle
+    ctx.lineWidth = 1.5;
+    const spacing = 8;
+    for (let i = -h; i < w; i += spacing) {
+        ctx.beginPath();
+        ctx.moveTo(x + i, y);
+        ctx.lineTo(x + i + h, y + h);
+        ctx.stroke();
+    }
+    ctx.restore();
+  }
+  
+  // Function to draw stippling (dots) in a rectangle
+  function drawStippling(x, y, w, h, density = 5) {
+      for (let i = x + density / 2; i < x + w; i += density) {
+          for (let j = y + density / 2; j < y + h; j += density) {
+              ctx.beginPath();
+              ctx.arc(i, j, 0.7, 0, 2 * Math.PI);
+              ctx.fill();
+          }
+      }
+  }
+  
+  // --- Main Drawing ---
+  
+  const yCenter = 225; // Vertical center for the beam
+
+  // 1. Draw Oven
+  const oven = { x: 50, y: 190, w: 100, h: 70, t: 12, lip: 15, nozzleH: 20 };
+  
+  // Define wall regions for stippling and drawing
+  const ovenWall = {
+      back: { x: oven.x, y: oven.y, w: oven.t, h: oven.h },
+      top: { x: oven.x + oven.t, y: oven.y, w: oven.w - oven.t, h: oven.t },
+      bottom: { x: oven.x + oven.t, y: oven.y + oven.h - oven.t, w: oven.w - oven.t, h: oven.t },
+      frontTop: { x: oven.x + oven.w - oven.lip, y: oven.y, w: oven.lip, h: (oven.h - oven.nozzleH) / 2 },
+      frontBottom: { x: oven.x + oven.w - oven.lip, y: yCenter + oven.nozzleH / 2, w: oven.lip, h: (oven.h - oven.nozzleH) / 2 }
+  };
+
+  // Draw and stipple each wall section
+  for (const part of Object.values(ovenWall)) {
+      drawStippling(part.x, part.y, part.w, part.h, 6);
+  }
+  
+  // Draw the outline of the oven
+  ctx.beginPath();
+  ctx.moveTo(oven.x + oven.w, oven.y);
+  ctx.lineTo(oven.x, oven.y);
+  ctx.lineTo(oven.x, oven.y + oven.h);
+  ctx.lineTo(oven.x + oven.w, oven.y + oven.h);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(oven.x + oven.w, yCenter - oven.nozzleH / 2);
+  ctx.lineTo(oven.x + oven.w - oven.lip, yCenter - oven.nozzleH / 2);
+  ctx.lineTo(oven.x + oven.w - oven.lip, oven.y + oven.t);
+  ctx.lineTo(oven.x + oven.t, oven.y + oven.t);
+  ctx.lineTo(oven.x + oven.t, oven.y + oven.h - oven.t);
+  ctx.lineTo(oven.x + oven.w - oven.lip, oven.y + oven.h - oven.t);
+  ctx.lineTo(oven.x + oven.w - oven.lip, yCenter + oven.nozzleH / 2);
+  ctx.lineTo(oven.x + oven.w, yCenter + oven.nozzleH / 2);
+  ctx.stroke();
+
+  // Label: oven
+  ctx.fillText('oven', oven.x + oven.w / 2 - 10, oven.y + oven.h + 25);
+  
+  // 2. Draw "small hole" and effusing particles
+  const nozzleX = oven.x + oven.w;
+
+  // Label: small hole
+  ctx.fillText('small hole', nozzleX, yCenter - 65);
+  // Arrow for "small hole"
+  ctx.beginPath();
+  ctx.moveTo(nozzleX, yCenter - 50);
+  ctx.lineTo(nozzleX + 2, yCenter - 5);
+  ctx.stroke();
+  drawArrowhead(nozzleX, yCenter - 50, nozzleX + 2, yCenter - 5, Math.PI / 8, 10);
+  
+  // Effusing particles (spray)
+  ctx.save();
+  ctx.lineWidth = 1.5;
+  const numParticles = 5;
+  const spreadAngle = Math.PI / 3.5;
+  for (let i = 0; i < numParticles; i++) {
+    const angle = (i - (numParticles - 1) / 2) * spreadAngle / (numParticles - 1);
+    const length = 20 + Math.random() * 10;
+    ctx.beginPath();
+    ctx.moveTo(nozzleX + 2, yCenter);
+    ctx.lineTo(nozzleX + 2 + length * Math.cos(angle), yCenter + length * Math.sin(angle));
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // 3. Draw Collimating Slits
+  const slit1X = nozzleX + 70;
+  const slit2X = nozzleX + 140;
+  const slitH = 140;
+  const slitW = 20;
+  const slitGap = 20;
+  
+  // First slit
+  const slitTopY = yCenter - slitH / 2;
+  const slitTopH = slitH / 2 - slitGap / 2;
+  const slitBottomY = yCenter + slitGap / 2;
+  const slitBottomH = slitTopH;
+  
+  ctx.strokeRect(slit1X, slitTopY, slitW, slitTopH);
+  drawHatching(slit1X, slitTopY, slitW, slitTopH);
+  ctx.strokeRect(slit1X, slitBottomY, slitW, slitBottomH);
+  drawHatching(slit1X, slitBottomY, slitW, slitBottomH);
+
+  // Second slit
+  ctx.strokeRect(slit2X, slitTopY, slitW, slitTopH);
+  drawHatching(slit2X, slitTopY, slitW, slitTopH);
+  ctx.strokeRect(slit2X, slitBottomY, slitW, slitBottomH);
+  drawHatching(slit2X, slitBottomY, slitW, slitBottomH);
+
+  // Label: collimating slits
+  ctx.fillText('collimating slits', (slit1X + slit2X + slitW) / 2, yCenter - slitH / 2 - 20);
+  
+  // 4. Draw Vacuum Chamber
+  const chamberX = slit2X + slitW;
+  const chamberW = 400;
+  const chamberH = 160;
+  ctx.strokeRect(chamberX, yCenter - chamberH / 2, chamberW, chamberH);
+  
+  // 5. Draw Collimated Beam
+  const beamStartX = nozzleX;
+  const beamEndX = chamberX + chamberW - 60;
+  
+  ctx.beginPath();
+  ctx.moveTo(beamStartX, yCenter);
+  ctx.lineTo(beamEndX, yCenter);
+  ctx.stroke();
+  drawArrowhead(beamStartX, yCenter, beamEndX, yCenter, Math.PI / 8, 20);
+
+  // Labels inside chamber
+  ctx.fillText('collimated beam', chamberX + chamberW / 2, yCenter - 30);
+  ctx.fillText('vacuum chamber', chamberX + chamberW / 2, yCenter + 45);
+  
+  // 6. Draw Dimension Line
+  const dimY = yCenter + chamberH / 2 + 40;
+  
+  // Main line
+  ctx.beginPath();
+  ctx.moveTo(chamberX, dimY);
+  ctx.lineTo(chamberX + chamberW, dimY);
+  ctx.stroke();
+  // Ticks
+  ctx.beginPath();
+  ctx.moveTo(chamberX, dimY - 10);
+  ctx.lineTo(chamberX, dimY + 10);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(chamberX + chamberW, dimY - 10);
+  ctx.lineTo(chamberX + chamberW, dimY + 10);
+  ctx.stroke();
+  
+  // Label: 1 m
+  // To place text "on" the line, we can clear a small rectangle behind it.
+  const labelText = '1 m';
+  const textWidth = ctx.measureText(labelText).width;
+  ctx.clearRect(chamberX + chamberW/2 - textWidth/2 - 2, dimY - 10, textWidth + 4, 20);
+  ctx.fillText(labelText, chamberX + chamberW / 2, dimY);
+
+  // 7. Draw Figure Label
+  ctx.fillText('Fig. 2.45.', chamberX + chamberW / 2, dimY + 60);
+
+</script>
+</body>
+</html>

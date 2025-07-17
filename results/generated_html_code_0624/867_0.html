@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram of Collision</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    canvas {
+        border: 1px solid #ccc;
+        background-color: white;
+    }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="350"></canvas>
+<script>
+const canvas = document.getElementById('physicsCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Helper Function to draw arrows ---
+function drawArrow(ctx, fromx, fromy, tox, toy) {
+    const headlen = 10; // length of head in pixels
+    const dx = tox - fromx;
+    const dy = toy - fromy;
+    const angle = Math.atan2(dy, dx);
+    
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath();
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+// --- Drawing Parameters ---
+const R = 50;
+const originX = 450;
+const originY = 250;
+
+// --- Styles ---
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+ctx.lineWidth = 2;
+ctx.font = 'italic 20px Times New Roman';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+// --- Draw Coordinate System ---
+// X-axis
+drawArrow(ctx, 50, originY, 580, originY);
+ctx.fillText('x', 590, originY);
+// Y-axis
+drawArrow(ctx, originX, 330, originX, 20);
+ctx.fillText('y', originX + 20, 25);
+// Origin label
+ctx.font = '20px Times New Roman';
+ctx.fillText('O', originX - 10, originY + 15);
+ctx.font = 'italic 20px Times New Roman';
+
+// --- Draw Stationary Target Circle (Right) ---
+const targetCenterX = originX;
+const targetCenterY = originY - R;
+
+ctx.beginPath();
+ctx.arc(targetCenterX, targetCenterY, R, 0, 2 * Math.PI);
+ctx.stroke();
+
+// Radii for target
+// Vertical radius
+ctx.beginPath();
+ctx.moveTo(targetCenterX, targetCenterY);
+ctx.lineTo(targetCenterX, originY);
+ctx.stroke();
+
+// Angled radius (approximating the one in the image)
+const angle = Math.PI / 4; 
+const radiusEndX = targetCenterX + R * Math.cos(angle);
+const radiusEndY = targetCenterY - R * Math.sin(angle); // Use subtraction because canvas y-axis is inverted
+ctx.beginPath();
+ctx.moveTo(targetCenterX, targetCenterY);
+ctx.lineTo(radiusEndX, radiusEndY);
+ctx.stroke();
+// Label 'R' for target
+ctx.fillText('R', targetCenterX + R * 0.45, targetCenterY - R * 0.2);
+
+// --- Draw Moving Projectile Circle (Left) ---
+const projCenterX = originX - 4.5 * R;
+const projCenterY = originY;
+
+ctx.beginPath();
+ctx.arc(projCenterX, projCenterY, R, 0, 2 * Math.PI);
+ctx.stroke();
+
+// Radius for projectile (pointing right, as in original)
+ctx.beginPath();
+ctx.moveTo(projCenterX, projCenterY);
+ctx.lineTo(projCenterX + R, projCenterY);
+ctx.stroke();
+// Label 'R' for projectile
+ctx.fillText('R', projCenterX + R * 0.5, projCenterY - R * 0.4);
+
+
+// --- Draw Path and Velocity Vectors ---
+// Dashed line for path
+ctx.save();
+ctx.setLineDash([5, 5]);
+ctx.beginPath();
+ctx.moveTo(50, originY);
+ctx.lineTo(originX - 5, originY); // Stop before the target
+ctx.stroke();
+ctx.restore();
+
+// Velocity vector over projectile
+const v_y1 = projCenterY - R - 25;
+const v_len = 1.2 * R;
+const v_start_x1 = projCenterX - v_len / 2;
+const v_end_x1 = projCenterX + v_len / 2;
+drawArrow(ctx, v_start_x1, v_y1, v_end_x1, v_y1);
+ctx.fillText('v\u2080', projCenterX, v_y1 - 15);
+// Draw vector arrow over the v
+ctx.beginPath();
+ctx.moveTo(projCenterX - 5, v_y1 - 25);
+ctx.lineTo(projCenterX + 5, v_y1 - 25);
+ctx.lineTo(projCenterX + 2, v_y1 - 28);
+ctx.moveTo(projCenterX + 5, v_y1 - 25);
+ctx.lineTo(projCenterX + 2, v_y1 - 22);
+ctx.stroke();
+
+
+// Second velocity vector over path
+const v_y2 = originY - 30;
+const v2_x_center = originX - 2.5 * R;
+const v_start_x2 = v2_x_center - v_len / 2;
+const v_end_x2 = v2_x_center + v_len / 2;
+drawArrow(ctx, v_start_x2, v_y2, v_end_x2, v_y2);
+ctx.fillText('v\u2080', v2_x_center, v_y2 - 15);
+// Draw vector arrow over the v
+ctx.beginPath();
+ctx.moveTo(v2_x_center - 5, v_y2 - 25);
+ctx.lineTo(v2_x_center + 5, v_y2 - 25);
+ctx.lineTo(v2_x_center + 2, v_y2 - 28);
+ctx.moveTo(v2_x_center + 5, v_y2 - 25);
+ctx.lineTo(v2_x_center + 2, v_y2 - 22);
+ctx.stroke();
+
+
+// --- Draw Bottom Label ---
+ctx.font = '20px "KaiTi", "SimSun", sans-serif'; 
+ctx.fillStyle = 'black';
+ctx.textAlign = 'center';
+ctx.fillText('习题 2-34 图', canvas.width / 2, canvas.height - 20);
+
+</script>
+</body>
+</html>

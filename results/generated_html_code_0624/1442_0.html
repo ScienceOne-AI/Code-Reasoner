@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Newton's Rings Setup</title>
+</head>
+<body>
+    <canvas id="newtonRingsCanvas" width="600" height="350"></canvas>
+    <script>
+        const canvas = document.getElementById('newtonRingsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Font Settings ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '28px sans-serif';
+
+        // --- Helper function to draw an arrow ---
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+            const angle = Math.atan2(toy - fromy, tox - fromx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+
+        // 1. Draw the bottom plate (rectangle)
+        const bottomPlate = { x: 50, y: 220, width: 500, height: 50 };
+        ctx.beginPath();
+        ctx.rect(bottomPlate.x, bottomPlate.y, bottomPlate.width, bottomPlate.height);
+        ctx.stroke();
+
+        // 2. Draw the top element (plano-concave lens)
+        const topElement = {
+            leftX: 80,
+            rightX: 520,
+            topY: 120,
+            arcEndY: 190,
+            arcContactY: 220,
+            centerX: 300
+        };
+        const controlPointY = topElement.arcContactY + (topElement.arcContactY - topElement.arcEndY);
+        
+        ctx.beginPath();
+        ctx.moveTo(topElement.leftX, topElement.topY);
+        ctx.lineTo(topElement.rightX, topElement.topY); // Top line
+        ctx.lineTo(topElement.rightX, topElement.arcEndY); // Right side
+        ctx.moveTo(topElement.leftX, topElement.topY);
+        ctx.lineTo(topElement.leftX, topElement.arcEndY); // Left side
+        ctx.moveTo(topElement.leftX, topElement.arcEndY);
+        ctx.quadraticCurveTo(topElement.centerX, controlPointY, topElement.rightX, topElement.arcEndY); // Curved bottom
+        ctx.stroke();
+
+        // 3. Draw the incident light arrows
+        const arrowTopY = 70;
+        const arrowBottomY = 110;
+        const arrowSpacing = 70;
+        for (let i = -2; i <= 2; i++) {
+            drawArrow(ctx, topElement.centerX + i * arrowSpacing, arrowTopY, topElement.centerX + i * arrowSpacing, arrowBottomY);
+        }
+        
+        // 4. Draw the contact point P and its marker
+        // The contact point dot
+        ctx.beginPath();
+        ctx.arc(topElement.centerX, topElement.arcContactY, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        // The vertical axis marker
+        ctx.beginPath();
+        ctx.moveTo(topElement.centerX, topElement.arcContactY - 5);
+        ctx.lineTo(topElement.centerX, topElement.arcContactY + 15);
+        ctx.stroke();
+
+        // 5. Add all text labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Lambda symbol
+        ctx.font = 'italic 30px serif';
+        ctx.fillText('λ', topElement.centerX, 55);
+
+        // Refractive index labels
+        ctx.font = '28px sans-serif';
+        // Top element
+        ctx.fillText('1.52', topElement.centerX, 155);
+        // Surrounding medium
+        ctx.textAlign = 'right';
+        ctx.fillText('1.62', topElement.leftX - 20, 205);
+        ctx.textAlign = 'left';
+        ctx.fillText('1.62', topElement.rightX + 20, 205);
+        // Bottom plate
+        ctx.textAlign = 'center';
+        ctx.fillText('1.75', topElement.centerX - 110, 245);
+        ctx.fillText('1.52', topElement.centerX + 110, 245);
+        
+        // 'P' label
+        ctx.font = 'italic 28px serif';
+        ctx.fillText('P', topElement.centerX, 245);
+
+    </script>
+</body>
+</html>

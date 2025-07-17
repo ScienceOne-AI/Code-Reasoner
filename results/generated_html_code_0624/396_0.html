@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>X-ray Diffraction Setup</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings to mimic the hand-drawn look
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.font = "bold 22px 'Comic Sans MS', cursive, sans-serif";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- 1. Draw X-ray Tube and Circuits ---
+
+        // Main tube circle
+        const tubeCenter = { x: 250, y: 220 };
+        const tubeRadius = 80;
+        ctx.beginPath();
+        ctx.arc(tubeCenter.x, tubeCenter.y, tubeRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Anode (target)
+        ctx.beginPath();
+        ctx.moveTo(280, 180);
+        ctx.lineTo(315, 215);
+        ctx.lineTo(280, 215);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Cathode (filament)
+        const filamentStart = { x: 200, y: 260 };
+        const filamentProng1 = { x: 195, y: 280 };
+        const filamentProng2 = { x: 235, y: 280 };
+        
+        ctx.beginPath();
+        ctx.moveTo(filamentProng1.x, filamentProng1.y);
+        ctx.lineTo(filamentStart.x, filamentStart.y);
+        // Coil
+        ctx.arc(filamentStart.x + 7.5, filamentStart.y, 7.5, Math.PI, 0, false);
+        ctx.arc(filamentStart.x + 22.5, filamentStart.y, 7.5, Math.PI, 0, false);
+        // End of coil
+        ctx.lineTo(filamentProng2.x, filamentProng2.y);
+        ctx.stroke();
+
+        // Filament Power Supply
+        ctx.beginPath();
+        ctx.moveTo(filamentProng1.x, filamentProng1.y);
+        ctx.lineTo(185, 300);
+        ctx.moveTo(filamentProng2.x, filamentProng2.y);
+        ctx.lineTo(225, 300);
+        ctx.stroke();
+        // Battery symbol (multi-cell)
+        const batteryFilament = { x: 205, y: 300 };
+        const cellWidth = 10;
+        const longLine = 12;
+        const shortLine = 6;
+        for (let i = 0; i < 3; i++) {
+            const x_pos = batteryFilament.x - 20 + i * cellWidth;
+            ctx.beginPath();
+            ctx.moveTo(x_pos, batteryFilament.y - longLine);
+            ctx.lineTo(x_pos, batteryFilament.y + longLine);
+            ctx.stroke();
+            if (i < 2) {
+                ctx.beginPath();
+                ctx.moveTo(x_pos + cellWidth / 2, batteryFilament.y - shortLine);
+                ctx.lineTo(x_pos + cellWidth / 2, batteryFilament.y + shortLine);
+                ctx.stroke();
+            }
+        }
+
+        // High Voltage Circuit
+        const anodeConn = { x: 298, y: 198 };
+        const cathodeConn = { x: 190, y: 250 }; // on the tube rim
+        const circuitTopLeft = { x: 130, y: 110 };
+        const circuitBotLeft = { x: 100, y: 310 };
+
+        ctx.beginPath();
+        ctx.moveTo(anodeConn.x, anodeConn.y);
+        ctx.lineTo(circuitTopLeft.x + 20, circuitTopLeft.y);
+        ctx.lineTo(circuitTopLeft.x, circuitTopLeft.y + 20);
+
+        ctx.moveTo(cathodeConn.x, cathodeConn.y);
+        ctx.lineTo(circuitBotLeft.x + 20, circuitBotLeft.y);
+        ctx.lineTo(circuitBotLeft.x, circuitBotLeft.y - 20);
+        
+        ctx.stroke();
+        
+        // High Voltage Battery symbol
+        const battV_pos1 = {x: circuitTopLeft.x, y: circuitTopLeft.y + 20};
+        const battV_pos2 = {x: circuitBotLeft.x, y: circuitBotLeft.y - 20};
+        ctx.beginPath();
+        ctx.moveTo(battV_pos1.x - 15, battV_pos1.y);
+        ctx.lineTo(battV_pos1.x + 15, battV_pos1.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(battV_pos2.x - 8, battV_pos2.y);
+        ctx.lineTo(battV_pos2.x + 8, battV_pos2.y);
+        ctx.stroke();
+
+        // --- 2. Draw Diffraction Setup ---
+        
+        // Crystal/Film Block
+        const filmBlock = { x: 280, y: 450, w: 400, h: 80 };
+        ctx.beginPath();
+        ctx.rect(filmBlock.x, filmBlock.y, filmBlock.w, filmBlock.h);
+        ctx.stroke();
+
+        // Rays and Angles
+        const incidencePoint = { x: 480, y: 450 };
+        const sourcePoint = { x: 300, y: 210 }; // From anode area
+        
+        // Calculate angle
+        const dx = incidencePoint.x - sourcePoint.x;
+        const dy = incidencePoint.y - sourcePoint.y;
+        const angle = Math.atan(dy / dx);
+
+        // Incident Ray
+        ctx.beginPath();
+        ctx.moveTo(sourcePoint.x, sourcePoint.y);
+        ctx.lineTo(incidencePoint.x, incidencePoint.y);
+        ctx.stroke();
+
+        // Diffracted Ray
+        const rayLength = Math.sqrt(dx*dx + dy*dy);
+        const endPoint = {
+            x: incidencePoint.x + rayLength * Math.cos(angle),
+            y: incidencePoint.y - rayLength * Math.sin(angle)
+        };
+        ctx.beginPath();
+        ctx.moveTo(incidencePoint.x, incidencePoint.y);
+        ctx.lineTo(endPoint.x, endPoint.y);
+        ctx.stroke();
+        
+        // Normal line
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(incidencePoint.x, incidencePoint.y);
+        ctx.lineTo(incidencePoint.x, incidencePoint.y - 60);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Angle Arcs
+        const arcRadius = 50;
+        // Incident angle
+        ctx.beginPath();
+        ctx.arc(incidencePoint.x, incidencePoint.y, arcRadius, Math.PI, Math.PI + angle);
+        ctx.stroke();
+        // Diffracted angle
+        ctx.beginPath();
+        ctx.arc(incidencePoint.x, incidencePoint.y, arcRadius, -angle, 0);
+        ctx.stroke();
+
+        // Detector ("crystal" label)
+        const detectorCenter = { x: endPoint.x - 15, y: endPoint.y + 15}; // Shift for better placement
+        const detectorLength = 120;
+        const detectorAngle = Math.PI / 2 - angle; // Perpendicular to diffracted ray
+        ctx.beginPath();
+        ctx.moveTo(detectorCenter.x - detectorLength / 2 * Math.cos(detectorAngle), detectorCenter.y - detectorLength / 2 * Math.sin(detectorAngle));
+        ctx.lineTo(detectorCenter.x + detectorLength / 2 * Math.cos(detectorAngle), detectorCenter.y + detectorLength / 2 * Math.sin(detectorAngle));
+        ctx.stroke();
+        
+        // --- 3. Add Labels ---
+        
+        // "V"
+        ctx.fillText('V', circuitTopLeft.x - 30, (battV_pos1.y + battV_pos2.y)/2);
+        
+        // "X-ray tube"
+        ctx.fillText('X-ray tube', tubeCenter.x + tubeRadius + 60, tubeCenter.y - 20);
+
+        // "film"
+        ctx.fillText('film', filmBlock.x + filmBlock.w / 2, filmBlock.y + filmBlock.h / 2 + 10);
+
+        // "crystal"
+        ctx.fillText('crystal', detectorCenter.x + 50, detectorCenter.y - 40);
+
+        // Angle "θ"
+        const theta_x_inc = incidencePoint.x - arcRadius * 0.8 * Math.cos(angle / 2);
+        const theta_y_inc = incidencePoint.y + arcRadius * 0.8 * Math.sin(angle / 2);
+        ctx.fillText('θ', theta_x_inc, theta_y_inc);
+
+        const theta_x_dif = incidencePoint.x + arcRadius * 0.8 * Math.cos(angle / 2);
+        const theta_y_dif = incidencePoint.y - arcRadius * 0.8 * Math.sin(angle / 2);
+        ctx.fillText('θ', theta_x_dif, theta_y_dif);
+
+        // Figure number
+        ctx.fillText('Fig. 2.82', 380, 570);
+
+    </script>
+</body>
+</html>

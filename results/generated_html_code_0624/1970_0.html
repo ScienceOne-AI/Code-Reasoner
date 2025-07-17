@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Pulley System</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="450" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to create a texture pattern
+        function createTexture(color1, color2) {
+            const patternCanvas = document.createElement('canvas');
+            const patternCtx = patternCanvas.getContext('2d');
+            patternCanvas.width = 6;
+            patternCanvas.height = 6;
+            patternCtx.fillStyle = color1;
+            patternCtx.fillRect(0, 0, patternCanvas.width, patternCanvas.height);
+            patternCtx.fillStyle = color2;
+            patternCtx.fillRect(0, 0, 3, 3);
+            patternCtx.fillRect(3, 3, 3, 3);
+            return ctx.createPattern(patternCanvas, 'repeat');
+        }
+
+        // Define styles and colors
+        const blockColor = '#D3D3D3';
+        const blockStrokeColor = 'black';
+        const pulleyColor = '#808080';
+        const bracketColor = '#C0C0C0';
+        const ropeColor = 'black';
+        const textColor = 'black';
+        const lineWidth = 2;
+
+        // Create fill pattern for blocks
+        const blockPattern = createTexture('#E0E0E0', '#C0C0C0');
+
+        // Define dimensions and positions
+        const centerX = canvas.width / 2;
+        const groundY = 450;
+
+        const blockA_W = 80;
+        const blockA_H = 120;
+        const blockB_W = 60;
+        const blockB_H = 60;
+
+        const gap = 30;
+        const totalWidth = blockA_W + gap + blockB_W;
+        const startX = centerX - totalWidth / 2;
+
+        const blockA_X = startX;
+        const blockA_Y = groundY - blockA_H;
+        const blockB_X = startX + blockA_W + gap;
+        const blockB_Y = groundY - blockB_H;
+
+        const ropeA_X = blockA_X + blockA_W / 2;
+        const ropeB_X = blockB_X + blockB_W / 2;
+
+        const pulleyR = 40;
+        const pulleyY = 180;
+        const pulleyX = (ropeA_X + ropeB_X) / 2;
+
+        // --- Drawing ---
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 1. Draw Ground
+        ctx.beginPath();
+        ctx.moveTo(centerX - 180, groundY);
+        ctx.lineTo(centerX + 180, groundY);
+        ctx.strokeStyle = blockStrokeColor;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+        
+        // Draw ground texture
+        ctx.strokeStyle = '#A9A9A9';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 36; i++) {
+            const x = centerX - 180 + i * 10;
+            ctx.beginPath();
+            ctx.moveTo(x, groundY);
+            ctx.lineTo(x + (Math.random() - 0.5) * 10, groundY + 5);
+            ctx.stroke();
+        }
+
+        // 2. Draw Block A
+        ctx.fillStyle = blockPattern;
+        ctx.strokeStyle = blockStrokeColor;
+        ctx.lineWidth = lineWidth;
+        ctx.fillRect(blockA_X, blockA_Y, blockA_W, blockA_H);
+        ctx.strokeRect(blockA_X, blockA_Y, blockA_W, blockA_H);
+
+        // 3. Draw Block B
+        ctx.fillRect(blockB_X, blockB_Y, blockB_W, blockB_H);
+        ctx.strokeRect(blockB_X, blockB_Y, blockB_W, blockB_H);
+
+        // 4. Draw labels A and B
+        ctx.fillStyle = textColor;
+        ctx.font = 'bold 30px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('A', blockA_X + blockA_W / 2, blockA_Y + blockA_H / 2);
+        ctx.fillText('B', blockB_X + blockB_W / 2, blockB_Y + blockB_H / 2);
+
+        // 5. Draw Ropes
+        ctx.strokeStyle = ropeColor;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        // Rope from A
+        ctx.moveTo(ropeA_X, blockA_Y);
+        ctx.lineTo(ropeA_X, pulleyY);
+        // Rope from B
+        ctx.moveTo(ropeB_X, blockB_Y);
+        ctx.lineTo(ropeB_X, pulleyY);
+        ctx.stroke();
+
+        // 6. Draw Pulley
+        // Bracket
+        const bracketWidth = 25;
+        const bracketHeight = pulleyR;
+        ctx.fillStyle = bracketColor;
+        ctx.strokeStyle = blockStrokeColor;
+        ctx.lineWidth = lineWidth;
+        ctx.fillRect(pulleyX - bracketWidth / 2, pulleyY - bracketHeight, bracketWidth, bracketHeight);
+        ctx.strokeRect(pulleyX - bracketWidth / 2, pulleyY - bracketHeight, bracketWidth, bracketHeight);
+        
+        // Wheel
+        ctx.beginPath();
+        ctx.arc(pulleyX, pulleyY, pulleyR, 0, 2 * Math.PI);
+        ctx.fillStyle = pulleyColor;
+        ctx.fill();
+        ctx.stroke();
+        
+        // 7. Draw Force Applicator
+        const rodHeight = 40;
+        const rodWidth = 10;
+        const rodY = pulleyY - bracketHeight - rodHeight;
+        ctx.fillStyle = blockColor;
+        ctx.fillRect(pulleyX - rodWidth / 2, rodY, rodWidth, rodHeight);
+        ctx.strokeRect(pulleyX - rodWidth / 2, rodY, rodWidth, rodHeight);
+
+        // 8. Draw Force Vector F
+        const forceLineLength = 70;
+        const forceArrowheadSize = 10;
+        const forceY_start = rodY;
+        const forceY_end = rodY - forceLineLength;
+        
+        ctx.beginPath();
+        ctx.moveTo(pulleyX, forceY_start);
+        ctx.lineTo(pulleyX, forceY_end);
+        ctx.stroke();
+        
+        // Arrowhead
+        ctx.beginPath();
+        ctx.moveTo(pulleyX, forceY_end);
+        ctx.lineTo(pulleyX - forceArrowheadSize / 2, forceY_end + forceArrowheadSize);
+        ctx.moveTo(pulleyX, forceY_end);
+        ctx.lineTo(pulleyX + forceArrowheadSize / 2, forceY_end + forceArrowheadSize);
+        ctx.stroke();
+        
+        // Label F
+        ctx.fillStyle = textColor;
+        ctx.font = 'italic bold 24px Arial';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('F', pulleyX + 10, forceY_end + 5);
+
+        // 9. Draw Diagram Label
+        ctx.font = '24px "KaiTi", "SimSun", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('习题 1-29 图', centerX, canvas.height - 10);
+    </script>
+</body>
+</html>

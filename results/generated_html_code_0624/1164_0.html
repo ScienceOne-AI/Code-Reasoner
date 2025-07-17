@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interference Pattern from Two Point Sources</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="900" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw a line with an arrowhead
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 8) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        }
+
+        // --- Left Diagram: Optical Path ---
+
+        // Parameters
+        const yMid = 200;
+        const screenX = 550;
+        const z1 = 280;
+        const deltaZ = 120;
+        const s1X = screenX - z1;
+        const s2X = s1X - deltaZ;
+        const pointY = 100; // y-coordinate of the upper point on the screen
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // Main Z-axis (optical axis)
+        ctx.beginPath();
+        ctx.moveTo(s2X - 40, yMid);
+        ctx.lineTo(screenX + 20, yMid);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Sources S1 and S2 markers
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(s1X, yMid - 10);
+        ctx.lineTo(s1X, yMid + 10);
+        ctx.moveTo(s2X, yMid - 10);
+        ctx.lineTo(s2X, yMid + 10);
+        ctx.stroke();
+
+        // Labels for sources
+        ctx.font = 'italic 24px Arial';
+        ctx.fillText('S₁', s1X + 5, yMid - 20);
+        ctx.fillText('S₂', s2X - 25, yMid - 20);
+
+        // Screen
+        ctx.beginPath();
+        ctx.moveTo(screenX, 50);
+        ctx.lineTo(screenX, 350);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Screen coordinate system
+        ctx.beginPath();
+        ctx.lineWidth = 1.5;
+        drawArrow(ctx, screenX, yMid, screenX, 50);
+        ctx.stroke();
+        ctx.font = 'italic 20px Arial';
+        ctx.fillText('x,y', screenX + 10, 65);
+
+        // Rays
+        ctx.lineWidth = 1.2;
+        // Rays from S1
+        ctx.beginPath();
+        drawArrow(ctx, s1X, yMid, screenX, pointY);
+        drawArrow(ctx, s1X, yMid, screenX, 2 * yMid - pointY);
+        ctx.stroke();
+        // Rays from S2
+        ctx.beginPath();
+        drawArrow(ctx, s2X, yMid, screenX, pointY);
+        drawArrow(ctx, s2X, yMid, screenX, 2 * yMid - pointY);
+        ctx.stroke();
+        
+        // Rays along the axis
+        ctx.beginPath();
+        const p1 = s2X + deltaZ / 3;
+        const p2 = s2X + 2 * deltaZ / 3;
+        drawArrow(ctx, s2X, yMid, p1, yMid);
+        drawArrow(ctx, p1, yMid, p2, yMid);
+        const p3 = s1X + z1 / 3;
+        const p4 = s1X + 2 * z1 / 3;
+        drawArrow(ctx, s1X, yMid, p3, yMid);
+        drawArrow(ctx, p3, yMid, p4, yMid);
+        drawArrow(ctx, p4, yMid, screenX, yMid);
+        ctx.stroke();
+
+        // Dimension lines
+        const dimOffsetY = 80;
+        ctx.lineWidth = 1;
+        
+        // Dimension for Δz
+        const yDimDeltaZ = yMid + dimOffsetY;
+        ctx.beginPath();
+        ctx.moveTo(s2X, yMid); // Vertical line from S2
+        ctx.lineTo(s2X, yDimDeltaZ);
+        ctx.moveTo(s1X, yMid); // Vertical line from S1
+        ctx.lineTo(s1X, yDimDeltaZ);
+        drawArrow(ctx, s1X, yDimDeltaZ, s2X, yDimDeltaZ, 6); // Arrow from S1 pos to S2 pos
+        drawArrow(ctx, s2X, yDimDeltaZ, s1X, yDimDeltaZ, 6); // Arrow from S2 pos to S1 pos
+        ctx.stroke();
+        ctx.font = 'italic 20px Arial';
+        const midDeltaZ = s2X + deltaZ / 2;
+        ctx.fillText('Δz', midDeltaZ - ctx.measureText('Δz').width / 2, yDimDeltaZ - 8);
+
+        // Dimension for z1
+        const yDimZ1 = yMid + dimOffsetY;
+        ctx.beginPath();
+        ctx.moveTo(s1X, yMid); // Vertical line from S1
+        ctx.lineTo(s1X, yDimZ1);
+        ctx.moveTo(screenX, yMid); // Vertical line from Screen
+        ctx.lineTo(screenX, yDimZ1);
+        ctx.moveTo(s1X, yDimZ1); // Horizontal line
+        ctx.lineTo(screenX, yDimZ1);
+        // Ticks
+        const tickHeight = 4;
+        ctx.moveTo(s1X, yDimZ1 - tickHeight);
+        ctx.lineTo(s1X, yDimZ1 + tickHeight);
+        ctx.moveTo(screenX, yDimZ1 - tickHeight);
+        ctx.lineTo(screenX, yDimZ1 + tickHeight);
+        ctx.stroke();
+        ctx.font = 'italic 20px Arial';
+        ctx.fillText('z₁', s1X + z1 / 2 - ctx.measureText('z₁').width / 2, yDimZ1 - 8);
+
+        // --- Right Diagram: Interference Pattern ---
+
+        const patternCX = 750;
+        const patternCY = yMid;
+        const patternRMax = 90;
+        const numRings = 7; // Number of visible rings around the center
+        const totalRegions = numRings + 1; // includes the central spot
+        const radiusStep = patternRMax / totalRegions;
+
+        // Draw interference rings by layering filled circles
+        const lightGray = '#D3D3D3';
+        const darkGray = '#B0B0B0';
+
+        // Draw from the outermost circle inwards
+        for (let i = totalRegions; i > 0; i--) {
+            ctx.beginPath();
+            ctx.arc(patternCX, patternCY, i * radiusStep, 0, 2 * Math.PI);
+            // The image shows the outermost ring as light gray
+            // i=8 (totalRegions) -> light, i=7 -> dark, etc.
+            if (i % 2 === 0) {
+                ctx.fillStyle = lightGray;
+            } else {
+                ctx.fillStyle = darkGray;
+            }
+            ctx.fill();
+        }
+        
+        // Draw the central black spot
+        ctx.beginPath();
+        ctx.arc(patternCX, patternCY, radiusStep, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+
+        // Axes for the pattern
+        ctx.beginPath();
+        ctx.lineWidth = 1.5;
+        // x-axis
+        drawArrow(ctx, patternCX - patternRMax - 20, patternCY, patternCX + patternRMax + 20, patternCY);
+        // y-axis
+        drawArrow(ctx, patternCX, patternCY + patternRMax + 20, patternCX, patternCY - patternRMax - 20);
+        ctx.stroke();
+
+        // Axis labels
+        ctx.font = 'italic 20px Arial';
+        ctx.fillStyle = 'black';
+        ctx.fillText('y', patternCX - 25, patternCY - patternRMax - 10);
+        ctx.fillText('x', patternCX + patternRMax + 10, patternCY + 10);
+
+    </script>
+</body>
+</html>

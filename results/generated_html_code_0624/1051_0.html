@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="500"></canvas>
+    <script>
+        window.onload = function() {
+            const canvas = document.getElementById('physicsCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // --- Configuration ---
+            const O = { x: 220, y: 380 }; // Origin
+            const loopCenter = { x: O.x, y: 180 };
+            const h = O.y - loopCenter.y;
+            const r_y = 180; // Ellipse horizontal radius (real radius r)
+            const r_z = 60;  // Ellipse vertical radius (for perspective)
+
+            // --- Helper Function to draw arrows ---
+            function drawArrow(ctx, fromx, fromy, tox, toy, headLength = 10) {
+                const dx = tox - fromx;
+                const dy = toy - fromy;
+                const angle = Math.atan2(dy, dx);
+                ctx.beginPath();
+                ctx.moveTo(fromx, fromy);
+                ctx.lineTo(tox, toy);
+                ctx.lineTo(tox - headLength * Math.cos(angle - Math.PI / 6), toy - headLength * Math.sin(angle - Math.PI / 6));
+                ctx.moveTo(tox, toy);
+                ctx.lineTo(tox - headLength * Math.cos(angle + Math.PI / 6), toy - headLength * Math.sin(angle + Math.PI / 6));
+                ctx.stroke();
+            }
+
+            // --- Drawing Functions ---
+
+            function drawAxes() {
+                ctx.strokeStyle = 'black';
+                ctx.fillStyle = 'black';
+                ctx.lineWidth = 1.5;
+                ctx.font = 'italic 20px Times New Roman';
+
+                // Z-axis
+                drawArrow(ctx, O.x, O.y, O.x, 50);
+                ctx.fillText('z', O.x - 20, 50);
+
+                // Y-axis
+                drawArrow(ctx, O.x, O.y, 480, O.y);
+                ctx.fillText('y', 485, O.y + 8);
+                
+                // X-axis
+                const x_end = { x: O.x - 150, y: O.y + 75 };
+                drawArrow(ctx, O.x, O.y, x_end.x, x_end.y);
+                ctx.fillText('x', x_end.x - 15, x_end.y + 15);
+
+                // Origin Label
+                ctx.font = '20px Times New Roman';
+                ctx.fillText('O', O.x - 20, O.y + 20);
+            }
+
+            function drawLoopAndLabels() {
+                // Draw the ellipse
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'black';
+                ctx.beginPath();
+                ctx.ellipse(loopCenter.x, loopCenter.y, r_y, r_z, 0, 0, 2 * Math.PI);
+                ctx.stroke();
+
+                // Dashed lines
+                ctx.save();
+                ctx.setLineDash([4, 4]);
+                ctx.lineWidth = 1;
+
+                // Diameter Q1-Q2 (parallel to y-axis)
+                const Q1 = { x: loopCenter.x - r_y, y: loopCenter.y };
+                const Q2 = { x: loopCenter.x + r_y, y: loopCenter.y };
+                ctx.beginPath();
+                ctx.moveTo(Q1.x, Q1.y);
+                ctx.lineTo(Q2.x, Q2.y);
+                ctx.stroke();
+
+                // Diameter P1-P2 (parallel to x-axis, with perspective)
+                // Calculated based on the x-axis slope (-0.5)
+                const dx_p = 105;
+                const dy_p = 52.5;
+                const P1 = { x: loopCenter.x + dx_p, y: loopCenter.y - dy_p }; // back
+                const P2 = { x: loopCenter.x - dx_p, y: loopCenter.y + dy_p }; // front
+                ctx.beginPath();
+                ctx.moveTo(P1.x, P1.y);
+                ctx.lineTo(P2.x, P2.y);
+                ctx.stroke();
+                
+                // Radius r
+                ctx.beginPath();
+                ctx.moveTo(loopCenter.x, loopCenter.y);
+                ctx.lineTo(loopCenter.x - r_y * 0.7, loopCenter.y);
+                ctx.stroke();
+
+                ctx.restore();
+
+                // Labels
+                ctx.font = '20px Times New Roman';
+                ctx.fillStyle = 'black';
+                ctx.fillText('Q₁', Q1.x - 25, Q1.y + 8);
+                ctx.fillText('Q₂', Q2.x + 5, Q2.y + 8);
+                ctx.fillText('P₁', P2.x - 25, P2.y - 5);
+                ctx.fillText('P₂', P1.x + 5, P1.y - 5);
+                ctx.fillText('m', P1.x + 30, P1.y + 15);
+                ctx.font = 'italic 20px Times New Roman';
+                ctx.fillText('r', loopCenter.x - r_y*0.35 - 5, loopCenter.y - 10);
+                
+                // Current I
+                ctx.fillText('I', loopCenter.x - 120, loopCenter.y - r_z - 5);
+                ctx.fillText('I', loopCenter.x + 100, loopCenter.y + r_z + 20);
+                
+                // Current arrows
+                ctx.lineWidth = 1.5;
+                // Back arrow (right to left)
+                drawArrow(ctx, loopCenter.x - 50, loopCenter.y - r_z*0.87, loopCenter.x - 80, loopCenter.y - r_z*0.7, 8);
+                // Front arrow (left to right)
+                drawArrow(ctx, loopCenter.x + 50, loopCenter.y + r_z*0.87, loopCenter.x + 80, loopCenter.y + r_z*0.7, 8);
+
+
+            }
+
+            function drawAnnotations() {
+                // Height h
+                const h_x = Q2.x + 30;
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'black';
+                drawArrow(ctx, h_x, loopCenter.y, h_x, O.y, 10);
+                ctx.beginPath();
+                ctx.moveTo(h_x - 5, loopCenter.y);
+                ctx.lineTo(h_x + 5, loopCenter.y);
+                ctx.moveTo(h_x - 5, O.y);
+                ctx.lineTo(h_x + 5, O.y);
+                ctx.stroke();
+                ctx.font = 'italic 20px Times New Roman';
+                ctx.fillText('h', h_x + 10, loopCenter.y + h / 2);
+
+                // Plate label
+                ctx.font = '20px "SimSun", "Songti SC", serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('超导平板', O.x, O.y + 40);
+
+                // Figure caption
+                ctx.fillText('电图 2.24.1', O.x, O.y + 90);
+            }
+
+            // --- Main Execution ---
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawAxes();
+            const Q2 = { x: loopCenter.x + r_y, y: loopCenter.y }; // Define for h positioning
+            drawAnnotations(); // Draw h and text first to be in background
+            drawLoopAndLabels();
+
+        };
+    </script>
+</body>
+</html>

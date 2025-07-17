@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="800" height="520"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Drawing Functions ---
+
+        function drawResistor(x, y, width, height, label, labelPos = 'top') {
+            ctx.strokeRect(x - width / 2, y - height / 2, width, height);
+            ctx.save();
+            ctx.textAlign = 'center';
+            if (labelPos === 'top') {
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(label, x, y - height / 2 - 4);
+            } else if (labelPos === 'bottom') {
+                ctx.textBaseline = 'top';
+                ctx.fillText(label, x, y + height / 2 + 4);
+            } else if (labelPos === 'right') {
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label, x + width / 2 + 4, y);
+            } else if (labelPos === 'left') {
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label, x - width / 2 - 4, y);
+            }
+            ctx.restore();
+        }
+
+        function drawThermistor(x, y, width, height) {
+            // Draw the resistor box
+            ctx.strokeRect(x - width / 2, y - height / 2, width, height);
+            // Draw the characteristic NTC thermistor symbol (¯\) over it
+            ctx.beginPath();
+            const bar_y = y - height / 2 - 4;
+            const bar_x1 = x - width / 2 + 4;
+            const bar_x2 = bar_x1 + 12;
+            const slash_x_end = x + width / 2 - 4;
+            const slash_y_end = y + height / 2 + 4;
+            ctx.moveTo(bar_x1, bar_y);
+            ctx.lineTo(bar_x2, bar_y);
+            ctx.lineTo(slash_x_end, slash_y_end);
+            ctx.stroke();
+        }
+
+        function drawBattery(x, y_top, y_bottom, label) {
+            const w_long = 20;
+            const w_short = 10;
+            const y_mid = (y_top + y_bottom) / 2;
+
+            // Top cell part (long positive, short negative)
+            ctx.beginPath();
+            ctx.moveTo(x - w_long, y_top);
+            ctx.lineTo(x + w_long, y_top);
+            ctx.moveTo(x - w_short, y_top + 10);
+            ctx.lineTo(x + w_short, y_top + 10);
+            ctx.stroke();
+
+            // Dashed line connecting the cells in the symbol
+            ctx.save();
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(x, y_top + 10);
+            ctx.lineTo(x, y_bottom - 10);
+            ctx.stroke();
+            ctx.restore();
+            
+            // Bottom cell part
+            ctx.beginPath();
+            ctx.moveTo(x - w_long, y_bottom - 10);
+            ctx.lineTo(x + w_long, y_bottom - 10);
+            ctx.moveTo(x - w_short, y_bottom);
+            ctx.lineTo(x + w_short, y_bottom);
+            ctx.stroke();
+            
+            // Label
+            ctx.save();
+            ctx.textAlign = 'right';
+            ctx.fillText(label, x - w_long - 10, y_mid);
+            ctx.restore();
+        }
+
+        function drawOpAmp(x_in, y_inv, y_noninv, x_out) {
+            const y_top = y_inv - 35;
+            const y_bot = y_noninv + 35;
+            const y_mid_out = (y_inv + y_noninv) / 2;
+
+            // Triangle body
+            ctx.beginPath();
+            ctx.moveTo(x_in, y_top);
+            ctx.lineTo(x_out, y_mid_out);
+            ctx.lineTo(x_in, y_bot);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Input labels
+            ctx.fillText('-', x_in + 15, y_inv);
+            ctx.fillText('+', x_in + 15, y_noninv);
+            
+            // Power supply connections
+            const pwr_x = x_in + (x_out-x_in) * 0.4;
+            ctx.beginPath();
+            ctx.moveTo(pwr_x, y_top);
+            ctx.lineTo(pwr_x, y_top - 20);
+            ctx.stroke();
+            ctx.fillText('+5.0 V', pwr_x, y_top - 30);
+            
+            ctx.beginPath();
+            ctx.moveTo(pwr_x, y_bot);
+            ctx.lineTo(pwr_x, y_bot + 20);
+            ctx.stroke();
+            ctx.fillText('-5.0 V', pwr_x, y_bot + 30);
+        }
+
+        function drawVoltmeter(x, y, radius) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.fillText('V', x, y);
+        }
+
+        function drawGround(x, y) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + 10);
+            ctx.moveTo(x - 20, y + 10);
+            ctx.lineTo(x + 20, y + 10);
+            ctx.moveTo(x - 13, y + 16);
+            ctx.lineTo(x + 13, y + 16);
+            ctx.moveTo(x - 6, y + 22);
+            ctx.lineTo(x + 6, y + 22);
+            ctx.stroke();
+        }
+
+        function drawNode(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.save();
+            ctx.fillStyle = 'black';
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // --- Main Drawing Logic ---
+        // Set global styles
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Define major coordinates for layout
+        const y_top_wire = 80;
+        const y_fb_wire = 140;
+        const y_inv = 240;
+        const y_op_out = 285;
+        const y_noninv = 330;
+        const y_gnd = 440;
+
+        const x_batt = 100;
+        const x_div = 200;
+        const x_op_in = 400;
+        const x_op_out = 520;
+        const x_out_node = 700;
+        
+        // Ground Line
+        ctx.beginPath();
+        ctx.moveTo(x_batt, y_gnd);
+        ctx.lineTo(x_out_node, y_gnd);
+        ctx.stroke();
+
+        // Left section: Battery and Voltage Divider
+        drawBattery(x_batt, y_top_wire, y_top_wire + 100, '1.5 V');
+        ctx.beginPath();
+        ctx.moveTo(x_batt, y_top_wire); // Positive terminal to divider
+        ctx.lineTo(x_div, y_top_wire);
+        ctx.moveTo(x_div, y_top_wire);
+        ctx.lineTo(x_div, y_gnd);
+        ctx.moveTo(x_batt, y_top_wire + 100); // Negative terminal to ground line
+        ctx.lineTo(x_batt, y_gnd);
+        ctx.stroke();
+        
+        // Divider Resistors
+        drawResistor(x_div, y_top_wire + 60, 20, 50, '1100 Ω', 'right');
+        drawResistor(x_div, y_gnd - 90, 20, 50, '400 Ω', 'right');
+        
+        // Node X
+        drawNode(x_div, y_inv);
+        ctx.fillText('X', x_div + 18, y_inv - 5);
+        
+        // Op-Amp and its input
+        drawOpAmp(x_op_in, y_inv, y_noninv, x_op_out);
+        ctx.beginPath();
+        ctx.moveTo(x_div, y_inv); // from Node X
+        ctx.lineTo(x_op_in, y_inv); // to inverting input
+        ctx.stroke();
+        drawResistor((x_div + x_op_in) / 2, y_inv, 80, 20, '96 kΩ');
+        
+        // Non-inverting input to ground
+        ctx.beginPath();
+        ctx.moveTo(x_op_in, y_noninv);
+        ctx.lineTo(x_op_in, y_gnd);
+        ctx.stroke();
+        drawNode(x_op_in, y_gnd);
+        drawGround(x_op_in, y_gnd);
+
+        // Feedback loop
+        ctx.beginPath();
+        ctx.moveTo(x_op_out, y_op_out);
+        ctx.lineTo(x_out_node, y_op_out);
+        ctx.moveTo(x_out_node, y_op_out);
+        ctx.lineTo(x_out_node, y_fb_wire);
+        ctx.lineTo(x_op_in, y_fb_wire);
+        ctx.lineTo(x_op_in, y_inv);
+        ctx.stroke();
+        drawNode(x_out_node, y_op_out);
+        drawNode(x_op_in, y_inv);
+
+        // Feedback components
+        drawThermistor(x_op_in + 70, y_fb_wire, 80, 20);
+        drawResistor(x_op_in + 210, y_fb_wire, 80, 20, '100 kΩ');
+
+        // Voltmeter and connections
+        ctx.beginPath();
+        ctx.moveTo(x_out_node, y_op_out);
+        ctx.lineTo(x_out_node, y_op_out + 60);
+        ctx.moveTo(x_out_node, y_op_out + 120);
+        ctx.lineTo(x_out_node, y_gnd);
+        ctx.stroke();
+        drawVoltmeter(x_out_node, y_op_out + 90, 30);
+        drawNode(x_out_node, y_gnd);
+        
+        // Other connection nodes
+        drawNode(x_div, y_gnd);
+        drawNode(x_batt, y_gnd);
+
+        // Figure caption
+        ctx.fillText('Fig. 7.1', canvas.width / 2, 500);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="500" height="600"></canvas>
+    <script>
+        // Helper function to draw a dashed line
+        function drawDashedLine(ctx, x1, y1, x2, y2, dashLen = 5) {
+            ctx.beginPath();
+            ctx.setLineDash([dashLen, dashLen]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset to solid line
+        }
+
+        // Helper function to draw an arrow on a line
+        function drawArrow(ctx, x1, y1, x2, y2, headLen = 10) {
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+
+        const centerX = 250;
+        const scale = 40; // pixels per cm
+
+        // Coil dimensions
+        const coilWidth = 3.00 * scale;
+        const coilHeight = 5.00 * scale;
+
+        // Coil position
+        const coilTopY = 230;
+        const coilLeftX = centerX - coilWidth / 2;
+        const coilRightX = centerX + coilWidth / 2;
+        const coilBottomY = coilTopY + coilHeight;
+
+        // 1. Draw Newton Meter
+        ctx.lineWidth = 1.5;
+        const meterTopY = 50;
+        const meterBodyTopY = 70;
+        const meterBodyBottomY = 170;
+        const meterBodyWidth = 40;
+        const hookTopY = meterBodyBottomY;
+        const hookBottomY = 205;
+
+        // Top loop
+        ctx.beginPath();
+        ctx.arc(centerX, meterTopY, 12, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Connection to body
+        ctx.beginPath();
+        ctx.moveTo(centerX, meterTopY + 12);
+        ctx.lineTo(centerX, meterBodyTopY);
+        ctx.stroke();
+        // Body
+        ctx.strokeRect(centerX - meterBodyWidth / 2, meterBodyTopY, meterBodyWidth, meterBodyBottomY - meterBodyTopY);
+        // Scale inside
+        ctx.beginPath();
+        ctx.moveTo(centerX, meterBodyTopY + 10);
+        ctx.lineTo(centerX, meterBodyBottomY - 10);
+        ctx.stroke();
+        // Tick mark
+        ctx.beginPath();
+        ctx.moveTo(centerX - 10, meterBodyTopY + 50);
+        ctx.lineTo(centerX + 10, meterBodyTopY + 50);
+        ctx.stroke();
+        // Hook
+        ctx.beginPath();
+        ctx.moveTo(centerX, hookTopY);
+        ctx.lineTo(centerX, hookBottomY - 10);
+        ctx.arc(centerX, hookBottomY - 10, 10, Math.PI, 0, true);
+        ctx.stroke();
+
+        // 2. Draw Cradle
+        const cradleTopY = hookBottomY - 10;
+        const cradleTopLeftX = centerX - 10;
+        const cradleTopRightX = centerX + 10;
+
+        const cradleBottomY = coilTopY;
+        const cradleBottomSpread = 50;
+        const cradleBottomLeftX = centerX - cradleBottomSpread / 2;
+        const cradleBottomRightX = centerX + cradleBottomSpread / 2;
+
+        ctx.beginPath();
+        ctx.moveTo(cradleTopLeftX, cradleTopY);
+        ctx.lineTo(cradleBottomLeftX, cradleBottomY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cradleTopRightX, cradleTopY);
+        ctx.lineTo(cradleBottomRightX, cradleBottomY);
+        ctx.stroke();
+
+        // 3. Draw Coil
+        ctx.lineWidth = 2;
+        ctx.strokeRect(coilLeftX, coilTopY, coilWidth, coilHeight);
+        
+        // 4. Draw Labels and Pointers
+        ctx.lineWidth = 1;
+
+        // newton meter
+        const newtonMeterLabelX = centerX + meterBodyWidth / 2 + 20;
+        const newtonMeterLabelY = meterBodyTopY + 40;
+        ctx.fillText('newton meter', newtonMeterLabelX, newtonMeterLabelY);
+        ctx.beginPath();
+        ctx.moveTo(newtonMeterLabelX, newtonMeterLabelY);
+        ctx.lineTo(centerX + meterBodyWidth / 2 + 5, newtonMeterLabelY);
+        ctx.stroke();
+
+        // cradle
+        const cradleLabelX = coilLeftX - 90;
+        const cradleLabelY = coilTopY - 20;
+        ctx.fillText('cradle', cradleLabelX, cradleLabelY);
+        const pointerStartX = cradleLabelX + 50;
+        const pointerStartY = cradleLabelY;
+        const forkX = pointerStartX + 15;
+        const forkY = pointerStartY;
+        ctx.beginPath();
+        ctx.moveTo(pointerStartX, pointerStartY);
+        ctx.lineTo(forkX, forkY);
+        ctx.stroke();
+        drawArrow(ctx, forkX, forkY, cradleBottomLeftX, cradleBottomY, 8);
+        drawArrow(ctx, forkX, forkY, cradleBottomRightX, cradleBottomY, 8);
+        
+        // coil
+        const coilLabelX = coilRightX + 20;
+        const coilLabelY = coilTopY + 40;
+        ctx.fillText('coil', coilLabelX, coilLabelY);
+        ctx.fillText('40 turns', coilLabelX, coilLabelY + 20);
+        ctx.beginPath();
+        ctx.moveTo(coilLabelX, coilLabelY);
+        ctx.lineTo(coilRightX + 5, coilLabelY);
+        ctx.stroke();
+
+        // 5. Draw Dimension Lines and Text
+        const dimOffset = 50;
+        const dimTextOffset = 10;
+
+        // Vertical dimension (5.00 cm)
+        const vDimX = coilLeftX - dimOffset;
+        drawDashedLine(ctx, coilLeftX, coilTopY, vDimX, coilTopY);
+        drawDashedLine(ctx, coilLeftX, coilBottomY, vDimX, coilBottomY);
+        drawArrow(ctx, vDimX, coilTopY, vDimX, coilBottomY);
+        drawArrow(ctx, vDimX, coilBottomY, vDimX, coilTopY);
+        ctx.save();
+        ctx.translate(vDimX - dimTextOffset, coilTopY + coilHeight / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('5.00 cm', 0, 0);
+        ctx.restore();
+
+        // Horizontal dimension (3.00 cm)
+        const hDimY = coilBottomY + dimOffset;
+        drawDashedLine(ctx, coilLeftX, coilBottomY, coilLeftX, hDimY);
+        drawDashedLine(ctx, coilRightX, coilBottomY, coilRightX, hDimY);
+        drawArrow(ctx, coilLeftX, hDimY, coilRightX, hDimY);
+        drawArrow(ctx, coilRightX, hDimY, coilLeftX, hDimY);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('3.00 cm', centerX, hDimY + dimTextOffset);
+
+        // 6. Draw Figure Caption
+        ctx.font = 'bold 16px Arial';
+        ctx.fillText('Fig. 7.1', centerX, hDimY + dimOffset);
+    </script>
+</body>
+</html>

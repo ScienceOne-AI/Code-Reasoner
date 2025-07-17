@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Infinite Nested Squares Network</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="500"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    const center = { x: w / 2, y: h / 2 };
+
+    // --- Style Configuration ---
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = '22px serif';
+    ctx.fillStyle = 'black';
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws a polygon from a list of vertices.
+     * @param {Array<{x: number, y: number}>} vertices - The vertices of the polygon.
+     * @param {boolean} [dashed=false] - Whether to draw the line dashed.
+     */
+    function drawPolygon(vertices, dashed = false) {
+        if (dashed) {
+            ctx.setLineDash([4, 4]);
+        } else {
+            ctx.setLineDash([]);
+        }
+        ctx.beginPath();
+        ctx.moveTo(vertices[0].x, vertices[0].y);
+        for (let i = 1; i < vertices.length; i++) {
+            ctx.lineTo(vertices[i].x, vertices[i].y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset for other drawings
+    }
+
+    /**
+     * Calculates the midpoints of the sides of a polygon.
+     * @param {Array<{x: number, y: number}>} vertices - The vertices of the polygon.
+     * @returns {Array<{x: number, y: number}>} - The calculated midpoints.
+     */
+    function getMidpoints(vertices) {
+        const midpoints = [];
+        for (let i = 0; i < vertices.length; i++) {
+            const p1 = vertices[i];
+            const p2 = vertices[(i + 1) % vertices.length];
+            midpoints.push({ x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 });
+        }
+        return midpoints;
+    }
+
+    // --- Main Drawing Logic ---
+
+    // 1. Outermost Square (ABCD)
+    const s0 = 200; // semi-diagonal
+    let v0 = [
+        { x: center.x, y: center.y - s0 }, // Top vertex (A)
+        { x: center.x - s0, y: center.y }, // Left vertex (B)
+        { x: center.x, y: center.y + s0 }, // Bottom vertex (C)
+        { x: center.x + s0, y: center.y }  // Right vertex (D)
+    ];
+    drawPolygon(v0);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('A', v0[0].x, v0[0].y - 8);
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('B', v0[1].x - 8, v0[1].y);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('C', v0[2].x, v0[2].y + 8);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('D', v0[3].x + 8, v0[3].y);
+
+    // 2. Second Square (EFGH)
+    // Vertices are midpoints of the first square's sides.
+    // Order: Mid(AB), Mid(BC), Mid(CD), Mid(DA)
+    // This corresponds to: Top-Left(E), Bottom-Left(F), Bottom-Right(G), Top-Right(H)
+    let v1 = getMidpoints(v0);
+    drawPolygon(v1);
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('E', v1[0].x - 8, v1[0].y - 5);
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText('F', v1[1].x - 8, v1[1].y + 5);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('G', v1[2].x + 8, v1[2].y + 5);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('H', v1[3].x + 8, v1[3].y - 5);
+    
+    // 3. Third Square (vertex I)
+    // Vertices are midpoints of the second square's sides.
+    // Order: Mid(EF), Mid(FG), Mid(GH), Mid(HE)
+    // This corresponds to: Left, Bottom(I), Right, Top vertices of the third square.
+    let v2 = getMidpoints(v1);
+    drawPolygon(v2);
+    // Vertex I is the bottom vertex, which is v2[1].
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('I', v2[1].x - 10, v2[1].y + 5);
+
+    // 4. Fourth Square
+    let v3 = getMidpoints(v2);
+    drawPolygon(v3);
+
+    // 5. Fifth Square (innermost, dashed)
+    let v4 = getMidpoints(v3);
+    drawPolygon(v4, true);
+
+    // 6. Dashed cross in the middle
+    // The cross connects the midpoints of the sides of the innermost dashed square (v4).
+    let inner_midpoints = getMidpoints(v4);
+    // inner_midpoints order corresponds to midpoints of sides: 
+    // [0]=Left, [1]=Bottom, [2]=Right, [3]=Top
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    // Horizontal line of the cross (connects left and right midpoints)
+    ctx.moveTo(inner_midpoints[0].x, inner_midpoints[0].y);
+    ctx.lineTo(inner_midpoints[2].x, inner_midpoints[2].y);
+    // Vertical line of the cross (connects top and bottom midpoints)
+    ctx.moveTo(inner_midpoints[3].x, inner_midpoints[3].y);
+    ctx.lineTo(inner_midpoints[1].x, inner_midpoints[1].y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+</script>
+
+</body>
+</html>

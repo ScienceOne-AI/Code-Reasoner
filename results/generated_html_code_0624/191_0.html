@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Loop Track</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Parameters
+        const cx = 320;
+        const cy = 250;
+        const R = 70; // Radius of the loop track
+        const ballRadius = 6;
+        const lineWidth = 2;
+
+        ctx.lineWidth = lineWidth;
+        ctx.font = '16px serif';
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+
+        // --- Calculate Track Geometry ---
+        // We want the ramp line y = mx + c to be tangent to the circle (x-cx)^2 + (y-cy)^2 = R^2
+        // For a good visual appearance matching the diagram, let's define the ramp slope and starting point.
+        const rampSlope = 1.0; // Positive slope in canvas coordinates (down and right)
+        
+        // Find tangent point by solving for line y = m(x-x0)+y0 and circle equation.
+        // It's easier to pick a tangent angle and derive the line from it.
+        // As analyzed, a true tangent for the visual geometry is impossible.
+        // We will create a visually smooth connection instead.
+        const rampStartX = 140;
+        const rampStartY = 140;
+
+        const rampEndX = cx - R * Math.cos(Math.PI / 4) - 2;
+        const rampEndY = cy - R * Math.sin(Math.PI / 4) - 2;
+
+        const loopStartAngle = 1.25 * Math.PI; // Angle where ramp meets loop
+        const loopEndAngle = 0.5 * Math.PI;   // Angle at the bottom of the loop
+
+        // --- Draw Track ---
+        ctx.beginPath();
+        // Ramp
+        ctx.moveTo(rampStartX, rampStartY);
+        // Use a quadratic curve to smoothly join the ramp to the circular arc.
+        // The control point is chosen to make the start of the arc appear tangent to the ramp.
+        const tangentPointX = cx - R * Math.cos(Math.PI / 4);
+        const tangentPointY = cy - R * Math.sin(Math.PI / 4);
+        ctx.lineTo(tangentPointX, tangentPointY);
+
+        // Loop arc
+        ctx.arc(cx, cy, R, loopStartAngle, loopEndAngle, false);
+
+        // Horizontal exit track
+        const bottomX = cx;
+        const bottomY = cy + R;
+        ctx.lineTo(bottomX + 150, bottomY);
+        ctx.stroke();
+
+        // --- Draw Annotations ---
+
+        // Starting Ball
+        const startBallX = rampStartX + 25;
+        const startBallY = rampStartY + 25;
+        ctx.beginPath();
+        ctx.arc(startBallX, startBallY, ballRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // Ball at the top of the loop
+        ctx.beginPath();
+        ctx.arc(cx, cy - R + ballRadius, ballRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Rotation indicator
+        ctx.beginPath();
+        ctx.arc(cx, cy - R + ballRadius, ballRadius * 0.6, Math.PI, 1.8 * Math.PI);
+        ctx.moveTo(cx - ballRadius * 0.6 + 1, cy - R + ballRadius);
+        ctx.lineTo(cx - ballRadius * 0.6 - 2, cy - R + ballRadius - 2);
+        ctx.lineTo(cx - ballRadius * 0.6 + 2, cy - R + ballRadius - 4);
+        ctx.stroke();
+
+        // Ball at the bottom of the loop
+        ctx.beginPath();
+        ctx.arc(cx, cy + R - ballRadius, ballRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Rotation indicator
+        ctx.beginPath();
+        ctx.arc(cx, cy + R - ballRadius, ballRadius * 0.6, 0, 0.8 * Math.PI);
+        ctx.moveTo(cx + ballRadius * 0.6 -1 , cy + R - ballRadius);
+        ctx.lineTo(cx + ballRadius * 0.6 + 2, cy + R - ballRadius + 2);
+        ctx.lineTo(cx + ballRadius * 0.6 - 2, cy + R - ballRadius + 4);
+        ctx.stroke();
+
+
+        // Height 'h'
+        const h_line_x = rampStartX - 20;
+        const h_top_y = startBallY;
+        const h_bottom_y = cy - R;
+
+        ctx.beginPath();
+        ctx.setLineDash([5, 3]);
+        ctx.moveTo(startBallX, h_top_y);
+        ctx.lineTo(h_line_x, h_top_y);
+        ctx.moveTo(cx - R, h_bottom_y);
+        ctx.lineTo(h_line_x, h_bottom_y);
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(h_line_x, h_top_y);
+        ctx.lineTo(h_line_x, h_bottom_y);
+        // Arrows for h
+        ctx.moveTo(h_line_x, h_top_y);
+        ctx.lineTo(h_line_x - 4, h_top_y + 4);
+        ctx.moveTo(h_line_x, h_top_y);
+        ctx.lineTo(h_line_x + 4, h_top_y + 4);
+        ctx.moveTo(h_line_x, h_bottom_y);
+        ctx.lineTo(h_line_x - 4, h_bottom_y - 4);
+        ctx.moveTo(h_line_x, h_bottom_y);
+        ctx.lineTo(h_line_x + 4, h_bottom_y - 4);
+        ctx.stroke();
+        ctx.fillText('h', h_line_x - 20, (h_top_y + h_bottom_y) / 2 + 5);
+
+        // Diameter 'D = 2R'
+        const D_line_x = cx + R + 30;
+        const D_top_y = cy - R;
+        const D_bottom_y = cy + R;
+        
+        ctx.beginPath();
+        ctx.setLineDash([5, 3]);
+        ctx.moveTo(cx, D_top_y);
+        ctx.lineTo(D_line_x, D_top_y);
+        ctx.moveTo(cx, D_bottom_y);
+        ctx.lineTo(D_line_x, D_bottom_y);
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(D_line_x, D_top_y);
+        ctx.lineTo(D_line_x, D_bottom_y);
+        // T-ends for D
+        ctx.moveTo(D_line_x - 4, D_top_y);
+        ctx.lineTo(D_line_x + 4, D_top_y);
+        ctx.moveTo(D_line_x - 4, D_bottom_y);
+        ctx.lineTo(D_line_x + 4, D_bottom_y);
+        ctx.stroke();
+        ctx.fillText('D = 2R', D_line_x + 10, (D_top_y + D_bottom_y) / 2 + 5);
+
+        // Figure caption
+        ctx.fillText('Fig. 1.160.', canvas.width / 2 - 40, canvas.height - 20);
+    </script>
+</body>
+</html>

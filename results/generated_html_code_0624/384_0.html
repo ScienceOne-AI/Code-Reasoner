@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Two-Slit Diffraction Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="650" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '16px "Comic Sans MS", cursive, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Coordinates and dimensions
+        const origin = { x: 50, y: 225 };
+        const x_tube = 20;
+        const x_source_slit = 70;
+        const x_double_slit = 230;
+        const x_screen = 580;
+        
+        const tube_radius = 25;
+        const y_slit_half = 15;
+        const D_half = 60;
+        const w_dim = 25;
+        const l_dim = 70;
+        
+        const H_outer_half = D_half + w_dim;
+
+        // --- Helper Functions ---
+
+        function drawArrow(x1, y1, x2, y2, size = 5) {
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 6), y2 - size * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 6), y2 - size * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawDimLine(x1, y1, x2, y2, label) {
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            drawArrow(x1 - 10, y1, x1, y1);
+            drawArrow(x2 + 10, y2, x2, y2);
+            
+            ctx.fillStyle = 'black';
+            if (x1 === x2) { // Vertical line
+                ctx.fillText(label, x1 - 15, (y1 + y2) / 2);
+            } else { // Horizontal line
+                ctx.fillText(label, (x1 + x2) / 2, y1 + 15);
+            }
+            ctx.restore();
+        }
+        
+        function drawVerticalDimLine(x, y_start, y_end, label, label_x_offset) {
+            ctx.save();
+            ctx.lineWidth = 1;
+            // Main line
+            ctx.beginPath();
+            ctx.moveTo(x, y_start);
+            ctx.lineTo(x, y_end);
+            ctx.stroke();
+            // Ticks
+            ctx.beginPath();
+            ctx.moveTo(x - 5, y_start);
+            ctx.lineTo(x + 5, y_start);
+            ctx.moveTo(x - 5, y_end);
+            ctx.lineTo(x + 5, y_end);
+            ctx.stroke();
+            // Arrows
+            drawArrow(x, y_start + 10, x, y_start);
+            drawArrow(x, y_end - 10, x, y_end);
+
+            ctx.fillText(label, x + label_x_offset, (y_start + y_end) / 2);
+            ctx.restore();
+        }
+        
+        function drawHorizontalDimLine(y, x_start, x_end, label, label_y_offset) {
+            ctx.save();
+            ctx.lineWidth = 1;
+            // Main line
+            ctx.beginPath();
+            ctx.moveTo(x_start, y);
+            ctx.lineTo(x_end, y);
+            ctx.stroke();
+            // Ticks
+            ctx.beginPath();
+            ctx.moveTo(x_start, y - 5);
+            ctx.lineTo(x_start, y + 5);
+            ctx.moveTo(x_end, y - 5);
+            ctx.lineTo(x_end, y + 5);
+            ctx.stroke();
+            ctx.fillText(label, (x_start + x_end) / 2, y + label_y_offset);
+            ctx.restore();
+        }
+
+
+        function drawDashedLine(x1, y1, x2, y2, segments = 20) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+        }
+
+        ctx.translate(origin.x, origin.y);
+
+        // --- Draw Main Components ---
+
+        // 1. Central Axis
+        drawDashedLine(-50, 0, x_screen + 30, 0);
+
+        // 2. Vertical lines (barriers/screen)
+        ctx.save();
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        // Source slit barrier
+        ctx.moveTo(x_source_slit, -120);
+        ctx.lineTo(x_source_slit, 120);
+        // Double slit barrier
+        ctx.moveTo(x_double_slit, -120);
+        ctx.lineTo(x_double_slit, 120);
+        // Screen
+        ctx.moveTo(x_screen, -150);
+        ctx.lineTo(x_screen, 150);
+        ctx.stroke();
+        ctx.restore();
+        
+        // 3. Discharge Tube
+        ctx.beginPath();
+        ctx.arc(x_tube, 0, tube_radius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.fillText('Discharge', x_tube, -55);
+        ctx.fillText('tube', x_tube, -38);
+
+        // 4. Light Path - Outer solid shape
+        ctx.beginPath();
+        const left_vertex_x = x_source_slit + 5;
+        ctx.moveTo(left_vertex_x, 0);
+        ctx.lineTo(x_double_slit, H_outer_half);
+        ctx.lineTo(x_screen, l_dim);
+        ctx.lineTo(x_double_slit, -H_outer_half);
+        ctx.closePath();
+        ctx.stroke();
+
+        // 5. Light Path - Inner dashed lines
+        drawDashedLine(x_double_slit, D_half, x_screen, l_dim);
+        drawDashedLine(x_double_slit, -D_half, x_screen, l_dim);
+        drawDashedLine(x_double_slit, 0, x_screen, l_dim);
+
+        // --- Draw Labels and Dimensions ---
+        
+        // 'P' point
+        ctx.fillText('P', x_screen + 15, l_dim);
+        
+        // 'y' dimension
+        drawVerticalDimLine(x_source_slit, -y_slit_half, y_slit_half, 'y', -15);
+        
+        // 'x' and 'L' dimensions
+        drawHorizontalDimLine(130, x_source_slit, x_double_slit, 'x', 20);
+        drawHorizontalDimLine(130, x_double_slit, x_screen, 'L', 20);
+        
+        // 'D' dimension
+        drawVerticalDimLine(x_double_slit + 20, -D_half, D_half, 'D', 15);
+        
+        // 'w' dimensions
+        drawVerticalDimLine(x_double_slit - 25, D_half, H_outer_half, 'w', -15);
+        drawVerticalDimLine(x_double_slit - 25, -H_outer_half, -D_half, 'w', -15);
+        
+        // 'l' dimension
+        drawVerticalDimLine(x_screen + 20, 0, l_dim, 'l', 15);
+        
+        // 'θ' angle
+        ctx.save();
+        ctx.lineWidth = 1;
+        const angle_radius = 60;
+        const angle_end = Math.atan2(l_dim, x_screen - x_double_slit);
+        ctx.beginPath();
+        ctx.arc(x_double_slit, 0, angle_radius, 0, angle_end);
+        ctx.stroke();
+        const theta_x = x_double_slit + angle_radius * 1.2 * Math.cos(angle_end / 2);
+        const theta_y = angle_radius * 1.2 * Math.sin(angle_end / 2);
+        ctx.fillText('θ', theta_x, theta_y);
+        ctx.restore();
+        
+        // Figure Caption
+        ctx.fillText('Fig. 2.9', (x_double_slit+x_screen)/2, 180);
+
+    </script>
+</body>
+</html>

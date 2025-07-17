@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="800" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+
+        function drawGrid(ctx, step) {
+            ctx.beginPath();
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 0.5;
+
+            for (let x = 0; x <= ctx.canvas.width; x += step) {
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, ctx.canvas.height);
+            }
+
+            for (let y = 0; y <= ctx.canvas.height; y += step) {
+                ctx.moveTo(0, y);
+                ctx.lineTo(ctx.canvas.width, y);
+            }
+            ctx.stroke();
+        }
+
+        function drawResistorV(ctx, x, y1, y2, label, value) {
+            const length = y2 - y1;
+            const leadLength = length * 0.25;
+            const bodyLength = length * 0.5;
+            const startY = y1 + leadLength;
+            const endY = y2 - leadLength;
+            const zigZagWidth = 10;
+            const numZigs = 7;
+
+            // Top lead
+            ctx.beginPath();
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, startY);
+            ctx.stroke();
+
+            // Resistor Body (ZigZag)
+            ctx.beginPath();
+            ctx.moveTo(x, startY);
+            for (let i = 0; i < numZigs; i++) {
+                const y = startY + (i + 0.5) * (bodyLength / numZigs);
+                const zigX = x + (i % 2 === 0 ? 1 : -1) * zigZagWidth;
+                ctx.lineTo(zigX, y);
+            }
+            ctx.lineTo(x, endY);
+            ctx.stroke();
+            
+            // Bottom lead
+            ctx.beginPath();
+            ctx.moveTo(x, endY);
+            ctx.lineTo(x, y2);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = 'black';
+            ctx.font = '18px serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(label, x + 20, y1 + length / 2 - 5);
+            ctx.fillText(value, x + 20, y1 + length / 2 + 15);
+        }
+        
+        function drawResistorH(ctx, x1, y, x2, label, value) {
+            const length = x2 - x1;
+            const leadLength = length * 0.15;
+            const bodyLength = length * 0.7;
+            const startX = x1 + leadLength;
+            const endX = x2 - leadLength;
+            const zigZagHeight = 10;
+            const numZigs = 7;
+
+            // Left lead
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(startX, y);
+            ctx.stroke();
+
+            // Resistor Body (ZigZag)
+            ctx.beginPath();
+            ctx.moveTo(startX, y);
+            for (let i = 0; i < numZigs; i++) {
+                const x = startX + (i + 0.5) * (bodyLength / numZigs);
+                const zigY = y + (i % 2 === 0 ? -1 : 1) * zigZagHeight;
+                ctx.lineTo(x, zigY);
+            }
+            ctx.lineTo(endX, y);
+            ctx.stroke();
+            
+            // Right lead
+            ctx.beginPath();
+            ctx.moveTo(endX, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+            
+            // Labels
+            ctx.fillStyle = 'black';
+            ctx.font = '18px serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, x1 + length / 2, y + 30);
+            ctx.fillText(value, x1 + length / 2, y + 50);
+        }
+
+        function drawJunction(ctx, x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = 'black';
+            ctx.fill();
+        }
+
+        // --- Main Drawing ---
+
+        // Clear canvas and draw grid
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid(ctx, 20);
+
+        // Set styles for circuit components
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // Title
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 36px serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('Circuit 2', 80, 70);
+
+        // Battery
+        const batX = 150;
+        const batY = 300;
+        const batR = 35;
+        ctx.beginPath();
+        ctx.arc(batX, batY, batR, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Plus and minus signs
+        ctx.font = '30px sans-serif';
+        ctx.fillText('+', batX - 8, batY - 8);
+        ctx.font = '40px sans-serif';
+        ctx.fillText('—', batX - 10, batY + 18);
+        // Labels
+        ctx.font = '18px serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('Battery', batX + batR + 10, batY - 5);
+        ctx.fillText('3 V', batX + batR + 10, batY + 15);
+
+
+        // --- Wires ---
+        const yTop = 175;
+        const yMid = 350;
+        const yBot = 450;
+        
+        // Battery to R1
+        ctx.beginPath();
+        ctx.moveTo(batX, batY - batR);
+        ctx.lineTo(batX, yTop);
+        ctx.lineTo(250, yTop);
+        ctx.stroke();
+
+        // Main top wire
+        ctx.beginPath();
+        ctx.moveTo(400, yTop);
+        ctx.lineTo(680, yTop);
+        ctx.stroke();
+        
+        // R3/R4 middle wire
+        ctx.beginPath();
+        ctx.moveTo(550, yMid);
+        ctx.lineTo(650, yMid);
+        ctx.stroke();
+        
+        // Main bottom wire
+        ctx.beginPath();
+        ctx.moveTo(batX, batY + batR);
+        ctx.lineTo(batX, yBot);
+        ctx.lineTo(700, yBot);
+        ctx.stroke();
+
+        // --- Resistors ---
+        drawResistorH(ctx, 250, yTop, 400, 'R1', '50 Ω');
+        drawResistorV(ctx, 450, yTop, yBot, 'R2', '50 Ω');
+        drawResistorV(ctx, 550, yTop, yMid, 'R3', '60 Ω');
+        drawResistorV(ctx, 650, yTop, yMid, 'R4', '30 Ω');
+        drawResistorV(ctx, 600, yMid, yBot, 'R5', '30 Ω');
+        
+        // --- Junctions ---
+        drawJunction(ctx, 450, yTop); // R1,R2,R3/4 branch
+        drawJunction(ctx, 550, yTop); // Top wire to R3
+        drawJunction(ctx, 650, yTop); // Top wire to R4 (as implied by image)
+        drawJunction(ctx, 600, yMid); // R3,R4,R5
+        drawJunction(ctx, 450, yBot); // R2 to bottom wire
+    </script>
+</body>
+</html>

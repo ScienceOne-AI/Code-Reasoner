@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="700" height="450" style="border:1px solid #000000;"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '18px sans-serif';
+
+        // --- Helper functions to draw components ---
+
+        function drawWire(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        function drawNode(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        // Draws a horizontal resistor
+        function drawHResistor(x, y, width, label, value) {
+            const zigHeight = 10;
+            const segment = width / 6;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + segment / 2, y);
+            ctx.lineTo(x + segment, y - zigHeight);
+            ctx.lineTo(x + 2 * segment, y + zigHeight);
+            ctx.lineTo(x + 3 * segment, y - zigHeight);
+            ctx.lineTo(x + 4 * segment, y + zigHeight);
+            ctx.lineTo(x + 4.5 * segment, y);
+            ctx.lineTo(x + 5 * segment, y);
+            ctx.stroke();
+            
+            // Draw labels
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(value, x + segment * 2.5, y - 15);
+            ctx.fillText(label, x + segment * 2.5, y - 35);
+        }
+        
+        // Draws a vertical resistor
+        function drawVResistor(x, y, height, label, value) {
+            const zigWidth = 10;
+            const segment = height / 6;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + segment / 2);
+            ctx.lineTo(x + zigWidth, y + segment);
+            ctx.lineTo(x - zigWidth, y + 2 * segment);
+            ctx.lineTo(x + zigWidth, y + 3 * segment);
+            ctx.lineTo(x - zigWidth, y + 4 * segment);
+            ctx.lineTo(x, y + 4.5 * segment);
+            ctx.lineTo(x, y + 5 * segment);
+            ctx.stroke();
+
+            // Draw labels
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, x + 18, y + segment * 2.5 - 10);
+            ctx.fillText(value, x + 18, y + segment * 2.5 + 10);
+        }
+
+        function drawVoltageSource(x, y, height, label) {
+            const plateWidthLong = 40;
+            const plateWidthShort = 20;
+            const topY = y - height / 2;
+            const bottomY = y + height / 2;
+
+            // Wires to plates
+            drawWire(x, topY, x, y - 10);
+            drawWire(x, bottomY, x, y + 10);
+            
+            // Plates
+            ctx.beginPath();
+            ctx.moveTo(x - plateWidthLong / 2, y - 10);
+            ctx.lineTo(x + plateWidthLong / 2, y - 10);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x - plateWidthShort / 2, y + 10);
+            ctx.lineTo(x + plateWidthShort / 2, y + 10);
+            ctx.stroke();
+            
+            // Labels
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '24px sans-serif';
+            ctx.fillText('+', x, y - 25);
+            ctx.font = '18px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(label, x - 30, y);
+        }
+
+        // --- Main drawing logic ---
+
+        // Define coordinates
+        const y_top = 70;
+        const y_bottom = 380;
+        const x_source = 80;
+        const x1 = 260; // First branch (R2, R3)
+        const x2 = 460; // Second branch (R5)
+        const x3 = 600; // Third branch (R6, R7)
+        
+        // Draw bottom wire
+        drawWire(x_source, y_bottom, x3, y_bottom);
+
+        // Draw left side with voltage source
+        const y_source_center = y_top + (y_bottom - y_top) / 2;
+        drawWire(x_source, y_bottom, x_source, y_source_center + 40);
+        drawVoltageSource(x_source, y_source_center, 80, '5 V');
+        drawWire(x_source, y_source_center - 40, x_source, y_top);
+
+        // Draw top part of the circuit
+        const x_R1_start = x_source;
+        const x_R1_end = x_R1_start + 120;
+        drawWire(x_R1_start, y_top, x_R1_start + 20, y_top);
+        drawHResistor(x_R1_start + 20, y_top, 80, 'R1', '4 Ω');
+        drawWire(x_R1_start + 100, y_top, x1, y_top);
+        
+        drawNode(x1, y_top);
+
+        const x_R4_start = x1;
+        const x_R4_end = x_R4_start + 120;
+        drawWire(x_R4_start, y_top, x_R4_start + 10, y_top);
+        drawHResistor(x_R4_start + 10, y_top, 100, 'R4', '10 Ω');
+        drawWire(x_R4_start + 110, y_top, x2, y_top);
+
+        drawNode(x2, y_top);
+        drawWire(x2, y_top, x3, y_top);
+
+        // Draw vertical branches
+        
+        // Branch 1: R2 and R3
+        const y_mid1 = y_top + (y_bottom - y_top) / 2;
+        drawWire(x1, y_top, x1, y_mid1 - 70);
+        drawVResistor(x1, y_mid1 - 70, 60, 'R2', '4 Ω');
+        drawWire(x1, y_mid1 - 10, x1, y_mid1 + 10);
+        drawVResistor(x1, y_mid1 + 10, 60, 'R3', '8 Ω');
+        drawWire(x1, y_mid1 + 70, x1, y_bottom);
+        drawNode(x1, y_bottom);
+
+        // Branch 2: R5
+        const y_mid2 = y_top + (y_bottom - y_top) / 2;
+        drawWire(x2, y_top, x2, y_mid2 - 50);
+        drawVResistor(x2, y_mid2 - 50, 100, 'R5', '4 Ω');
+        drawWire(x2, y_mid2 + 50, x2, y_bottom);
+        drawNode(x2, y_bottom);
+
+        // Branch 3: R6 and R7
+        const y_mid3 = y_top + (y_bottom - y_top) / 2;
+        drawWire(x3, y_top, x3, y_mid3 - 70);
+        drawVResistor(x3, y_mid3 - 70, 60, 'R6', '2 Ω');
+        drawWire(x3, y_mid3 - 10, x3, y_mid3 + 10);
+        drawVResistor(x3, y_mid3 + 10, 60, 'R7', '2 Ω');
+        drawWire(x3, y_mid3 + 70, x3, y_bottom);
+        drawNode(x3, y_bottom);
+
+    </script>
+</body>
+</html>

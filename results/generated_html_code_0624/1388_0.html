@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  canvas {
+    border: 1px solid #d3d3d3;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="physicsDiagram" width="700" height="350"></canvas>
+
+<script>
+  const canvas = document.getElementById('physicsDiagram');
+  const ctx = canvas.getContext('2d');
+
+  // --- Drawing Configuration ---
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 2;
+  ctx.font = "italic 22px Times New Roman";
+  ctx.textAlign = 'center';
+
+  // --- Helper Function for Drawing Spring ---
+  function drawSpring(ctx, x0, y0, len, amp, coils) {
+      ctx.beginPath();
+      const segmentLen = len / coils;
+      const leadLen = segmentLen / 4;
+      
+      // Start of spring's straight part
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x0 + leadLen, y0);
+      
+      let currentX = x0 + leadLen;
+      
+      // Coils
+      for (let i = 0; i < coils; i++) {
+          ctx.arc(currentX + segmentLen / 4, y0, amp, Math.PI, 0, true);
+          ctx.arc(currentX + 3 * segmentLen / 4, y0, amp, Math.PI, 0, false);
+          currentX += segmentLen;
+      }
+      
+      // End of spring's straight part
+      ctx.lineTo(x0 + len, y0);
+      
+      ctx.stroke();
+  }
+
+  // --- Main Drawing Logic ---
+  
+  // 1. Ground
+  const yGround = 300;
+  ctx.beginPath();
+  ctx.moveTo(0, yGround);
+  ctx.lineTo(700, yGround);
+  ctx.stroke();
+  ctx.lineWidth = 1.5;
+  for (let i = 20; i < 700; i += 25) {
+      ctx.beginPath();
+      ctx.moveTo(i, yGround);
+      ctx.lineTo(i - 10, yGround + 10);
+      ctx.stroke();
+  }
+  ctx.lineWidth = 2;
+
+  // 2. Slideway AB (outer U-shape)
+  const xA = 80;
+  const xB = 620;
+  const yTop = 160;
+  const yBase = 280;
+  ctx.beginPath();
+  ctx.moveTo(xA, yTop);
+  ctx.lineTo(xA, yBase);
+  ctx.lineTo(xB, yBase);
+  ctx.lineTo(xB, yTop);
+  ctx.stroke();
+  ctx.fillText("A", xA, yTop - 10);
+  ctx.fillText("B", xB, yTop - 10);
+
+  // 3. Plate (inner element)
+  const lx = 90;
+  const plateLen = 320;
+  const xPlateLeft = xA + lx;
+  const xPlateRight = xPlateLeft + plateLen;
+  const yPlateBottom = yBase;
+  const plateHeight = 40;
+  const yPlateTop = yPlateBottom - plateHeight;
+
+  // Draw plate as a box-like shape with two horizontal lines
+  ctx.beginPath();
+  ctx.moveTo(xPlateLeft, yPlateTop);
+  ctx.lineTo(xPlateRight, yPlateTop);
+  ctx.moveTo(xPlateLeft, yPlateBottom);
+  ctx.lineTo(xPlateRight, yPlateBottom);
+  ctx.stroke();
+  
+  // Plate Labels
+  ctx.fillText("m", xPlateLeft + plateLen / 2 - 30, yPlateBottom - 12);
+  ctx.fillText("3l", xPlateLeft + plateLen / 2 + 30, yPlateBottom - 12);
+
+  // 4. Spring
+  const ySpring = yPlateTop;
+  const springLen = 140;
+  drawSpring(ctx, xPlateLeft, ySpring, springLen, 10, 8);
+  ctx.fillText("k, 2l", xPlateLeft + springLen / 2, ySpring - 25);
+
+  // 5. Block
+  const blockSize = 40;
+  const xBlock = xPlateRight - 120;
+  const yBlockTop = yPlateTop - blockSize;
+  ctx.beginPath();
+  ctx.rect(xBlock, yBlockTop, blockSize, blockSize);
+  ctx.stroke();
+  ctx.fillText("m", xBlock + blockSize / 2, yBlockTop - 8);
+
+  // 6. Velocity vector v0
+  const yArrow = yBlockTop + blockSize / 2;
+  const xArrowStart = xBlock - 10;
+  const xArrowEnd = xArrowStart - 50;
+  ctx.beginPath();
+  ctx.moveTo(xArrowStart, yArrow);
+  ctx.lineTo(xArrowEnd, yArrow);
+  // Arrowhead
+  ctx.moveTo(xArrowEnd, yArrow);
+  ctx.lineTo(xArrowEnd + 10, yArrow - 5);
+  ctx.moveTo(xArrowEnd, yArrow);
+  ctx.lineTo(xArrowEnd + 10, yArrow + 5);
+  ctx.stroke();
+  // Label for velocity
+  ctx.fillText("v", xArrowEnd + 30, yArrow - 12);
+  ctx.save();
+  ctx.font = "italic 16px Times New Roman";
+  ctx.fillText("0", xArrowEnd + 39, yArrow - 7);
+  ctx.restore();
+
+  // 7. Dimension lx
+  const yLx = yTop + 35;
+  ctx.beginPath();
+  ctx.moveTo(xA, yLx);
+  ctx.lineTo(xPlateLeft, yLx);
+  // Left arrowhead
+  ctx.moveTo(xA, yLx);
+  ctx.lineTo(xA + 10, yLx - 5);
+  ctx.moveTo(xA, yLx);
+  ctx.lineTo(xA + 10, yLx + 5);
+  // Right arrowhead
+  ctx.moveTo(xPlateLeft, yLx);
+  ctx.lineTo(xPlateLeft - 10, yLx - 5);
+  ctx.moveTo(xPlateLeft, yLx);
+  ctx.lineTo(xPlateLeft - 10, yLx + 5);
+  ctx.stroke();
+  // Label lx
+  ctx.fillText("l", (xA + xPlateLeft) / 2 - 5, yLx - 5);
+  ctx.save();
+  ctx.font = "italic 16px Times New Roman";
+  ctx.fillText("x", (xA + xPlateLeft) / 2 + 3, yLx);
+  ctx.restore();
+
+  // 8. Mass 'm' for the slideway
+  ctx.fillText("m", xA + 35, yLx + 40);
+
+</script>
+
+</body>
+</html>

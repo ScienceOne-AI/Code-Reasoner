@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Canvas</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450"></canvas>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // --- Helper function for drawing arrows ---
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+    }
+    
+    // --- Main Drawing Logic ---
+    ctx.lineWidth = 1.5;
+
+    // Base coordinates and perspective parameters
+    const cx = 280; // Center x
+    const cy_front = 350; // y of the front edge of the plate
+    const L = 250;  // Width of the plate on the canvas
+    const plate_depth_ratio = 0.35;
+    const plate_dx = L * 0.2;
+    const plate_dy = L * plate_depth_ratio;
+    const back_edge_y = cy_front - plate_dy;
+
+    // 1. Draw the conductor plate (parallelogram)
+    ctx.beginPath();
+    ctx.moveTo(cx - L / 2, cy_front); // front-left
+    ctx.lineTo(cx + L / 2, cy_front); // front-right
+    ctx.lineTo(cx + L / 2 + plate_dx, back_edge_y); // back-right
+    ctx.lineTo(cx - L / 2 + plate_dx, back_edge_y); // back-left
+    ctx.closePath();
+    ctx.stroke();
+    
+    // Define geometry for the curved wire (semi-ellipse for perspective)
+    const ellipse_center_x = cx + plate_dx / 2;
+    const ellipse_center_y = back_edge_y;
+    const radiusX = L / 2;
+    const perspective_squash = 0.8;
+    const radiusY = L / 2 * perspective_squash;
+
+    // Helper to get point on the wire
+    function getPointOnWire(angle) {
+        const rad = angle * Math.PI / 180;
+        return {
+            x: ellipse_center_x + radiusX * Math.cos(rad),
+            y: ellipse_center_y - radiusY * Math.sin(rad)
+        };
+    }
+
+    // 2. Draw main semi-ellipse wire `ad`
+    ctx.beginPath();
+    ctx.ellipse(ellipse_center_x, ellipse_center_y, radiusX, radiusY, 0, Math.PI, 0);
+    ctx.stroke();
+
+    // 3. Define points a, b, c, d, e, f based on dividing the semicircle into three 60-degree arcs
+    const p_a = getPointOnWire(180);
+    const p_b = getPointOnWire(120);
+    const p_c = getPointOnWire(60);
+    const p_d = getPointOnWire(0);
+    const p_e = getPointOnWire(150);
+    const p_f = getPointOnWire(30);
+
+    // 4. Draw the extra arc from `c` to `f` to match the original diagram
+    ctx.beginPath();
+    // Using a quadratic curve for a smooth arc, with control point shifted up and right
+    const cp_f_x = (p_c.x + p_f.x) / 2 + 20;
+    const cp_f_y = (p_c.y + p_f.y) / 2 - 25;
+    ctx.moveTo(p_c.x, p_c.y);
+    ctx.quadraticCurveTo(cp_f_x, cp_f_y, p_f.x, p_f.y);
+    ctx.stroke();
+
+    // 5. Draw voltmeter and connections
+    const V_radius = 18;
+    const V_center = { x: p_b.x - 30, y: p_b.y + 25 };
+    ctx.beginPath();
+    ctx.arc(V_center.x, V_center.y, V_radius, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.font = "bold 20px 'Times New Roman'";
+    ctx.fillText("V", V_center.x - 7, V_center.y + 7);
+
+    // Connection lines to voltmeter
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(p_b.x, p_b.y);
+    ctx.lineTo(V_center.x - 9, V_center.y - V_radius + 6);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(p_c.x, p_c.y);
+    ctx.lineTo(V_center.x + V_radius - 2, V_center.y - 4);
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+
+    // 6. Draw points and labels
+    ctx.font = "italic 20px 'Times New Roman'";
+    function drawLabeledPoint(p, label, dx, dy) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2.5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText(label, p.x + dx, p.y + dy);
+    }
+    drawLabeledPoint(p_a, 'a', 5, 20);
+    drawLabeledPoint(p_b, 'b', -20, 5);
+    drawLabeledPoint(p_c, 'c', -5, -15);
+    drawLabeledPoint(p_d, 'd', 10, 0);
+    drawLabeledPoint(p_e, 'e', -10, 20);
+    drawLabeledPoint(p_f, 'f', 10, -10);
+
+    // 7. Draw axes and vectors
+    // Central vertical axis
+    ctx.beginPath();
+    ctx.moveTo(ellipse_center_x, back_edge_y);
+    ctx.lineTo(ellipse_center_x, back_edge_y - radiusY - 30);
+    ctx.stroke();
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(ellipse_center_x, back_edge_y);
+    ctx.lineTo(ellipse_center_x, cy_front + 20);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.font = "bold 22px 'Times New Roman'";
+    // B vector
+    const B_arrow_start_y = ellipse_center_y - radiusY + 20;
+    drawArrow(ctx, ellipse_center_x, B_arrow_start_y, ellipse_center_x, B_arrow_start_y - 80);
+    ctx.fillText("B", ellipse_center_x - 25, B_arrow_start_y - 85);
+
+    // v vector
+    const v_start = { x: p_c.x + 30, y: p_c.y - 20 };
+    drawArrow(ctx, v_start.x, v_start.y, v_start.x + 100, v_start.y);
+    ctx.fillText("v", v_start.x + 105, v_start.y + 8);
+
+    // x-axis
+    const x_axis_start = { x: ellipse_center_x, y: cy_front };
+    drawArrow(ctx, x_axis_start.x, x_axis_start.y, x_axis_start.x + 150, x_axis_start.y);
+    ctx.fillText("x", x_axis_start.x + 155, x_axis_start.y + 8);
+    
+    // L dimension line (parallel to the left edge)
+    const L_dim_offset = 30;
+    const L_start = { x: cx - L / 2 - L_dim_offset, y: cy_front };
+    const L_end = { x: cx - L / 2 + plate_dx - L_dim_offset, y: back_edge_y };
+    const L_mid = { x: (L_start.x + L_end.x) / 2, y: (L_start.y + L_end.y) / 2 };
+    drawArrow(ctx, L_mid.x, L_mid.y, L_start.x, L_start.y, 8);
+    drawArrow(ctx, L_mid.x, L_mid.y, L_end.x, L_end.y, 8);
+    ctx.fillText("L", L_mid.x - 30, L_mid.y + 8);
+
+    // 8. Draw floating minus sign at the top
+    ctx.font = "30px 'Times New Roman'";
+    ctx.fillText("-", ellipse_center_x, 50);
+
+    // 9. Caption
+    ctx.font = "20px 'SimSun', 'STSong'";
+    ctx.fillText("电图 3.8.1", cx, cy_front + 50);
+
+</script>
+</body>
+</html>

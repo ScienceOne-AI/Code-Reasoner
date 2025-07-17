@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TTL Totem Pole Circuit</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="700" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Drawing Configuration ---
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#000';
+        ctx.fillStyle = '#000';
+        ctx.font = '20px "Courier New", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper Functions ---
+
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        function drawText(text, x, y, align = 'center', baseline = 'middle') {
+            ctx.textAlign = align;
+            ctx.textBaseline = baseline;
+            ctx.fillText(text, x, y);
+        }
+
+        function drawDot(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        function drawResistor(x1, y1, x2, y2, zigzags = 6) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            const height = 8; // Half height of zigzag
+
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+
+            const leadLength = 0.15 * len;
+            const zigLength = 0.7 * len;
+            const zigSegment = zigLength / zigzags;
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(leadLength, 0);
+            for (let i = 0; i < zigzags; i++) {
+                const zx = leadLength + (i + 0.5) * zigSegment;
+                const zy = (i % 2 === 0) ? -height : height;
+                ctx.lineTo(zx, zy);
+            }
+            ctx.lineTo(leadLength + zigLength, 0);
+            ctx.lineTo(len, 0);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawNPN(x_base_conn, y_base_conn, x_vert, orientation = 'vertical') {
+            const base_len = 20;
+            const collector_y = y_base_conn - 25;
+            const emitter_y = y_base_conn + 25;
+            
+            // Base wire
+            drawLine(x_base_conn, y_base_conn, x_vert, y_base_conn);
+            // Vertical bar
+            drawLine(x_vert, collector_y, x_vert, emitter_y);
+
+            // Emitter line and arrow
+            const emitter_lead_y = emitter_y + 25;
+            drawLine(x_vert, emitter_y, x_vert, emitter_lead_y);
+            // Arrow
+            const arrow_y = emitter_y + 12;
+            ctx.beginPath();
+            ctx.moveTo(x_vert, arrow_y);
+            ctx.lineTo(x_vert - 7, arrow_y - 7);
+            ctx.moveTo(x_vert, arrow_y);
+            ctx.lineTo(x_vert + 7, arrow_y - 7);
+            ctx.stroke();
+
+            // Collector line
+            const collector_lead_y = collector_y - 25;
+            drawLine(x_vert, collector_y, x_vert, collector_lead_y);
+        }
+        
+        // --- Main Drawing Logic ---
+
+        // VCC (+5V) and Ground Rails
+        drawLine(250, 50, 450, 50); // VCC
+        drawText('+5V', 470, 50, 'left');
+        drawLine(150, 450, 550, 450); // Ground
+
+        // Input Stage
+        drawText('A', 80, 200);
+        drawDot(100, 200);
+        drawResistor(100, 200, 180, 200);
+        drawText('1K', 140, 180);
+        
+        // Node F
+        drawDot(180, 200);
+        drawText('F', 180, 180);
+        
+        // 5K Resistor to Ground
+        drawResistor(180, 200, 180, 450);
+        drawText('5K', 165, 325, 'right');
+
+        // Transistor T1 (Phase Splitter)
+        const t1_base_x = 180, t1_base_y = 200;
+        const t1_vert_x = 220;
+        const t1_coll_y = t1_base_y - 50;
+        const t1_emit_y = t1_base_y + 50;
+        
+        drawLine(t1_base_x, t1_base_y, t1_vert_x, t1_base_y); // Base lead
+        drawLine(t1_vert_x, t1_base_y - 25, t1_vert_x, t1_base_y + 25); // Vert bar
+        drawLine(t1_vert_x, t1_base_y - 25, t1_vert_x, t1_coll_y); // Collector lead
+        drawLine(t1_vert_x, t1_base_y + 25, t1_vert_x, t1_emit_y); // Emitter lead
+        
+        // Emitter arrow for T1
+        const t1_arrow_y = t1_base_y + 35;
+        ctx.beginPath();
+        ctx.moveTo(t1_vert_x, t1_arrow_y);
+        ctx.lineTo(t1_vert_x - 7, t1_arrow_y - 7);
+        ctx.moveTo(t1_vert_x, t1_arrow_y);
+        ctx.lineTo(t1_vert_x + 7, t1_arrow_y - 7);
+        ctx.stroke();
+        drawText('T₁', t1_vert_x + 30, t1_base_y);
+        
+        // Node C
+        drawDot(t1_vert_x, t1_coll_y);
+        drawText('C', t1_vert_x + 15, t1_coll_y);
+        
+        // Node B
+        drawDot(t1_vert_x, t1_emit_y);
+        drawText('B', t1_vert_x - 15, t1_emit_y, 'right');
+
+        // 1.4K Resistor from C to VCC
+        drawResistor(t1_vert_x, t1_coll_y, t1_vert_x, 50);
+        drawText('1.4K', t1_vert_x - 15, (t1_coll_y + 50) / 2, 'right');
+
+        // 1K Resistor from B to Ground
+        drawResistor(t1_vert_x, t1_emit_y, t1_vert_x, 450);
+        drawText('1K', t1_vert_x + 15, (t1_emit_y + 450) / 2, 'left');
+
+        // Output Stage
+        // Transistor T2
+        const t2_base_x = 320, t2_base_y = 120;
+        const t2_vert_x = 340;
+        const t2_coll_y = t2_base_y - 40;
+        const t2_emit_y = t2_base_y + 40;
+        
+        drawLine(t1_vert_x, t1_coll_y, t2_base_x, t2_base_y); // C to T2 base (slanted for layout)
+        drawLine(t2_base_x, t2_base_y, t2_vert_x, t2_base_y); // T2 base lead
+        drawLine(t2_vert_x, t2_base_y - 25, t2_vert_x, t2_base_y + 25); // T2 vert bar
+        drawLine(t2_vert_x, t2_base_y - 25, t2_vert_x, t2_coll_y); // T2 collector lead
+        drawLine(t2_vert_x, t2_base_y + 25, t2_vert_x, t2_emit_y); // T2 emitter lead
+        
+        // Emitter arrow for T2
+        const t2_arrow_y = t2_base_y + 35;
+        ctx.beginPath();
+        ctx.moveTo(t2_vert_x, t2_arrow_y);
+        ctx.lineTo(t2_vert_x - 7, t2_arrow_y - 7);
+        ctx.moveTo(t2_vert_x, t2_arrow_y);
+        ctx.lineTo(t2_vert_x + 7, t2_arrow_y - 7);
+        ctx.stroke();
+        drawText('T₂', t2_vert_x + 30, t2_base_y);
+        
+        // Node G and 100 Ohm resistor
+        drawResistor(t2_vert_x, t2_coll_y, 420, t2_coll_y);
+        drawLine(420, t2_coll_y, 420, 50);
+        drawDot(t2_vert_x, t2_coll_y);
+        drawText('G', t2_vert_x + 20, t2_coll_y - 15);
+        drawText('100Ω', 380, t2_coll_y - 15);
+
+        // Diode D
+        const diode_top_y = t2_emit_y;
+        const diode_bottom_y = diode_top_y + 60;
+        const diode_x = t2_vert_x;
+        
+        drawDot(diode_x, diode_top_y);
+        drawText('D', diode_x + 15, diode_top_y);
+        
+        drawLine(diode_x, diode_top_y, diode_x, diode_top_y + 15); // Anode lead
+        const tri_base_y = diode_top_y + 15;
+        const tri_tip_y = diode_top_y + 45;
+        const w = 10;
+        ctx.beginPath();
+        ctx.moveTo(diode_x - w, tri_base_y);
+        ctx.lineTo(diode_x + w, tri_base_y);
+        ctx.lineTo(diode_x, tri_tip_y);
+        ctx.closePath();
+        ctx.stroke(); // Draw triangle
+        
+        drawLine(diode_x - w, tri_tip_y, diode_x + w, tri_tip_y); // Cathode bar
+        drawLine(diode_x, tri_tip_y, diode_x, diode_bottom_y); // Cathode lead
+        drawText('D', diode_x - 25, (diode_top_y + diode_bottom_y) / 2);
+
+        // Transistor T3
+        const t3_base_x = 320, t3_base_y = 280;
+        const t3_vert_x = 340;
+        const t3_coll_y = t3_base_y - 40;
+        const t3_emit_y = t3_base_y + 40;
+
+        drawLine(t1_vert_x, t1_emit_y, t3_base_x, t3_base_y); // B to T3 base (slanted for layout)
+        drawLine(t3_base_x, t3_base_y, t3_vert_x, t3_base_y); // T3 base lead
+        drawLine(t3_vert_x, t3_base_y - 25, t3_vert_x, t3_base_y + 25); // T3 vert bar
+        drawLine(t3_vert_x, t3_base_y - 25, t3_vert_x, t3_coll_y); // T3 collector lead
+        drawLine(t3_vert_x, t3_base_y + 25, t3_vert_x, t3_emit_y); // T3 emitter lead to ground
+        drawLine(t3_vert_x, t3_emit_y, t3_vert_x, 450);
+        
+        // Emitter arrow for T3
+        const t3_arrow_y = t3_base_y + 35;
+        ctx.beginPath();
+        ctx.moveTo(t3_vert_x, t3_arrow_y);
+        ctx.lineTo(t3_vert_x - 7, t3_arrow_y - 7);
+        ctx.moveTo(t3_vert_x, t3_arrow_y);
+        ctx.lineTo(t3_vert_x + 7, t3_arrow_y - 7);
+        ctx.stroke();
+        drawText('T₃', t3_vert_x + 30, t3_base_y);
+
+        // Output Node E
+        const node_e_x = 450;
+        const node_e_y = (diode_bottom_y + t3_coll_y) / 2;
+        drawLine(diode_x, diode_bottom_y, node_e_x, node_e_y); // Diode to E
+        drawLine(t3_vert_x, t3_coll_y, node_e_x, node_e_y);   // T3 Collector to E
+        drawDot(node_e_x, node_e_y);
+        drawText('E', node_e_x + 15, node_e_y);
+
+        // Load Resistor
+        drawResistor(node_e_x, node_e_y, node_e_x, 450);
+        drawText('R', 500, node_e_y + 40, 'left');
+        drawText('LOAD', 500, node_e_y + 60, 'left');
+        drawText('=1K', 500, node_e_y + 80, 'left');
+        
+        // Figure Caption
+        drawText('Fig. 3.70', canvas.width / 2, 520);
+    </script>
+</body>
+</html>

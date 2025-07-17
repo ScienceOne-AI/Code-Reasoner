@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram 5.4.1</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="520" height="480"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws a label with a subscript, e.g., R_1
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {string} mainText - The main part of the label (e.g., "R").
+     * @param {string} subText - The subscript part (e.g., "1").
+     * @param {number} x - The x-coordinate for the label's starting position.
+     * @param {number} y - The y-coordinate for the label's baseline.
+     */
+    function drawSubscriptLabel(ctx, mainText, subText, x, y) {
+        ctx.save();
+        const mainFontSize = 22;
+        const subFontSize = 14;
+        
+        ctx.font = `italic ${mainFontSize}px Times New Roman`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText(mainText, x, y);
+        
+        const mainTextWidth = ctx.measureText(mainText).width;
+        
+        ctx.font = `italic ${subFontSize}px Times New Roman`;
+        ctx.fillText(subText, x + mainTextWidth - 2, y + 6);
+        ctx.restore();
+    }
+
+    /**
+     * Draws a resistor (rectangle) between two points.
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {number} x1 - Start x.
+     * @param {number} y1 - Start y.
+     * @param {number} x2 - End x.
+     * @param {number} y2 - End y.
+     */
+    function drawResistor(ctx, x1, y1, x2, y2) {
+        const width = 36;
+        const height = 14;
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        const totalLength = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+
+        const line1_len = (totalLength - width) / 2;
+        const p1_end_x = x1 + line1_len * Math.cos(angle);
+        const p1_end_y = y1 + line1_len * Math.sin(angle);
+
+        const p2_start_x = x2 - line1_len * Math.cos(angle);
+        const p2_start_y = y2 - line1_len * Math.sin(angle);
+
+        // Draw connecting lines
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(p1_end_x, p1_end_y);
+        ctx.moveTo(p2_start_x, p2_start_y);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Draw resistor body
+        ctx.save();
+        ctx.translate(midX, midY);
+        ctx.rotate(angle);
+        ctx.strokeRect(-width / 2, -height / 2, width, height);
+        ctx.restore();
+    }
+
+    /**
+     * Draws an inductor (coil) between two points.
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {number} x1 - Start x.
+     * @param {number} y1 - Start y.
+     * @param {number} x2 - End x.
+     * @param {number} y2 - End y.
+     */
+    function drawInductor(ctx, x1, y1, x2, y2) {
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        const totalLength = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+
+        const numLoops = 4;
+        const loopRadius = 6;
+        const coilLength = numLoops * loopRadius * 1.8;
+        const line_len = (totalLength - coilLength) / 2;
+        
+        const p1_end_x = x1 + line_len * Math.cos(angle);
+        const p1_end_y = y1 + line_len * Math.sin(angle);
+
+        const p2_start_x = x2 - line_len * Math.cos(angle);
+        const p2_start_y = y2 - line_len * Math.sin(angle);
+        
+        // Draw connecting lines
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(p1_end_x, p1_end_y);
+        ctx.moveTo(p2_start_x, p2_start_y);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Draw coil
+        ctx.save();
+        ctx.translate(p1_end_x, p1_end_y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0,0);
+        for (let i = 0; i < numLoops; i++) {
+            ctx.arc(i * 2 * loopRadius + loopRadius, 0, loopRadius, Math.PI, 0, true);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    /**
+     * Draws the galvanometer M.
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {number} x1 - Top connection x.
+     * @param {number} y1 - Top connection y.
+     * @param {number} x2 - Bottom connection x.
+     * @param {number} y2 - Bottom connection y.
+     */
+    function drawGalvanometer(ctx, x1, y1, x2, y2) {
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        const radius = 22;
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(midX, midY - radius);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(midX, midY + radius);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.arc(midX, midY, radius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        ctx.font = '24px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('M', midX, midY);
+    }
+
+    // --- Main Drawing Logic ---
+    
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    // Define key node coordinates
+    const N_left = { x: 80, y: 225 };
+    const N_top = { x: 260, y: 80 };
+    const N_bottom = { x: 260, y: 370 };
+    const N_right = { x: 440, y: 225 };
+
+    // Define intermediate points for series components
+    const P_L1R1 = { x: N_left.x + 0.5 * (N_top.x - N_left.x), y: N_left.y + 0.5 * (N_top.y - N_left.y) };
+    const P_L2R2 = { x: N_left.x + 0.5 * (N_bottom.x - N_left.x), y: N_left.y + 0.5 * (N_bottom.y - N_left.y) };
+
+    // Draw components
+    drawInductor(ctx, N_left.x, N_left.y, P_L1R1.x, P_L1R1.y);
+    drawResistor(ctx, P_L1R1.x, P_L1R1.y, N_top.x, N_top.y);
+
+    drawInductor(ctx, N_left.x, N_left.y, P_L2R2.x, P_L2R2.y);
+    drawResistor(ctx, P_L2R2.x, P_L2R2.y, N_bottom.x, N_bottom.y);
+
+    drawResistor(ctx, N_top.x, N_top.y, N_right.x, N_right.y);
+    drawResistor(ctx, N_bottom.x, N_bottom.y, N_right.x, N_right.y);
+
+    drawGalvanometer(ctx, N_top.x, N_top.y, N_bottom.x, N_bottom.y);
+
+    // Draw component labels
+    drawSubscriptLabel(ctx, 'L', '1', 120, 145);
+    drawSubscriptLabel(ctx, 'R', '1', 210, 85);
+    drawSubscriptLabel(ctx, 'L', '2', 120, 300);
+    drawSubscriptLabel(ctx, 'R', '2', 210, 360);
+    drawSubscriptLabel(ctx, 'R', '3', 350, 85);
+    drawSubscriptLabel(ctx, 'R', '4', 350, 360);
+
+    // Draw input terminals
+    const term_y = 420;
+    const term_left_x = 200;
+    const term_right_x = 320;
+
+    ctx.beginPath();
+    ctx.moveTo(N_left.x, N_left.y);
+    ctx.lineTo(N_left.x, term_y);
+    ctx.lineTo(term_left_x, term_y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(N_right.x, N_right.y);
+    ctx.lineTo(N_right.x, term_y);
+    ctx.lineTo(term_right_x, term_y);
+    ctx.stroke();
+    
+    // Terminal circles
+    ctx.beginPath();
+    ctx.arc(term_left_x, term_y, 4, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(term_right_x, term_y, 4, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // EMF Symbol
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('ℰ', (term_left_x + term_right_x) / 2, term_y + 2);
+
+    // Draw caption
+    ctx.font = '24px "SimSun"';
+    ctx.fillText('电图 5.4.1', 260, 460);
+
+</script>
+</body>
+</html>

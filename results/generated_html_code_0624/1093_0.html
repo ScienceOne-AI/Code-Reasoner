@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram 5.8.1</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="600" height="480"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Helper function to draw an arrowhead
+        function drawArrowhead(fromX, fromY, toX, toY, headLength = 8) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            ctx.save();
+            ctx.translate(toX, toY);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headLength, -headLength / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headLength, headLength / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        // Helper function to draw a resistor
+        function drawResistor(x, y, w, h, vertical = true) {
+            if (vertical) {
+                ctx.strokeRect(x - w / 2, y, w, h);
+            } else {
+                 ctx.strokeRect(x, y - h/2, w, h);
+            }
+        }
+
+        // Helper function to draw an inductor
+        function drawInductor(x1, y1, x2, y2, coils = 4, radius = 8) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            const coilLength = distance / coils;
+
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            for (let i = 0; i < coils; i++) {
+                ctx.arc(coilLength * (i + 0.5), 0, radius, Math.PI, 0, false);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        // Helper function to draw a capacitor
+        function drawCapacitor(x1, y1, x2, y2, plateLength = 20, gap = 6) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx);
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+
+            ctx.save();
+            ctx.translate(midX, midY);
+            ctx.rotate(angle);
+
+            const leadLength = (Math.sqrt(dx*dx + dy*dy) - gap) / 2;
+            ctx.beginPath();
+            ctx.moveTo(-leadLength - gap/2, 0);
+            ctx.lineTo(-gap/2, 0);
+            ctx.moveTo(-gap/2, -plateLength / 2);
+            ctx.lineTo(-gap/2, plateLength / 2);
+
+            ctx.moveTo(gap / 2, -plateLength / 2);
+            ctx.lineTo(gap / 2, plateLength / 2);
+            ctx.moveTo(gap / 2, 0);
+            ctx.lineTo(leadLength + gap/2, 0);
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        // Helper function to draw a phasor symbol with optional subscript
+        function drawPhasor(baseChar, sub, x, y) {
+            const mainFontSize = 22;
+            const subFontSize = 14;
+            ctx.font = `italic ${mainFontSize}px serif`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            
+            const baseWidth = ctx.measureText(baseChar).width;
+            ctx.fillText(baseChar, x, y);
+
+            // Draw tilde
+            ctx.beginPath();
+            ctx.moveTo(x, y - mainFontSize * 0.75);
+            ctx.quadraticCurveTo(x + baseWidth / 2, y - mainFontSize * 0.95, x + baseWidth * 0.9, y - mainFontSize * 0.75);
+            ctx.stroke();
+
+            if (sub) {
+                ctx.font = `${subFontSize}px serif`;
+                ctx.fillText(sub, x + baseWidth * 0.8, y + 6);
+            }
+            // Return total width for layout purposes
+            ctx.font = `italic ${mainFontSize}px serif`;
+            return ctx.measureText(baseChar).width + (sub ? ctx.measureText(sub).width / 2 : 0);
+        }
+
+        // --- Main Drawing ---
+
+        // Node coordinates
+        const A = { x: 100, y: 380 };
+        const Y = { x: 280, y: 100 };
+        const X = { x: 280, y: 320 };
+        const B = { x: 520, y: 100 };
+
+        // Component specific points
+        // A-Y Branch
+        const p_R1_start = { x: 100, y: 250 };
+        const p_R1_end = { x: 100, y: 210 };
+        const p_L1_start = { x: 180, y: 100 };
+        // A-X Branch
+        const p_C1_start = { x: 140, y: 380 };
+        const p_C1_end = { x: 240, y: 340 };
+        // Y-X Branch
+        const p_R2_start = { x: 280, y: 150 };
+        const p_R2_end = { x: 280, y: 270 };
+        // Y-B Branch
+        const p_C2_start = { x: 350, y: 100 };
+        const p_C2_end = { x: 450, y: 100 };
+        // X-B Branch
+        const p_L2_start = { x: 320, y: 320 };
+        const p_L2_end = { x: 420, y: 220 };
+        const p_R3_start = { x: 460, y: 160 };
+        const p_R3_end = { x: 500, y: 120 };
+
+        // Draw wires
+        ctx.beginPath();
+        // A-Y
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(p_R1_start.x, p_R1_start.y);
+        ctx.moveTo(p_R1_end.x, p_R1_end.y);
+        ctx.lineTo(p_L1_start.x, p_L1_start.y);
+        // A-X
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(p_C1_start.x, p_C1_start.y);
+        ctx.moveTo(p_C1_end.x, p_C1_end.y);
+        ctx.lineTo(X.x, X.y);
+        // Y-X
+        ctx.moveTo(Y.x, Y.y);
+        ctx.lineTo(p_R2_start.x, p_R2_start.y);
+        ctx.moveTo(p_R2_end.x, p_R2_end.y);
+        ctx.lineTo(X.x, X.y);
+        // Y-B
+        ctx.moveTo(Y.x, Y.y);
+        ctx.lineTo(p_C2_start.x, p_C2_start.y);
+        ctx.moveTo(p_C2_end.x, p_C2_end.y);
+        ctx.lineTo(B.x, B.y);
+        // X-B
+        ctx.moveTo(X.x, X.y);
+        ctx.lineTo(p_L2_start.x, p_L2_start.y);
+        ctx.moveTo(p_L2_end.x, p_L2_end.y);
+        ctx.lineTo(p_R3_start.x, p_R3_start.y);
+        ctx.moveTo(p_R3_end.x, p_R3_end.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+
+        // Draw components
+        drawResistor(p_R1_start.x, p_R1_end.y, 20, p_R1_start.y - p_R1_end.y);
+        drawInductor(p_L1_start.x, p_L1_start.y, Y.x, Y.y);
+        drawCapacitor(p_C1_start.x, p_C1_start.y, p_C1_end.x, p_C1_end.y);
+        drawResistor(p_R2_start.x, p_R2_end.y, 20, p_R2_start.y-p_R2_end.y);
+        drawCapacitor(p_C2_start.x, p_C2_start.y, p_C2_end.x, p_C2_end.y, 20, 8);
+        drawInductor(p_L2_start.x, p_L2_start.y, p_L2_end.x, p_L2_end.y);
+        drawResistor(p_R3_start.x - 10, p_R3_end.y, 20, p_R3_start.y - p_R3_end.y);
+
+
+        // Draw Input/Output arrows
+        ctx.beginPath();
+        const p_in_start = {x: 50, y: 410};
+        ctx.moveTo(p_in_start.x, p_in_start.y);
+        ctx.lineTo(A.x, A.y);
+        ctx.stroke();
+        drawArrowhead(p_in_start.x, p_in_start.y, A.x, A.y);
+        
+        ctx.beginPath();
+        const p_out_end = {x: 570, y: 70};
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(p_out_end.x, p_out_end.y);
+        ctx.stroke();
+        drawArrowhead(B.x, B.y, p_out_end.x, p_out_end.y);
+        
+        // Labels
+        ctx.font = "bold 20px sans-serif";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Node labels
+        ctx.fillText("A", A.x - 15, A.y + 15);
+        ctx.fillText("B", B.x + 20, B.y);
+        ctx.fillText("Y", Y.x + 15, Y.y - 15);
+        ctx.fillText("X", X.x - 15, X.y);
+
+        // Component labels
+        ctx.fillText("R", p_R1_start.x + 25, (p_R1_start.y + p_R1_end.y)/2);
+        ctx.fillText("L", (p_L1_start.x + Y.x)/2, p_L1_start.y - 25);
+        ctx.fillText("R", p_R2_start.x + 25, (p_R2_start.y+p_R2_end.y)/2);
+        ctx.fillText("R", p_R3_end.x + 25, p_R3_end.y + 10);
+        ctx.fillText("C", (p_C1_start.x + p_C1_end.x)/2 - 25, (p_C1_start.y + p_C1_end.y)/2 + 5);
+        ctx.fillText("C", (p_C2_start.x + p_C2_end.x)/2, p_C2_start.y - 25);
+        ctx.fillText("L", (p_L2_start.x + p_L2_end.x)/2 + 10, (p_L2_start.y + p_L2_end.y)/2 + 20);
+        
+        // Current arrows
+        drawArrowhead(100, 360, 100, 320); // I1
+        drawArrowhead(A.x, A.y, 130, A.y); // I - I1
+        drawArrowhead(280, 130, 280, 170); // I2
+        drawArrowhead(X.x, X.y, 310, X.y); // I - I1 - I2
+
+        // Current labels
+        drawPhasor("I", null, 60, 390);
+        drawPhasor("I", null, B.x + 35, B.y - 20);
+        
+        drawPhasor("I", "1", 125, 330);
+
+        let current_x = 150;
+        let w = drawPhasor("I", null, current_x, 400);
+        current_x += w;
+        ctx.font = "22px serif";
+        ctx.fillText("-", current_x, 400);
+        current_x += ctx.measureText("-").width + 2;
+        drawPhasor("I", "1", current_x, 400);
+
+        drawPhasor("I", "2", 305, 210);
+
+        current_x = 310;
+        w = drawPhasor("I", null, current_x, 345);
+        current_x += w;
+        ctx.font = "22px serif";
+        ctx.fillText("-", current_x, 345);
+        current_x += ctx.measureText("-").width + 2;
+        w = drawPhasor("I", "1", current_x, 345);
+        current_x += w;
+        ctx.fillText("-", current_x, 345);
+        current_x += ctx.measureText("-").width + 2;
+        drawPhasor("I", "2", current_x, 345);
+        
+        // Caption
+        ctx.font = '24px "SimSun", "Songti SC", serif';
+        ctx.textAlign = 'center';
+        ctx.fillText("电图 5.8.1", canvas.width / 2, 460);
+    </script>
+</body>
+</html>

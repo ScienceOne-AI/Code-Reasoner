@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="300"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = "italic 20px 'Times New Roman'";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Center point for stacking
+        const centerX = canvas.width / 2;
+        const groundY = 250;
+
+        // Block dimensions
+        const blockC = { w: 220, h: 60 };
+        const blockB = { w: 160, h: 50 };
+        const blockA = { w: 100, h: 40 };
+
+        // Block positions
+        blockC.x = centerX - blockC.w / 2;
+        blockC.y = groundY - blockC.h;
+        blockB.x = centerX - blockB.w / 2;
+        blockB.y = blockC.y - blockB.h;
+        blockA.x = centerX - blockA.w / 2;
+        blockA.y = blockB.y - blockA.h;
+
+        // --- Drawing Functions ---
+
+        // Function to draw an arrow
+        function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Function to draw text with a subscript
+        function drawTextWithSubscript(text, sub, x, y) {
+            ctx.font = "italic 24px 'Times New Roman'";
+            const textMetrics = ctx.measureText(text);
+            ctx.fillText(text, x, y);
+
+            ctx.font = "italic 16px 'Times New Roman'";
+            ctx.fillText(sub, x + textMetrics.width / 2 + 3, y + 8);
+        }
+        
+        // --- Draw Scene ---
+
+        // 1. Draw the ground
+        ctx.beginPath();
+        ctx.moveTo(0, groundY);
+        ctx.lineTo(canvas.width, groundY);
+        ctx.stroke();
+        // Draw hatches for the ground
+        for (let i = 0; i < canvas.width; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(i, groundY);
+            ctx.lineTo(i - 10, groundY + 10);
+            ctx.stroke();
+        }
+
+        // 2. Draw the blocks
+        ctx.strokeRect(blockA.x, blockA.y, blockA.w, blockA.h);
+        ctx.strokeRect(blockB.x, blockB.y, blockB.w, blockB.h);
+        ctx.strokeRect(blockC.x, blockC.y, blockC.w, blockC.h);
+
+        // 3. Draw the labels inside the blocks
+        ctx.font = "italic 22px 'Times New Roman'";
+        ctx.fillText('a', centerX, blockA.y + blockA.h / 2);
+        ctx.fillText('b', centerX, blockB.y + blockB.h / 2);
+        ctx.fillText('c', centerX, blockC.y + blockC.h / 2);
+        
+        // 4. Draw the forces
+        const forceLength = 100;
+
+        // Draw force Fb on block b (to the left)
+        const fb_y = blockB.y + blockB.h / 2;
+        const fb_startX = blockB.x - forceLength;
+        const fb_endX = blockB.x;
+        drawArrow(fb_startX, fb_y, fb_endX, fb_y);
+        drawTextWithSubscript('F', fb_startX - 30, fb_y - 10);
+        ctx.fillText('b', fb_startX - 30 + ctx.measureText('F').width/2+3 - 2, fb_y - 10 + 8);
+
+        // Draw force Fc on block c (to the right)
+        const fc_y = blockC.y + blockC.h / 2;
+        const fc_startX = blockC.x + blockC.w;
+        const fc_endX = fc_startX + forceLength;
+        drawArrow(fc_startX, fc_y, fc_endX, fc_y);
+        drawTextWithSubscript('F', fc_endX + 25, fc_y - 10);
+        ctx.fillText('c', fc_endX + 25 + ctx.measureText('F').width/2+3 - 2, fc_y - 10 + 8);
+
+    </script>
+</body>
+</html>

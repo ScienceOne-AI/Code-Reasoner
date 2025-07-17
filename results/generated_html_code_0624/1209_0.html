@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+    <canvas id="trussCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('trussCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style constants
+        const primaryColor = 'black';
+        const thickLineWidth = 6;
+        const thinLineWidth = 2;
+        const dashPattern = [7, 7];
+        const hingeRadius = 6;
+        const hingeLineWidth = 3;
+
+        // Coordinates setup
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const margin = 80;
+        
+        const yBase = canvasHeight * 0.75;
+        const xA = margin;
+        const xC = canvasWidth - margin;
+        const span = xC - xA;
+        
+        // Since alpha = 45 degrees, the triangle formed by A, B, C is isosceles
+        const height = span / 2;
+        const xB = xA + span / 2;
+        const yB = yBase - height;
+
+        const A = { x: xA, y: yBase };
+        const B = { x: xB, y: yB };
+        const C = { x: xC, y: yBase };
+
+        // --- Helper Function to draw Hinge Support ---
+        function drawHingeSupport(x, y) {
+            const supportWidth = 40;
+            const supportHeight = 30;
+            const groundY = y + supportHeight;
+
+            // Triangle part of the support
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - supportWidth / 2, groundY);
+            ctx.lineTo(x + supportWidth / 2, groundY);
+            ctx.closePath();
+            ctx.lineWidth = thickLineWidth / 1.5;
+            ctx.strokeStyle = primaryColor;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+
+            // Base line for the ground
+            ctx.beginPath();
+            ctx.moveTo(x - supportWidth / 2 - 5, groundY);
+            ctx.lineTo(x + supportWidth / 2 + 5, groundY);
+            ctx.lineWidth = thickLineWidth;
+            ctx.stroke();
+
+            // Hatching for the ground
+            ctx.lineWidth = thinLineWidth;
+            for (let i = x - supportWidth / 2; i <= x + supportWidth / 2; i += 10) {
+                ctx.beginPath();
+                ctx.moveTo(i, groundY);
+                ctx.lineTo(i - 10, groundY + 15);
+                ctx.stroke();
+            }
+        }
+        
+        // Clear canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        
+        // --- Main Drawing Logic ---
+        
+        // 1. Dashed horizontal line AC
+        ctx.beginPath();
+        ctx.setLineDash(dashPattern);
+        ctx.lineWidth = thinLineWidth;
+        ctx.strokeStyle = primaryColor;
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(C.x, C.y);
+        ctx.stroke();
+
+        // 2. Dashed initial straight line BC
+        ctx.beginPath();
+        ctx.lineWidth = thinLineWidth; 
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(C.x, C.y);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset dash pattern
+
+        // 3. Solid bar AB
+        ctx.beginPath();
+        ctx.lineWidth = thickLineWidth;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = primaryColor;
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+
+        // 4. Solid curved bar BC
+        const controlPointX = B.x + (C.x - B.x) * 0.5 + 10;
+        const controlPointY = B.y + (C.y - B.y) * 0.5 + 45;
+        ctx.beginPath();
+        ctx.moveTo(B.x, B.y);
+        ctx.quadraticCurveTo(controlPointX, controlPointY, C.x, C.y);
+        ctx.stroke();
+
+        // 5. Supports at A and C
+        drawHingeSupport(A.x, A.y);
+        drawHingeSupport(C.x, C.y);
+
+        // 6. Hinges (circles) at A, B, and C
+        [A, B, C].forEach(point => {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, hingeRadius, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.lineWidth = hingeLineWidth;
+            ctx.strokeStyle = primaryColor;
+            ctx.stroke();
+        });
+
+        // 7. Angles and their labels
+        const angleRadius = 50;
+        const angleLineWidth = 1.5;
+        ctx.lineWidth = angleLineWidth;
+        ctx.font = 'italic 28px "Times New Roman"';
+        ctx.fillStyle = primaryColor;
+
+        // Angle alpha at A
+        // Arc from horizontal (0 rad) to line AB (-PI/4 rad), going counter-clockwise (true)
+        ctx.beginPath();
+        ctx.arc(A.x, A.y, angleRadius, 0, -Math.PI / 4, true);
+        ctx.stroke();
+        ctx.fillText('α', A.x + angleRadius * 0.7 - 5, A.y - angleRadius * 0.3 + 5);
+
+        // Angle alpha at C
+        // Angle between horizontal (PI rad) and initial line BC (3*PI/4 rad).
+        // Arc from horizontal (PI) to line BC (3*PI/4), going clockwise (false).
+        const angleBC = Math.atan2(B.y - C.y, B.x - C.x); // this is 5*PI/4 or -3*PI/4
+        const angleHorizontal = Math.PI;
+        ctx.beginPath();
+        ctx.arc(C.x, C.y, angleRadius, angleHorizontal, angleBC, false);
+        ctx.stroke();
+        ctx.fillText('α', C.x - angleRadius * 0.7 - 5, C.y - angleRadius * 0.3 + 5);
+
+        // 8. Point labels
+        ctx.font = 'bold 32px "Times New Roman"';
+        ctx.fillText('A', A.x - 45, A.y + 15);
+        ctx.fillText('B', B.x - 10, B.y - 20);
+        ctx.fillText('C', C.x + 25, C.y + 15);
+
+    </script>
+</body>
+</html>

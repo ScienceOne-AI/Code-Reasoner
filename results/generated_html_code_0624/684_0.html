@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Physics Diagram - Circular Motion</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      background-color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="physicsCanvas" width="600" height="500"></canvas>
+  <script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Parameters
+    const cx = 280; // Center X of the circle
+    const cy = 180; // Center Y of the circle
+    const R = 120;  // Radius in pixels
+    const theta_deg = 60;
+    const theta_rad = theta_deg * Math.PI / 180;
+
+    const blockBottomY = cy + R + 60;
+    const groundY = blockBottomY + 10;
+    
+    // Helper function to draw an arrowhead
+    function drawArrowhead(ctx, fromX, fromY, toX, toY, headLength) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Start Drawing ---
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // 1. Draw the ground
+    ctx.beginPath();
+    ctx.moveTo(50, groundY);
+    ctx.lineTo(550, groundY);
+    ctx.stroke();
+
+    // Draw hatching for the ground
+    ctx.lineWidth = 1;
+    for (let i = 50; i < 550; i += 15) {
+        ctx.beginPath();
+        ctx.moveTo(i, groundY);
+        ctx.lineTo(i - 10, groundY + 10);
+        ctx.stroke();
+    }
+    ctx.lineWidth = 2;
+
+
+    // 2. Define key points
+    const O = { x: cx, y: cy };
+    const A = { x: cx + R, y: cy };
+    
+    // Angle of B from positive x-axis is 150 degrees (5*PI/6)
+    const angle_B = Math.PI - (Math.PI / 2 - theta_rad); // which is PI/2 + theta_rad = 150 deg
+    const B = {
+        x: cx + R * Math.cos(angle_B),
+        y: cy + R * Math.sin(angle_B)
+    };
+
+    // 3. Draw the concave groove (mass m)
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y); // Start at A
+    ctx.arc(O.x, O.y, R, 0, angle_B, false); // Arc from A to B
+    ctx.lineTo(B.x, blockBottomY); // Left vertical side
+    ctx.lineTo(A.x, blockBottomY); // Bottom side
+    ctx.closePath(); // Right vertical side
+    ctx.stroke();
+
+    // 4. Draw construction lines and angle
+    // Dashed line OA
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(O.x, O.y);
+    ctx.lineTo(A.x, A.y);
+    ctx.stroke();
+    ctx.restore();
+
+    // Line OB
+    ctx.beginPath();
+    ctx.moveTo(O.x, O.y);
+    ctx.lineTo(B.x, B.y);
+    ctx.stroke();
+
+    // Vertical line from O
+    const verticalLineEndY = cy + R * Math.sin(Math.PI/2);
+    ctx.beginPath();
+    ctx.moveTo(O.x, O.y);
+    ctx.lineTo(O.x, verticalLineEndY);
+    ctx.stroke();
+    drawArrowhead(ctx, O.x, O.y, O.x, verticalLineEndY, 10);
+
+    // Angle arc for theta
+    ctx.beginPath();
+    ctx.arc(O.x, O.y, 40, Math.PI / 2, angle_B, false);
+    ctx.stroke();
+
+
+    // 5. Draw the small block (mass m')
+    ctx.beginPath();
+    ctx.arc(A.x, A.y, 6, 0, 2 * Math.PI);
+    ctx.fillStyle = '#404040';
+    ctx.fill();
+    ctx.fillStyle = 'black';
+
+
+    // 6. Add labels
+    ctx.font = 'italic 22px "Times New Roman"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // O, A, B
+    ctx.fillText('O', O.x - 20, O.y);
+    ctx.fillText('A', A.x + 20, A.y);
+    ctx.fillText('B', B.x - 20, B.y - 15);
+    
+    // R
+    ctx.fillText('R', O.x + R / 2, O.y - 15);
+
+    // theta
+    ctx.fillText('θ', O.x - 28, O.y + 45);
+
+    // m and m'
+    ctx.fillText("m'", cx + R - 60, cy + R - 50);
+    ctx.fillText("m", cx, blockBottomY - 25);
+    
+    // Title
+    ctx.font = '24px "KaiTi", "SimSun", serif';
+    ctx.fillText('习题 2-35 图', canvas.width / 2, groundY + 40);
+
+  </script>
+</body>
+</html>

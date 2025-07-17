@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="850" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.lineWidth = 1.5;
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Helper function to draw a line
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        // Helper function to draw text
+        function drawText(text, x, y, align = 'center', baseline = 'middle') {
+            ctx.textAlign = align;
+            ctx.textBaseline = baseline;
+            ctx.fillText(text, x, y);
+        }
+
+        // Helper function to draw a resistor
+        function drawResistor(x, y, width, height, label, labelPos) {
+            ctx.strokeRect(x - width / 2, y - height / 2, width, height);
+            let labelX = x;
+            let labelY = y;
+            const offset = 15;
+            if (labelPos === 'top') {
+                labelY -= height / 2 + offset;
+            } else if (labelPos === 'bottom') {
+                labelY += height / 2 + offset;
+            } else if (labelPos === 'right') {
+                labelX += width / 2 + offset + 15;
+                ctx.textAlign = 'left';
+            } else if (labelPos === 'left') {
+                labelX -= width / 2 + offset;
+                ctx.textAlign = 'right';
+            }
+            drawText(label, labelX, labelY);
+        }
+        
+        // Helper function to draw a thermistor
+        function drawThermistor(x, y, width, height, label, labelPos) {
+            drawResistor(x, y, width, height, label, labelPos);
+            // Draw the characteristic line for the thermistor
+            ctx.beginPath();
+            ctx.moveTo(x - width/2 - 5, y + height/2 + 5);
+            ctx.lineTo(x + width/2 + 5, y - height/2 - 5);
+            ctx.stroke();
+        }
+
+
+        // Helper function to draw a DC voltage source (battery)
+        function drawBattery(x, y, height, label) {
+            const longLine = height / 3;
+            const shortLine = height / 6;
+            const gap = 8;
+            
+            drawLine(x - longLine, y, x + longLine, y); // Positive plate
+            drawLine(x - shortLine, y + gap, x + shortLine, y + gap); // Negative plate
+
+            drawText(label, x - longLine - 25, y + gap/2, 'center');
+        }
+
+        // Helper function to draw an operational amplifier
+        function drawOpAmp(x_base, y_center, width, height) {
+            const y_top = y_center - height / 2;
+            const y_bottom = y_center + height / 2;
+            const x_tip = x_base + width;
+
+            ctx.beginPath();
+            ctx.moveTo(x_base, y_top);
+            ctx.lineTo(x_base, y_bottom);
+            ctx.lineTo(x_tip, y_center);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Draw inputs and output lines
+            const in_y_inv = y_center - height/4;
+            const in_y_ninv = y_center + height/4;
+            drawLine(x_base - 20, in_y_inv, x_base, in_y_inv); // Inverting input line
+            drawLine(x_base - 20, in_y_ninv, x_base, in_y_ninv); // Non-inverting input line
+            drawLine(x_tip, y_center, x_tip + 20, y_center); // Output line
+
+            // Draw + and - symbols
+            ctx.font = '20px Arial';
+            drawText('-', x_base + 10, in_y_inv);
+            drawText('+', x_base + 10, in_y_ninv);
+            ctx.font = '16px Arial';
+        }
+
+        // Helper function to draw a voltmeter
+        function drawVoltmeter(x, y, radius, label) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.font = '20px Arial';
+            drawText(label, x, y);
+            ctx.font = '16px Arial';
+        }
+
+        // Helper function to draw a ground symbol
+        function drawGround(x, y) {
+            drawLine(x, y, x, y + 15);
+            drawLine(x - 15, y + 15, x + 15, y + 15);
+            drawLine(x - 10, y + 20, x + 10, y + 20);
+            drawLine(x - 5, y + 25, x + 5, y + 25);
+        }
+
+        // Helper function to draw a connection dot
+        function drawDot(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, 2 * Math.PI);
+            ctx.fillStyle = 'black';
+            ctx.fill();
+            ctx.fillStyle = 'white';
+        }
+
+
+        // --- Main Drawing ---
+        
+        const groundY = 420;
+        const opamp_base_x = 500;
+        const opamp_center_y = 260;
+
+        // Ground line
+        drawLine(100, groundY, 780, groundY);
+        drawGround(420, groundY);
+
+        // Left part: Voltage Source and Divider
+        const vs_x = 100;
+        const vs_y_top = 100;
+        const divider_x = 250;
+        const nodeQ_y = 210;
+
+        drawBattery(vs_x, vs_y_top, 20, '1.5 V');
+        drawLine(vs_x, vs_y_top, divider_x, vs_y_top); // Top wire
+        drawLine(vs_x, vs_y_top + 8, vs_x, groundY); // Bottom wire to ground
+
+        drawLine(divider_x, vs_y_top, divider_x, nodeQ_y - 25);
+        drawResistor(divider_x, nodeQ_y - 50, 20, 50, '110 Ω', 'right');
+        drawLine(divider_x, nodeQ_y - 75, divider_x, nodeQ_y - 25);
+        
+        drawDot(divider_x, nodeQ_y);
+        drawText('Q', divider_x + 15, nodeQ_y);
+
+        drawLine(divider_x, nodeQ_y, divider_x, nodeQ_y + 25);
+        drawResistor(divider_x, nodeQ_y + 50, 20, 50, '40 Ω', 'right');
+        drawLine(divider_x, nodeQ_y + 75, divider_x, groundY);
+
+        // Middle Part: Input to Op-Amp
+        const nodeP_x = opamp_base_x - 20;
+        const nodeP_y = opamp_center_y - 40;
+        
+        drawLine(divider_x, nodeQ_y, nodeP_x - 60, nodeQ_y);
+        drawResistor(nodeP_x-100, nodeQ_y, 80, 20, '150 kΩ', 'top');
+        drawLine(nodeP_x - 140, nodeQ_y, nodeP_x - 60, nodeQ_y);
+
+        drawDot(nodeP_x, nodeQ_y);
+        drawText('P', nodeP_x + 10, nodeQ_y - 10);
+        
+        // Op-Amp
+        drawOpAmp(opamp_base_x, opamp_center_y, 100, 80);
+        const inv_input_y = opamp_center_y - 20;
+        const ninv_input_y = opamp_center_y + 20;
+        
+        // Connect P to inverting input
+        drawLine(nodeP_x, nodeQ_y, nodeP_x, inv_input_y);
+
+        // Connect non-inverting input to ground
+        drawLine(opamp_base_x - 20, ninv_input_y, opamp_base_x-20, groundY);
+
+        // Feedback Loop
+        const feedback_y = 120;
+        const output_x = opamp_base_x + 100 + 20;
+        const output_y = opamp_center_y;
+        const feedback_end_x = 750;
+
+        drawLine(nodeP_x, nodeQ_y, nodeP_x, feedback_y); // From P up
+        drawLine(output_x, output_y, feedback_end_x, output_y);
+        drawLine(feedback_end_x, output_y, feedback_end_x, feedback_y); // From output up
+
+        drawLine(nodeP_x, feedback_y, feedback_end_x, feedback_y); // Top horizontal wire
+        
+        drawResistor(580, feedback_y, 80, 20, '100 kΩ', 'top');
+        drawThermistor(680, feedback_y, 60, 20, 'T', 'top');
+
+        // Voltmeter
+        const vm_x = output_x + 70;
+        const vm_y = 350;
+        drawVoltmeter(vm_x, vm_y, 25, 'V');
+        drawDot(output_x, output_y);
+        drawLine(output_x, output_y, vm_x, output_y); // Branch to voltmeter
+        drawLine(vm_x, output_y, vm_x, vm_y - 25);
+        drawLine(vm_x, vm_y + 25, vm_x, groundY);
+        
+        // Figure Caption
+        ctx.fillStyle = 'black';
+        drawText('Fig. 8.1', canvas.width / 2, canvas.height - 20);
+
+    </script>
+</body>
+</html>

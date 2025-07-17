@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tower Crane Diagram</title>
+</head>
+<body>
+    <canvas id="craneCanvas" width="700" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('craneCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, x1, y1, x2, y2, headlen = 10) {
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Helper function to draw a dimension line
+        function drawDim(ctx, x1, y, x2, label) {
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#333';
+            ctx.font = '15px Arial';
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y - 5);
+            ctx.lineTo(x1, y + 5);
+            ctx.moveTo(x2, y - 5);
+            ctx.lineTo(x2, y + 5);
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillStyle = 'black';
+            ctx.fillText(label, (x1 + x2) / 2, y - 4);
+            ctx.restore();
+        }
+        
+        // Helper function for text with subscript
+        function drawTextWithSubscript(ctx, text, sub, x, y) {
+            const baseFont = 'bold 18px Arial';
+            ctx.font = baseFont;
+            ctx.fillText(text, x, y);
+            const textWidth = ctx.measureText(text).width;
+            
+            ctx.save();
+            const subFont = '14px Arial';
+            ctx.font = subFont;
+            ctx.textBaseline = 'top';
+            ctx.fillText(sub, x + textWidth * 0.9, y);
+            ctx.restore();
+        }
+
+        // --- Basic Setup ---
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        const s = 38; // scale: pixels per meter
+        const y_ground = 420;
+        
+        // --- Coordinates ---
+        const Bx = 150;
+        const Ax = Bx + 3 * s; // 150 + 114 = 264
+        const tower_y_top = 200;
+        const jib_y_bottom = tower_y_top;
+        const jib_y_top = tower_y_top - 60;
+        const jib_x_right = Ax + 10 * s; // 264 + 380 = 644
+        const jib_x_left = 40;
+        
+        const q_block_width = 60;
+        const x_Q_force = jib_x_left + q_block_width / 2; // Position of force Q
+        
+        const x_P1 = Ax - 1.5 * s; // 264 - 57 = 207
+        const y_C = jib_y_bottom - 40;
+        
+        const x_P2 = jib_x_right;
+
+        // --- Draw Ground ---
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, y_ground);
+        ctx.lineTo(canvas.width, y_ground);
+        ctx.stroke();
+        // Hatching
+        for (let i = -15; i < canvas.width; i += 15) {
+            ctx.beginPath();
+            ctx.moveTo(i, y_ground + 15);
+            ctx.lineTo(i + 15, y_ground);
+            ctx.stroke();
+        }
+
+        // --- Draw Crane Structure ---
+        ctx.lineWidth = 2;
+
+        // Tower
+        const tower_w_bottom = Ax - Bx;
+        const tower_w_top = tower_w_bottom * 0.8;
+        const tower_top_x1 = Bx + (tower_w_bottom - tower_w_top) / 2;
+        const tower_top_x2 = Ax - (tower_w_bottom - tower_w_top) / 2;
+        
+        ctx.beginPath();
+        ctx.moveTo(Bx, y_ground);
+        ctx.lineTo(tower_top_x1, tower_y_top);
+        ctx.moveTo(Ax, y_ground);
+        ctx.lineTo(tower_top_x2, tower_y_top);
+        ctx.stroke();
+
+        // Tower Bracing
+        ctx.lineWidth = 1.5;
+        const tower_height = y_ground - tower_y_top;
+        const num_braces = 3;
+        for (let i = 0; i < num_braces; i++) {
+            const y1 = y_ground - (i * tower_height / num_braces);
+            const y2 = y_ground - ((i + 1) * tower_height / num_braces);
+            const w1 = tower_w_bottom - (i * (tower_w_bottom - tower_w_top) / num_braces);
+            const w2 = tower_w_bottom - ((i + 1) * (tower_w_bottom - tower_w_top) / num_braces);
+            const x1_left = Bx + (tower_w_bottom - w1) / 2;
+            const x1_right = Ax - (tower_w_bottom - w1) / 2;
+            const x2_left = Bx + (tower_w_bottom - w2) / 2;
+            const x2_right = Ax - (tower_w_bottom - w2) / 2;
+            ctx.beginPath();
+            ctx.moveTo(x1_left, y1);
+            ctx.lineTo(x2_right, y2);
+            ctx.moveTo(x1_right, y1);
+            ctx.lineTo(x2_left, y2);
+            ctx.stroke();
+        }
+
+        // Jib (Truss)
+        ctx.lineWidth = 1.5;
+        const top_plat_x1 = tower_top_x1 - 20;
+        const top_plat_x2 = tower_top_x2 + 20;
+        
+        // Outline
+        ctx.beginPath();
+        ctx.moveTo(jib_x_left, jib_y_bottom);
+        ctx.lineTo(jib_x_right, jib_y_bottom); // Bottom chord
+        ctx.moveTo(jib_x_left, jib_y_bottom);
+        ctx.lineTo(top_plat_x1, jib_y_top);
+        ctx.lineTo(top_plat_x2, jib_y_top);
+        ctx.lineTo(jib_x_right, jib_y_bottom);
+        ctx.stroke();
+
+        // Jib Bracing
+        let bottom_nodes = [];
+        let top_nodes = [];
+        const num_sections = 18;
+        for (let i = 0; i <= num_sections; i++) {
+            const x = jib_x_left + i * (jib_x_right - jib_x_left) / num_sections;
+            bottom_nodes.push({x: x, y: jib_y_bottom});
+            let y_top;
+            if (x < top_plat_x1) {
+                y_top = jib_y_bottom + (jib_y_top - jib_y_bottom) * (x - jib_x_left) / (top_plat_x1 - jib_x_left);
+            } else if (x > top_plat_x2) {
+                y_top = jib_y_top + (jib_y_bottom - jib_y_bottom) * (x - top_plat_x2) / (jib_x_right - top_plat_x2);
+            } else {
+                y_top = jib_y_top;
+            }
+            top_nodes.push({x: x, y: y_top});
+        }
+        for (let i = 0; i < num_sections; i++) {
+            ctx.beginPath();
+            ctx.moveTo(bottom_nodes[i].x, bottom_nodes[i].y);
+            ctx.lineTo(top_nodes[i].x, top_nodes[i].y);
+            ctx.lineTo(bottom_nodes[i+1].x, bottom_nodes[i+1].y);
+            ctx.stroke();
+        }
+        
+        // Supports at base
+        ctx.lineWidth = 2;
+        ctx.fillRect(Bx - 10, y_ground, 20, 8);
+        ctx.fillRect(Ax - 10, y_ground, 20, 8);
+
+
+        // --- Draw Forces and Loads ---
+        ctx.lineWidth = 2;
+        
+        // Counterweight Q
+        const q_block_height = 40;
+        const q_block_y = jib_y_bottom - q_block_height;
+        ctx.strokeRect(jib_x_left, q_block_y, q_block_width, q_block_height);
+        ctx.font = 'bold 18px Arial';
+        ctx.fillText('Q', jib_x_left - 25, q_block_y + 25);
+        drawArrow(ctx, x_Q_force, q_block_y, x_Q_force, q_block_y + 90);
+
+        // Load P2
+        const p2_block_width = 60;
+        const p2_block_height = 50;
+        const y_trolley = jib_y_bottom;
+        // Trolley
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(x_P2 - 15, y_trolley + 5, 5, 0, 2 * Math.PI);
+        ctx.arc(x_P2 + 15, y_trolley + 5, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.strokeRect(x_P2 - 25, y_trolley, 50, 10);
+        // Hanger
+        ctx.beginPath();
+        ctx.moveTo(x_P2, y_trolley + 10);
+        ctx.lineTo(x_P2, y_trolley + 30);
+        ctx.moveTo(x_P2 - 20, y_trolley + 30);
+        ctx.lineTo(x_P2 + 20, y_trolley + 30);
+        ctx.stroke();
+        // Block
+        const p2_block_x = x_P2 - p2_block_width / 2;
+        const p2_block_y = y_trolley + 30;
+        ctx.strokeRect(p2_block_x, p2_block_y, p2_block_width, p2_block_height);
+        // Force Arrow
+        ctx.lineWidth = 2;
+        const y_P2_arrow_end = p2_block_y + p2_block_height + 40;
+        drawArrow(ctx, x_P2, p2_block_y + p2_block_height/2, x_P2, y_P2_arrow_end);
+        drawTextWithSubscript(ctx, 'P', '2', x_P2 + 10, y_P2_arrow_end - 15);
+
+        // Crane Weight P1
+        const y_P1_arrow_end = y_C + 90;
+        drawArrow(ctx, x_P1, y_C, x_P1, y_P1_arrow_end);
+        drawTextWithSubscript(ctx, 'P', '1', x_P1 + 8, y_P1_arrow_end - 10);
+        ctx.beginPath();
+        ctx.arc(x_P1, y_C, 4, 0, 2*Math.PI);
+        ctx.fill();
+        ctx.font = 'bold 18px Arial';
+        ctx.fillText('C', x_P1 - 20, y_C + 8);
+        
+        // --- Draw Dimensions ---
+        // Dashed extension lines
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#555';
+
+        const dim_y1 = 260;
+        const dim_y2 = 290;
+        const dim_y_base = y_ground + 30;
+        
+        // from Q
+        ctx.beginPath(); ctx.moveTo(x_Q_force, q_block_y + q_block_height); ctx.lineTo(x_Q_force, dim_y1 + 10); ctx.stroke();
+        // from B
+        ctx.beginPath(); ctx.moveTo(Bx, y_ground); ctx.lineTo(Bx, dim_y_base + 10); ctx.stroke();
+        // from P1
+        ctx.beginPath(); ctx.moveTo(x_P1, y_C); ctx.lineTo(x_P1, dim_y2 + 10); ctx.stroke();
+        // from A
+        ctx.beginPath(); ctx.moveTo(Ax, y_ground); ctx.lineTo(Ax, dim_y_base + 10); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(Ax, tower_y_top); ctx.lineTo(Ax, dim_y2 + 10); ctx.stroke();
+        // from P2
+        ctx.beginPath(); ctx.moveTo(x_P2, y_trolley); ctx.lineTo(x_P2, dim_y2 + 10); ctx.stroke();
+        
+        ctx.restore();
+        
+        // Dimension lines
+        drawDim(ctx, Bx, dim_y_base, Ax, '3 m');
+        drawDim(ctx, x_Q_force, dim_y1, Bx, 'x');
+        
+        const dim_p1_y_line = 320;
+        drawDim(ctx, x_P1, dim_p1_y_line, Ax, '1.5 m');
+        
+        const dim_p2_y_line = 350;
+        drawDim(ctx, Ax, dim_p2_y_line, x_P2, '10 m');
+
+        // Labels A, B
+        ctx.font = 'bold 18px Arial';
+        ctx.fillText('B', Bx - 8, y_ground + 25);
+        ctx.fillText('A', Ax - 8, y_ground + 25);
+
+    </script>
+</body>
+</html>

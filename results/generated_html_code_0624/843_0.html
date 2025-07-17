@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sound Interferometer</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="450" height="700"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style and Parameter Definitions ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '24px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Geometric Parameters ---
+        const cx = canvas.width / 2; // Center X
+        const top_A = 100;           // Y-coordinate of the top of bend A
+        const inletY = 170;          // Y-coordinate of the inlet/outlet tubes
+        const fixedPipeBottomY = 480;// Y-coordinate where the fixed inner pipes end
+        
+        const armSeparation = 130;   // Separation between the arms' centerlines
+        const pipeRadius = 10;       // Radius of the fixed pipe cross-section
+        
+        // Parameters for the sliding part B
+        const slideTopY = 280;         // Y-coordinate where the sliding tube starts
+        const bottom_B = 550;        // Y-coordinate of the bottom of bend B
+        const slidePipeRadius = 14;  // Radius for the wider sliding tube
+
+        // --- Drawing Functions ---
+
+        // Function to draw the fixed upper apparatus (SAD path)
+        function drawFixedPart() {
+            const leftArmX = cx - armSeparation / 2;
+            const rightArmX = cx + armSeparation / 2;
+            
+            ctx.beginPath();
+            
+            // Top U-bend (A) - Outer arc
+            ctx.arc(cx, top_A, armSeparation / 2 + pipeRadius, Math.PI, 0);
+            
+            // Top U-bend (A) - Inner arc
+            ctx.moveTo(cx + armSeparation / 2 - pipeRadius, top_A);
+            ctx.arc(cx, top_A, armSeparation / 2 - pipeRadius, 0, Math.PI);
+            
+            // Vertical pipes of fixed part
+            // Left pipe
+            ctx.moveTo(leftArmX - pipeRadius, top_A);
+            ctx.lineTo(leftArmX - pipeRadius, fixedPipeBottomY);
+            ctx.moveTo(leftArmX + pipeRadius, top_A);
+            ctx.lineTo(leftArmX + pipeRadius, fixedPipeBottomY);
+
+            // Right pipe
+            ctx.moveTo(rightArmX - pipeRadius, top_A);
+            ctx.lineTo(rightArmX - pipeRadius, fixedPipeBottomY);
+            ctx.moveTo(rightArmX + pipeRadius, top_A);
+            ctx.lineTo(rightArmX + pipeRadius, fixedPipeBottomY);
+
+            // T-junctions
+            // Left junction
+            ctx.moveTo(leftArmX - pipeRadius, inletY);
+            ctx.lineTo(leftArmX - 80, inletY);
+            ctx.moveTo(leftArmX + pipeRadius, inletY);
+            ctx.lineTo(leftArmX, inletY);
+
+            // Right junction
+            ctx.moveTo(rightArmX + pipeRadius, inletY);
+            ctx.lineTo(rightArmX + 80, inletY);
+            ctx.moveTo(rightArmX - pipeRadius, inletY);
+            ctx.lineTo(rightArmX, inletY);
+            
+            ctx.stroke();
+        }
+
+        // Function to draw the sliding lower part (B)
+        function drawSlidingPart() {
+            const leftArmX = cx - armSeparation / 2;
+            const rightArmX = cx + armSeparation / 2;
+            
+            ctx.beginPath();
+            
+            // Outer path of slide B
+            ctx.moveTo(leftArmX - slidePipeRadius, slideTopY);
+            ctx.lineTo(leftArmX - slidePipeRadius, bottom_B);
+            ctx.arc(cx, bottom_B, armSeparation / 2 + slidePipeRadius, Math.PI, 0);
+            ctx.lineTo(rightArmX + slidePipeRadius, slideTopY);
+
+            // Inner path of slide B
+            ctx.moveTo(leftArmX + slidePipeRadius, slideTopY);
+            ctx.lineTo(leftArmX + slidePipeRadius, bottom_B);
+            ctx.arc(cx, bottom_B, armSeparation / 2 - slidePipeRadius, Math.PI, 0);
+            ctx.lineTo(rightArmX - slidePipeRadius, slideTopY);
+
+            ctx.stroke();
+        }
+
+        // Function to draw the source (S) and detector (D)
+        function drawSourceAndDetector() {
+            // Source S (Loudspeaker)
+            const sx = cx - armSeparation / 2 - 80;
+            ctx.beginPath();
+            ctx.rect(sx - 20, inletY - 15, 20, 30);
+            ctx.moveTo(sx, inletY - 20);
+            ctx.lineTo(sx + 30, inletY - 30);
+            ctx.lineTo(sx + 30, inletY + 30);
+            ctx.lineTo(sx, inletY + 20);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Detector D (Ear)
+            const dx = cx + armSeparation / 2 + 80;
+            ctx.beginPath();
+            ctx.moveTo(dx, inletY);
+            ctx.lineTo(dx + 20, inletY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(dx + 25, inletY, 25, 1.3 * Math.PI, 0.7 * Math.PI);
+            ctx.moveTo(dx + 25, inletY-10);
+            ctx.arc(dx + 25, inletY-2, 12, 1.5*Math.PI, 0.5*Math.PI, true);
+            ctx.stroke();
+        }
+
+        // Function to add labels
+        function drawLabels() {
+            // Label S
+            ctx.fillText('S', cx - armSeparation / 2 - 125, inletY);
+            // Label D
+            ctx.fillText('D', cx + armSeparation / 2 + 135, inletY);
+            // Label A
+            ctx.fillText('A', cx, top_A - 30);
+            // Label B
+            ctx.fillText('B', cx, bottom_B - 35);
+            // Bottom text
+            ctx.font = '28px KaiTi'; // Using a font that supports Chinese characters
+            ctx.fillText('习题 11-27 图', cx, canvas.height - 40);
+        }
+
+        // --- Main Drawing Execution ---
+        drawFixedPart();
+        drawSlidingPart();
+        drawSourceAndDetector();
+        drawLabels();
+
+    </script>
+</body>
+</html>

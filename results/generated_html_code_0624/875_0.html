@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>p-V Diagram</title>
+  <style>
+    canvas {
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="pvDiagramCanvas" width="500" height="450"></canvas>
+  <script>
+    const canvas = document.getElementById('pvDiagramCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Configuration ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    const arrowheadSize = 8;
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws a line with an arrowhead at the end.
+     * @param {CanvasRenderingContext2D} ctx The canvas context.
+     * @param {number} fromX Starting x-coordinate.
+     * @param {number} fromY Starting y-coordinate.
+     * @param {number} toX Ending x-coordinate.
+     * @param {number} toY Ending y-coordinate.
+     * @param {number} headLength Length of the arrowhead sides.
+     */
+    function drawAxisArrow(ctx, fromX, fromY, toX, toY, headLength = 10) {
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+      const angle = Math.atan2(dy, dx);
+
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(toX, toY);
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+      ctx.stroke();
+    }
+
+    /**
+     * Draws an arrowhead at a point, pointing in a given direction.
+     * @param {CanvasRenderingContext2D} ctx The canvas context.
+     * @param {number} x The x-coordinate of the arrowhead's tip.
+     * @param {number} y The y-coordinate of the arrowhead's tip.
+     * @param {number} angle The angle of the direction in radians.
+     * @param {number} size The size of the arrowhead.
+     */
+    function drawArrowhead(ctx, x, y, angle, size) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-size, -size / 2.5);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-size, size / 2.5);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // --- Main Drawing ---
+    
+    // Define coordinate system
+    const margin = 50;
+    const originX = margin;
+    const originY = canvas.height - margin;
+
+    // Draw Axes
+    ctx.font = 'italic 20px Times New Roman';
+    drawAxisArrow(ctx, originX, originY, canvas.width - margin / 2, originY); // V-axis
+    ctx.fillText('V', canvas.width - margin, originY + 25);
+    drawAxisArrow(ctx, originX, originY, originX, margin / 2); // p-axis
+    ctx.fillText('p', originX - 25, margin / 2 + 5);
+    ctx.fillText('O', originX - 25, originY + 20);
+
+    // Define points for the rectangle in canvas coordinates
+    const ax = 100, ay = 350;
+    const bx = 400, by = 100;
+    const cx = 100, cy = 100;
+    const dx = 400, dy = 350;
+
+    // Draw rectangular cycle a -> d -> b -> c -> a
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(dx, dy); // a -> d
+    ctx.lineTo(bx, by); // d -> b
+    ctx.lineTo(cx, cy); // b -> c
+    ctx.closePath();
+    ctx.stroke();
+
+    // Add arrows to the rectangular cycle
+    drawArrowhead(ctx, (ax + dx) / 2, ay, 0, arrowheadSize + 2); // a -> d
+    drawArrowhead(ctx, dx, (dy + by) / 2, -Math.PI / 2, arrowheadSize + 2); // d -> b
+    drawArrowhead(ctx, (bx + cx) / 2, by, Math.PI, arrowheadSize + 2); // b -> c
+    drawArrowhead(ctx, cx, (cy + ay) / 2, Math.PI / 2, arrowheadSize + 2); // c -> a
+
+    // Draw curved path a -> b
+    // Using two quadratic curves for the wavy shape a -> m -> b
+    const m = { x: 230, y: 220 }; // Intermediate point
+    const c1 = { x: 150, y: 260 }; // Control point for a -> m
+    const c2 = { x: 300, y: 185 }; // Control point for m -> b
+    
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.quadraticCurveTo(c1.x, c1.y, m.x, m.y);
+    ctx.quadraticCurveTo(c2.x, c2.y, bx, by);
+    ctx.stroke();
+
+    // Add arrows to the curved path
+    // Arrow 1 on the first segment
+    const t1 = 0.5;
+    const arrow1_x = (1 - t1) * (1 - t1) * ax + 2 * (1 - t1) * t1 * c1.x + t1 * t1 * m.x;
+    const arrow1_y = (1 - t1) * (1 - t1) * ay + 2 * (1 - t1) * t1 * c1.y + t1 * t1 * m.y;
+    const tangent1_angle = Math.atan2(m.y - ay, m.x - ax);
+    drawArrowhead(ctx, arrow1_x, arrow1_y, tangent1_angle, arrowheadSize);
+
+    // Arrow 2 on the second segment
+    const t2 = 0.6;
+    const arrow2_x = (1 - t2) * (1 - t2) * m.x + 2 * (1 - t2) * t2 * c2.x + t2 * t2 * bx;
+    const arrow2_y = (1 - t2) * (1 - t2) * m.y + 2 * (1 - t2) * t2 * c2.y + t2 * t2 * by;
+    const tangent2_angle = Math.atan2(by - m.y, bx - m.x);
+    drawArrowhead(ctx, arrow2_x, arrow2_y, tangent2_angle, arrowheadSize);
+
+    // Add point labels
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.fillText('a', ax - 20, ay + 15);
+    ctx.fillText('b', bx + 5, by);
+    ctx.fillText('c', cx - 20, cy);
+    ctx.fillText('d', dx + 5, dy + 15);
+
+    // Add caption
+    ctx.font = '20px "SimSun", "Songti SC", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 6-1 图', canvas.width / 2, canvas.height - 15);
+
+  </script>
+</body>
+</html>

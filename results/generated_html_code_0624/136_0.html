@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Rotating Water Surface</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="400" height="450"></canvas>
+    <script>
+        function drawArrow(ctx, x1, y1, x2, y2) {
+            const headlen = 10;
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // General Styling
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        
+        // Define Coordinate System Origin
+        const cx = 200;
+        const cy = 340;
+
+        // 1. Draw Axes
+        ctx.font = 'italic 20px serif';
+        // z-axis
+        drawArrow(ctx, cx, cy, cx, 60);
+        ctx.fillText('z', cx - 25, 70);
+        // r-axis
+        drawArrow(ctx, cx - 10, cy, cx + 180, cy);
+        ctx.fillText('r', cx + 180, cy + 20);
+        // Origin label
+        ctx.font = '18px serif';
+        ctx.fillText('O', cx - 20, cy + 20);
+
+        // 2. Draw Parabola (Water Surface) and Container Walls
+        const a = 0.006;
+        const r_max = 130;
+        const z_max = a * r_max * r_max;
+        const parabola_y_end = cy - z_max;
+        
+        ctx.beginPath();
+        ctx.moveTo(cx - r_max, parabola_y_end);
+        ctx.quadraticCurveTo(cx, cy, cx + r_max, parabola_y_end);
+        ctx.stroke();
+
+        // Walls
+        const wall_top_y = parabola_y_end - 110;
+        ctx.beginPath();
+        ctx.moveTo(cx - r_max, parabola_y_end);
+        ctx.lineTo(cx - r_max, wall_top_y);
+        ctx.moveTo(cx + r_max, parabola_y_end);
+        ctx.lineTo(cx + r_max, wall_top_y);
+        ctx.stroke();
+
+        // 3. Draw Rotation Symbol
+        const rot_y = 100;
+        const rot_radius = 28;
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('\u03C9', cx - rot_radius - 25, rot_y + 8);
+        
+        const startAngleRot = 0.75 * Math.PI;
+        const endAngleRot = 0.25 * Math.PI;
+        
+        ctx.beginPath();
+        // false for Clockwise rotation
+        ctx.arc(cx, rot_y, rot_radius, startAngleRot, endAngleRot, false); 
+        ctx.stroke();
+
+        // Arrowhead for rotation arc
+        const tangentAngle = endAngleRot - Math.PI / 2; // Tangent for CW arc
+        const arrow_x = cx + rot_radius * Math.cos(endAngleRot);
+        const arrow_y = rot_y + rot_radius * Math.sin(endAngleRot);
+        const headlen = 10;
+        ctx.beginPath();
+        ctx.moveTo(arrow_x, arrow_y);
+        ctx.lineTo(arrow_x - headlen * Math.cos(tangentAngle - Math.PI / 6), arrow_y - headlen * Math.sin(tangentAngle - Math.PI / 6));
+        ctx.moveTo(arrow_x, arrow_y);
+        ctx.lineTo(arrow_x - headlen * Math.cos(tangentAngle + Math.PI / 6), arrow_y - headlen * Math.sin(tangentAngle + Math.PI / 6));
+        ctx.stroke();
+        
+        // 4. Draw Particle and Forces
+        const r_p = 95;
+        const z_p = a * r_p * r_p;
+        const px = cx + r_p;
+        const py = cy - z_p;
+
+        // Particle dot
+        ctx.beginPath();
+        ctx.arc(px, py, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Forces
+        const force_len = 60;
+        const comp_len = 45;
+        ctx.font = 'italic 20px serif';
+
+        // mg (Gravity)
+        drawArrow(ctx, px, py, px, py + force_len);
+        ctx.fillText('mg', px + 10, py + force_len / 2 + 10);
+
+        // F (Normal Force)
+        const slope = 2 * a * r_p;
+        const norm_angle = Math.atan2(-1, -slope);
+        const F_end_x = px + force_len * Math.cos(norm_angle);
+        const F_end_y = py + force_len * Math.sin(norm_angle);
+        drawArrow(ctx, px, py, F_end_x, F_end_y);
+        ctx.fillText('F', F_end_x - 10, F_end_y - 20);
+
+        // Components of F (as separate arrows)
+        // Vertical component
+        drawArrow(ctx, px, py, px, py - comp_len);
+        // Horizontal component
+        drawArrow(ctx, px, py, px - comp_len, py);
+
+        // Angle theta
+        const angle_radius = 25;
+        const start_angle_theta = -Math.PI / 2; // Vertical up
+        const end_angle_theta = norm_angle;
+        ctx.beginPath();
+        // true for CCW, from vertical to the normal force vector
+        ctx.arc(px, py, angle_radius, start_angle_theta, end_angle_theta, true);
+        ctx.stroke();
+        
+        const theta_angle_pos = (start_angle_theta + end_angle_theta) / 2;
+        const theta_x = px + (angle_radius + 10) * Math.cos(theta_angle_pos);
+        const theta_y = py + (angle_radius + 10) * Math.sin(theta_angle_pos);
+        ctx.fillText('\u03B8', theta_x, theta_y);
+
+        // 5. Draw Figure Caption
+        ctx.font = '16px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Fig. 1.239.', cx, canvas.height - 10);
+
+    </script>
+</body>
+</html>

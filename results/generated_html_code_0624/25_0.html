@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Projectile Motion on Stairs</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = '#000';
+        ctx.fillStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 20px "Times New Roman"';
+
+        // Helper function to draw an arrow
+        function drawArrow(fromx, fromy, tox, toy, arrowHeadSize = 8) {
+            const angle = Math.atan2(toy - fromy, tox - fromx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - arrowHeadSize * Math.cos(angle - Math.PI / 6), toy - arrowHeadSize * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tox - arrowHeadSize * Math.cos(angle + Math.PI / 6), toy - arrowHeadSize * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        // Define key points and dimensions
+        const o = { x: 300, y: 200 };
+        const l = 100;
+
+        // --- Draw the Stairs ---
+        ctx.beginPath();
+        // Top step
+        ctx.moveTo(o.x + l + 50, o.y - l);
+        ctx.lineTo(o.x, o.y - l);
+        ctx.lineTo(o.x, o.y);
+        // Middle step (where O is)
+        ctx.lineTo(o.x - l, o.y);
+        ctx.lineTo(o.x - l, o.y + l);
+        // Bottom step
+        ctx.lineTo(o.x - 2 * l, o.y + l);
+        ctx.lineTo(o.x - 2 * l, o.y + 2 * l);
+        ctx.lineTo(o.x - 3 * l, o.y + 2 * l);
+        ctx.stroke();
+
+        // Hatching for the solid stairs
+        ctx.save();
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 20; i++) {
+            const startX = o.x + l + 50 - i * 20;
+            ctx.beginPath();
+            ctx.moveTo(startX, o.y - l);
+            ctx.lineTo(startX - 20, o.y - l + 20);
+            ctx.stroke();
+            
+            const startX2 = o.x - i*20;
+            ctx.beginPath();
+            ctx.moveTo(startX2, o.y);
+            ctx.lineTo(startX2 - 20, o.y + 20);
+            ctx.stroke();
+            
+            const startX3 = o.x - l - i * 20;
+             ctx.beginPath();
+            ctx.moveTo(startX3, o.y + l);
+            ctx.lineTo(startX3 - 20, o.y + l + 20);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+
+        // --- Draw the Trajectory Arcs ---
+        // Arc landing at O
+        ctx.beginPath();
+        ctx.moveTo(o.x + l, o.y - l);
+        ctx.quadraticCurveTo(o.x + l / 2, o.y - l - 80, o.x, o.y);
+        ctx.stroke();
+        
+        // Arc bouncing from O
+        const p_low = { x: o.x - l, y: o.y + l };
+        ctx.beginPath();
+        ctx.moveTo(o.x, o.y);
+        ctx.quadraticCurveTo(o.x - l / 2, o.y - 70, p_low.x, p_low.y);
+        ctx.stroke();
+
+        // Arc bouncing from p_low
+        ctx.beginPath();
+        ctx.moveTo(p_low.x, p_low.y);
+        ctx.quadraticCurveTo(p_low.x - l/2, p_low.y - 80, p_low.x - l * 0.9, p_low.y - 50);
+        ctx.stroke();
+
+
+        // --- Draw Vectors and Labels ---
+        
+        // At point O
+        drawArrow(o.x + 20, o.y - 45, o.x, o.y, 10); // v1 incoming
+        drawArrow(o.x, o.y, o.x - 20, o.y - 45, 10); // v2 outgoing
+        ctx.fillText('v', o.x + 25, o.y - 25);
+        ctx.font = 'italic 14px "Times New Roman"';
+        ctx.fillText('1', o.x + 33, o.y - 21);
+        ctx.font = 'italic 20px "Times New Roman"';
+
+        ctx.fillText('v', o.x - 45, o.y - 25);
+        ctx.font = 'italic 14px "Times New Roman"';
+        ctx.fillText('2', o.x - 37, o.y - 21);
+        ctx.font = 'italic 20px "Times New Roman"';
+        
+        ctx.fillText('O', o.x + 5, o.y + 20);
+
+        // Displacement indicators from O
+        drawArrow(o.x, o.y, o.x - 50, o.y, 8);
+        drawArrow(o.x, o.y, o.x, o.y + 50, 8);
+        ctx.fillText('l', o.x - 30, o.y - 5);
+        ctx.fillText('l', o.x + 10, o.y + 30);
+
+
+        // At point p_low
+        drawArrow(p_low.x + 20, p_low.y - 45, p_low.x, p_low.y, 10); // v1 incoming
+        ctx.fillText('v', p_low.x + 25, p_low.y - 20);
+        ctx.font = 'italic 14px "Times New Roman"';
+        ctx.fillText('1', p_low.x + 33, p_low.y - 16);
+        ctx.font = 'italic 20px "Times New Roman"';
+
+        // Dimension lines at the bottom left
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(p_low.x, p_low.y);
+        ctx.lineTo(p_low.x, p_low.y + l);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(p_low.x, p_low.y);
+        ctx.lineTo(p_low.x - l, p_low.y);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.fillText('l', p_low.x - 25, p_low.y + l/2);
+        ctx.fillText('l', p_low.x - l/2, p_low.y + 25);
+
+
+        // --- Draw Figure Caption ---
+        ctx.font = 'bold 20px "Times New Roman"';
+        ctx.fillText('Fig. 1.5.', 220, 450);
+
+    </script>
+</body>
+</html>

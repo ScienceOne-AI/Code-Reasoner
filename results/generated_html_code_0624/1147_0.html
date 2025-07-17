@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Thermodynamics Cylinder Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+  }
+</style>
+</head>
+<body>
+<canvas id="thermoCanvas" width="850" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('thermoCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Style Defaults ---
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  
+  /**
+   * Draws a hatched rectangle.
+   * @param {CanvasRenderingContext2D} ctx The canvas context.
+   * @param {number} x The x-coordinate of the rectangle.
+   * @param {number} y The y-coordinate of the rectangle.
+   * @param {number} w The width of the rectangle.
+   * @param {number} h The height of the rectangle.
+   */
+  function drawHatchedRect(ctx, x, y, w, h) {
+    const mainLineWidth = ctx.lineWidth;
+    
+    // Draw rectangle outline
+    ctx.lineWidth = mainLineWidth;
+    ctx.strokeRect(x, y, w, h);
+    
+    // Create clipping region for hatching
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    
+    // Draw hatching lines (//)
+    ctx.beginPath();
+    ctx.lineWidth = 1.5; // Thinner lines for hatching
+    const spacing = 8;
+    // Iterate from a point outside the top-left to cover the whole rectangle
+    for (let i = -h; i < w; i += spacing) {
+      ctx.moveTo(x + i, y);
+      ctx.lineTo(x + i + h, y + h);
+    }
+    ctx.stroke();
+    
+    // Restore context to its state before clipping
+    ctx.restore();
+    ctx.lineWidth = mainLineWidth;
+  }
+  
+  // --- Drawing Parameters ---
+  const C = {
+      left: 50,
+      top: 150,
+      width: 700,
+      height: 120,
+  };
+  C.right = C.left + C.width;
+  C.bottom = C.top + C.height;
+
+  const partitionWidth = 20;
+  const pistonWidth = 20;
+  
+  const partitionX = C.left + C.width / 2 - partitionWidth / 2;
+  const pistonX = C.right; // Piston is at the right edge
+  
+  ctx.lineWidth = 2;
+
+  // 1. Draw Cylinder Walls (main lines)
+  ctx.beginPath();
+  ctx.moveTo(C.left, C.top);
+  ctx.lineTo(C.right + pistonWidth, C.top); // Extend to include piston
+  ctx.moveTo(C.left, C.bottom);
+  ctx.lineTo(C.right + pistonWidth, C.bottom); // Extend to include piston
+  ctx.moveTo(C.left, C.top);
+  ctx.lineTo(C.left, C.bottom);
+  ctx.stroke();
+
+  // 2. Draw Wall Insulation Hatching
+  const hatchLength = 12; // Length of each hatch mark
+  const hatchSpacing = 25;
+  const hatchAngle = Math.PI / 4; // 45 degrees for '/'
+  const hdx = (hatchLength / 2) * Math.cos(hatchAngle);
+  const hdy = (hatchLength / 2) * Math.sin(hatchAngle);
+  
+  ctx.lineWidth = 1.5;
+  // Top wall hatching
+  for (let x = C.left; x <= C.right + pistonWidth; x += hatchSpacing) {
+      ctx.beginPath();
+      ctx.moveTo(x - hdx, C.top + hdy);
+      ctx.lineTo(x + hdx, C.top - hdy);
+      ctx.stroke();
+  }
+  // Bottom wall hatching
+  for (let x = C.left; x <= C.right + pistonWidth; x += hatchSpacing) {
+      ctx.beginPath();
+      ctx.moveTo(x - hdx, C.bottom + hdy);
+      ctx.lineTo(x + hdx, C.bottom - hdy);
+      ctx.stroke();
+  }
+  // Left wall hatching
+  for (let y = C.top; y <= C.bottom; y += hatchSpacing) {
+      ctx.beginPath();
+      ctx.moveTo(C.left - hdx, y + hdy);
+      ctx.lineTo(C.left + hdx, y - hdy);
+      ctx.stroke();
+  }
+  
+  ctx.lineWidth = 2; // Reset to main line width
+
+  // 3. Draw Partition
+  const gapTop = C.top + C.height * 0.4;
+  const gapHeight = C.height * 0.2;
+  const gapBottom = gapTop + gapHeight;
+  // Top part of partition
+  drawHatchedRect(ctx, partitionX, C.top, partitionWidth, gapTop - C.top);
+  // Bottom part of partition
+  drawHatchedRect(ctx, partitionX, gapBottom, partitionWidth, C.bottom - gapBottom);
+
+  // 4. Draw Valve
+  ctx.beginPath();
+  // Hinge is on the bottom-right corner of the top partition part
+  const hingeX = partitionX + partitionWidth;
+  const hingeY = gapTop;
+  ctx.moveTo(hingeX, hingeY);
+  // The flap is a line angled down and to the left into the first chamber
+  ctx.lineTo(partitionX, gapTop + (gapHeight * 0.8));
+  ctx.stroke();
+  
+  // 5. Draw Piston
+  drawHatchedRect(ctx, pistonX, C.top, pistonWidth, C.height);
+
+  // 6. Draw Piston Rod
+  const rodHeight = 25;
+  const rod = {
+      x: pistonX + pistonWidth,
+      y: C.top + C.height / 2 - rodHeight / 2,
+      w: 60,
+      h: rodHeight
+  };
+  drawHatchedRect(ctx, rod.x, rod.y, rod.w, rod.h);
+  
+  // 7. Draw Label
+  ctx.font = "bold 30px 'KaiTi', 'SimSun', serif";
+  ctx.textAlign = 'center';
+  ctx.fillText("热图 2.12.1", C.left + (C.width + pistonWidth) / 2, C.bottom + 80);
+
+</script>
+</body>
+</html>

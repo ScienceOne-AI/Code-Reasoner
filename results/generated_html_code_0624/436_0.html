@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Acousto-Optic Modulator Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Clear canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // --- Styles and Parameters ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = "italic 20px 'Times New Roman'";
+
+        const aom = { x: 250, y: 75, width: 100, height: 250 };
+        const transducer = { x: 260, y: 325, width: 80, height: 20 };
+        const angleDeg = 20;
+        const angleRad = angleDeg * Math.PI / 180;
+
+        // --- Draw Acousto-Optic Modulator (AOM) Cell ---
+        ctx.fillStyle = '#D3D3D3'; // Light gray
+        ctx.fillRect(aom.x, aom.y, aom.width, aom.height);
+        ctx.strokeRect(aom.x, aom.y, aom.width, aom.height);
+
+        // --- Draw Piezoelectric Transducer ---
+        ctx.fillStyle = 'black';
+        ctx.fillRect(transducer.x, transducer.y, transducer.width, transducer.height);
+
+        // --- Draw Wires and Terminals ---
+        ctx.beginPath();
+        ctx.moveTo(transducer.x, transducer.y + 7);
+        ctx.lineTo(150, transducer.y + 7);
+        ctx.moveTo(transducer.x, transducer.y + 13);
+        ctx.lineTo(150, transducer.y + 13);
+        ctx.stroke();
+
+        function drawTerminal(x, y, radius) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            const angle = Math.PI / 4;
+            ctx.moveTo(x - radius * Math.cos(angle), y - radius * Math.sin(angle));
+            ctx.lineTo(x + radius * Math.cos(angle), y + radius * Math.sin(angle));
+            ctx.stroke();
+        }
+        drawTerminal(150, transducer.y + 7, 4);
+        drawTerminal(150, transducer.y + 13, 4);
+
+        // --- Draw Wire Labels ---
+        ctx.textAlign = 'center';
+        // ~U_s
+        ctx.fillText("~", 120, transducer.y - 2);
+        ctx.fillText("U", 120, transducer.y + 10);
+        ctx.font = "italic 14px 'Times New Roman'";
+        ctx.fillText("s", 130, transducer.y + 15);
+        ctx.font = "italic 20px 'Times New Roman'";
+        // f_s
+        ctx.fillText("f", 120, transducer.y + 16);
+        ctx.font = "italic 14px 'Times New Roman'";
+        ctx.fillText("s", 128, transducer.y + 21);
+        ctx.font = "italic 20px 'Times New Roman'";
+        ctx.textAlign = 'left';
+
+        // --- Draw Standing Wave ---
+        ctx.strokeStyle = '#333333';
+        ctx.lineWidth = 3;
+        const numLines = 14;
+        const lineSpacing = aom.height / (numLines + 1);
+        for (let i = 1; i <= numLines; i++) {
+            const y = aom.y + i * lineSpacing;
+            ctx.beginPath();
+            ctx.moveTo(aom.x + 5, y);
+            ctx.lineTo(aom.x + aom.width - 5, y);
+            ctx.stroke();
+        }
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+
+
+        // --- Draw Horizontal Dashed Line ---
+        const midY = aom.y + aom.height / 2;
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(20, midY);
+        ctx.lineTo(canvas.width - 20, midY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // --- Draw Light Rays ---
+        function drawArrow(x, y, angle, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size / 2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size / 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        const midX = aom.x + aom.width / 2;
+        const raySpacing = 30;
+
+        for (let i = -1; i <= 1; i++) {
+            const yOffset = i * raySpacing;
+            const yCenter = midY + yOffset;
+
+            // Incident Ray
+            const startX_inc = 50;
+            const startY_inc = yCenter - Math.tan(angleRad) * (midX - startX_inc);
+            const endX_inc = midX;
+            const endY_inc = yCenter;
+
+            ctx.beginPath();
+            ctx.moveTo(startX_inc, startY_inc);
+            ctx.lineTo(endX_inc, endY_inc);
+            ctx.stroke();
+            drawArrow(150, yCenter - Math.tan(angleRad) * (midX - 150), angleRad, 8);
+
+            // Diffracted Ray
+            const startX_dif = midX;
+            const startY_dif = yCenter;
+            const endX_dif = canvas.width - 50;
+            const endY_dif = yCenter - Math.tan(angleRad) * (endX_dif - midX);
+            
+            ctx.beginPath();
+            ctx.moveTo(startX_dif, startY_dif);
+            ctx.lineTo(endX_dif, endY_dif);
+            ctx.stroke();
+            drawArrow(endX_dif, endY_dif, -angleRad, 8);
+        }
+
+        // --- Draw Angle Arcs and Labels ---
+        // Left angle (theta)
+        const lowerRayY_at_midX = midY + raySpacing;
+        const intersectX_left = midX - (lowerRayY_at_midX - midY) / Math.tan(angleRad);
+        ctx.beginPath();
+        ctx.arc(intersectX_left, midY, 30, -angleRad, 0);
+        ctx.stroke();
+        ctx.fillText("θ", intersectX_left + 35, midY + 5);
+
+        // Right angle (theta)
+        const upperRayY_at_midX = midY - raySpacing;
+        const intersectX_right = midX - (upperRayY_at_midX - midY) / (-Math.tan(angleRad)); // This is midX
+        ctx.beginPath();
+        ctx.arc(midX, midY, 50, -angleRad, 0);
+        ctx.stroke();
+        ctx.fillText("θ", midX + 55, midY - 5);
+        
+        // --- Draw Incident Light Label (lambda_0) ---
+        ctx.font = "italic 24px 'Times New Roman'";
+        ctx.fillText("λ", 150, 65);
+        ctx.font = "italic 16px 'Times New Roman'";
+        ctx.fillText("0", 165, 70);
+
+    </script>
+</body>
+</html>

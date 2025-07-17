@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Reconstruction</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Drawing Configuration ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.font = 'bold 24px sans-serif';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // --- Helper Function for Hatched Support (Fulcrum) ---
+        function drawFulcrum(x_apex, y_apex, label) {
+            const base_width = 40;
+            const base_height = 30;
+            const x_base_left = x_apex - base_width / 2;
+            const x_base_right = x_apex + base_width / 2;
+            const y_base = y_apex + base_height;
+
+            // Triangle shape
+            ctx.beginPath();
+            ctx.moveTo(x_apex, y_apex);
+            ctx.lineTo(x_base_left, y_base);
+            ctx.lineTo(x_base_right, y_base);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Hatching below the triangle
+            const hatch_depth = 15;
+            const hatch_y_bottom = y_base + hatch_depth;
+            const old_lineWidth = ctx.lineWidth;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            for (let i = 0; i < base_width + hatch_depth; i += 5) {
+                ctx.moveTo(x_base_left + i - hatch_depth, y_base);
+                ctx.lineTo(x_base_left + i, hatch_y_bottom);
+            }
+            ctx.stroke();
+            ctx.lineWidth = old_lineWidth;
+            
+            // Label
+            ctx.fillText(label, x_apex - 8, hatch_y_bottom + 25);
+        }
+
+        // --- Main Drawing Logic ---
+
+        // 1. Ceiling Support for Pulley
+        const ceil_x = 80, ceil_y = 40, ceil_w = 100, ceil_h = 20;
+        ctx.beginPath();
+        ctx.rect(ceil_x, ceil_y, ceil_w, ceil_h);
+        ctx.stroke();
+        // Hatching for ceiling
+        const old_lw = ctx.lineWidth;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let i = 0; i < ceil_w + ceil_h; i+= 6) {
+             ctx.moveTo(ceil_x + i - ceil_h, ceil_y);
+             ctx.lineTo(ceil_x + i, ceil_y + ceil_h);
+        }
+        ctx.stroke();
+        ctx.lineWidth = old_lw;
+
+        // 2. Pulley System
+        const pulley_center_x = 130;
+        const pulley_center_y = 100;
+        const pulley_radius = 25;
+
+        // Pivot
+        ctx.beginPath();
+        ctx.moveTo(pulley_center_x, ceil_y + ceil_h);
+        ctx.lineTo(pulley_center_x, pulley_center_y - 5);
+        ctx.stroke();
+        // Hook for pulley axle
+        ctx.beginPath();
+        ctx.arc(pulley_center_x, pulley_center_y, 5, 0, Math.PI, true);
+        ctx.stroke();
+
+
+        // Pulley wheel
+        ctx.beginPath();
+        ctx.arc(pulley_center_x, pulley_center_y, pulley_radius, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(pulley_center_x, pulley_center_y, 5, 0, 2 * Math.PI); // Axle center
+        ctx.stroke();
+        
+        // Beam coordinates
+        const beam_attach_x = pulley_center_x + pulley_radius;
+        const beam_y_top = 200;
+        const beam_y_bottom = 220;
+        const beam_length = 450;
+        const beam_end_x = beam_attach_x + beam_length;
+        
+        // Ropes
+        const rope_q_x = pulley_center_x - pulley_radius;
+        ctx.beginPath();
+        ctx.arc(pulley_center_x, pulley_center_y, pulley_radius, Math.PI, 0); // Rope over pulley
+        ctx.moveTo(rope_q_x, pulley_center_y); // Rope to Q
+        ctx.lineTo(rope_q_x, 240);
+        ctx.moveTo(beam_attach_x, pulley_center_y); // Rope to Beam
+        ctx.lineTo(beam_attach_x, beam_y_top - 10);
+        ctx.stroke();
+        
+        // 3. Weight Q
+        const q_size = 40;
+        const q_x = rope_q_x - q_size / 2;
+        const q_y = 240;
+        ctx.beginPath();
+        ctx.rect(q_x, q_y, q_size, q_size);
+        ctx.stroke();
+        ctx.fillText('Q', q_x - 30, q_y + 30);
+        
+        // 4. Beam
+        ctx.beginPath();
+        // Small connector at the end of the beam
+        ctx.rect(beam_attach_x - 5, beam_y_top - 10, 10, 10);
+        ctx.moveTo(beam_attach_x, beam_y_top - 10);
+        ctx.lineTo(beam_attach_x, beam_y_top);
+        // Beam body
+        ctx.rect(beam_attach_x, beam_y_top, beam_length, beam_y_bottom - beam_y_top);
+        // Center line
+        ctx.moveTo(beam_attach_x, (beam_y_top + beam_y_bottom) / 2);
+        ctx.lineTo(beam_end_x, (beam_y_top + beam_y_bottom) / 2);
+        ctx.stroke();
+        
+        // 5. Supports A and B
+        const support_A_x = beam_attach_x + 60;
+        const support_B_x = beam_end_x - 100;
+        drawFulcrum(support_A_x, beam_y_bottom, 'A');
+        drawFulcrum(support_B_x, beam_y_bottom, 'B');
+
+        // 6. Weight P
+        const p_hang_x = beam_attach_x + 150;
+        const p_size = 40;
+        const p_y = 260;
+        const p_x = p_hang_x - p_size / 2;
+        // Hanger
+        ctx.beginPath();
+        ctx.moveTo(p_hang_x, (beam_y_top + beam_y_bottom) / 2);
+        ctx.lineTo(p_hang_x, p_y - 10);
+        ctx.stroke();
+        // Hanger loop
+        ctx.beginPath();
+        ctx.arc(p_hang_x, p_y - 10, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+        // Attachment to weight
+        ctx.beginPath();
+        ctx.moveTo(p_hang_x, p_y - 5);
+        ctx.lineTo(p_hang_x, p_y);
+        ctx.stroke();
+        // Weight block
+        ctx.beginPath();
+        ctx.rect(p_x, p_y, p_size, p_size);
+        ctx.stroke();
+        ctx.fillText('P', p_x + p_size + 10, p_y + 30);
+        
+        // 7. Labels on beam
+        ctx.fillText('C', beam_attach_x + 30, beam_y_top - 10);
+        ctx.fillText('D', support_B_x + 40, beam_y_top - 10);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+    <canvas id="myCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Geometric Parameters and Coordinates ---
+        const B = { x: 230, y: 200 };
+        const L_AB = 180;
+        const L_BCD = 130;
+        const angle_AB_rad = Math.PI / 4; // 45 degrees
+
+        // Calculate coordinates of other points based on B
+        const A = {
+            x: B.x - L_AB * Math.cos(angle_AB_rad),
+            y: B.y + L_AB * Math.sin(angle_AB_rad)
+        };
+
+        const h_BCD = L_BCD * Math.sqrt(3) / 2; // Altitude of equilateral triangle BCD
+        const C = {
+            x: B.x + h_BCD,
+            y: B.y - L_BCD / 2
+        };
+        const D = {
+            x: B.x + h_BCD,
+            y: B.y + L_BCD / 2
+        };
+
+        // --- Drawing Helper Functions ---
+
+        function drawLine(p1, p2, lineWidth = 2) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.lineWidth = lineWidth;
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawCircle(p, radius = 4) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, radius, 0, 2 * Math.PI);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawHatchedWall(x, y_start, y_end, hatch_length = 10, hatch_spacing = 8) {
+            // Draw main vertical line
+            drawLine({x: x, y: y_start}, {x: x, y: y_end}, 3);
+
+            // Draw hatches
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            for (let y = y_start; y <= y_end; y += hatch_spacing) {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + hatch_length, y - hatch_length);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawHatchedSupport(p, length, surfaceAngle, hatch_length = 8, hatch_spacing = 7) {
+            const dx = length / 2 * Math.cos(surfaceAngle);
+            const dy = length / 2 * Math.sin(surfaceAngle);
+            const p1 = {x: p.x - dx, y: p.y - dy};
+            const p2 = {x: p.x + dx, y: p.y + dy};
+
+            // Draw support surface line
+            drawLine(p1, p2, 3);
+
+            // Draw hatches (perpendicular to the surface)
+            ctx.save();
+            const hatch_angle = surfaceAngle - Math.PI / 2;
+            const hdx = hatch_length * Math.cos(hatch_angle);
+            const hdy = hatch_length * Math.sin(hatch_angle);
+            const num_hatches = Math.floor(length / hatch_spacing);
+            
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i <= num_hatches; i++) {
+                const start_x = p1.x + i * (p2.x - p1.x) / num_hatches;
+                const start_y = p1.y + i * (p2.y - p1.y) / num_hatches;
+                ctx.beginPath();
+                ctx.moveTo(start_x, start_y);
+                ctx.lineTo(start_x + hdx, start_y + hdy);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // --- Main Drawing Logic ---
+
+        // 1. Draw the fixed wall on the right
+        drawHatchedWall(C.x, C.y - 40, D.y + 40);
+
+        // 2. Draw the support at A
+        // The support surface is perpendicular to bar AB.
+        // Slope of AB is -1, so perpendicular slope is 1 (angle PI/4 or 45 deg).
+        drawHatchedSupport({x: A.x, y: A.y+2}, 70, Math.PI / 4);
+
+        // 3. Draw the bars and rods
+        // Bar AB is thicker
+        ctx.save();
+        ctx.lineCap = 'round';
+        drawLine(A, B, 8);
+        ctx.restore();
+
+        // Rods BC and BD
+        drawLine(B, C, 3);
+        drawLine(B, D, 3);
+
+        // 4. Draw the hinged joints
+        drawCircle(B, 5);
+        drawCircle(C, 5);
+        drawCircle(D, 5);
+        
+        // 5. Draw the 45-degree angle annotation
+        const angleRadius = 35;
+        const textRadius = 55;
+        
+        // Dashed horizontal line from B
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1.5;
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(B.x - textRadius, B.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Arc for the angle
+        const startAngle = Math.PI * 0.75; // Angle of line BA
+        const endAngle = Math.PI;          // Angle of horizontal line to the left
+        ctx.save();
+        ctx.beginPath();
+        ctx.lineWidth = 1.5;
+        ctx.arc(B.x, B.y, angleRadius, startAngle, endAngle);
+        ctx.stroke();
+        ctx.restore();
+
+        // Arrowhead on the arc
+        const arrowAngle = startAngle + 0.12; // Position on the arc, near the bar
+        const arrowTip = { x: B.x + angleRadius * Math.cos(arrowAngle), y: B.y + angleRadius * Math.sin(arrowAngle) };
+        ctx.save();
+        ctx.translate(arrowTip.x, arrowTip.y);
+        ctx.rotate(arrowAngle + Math.PI / 2); // Align with tangent
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-5, 8);
+        ctx.lineTo(5, 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        
+        // Angle value text
+        const textAngle = (startAngle + endAngle) / 2 + 0.05; // Adjust position for aesthetics
+        ctx.fillText("45°",
+            B.x + textRadius * Math.cos(textAngle),
+            B.y + textRadius * Math.sin(textAngle));
+
+        // 6. Add labels for points A, B, C, D
+        ctx.fillText("A", A.x - 25, A.y + 5);
+        ctx.fillText("B", B.x - 15, B.y - 15);
+        ctx.fillText("C", C.x + 20, C.y - 10);
+        ctx.fillText("D", D.x + 20, D.y + 10);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="600" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings to emulate the hand-drawn look
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a resistor symbol.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x_start - The starting x-coordinate of the resistor.
+         * @param {number} y - The y-coordinate of the resistor.
+         * @param {number} len - The length of the resistor.
+         * @param {number} h - The height of the zig-zag peaks.
+         */
+        function drawResistor(ctx, x_start, y, len, h) {
+            ctx.beginPath();
+            const s = len / 6;
+            ctx.moveTo(x_start, y);
+            ctx.lineTo(x_start + s, y - h);
+            ctx.lineTo(x_start + 2 * s, y + h);
+            ctx.lineTo(x_start + 3 * s, y - h);
+            ctx.lineTo(x_start + 4 * s, y + h);
+            ctx.lineTo(x_start + 5 * s, y - h);
+            ctx.lineTo(x_start + 6 * s, y);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a capacitor symbol.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x - The center x-coordinate of the capacitor.
+         * @param {number} y - The y-coordinate of the capacitor.
+         * @param {number} plate_h - The height of the capacitor plates.
+         * @param {number} gap - The gap between the plates.
+         */
+        function drawCapacitor(ctx, x, y, plate_h, gap) {
+            ctx.beginPath();
+            // Left plate
+            ctx.moveTo(x - gap, y - plate_h / 2);
+            ctx.lineTo(x - gap, y + plate_h / 2);
+            // Right plate
+            ctx.moveTo(x + gap, y - plate_h / 2);
+            ctx.lineTo(x + gap, y + plate_h / 2);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a ground symbol.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x - The x-coordinate of the ground symbol.
+         * @param {number} y - The y-coordinate of the top of the ground symbol.
+         */
+        function drawGround(ctx, x, y) {
+            ctx.beginPath();
+            ctx.moveTo(x - 20, y);
+            ctx.lineTo(x + 20, y);
+            ctx.moveTo(x - 12, y + 6);
+            ctx.lineTo(x + 12, y + 6);
+            ctx.moveTo(x - 6, y + 12);
+            ctx.lineTo(x + 6, y + 12);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a label with a subscript.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {string} text - The main text.
+         * @param {string} sub - The subscript text.
+         * @param {number} x - The x-coordinate.
+         * @param {number} y - The y-coordinate.
+         */
+        function drawLabelWithSub(ctx, text, sub, x, y) {
+            ctx.font = 'bold 22px serif';
+            ctx.textAlign = 'left';
+            const textMetrics = ctx.measureText(text);
+            ctx.fillText(text, x, y);
+            ctx.font = 'bold 16px serif';
+            ctx.fillText(sub, x + textMetrics.width - 2, y + 6);
+        }
+
+        // --- Main Drawing Logic ---
+
+        // Component coordinates
+        const op_amp_in_x = 300;
+        const op_amp_in_y_neg = 150;
+        const op_amp_in_y_pos = 190;
+        const op_amp_out_x = 420;
+        const op_amp_out_y = 170;
+
+        // 1. Draw Op-Amp
+        ctx.beginPath();
+        ctx.moveTo(op_amp_in_x, 130);
+        ctx.lineTo(op_amp_out_x, op_amp_out_y);
+        ctx.lineTo(op_amp_in_x, 210);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Op-Amp Labels (+/-)
+        ctx.font = 'bold 30px serif';
+        ctx.fillText('-', op_amp_in_x + 5, op_amp_in_y_neg + 8);
+        ctx.fillText('+', op_amp_in_x + 5, op_amp_in_y_pos + 8);
+
+        // 2. Draw Input Path (V_in, R1, C)
+        const vin_x = 100;
+        const vin_y = op_amp_in_y_neg;
+
+        // V_in terminal and ground connection
+        ctx.beginPath();
+        ctx.arc(vin_x, vin_y, 4, 0, 2 * Math.PI); // Input node
+        ctx.fill();
+        ctx.moveTo(vin_x, vin_y);
+        ctx.lineTo(vin_x, vin_y + 60);
+        ctx.stroke();
+        drawGround(ctx, vin_x, vin_y + 60);
+        drawLabelWithSub(ctx, 'V', 'in', vin_x - 35, vin_y);
+
+        // Resistor R1
+        const r1_x = 140;
+        const r1_len = 60;
+        ctx.beginPath();
+        ctx.moveTo(vin_x, vin_y);
+        ctx.lineTo(r1_x, vin_y);
+        ctx.stroke();
+        drawResistor(ctx, r1_x, vin_y, r1_len, 10);
+        drawLabelWithSub(ctx, 'R', '1', r1_x + r1_len / 2 - 10, vin_y - 20);
+
+        // Capacitor C
+        const cap_x = r1_x + r1_len + 30;
+        ctx.beginPath();
+        ctx.moveTo(r1_x + r1_len, vin_y);
+        ctx.lineTo(cap_x - 10, vin_y);
+        ctx.stroke();
+        drawCapacitor(ctx, cap_x, vin_y, 20, 4);
+        ctx.font = 'bold 22px serif';
+        ctx.fillText('C', cap_x - 5, vin_y - 20);
+
+        // Wire from C to Op-Amp inverting input
+        ctx.beginPath();
+        ctx.moveTo(cap_x + 10, vin_y);
+        ctx.lineTo(op_amp_in_x, vin_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(op_amp_in_x, vin_y, 4, 0, 2 * Math.PI); // Node at inverting input
+        ctx.fill();
+
+        // 3. Draw Non-inverting Input Path
+        ctx.beginPath();
+        ctx.moveTo(op_amp_in_x, op_amp_in_y_pos);
+        ctx.lineTo(op_amp_in_x, op_amp_in_y_pos + 40);
+        ctx.stroke();
+        drawGround(ctx, op_amp_in_x, op_amp_in_y_pos + 40);
+
+        // 4. Draw Output Path (V_out)
+        const vout_x = 480;
+        const vout_y = op_amp_out_y;
+
+        ctx.beginPath();
+        ctx.moveTo(op_amp_out_x, vout_y);
+        ctx.lineTo(vout_x, vout_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(vout_x, vout_y, 4, 0, 2 * Math.PI); // Output node
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(vout_x, vout_y);
+        ctx.lineTo(vout_x, vout_y + 60);
+        ctx.stroke();
+        drawGround(ctx, vout_x, vout_y + 60);
+        drawLabelWithSub(ctx, 'V', 'out', vout_x, vout_y + 25);
+
+        // 5. Draw Feedback Path with R2
+        const feedback_y_top = 100;
+        const r2_len_feedback = 100;
+        const r2_x_center = (op_amp_in_x + vout_x) / 2;
+        
+        ctx.beginPath();
+        // Path from inverting input up and across
+        ctx.moveTo(op_amp_in_x, op_amp_in_y_neg);
+        ctx.lineTo(op_amp_in_x, feedback_y_top);
+        ctx.lineTo(r2_x_center - r2_len_feedback / 2, feedback_y_top);
+        // Path from output up and across
+        ctx.moveTo(vout_x, vout_y);
+        ctx.lineTo(vout_x, feedback_y_top);
+        ctx.lineTo(r2_x_center + r2_len_feedback / 2, feedback_y_top);
+        ctx.stroke();
+        
+        // Draw Resistor R2 on the top wire
+        drawResistor(ctx, r2_x_center - r2_len_feedback / 2, feedback_y_top, r2_len_feedback, 10);
+        drawLabelWithSub(ctx, 'R', '2', r2_x_center - 10, feedback_y_top - 20);
+
+        // 6. Draw Figure Caption
+        ctx.font = 'bold 24px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 3.56', canvas.width / 2, 350);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="circuitCanvas" width="550" height="450" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings to mimic the original image's characteristics
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineCap = 'butt'; 
+    ctx.lineJoin = 'miter'; 
+
+    // Define key coordinates for the circuit layout
+    const x1 = 100, y1 = 100; // Top-left corner of the circuit
+    const x2 = 350, y2 = 300; // Bottom-right corner of the solid part
+
+    // Define terminal positions for A and B
+    const ax = x2, ay = y1;
+    const bx = x2, by = y2;
+
+    // --- Draw Circuit Components ---
+
+    // 1. Draw the left wire with the voltage source (battery)
+    const batYcenter = y1 + (y2 - y1) / 2; // Vertically center the battery
+    const batPlateLong = 15;
+    const batPlateShort = 8;
+    const batWireGap = 15;
+    
+    // Wire from top-left corner to the battery's positive pole
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1, batYcenter - batWireGap);
+    ctx.stroke();
+
+    // Battery symbol (positive pole at the top)
+    ctx.beginPath();
+    ctx.moveTo(x1 - batPlateLong, batYcenter - batWireGap); // Long horizontal line for positive terminal
+    ctx.lineTo(x1 + batPlateLong, batYcenter - batWireGap);
+    ctx.moveTo(x1 - batPlateShort, batYcenter + batWireGap);  // Short horizontal line for negative terminal
+    ctx.lineTo(x1 + batPlateShort, batYcenter + batWireGap);
+    ctx.stroke();
+    
+    // Label for voltage 'V'
+    ctx.font = 'italic 24px serif';
+    ctx.fillText('V', x1 + batPlateLong + 10, batYcenter + 8);
+
+    // Wire from the battery's negative pole to the bottom-left corner
+    ctx.beginPath();
+    ctx.moveTo(x1, batYcenter + batWireGap); 
+    ctx.lineTo(x1, y2);
+    ctx.stroke();
+
+    // 2. Draw the bottom wire
+    ctx.beginPath();
+    ctx.moveTo(x1, y2);
+    ctx.lineTo(bx, by);
+    ctx.stroke();
+
+    // 3. Draw the top wire with the internal resistor 'r'
+    const r_x_start = x1 + 60;
+    const r_width = 120;
+    
+    // Wire segment before resistor 'r'
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(r_x_start, y1);
+    ctx.stroke();
+
+    // Internal resistor 'r' (zigzag pattern)
+    const r_height_amp = 12; // Amplitude of the zigzag
+    const r_segments = 8;
+    const r_seg_len = r_width / r_segments;
+    ctx.beginPath();
+    ctx.moveTo(r_x_start, y1);
+    for (let i = 0; i < r_segments; i++) {
+        // Create an alternating up/down pattern for the zigzag, starting by going up
+        ctx.lineTo(r_x_start + (i + 0.5) * r_seg_len, y1 + r_height_amp * ((-1)**i) * -1); 
+    }
+    ctx.lineTo(r_x_start + r_width, y1);
+    ctx.stroke();
+    
+    // Label for internal resistance 'r'
+    ctx.font = 'italic 24px serif';
+    ctx.fillText('r', r_x_start + r_width/2 - 5, y1 + 35);
+
+    // Wire segment after resistor 'r' to terminal A
+    ctx.beginPath();
+    ctx.moveTo(r_x_start + r_width, y1);
+    ctx.lineTo(ax, ay);
+    ctx.stroke();
+
+    // 4. Draw terminals A and B
+    ctx.font = 'bold 24px sans-serif';
+    // Terminal A (dot and label)
+    ctx.beginPath();
+    ctx.arc(ax, ay, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('A', ax + 10, ay + 10);
+
+    // Terminal B (dot and label)
+    ctx.beginPath();
+    ctx.arc(bx, by, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('B', bx + 10, by + 10);
+
+    // 5. Draw the dashed external circuit part with load resistor 'R'
+    const dash_x = x2 + 60;
+    
+    ctx.save(); // Save current context (solid line style)
+    ctx.setLineDash([7, 5]); // Set line style to dashed
+
+    // Dashed wire from terminal A to the start of resistor R
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(dash_x, ay);
+    const R_y_start = ay + (by - ay - 80) / 2; // Center R vertically on the dashed path
+    ctx.lineTo(dash_x, R_y_start);
+    ctx.stroke();
+
+    // Dashed wire from the end of resistor R to terminal B
+    const R_y_end = R_y_start + 80;
+    ctx.beginPath();
+    ctx.moveTo(dash_x, R_y_end);
+    ctx.lineTo(dash_x, by);
+    ctx.lineTo(bx, by);
+    ctx.stroke();
+    
+    ctx.restore(); // Restore context to solid lines
+
+    // Load resistor 'R' (vertical zigzag pattern)
+    const R_width_amp = 12; // Amplitude of the zigzag
+    const R_segments = 8;
+    const R_seg_len = (R_y_end - R_y_start) / R_segments;
+    ctx.beginPath();
+    ctx.moveTo(dash_x, R_y_start);
+    for (let i = 0; i < R_segments; i++) {
+        // Create an alternating left/right pattern for the zigzag, starting by going left
+        ctx.lineTo(dash_x + R_width_amp * ((-1)**i) * -1, R_y_start + (i + 0.5) * R_seg_len);
+    }
+    ctx.lineTo(dash_x, R_y_end);
+    ctx.stroke();
+    
+    // Label for load resistance 'R'
+    ctx.font = 'italic 24px serif';
+    ctx.fillText('R', dash_x - 35, R_y_start + (R_y_end - R_y_start)/2 + 8);
+
+    // 6. Draw the figure caption
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillText('Fig. 3.4', (x1 + dash_x)/2 - 40, by + 60);
+
+</script>
+</body>
+</html>

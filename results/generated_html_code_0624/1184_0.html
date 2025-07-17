@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Diffraction Grating Diagram</title>
+</head>
+<body>
+<canvas id="diffractionCanvas" width="650" height="500" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('diffractionCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper Functions ---
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke();
+        
+        const angle = Math.atan2(toy - fromy, tox - fromx);
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+
+    function drawTextWithSubscript(ctx, text, sub, x, y, options = {}) {
+        const { baseFont = '24px serif', subFont = '16px serif', subXOffsetFactor = 0.7, subYOffset = 6 } = options;
+        ctx.save();
+        ctx.font = baseFont;
+        const textMetrics = ctx.measureText(text);
+        ctx.fillText(text, x, y);
+        
+        ctx.font = subFont;
+        ctx.fillText(sub, x + textMetrics.width * subXOffsetFactor, y + subYOffset);
+        ctx.restore();
+    }
+
+    // --- Drawing Parameters ---
+    const cx = 300;
+    const cy = 300;
+
+    // --- Main Drawing Logic ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    // 1. Normal Line (horizontal dashed)
+    ctx.save();
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(40, cy);
+    ctx.lineTo(640, cy);
+    ctx.stroke();
+    ctx.restore();
+
+    // 2. Diffraction Grating (DG)
+    ctx.save();
+    ctx.fillStyle = '#DCDCDC';
+    ctx.fillRect(cx - 6, cy - 180, 12, 360);
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(cx - 6, cy - 180, 12, 360);
+    ctx.restore();
+    ctx.font = '24px sans-serif';
+    ctx.fillText('DG', cx - 60, cy - 120);
+
+    // 3. Incoming Beam
+    drawArrow(ctx, 50, 365, 300, 300);
+    drawArrow(ctx, 70, 375, 320, 310);
+
+    // 4. Outgoing Beams
+    // m = -1
+    drawArrow(ctx, 300, 300, 480, 120);
+    drawArrow(ctx, 320, 310, 500, 130);
+    // m = 0
+    drawArrow(ctx, 300, 300, 550, 220);
+    drawArrow(ctx, 320, 310, 570, 230);
+    // m = 1
+    drawArrow(ctx, 300, 300, 620, 290);
+    drawArrow(ctx, 320, 310, 640, 300);
+
+    // 5. Labels for diffraction orders
+    ctx.font = 'italic 20px serif';
+    ctx.fillText('m = -1', 490, 100);
+    ctx.fillText('m = 0', 560, 200);
+    ctx.fillText('m = 1', 580, 315);
+
+    // 6. Angle alpha_0
+    ctx.save();
+    ctx.lineWidth = 1;
+    const alpha_arc_cx = 110;
+    // Calculate angle based on the drawn line from (50,365) to (300,300) to find the arc angle
+    const alpha_rad = Math.atan2(cy - 365, 300 - 50);
+    ctx.beginPath();
+    ctx.arc(alpha_arc_cx, cy, 50, 0, -alpha_rad, false);
+    ctx.stroke();
+    // Reference line for angle
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(alpha_arc_cx - 50, cy);
+    ctx.lineTo(alpha_arc_cx, cy);
+    ctx.stroke();
+    ctx.restore();
+    drawTextWithSubscript(ctx, 'α', '0', 75, 338);
+
+    // 7. Angle beta_-1
+    ctx.save();
+    ctx.lineWidth = 1;
+    // Dashed arc for the angle
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    const beta_neg1_rad = Math.atan2(cy - 120, 480 - cx);
+    ctx.arc(cx, cy, 100, 0, beta_neg1_rad, false);
+    ctx.stroke();
+    ctx.restore();
+    
+    // Thin line from label to ray
+    ctx.save();
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(435, 238);
+    ctx.lineTo(490, 133);
+    ctx.stroke();
+    ctx.restore();
+    drawTextWithSubscript(ctx, 'β', '-1', 410, 245, {subXOffsetFactor: 0.65});
+
+    // 8. Angle beta_+1
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    const x_corner = 560;
+    const y_corner = cy;
+    const m1_slope = (290 - 300) / (620 - 300);
+    const y_ray_at_corner = cy + m1_slope * (x_corner - cx);
+    ctx.beginPath();
+    ctx.moveTo(x_corner, y_ray_at_corner);
+    ctx.lineTo(x_corner, y_corner);
+    ctx.lineTo(x_corner + 30, y_corner);
+    ctx.stroke();
+    ctx.restore();
+    drawTextWithSubscript(ctx, 'β', '+1', 535, 350, {subXOffsetFactor: 0.65});
+
+</script>
+</body>
+</html>

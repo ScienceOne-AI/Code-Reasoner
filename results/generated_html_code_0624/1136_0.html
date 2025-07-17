@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Parameters
+        const originX = 220;
+        const originY = 100;
+        const rodLength = 200;
+        const theta = 40 * Math.PI / 180; // Angle for the solid rod
+        const theta0 = 20 * Math.PI / 180; // Angle for the dashed rod
+
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineCap = 'round';
+        
+        // 1. Draw T-shaped track (axes)
+        ctx.lineWidth = 2.5;
+        // Horizontal track (x-axis)
+        drawArrow(originX + 280, originY, 40, originY);
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('x', 50, originY - 10);
+        
+        // Vertical track (y-axis)
+        drawArrow(originX, 50, originX, originY + 350);
+        ctx.fillText('y', originX + 10, originY + 345);
+
+        // 2. Draw the dashed rod (initial position)
+        const a_dash_x = originX + rodLength * Math.sin(theta0);
+        const b_dash_y = originY + rodLength * Math.cos(theta0);
+        
+        ctx.save();
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(a_dash_x, originY);
+        ctx.lineTo(originX, b_dash_y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw angle theta0
+        ctx.beginPath();
+        ctx.arc(originX, originY, 40, Math.PI / 2 - theta0, Math.PI / 2);
+        ctx.stroke();
+        ctx.font = 'italic 18px Times New Roman';
+        ctx.fillText('θ₀', originX + 22, originY + 35);
+        
+        // 3. Draw the solid rod
+        const a_x = originX - rodLength * Math.sin(theta);
+        const b_y = originY + rodLength * Math.cos(theta);
+        
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(a_x, originY);
+        ctx.lineTo(originX, b_y);
+        ctx.stroke();
+
+        // Draw joints A and B
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(a_x, originY, 6, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(originX, b_y, 6, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Labels for A and B
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('A', a_x - 25, originY);
+        ctx.fillText('B', originX - 25, b_y);
+
+        // Label for length l
+        ctx.save();
+        ctx.translate((a_x + originX) / 2, (originY + b_y) / 2);
+        ctx.rotate(-theta);
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('l', -20, 5);
+        ctx.restore();
+        
+        // Draw angle theta
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(originX, originY, 70, Math.PI / 2 - theta, Math.PI / 2);
+        ctx.stroke();
+        ctx.font = 'italic 18px Times New Roman';
+        ctx.fillText('θ', originX - 45, originY + 50);
+
+        // 4. Draw forces
+        ctx.lineWidth = 1.5;
+        const arrowLength = 70;
+
+        // Force N1
+        drawArrow(a_x, originY, a_x, originY - arrowLength);
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('N', a_x - 8, originY - arrowLength - 5);
+        ctx.font = '14px Times New Roman';
+        ctx.fillText('1', a_x, originY - arrowLength - 5);
+
+        // Force N2
+        drawArrow(originX, b_y, originX + arrowLength, b_y);
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('N', originX + arrowLength + 5, b_y + 8);
+        ctx.font = '14px Times New Roman';
+        ctx.fillText('2', originX + arrowLength + 15, b_y + 11);
+        
+        // Force mg
+        const centerX = (a_x + originX) / 2;
+        const centerY = (originY + b_y) / 2;
+        drawArrow(centerX, centerY, centerX, centerY + arrowLength);
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('mg', centerX - 40, centerY + 30);
+
+        // 5. Draw the ball and its velocity
+        const ball_x = a_dash_x + 100;
+        
+        // Ball
+        ctx.beginPath();
+        ctx.arc(ball_x, originY, 7, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('m', ball_x + 15, originY);
+        
+        // Velocity vector v0
+        ctx.lineWidth = 1.5;
+        const v_start_x = ball_x - 15;
+        const v_end_x = ball_x - 70;
+        // Custom double line arrow for v0
+        ctx.beginPath();
+        ctx.moveTo(v_start_x, originY - 2);
+        ctx.lineTo(v_end_x, originY - 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(v_start_x, originY + 2);
+        ctx.lineTo(v_end_x, originY + 2);
+        ctx.stroke();
+        // Arrow head
+        ctx.beginPath();
+        ctx.moveTo(v_end_x, originY-6);
+        ctx.lineTo(v_end_x - 10, originY);
+        ctx.lineTo(v_end_x, originY+6);
+        ctx.stroke();
+        
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('v', v_end_x - 5, originY - 15);
+        ctx.font = '14px Times New Roman';
+        ctx.fillText('0', v_end_x, originY - 12);
+
+        // 6. Draw the title
+        ctx.font = '22px KaiTi'; // KaiTi is a common Chinese font
+        ctx.textAlign = 'center';
+        ctx.fillText('力图 7.18.1', canvas.width / 2, canvas.height - 30);
+    </script>
+</body>
+</html>

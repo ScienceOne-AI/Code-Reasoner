@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Physics Diagram of a Rod and Bullet</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  canvas {
+    border: 1px solid #d3d3d3;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="550"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Helper Functions ---
+
+  /**
+   * Draws a vertical dimension line with T-ticks and arrows.
+   * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+   * @param {number} x - The x-coordinate of the vertical line.
+   * @param {number} y1 - The starting y-coordinate.
+   * @param {number} y2 - The ending y-coordinate.
+   * @param {number} tickStartX - The starting x-coordinate of the horizontal ticks.
+   * @param {number} tickEndX - The ending x-coordinate of the horizontal ticks.
+   * @param {function} drawLabel - A function to draw the label for the dimension.
+   */
+  function drawVerticalDimLine(ctx, x, y1, y2, tickStartX, tickEndX, drawLabel) {
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // The two horizontal T-ticks
+    ctx.beginPath();
+    ctx.moveTo(tickStartX, y1);
+    ctx.lineTo(tickEndX, y1);
+    ctx.moveTo(tickStartX, y2);
+    ctx.lineTo(tickEndX, y2);
+    ctx.stroke();
+
+    // The vertical line with arrows
+    const arrowOffset = 8;
+    const arrowY1 = y1 + arrowOffset;
+    const arrowY2 = y2 - arrowOffset;
+    ctx.beginPath();
+    ctx.moveTo(x, arrowY1);
+    ctx.lineTo(x, arrowY2);
+    ctx.stroke();
+
+    // Arrowhead at top (pointing to y1)
+    ctx.beginPath();
+    ctx.moveTo(x, y1);
+    ctx.lineTo(x - 5, arrowY1);
+    ctx.lineTo(x + 5, arrowY1);
+    ctx.closePath();
+    ctx.fill();
+
+    // Arrowhead at bottom (pointing to y2)
+    ctx.beginPath();
+    ctx.moveTo(x, y2);
+    ctx.lineTo(x - 5, arrowY2);
+    ctx.lineTo(x + 5, arrowY2);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Draw label
+    if (drawLabel) {
+        drawLabel();
+    }
+    
+    ctx.restore();
+  }
+
+  /**
+   * Draws a horizontal arrow.
+   * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+   * @param {number} x1 - The starting x-coordinate.
+   * @param {number} y - The y-coordinate.
+   * @param {number} x2 - The ending x-coordinate (arrowhead position).
+   */
+  function drawHorizontalArrow(ctx, x1, y, x2) {
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // Line
+    ctx.beginPath();
+    ctx.moveTo(x1, y);
+    ctx.lineTo(x2, y);
+    ctx.stroke();
+
+    // Arrowhead
+    ctx.beginPath();
+    ctx.moveTo(x2, y);
+    ctx.lineTo(x2 - 10, y - 5);
+    ctx.lineTo(x2 - 10, y + 5);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  // --- Main Drawing ---
+  
+  // Clear canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Drawing parameters
+  const pivotPoint = { x: 250, y: 95 };
+  const rodLength = 320;
+  const rodWidth = 20;
+  const rodTopY = pivotPoint.y + 5; // Start rod slightly below pivot center for visual clarity
+  const rodBottomY = rodTopY + rodLength;
+  const pointAY = rodTopY + (3 / 4) * rodLength;
+
+  // 1. Draw Ceiling
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(100, 70);
+  ctx.lineTo(400, 70);
+  ctx.stroke();
+  // Hatching
+  for (let i = 110; i < 400; i += 20) {
+    ctx.beginPath();
+    ctx.moveTo(i, 70);
+    ctx.lineTo(i - 15, 85);
+    ctx.stroke();
+  }
+
+  // 2. Draw Pivot Support and Hinge
+  ctx.beginPath();
+  ctx.moveTo(220, 70);
+  ctx.lineTo(pivotPoint.x, pivotPoint.y);
+  ctx.moveTo(280, 70);
+  ctx.lineTo(pivotPoint.x, pivotPoint.y);
+  ctx.stroke();
+
+  // Rod eyelet and pivot pin
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(pivotPoint.x, pivotPoint.y, 8, 0, 2 * Math.PI, false); // Rod eyelet
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(pivotPoint.x, pivotPoint.y, 3, 0, 2 * Math.PI, false); // Pivot pin
+  ctx.stroke();
+  
+  // 3. Draw Rod
+  ctx.beginPath();
+  // Manually draw the rod to connect smoothly to the eyelet
+  const rodAttachY = pivotPoint.y + Math.sqrt(8*8 - (rodWidth/2)**2);
+  ctx.moveTo(pivotPoint.x - rodWidth / 2, rodAttachY);
+  ctx.lineTo(pivotPoint.x - rodWidth / 2, rodBottomY);
+  ctx.lineTo(pivotPoint.x + rodWidth / 2, rodBottomY);
+  ctx.lineTo(pivotPoint.x + rodWidth / 2, rodAttachY);
+  ctx.stroke();
+  
+  // 4. Labels O and A
+  ctx.font = 'italic 24px "Times New Roman"';
+  ctx.textAlign = 'left';
+  ctx.fillText('O', pivotPoint.x + 15, pivotPoint.y + 5);
+  
+  ctx.textAlign = 'center';
+  ctx.fillText('A', 200, pointAY + 25);
+
+  // 5. Impact Arrow at Point A
+  drawHorizontalArrow(ctx, 160, pointAY, pivotPoint.x - rodWidth / 2 - 2);
+
+  // 6. Dimension Lines
+  // For total length l (on the right)
+  const dim_l_x = pivotPoint.x + 90;
+  drawVerticalDimLine(ctx, dim_l_x, rodTopY, rodBottomY, pivotPoint.x + rodWidth / 2, dim_l_x + 20, () => {
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.textAlign = 'left';
+    ctx.fillText('l', dim_l_x + 10, rodTopY + rodLength / 2);
+  });
+
+  // For distance 3l/4 (on the left)
+  const dim_A_x = pivotPoint.x - 90;
+  drawVerticalDimLine(ctx, dim_A_x, rodTopY, pointAY, dim_A_x - 20, pivotPoint.x - rodWidth / 2, () => {
+    ctx.font = '24px "Times New Roman"';
+    const labelX = dim_A_x - 25;
+    const labelY = rodTopY + (pointAY - rodTopY) / 2;
+    
+    // Draw fraction
+    ctx.textAlign = 'center';
+    ctx.fillText('3', labelX, labelY - 8);
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(labelX - 10, labelY + 2);
+    ctx.lineTo(labelX + 10, labelY + 2);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillText('4', labelX, labelY + 22);
+
+    // Draw 'l'
+    ctx.font = 'italic 24px "Times New Roman"';
+    ctx.textAlign = 'left';
+    ctx.fillText('l', labelX + 15, labelY + 5);
+  });
+  
+  // 7. Bottom Text
+  ctx.font = '24px "SimSun", "Songti SC", serif'; // Use a font that supports Chinese characters
+  ctx.textAlign = 'center';
+  ctx.fillText('题 7 图', canvas.width / 2, 520);
+
+</script>
+</body>
+</html>

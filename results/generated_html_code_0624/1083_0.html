@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resistor Network Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+        function drawLine(p1, p2, dashed = false) {
+            ctx.beginPath();
+            if (dashed) {
+                ctx.setLineDash([5, 5]);
+            } else {
+                ctx.setLineDash([]);
+            }
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+        }
+
+        function drawText(text, p, size = 20, font = "Arial") {
+            ctx.font = `${size}px ${font}`;
+            ctx.fillStyle = 'black';
+            ctx.fillText(text, p.x, p.y);
+        }
+        
+        function drawArrow(p1, p2, size = 5) {
+            const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            ctx.beginPath();
+            ctx.moveTo(p2.x, p2.y);
+            ctx.lineTo(p2.x - size * Math.cos(angle - Math.PI / 6), p2.y - size * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(p2.x, p2.y);
+            ctx.lineTo(p2.x - size * Math.cos(angle + Math.PI / 6), p2.y - size * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Logic ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Define the 10 vertices of the subdivided tetrahedron based on the image's perspective
+        const A = { x: 88, y: 303 };
+        const B = { x: 410, y: 328 };
+        const C = { x: 235, y: 322 };
+        const D = { x: 158, y: 142 }; // This is the top-left main vertex
+        
+        const M_ab = { x: 250, y: 315 }; // Midpoint on edge AB
+        const M_ac = { x: 162, y: 312 }; // Midpoint on edge AC
+        const M_bc = { x: 323, y: 325 }; // Midpoint on edge BC
+        const M_ad = { x: 123, y: 223 }; // Midpoint on edge AD
+        const M_bd = { x: 284, y: 185 }; // Midpoint on edge BD
+        const M_cd = { x: 197, y: 232 }; // Midpoint on edge CD
+
+        // Draw dashed lines first (the "hidden" parts)
+        const dashedLines = [
+            [C, M_ac], [C, M_cd], [D, M_cd],
+            [M_ab, M_ac], [M_ab, M_ad], [M_ab, M_bc],
+            [M_ac, M_ad], [M_ac, M_cd],
+            [M_bc, M_bd], [M_bc, M_cd],
+            [M_ad, M_cd], [M_bd, M_cd]
+        ];
+        dashedLines.forEach(pair => drawLine(pair[0], pair[1], true));
+
+        // Draw solid lines (the "visible" parts)
+        const solidLines = [
+            [A, M_ac], [A, M_ad], [A, M_ab],
+            [B, M_ab], [B, M_bc], [B, M_bd],
+            [C, M_bc],
+            [D, M_ad], [D, M_bd],
+            [M_ab, M_bd], [M_ad, M_bd], [M_ac, M_bc]
+        ];
+        solidLines.forEach(pair => drawLine(pair[0], pair[1], false));
+        
+        // Draw the labels for vertices
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        drawText("A", { x: A.x - 20, y: A.y + 10 });
+        drawText("B", { x: B.x + 20, y: B.y + 10 });
+        drawText("C", { x: C.x, y: C.y + 20 });
+        drawText("D", { x: D.x - 20, y: D.y - 10 });
+
+        // Draw the R label with its indicators
+        ctx.save();
+        ctx.setLineDash([]);
+        ctx.lineWidth = 1;
+        const r_p1 = {x: 325, y: 125};
+        const r_p2 = {x: 350, y: 100};
+        const r_mid = {x: (r_p1.x + r_p2.x)/2, y: (r_p1.y + r_p2.y)/2};
+        
+        // Perpendicular vector for offset
+        const dx = r_p2.x - r_p1.x;
+        const dy = r_p2.y - r_p1.y;
+        const len = Math.sqrt(dx*dx + dy*dy);
+        const perp = {x: -dy/len, y: dx/len};
+        const offset = 15;
+        
+        // Draw indicator lines
+        ctx.beginPath();
+        ctx.moveTo(r_p1.x, r_p1.y);
+        ctx.lineTo(r_p1.x + perp.x*offset, r_p1.y + perp.y*offset);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(r_p2.x, r_p2.y);
+        ctx.lineTo(r_p2.x + perp.x*offset, r_p2.y + perp.y*offset);
+        ctx.stroke();
+
+        // Draw line with arrows for R
+        const r_line_p1 = {x: r_p1.x + perp.x*(offset-5), y: r_p1.y + perp.y*(offset-5)};
+        const r_line_p2 = {x: r_p2.x + perp.x*(offset-5), y: r_p2.y + perp.y*(offset-5)};
+        drawLine(r_line_p1, r_line_p2);
+        drawArrow(r_line_p2, r_line_p1);
+        drawArrow(r_line_p1, r_line_p2);
+
+        // Draw R text
+        drawText("R", { x: r_mid.x + perp.x*(offset+8), y: r_mid.y + perp.y*(offset+8) }, 22, "serif italic");
+
+        ctx.restore();
+
+        // Draw the caption
+        ctx.textAlign = 'center';
+        drawText("电图 4.9.1", { x: canvas.width / 2 - 50, y: 400 }, 24, "Songti SC");
+    </script>
+</body>
+</html>

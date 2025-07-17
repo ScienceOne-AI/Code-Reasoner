@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    canvas {
+        border: 1px solid #ccc;
+        background-color: white;
+    }
+</style>
+</head>
+<body>
+
+<canvas id="myCanvas" width="600" height="550"></canvas>
+
+<script>
+const canvas = document.getElementById('myCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- 1. Setup Coordinates ---
+const padX = 80;
+const padY = 50;
+const bottomMargin = 50;
+const rightMargin = 40;
+const plotWidth = canvas.width - padX - rightMargin;
+const plotHeight = canvas.height - padY - bottomMargin;
+
+const xMin = 0;
+const xMax = 0.25;
+const yMin = -12;
+const yMax = 8;
+const yRange = yMax - yMin;
+
+// --- Coordinate transformation functions ---
+function x_coord(r) {
+    return padX + (r - xMin) / (xMax - xMin) * plotWidth;
+}
+
+function y_coord(b_dot) {
+    return (canvas.height - bottomMargin) - (b_dot - yMin) / yRange * plotHeight;
+}
+
+// --- 2. Draw Axes ---
+ctx.beginPath();
+ctx.strokeStyle = 'black';
+ctx.lineWidth = 1.5;
+
+// Y-axis
+ctx.moveTo(x_coord(0), y_coord(yMin));
+ctx.lineTo(x_coord(0), y_coord(yMax));
+ctx.stroke();
+
+// X-axis (at y=0)
+ctx.moveTo(x_coord(xMin), y_coord(0));
+ctx.lineTo(x_coord(xMax), y_coord(0));
+ctx.stroke();
+
+// --- 3. Draw Ticks and Labels ---
+ctx.fillStyle = 'black';
+ctx.font = '16px Arial';
+
+// Y-axis ticks and labels
+ctx.textAlign = 'right';
+ctx.textBaseline = 'middle';
+for (let i = yMin; i <= yMax; i += 2) {
+    const yPos = y_coord(i);
+    ctx.beginPath();
+    ctx.moveTo(x_coord(0), yPos);
+    ctx.lineTo(x_coord(0) - 6, yPos);
+    ctx.stroke();
+    ctx.fillText(i, x_coord(0) - 10, yPos);
+}
+
+// X-axis ticks and labels
+ctx.textAlign = 'center';
+ctx.textBaseline = 'top';
+const xTickValues = [0, 0.05, 0.10, 0.15, 0.20, 0.25];
+// Replicating the typo from the original image for the last two labels
+const xTickLabels = ['0', '0.05', '0.10', '0.15', '0.02', '0.025'];
+for (let i = 0; i < xTickValues.length; i++) {
+    const xPos = x_coord(xTickValues[i]);
+    const label = xTickLabels[i];
+    ctx.beginPath();
+    ctx.moveTo(xPos, y_coord(0));
+    ctx.lineTo(xPos, y_coord(0) + 6);
+    ctx.stroke();
+    if (xTickValues[i] !== 0) {
+        ctx.fillText(label, xPos, y_coord(0) + 10);
+    }
+}
+
+// --- 4. Draw Axis Titles ---
+ctx.font = '18px Arial';
+
+// Y-axis Title
+ctx.save();
+ctx.textAlign = 'center';
+ctx.textBaseline = 'bottom';
+const yAxisLabelX = padX - 55;
+const yAxisLabelY = padY + plotHeight / 2;
+ctx.translate(yAxisLabelX, yAxisLabelY);
+ctx.rotate(-Math.PI / 2);
+// Using Unicode for superscripts: ⁻ (U+207B), ⁴ (U+2074)
+const yLabel = 'B的变化率/(10⁻⁴ T·s⁻¹)';
+ctx.fillText(yLabel, 0, 0);
+ctx.restore();
+
+// X-axis Title
+ctx.textAlign = 'center';
+ctx.textBaseline = 'top';
+ctx.fillText('r/m', x_coord(xMax / 2), y_coord(0) + 35);
+
+// --- 5. Draw Curves ---
+ctx.lineWidth = 2;
+
+const r_start = 0;
+const r_end = 0.2;
+const steps = 200;
+const dr = (r_end - r_start) / steps;
+
+// Solid line: y = 1 - 55r
+ctx.beginPath();
+ctx.strokeStyle = 'black';
+ctx.setLineDash([]);
+ctx.moveTo(x_coord(r_start), y_coord(1));
+for (let r = r_start + dr; r <= r_end + dr/2; r += dr) {
+    const y = 1 - 55 * r;
+    ctx.lineTo(x_coord(r), y_coord(y));
+}
+ctx.stroke();
+
+// Short-dashed line: y = 1 - 62.5r^2
+ctx.beginPath();
+ctx.setLineDash([5, 5]);
+ctx.moveTo(x_coord(r_start), y_coord(1));
+for (let r = r_start + dr; r <= r_end + dr/2; r += dr) {
+    const y = 1 - 62.5 * r * r;
+    ctx.lineTo(x_coord(r), y_coord(y));
+}
+ctx.stroke();
+
+// Long-dashed line: y = 1 + 150r^2
+ctx.beginPath();
+ctx.setLineDash([10, 5]);
+ctx.moveTo(x_coord(r_start), y_coord(1));
+for (let r = r_start + dr; r <= r_end + dr/2; r += dr) {
+    const y = 1 + 150 * r * r;
+    ctx.lineTo(x_coord(r), y_coord(y));
+}
+ctx.stroke();
+
+// --- 6. Draw Caption ---
+ctx.setLineDash([]);
+ctx.fillStyle = 'black';
+ctx.font = '22px "KaiTi", "SimSun", serif';
+ctx.textAlign = 'center';
+ctx.fillText('习题 8-56 图', canvas.width / 2, canvas.height - 15);
+
+</script>
+
+</body>
+</html>

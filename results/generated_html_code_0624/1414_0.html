@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Physics Diagram Recreation</title>
+</head>
+<body>
+<canvas id="physics-diagram" width="550" height="400" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('physics-diagram');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const scale = 4.2;
+    const originX = 50;
+    const originY = 330;
+    ctx.lineWidth = 1.5;
+    ctx.font = "18px Arial";
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "black";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // --- Coordinates ---
+    // Logical coordinates (cm)
+    const B1_logic = { x: 0, y: 0 };
+    const B2_logic = { x: 100, y: 0 };
+    const A_logic = { x: 64, y: 48 };
+
+    // Canvas coordinates
+    const B1 = { x: originX + B1_logic.x * scale, y: originY - B1_logic.y * scale };
+    const B2 = { x: originX + B2_logic.x * scale, y: originY - B2_logic.y * scale };
+    const A = { x: originX + A_logic.x * scale, y: originY - A_logic.y * scale };
+
+    // Block P is 60cm from A along the slope AB1
+    const vec_AB1 = { x: B1.x - A.x, y: B1.y - A.y };
+    const len_AB1 = Math.sqrt(vec_AB1.x**2 + vec_AB1.y**2);
+    const u_vec_AB1 = { x: vec_AB1.x / len_AB1, y: vec_AB1.y / len_AB1 };
+    const dist_AP_canvas = 60 * scale;
+    const P = { x: A.x + dist_AP_canvas * u_vec_AB1.x, y: A.y + dist_AP_canvas * u_vec_AB1.y };
+
+    // Block Q is at A
+    const Q = A;
+
+    // --- Helper functions ---
+    function drawDimArrow(ctx, x, y, angle) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-8, 4);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-8, -4);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawTick(ctx, x, y, angle) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle + Math.PI / 2);
+        ctx.beginPath();
+        ctx.moveTo(0, -5);
+        ctx.lineTo(0, 5);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Draw Main Scene ---
+
+    // 1. Draw Ground
+    ctx.beginPath();
+    ctx.moveTo(B1.x - 40, B1.y);
+    ctx.lineTo(B2.x + 40, B2.y);
+    ctx.stroke();
+    // Hatching
+    for (let i = B1.x - 35; i < B2.x + 40; i += 10) {
+        ctx.beginPath();
+        ctx.moveTo(i, B2.y);
+        ctx.lineTo(i - 10, B2.y + 10);
+        ctx.stroke();
+    }
+    ctx.fillText("水平地面", (B1.x + B2.x) / 2, B2.y + 30);
+
+    // 2. Draw Slopes
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y);
+    ctx.lineTo(B1.x, B1.y);
+    ctx.moveTo(A.x, A.y);
+    ctx.lineTo(B2.x, B2.y);
+    ctx.stroke();
+
+    // 3. Right angle symbol at A
+    const u_vec_AB2 = { x: (B2.x - A.x) / (60 * scale), y: (B2.y - A.y) / (60 * scale) };
+    const r_size = 12;
+    ctx.beginPath();
+    ctx.moveTo(A.x + r_size * u_vec_AB1.x, A.y + r_size * u_vec_AB1.y);
+    ctx.lineTo(A.x + r_size * u_vec_AB1.x + r_size * u_vec_AB2.x, A.y + r_size * u_vec_AB1.y + r_size * u_vec_AB2.y);
+    ctx.lineTo(A.x + r_size * u_vec_AB2.x, A.y + r_size * u_vec_AB2.y);
+    ctx.stroke();
+
+    // 4. Draw Rope and Blocks
+    ctx.beginPath();
+    ctx.moveTo(P.x, P.y);
+    ctx.lineTo(A.x, A.y);
+    ctx.stroke();
+    
+    ctx.lineWidth = 2;
+    ctx.strokeRect(P.x - 6, P.y - 6, 12, 12);
+    ctx.strokeRect(Q.x - 6, Q.y - 6, 12, 12);
+    ctx.lineWidth = 1.5;
+
+    // 5. Draw Labels
+    ctx.fillText("A", A.x + 10, A.y - 10);
+    ctx.fillText("B₁", B1.x - 20, B1.y - 5);
+    ctx.fillText("B₂", B2.x + 20, B2.y - 5);
+    ctx.fillText("P", P.x - 20, P.y - 15);
+    ctx.fillText("Q", Q.x + 20, Q.y + 15);
+
+    // --- Draw Dimension Lines ---
+
+    // 100cm Base
+    const baseOff = 25;
+    ctx.beginPath();
+    ctx.moveTo(B1.x, B1.y); ctx.lineTo(B1.x, B1.y + baseOff);
+    ctx.moveTo(B2.x, B2.y); ctx.lineTo(B2.x, B2.y + baseOff);
+    ctx.moveTo(B1.x, B1.y + baseOff); ctx.lineTo(B2.x, B2.y + baseOff);
+    ctx.stroke();
+    drawDimArrow(ctx, B1.x, B1.y + baseOff, Math.PI);
+    drawDimArrow(ctx, B2.x, B2.y + baseOff, 0);
+    ctx.fillText("100cm", (B1.x + B2.x) / 2, B1.y + baseOff - 10);
+
+    // 80cm Left Slope
+    const slope1Off = -30;
+    const ang1 = Math.atan2(A.y - B1.y, A.x - B1.x);
+    const n1x = Math.cos(ang1 + Math.PI / 2);
+    const n1y = Math.sin(ang1 + Math.PI / 2);
+
+    ctx.beginPath();
+    ctx.moveTo(B1.x, B1.y); ctx.lineTo(B1.x + n1x * slope1Off, B1.y + n1y * slope1Off);
+    ctx.moveTo(A.x, A.y); ctx.lineTo(A.x + n1x * slope1Off, A.y + n1y * slope1Off);
+    ctx.moveTo(B1.x + n1x * slope1Off, B1.y + n1y * slope1Off); ctx.lineTo(A.x + n1x * slope1Off, A.y + n1y * slope1Off);
+    ctx.stroke();
+    drawDimArrow(ctx, B1.x + n1x * slope1Off, B1.y + n1y * slope1Off, ang1);
+    drawDimArrow(ctx, A.x + n1x * slope1Off, A.y + n1y * slope1Off, ang1 + Math.PI);
+    ctx.save();
+    ctx.translate((B1.x + A.x) / 2 + n1x * slope1Off, (B1.y + A.y) / 2 + n1y * slope1Off);
+    ctx.rotate(ang1);
+    ctx.fillText("80cm", 0, -12);
+    ctx.restore();
+
+    // 60cm Right Slope
+    const slope2Off = 30;
+    const ang2 = Math.atan2(B2.y - A.y, B2.x - A.x);
+    const n2x = Math.cos(ang2 - Math.PI / 2);
+    const n2y = Math.sin(ang2 - Math.PI / 2);
+
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y); ctx.lineTo(A.x + n2x * slope2Off, A.y + n2y * slope2Off);
+    ctx.moveTo(B2.x, B2.y); ctx.lineTo(B2.x + n2x * slope2Off, B2.y + n2y * slope2Off);
+    ctx.moveTo(A.x + n2x * slope2Off, A.y + n2y * slope2Off); ctx.lineTo(B2.x + n2x * slope2Off, B2.y + n2y * slope2Off);
+    ctx.stroke();
+    drawDimArrow(ctx, A.x + n2x * slope2Off, A.y + n2y * slope2Off, ang2);
+    drawDimArrow(ctx, B2.x + n2x * slope2Off, B2.y + n2y * slope2Off, ang2 + Math.PI);
+    ctx.save();
+    ctx.translate((A.x + B2.x) / 2 + n2x * slope2Off, (A.y + B2.y) / 2 + n2y * slope2Off);
+    ctx.rotate(ang2);
+    ctx.fillText("60cm", 0, -12);
+    ctx.restore();
+
+    // 60cm Left-part Slope
+    const slope3Off = 25;
+    const ang3 = Math.atan2(P.y - A.y, P.x - A.x);
+    const n3x = Math.cos(ang3 - Math.PI / 2);
+    const n3y = Math.sin(ang3 - Math.PI / 2);
+    const A_dim_start = { x: A.x + n3x * slope3Off, y: A.y + n3y * slope3Off };
+    const P_dim_end = { x: P.x + n3x * slope3Off, y: P.y + n3y * slope3Off };
+
+    ctx.beginPath();
+    drawTick(ctx, A.x, A.y, ang3);
+    drawTick(ctx, P.x, P.y, ang3);
+    ctx.moveTo(A_dim_start.x, A_dim_start.y); ctx.lineTo(P_dim_end.x, P_dim_end.y);
+    ctx.stroke();
+    drawDimArrow(ctx, A_dim_start.x, A_dim_start.y, ang3);
+    drawDimArrow(ctx, P_dim_end.x, P_dim_end.y, ang3 + Math.PI);
+    ctx.save();
+    ctx.translate((A.x + P.x) / 2 + n3x * slope3Off, (A.y + P.y) / 2 + n3y * slope3Off);
+    ctx.rotate(ang3);
+    ctx.fillText("60cm", 0, -12);
+    ctx.restore();
+
+</script>
+</body>
+</html>

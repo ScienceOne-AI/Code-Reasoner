@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="550" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings to mimic the hand-drawn look
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.font = '20px "Comic Sans MS", cursive, sans-serif';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Helper function to draw an arrow
+        function drawArrow(fromx, fromy, tox, toy, text = '') {
+            const headlen = 10; // length of head in pixels
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+            if (text) {
+                ctx.save();
+                ctx.translate(tox, toy);
+                ctx.rotate(angle);
+                ctx.fillText(text, -40, -10);
+                ctx.restore();
+            }
+        }
+        
+        // --- Diagram Parameters ---
+        const origin = { x: 70, y: 400 };
+        const axisLength = 380;
+        
+        const h = 150; // height of the wedge
+        const theta_deg = 28;
+        const theta_rad = theta_deg * Math.PI / 180;
+        const b = h / Math.tan(theta_rad); // base of the wedge
+
+        const r = 30; // radius of the cylinder
+
+        // --- Calculate Coordinates ---
+        // Wedge vertices
+        const v1 = { x: origin.x, y: origin.y };
+        const v2 = { x: v1.x + b, y: v1.y };
+        const v3 = { x: v2.x, y: v2.y - h };
+
+        // Cylinder position
+        // Place the contact point at a certain distance from the top corner of the wedge
+        const distFromTop = 100;
+        const cos_t = Math.cos(theta_rad);
+        const sin_t = Math.sin(theta_rad);
+
+        // Contact point P on the slope
+        const p = {
+            x: v3.x - distFromTop * cos_t,
+            y: v3.y + distFromTop * sin_t
+        };
+
+        // Center of the cylinder C
+        const c = {
+            x: p.x - r * sin_t,
+            y: p.y - r * cos_t
+        };
+
+
+        // --- Drawing ---
+        
+        // 1. Axes
+        ctx.beginPath();
+        // Y-axis
+        drawArrow(origin.x, origin.y, origin.x, origin.y - 350);
+        ctx.fillText('y', origin.x - 20, origin.y - 350);
+        // X-axis
+        drawArrow(origin.x, origin.y, origin.x + axisLength, origin.y);
+        ctx.fillText('x', origin.x + axisLength + 10, origin.y + 10);
+
+        // 2. Ground surface
+        ctx.beginPath();
+        ctx.moveTo(origin.x - 20, origin.y);
+        ctx.lineTo(origin.x + axisLength, origin.y);
+        ctx.stroke();
+        
+        // Hatchings for the ground
+        for (let i = 0; i < 20; i++) {
+            ctx.beginPath();
+            ctx.moveTo(origin.x - 10 + i * 20, origin.y + 10);
+            ctx.lineTo(origin.x + 10 + i * 20, origin.y);
+            ctx.stroke();
+        }
+
+        // 3. Wedge
+        ctx.beginPath();
+        ctx.moveTo(v1.x, v1.y);
+        ctx.lineTo(v2.x, v2.y);
+        ctx.lineTo(v3.x, v3.y);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.fillText('M', v1.x + b/2, v1.y - h/2.5);
+        
+        // 4. Wedge labels
+        // Angle theta
+        ctx.beginPath();
+        ctx.arc(v1.x, v1.y, 40, 0, -theta_rad, true);
+        ctx.stroke();
+        ctx.fillText('θ', v1.x + 45, v1.y - 10);
+        
+        // Height h
+        ctx.beginPath();
+        ctx.moveTo(v3.x + 20, v3.y);
+        ctx.lineTo(v3.x + 20, v2.y);
+        ctx.stroke();
+        drawArrow(v3.x + 20, v3.y, v3.x + 20, v3.y - 15);
+        drawArrow(v3.x + 20, v2.y, v3.x + 20, v2.y + 15);
+        ctx.fillText('h', v3.x + 25, v3.y + h/2);
+
+        // 5. Cylinder
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, r, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // 6. Cylinder labels
+        // mg force
+        drawArrow(c.x, c.y, c.x, c.y + 60);
+        ctx.fillText('mg', c.x + 5, c.y + 50);
+
+        // Radius r and angle phi
+        ctx.beginPath();
+        ctx.moveTo(c.x, c.y);
+        ctx.lineTo(p.x, p.y); // Radius line
+        ctx.stroke();
+        ctx.fillText('r', c.x - 25, c.y - 10);
+
+        // Dashed horizontal line and vertical line for angle
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(c.x, c.y);
+        ctx.lineTo(c.x + r, c.y); // Horizontal line
+        ctx.stroke();
+        
+        // Little right angle symbol
+        ctx.beginPath();
+        ctx.moveTo(c.x + 5, c.y);
+        ctx.lineTo(c.x + 5, c.y + 5);
+        ctx.lineTo(c.x, c.y + 5);
+        ctx.stroke();
+        ctx.restore();
+        
+        // Angle φ
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, 15, 0, - (Math.PI/2 - theta_rad), true);
+        ctx.stroke();
+        ctx.fillText('φ', c.x + 18, c.y - 5);
+        
+        // Dimension xi (ξ)
+        const xi_offset = 40;
+        const normal_vec = { x: -sin_t, y: -cos_t };
+        const d1 = { x: v3.x + xi_offset * normal_vec.x, y: v3.y + xi_offset * normal_vec.y };
+        const d2 = { x: c.x + xi_offset * normal_vec.x, y: c.y + xi_offset * normal_vec.y };
+        
+        ctx.beginPath();
+        ctx.moveTo(v3.x, v3.y);
+        ctx.lineTo(d1.x, d1.y);
+        ctx.moveTo(c.x, c.y);
+        ctx.lineTo(d2.x, d2.y);
+        ctx.stroke();
+
+        drawArrow(d1.x, d1.y, d2.x, d2.y);
+        drawArrow(d2.x, d2.y, d1.x, d1.y);
+        ctx.fillText('ξ', (d1.x + d2.x)/2 - 20, (d1.y + d2.y)/2 - 5);
+
+        // 7. Figure Caption
+        ctx.font = '16px "Times New Roman", serif';
+        ctx.fillText('Fig. 1.174.', 240, 440);
+
+    </script>
+</body>
+</html>

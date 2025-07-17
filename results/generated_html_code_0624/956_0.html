@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electric Potential Graph</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsGraph" width="700" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsGraph');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const margin = { top: 50, right: 50, bottom: 80, left: 70 };
+        const graphWidth = canvas.width - margin.left - margin.right;
+        const graphHeight = canvas.height - margin.top - margin.bottom;
+
+        const xMin = 0;
+        const xMax = 12;
+        const yMin = -40;
+        const yMax = 20;
+
+        // --- Coordinate transformation functions ---
+        function toCanvasX(x) {
+            return margin.left + (x - xMin) / (xMax - xMin) * graphWidth;
+        }
+
+        function toCanvasY(y) {
+            // y-axis is inverted in canvas
+            return margin.top + graphHeight - (y - yMin) / (yMax - yMin) * graphHeight;
+        }
+
+        // --- Drawing ---
+
+        // 1. Background
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // --- Draw Grid ---
+        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = '#cccccc'; // Light gray for grid
+
+        // Minor grid lines
+        // Vertical
+        for (let x = xMin + 0.2; x < xMax; x += 0.2) {
+             if (Math.round(x*10) % 20 !== 0) { // Avoid drawing over major lines
+                ctx.beginPath();
+                ctx.moveTo(toCanvasX(x), toCanvasY(yMin));
+                ctx.lineTo(toCanvasX(x), toCanvasY(yMax));
+                ctx.stroke();
+            }
+        }
+        // Horizontal
+        for (let y = yMin + 1; y < yMax; y += 1) {
+            if (y % 10 !== 0) {
+                ctx.beginPath();
+                ctx.moveTo(toCanvasX(xMin), toCanvasY(y));
+                ctx.lineTo(toCanvasX(xMax), toCanvasY(y));
+                ctx.stroke();
+            }
+        }
+
+        // Major grid lines
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#aaaaaa'; // Darker gray for major grid
+
+        // Vertical
+        for (let x = xMin; x <= xMax; x += 2) {
+            ctx.beginPath();
+            ctx.moveTo(toCanvasX(x), toCanvasY(yMin));
+            ctx.lineTo(toCanvasX(x), toCanvasY(yMax));
+            ctx.stroke();
+        }
+        // Horizontal
+        for (let y = yMin; y <= yMax; y += 10) {
+            ctx.beginPath();
+            ctx.moveTo(toCanvasX(xMin), toCanvasY(y));
+            ctx.lineTo(toCanvasX(xMax), toCanvasY(y));
+            ctx.stroke();
+        }
+
+        // --- Draw Axes ---
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'black';
+
+        // X-axis (at y=0)
+        ctx.beginPath();
+        ctx.moveTo(toCanvasX(xMin), toCanvasY(0));
+        ctx.lineTo(toCanvasX(xMax), toCanvasY(0));
+        ctx.stroke();
+
+        // Y-axis (at x=0)
+        ctx.beginPath();
+        ctx.moveTo(toCanvasX(0), toCanvasY(yMin));
+        ctx.lineTo(toCanvasX(0), toCanvasY(yMax));
+        ctx.stroke();
+
+        // --- Draw Ticks and Labels ---
+        ctx.fillStyle = 'black';
+        ctx.font = "16px 'Times New Roman'";
+
+        // X-axis labels
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let x = xMin; x <= xMax; x += 2) {
+            ctx.fillText(x, toCanvasX(x), toCanvasY(0) + 8);
+        }
+
+        // Y-axis labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let y = yMin; y <= yMax; y += 10) {
+            if (y !== 0) {
+                 ctx.fillText(y, toCanvasX(0) - 8, toCanvasY(y));
+            }
+        }
+        // Reposition 0 to not overlap with x-axis labels
+        ctx.fillText(0, toCanvasX(0) - 8, toCanvasY(0) - 10);
+
+        // --- Draw Axis Titles ---
+        // Y-axis Title: V / 10^2 V
+        const yLabelX = margin.left - 45;
+        const yLabelY = toCanvasY(15);
+        ctx.textAlign = 'left';
+        ctx.fillText('V / 10', yLabelX, yLabelY);
+        ctx.font = "12px 'Times New Roman'";
+        ctx.fillText('2', yLabelX + 40, yLabelY - 10);
+        ctx.font = "16px 'Times New Roman'";
+        ctx.fillText('V', yLabelX + 48, yLabelY);
+
+        // X-axis Title: x / cm
+        ctx.textAlign = 'left';
+        ctx.fillText('x / cm', toCanvasX(10) + 15, toCanvasY(0) - 20);
+
+        // --- Plot the Curve ---
+        const points = [
+            {x: 1.0, y: 16.0}, {x: 1.2, y: 12.0}, {x: 1.5, y: 8.8},
+            {x: 2.0, y: 6.0},  {x: 2.5, y: 3.8},  {x: 3.0, y: 2.0},
+            {x: 4.0, y: 0.5},  {x: 5.0, y: -1.2}, {x: 6.0, y: -3.5},
+            {x: 7.0, y: -6.0},  {x: 8.0, y: -9.5}, {x: 9.0, y: -13.0},
+            {x: 10.0, y: -20.0},{x: 10.5, y: -26.0},{x: 11.0, y: -35.0}
+        ];
+
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(toCanvasX(points[0].x), toCanvasY(points[0].y));
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(toCanvasX(points[i].x), toCanvasY(points[i].y));
+        }
+        ctx.stroke();
+
+        // --- Draw Figure Caption ---
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.font = "bold 16px 'Times New Roman'";
+        ctx.fillText('Fig. 5.2', canvas.width / 2, canvas.height - 10);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="450" style="border:1px solid #000000;"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = '18px Arial';
+    ctx.textBaseline = 'bottom';
+
+    // Coordinates and sizes
+    const cx = 330;
+    const cy = 220;
+    const earthRadius = 100;
+    const orbitRadius = 220;
+    const satelliteSize = 12;
+    const arrowSize = 14;
+
+    // Helper function to draw V-shaped arrowheads
+    function drawArrowhead(ctx, tipX, tipY, fromX, fromY, size) {
+        const angle = Math.atan2(tipY - fromY, tipX - fromX);
+        const armAngle = 25 * Math.PI / 180; // Angle of arrow arms from the main line
+
+        // Draw the first arm
+        ctx.beginPath();
+        ctx.moveTo(tipX, tipY);
+        ctx.lineTo(tipX - size * Math.cos(angle - armAngle), tipY - size * Math.sin(angle - armAngle));
+        ctx.stroke();
+
+        // Draw the second arm
+        ctx.beginPath();
+        ctx.moveTo(tipX, tipY);
+        ctx.lineTo(tipX - size * Math.cos(angle + armAngle), tipY - size * Math.sin(angle + armAngle));
+        ctx.stroke();
+    }
+
+    // --- Draw Earth ---
+    ctx.beginPath();
+    ctx.arc(cx, cy, earthRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // --- Draw Satellite and its radius vector ---
+    const satelliteAngle = -40 * Math.PI / 180;
+    const satX = cx + orbitRadius * Math.cos(satelliteAngle);
+    const satY = cy + orbitRadius * Math.sin(satelliteAngle);
+
+    // Draw the line from the satellite to the center of the Earth
+    ctx.beginPath();
+    ctx.moveTo(satX, satY);
+    ctx.lineTo(cx, cy);
+    ctx.stroke();
+
+    // Draw the arrowhead at the center, pointing from the satellite
+    drawArrowhead(ctx, cx, cy, satX, satY, arrowSize);
+
+    // Draw the satellite as a diamond (rotated square)
+    ctx.save();
+    ctx.translate(satX, satY);
+    ctx.rotate(45 * Math.PI / 180);
+    ctx.strokeRect(-satelliteSize / 2, -satelliteSize / 2, satelliteSize, satelliteSize);
+    ctx.restore();
+
+    // --- Draw Earth radius vector and associated labels ---
+    const earthBottomX = cx;
+    const earthBottomY = cy + earthRadius;
+
+    // Draw the vertical radius line from the bottom of the circle to the center
+    ctx.beginPath();
+    ctx.moveTo(earthBottomX, earthBottomY);
+    ctx.lineTo(cx, cy);
+    ctx.stroke();
+
+    // Draw the arrowhead at the center, pointing from the bottom
+    drawArrowhead(ctx, cx, cy, earthBottomX, earthBottomY, arrowSize);
+
+    // Draw the horizontal line for the label
+    const labelLineStartX = 50;
+    ctx.beginPath();
+    ctx.moveTo(labelLineStartX, earthBottomY);
+    ctx.lineTo(earthBottomX, earthBottomY);
+    ctx.stroke();
+
+    // --- Draw all text labels ---
+    ctx.textAlign = 'left';
+
+    // Label: "radius of Earth" and value
+    ctx.fillText('radius of Earth', labelLineStartX, earthBottomY - 30);
+    ctx.fillText('6.4 × 10', labelLineStartX, earthBottomY - 5);
+    const textMetrics1 = ctx.measureText('6.4 × 10');
+    const originalFont = ctx.font;
+    ctx.font = '12px Arial';
+    ctx.fillText('6', labelLineStartX + textMetrics1.width, earthBottomY - 14);
+    ctx.font = originalFont;
+    const textMetrics2 = ctx.measureText('6.4 × 10 ');
+    ctx.fillText('m', labelLineStartX + textMetrics2.width, earthBottomY - 5);
+
+
+    // Label: "Earth"
+    const earthLabelLineStartX = cx - earthRadius * 0.707;
+    const earthLabelLineStartY = cy - earthRadius * 0.707;
+    const earthLabelLineEndX = earthLabelLineStartX - 70;
+    const earthLabelLineEndY = earthLabelLineStartY - 70;
+    ctx.textAlign = 'right';
+    ctx.fillText('Earth', earthLabelLineEndX, earthLabelLineEndY + 5);
+    ctx.beginPath();
+    ctx.moveTo(earthLabelLineStartX, earthLabelLineStartY);
+    ctx.lineTo(earthLabelLineEndX + 5, earthLabelLineEndY);
+    ctx.stroke();
+
+
+    // Label: "satellite TESS"
+    const satLabelLineEndX = satX + 20;
+    const satLabelLineEndY = satY - 20;
+    ctx.textAlign = 'left';
+    ctx.fillText('satellite TESS', satLabelLineEndX + 5, satLabelLineEndY - 10);
+    ctx.beginPath();
+    ctx.moveTo(satX, satY);
+    ctx.lineTo(satLabelLineEndX, satLabelLineEndY);
+    ctx.stroke();
+
+
+    // Label: "radius of orbit"
+    const radiusOrbitLabelLineStartX = cx + (orbitRadius * 0.6) * Math.cos(satelliteAngle);
+    const radiusOrbitLabelLineStartY = cy + (orbitRadius * 0.6) * Math.sin(satelliteAngle);
+    const radiusOrbitLabelLineEndX = radiusOrbitLabelLineStartX + 20;
+    const radiusOrbitLabelLineEndY = radiusOrbitLabelLineStartY + 60;
+    ctx.fillText('radius of orbit', radiusOrbitLabelLineEndX + 5, radiusOrbitLabelLineEndY + 5);
+    ctx.beginPath();
+    ctx.moveTo(radiusOrbitLabelLineStartX, radiusOrbitLabelLineStartY);
+    ctx.lineTo(radiusOrbitLabelLineEndX, radiusOrbitLabelLineEndY);
+    ctx.stroke();
+
+
+    // Label: "Fig. 1.1 (not to scale)"
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 1.1 (not to scale)', canvas.width / 2, canvas.height - 15);
+
+</script>
+</body>
+</html>

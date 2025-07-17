@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Recreation</title>
+</head>
+<body>
+
+<canvas id="physics-diagram" width="500" height="450"></canvas>
+
+<script>
+    const canvas = document.getElementById('physics-diagram');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = 'italic 20px Arial';
+
+    // Center coordinates and dimensions
+    const centerX = 250;
+    const o_y = 300;
+    const o_prime_y = 150;
+    const ellipse_rx = 180;
+    const ellipse_ry = 60;
+
+    // 1. Draw the elliptical path (representing the rotating disk)
+    ctx.beginPath();
+    ctx.ellipse(centerX, o_y, ellipse_rx, ellipse_ry, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 2. Draw the rotation axis O O' (dashed line)
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.moveTo(centerX, o_y + ellipse_ry - 10);
+    ctx.lineTo(centerX, o_prime_y - 50);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset line dash
+
+    // 3. Draw the T-bar and supports
+    // Tilted bar passing through O'
+    const bar_y_at_O_prime = o_prime_y;
+    const bar_slope = -0.2;
+    const bar_start_x = 100;
+    const bar_start_y = bar_y_at_O_prime - bar_slope * (bar_start_x - centerX);
+    const bar_end_x = 400;
+    const bar_end_y = bar_y_at_O_prime - bar_slope * (bar_end_x - centerX);
+    ctx.beginPath();
+    ctx.moveTo(bar_start_x, bar_start_y);
+    ctx.lineTo(bar_end_x, bar_end_y);
+    ctx.stroke();
+
+    // Supports connecting bar to the disk
+    const support1_x = 150;
+    const support2_x = 350;
+    const support1_bar_y = bar_y_at_O_prime - bar_slope * (support1_x - centerX);
+    const support2_bar_y = bar_y_at_O_prime - bar_slope * (support2_x - centerX);
+    // Y on ellipse: y = o_y +/- ry * sqrt(1 - ((x-centerX)/rx)^2)
+    const support1_ellipse_y = o_y - ellipse_ry * Math.sqrt(1 - Math.pow((support1_x - centerX) / ellipse_rx, 2));
+    const support2_ellipse_y = o_y - ellipse_ry * Math.sqrt(1 - Math.pow((support2_x - centerX) / ellipse_rx, 2));
+
+    ctx.beginPath();
+    ctx.moveTo(support1_x, support1_bar_y);
+    ctx.lineTo(support1_x, support1_ellipse_y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(support2_x, support2_bar_y);
+    ctx.lineTo(support2_x, support2_ellipse_y);
+    ctx.stroke();
+
+    // Rings on supports
+    const ringRadius = 6;
+    ctx.beginPath();
+    ctx.arc(support1_x, support1_bar_y, ringRadius, Math.PI, 2 * Math.PI, false);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(support2_x, support2_bar_y, ringRadius, Math.PI, 2 * Math.PI, false);
+    ctx.stroke();
+
+    // 4. Draw the pendulum (to the left of the vertical axis as in the image)
+    const pendulum_length_px = 100;
+    const theta_rad = 20 * Math.PI / 180; // Angle in radians
+    const m_x = centerX - pendulum_length_px * Math.sin(theta_rad);
+    const m_y = o_prime_y + pendulum_length_px * Math.cos(theta_rad);
+
+    // Rod
+    ctx.beginPath();
+    ctx.moveTo(centerX, o_prime_y);
+    ctx.lineTo(m_x, m_y);
+    ctx.stroke();
+
+    // Mass m
+    ctx.beginPath();
+    ctx.arc(m_x, m_y, 7, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 5. Draw labels and symbols
+    ctx.font = 'italic 22px Arial';
+    // O and O'
+    ctx.fillText("O", centerX - 20, o_y + 25);
+    ctx.fillText("O'", centerX - 30, o_prime_y + 5);
+    // m
+    ctx.fillText("m", m_x + 5, m_y + 5);
+    // l
+    const l_label_x = (centerX + m_x) / 2 - 20;
+    const l_label_y = (o_prime_y + m_y) / 2;
+    ctx.fillText("l", l_label_x, l_label_y);
+    // Angle theta arc and label
+    ctx.beginPath();
+    ctx.arc(centerX, o_prime_y, 30, Math.PI / 2 - theta_rad, Math.PI / 2);
+    ctx.stroke();
+    ctx.fillText("θ", centerX - 15, o_prime_y + 30);
+
+
+    // 6. Draw rotation arrow and label Ω
+    // Curved arrow on the right, pointing counter-clockwise/upwards
+    ctx.beginPath();
+    ctx.moveTo(415, 330);
+    ctx.quadraticCurveTo(445, 300, 425, 270);
+    ctx.stroke();
+    // Arrowhead
+    const ax = 425, ay = 270;
+    const tangent_angle = Math.atan2(ay - 300, ax - 445);
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax - 12 * Math.cos(tangent_angle - Math.PI / 6), ay - 12 * Math.sin(tangent_angle - Math.PI / 6));
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax - 12 * Math.cos(tangent_angle + Math.PI / 6), ay - 12 * Math.sin(tangent_angle + Math.PI / 6));
+    ctx.stroke();
+    // Ω label
+    ctx.fillText("Ω", 445, 320);
+    
+    // 7. Add caption
+    ctx.font = '22px KaiTi';
+    ctx.textAlign = 'center';
+    ctx.fillText("力图 7.22.1", canvas.width / 2, 430);
+
+</script>
+
+</body>
+</html>

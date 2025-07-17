@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Archimedean Spiral Physics Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Parameters for the drawing
+        const cx = 200; // x-coordinate of the spiral's center
+        const cy = 220; // y-coordinate of the spiral's center
+        const r0 = 60;  // a parameter from the spiral equation r = r0 * theta / PI
+        const w = 8;    // half the width of the pipe
+        const a = r0 / Math.PI; // constant 'a' for r = a * theta
+
+        // General drawing styles
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        
+        /**
+         * Helper function to draw a segment of a spiral.
+         * @param {number} offset - Radial offset from the centerline (positive for outer, negative for inner wall).
+         * @param {number} startTheta - The starting angle in radians.
+         * @param {number} endTheta - The ending angle in radians.
+         */
+        function drawSpiralArc(offset, startTheta, endTheta) {
+            ctx.beginPath();
+            const steps = 150; // number of line segments to approximate the curve
+            const dTheta = (endTheta - startTheta) / steps;
+            
+            let firstPoint = true;
+            for (let i = 0; i <= steps; i++) {
+                const theta = startTheta + i * dTheta;
+                const r = a * theta + offset;
+                
+                // Ensure the radius is non-negative for the inner wall
+                if (r < 0) continue;
+
+                const x = cx + r * Math.cos(theta);
+                const y = cy - r * Math.sin(theta); // Subtract y because canvas y-axis is inverted
+                
+                if (firstPoint) {
+                    ctx.moveTo(x, y);
+                    firstPoint = false;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+        }
+
+        // --- Draw the spiral pipe ---
+        const theta_solid_end = 2.1 * Math.PI;
+        const theta_dashed_end = 2.4 * Math.PI;
+
+        // 1. Draw the outer wall (solid and dashed parts)
+        drawSpiralArc(w, 0, theta_solid_end);
+        ctx.setLineDash([5, 5]);
+        drawSpiralArc(w, theta_solid_end, theta_dashed_end);
+        ctx.setLineDash([]);
+
+        // 2. Draw the inner wall, creating a gap around theta = PI
+        const inner_start_theta = w / a; // Theta where the inner wall's radius becomes positive
+        const gap_center_theta = Math.PI;
+        const gap_angular_size = 0.25; // Controls the size of the opening
+
+        // Inner wall - central part (before the gap)
+        drawSpiralArc(-w, inner_start_theta, gap_center_theta - gap_angular_size);
+
+        // Inner wall - outer part (after the gap)
+        drawSpiralArc(-w, gap_center_theta, theta_solid_end);
+        ctx.setLineDash([5, 5]);
+        drawSpiralArc(-w, theta_solid_end, theta_dashed_end);
+        ctx.setLineDash([]);
+
+        // --- Draw the moving object and vectors ---
+
+        // 3. Draw the ball (mass m)
+        const ball_theta = Math.PI;
+        const ball_r = r0;
+        const ball_x = cx + ball_r * Math.cos(ball_theta);
+        const ball_y = cy - ball_r * Math.sin(ball_theta);
+        
+        ctx.beginPath();
+        ctx.arc(ball_x, ball_y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Label for the mass 'm'
+        ctx.font = 'italic 18px Times New Roman';
+        ctx.fillText('m', ball_x - 20, ball_y + 6);
+
+        // 4. Draw the horizontal line representing the axis and velocity
+        const line_start_x = ball_x;
+        const line_y = ball_y;
+        const arrow_x = ball_x + 160;
+        const line_end_x = arrow_x + 60;
+
+        // Draw the full line
+        ctx.beginPath();
+        ctx.moveTo(line_start_x, line_y);
+        ctx.lineTo(line_end_x, line_y);
+        ctx.stroke();
+
+        // Draw the arrowhead on the line
+        ctx.beginPath();
+        ctx.moveTo(arrow_x, line_y);
+        ctx.lineTo(arrow_x - 12, line_y - 6);
+        ctx.moveTo(arrow_x, line_y);
+        ctx.lineTo(arrow_x - 12, line_y + 6);
+        ctx.stroke();
+        
+        // Label for velocity 'v₀'
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.fillText('v', ball_x + 70, ball_y + 24);
+        ctx.font = 'italic 15px Times New Roman';
+        ctx.fillText('0', ball_x + 70 + 9, ball_y + 24 + 5);
+
+    </script>
+</body>
+</html>

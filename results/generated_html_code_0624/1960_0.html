@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Orbital Mechanics</title>
+    <style>
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+        canvas { background-color: white; }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="550" height="550"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    /**
+     * Draws an arrow from (fromx, fromy) to (tox, toy).
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {number} fromx - The x-coordinate of the start point.
+     * @param {number} fromy - The y-coordinate of the start point.
+     * @param {number} tox - The x-coordinate of the end point.
+     * @param {number} toy - The y-coordinate of the end point.
+     * @param {number} [headlen=10] - The length of the arrowhead sides.
+     */
+    function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 12) {
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    /**
+     * Draws text with a subscript.
+     * @param {CanvasRenderingContext2D} ctx - The canvas context.
+     * @param {string} text - The main text.
+     * @param {string} sub - The subscript text.
+     * @param {number} x - The x-coordinate of the start of the main text.
+     * @param {number} y - The y-coordinate of the baseline of the main text.
+     * @param {number} [baseFontSize=22] - The font size for the main text.
+     */
+    function drawSubscriptText(ctx, text, sub, x, y, baseFontSize = 24) {
+        ctx.save();
+        ctx.font = `italic ${baseFontSize}px 'Times New Roman'`;
+        const textMetrics = ctx.measureText(text);
+        ctx.fillText(text, x, y);
+        ctx.font = `italic ${baseFontSize * 0.7}px 'Times New Roman'`;
+        ctx.fillText(sub, x + textMetrics.width * 0.9, y + baseFontSize * 0.2);
+        ctx.restore();
+    }
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // --- Main Drawing Logic ---
+    ctx.save();
+    
+    // --- Configuration ---
+    const centerX = canvas.width / 2 + 20;
+    const centerY = canvas.height / 2;
+    const rotationAngle = -35 * Math.PI / 180;
+    
+    // Translate and rotate the entire coordinate system
+    ctx.translate(centerX, centerY);
+    ctx.rotate(rotationAngle);
+
+    // --- Define Geometric Parameters (in the un-rotated frame where the major axis is vertical) ---
+    const M_x = 0;
+    const M_y = 0;
+    
+    const R0 = 65;  // Radius of the inner circular orbit
+    const R1 = 200; // Apogee distance from M
+
+    // Ellipse parameters based on a vertical major axis
+    const a = (R0 + R1) / 2; // Semi-major axis
+    const c = (R1 - R0) / 2; // Distance from center to focus
+    const b = Math.sqrt(R0 * R1); // Semi-minor axis
+    const ellipseCenterY = M_y + c;
+
+    // Key points (major axis along the y-axis in this frame)
+    const P_x = M_y;
+    const P_y = M_y - R1; // Apogee (top point)
+    const Q_x = M_x;
+    const Q_y = M_y + R0; // Perigee (bottom point)
+
+    // Point 'm' and vector 'u0' locations
+    const m_angle = -20 * Math.PI / 180;
+    const m_x = M_x + R0 * Math.cos(m_angle);
+    const m_y = M_y + R0 * Math.sin(m_angle);
+    
+    // Position for vector u0 on the circle (left side)
+    const u0_angle = 180 * Math.PI / 180;
+    const u0_start_x = M_x + R0 * Math.cos(u0_angle);
+    const u0_start_y = M_y + R0 * Math.sin(u0_angle);
+
+    // --- Styling ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    // --- Drawing ---
+
+    // 1. Draw Large Ellipse
+    ctx.beginPath();
+    ctx.ellipse(M_x, ellipseCenterY, b, a, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 2. Draw Dashed Line (Major Axis P-Q)
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash([6, 4]);
+    ctx.moveTo(P_x, P_y);
+    ctx.lineTo(Q_x, Q_y);
+    ctx.stroke();
+    ctx.restore();
+
+    // 3. Draw Small Circle (Initial Orbit)
+    ctx.beginPath();
+    ctx.arc(M_x, M_y, R0, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 4. Draw directional arrow on the small circle (counter-clockwise)
+    const arrowArcStartAngle = -40 * Math.PI / 180;
+    const arrowArcEndAngle = 10 * Math.PI / 180;
+    ctx.beginPath();
+    ctx.arc(M_x, M_y, R0, arrowArcStartAngle, arrowArcEndAngle, false); 
+    ctx.stroke();
+    const arrowHeadAngle = arrowArcEndAngle;
+    const arrowHeadX = M_x + R0 * Math.cos(arrowHeadAngle);
+    const arrowHeadY = M_y + R0 * Math.sin(arrowHeadAngle);
+    const tangentAngle = arrowHeadAngle + Math.PI / 2;
+    drawArrow(ctx, arrowHeadX - 15 * Math.cos(tangentAngle), arrowHeadY - 15 * Math.sin(tangentAngle), arrowHeadX, arrowHeadY, 10);
+
+    // 5. Draw Points (M, m, P, Q)
+    const pointRadius = 3.5;
+    ctx.beginPath(); ctx.arc(M_x, M_y, pointRadius, 0, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(m_x, m_y, pointRadius, 0, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(P_x, P_y, pointRadius, 0, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(Q_x, Q_y, pointRadius, 0, 2 * Math.PI); ctx.fill();
+
+    // 6. Draw Velocity Vectors
+    const vecLength = 55;
+    ctx.save();
+    ctx.lineWidth = 2;
+    // Vector u1 at Q (tangent points left in this frame for CCW orbit)
+    drawArrow(ctx, Q_x, Q_y, Q_x - vecLength, Q_y);
+    // Vector u2 at P (tangent points right in this frame for CCW orbit)
+    drawArrow(ctx, P_x, P_y, P_x + vecLength, P_y);
+    // Vector u0 at the 'left' of the circle (tangent points up in this frame for CCW orbit)
+    drawArrow(ctx, u0_start_x, u0_start_y, u0_start_x, u0_start_y - vecLength);
+    ctx.restore();
+
+    // 7. Draw Labels
+    ctx.fillStyle = 'black';
+    const baseFontSize = 24;
+    // P, Q, M, m
+    ctx.fillText('P', P_x + 15, P_y - 5);
+    ctx.fillText('Q', Q_x - 35, Q_y + 10);
+    ctx.fillText('M', M_x + 10, M_y + 15);
+    ctx.fillText('m', m_x + 10, m_y);
+    // R1, R0
+    drawSubscriptText(ctx, 'R', '1', M_x + 15, P_y / 2, baseFontSize);
+    drawSubscriptText(ctx, 'R', '0', M_x - 50, M_y + R0 / 2 + 10, baseFontSize);
+    // u2, u1, u0
+    drawSubscriptText(ctx, 'u', '2', P_x + vecLength + 5, P_y - 15, baseFontSize);
+    drawSubscriptText(ctx, 'u', '1', Q_x - vecLength - 25, Q_y - 5, baseFontSize);
+    drawSubscriptText(ctx, 'u', '0', u0_start_x - 5, u0_start_y - vecLength - 10, baseFontSize);
+
+    // Restore the context to its original state (un-rotated)
+    ctx.restore();
+
+    // Draw the figure label at the bottom
+    ctx.fillStyle = 'black';
+    ctx.font = '24px "SimSun"';
+    ctx.textAlign = 'center';
+    ctx.fillText('图 1', canvas.width / 2, canvas.height - 20);
+
+</script>
+</body>
+</html>

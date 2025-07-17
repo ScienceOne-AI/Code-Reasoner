@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram - Spring in a Ring</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="450" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Define geometric parameters
+    const cx = canvas.width / 2;
+    const cy = 200;
+    const R = 120;
+    const ringThickness = 12;
+
+    // --- Helper function to draw the spring ---
+    function drawSpring(ctx, x1, y1, x2, y2, coils, amplitude) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
+
+        ctx.save();
+        ctx.translate(x1, y1);
+        ctx.rotate(angle);
+
+        // Create the path for the zig-zag spring
+        const path = new Path2D();
+        path.moveTo(0, 0);
+
+        const numPoints = coils * 2;
+        const x_increment = length / numPoints;
+
+        for (let i = 1; i < numPoints; i++) {
+            const x = i * x_increment;
+            const y = (i % 2 !== 0) ? amplitude : -amplitude; // Alternate between top and bottom peaks
+            path.lineTo(x, y);
+        }
+        path.lineTo(length, 0);
+
+        // Style and draw the spring
+        ctx.fillStyle = '#E0E0E0'; // Light gray fill to give substance
+        ctx.fill(path);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.2;
+        ctx.stroke(path);
+
+        ctx.restore();
+    }
+
+    // --- Draw the main components ---
+
+    // 1. Draw the circular ring
+    ctx.strokeStyle = 'black';
+    // Outer circle
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+    ctx.stroke();
+    // Inner circle
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R - ringThickness, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 2. Define key points based on the problem description (L_AB = 1.6R)
+    // A is at the top of the ring
+    const ax = cx;
+    const ay = cy - R;
+    // C is at the bottom of the ring
+    const cx_bottom = cx;
+    const cy_bottom = cy + R;
+    // B's position is calculated from L_AB = 1.6R and it being on the circle
+    // Calculation: x = R*sqrt(1-(0.28)^2) = 0.96R, y = 0.28R (relative to center)
+    const bx = cx + 0.96 * R;
+    const by = cy + 0.28 * R;
+
+    // 3. Draw dashed lines
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 1;
+    // Vertical diameter AC
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(cx_bottom, cy_bottom);
+    ctx.stroke();
+    // Radius line
+    const radiusAngle = 150 * Math.PI / 180; // Angle for the radius line in the top-left quadrant
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + R * Math.cos(radiusAngle), cy + R * Math.sin(radiusAngle));
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset to solid line
+
+    // 4. Draw the spring connecting A and B
+    drawSpring(ctx, ax, ay, bx, by, 12, 9);
+
+    // 5. Draw the mass at point B
+    ctx.beginPath();
+    ctx.arc(bx, by, 6, 0, 2 * Math.PI);
+    ctx.fillStyle = '#333';
+    ctx.fill();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+
+    // 6. Add labels
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 22px Times New Roman';
+    // Label A
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('A', ax, ay - 8);
+    // Label B
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('B', bx + 10, by + 2);
+    // Label C
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('C', cx_bottom, cy_bottom + 8);
+    // Label R
+    const rLabelX = cx + 0.55 * R * Math.cos(radiusAngle);
+    const rLabelY = cy + 0.55 * R * Math.sin(radiusAngle);
+    ctx.fillText('R', rLabelX - 10, rLabelY + 5);
+
+    // 7. Add the caption
+    ctx.font = '22px "KaiTi", "SimSun"';
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 2-19 图', cx, canvas.height - 25);
+</script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mass-Spring Systems</title>
+</head>
+<body>
+<canvas id="physics-canvas" width="600" height="420"></canvas>
+<script>
+    const canvas = document.getElementById('physics-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    /**
+     * Draws a rectangular support.
+     * @param {number} x - The top-left x-coordinate.
+     * @param {number} y - The top-left y-coordinate.
+     * @param {number} width - The width of the support.
+     * @param {number} height - The height of the support.
+     */
+    function drawSupport(x, y, width, height) {
+        ctx.fillRect(x, y, width, height);
+    }
+
+    /**
+     * Draws a square mass with a label 'm'.
+     * @param {number} x - The top-left x-coordinate of the mass block.
+     * @param {number} y - The top-left y-coordinate of the mass block.
+     * @param {number} size - The side length of the square mass.
+     */
+    function drawMass(x, y, size) {
+        ctx.strokeRect(x, y, size, size);
+        ctx.save();
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('m', x + size / 2, y + size / 2);
+        ctx.restore();
+    }
+
+    /**
+     * Draws a spring using a zigzag pattern.
+     * @param {number} x - The center x-coordinate of the spring.
+     * @param {number} y - The starting y-coordinate of the spring.
+     * @param {number} len - The total length of the spring.
+     * @param {number} width - The width of the spring coils.
+     * @param {number} zigs - The number of zigs (half-coils).
+     */
+    function drawSpring(x, y, len, width, zigs) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      const hook = 5;
+      y += hook;
+      ctx.lineTo(x, y);
+      const springLen = len - 2 * hook;
+      const segLen = springLen / zigs;
+      for (let i = 0; i < zigs; i++) {
+        const side = (i % 2 === 0) ? 1 : -1;
+        ctx.lineTo(x + side * width / 2, y + (i + 0.5) * segLen);
+      }
+      y += springLen;
+      ctx.lineTo(x, y);
+      y += hook;
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    /**
+     * Draws a dimension line with arrows, ticks, and a label.
+     * @param {number} line_x - The x-coordinate of the vertical dimension line.
+     * @param {number} object_x - The x-coordinate where the ticks should point to.
+     * @param {number} y_start - The starting y-coordinate.
+     * @param {number} length - The length of the dimension.
+     * @param {string} label - The label for the dimension (e.g., 'L').
+     */
+    function drawDimensionLine(line_x, object_x, y_start, length, label) {
+        const y_end = y_start + length;
+        const arrowSize = 6;
+
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        
+        // Vertical Line
+        ctx.moveTo(line_x, y_start);
+        ctx.lineTo(line_x, y_end);
+
+        // Arrows (pointing outwards)
+        ctx.moveTo(line_x, y_start); ctx.lineTo(line_x - arrowSize / 2, y_start + arrowSize);
+        ctx.moveTo(line_x, y_start); ctx.lineTo(line_x + arrowSize / 2, y_start + arrowSize);
+        ctx.moveTo(line_x, y_end); ctx.lineTo(line_x - arrowSize / 2, y_end - arrowSize);
+        ctx.moveTo(line_x, y_end); ctx.lineTo(line_x + arrowSize / 2, y_end - arrowSize);
+
+        // Ticks from line to object
+        ctx.moveTo(line_x, y_start);
+        ctx.lineTo(object_x, y_start);
+        ctx.moveTo(line_x, y_end);
+        ctx.lineTo(object_x, y_end);
+
+        ctx.stroke();
+
+        // Label
+        ctx.font = 'italic 20px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, line_x - 12, y_start + length / 2);
+        ctx.restore();
+    }
+
+    // --- Global Drawing Parameters ---
+    const L = 80;
+    const springWidth = 20;
+    const springZigs = 12;
+    const massSize = 40;
+    const supportWidth = 120;
+    const supportHeight = 20;
+    const topY = 50;
+
+    // --- System (a) ---
+    const x_a = 120;
+    const y_support_a_bottom = topY + supportHeight;
+    drawSupport(x_a - supportWidth / 2, topY, supportWidth, supportHeight);
+    const y_spring1_start = y_support_a_bottom;
+    drawSpring(x_a, y_spring1_start, L, springWidth, springZigs);
+    const y_spring2_start = y_spring1_start + L;
+    drawSpring(x_a, y_spring2_start, L, springWidth, springZigs);
+    const y_mass_a = y_spring2_start + L;
+    drawMass(x_a - massSize / 2, y_mass_a, massSize);
+    // Dimension lines and labels for (a)
+    drawDimensionLine(x_a - 55, x_a - 45, y_spring1_start, L, 'L');
+    drawDimensionLine(x_a - 40, x_a - 30, y_spring2_start, L, 'L');
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('k', x_a + 15, y_spring1_start + L / 2);
+    ctx.fillText('k', x_a + 15, y_spring2_start + L / 2);
+    ctx.font = '20px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.fillText('(a)', x_a, y_mass_a + massSize + 30);
+
+
+    // --- System (b) ---
+    const x_b = 300;
+    const y_support_b_bottom = topY + supportHeight;
+    drawSupport(x_b - supportWidth / 2, topY, supportWidth, supportHeight);
+    const y_spring_b_start = y_support_b_bottom;
+    drawSpring(x_b, y_spring_b_start, L, springWidth, springZigs);
+    const y_mass_b = y_spring_b_start + L;
+    drawMass(x_b - massSize / 2, y_mass_b, massSize);
+    // Dimension line and labels for (b)
+    drawDimensionLine(x_b - 40, x_b - 30, y_spring_b_start, L, 'L');
+    ctx.font = '20px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.fillText('(b)', x_b, y_mass_b + massSize + 30);
+
+
+    // --- System (c) ---
+    const x_c = 480;
+    const parallel_spacing = 50;
+    const x_c_left = x_c - parallel_spacing / 2;
+    const x_c_right = x_c + parallel_spacing / 2;
+    const y_support_c_bottom = topY + supportHeight;
+    drawSupport(x_c - supportWidth / 2, topY, supportWidth, supportHeight);
+    const y_spring_c_start = y_support_c_bottom;
+    drawSpring(x_c_left, y_spring_c_start, L, springWidth, springZigs);
+    drawSpring(x_c_right, y_spring_c_start, L, springWidth, springZigs);
+    const y_plate_c = y_spring_c_start + L;
+    const plateWidth = 80;
+    const plateHeight = 5;
+    ctx.fillRect(x_c - plateWidth / 2, y_plate_c, plateWidth, plateHeight);
+    ctx.beginPath();
+    ctx.moveTo(x_c, y_plate_c + plateHeight);
+    ctx.lineTo(x_c, y_plate_c + 25);
+    ctx.stroke();
+    const y_mass_c = y_plate_c + 25;
+    drawMass(x_c - massSize / 2, y_mass_c, massSize);
+    // Dimension line and labels for (c)
+    drawDimensionLine(x_c_left - 40, x_c_left - 30, y_spring_c_start, L, 'L');
+    ctx.font = 'italic 20px Times New Roman';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('k', x_c_left + 15, y_spring_c_start + L / 2);
+    ctx.fillText('k', x_c_right + 15, y_spring_c_start + L / 2);
+    ctx.font = '20px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.fillText('(c)', x_c, y_mass_c + massSize + 30);
+
+</script>
+</body>
+</html>

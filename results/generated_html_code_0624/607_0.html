@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Position vs. Time Graph</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style parameters
+        const padding = { top: 40, bottom: 60, left: 70, right: 30 };
+        const graphWidth = canvas.width - padding.left - padding.right;
+        const graphHeight = canvas.height - padding.top - padding.bottom;
+
+        // Graph scale
+        const tMax = 10; // max time in seconds
+        const pMax = 10; // max position in meters
+        const pMin = -10; // min position in meters
+
+        // Coordinate transformation functions
+        function mapX(t) {
+            return padding.left + (t / tMax) * graphWidth;
+        }
+
+        function mapY(p) {
+            return padding.top + graphHeight - ((p - pMin) / (pMax - pMin)) * graphHeight;
+        }
+
+        // --- Drawing ---
+
+        // Clear canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw grid
+        ctx.strokeStyle = '#cccccc';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        // Vertical grid lines
+        for (let t = 1; t <= tMax; t++) {
+            ctx.moveTo(mapX(t), mapY(pMin));
+            ctx.lineTo(mapX(t), mapY(pMax));
+        }
+        // Horizontal grid lines
+        for (let p = pMin + 2; p < pMax; p += 2) {
+             if (p !== 0) { // Don't redraw axis line
+                ctx.moveTo(mapX(0), mapY(p));
+                ctx.lineTo(mapX(tMax), mapY(p));
+             }
+        }
+        ctx.stroke();
+
+
+        // Draw axes
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        // X-axis (time)
+        ctx.moveTo(mapX(0), mapY(0));
+        ctx.lineTo(mapX(tMax), mapY(0));
+        // Y-axis (position)
+        ctx.moveTo(mapX(0), mapY(pMin));
+        ctx.lineTo(mapX(0), mapY(pMax));
+        ctx.stroke();
+
+        // Draw labels and ticks
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+
+        // X-axis ticks and labels
+        for (let t = 0; t <= tMax; t++) {
+            ctx.fillText(t, mapX(t), mapY(0) + 8);
+        }
+        ctx.fillText('Time (s)', mapX(tMax / 2), mapY(0) + 35);
+
+        // Y-axis ticks and labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('10', mapX(0) - 8, mapY(10));
+        ctx.fillText('0', mapX(0) - 8, mapY(0));
+        ctx.fillText('-10', mapX(0) - 8, mapY(-10));
+        
+        ctx.save();
+        ctx.translate(padding.left - 50, padding.top + graphHeight / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.fillText('Position (m)', 0, 0);
+        ctx.restore();
+
+
+        // Draw the motion graph
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+
+        // Key points from the graph
+        const p0 = {t: 0, p: 5};
+        const p1 = {t: 2, p: 5};
+        const p2 = {t: 4, p: -3};
+        const p3 = {t: 5, p: -8};
+        const p4 = {t: 7, p: -8};
+        const p5 = {t: 10, p: -4};
+
+        // Segment 1: t=0 to t=2 (at rest)
+        ctx.moveTo(mapX(p0.t), mapY(p0.p));
+        ctx.lineTo(mapX(p1.t), mapY(p1.p));
+        
+        // Segment 2: t=2 to t=4 (constant negative velocity)
+        ctx.lineTo(mapX(p2.t), mapY(p2.p));
+
+        // Segment 3: t=4 to t=5 (curved path, slowing to a stop)
+        // Use a Bezier curve to connect smoothly.
+        // Control points chosen to match slope at start and have zero slope at end.
+        // Start slope is -4. End slope is 0.
+        // cp1 defines start tangent, cp2 defines end tangent.
+        const cp1 = {t: 4.25, p: -4}; // (4, -3) -> (4.25, -4) has slope -4
+        const cp2 = {t: 4.75, p: -8}; // (4.75, -8) -> (5, -8) has slope 0
+        ctx.bezierCurveTo(mapX(cp1.t), mapY(cp1.p), mapX(cp2.t), mapY(cp2.p), mapX(p3.t), mapY(p3.p));
+        
+        // Segment 4: t=5 to t=7 (at rest)
+        ctx.lineTo(mapX(p4.t), mapY(p4.p));
+        
+        // Segment 5: t=7 to t=10 (constant positive velocity)
+        ctx.lineTo(mapX(p5.t), mapY(p5.p));
+
+        ctx.stroke();
+
+    </script>
+</body>
+</html>

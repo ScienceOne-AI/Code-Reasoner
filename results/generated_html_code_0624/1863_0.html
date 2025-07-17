@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.font = '22px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Coordinates ---
+        const A = { x: 550, y: 50 };
+        const B = { x: 50, y: 50 };
+        const C = { x: 50, y: 400 };
+        const D = { x: 550, y: 400 };
+
+        // Notch in the top wire AB
+        const notchStart = { x: 260, y: 50 };
+        const notchEnd = { x: 340, y: 50 };
+        const notchTip = { x: 300, y: 90 };
+
+        // Inner loop coordinates
+        const circleCenter = { x: 300, y: 220 };
+        const circleRadius = 90;
+        const crossover = { x: 300, y: 120 };
+
+        // --- Drawing ---
+
+        // 1. Draw the outer frame (BCDA)
+        ctx.beginPath();
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(C.x, C.y);
+        ctx.lineTo(D.x, D.y);
+        ctx.lineTo(A.x, A.y);
+        ctx.stroke();
+
+        // 2. Draw the notched top wire (AB)
+        ctx.beginPath();
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(notchStart.x, notchStart.y);
+        ctx.quadraticCurveTo(notchStart.x + 10, notchStart.y + 20, notchTip.x, notchTip.y);
+        ctx.quadraticCurveTo(notchEnd.x - 10, notchEnd.y + 20, notchEnd.x, notchEnd.y);
+        ctx.lineTo(A.x, A.y);
+        ctx.stroke();
+
+        // 3. Draw the inner twisted loop
+        // It's a single continuous loop. We draw it in a way to handle the crossover.
+        // Let's define the path for the whole loop.
+        // Bottom circle part
+        const angleOffset = Math.PI / 4.5;
+        const startAngle = Math.PI / 2 + angleOffset;
+        const endAngle = Math.PI / 2 - angleOffset;
+        
+        // Under-path (right side going up to crossover)
+        ctx.beginPath();
+        ctx.arc(circleCenter.x, circleCenter.y, circleRadius, endAngle, -Math.PI/2 - angleOffset, true); // Part of the right side
+        const underPathEndPoint = {
+            x: circleCenter.x + circleRadius * Math.cos(-Math.PI/2 - angleOffset),
+            y: circleCenter.y + circleRadius * Math.sin(-Math.PI/2 - angleOffset)
+        };
+        ctx.quadraticCurveTo(crossover.x + 30, crossover.y + 30, crossover.x, crossover.y);
+        ctx.stroke();
+
+        // Over-path (from crossover, down the left side)
+        ctx.beginPath();
+        ctx.moveTo(crossover.x, crossover.y);
+        ctx.quadraticCurveTo(crossover.x - 30, crossover.y + 30, circleCenter.x - circleRadius * Math.cos(startAngle), circleCenter.y + circleRadius * Math.sin(startAngle));
+        ctx.arc(circleCenter.x, circleCenter.y, circleRadius, startAngle, endAngle, false);
+        ctx.stroke();
+
+
+        // 4. Draw the magnetic field dots
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 5; i++) {
+            for (let j = 0; j < 4; j++) {
+                ctx.beginPath();
+                const x = 180 + i * 55;
+                const y = 140 + j * 55;
+                ctx.arc(x, y, 2, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+        ctx.lineWidth = 2.5;
+
+
+        // 5. Draw the labels (A, B, C, D)
+        ctx.fillText('A', A.x, A.y - 20);
+        ctx.fillText('B', B.x, B.y - 20);
+        ctx.fillText('C', C.x - 20, C.y);
+        ctx.fillText('D', D.x + 20, D.y);
+
+        // 6. Draw the force vector F
+        ctx.beginPath();
+        ctx.moveTo(A.x + 10, A.y);
+        ctx.lineTo(A.x + 60, A.y);
+        ctx.stroke();
+        // Arrowhead
+        ctx.beginPath();
+        ctx.moveTo(A.x + 60, A.y);
+        ctx.lineTo(A.x + 50, A.y - 6);
+        ctx.lineTo(A.x + 50, A.y + 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillText('F', A.x + 40, A.y - 25);
+        
+        // 7. Draw the radius r0
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1.5;
+        const radiusAngle = Math.PI * 1.3;
+        const radiusEnd = {
+            x: circleCenter.x + circleRadius * Math.cos(radiusAngle),
+            y: circleCenter.y + circleRadius * Math.sin(radiusAngle)
+        };
+        ctx.moveTo(circleCenter.x, circleCenter.y);
+        ctx.lineTo(radiusEnd.x, radiusEnd.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Label r0
+        ctx.save();
+        ctx.font = 'italic 22px serif';
+        ctx.translate(circleCenter.x + 20, circleCenter.y + 30);
+        ctx.fillText('r', 0, 0);
+        ctx.font = 'italic 16px serif';
+        ctx.fillText('0', 8, 8);
+        ctx.restore();
+
+
+        // 8. Label for magnetic field B
+        ctx.font = 'bold 24px serif';
+        ctx.fillText('B', 400, 280);
+        ctx.beginPath();
+        ctx.arc(420, 280, 2, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 9. Caption
+        ctx.font = '22px sans-serif';
+        ctx.fillText('电图 3.2.1', 300, 460);
+
+    </script>
+</body>
+</html>

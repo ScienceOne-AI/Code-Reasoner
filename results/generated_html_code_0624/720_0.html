@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hinge Mechanism Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="500" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style and Font settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5; // A bit thicker to match the original's inky style
+        ctx.lineCap = 'round'; // Smoother line endings
+
+        // --- Helper Function to draw an arrow ---
+        function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Logic ---
+
+        // 1. Define Coordinates
+        const A = { x: 100, y: 100 };
+        const B = { x: 400, y: 100 };
+        const C = { x: 400, y: 400 };
+        const D = { x: 100, y: 400 };
+
+        const H1 = { x: 200, y: 200 };
+        const H2 = { x: 300, y: 200 };
+        const H3 = { x: 300, y: 300 };
+        const H4 = { x: 200, y: 300 };
+        
+        const center = { x: 250, y: 250 };
+        const rM = 65;
+        const M_top = { x: center.x, y: center.y - rM };
+        const M_right = { x: center.x + rM, y: center.y };
+        const M_bottom = { x: center.x, y: center.y + rM };
+        const M_left = { x: center.x - rM, y: center.y };
+        
+        // The central shape is an octagon formed by the M block and its pressure pads
+        const centralShapePoints = [M_top, H2, M_right, H3, M_bottom, H4, M_left, H1];
+
+        const jointRadius = 8;
+        const forceArrowLength = 40;
+
+        // 2. Draw Central Block (M) and Hatching
+        ctx.beginPath();
+        ctx.moveTo(centralShapePoints[0].x, centralShapePoints[0].y);
+        for (let i = 1; i < centralShapePoints.length; i++) {
+            ctx.lineTo(centralShapePoints[i].x, centralShapePoints[i].y);
+        }
+        ctx.closePath();
+        
+        // Draw the outline of the central block
+        ctx.stroke();
+
+        // Apply hatching inside the block
+        ctx.save();
+        ctx.clip(); // Restrict drawing to the inside of the octagonal path
+        const hatchingBounds = {
+            y_start: M_top.y,
+            y_end: M_bottom.y,
+            x_start: M_left.x - 10,
+            x_end: M_right.x + 10
+        };
+        const hatchingSpacing = 7;
+        ctx.lineWidth = 1.5;
+        for (let y = hatchingBounds.y_start; y <= hatchingBounds.y_end; y += hatchingSpacing) {
+            ctx.beginPath();
+            ctx.moveTo(hatchingBounds.x_start, y);
+            ctx.lineTo(hatchingBounds.x_end, y);
+            ctx.stroke();
+        }
+        ctx.restore();
+        ctx.lineWidth = 2.5; // Restore original line width
+
+        // 3. Draw Frame (AB, BC, CD) and Rods (1, 2, 3, 4)
+        ctx.beginPath();
+        // Frame
+        ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y);
+        ctx.moveTo(B.x, B.y); ctx.lineTo(C.x, C.y);
+        ctx.moveTo(C.x, C.y); ctx.lineTo(D.x, D.y);
+        // Rods
+        ctx.moveTo(A.x, A.y); ctx.lineTo(H1.x, H1.y);
+        ctx.moveTo(B.x, B.y); ctx.lineTo(H2.x, H2.y);
+        ctx.moveTo(C.x, C.y); ctx.lineTo(H3.x, H3.y);
+        ctx.moveTo(D.x, D.y); ctx.lineTo(H4.x, H4.y);
+        ctx.stroke();
+
+        // 4. Draw Hinge Joints
+        // Outer joints (A, B, C, D) are filled circles
+        ctx.fillStyle = 'black';
+        [A, B, C, D].forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, jointRadius, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+
+        // Inner joints (H1-H4) are outlined circles with a center dot
+        [H1, H2, H3, H4].forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, jointRadius, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, jointRadius / 3, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+
+        // 5. Draw Forces (P)
+        drawArrow(ctx, A.x, A.y, A.x, A.y + forceArrowLength);
+        drawArrow(ctx, D.x, D.y, D.x, D.y - forceArrowLength);
+
+        // 6. Draw Labels
+        ctx.font = "italic 24px 'Times New Roman'";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'black';
+
+        // Corner labels
+        ctx.fillText("A", A.x - 20, A.y - 15);
+        ctx.fillText("B", B.x + 20, B.y - 15);
+        ctx.fillText("C", C.x + 20, C.y + 15);
+        ctx.fillText("D", D.x - 20, D.y + 15);
+
+        // Force labels
+        ctx.fillText("P", A.x - 20, A.y + 25);
+        ctx.fillText("P", D.x - 20, D.y - 25);
+        
+        // Rod labels
+        const mid1 = { x: (A.x + H1.x) / 2, y: (A.y + H1.y) / 2 };
+        const mid2 = { x: (B.x + H2.x) / 2, y: (B.y + H2.y) / 2 };
+        const mid3 = { x: (C.x + H3.x) / 2, y: (C.y + H3.y) / 2 };
+        const mid4 = { x: (D.x + H4.x) / 2, y: (D.y + H4.y) / 2 };
+        ctx.fillText("1", mid1.x + 20, mid1.y - 20);
+        ctx.fillText("2", mid2.x - 20, mid2.y - 20);
+        ctx.fillText("3", mid3.x - 20, mid3.y + 20);
+        ctx.fillText("4", mid4.x + 20, mid4.y + 20);
+
+        // Central block label
+        ctx.font = "italic bold 30px 'Times New Roman'";
+        ctx.fillText("M", center.x, center.y);
+
+    </script>
+</body>
+</html>

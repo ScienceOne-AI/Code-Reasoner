@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Floating Bridge Analysis</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="850" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Parameters from physics problem ---
+        // Given
+        const L = 20; // m
+        const B = 10; // m
+        const P_force = 750; // kN
+        const W_force = 2000; // kN
+        const gamma = 10; // kN/m^3
+
+        // Calculated
+        const x = 15; // m, submerged length
+        const h = 5 / 9; // m, lifted height
+        const d_max = 5 / 3; // m, max depth
+        const theta = Math.atan(h / (L - x)); // tilt angle
+
+        // --- Canvas Drawing Parameters ---
+        const scale = 35; // pixels per meter
+        const boatThickness_px = 60;
+        const y_water = 380;
+        const x_boat_start = 100;
+
+        // Calculated pixel dimensions
+        const L_px = L * scale;
+        const x_px = x * scale;
+        const L_minus_x_px = (L - x) * scale;
+        const h_px = h * scale;
+        const d_max_px = d_max * scale;
+        
+        // Pivot point (where boat bottom meets water)
+        const pivot_x = x_boat_start + L_minus_x_px;
+        const pivot_y = y_water;
+
+        // Boat corner coordinates
+        const bl_x = x_boat_start; // bottom-left x
+        const bl_y = y_water - h_px; // bottom-left y
+        const br_x = pivot_x + x_px; // bottom-right x
+        const br_y = pivot_y + d_max_px; // bottom-right y
+        
+        const tl_x = bl_x - boatThickness_px * Math.sin(theta); // top-left x
+        const tl_y = bl_y - boatThickness_px * Math.cos(theta); // top-left y
+        const tr_x = br_x - boatThickness_px * Math.sin(theta); // top-right x
+        const tr_y = br_y - boatThickness_px * Math.cos(theta); // top-right y
+        
+        // Key points coordinates
+        // K: Midpoint of the left face
+        const K_x = (bl_x + tl_x) / 2;
+        const K_y = (bl_y + tl_y) / 2;
+
+        // Midpoint of the right face
+        const mid_right_x = (br_x + tr_x) / 2;
+        const mid_right_y = (br_y + tr_y) / 2;
+
+        // C: Center of the boat (midpoint of the centerline)
+        const C_x = (K_x + mid_right_x) / 2;
+        const C_y = (K_y + mid_right_y) / 2;
+
+
+        // --- Helper Functions ---
+
+        function drawArrow(ctx, x1, y1, x2, y2, arrowHeadSize = 10) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.lineTo(x2 - arrowHeadSize * Math.cos(angle - Math.PI / 6), y2 - arrowHeadSize * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - arrowHeadSize * Math.cos(angle + Math.PI / 6), y2 - arrowHeadSize * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Main Drawing Function ---
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+
+        // 1. Draw Water Surface and Grounding
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, y_water);
+        ctx.lineTo(canvas.width, y_water);
+        ctx.stroke();
+
+        // Water hatching
+        ctx.lineWidth = 1;
+        for (let i = 0; i < canvas.width; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(i, y_water + 5);
+            ctx.lineTo(i + 15, y_water + 5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(i + 5, y_water + 10);
+            ctx.lineTo(i + 10, y_water + 10);
+            ctx.stroke();
+        }
+
+        // 2. Draw Buoyant Force (Pressure Distribution)
+        ctx.beginPath();
+        ctx.moveTo(pivot_x, pivot_y);
+        ctx.lineTo(br_x, br_y);
+        ctx.lineTo(br_x, pivot_y);
+        ctx.closePath();
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,255,255,0)'; // Transparent fill
+        ctx.fill();
+        ctx.restore();
+        ctx.stroke();
+        
+        // Hatching for pressure
+        const num_hatch = 10;
+        for (let i = 1; i <= num_hatch; i++) {
+            const ratio = i / num_hatch;
+            const y_pos = pivot_y + (br_y - pivot_y) * ratio;
+            const x_start = pivot_x + (br_x - pivot_x) * ratio;
+            ctx.beginPath();
+            ctx.moveTo(x_start, y_pos);
+            ctx.lineTo(br_x, y_pos);
+            ctx.stroke();
+        }
+
+        // 3. Draw Boat
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(bl_x, bl_y);
+        ctx.lineTo(tl_x, tl_y);
+        ctx.lineTo(tr_x, tr_y);
+        ctx.lineTo(br_x, br_y);
+        ctx.closePath();
+        ctx.stroke();
+
+        // 4. Draw Centerline and Key Points
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([10, 4, 3, 4]);
+        ctx.beginPath();
+        ctx.moveTo(K_x, K_y);
+        ctx.lineTo(mid_right_x, mid_right_y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        // Point C
+        ctx.beginPath();
+        ctx.arc(C_x, C_y, 6, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('C', C_x + 10, C_y + 8);
+        
+        // Vertical line from C
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(C_x, C_y);
+        ctx.lineTo(C_x, pivot_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(C_x-5, pivot_y);
+        ctx.lineTo(C_x+5, pivot_y);
+        ctx.stroke();
+
+
+        // Point K
+        ctx.font = 'italic 24px "Times New Roman"';
+        ctx.fillText('K', K_x - 30, K_y + 10);
+
+        // 5. Draw Force P
+        ctx.lineWidth = 3;
+        const P_arrow_length = 120;
+        drawArrow(ctx, K_x, K_y, K_x, K_y - P_arrow_length, 15);
+        ctx.font = 'italic bold 28px "Times New Roman"';
+        ctx.fillText('P', K_x - 40, K_y - P_arrow_length / 2);
+
+        // 6. Draw Dimensions
+        ctx.lineWidth = 1;
+        ctx.font = 'italic 24px "Times New Roman"';
+        
+        // Dimension h
+        const h_dim_x = bl_x - 40;
+        drawArrow(ctx, h_dim_x, bl_y, h_dim_x, y_water, 8);
+        ctx.beginPath();
+        ctx.moveTo(h_dim_x - 5, bl_y); ctx.lineTo(bl_x, bl_y);
+        ctx.moveTo(h_dim_x - 5, y_water); ctx.lineTo(bl_x, y_water);
+        ctx.stroke();
+        ctx.fillText('h', h_dim_x - 20, y_water - h_px / 2 + 8);
+
+        // Dimension L
+        const L_dim_y_offset = 40;
+        const L_start_x = tl_x - L_dim_y_offset * Math.sin(theta);
+        const L_start_y = tl_y - L_dim_y_offset * Math.cos(theta);
+        const L_end_x = tr_x - L_dim_y_offset * Math.sin(theta);
+        const L_end_y = tr_y - L_dim_y_offset * Math.cos(theta);
+
+        drawArrow(ctx, L_start_x, L_start_y, L_end_x, L_end_y, 10);
+        ctx.beginPath();
+        ctx.moveTo(L_start_x, L_start_y); ctx.lineTo(tl_x, tl_y);
+        ctx.moveTo(L_end_x, L_end_y); ctx.lineTo(tr_x, tr_y);
+        ctx.stroke();
+        
+        const L_label_x = (L_start_x + L_end_x) / 2;
+        const L_label_y = (L_start_y + L_end_y) / 2 - 10;
+        ctx.save();
+        ctx.translate(L_label_x, L_label_y);
+        ctx.rotate(theta);
+        ctx.fillText('L', 0, 0);
+        ctx.restore();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style and parameters
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        
+        const ox = 250; // Origin x
+        const oy = 100; // Origin y (apex of the cone)
+        const alpha = Math.PI / 7; // Half-angle of the cone (approx 25.7 degrees)
+        const coneSlantHeight = 250;
+        const massRadius = 8;
+        const m1_dist = 110; // Distance of m1 from apex
+        const m2_dist = 160; // Distance of m2 from apex
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy) {
+            const headlen = 12;
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // 1. Draw the Cone
+        const coneBaseY = oy + coneSlantHeight * Math.cos(alpha);
+        const coneBaseRadiusX = coneSlantHeight * Math.sin(alpha);
+        const coneBaseRadiusY = coneBaseRadiusX * 0.35; // Perspective effect
+
+        // Slant lines
+        ctx.beginPath();
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(ox - coneBaseRadiusX, coneBaseY);
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(ox + coneBaseRadiusX, coneBaseY);
+        ctx.stroke();
+
+        // Dashed Base
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.ellipse(ox, coneBaseY, coneBaseRadiusX, coneBaseRadiusY, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset line dash
+
+        // 2. Draw the Coordinate Axes
+        const axisLen = 90;
+        // Z-axis (vertical)
+        drawArrow(ctx, ox, oy, ox, oy - axisLen);
+        // Y-axis (horizontal)
+        drawArrow(ctx, ox, oy, ox + axisLen + 20, oy);
+        // X-axis (perspective)
+        drawArrow(ctx, ox, oy, ox - axisLen * 0.8, oy + axisLen * 0.4);
+
+        // 3. Draw the Rope and Masses
+        // Mass m1 (hanging inside)
+        const m1_x = ox;
+        const m1_y = oy + m1_dist;
+        ctx.beginPath();
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(m1_x, m1_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(m1_x, m1_y, massRadius, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Mass m2 (on the cone surface)
+        const m2_x = ox + m2_dist * Math.sin(alpha);
+        const m2_y = oy + m2_dist * Math.cos(alpha);
+        // The rope is part of the cone's slant line, redraw to ensure it's solid over any dashed lines.
+        ctx.beginPath();
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(m2_x, m2_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(m2_x, m2_y, massRadius, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 4. Draw the angle α
+        // Dashed line along the z-axis for reference
+        ctx.beginPath();
+        ctx.setLineDash([3, 3]);
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(ox, oy + 70);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Angle arc
+        const arcRadius = 50;
+        ctx.beginPath();
+        ctx.arc(ox, oy, arcRadius, Math.PI / 2, Math.PI / 2 + alpha);
+        ctx.stroke();
+
+        // 5. Add all labels
+        // Axes labels
+        ctx.font = 'italic bold 22px serif';
+        ctx.fillText('z', ox - 5, oy - axisLen - 5);
+        ctx.fillText('y', ox + axisLen + 25, oy + 8);
+        ctx.fillText('x', ox - axisLen * 0.8 - 25, oy + axisLen * 0.4 + 8);
+
+        // Angle label
+        ctx.fillText('α', ox + 28, oy + 48);
+
+        // Mass labels (with subscripts)
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('m', m1_x + massRadius + 5, m1_y + 7);
+        ctx.font = 'italic 16px serif';
+        ctx.fillText('1', m1_x + massRadius + 17, m1_y + 12);
+
+        ctx.font = 'italic 22px serif';
+        ctx.fillText('m', m2_x + massRadius + 5, m2_y + 7);
+        ctx.font = 'italic 16px serif';
+        ctx.fillText('2', m2_x + massRadius + 17, m2_y + 12);
+        
+        // Figure caption
+        ctx.font = '20px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 2.76.', canvas.width / 2, canvas.height - 15);
+    </script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cantilever Beam Diagram</title>
+</head>
+<body>
+<canvas id="canvas" width="500" height="650"></canvas>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Font ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // --- Helper function for filled arrowheads ---
+    function drawArrowHead(ctx, x, y, angle, headlen = 10) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headlen, -headlen / 2.5);
+        ctx.lineTo(-headlen, headlen / 2.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // --- Parameters ---
+    const origin = { x: 220, y: 500 }; // Base of the beam on the ground line
+    const beamHeight = 360; // Represents 12 m
+    const beamTopY = origin.y - beamHeight;
+    const loadMaxWidth = 120;
+
+    // --- 1. Draw Ground ---
+    ctx.beginPath();
+    ctx.moveTo(50, origin.y);
+    ctx.lineTo(450, origin.y);
+    ctx.stroke();
+    // Hatching
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    for (let i = 50; i < 450; i += 20) {
+        ctx.beginPath();
+        ctx.moveTo(i, origin.y);
+        ctx.lineTo(i - 20, origin.y + 20);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // --- 2. Draw Beam ---
+    ctx.save();
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y + 15); // Extend into ground
+    ctx.lineTo(origin.x, beamTopY);
+    ctx.stroke();
+    ctx.restore();
+
+    // --- 3. Draw Coordinate Axes ---
+    // Y-axis
+    const yAxisTop = beamTopY - 40;
+    ctx.beginPath();
+    ctx.moveTo(origin.x, beamTopY);
+    ctx.lineTo(origin.x, yAxisTop);
+    ctx.stroke();
+    drawArrowHead(ctx, origin.x, yAxisTop, -Math.PI / 2);
+    ctx.fillText('y', origin.x + 25, yAxisTop + 5);
+
+    // X-axis (on the ground line)
+    const xAxisEnd = origin.x + 180;
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(xAxisEnd, origin.y);
+    ctx.stroke();
+    drawArrowHead(ctx, xAxisEnd, origin.y, 0);
+    ctx.fillText('x', xAxisEnd + 20, origin.y);
+
+    // --- 4. Draw Triangular Distributed Load ---
+    const loadTopLeftX = origin.x - loadMaxWidth;
+
+    // Triangle outline
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(loadTopLeftX, beamTopY);
+    ctx.lineTo(origin.x, beamTopY);
+    ctx.stroke();
+
+    // Arrows for the load
+    const numArrows = 11;
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    for (let i = 1; i <= numArrows; i++) {
+        const y = origin.y - (i / (numArrows + 1)) * beamHeight;
+        const currentWidth = loadMaxWidth * (origin.y - y) / beamHeight;
+        const xStart = origin.x - currentWidth;
+        const xEnd = origin.x - 10;
+        ctx.beginPath();
+        ctx.moveTo(xStart, y);
+        ctx.lineTo(xEnd, y);
+        ctx.stroke();
+        drawArrowHead(ctx, xEnd, y, 0, 8);
+    }
+    ctx.restore();
+
+    // --- 5. Draw Dimensions ---
+    // 12 m dimension
+    const dimX = 60;
+    ctx.beginPath();
+    ctx.moveTo(dimX, origin.y);
+    ctx.lineTo(dimX, beamTopY);
+    ctx.stroke();
+    drawArrowHead(ctx, dimX, origin.y, Math.PI / 2);
+    drawArrowHead(ctx, dimX, beamTopY, -Math.PI / 2);
+    ctx.save();
+    ctx.translate(dimX - 25, (origin.y + beamTopY) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('12 m', 0, 0);
+    ctx.restore();
+
+    // q dimension
+    const qDimY = origin.y + 80;
+    const qDimX1 = origin.x - loadMaxWidth;
+    const qDimX2 = origin.x;
+    ctx.beginPath();
+    ctx.moveTo(qDimX1, qDimY);
+    ctx.lineTo(qDimX2, qDimY);
+    ctx.stroke();
+    // Arrowheads for dimension line
+    drawArrowHead(ctx, qDimX1, qDimY, Math.PI);
+    drawArrowHead(ctx, qDimX2, qDimY, 0);
+    // Text
+    ctx.textAlign = 'left';
+    ctx.fillText('q', qDimX1 - 2, qDimY + 30);
+    // Draw the special equals sign from the image
+    ctx.beginPath();
+    ctx.moveTo(qDimX1 + 13, qDimY + 28);
+    ctx.lineTo(qDimX1 + 25, qDimY + 28);
+    ctx.moveTo(qDimX1 + 13, qDimY + 32);
+    ctx.lineTo(qDimX1 + 25, qDimY + 32);
+    ctx.stroke();
+    ctx.fillText('1.5 kN/m', qDimX1 + 30, qDimY + 30);
+    ctx.textAlign = 'center';
+
+
+    // --- 6. Draw Concentrated Moment ---
+    const momentLineY = beamTopY;
+    const momentLineStartX = origin.x;
+    const momentLineEndX = origin.x + 70;
+    // Horizontal line at top
+    ctx.beginPath();
+    ctx.moveTo(momentLineStartX, momentLineY);
+    ctx.lineTo(momentLineEndX, momentLineY);
+    ctx.stroke();
+    // Downward arrow
+    const arrowTip = { x: momentLineEndX, y: momentLineY };
+    ctx.beginPath();
+    ctx.moveTo(arrowTip.x, arrowTip.y - 20);
+    ctx.lineTo(arrowTip.x, arrowTip.y);
+    ctx.stroke();
+    drawArrowHead(ctx, arrowTip.x, arrowTip.y, -Math.PI / 2);
+    // Text
+    ctx.textAlign = 'left';
+    ctx.fillText('4 kN\u00B7m', momentLineEndX + 10, momentLineY);
+</script>
+</body>
+</html>

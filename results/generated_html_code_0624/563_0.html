@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Parallel Current-Carrying Wires</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="550" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    /**
+     * Draws a line with an arrowhead.
+     * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+     * @param {number} fromX - The starting x-coordinate.
+     * @param {number} fromY - The starting y-coordinate.
+     * @param {number} toX - The ending x-coordinate.
+     * @param {number} toY - The ending y-coordinate.
+     * @param {number} headLength - The length of the arrowhead sides.
+     */
+    function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 10) {
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        // Draw the line segment
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        // Draw the arrowhead
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    }
+    
+    /**
+     * Draws a dimension line with a label and outward-pointing arrows.
+     * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+     * @param {number} x1 - The starting x-coordinate of the dimension.
+     * @param {number} x2 - The ending x-coordinate of the dimension.
+     * @param {number} y - The y-coordinate of the dimension line.
+     * @param {string} label - The text label for the dimension.
+     */
+    function drawDimension(ctx, x1, x2, y, label) {
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.font = 'italic 22px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.strokeStyle = "black";
+        ctx.fillStyle = "black";
+
+        // Draw vertical end ticks
+        ctx.beginPath();
+        ctx.moveTo(x1, y - 5);
+        ctx.lineTo(x1, y + 5);
+        ctx.moveTo(x2, y - 5);
+        ctx.lineTo(x2, y + 5);
+        ctx.stroke();
+        
+        // Place the label in the middle
+        const midX = (x1 + x2) / 2;
+        ctx.fillText(label, midX, y);
+        const textWidth = ctx.measureText(label).width;
+        const gap = 4;
+        
+        // Draw lines with arrows pointing outwards from the label to the ticks
+        drawArrow(ctx, midX - textWidth / 2 - gap, y, x1, y, 8);
+        drawArrow(ctx, midX + textWidth / 2 + gap, y, x2, y, 8);
+        ctx.restore();
+    }
+
+    // Define coordinates and constants
+    const x_left = 150;
+    const a = 300;
+    // For a visually clear diagram, we set x to a/3, which is the physical solution for zero force.
+    const x_dist = a / 3; 
+    const x_middle = x_left + x_dist;
+    const x_right = x_left + a;
+    
+    const y_top = 40;
+    const y_bottom = 300;
+    
+    const y_current_top = 100;
+    const y_current_len = 100;
+    const y_current_bottom = y_current_top + y_current_len;
+
+    // 1. Draw dashed lines for the wires
+    ctx.save();
+    ctx.setLineDash([6, 6]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x_left, y_top);
+    ctx.lineTo(x_left, y_bottom);
+    ctx.moveTo(x_middle, y_top);
+    ctx.lineTo(x_middle, y_bottom);
+    ctx.moveTo(x_right, y_top);
+    ctx.lineTo(x_right, y_bottom);
+    ctx.stroke();
+    ctx.restore();
+
+    // 2. Draw solid arrows for the currents
+    ctx.save();
+    ctx.lineWidth = 2;
+    // Left wire: current I, upwards
+    drawArrow(ctx, x_left, y_current_bottom, x_left, y_current_top);
+    // Middle wire: current I, downwards
+    drawArrow(ctx, x_middle, y_current_top, x_middle, y_current_bottom);
+    // Right wire: current 2I, upwards
+    drawArrow(ctx, x_right, y_current_bottom, x_right, y_current_top);
+    ctx.restore();
+
+    // 3. Draw text labels
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = "black";
+
+    // Current magnitudes
+    ctx.fillText('I', x_left - 25, y_current_top + y_current_len / 2);
+    ctx.fillText('I', x_middle + 25, y_current_top + y_current_len / 2);
+    ctx.fillText('2I', x_right + 30, y_current_top + y_current_len / 2);
+
+    // Wire labels A and B
+    ctx.font = 'italic 28px Times New Roman';
+    ctx.fillText('A', x_middle - 20, y_top + 20);
+    ctx.fillText('B', x_middle + 20, y_bottom - 60);
+
+    // 4. Draw dimension lines
+    const y_dim_x = y_bottom - 25;
+    const y_dim_a = y_bottom + 25;
+    drawDimension(ctx, x_left, x_middle, y_dim_x, 'x');
+    drawDimension(ctx, x_left, x_right, y_dim_a, 'a');
+
+    // 5. Draw the figure caption
+    ctx.font = '24px "SimSun", "Songti SC", sans-serif'; // Common Chinese fonts
+    ctx.fillText('题 6 图', (x_left + x_right) / 2, y_dim_a + 45);
+
+</script>
+</body>
+</html>

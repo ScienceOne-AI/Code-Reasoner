@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper function to draw an arrow ---
+        function drawArrow(ctx, fromx, fromy, tox, toy, arrowHeadLength = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - arrowHeadLength * Math.cos(angle - Math.PI / 6), toy - arrowHeadLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - arrowHeadLength * Math.cos(angle + Math.PI / 6), toy - arrowHeadLength * Math.sin(angle + Math.PI / 6));
+        }
+        
+        // --- Helper function for dimension lines ---
+        function drawDimensionLine(ctx, p1x, p1y, p2x, p2y, offset, label) {
+            const dx = p2x - p1x;
+            const dy = p2y - p1y;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const ux = dx / len;
+            const uy = dy / len;
+
+            // Perpendicular vector
+            const px = -uy;
+            const py = ux;
+
+            // Extension lines
+            ctx.save();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(p1x, p1y);
+            ctx.lineTo(p1x + px * offset, p1y + py * offset);
+            ctx.moveTo(p2x, p2y);
+            ctx.lineTo(p2x + px * offset, p2y + py * offset);
+            ctx.stroke();
+
+            // Dimension line with arrows
+            const d1x = p1x + px * offset;
+            const d1y = p1y + py * offset;
+            const d2x = p2x + px * offset;
+            const d2y = p2y + py * offset;
+            
+            ctx.beginPath();
+            drawArrow(ctx, d2x, d2y, d1x, d1y);
+            drawArrow(ctx, d1x, d1y, d2x, d2y);
+            ctx.stroke();
+            
+            // Label
+            const midX = (p1x + p2x) / 2 + px * (offset + 5);
+            const midY = (p1y + p2y) / 2 + py * (offset + 5);
+            ctx.font = "italic 20px Times New Roman";
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(label, midX, midY);
+            ctx.restore();
+        }
+
+        // --- Main Drawing Function ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Parameters
+            const a = 150;
+            const b = 60;
+            const alpha_deg = 20;
+            const alpha_rad = alpha_deg * Math.PI / 180;
+            const pivot_pos = { x: 380, y: 100 };
+
+            // Use rotation-then-translation to calculate coordinates
+            // 1. Define points in a simple coordinate system (C at origin, AB along x-axis)
+            const A_local = { x: -a, y: 0 };
+            const B_local = { x: a, y: 0 };
+            const O_local = { x: 0, y: b }; // OC is perpendicular
+
+            // 2. Rotate the system around C (origin) by -alpha
+            const theta = -alpha_rad;
+            const cos_t = Math.cos(theta);
+            const sin_t = Math.sin(theta);
+
+            const rotate = (p) => ({
+                x: p.x * cos_t - p.y * sin_t,
+                y: p.x * sin_t + p.y * cos_t
+            });
+
+            const A_rot = rotate(A_local);
+            const B_rot = rotate(B_local);
+            const O_rot = rotate(O_local);
+            const C_rot = { x: 0, y: 0 }; // C remains at origin
+
+            // 3. Calculate translation vector to move pivot O to its final position
+            const T = {
+                x: pivot_pos.x - O_rot.x,
+                y: pivot_pos.y - O_rot.y
+            };
+
+            // 4. Calculate final coordinates
+            const A = { x: A_rot.x + T.x, y: A_rot.y + T.y };
+            const B = { x: B_rot.x + T.x, y: B_rot.y + T.y };
+            const C = { x: C_rot.x + T.x, y: C_rot.y + T.y };
+            const O = { x: O_rot.x + T.x, y: O_rot.y + T.y };
+
+            // --- Draw elements ---
+            ctx.strokeStyle = 'black';
+            ctx.fillStyle = 'black';
+
+            // Draw Pivot Support
+            ctx.save();
+            ctx.fillStyle = '#aaa';
+            ctx.fillRect(O.x - 50, O.y - 60, 100, 20);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let i = 0; i < 100; i += 5) {
+                ctx.moveTo(O.x - 50 + i, O.y - 60);
+                ctx.lineTo(O.x - 50 + i - 10, O.y - 40);
+            }
+            ctx.stroke();
+            
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(O.x - 40, O.y - 40);
+            ctx.lineTo(O.x, O.y);
+            ctx.lineTo(O.x + 40, O.y - 40);
+            ctx.stroke();
+
+            // Draw pivot joint O
+            ctx.beginPath();
+            ctx.arc(O.x, O.y, 8, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(O.x, O.y, 4, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.restore();
+            
+            // Draw Rods
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(A.x, A.y);
+            ctx.lineTo(B.x, B.y);
+            ctx.moveTo(O.x, O.y);
+            ctx.lineTo(C.x, C.y);
+            ctx.stroke();
+
+            // Draw Joints at A and B
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(A.x, A.y, 5, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(B.x, B.y, 5, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw Weights
+            const weightSize = 35;
+            const ropeLength = 50;
+            ctx.lineWidth = 1.5;
+            // Weight P1
+            ctx.beginPath();
+            ctx.moveTo(A.x, A.y);
+            ctx.lineTo(A.x, A.y + ropeLength);
+            ctx.stroke();
+            ctx.strokeRect(A.x - weightSize / 2, A.y + ropeLength, weightSize, weightSize);
+            
+            // Weight P2
+            ctx.beginPath();
+            ctx.moveTo(B.x, B.y);
+            ctx.lineTo(B.x, B.y + ropeLength);
+            ctx.stroke();
+            ctx.strokeRect(B.x - weightSize / 2, B.y + ropeLength, weightSize, weightSize);
+
+            // Draw Labels
+            ctx.fillStyle = 'black';
+            ctx.font = "italic bold 22px Times New Roman";
+            ctx.fillText("A", A.x - 25, A.y - 5);
+            ctx.fillText("B", B.x + 15, B.y);
+            ctx.fillText("C", C.x - 20, C.y + 20);
+            ctx.fillText("O", O.x + 10, O.y - 10);
+            
+            ctx.font = "italic 20px Times New Roman";
+            ctx.fillText("P", A.x + weightSize / 2 + 5, A.y + ropeLength + weightSize/1.5);
+            ctx.font = "14px Times New Roman";
+            ctx.fillText("1", A.x + weightSize / 2 + 13, A.y + ropeLength + weightSize/1.5 + 5);
+
+            ctx.font = "italic 20px Times New Roman";
+            ctx.fillText("P", B.x + weightSize / 2 + 5, B.y + ropeLength + weightSize/1.5);
+            ctx.font = "14px Times New Roman";
+            ctx.fillText("2", B.x + weightSize / 2 + 13, B.y + ropeLength + weightSize/1.5 + 5);
+
+            // Draw Dimensions
+            // 'a' dimensions
+            drawDimensionLine(ctx, A.x, A.y, C.x, C.y, 25, 'a');
+            drawDimensionLine(ctx, C.x, C.y, B.x, B.y, 25, 'a');
+            
+            // 'b' dimension
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            drawArrow(ctx, C.x, C.y, O.x, O.y, 10);
+            drawArrow(ctx, O.x, O.y, C.x, C.y, 10);
+            ctx.stroke();
+            ctx.font = "italic 20px Times New Roman";
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText("b", (O.x + C.x)/2 + 10, (O.y + C.y)/2);
+            ctx.restore();
+            
+            // Angle 'alpha'
+            ctx.save();
+            ctx.lineWidth = 1;
+            // Dashed horizontal line
+            ctx.beginPath();
+            ctx.setLineDash([4, 4]);
+            ctx.moveTo(B.x, B.y);
+            ctx.lineTo(B.x + 60, B.y);
+            ctx.stroke();
+            
+            // Angle arc
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.arc(B.x, B.y, 40, theta, 0); // Arc from rod angle to horizontal
+            ctx.stroke();
+
+            // Vertical helper line for angle
+            const v_x = B.x + 50;
+            const v_y1 = B.y;
+            const v_y2 = B.y - 50 * Math.tan(theta);
+            ctx.beginPath();
+            ctx.moveTo(v_x, v_y1);
+            ctx.lineTo(v_x, v_y2);
+            ctx.stroke();
+            
+            // Angle label
+            const angle_label_rad = theta / 2;
+            const label_x = B.x + 25 * Math.cos(angle_label_rad);
+            const label_y = B.y + 25 * Math.sin(angle_label_rad);
+            ctx.font = "italic 20px Times New Roman";
+            ctx.fillText("α", label_x, label_y);
+            ctx.restore();
+        }
+
+        draw();
+    </script>
+</body>
+</html>

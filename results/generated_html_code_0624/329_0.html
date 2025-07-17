@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="700" height="650"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // --- Helper functions for drawing ---
+
+        function drawEllipse(context, x, y, rx, ry) {
+            context.save();
+            context.beginPath();
+            context.translate(x, y);
+            context.scale(rx, ry);
+            context.arc(0, 0, 1, 0, 2 * Math.PI, false);
+            context.restore();
+            context.stroke();
+        }
+        
+        function drawResistor(context, x, y_start, y_end) {
+            const w = 12;
+            const h = y_end - y_start;
+            const N = 6; // Number of zig-zags
+            const segment_h = h / N;
+            
+            context.beginPath();
+            context.moveTo(x, y_start);
+            for (let i = 0; i < N; i++) {
+                const y = y_start + i * segment_h;
+                const sign = (i % 2 === 0) ? 1 : -1;
+                context.lineTo(x + sign * w / 2, y + segment_h / 2);
+            }
+            context.lineTo(x, y_end);
+            context.stroke();
+        }
+
+        function drawInductor(context, x, y_start, y_end) {
+            const radius = 10;
+            const h = y_end - y_start;
+            const N = 4; // Number of loops
+            const y_step = h / N;
+
+            context.beginPath();
+            context.moveTo(x, y_start);
+            for (let i = 0; i < N; i++) {
+                const y = y_start + i * y_step;
+                context.arc(x, y + y_step / 2, radius, Math.PI * 1.5, Math.PI * 0.5, true);
+            }
+            context.moveTo(x, y_end); // to ensure lineTo connects
+            context.stroke();
+        }
+
+        function drawCapacitor(context, x, y1, y2) {
+            const plate_width = 30;
+            context.beginPath();
+            context.moveTo(x - plate_width / 2, y1);
+            context.lineTo(x + plate_width / 2, y1);
+            context.moveTo(x - plate_width / 2, y2);
+            context.lineTo(x + plate_width / 2, y2);
+            context.stroke();
+        }
+        
+        function drawVSource(context, x, y1, y2) {
+            const short_w = 15;
+            const long_w = 30;
+            context.beginPath();
+            context.moveTo(x - short_w / 2, y2); // Negative plate (shorter)
+            context.lineTo(x + short_w / 2, y2);
+            context.moveTo(x - long_w / 2, y1); // Positive plate (longer)
+            context.lineTo(x + long_w / 2, y1);
+            context.stroke();
+        }
+        
+        // --- Draw Figure (a) ---
+        
+        const cy_a = 150;
+        const cx_a_start = 200;
+        const cx_a_end = 550;
+        const len_a = cx_a_end - cx_a_start;
+
+        // Outer cylinder
+        const r_outer_y = 60;
+        const r_outer_x = 30;
+        drawEllipse(ctx, cx_a_start, cy_a, r_outer_x, r_outer_y);
+        drawEllipse(ctx, cx_a_end, cy_a, r_outer_x, r_outer_y);
+        ctx.beginPath();
+        ctx.moveTo(cx_a_start, cy_a - r_outer_y);
+        ctx.lineTo(cx_a_end, cy_a - r_outer_y);
+        ctx.moveTo(cx_a_start, cy_a + r_outer_y);
+        ctx.lineTo(cx_a_end, cy_a + r_outer_y);
+        ctx.stroke();
+
+        // Inner cylinder
+        const r_inner_y = 15;
+        const r_inner_x = 7;
+        drawEllipse(ctx, cx_a_start, cy_a, r_inner_x, r_inner_y);
+        drawEllipse(ctx, cx_a_end, cy_a, r_inner_x, r_inner_y);
+        
+        // Dashed lines for inner cylinder and axis
+        ctx.save();
+        ctx.setLineDash([8, 8]);
+        ctx.beginPath();
+        ctx.moveTo(cx_a_start, cy_a - r_inner_y);
+        ctx.lineTo(cx_a_end, cy_a - r_inner_y);
+        ctx.moveTo(cx_a_start, cy_a + r_inner_y);
+        ctx.lineTo(cx_a_end, cy_a + r_inner_y);
+        ctx.moveTo(cx_a_start - 50, cy_a);
+        ctx.lineTo(cx_a_end + 50, cy_a);
+        ctx.stroke();
+        ctx.restore();
+
+        // Dimensions
+        ctx.font = '20px "Comic Sans MS", cursive, sans-serif';
+        // 40 cm
+        ctx.beginPath();
+        ctx.moveTo(cx_a_start - 40, cy_a - r_outer_y);
+        ctx.lineTo(cx_a_start - 20, cy_a - r_outer_y);
+        ctx.moveTo(cx_a_start - 40, cy_a + r_outer_y);
+        ctx.lineTo(cx_a_start - 20, cy_a + r_outer_y);
+        ctx.moveTo(cx_a_start - 30, cy_a - r_outer_y);
+        ctx.lineTo(cx_a_start - 30, cy_a + r_outer_y);
+        ctx.stroke();
+        ctx.fillText('40 cm', cx_a_start - 65, cy_a - r_outer_y - 5);
+
+        // 5 cm
+        ctx.beginPath();
+        ctx.moveTo(cx_a_start - 30, cy_a - r_inner_y);
+        ctx.lineTo(cx_a_start - 10, cy_a - r_inner_y);
+        ctx.moveTo(cx_a_start - 30, cy_a + r_inner_y);
+        ctx.lineTo(cx_a_start - 10, cy_a + r_inner_y);
+        ctx.stroke();
+        ctx.fillText('5 cm', cx_a_start - 65, cy_a + r_inner_y + 8);
+        
+        // Particle path
+        ctx.font = 'italic 24px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('P', 80, cy_a + 25);
+        ctx.fillText('π', 120, cy_a - 20);
+        ctx.beginPath();
+        ctx.moveTo(95, cy_a + 15);
+        ctx.lineTo(150, cy_a - 10);
+        ctx.lineTo(135, cy_a - 20);
+        ctx.moveTo(150, cy_a - 10);
+        ctx.lineTo(138, cy_a);
+        ctx.stroke();
+        
+        // Label (a)
+        ctx.font = 'bold 24px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('(a)', 340, 280);
+
+        // --- Draw Figure (b) ---
+        const y_top_b = 400;
+        const y_bottom_b = 520;
+        
+        // V0 branch
+        const x_v0 = 280;
+        ctx.beginPath();
+        ctx.moveTo(x_v0, y_bottom_b);
+        ctx.lineTo(x_v0, 460);
+        ctx.moveTo(x_v0, 440);
+        ctx.lineTo(x_v0, y_top_b);
+        ctx.stroke();
+        drawVSource(ctx, x_v0, 440, 460);
+        ctx.font = 'italic 24px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('V', 295, 455);
+        ctx.font = 'italic 18px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('0', 308, 460);
+
+        // Capacitor branch
+        const x_c = 380;
+        ctx.beginPath();
+        ctx.moveTo(x_c, y_bottom_b);
+        ctx.lineTo(x_c, 460);
+        ctx.moveTo(x_c, 440);
+        ctx.lineTo(x_c, y_top_b);
+        ctx.stroke();
+        drawCapacitor(ctx, x_c, 440, 460);
+        ctx.font = 'italic 24px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('C', 400, 455);
+
+        // R and L branch
+        const x_rl = 520;
+        const y_r_start = 400;
+        const y_r_end = 440;
+        const y_l_start = 450;
+        const y_l_end = 500;
+        
+        ctx.beginPath();
+        ctx.moveTo(x_rl, y_r_end);
+        ctx.lineTo(x_rl, y_l_start);
+        ctx.moveTo(x_rl, y_l_end);
+        ctx.lineTo(x_rl, y_bottom_b);
+        ctx.stroke();
+        
+        drawResistor(ctx, x_rl, y_r_start, y_r_end);
+        drawInductor(ctx, x_rl, y_l_start, y_l_end);
+        
+        ctx.font = 'italic 24px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('R', 540, 425);
+        ctx.fillText('L', 540, 480);
+        
+        // Connecting wires and switches
+        ctx.beginPath();
+        // Bottom wire
+        ctx.moveTo(x_v0, y_bottom_b);
+        ctx.lineTo(x_rl, y_bottom_b);
+        
+        // Top wires
+        // Switch between V0 and C
+        ctx.moveTo(x_v0, y_top_b);
+        ctx.lineTo(315, y_top_b);
+        ctx.lineTo(325, 390); // Clipped corner
+        ctx.moveTo(325, 400); // Back to line
+        ctx.lineTo(x_c, 400);
+        
+        // Switch between C and RL
+        ctx.moveTo(x_c, y_top_b);
+        ctx.lineTo(470, y_top_b); // Line stops for a break
+        ctx.moveTo(490, y_top_b); // Line resumes
+        ctx.lineTo(x_rl, y_top_b);
+
+        ctx.stroke();
+
+        // Label (b)
+        ctx.font = 'bold 24px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('(b)', 390, 580);
+
+        // Figure caption
+        ctx.font = 'bold 22px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('Fig. 3.78', 310, 620);
+        
+    </script>
+</body>
+</html>

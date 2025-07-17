@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thermodynamics Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-diagram" width="500" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-diagram');
+        const ctx = canvas.getContext('2d');
+
+        // General style settings
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Helper function to draw an arrow
+        function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Coordinates
+        const y_ground = 320;
+        const M0 = { x: 50, y: y_ground };
+        const M3 = { x: 450, y: y_ground };
+        const M2 = { x: 270, y: 120 };
+        const p_M1 = { x: 145, y: 250 }; // Point for M1 location
+
+        // 1. Draw Ground Line
+        ctx.beginPath();
+        ctx.moveTo(M0.x, M0.y);
+        ctx.lineTo(M3.x, M3.y);
+        ctx.stroke();
+
+        // 2. Draw Mountain Profile
+        ctx.beginPath();
+        ctx.moveTo(M0.x, M0.y);
+        // Windward slope (M0 -> M2) with a point at M1
+        ctx.bezierCurveTo(90, 300, 110, 260, p_M1.x, p_M1.y);
+        ctx.quadraticCurveTo(200, 130, M2.x, M2.y);
+        // Leeward slope (M2 -> M3)
+        ctx.quadraticCurveTo(380, 230, M3.x, M3.y);
+        ctx.stroke();
+
+        // 3. Draw dashed line at M1's height
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(p_M1.x, p_M1.y);
+        ctx.lineTo(p_M1.x + 70, p_M1.y);
+        ctx.stroke();
+        ctx.restore();
+        
+        // Horizontal line from ground to h1 measurement
+        ctx.save();
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(M0.x, y_ground);
+        ctx.lineTo(p_M1.x + 70, y_ground);
+        ctx.stroke();
+        ctx.restore();
+
+        // 4. Draw h1 label and its arrows
+        const h1_line_x = 200;
+        drawArrow(h1_line_x, p_M1.y, h1_line_x, p_M1.y + 15); // Top arrow (pointing down)
+        drawArrow(h1_line_x, y_ground, h1_line_x, y_ground - 15); // Bottom arrow (pointing up)
+
+        // 5. Draw Labels (M0, M1, M2, M3, h1)
+        // M0
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.fillText('M', M0.x, y_ground + 22);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText('0', M0.x + 12, y_ground + 28);
+        
+        // M1
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.fillText('M', p_M1.x - 30, p_M1.y + 18);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText('1', p_M1.x - 30 + 12, p_M1.y + 24);
+        
+        // M2
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.fillText('M', M2.x, M2.y - 18);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText('2', M2.x + 12, M2.y - 12);
+        
+        // M3
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.fillText('M', M3.x, y_ground + 22);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText('3', M3.x + 12, y_ground + 28);
+        
+        // h1
+        ctx.font = 'italic 22px "Times New Roman"';
+        ctx.fillText('h', h1_line_x + 15, (p_M1.y + y_ground) / 2);
+        ctx.font = 'italic 16px "Times New Roman"';
+        ctx.fillText('1', h1_line_x + 15 + 8, (p_M1.y + y_ground) / 2 + 6);
+
+        // 6. Draw flow arrows on slopes
+        drawArrow(135, 230, 170, 195); // Upward arrow on windward slope
+        drawArrow(320, 180, 360, 230); // Downward arrow on leeward slope
+
+        // 7. Draw clouds
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        const drawCloudArc = (x, y, radius) => ctx.arc(x, y, radius, Math.PI, 0);
+        
+        // Bottom row of clouds
+        drawCloudArc(120, 200, 10); ctx.moveTo(145, 200);
+        drawCloudArc(145, 200, 12); ctx.moveTo(170, 200);
+        drawCloudArc(170, 200, 10);
+        // Middle row
+        ctx.moveTo(130, 185);
+        drawCloudArc(130, 185, 12); ctx.moveTo(155, 185);
+        drawCloudArc(155, 185, 10);
+        // Top row
+        ctx.moveTo(140, 170);
+        drawCloudArc(140, 170, 10);
+        
+        ctx.stroke();
+        ctx.restore();
+
+        // 8. Draw Caption
+        ctx.font = '24px "SimSun", "Microsoft YaHei"';
+        ctx.fillStyle = 'black';
+        ctx.fillText('热图 2.14.1', canvas.width / 2, 370);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="520" height="380"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General settings
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+
+        // Helper function to draw a vertical resistor
+        function drawResistor(x, y_start, length) {
+            const wire_portion = 0.15;
+            const zig_portion = 1 - 2 * wire_portion;
+            const wire_len = length * wire_portion;
+            const zig_len = length * zig_portion;
+
+            const zig_width = 8;
+            const h = zig_len / 8; // 4 full zigs = 8 segments
+
+            ctx.beginPath();
+            ctx.moveTo(x, y_start);
+            ctx.lineTo(x, y_start + wire_len);
+            const zig_start_y = y_start + wire_len;
+            ctx.lineTo(x - zig_width, zig_start_y + h);
+            ctx.lineTo(x + zig_width, zig_start_y + 3 * h);
+            ctx.lineTo(x - zig_width, zig_start_y + 5 * h);
+            ctx.lineTo(x + zig_width, zig_start_y + 7 * h);
+            ctx.lineTo(x, zig_start_y + 8 * h);
+            ctx.lineTo(x, y_start + length);
+            ctx.stroke();
+        }
+
+        // Draw Title
+        ctx.font = 'bold 30px serif';
+        ctx.fillText('Circuit 1', 20, 35);
+        
+        // Draw outer box
+        ctx.beginPath();
+        ctx.rect(10, 50, 500, 320);
+        ctx.stroke();
+
+        // Font for component labels
+        ctx.font = '22px sans-serif';
+
+        // --- Left side: Battery and Switch ---
+        const x_left_wire = 80;
+        
+        // Battery
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('12 V', x_left_wire - 40, 220);
+
+        ctx.beginPath();
+        // Two-cell battery symbol as in image
+        // Top cell: long (+) plate
+        ctx.moveTo(x_left_wire - 15, 205);
+        ctx.lineTo(x_left_wire + 15, 205);
+        // Top cell: short (-) plate
+        ctx.moveTo(x_left_wire - 8, 215);
+        ctx.lineTo(x_left_wire + 8, 215);
+        // Bottom cell: long plate
+        ctx.moveTo(x_left_wire - 15, 225);
+        ctx.lineTo(x_left_wire + 15, 225);
+        // Bottom cell: short plate
+        ctx.moveTo(x_left_wire - 8, 235);
+        ctx.lineTo(x_left_wire + 8, 235);
+        ctx.stroke();
+
+        // Switch
+        const switch_y = 80;
+        const x_bridge_left = 180;
+        ctx.beginPath();
+        ctx.arc(x_left_wire, switch_y, 4, 0, 2 * Math.PI); // Pivot point
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x_bridge_left, switch_y, 4, 0, 2 * Math.PI); // Contact point
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x_left_wire, switch_y); // Switch arm
+        ctx.lineTo(x_left_wire + 70, switch_y - 15);
+        ctx.stroke();
+
+        // --- Bridge Part ---
+        const x_bridge_right = 420;
+        const y_top_wire = 80;
+        const y_bottom_wire = 320;
+        const y_mid_wire = 200;
+
+        // Wires
+        ctx.beginPath();
+        // Left main wire
+        ctx.moveTo(x_left_wire, y_top_wire);
+        ctx.lineTo(x_left_wire, 205);
+        ctx.moveTo(x_left_wire, 235);
+        ctx.lineTo(x_left_wire, y_bottom_wire);
+        // Top and bottom horizontal wires
+        ctx.moveTo(x_bridge_left, y_top_wire);
+        ctx.lineTo(x_bridge_right, y_top_wire);
+        ctx.moveTo(x_left_wire, y_bottom_wire);
+        ctx.lineTo(x_bridge_right, y_bottom_wire);
+        // Left vertical branch wires
+        ctx.moveTo(x_bridge_left, y_top_wire);
+        ctx.lineTo(x_bridge_left, 100);
+        ctx.moveTo(x_bridge_left, 180);
+        ctx.lineTo(x_bridge_left, 220);
+        ctx.moveTo(x_bridge_left, 300);
+        ctx.lineTo(x_bridge_left, y_bottom_wire);
+        // Right vertical branch wires
+        ctx.moveTo(x_bridge_right, y_top_wire);
+        ctx.lineTo(x_bridge_right, 100);
+        ctx.moveTo(x_bridge_right, 180);
+        ctx.lineTo(x_bridge_right, 220);
+        ctx.moveTo(x_bridge_right, 300);
+        ctx.lineTo(x_bridge_right, y_bottom_wire);
+        // Center horizontal wire segments
+        ctx.moveTo(x_bridge_left, y_mid_wire);
+        ctx.lineTo(280, y_mid_wire);
+        ctx.moveTo(295, y_mid_wire);
+        ctx.lineTo(x_bridge_right, y_mid_wire);
+        ctx.stroke();
+
+        // Resistors and labels
+        const resistor_len = 80;
+        // Left branch
+        drawResistor(x_bridge_left, 100, resistor_len);
+        ctx.textAlign = 'right';
+        ctx.fillText('100 Ω', x_bridge_left - 20, 140);
+        drawResistor(x_bridge_left, 220, resistor_len);
+        ctx.fillText('300 Ω', x_bridge_left - 20, 260);
+        // Right branch
+        drawResistor(x_bridge_right, 100, resistor_len);
+        ctx.textAlign = 'left';
+        ctx.fillText('400 Ω', x_bridge_right + 20, 140);
+        drawResistor(x_bridge_right, 220, resistor_len);
+        ctx.fillText('200 Ω', x_bridge_right + 20, 260);
+
+        // Capacitor
+        ctx.beginPath();
+        ctx.moveTo(280, y_mid_wire - 12); // Plate 1
+        ctx.lineTo(280, y_mid_wire + 12);
+        ctx.moveTo(295, y_mid_wire - 12); // Plate 2
+        ctx.lineTo(295, y_mid_wire + 12);
+        ctx.stroke();
+        
+        // Node X
+        const x_node_X = 230;
+        ctx.beginPath();
+        ctx.arc(x_node_X, y_mid_wire, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('X', x_node_X, y_mid_wire + 10);
+    </script>
+</body>
+</html>

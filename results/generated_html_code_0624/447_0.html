@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>P-V Diagram</title>
+</head>
+<body>
+<canvas id="pvDiagramCanvas" width="600" height="500"></canvas>
+
+<script>
+    const canvas = document.getElementById('pvDiagramCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Configuration ---
+    const config = {
+        styles: {
+            font: '16px Arial',
+            axisColor: '#000000',
+            gridColor: '#e0e0e0',
+            majorGridColor: '#c0c0c0',
+            lineColor: '#000000',
+        },
+        margin: { top: 40, right: 40, bottom: 60, left: 80 },
+        pRange: { min: 2.2, max: 5.4 },
+        vRange: { min: 2.0, max: 4.0 },
+        points: {
+            A: { p: 2.6, v: 2.3 },
+            B: { p: 2.6, v: 3.8 },
+            C: { p: 5.2, v: 2.3 },
+        },
+        // Control point for the B->C curve, making it slightly concave (bowing inwards).
+        curveBC_CP: { p: 4.0, v: 2.8 } 
+    };
+
+    const width = canvas.width - config.margin.left - config.margin.right;
+    const height = canvas.height - config.margin.top - config.margin.bottom;
+
+    // --- Coordinate Mapping Functions ---
+    function mapPtoX(p) {
+        return config.margin.left + ((p - config.pRange.min) / (config.pRange.max - config.pRange.min)) * width;
+    }
+
+    function mapVtoY(v) {
+        // Y-axis is inverted in canvas coordinates
+        return config.margin.top + height - ((v - config.vRange.min) / (config.vRange.max - config.vRange.min)) * height;
+    }
+
+    // --- Drawing Functions ---
+    function drawGrid() {
+        // Minor grid lines
+        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = config.styles.gridColor;
+
+        const pStepMinor = 0.04;
+        for (let p = config.pRange.min; p <= config.pRange.max + 0.001; p += pStepMinor) {
+            const x = mapPtoX(p);
+            ctx.beginPath();
+            ctx.moveTo(x, config.margin.top);
+            ctx.lineTo(x, config.margin.top + height);
+            ctx.stroke();
+        }
+
+        const vStepMinor = 0.04;
+        for (let v = config.vRange.min; v <= config.vRange.max + 0.001; v += vStepMinor) {
+            const y = mapVtoY(v);
+            ctx.beginPath();
+            ctx.moveTo(config.margin.left, y);
+            ctx.lineTo(config.margin.left + width, y);
+            ctx.stroke();
+        }
+
+        // Major grid lines (overlay)
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = config.styles.majorGridColor;
+
+        const pStepMajor = 0.4;
+        for (let p = config.pRange.min; p <= config.pRange.max + 0.001; p += pStepMajor) {
+            const x = mapPtoX(p);
+            ctx.beginPath();
+            ctx.moveTo(x, config.margin.top);
+            ctx.lineTo(x, config.margin.top + height);
+            ctx.stroke();
+        }
+
+        const vStepMajor = 0.4;
+        for (let v = config.vRange.min; v <= config.vRange.max + 0.001; v += vStepMajor) {
+            const y = mapVtoY(v);
+            ctx.beginPath();
+            ctx.moveTo(config.margin.left, y);
+            ctx.lineTo(config.margin.left + width, y);
+            ctx.stroke();
+        }
+    }
+
+    function drawAxesAndLabels() {
+        ctx.strokeStyle = config.styles.axisColor;
+        ctx.fillStyle = config.styles.axisColor;
+        ctx.font = config.styles.font;
+        ctx.lineWidth = 2;
+
+        // Draw main axis lines
+        ctx.beginPath();
+        ctx.moveTo(config.margin.left, config.margin.top);
+        ctx.lineTo(config.margin.left, config.margin.top + height + 5);
+        ctx.moveTo(config.margin.left - 5, config.margin.top + height);
+        ctx.lineTo(config.margin.left + width, config.margin.top + height);
+        ctx.stroke();
+        
+        // X-axis labels and ticks
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let p = config.pRange.min; p <= config.pRange.max + 0.001; p += 0.4) {
+            const x = mapPtoX(p);
+            ctx.fillText(p.toFixed(1), x, config.margin.top + height + 5);
+            ctx.beginPath();
+            ctx.moveTo(x, config.margin.top + height);
+            ctx.lineTo(x, config.margin.top + height + 5);
+            ctx.stroke();
+        }
+        ctx.fillText('p / 10⁵ Pa', config.margin.left + width / 2, config.margin.top + height + 30);
+
+        // Y-axis labels and ticks
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let v = config.vRange.min; v <= config.vRange.max + 0.001; v += 0.4) {
+            const y = mapVtoY(v);
+            ctx.fillText(v.toFixed(1), config.margin.left - 10, y);
+            ctx.beginPath();
+            ctx.moveTo(config.margin.left, y);
+            ctx.lineTo(config.margin.left - 5, y);
+            ctx.stroke();
+        }
+        
+        // Y-axis title
+        ctx.save();
+        ctx.translate(config.margin.left - 55, config.margin.top + height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.fillText('V / 10⁻³ m³', 0, 0);
+        ctx.restore();
+    }
+    
+    function drawArrowHead(x, y, angle, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 3);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 3);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawCycle() {
+        const xA = mapPtoX(config.points.A.p), yA = mapVtoY(config.points.A.v);
+        const xB = mapPtoX(config.points.B.p), yB = mapVtoY(config.points.B.v);
+        const xC = mapPtoX(config.points.C.p), yC = mapVtoY(config.points.C.v);
+        const xCP = mapPtoX(config.curveBC_CP.p), yCP = mapVtoY(config.curveBC_CP.v);
+
+        // Draw the cycle path
+        ctx.strokeStyle = config.styles.lineColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(xA, yA);
+        ctx.lineTo(xB, yB);
+        ctx.quadraticCurveTo(xCP, yCP, xC, yC);
+        ctx.lineTo(xA, yA);
+        ctx.stroke();
+
+        // Draw arrows on the path
+        const arrowSize = 8;
+        // Arrow A -> B (upward)
+        const midAB_x = xA;
+        const midAB_y = (yA + yB) / 2;
+        drawArrowHead(midAB_x, midAB_y, -Math.PI / 2, arrowSize);
+
+        // Arrow C -> A (leftward)
+        const midCA_x = (xA + xC) / 2;
+        const midCA_y = yA;
+        drawArrowHead(midCA_x, midCA_y, Math.PI, arrowSize);
+
+        // Arrow B -> C (on curve)
+        const p0 = { x: xB, y: yB };
+        const p1 = { x: xCP, y: yCP };
+        const p2 = { x: xC, y: yC };
+        // Position of the arrow at t=0.5 on the quadratic Bezier curve
+        const midBC_x = 0.25 * p0.x + 0.5 * p1.x + 0.25 * p2.x;
+        const midBC_y = 0.25 * p0.y + 0.5 * p1.y + 0.25 * p2.y;
+        // The tangent at t=0.5 is parallel to the chord from P0 to P2
+        const tangent_angle = Math.atan2(p2.y - p0.y, p2.x - p0.x);
+        drawArrowHead(midBC_x, midBC_y, tangent_angle, arrowSize);
+
+        // Draw point labels
+        ctx.fillStyle = config.styles.axisColor;
+        ctx.font = `bold ${config.styles.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('A', xA - 15, yA + 10);
+        ctx.fillText('B', xB + 15, yB + 10);
+        ctx.fillText('C', xC + 15, yC);
+    }
+    
+    function drawCaption() {
+        ctx.fillStyle = config.styles.axisColor;
+        ctx.font = config.styles.font;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Fig. 2.1', canvas.width / 2, canvas.height - 5);
+    }
+
+    // --- Main Execution ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
+    drawAxesAndLabels();
+    drawCycle();
+    drawCaption();
+
+</script>
+</body>
+</html>

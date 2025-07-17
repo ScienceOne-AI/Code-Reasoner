@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flyball Governor Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="450" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        
+        // --- Central point and parameters ---
+        const cx = canvas.width / 2;
+        const topConnectorY = 120;
+        const l_pixels = 120; // length of the arms in pixels
+        const theta = Math.PI / 4; // 45 degrees, for visual representation
+        const shaft_half_width = 4;
+
+        // --- Helper function for drawing text ---
+        function drawText(text, x, y, font = 'italic 20px serif', align = 'center', baseline = 'middle') {
+            ctx.font = font;
+            ctx.textAlign = align;
+            ctx.textBaseline = baseline;
+            ctx.fillText(text, x, y);
+        }
+        
+        // --- Draw Central Shaft ---
+        ctx.beginPath();
+        ctx.moveTo(cx - shaft_half_width, 60);
+        ctx.lineTo(cx - shaft_half_width, 500);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx + shaft_half_width, 60);
+        ctx.lineTo(cx + shaft_half_width, 500);
+        ctx.stroke();
+
+        // --- Top Connector Block ---
+        ctx.fillRect(cx - shaft_half_width - 1, topConnectorY - 15, (shaft_half_width + 1) * 2, 15);
+
+        // --- Coordinate Axes ---
+        ctx.lineWidth = 2;
+        const axisLen = 70;
+        const arrowSize = 6;
+        
+        // Z-axis
+        ctx.beginPath();
+        ctx.moveTo(cx, topConnectorY - 15);
+        ctx.lineTo(cx, topConnectorY - 15 - axisLen);
+        ctx.moveTo(cx, topConnectorY - 15 - axisLen);
+        ctx.lineTo(cx - arrowSize, topConnectorY - 15 - axisLen + arrowSize);
+        ctx.moveTo(cx, topConnectorY - 15 - axisLen);
+        ctx.lineTo(cx + arrowSize, topConnectorY - 15 - axisLen + arrowSize);
+        ctx.stroke();
+        drawText('z', cx - 20, topConnectorY - 15 - axisLen, 'italic bold 20px serif');
+
+        // X-axis
+        ctx.beginPath();
+        ctx.moveTo(cx, topConnectorY - 15);
+        ctx.lineTo(cx + axisLen, topConnectorY - 15);
+        ctx.moveTo(cx + axisLen, topConnectorY - 15);
+        ctx.lineTo(cx + axisLen - arrowSize, topConnectorY - 15 - arrowSize);
+        ctx.moveTo(cx + axisLen, topConnectorY - 15);
+        ctx.lineTo(cx + axisLen - arrowSize, topConnectorY - 15 + arrowSize);
+        ctx.stroke();
+        drawText('x', cx + axisLen + 15, topConnectorY - 15, 'italic bold 20px serif');
+
+        // Y-axis
+        const y_dx = axisLen * 0.707;
+        const y_dy = axisLen * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx, topConnectorY - 15);
+        ctx.lineTo(cx + y_dx, topConnectorY - 15 - y_dy);
+        ctx.moveTo(cx + y_dx, topConnectorY - 15 - y_dy);
+        ctx.lineTo(cx + y_dx - arrowSize * 1.2, topConnectorY - 15 - y_dy + arrowSize * 0.3);
+        ctx.moveTo(cx + y_dx, topConnectorY - 15 - y_dy);
+        ctx.lineTo(cx + y_dx - arrowSize * 0.3, topConnectorY - 15 - y_dy - arrowSize * 1.2);
+        ctx.stroke();
+        drawText('y', cx + y_dx + 10, topConnectorY - 15 - y_dy - 10, 'italic bold 20px serif');
+
+        // --- Governor Assembly ---
+        ctx.lineWidth = 2.5;
+        const sinTheta = Math.sin(theta);
+        const cosTheta = Math.cos(theta);
+        
+        const m_radius = 8;
+        const right_m_x = cx + l_pixels * sinTheta;
+        const left_m_x = cx - l_pixels * sinTheta;
+        const m_y = topConnectorY + l_pixels * cosTheta;
+        const M_y = topConnectorY + 2 * l_pixels * cosTheta;
+
+        // Right side (upper arm, mass, lower arm)
+        ctx.beginPath();
+        ctx.moveTo(cx, topConnectorY);
+        ctx.lineTo(right_m_x, m_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(right_m_x, m_y);
+        ctx.lineTo(cx, M_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(right_m_x, m_y, m_radius, 0, 2 * Math.PI);
+        ctx.fill();
+        drawText('m', right_m_x + 25, m_y, 'italic 22px serif');
+
+        // Left side (upper arm, mass, lower arm)
+        ctx.beginPath();
+        ctx.moveTo(cx, topConnectorY);
+        ctx.lineTo(left_m_x, m_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(left_m_x, m_y);
+        ctx.lineTo(cx, M_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(left_m_x, m_y, m_radius, 0, 2 * Math.PI);
+        ctx.fill();
+        drawText('m', left_m_x - 25, m_y, 'italic 22px serif');
+        
+        // Sliding Mass M
+        const M_half_width = 20;
+        const M_height = 30;
+        ctx.fillStyle = 'white';
+        ctx.fillRect(cx - M_half_width, M_y - M_height / 2, 2 * M_half_width, M_height);
+        ctx.fillStyle = 'black';
+        ctx.strokeRect(cx - M_half_width, M_y - M_height / 2, 2 * M_half_width, M_height);
+        drawText('M', cx + M_half_width + 15, M_y, 'italic 22px serif');
+        // Dots on M
+        const dot_r = 2;
+        for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j+=2) {
+                if (i===0) continue;
+                ctx.beginPath();
+                ctx.arc(cx + j * 8, M_y + i * 8, dot_r, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+        
+        // Labels 'l'
+        ctx.save();
+        ctx.translate((cx + right_m_x) / 2, (topConnectorY + m_y) / 2);
+        ctx.rotate(theta);
+        drawText('l', -15, -10, 'italic 20px serif');
+        ctx.restore();
+        
+        ctx.save();
+        ctx.translate((cx + left_m_x) / 2, (topConnectorY + m_y) / 2);
+        ctx.rotate(-theta);
+        drawText('l', 15, -10, 'italic 20px serif');
+        ctx.restore();
+        
+        ctx.save();
+        ctx.translate((cx + right_m_x) / 2, (M_y + m_y) / 2);
+        ctx.rotate(-theta);
+        drawText('l', -15, 12, 'italic 20px serif');
+        ctx.restore();
+        
+        ctx.save();
+        ctx.translate((cx + left_m_x) / 2, (M_y + m_y) / 2);
+        ctx.rotate(theta);
+        drawText('l', 15, 12, 'italic 20px serif');
+        ctx.restore();
+
+        // --- Angle Markers 'θ' ---
+        ctx.lineWidth = 1.5;
+        const arc_rad = 30;
+        const marker_size = 10;
+        
+        // Upper right
+        ctx.beginPath();
+        ctx.arc(cx, topConnectorY, arc_rad, Math.PI / 2, Math.PI / 2 + theta, false);
+        ctx.stroke();
+        drawText('θ', cx + 22, topConnectorY + 28, 'italic 20px serif');
+        ctx.beginPath();
+        ctx.moveTo(cx + marker_size, topConnectorY);
+        ctx.lineTo(cx, topConnectorY);
+        ctx.lineTo(cx, topConnectorY + marker_size);
+        ctx.stroke();
+
+        // Upper left
+        ctx.beginPath();
+        ctx.arc(cx, topConnectorY, arc_rad, Math.PI / 2 - theta, Math.PI / 2, false);
+        ctx.stroke();
+        drawText('θ', cx - 22, topConnectorY + 28, 'italic 20px serif');
+        ctx.beginPath();
+        ctx.moveTo(cx - marker_size, topConnectorY);
+        ctx.lineTo(cx, topConnectorY);
+        ctx.lineTo(cx, topConnectorY + marker_size);
+        ctx.stroke();
+
+        // Lower right
+        ctx.beginPath();
+        ctx.arc(cx, M_y, arc_rad, 3 * Math.PI / 2 - theta, 3 * Math.PI / 2, false);
+        ctx.stroke();
+        drawText('θ', cx + 22, M_y - 25, 'italic 20px serif');
+        ctx.beginPath();
+        ctx.moveTo(cx + marker_size, M_y);
+        ctx.lineTo(cx, M_y);
+        ctx.lineTo(cx, M_y - marker_size);
+        ctx.stroke();
+        
+        // Lower left
+        ctx.beginPath();
+        ctx.arc(cx, M_y, arc_rad, 3 * Math.PI / 2, 3 * Math.PI / 2 + theta, false);
+        ctx.stroke();
+        drawText('θ', cx - 22, M_y - 25, 'italic 20px serif');
+        ctx.beginPath();
+        ctx.moveTo(cx - marker_size, M_y);
+        ctx.lineTo(cx, M_y);
+        ctx.lineTo(cx, M_y - marker_size);
+        ctx.stroke();
+
+        // --- Rotation Indicator ---
+        ctx.lineWidth = 2.5;
+        const rot_y = M_y + 80;
+        const rot_rad_x = 40;
+        const rot_rad_y = 12;
+        ctx.beginPath();
+        ctx.ellipse(cx, rot_y, rot_rad_x, rot_rad_y, 0, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.stroke();
+        // Arrowhead
+        const arrow_x = cx + rot_rad_x * Math.cos(Math.PI * 1.9);
+        const arrow_y = rot_y + rot_rad_y * Math.sin(Math.PI * 1.9);
+        ctx.beginPath();
+        ctx.moveTo(arrow_x, arrow_y);
+        ctx.lineTo(arrow_x - 10, arrow_y - 2);
+        ctx.moveTo(arrow_x, arrow_y);
+        ctx.lineTo(arrow_x - 3, arrow_y + 9);
+        ctx.stroke();
+        
+        // Omega label
+        drawText('ω', cx + rot_rad_x + 15, rot_y + 5, 'italic 22px serif');
+        drawText('0', cx + rot_rad_x + 29, rot_y + 11, 'italic 14px serif', 'left');
+        
+        // --- Figure Caption ---
+        drawText('Fig. 2.68.', cx, canvas.height - 30, 'bold 20px serif');
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quantum Well with Perturbations</title>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Drawing parameters
+        const margin = 50;
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        const L_pixels = canvasWidth - 2 * margin; // Visual length of the well L
+        const x0 = margin;
+        const xL = margin + L_pixels;
+
+        const y_base = canvasHeight - 100;
+        const wall_height = 200;
+        const y_top = y_base - wall_height;
+
+        // Perturbation parameters
+        const V_height = 160; // Height of potential V
+        const a_width = 12;   // Width of potential a
+
+        // X positions based on L
+        const x_L_over_4 = x0 + L_pixels / 4;
+        const x_3L_over_4 = x0 + 3 * L_pixels / 4;
+
+        // --- Helper Functions ---
+
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        }
+
+        function drawText(text, x, y, align = 'center', baseline = 'middle') {
+            ctx.textAlign = align;
+            ctx.textBaseline = baseline;
+            ctx.fillText(text, x, y);
+        }
+
+        function drawFraction(numerator, denominator, x, y) {
+            const originalAlign = ctx.textAlign;
+            ctx.textAlign = 'center';
+            const numText = numerator;
+            const denText = denominator;
+            const numWidth = ctx.measureText(numText).width;
+            const denWidth = ctx.measureText(denText).width;
+            const barWidth = Math.max(numWidth, denWidth) * 1.2;
+
+            drawText(numText, x, y - 8, 'center', 'bottom');
+            drawLine(x - barWidth / 2, y, x + barWidth / 2, y);
+            drawText(denText, x, y + 8, 'center', 'top');
+            ctx.textAlign = originalAlign;
+        }
+        
+        function drawHashes(x1, y1, x2, y2, numHashes, angle, length) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const lineLength = Math.sqrt(dx*dx + dy*dy);
+            
+            for (let i = 1; i < numHashes; i++) {
+                const frac = i / numHashes;
+                const px = x1 + dx * frac;
+                const py = y1 + dy * frac;
+                const hx = px + length * Math.cos(angle);
+                const hy = py + length * Math.sin(angle);
+                drawLine(px, py, hx, hy);
+            }
+        }
+
+        // --- Main Drawing ---
+        
+        // 1. Draw the potential well
+        // Base
+        drawLine(x0, y_base, xL, y_base);
+        // Left wall
+        drawLine(x0, y_base, x0, y_top);
+        // Right wall
+        drawLine(xL, y_base, xL, y_top);
+
+        // 2. Draw hash marks for infinite potential regions
+        drawHashes(x0, y_top, x0, y_base, 10, Math.PI * (5/4), 10); // Left wall
+        drawHashes(xL, y_top, xL, y_base, 10, Math.PI * (-1/4), 10); // Right wall
+        drawHashes(x0, y_base, xL, y_base, 25, Math.PI * (-1/4), 10); // Base
+
+        // 3. Draw the perturbations
+        // Perturbation 1 at L/4
+        ctx.fillRect(x_L_over_4 - a_width / 2, y_base - V_height, a_width, V_height);
+        // Perturbation 2 at 3L/4
+        ctx.fillRect(x_3L_over_4 - a_width / 2, y_base - V_height, a_width, V_height);
+        
+        // 4. Draw annotations and labels
+        
+        // X-axis and its labels
+        const y_axis_line = y_base + 40;
+        drawLine(x0, y_axis_line, xL, y_axis_line); // Axis line
+        // Ticks
+        drawLine(x0, y_axis_line - 5, x0, y_axis_line + 5);
+        drawLine(x_L_over_4, y_axis_line - 5, x_L_over_4, y_axis_line + 5);
+        drawLine(x_3L_over_4, y_axis_line - 5, x_3L_over_4, y_axis_line + 5);
+        drawLine(xL, y_axis_line - 5, xL, y_axis_line + 5);
+        
+        // Text labels for x-axis
+        ctx.font = '16px Arial';
+        drawText('x = 0', x0, y_axis_line + 20, 'center', 'top');
+        drawFraction('L', '4', x_L_over_4, y_axis_line + 20);
+        drawFraction('3L', '4', x_3L_over_4, y_axis_line + 20);
+        drawText('L', xL, y_axis_line + 20, 'center', 'top');
+
+        // Annotation 'a' (width)
+        const y_a_line = y_base - V_height - 15;
+        // For first perturbation
+        drawLine(x_L_over_4 - a_width / 2, y_a_line, x_L_over_4 + a_width / 2, y_a_line);
+        drawLine(x_L_over_4 - a_width / 2, y_a_line - 4, x_L_over_4 - a_width / 2, y_a_line + 4);
+        drawLine(x_L_over_4 + a_width / 2, y_a_line - 4, x_L_over_4 + a_width / 2, y_a_line + 4);
+        drawText('a', x_L_over_4, y_a_line - 12);
+        
+        // For second perturbation
+        drawLine(x_3L_over_4 - a_width / 2, y_a_line, x_3L_over_4 + a_width / 2, y_a_line);
+        drawLine(x_3L_over_4 - a_width / 2, y_a_line - 4, x_3L_over_4 - a_width / 2, y_a_line + 4);
+        drawLine(x_3L_over_4 + a_width / 2, y_a_line - 4, x_3L_over_4 + a_width / 2, y_a_line + 4);
+        drawText('a', x_3L_over_4, y_a_line - 12);
+
+        // Annotation 'V' (height)
+        const x_V_line = x_L_over_4 + 30;
+        drawLine(x_V_line, y_base, x_V_line, y_base - V_height);
+        drawLine(x_V_line - 4, y_base, x_V_line + 4, y_base);
+        drawLine(x_V_line - 4, y_base - V_height, x_V_line + 4, y_base - V_height);
+        drawText('V', x_V_line + 12, y_base - V_height / 2, 'left');
+
+        // 5. Draw Figure Caption
+        ctx.font = '16px Times New Roman';
+        drawText('Fig. 5.3', canvasWidth / 2, canvasHeight - 20);
+
+    </script>
+</body>
+</html>

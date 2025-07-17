@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Astrophysics Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="800" height="450" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper Functions ---
+
+    /**
+     * Draws text with a superscript, handling alignment.
+     * e.g., drawScientificNotation(ctx, 'mass ', '7.5 × 10', '23', ' kg', x, y, 'right');
+     */
+    function drawScientificNotation(ctx, prefix, base, exponent, suffix, x, y, textAlign = 'left') {
+        const originalFont = ctx.font;
+        const originalAlign = ctx.textAlign;
+        const originalBaseline = ctx.textBaseline;
+
+        const fontSize = parseInt(originalFont.match(/(\d+)px/)[1]);
+        const supFont = `${Math.round(fontSize * 0.7)}px Arial`;
+
+        // Calculate total width for alignment
+        let totalWidth = 0;
+        if (prefix) totalWidth += ctx.measureText(prefix).width;
+        if (base) totalWidth += ctx.measureText(base).width;
+        ctx.font = supFont;
+        if (exponent) totalWidth += ctx.measureText(exponent).width;
+        ctx.font = originalFont;
+        if (suffix) totalWidth += ctx.measureText(suffix).width;
+
+        let startX = x;
+        if (textAlign === 'center') {
+            startX = x - totalWidth / 2;
+        } else if (textAlign === 'right') {
+            startX = x - totalWidth;
+        }
+
+        let currentX = startX;
+        
+        ctx.textAlign = 'left'; 
+        ctx.textBaseline = 'middle';
+        
+        if (prefix) {
+            ctx.fillText(prefix, currentX, y);
+            currentX += ctx.measureText(prefix).width;
+        }
+        
+        if (base) {
+            ctx.fillText(base, currentX, y);
+            currentX += ctx.measureText(base).width;
+        }
+        
+        if (exponent) {
+            ctx.font = supFont;
+            const supY = y - fontSize * 0.4;
+            ctx.fillText(exponent, currentX, supY);
+            currentX += ctx.measureText(exponent).width;
+            ctx.font = originalFont;
+        }
+        
+        if (suffix) {
+            ctx.fillText(suffix, currentX, y);
+        }
+        
+        // Restore original context settings
+        ctx.textAlign = originalAlign;
+        ctx.textBaseline = originalBaseline;
+    }
+    
+    /**
+     * Draws an arrowhead on a path.
+     */
+    function drawArrowhead(ctx, x, y, angle, size) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, -size / 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-size, size / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- Drawing Constants ---
+    const planetCenter = { x: 180, y: 250 };
+    const planetRadius = 80;
+    const pointA = { x: planetCenter.x - 40, y: planetCenter.y - 130 };
+    const pointB = { x: 700, y: 200 };
+    const trajectoryControl = { x: 400, y: 50 };
+
+    // --- Style setup ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+    ctx.font = '20px Arial';
+    ctx.textBaseline = 'middle';
+
+    // 1. Draw the planet
+    const gradient = ctx.createRadialGradient(
+        planetCenter.x - planetRadius * 0.3, planetCenter.y - planetRadius * 0.3, planetRadius * 0.1, 
+        planetCenter.x, planetCenter.y, planetRadius
+    );
+    gradient.addColorStop(0, '#e8e8e8');
+    gradient.addColorStop(1, '#606060');
+    
+    ctx.beginPath();
+    ctx.arc(planetCenter.x, planetCenter.y, planetRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.strokeStyle = '#303030';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.lineWidth = 1.5; // Reset line width
+    ctx.fillStyle = 'black'; // Reset fill style
+
+    // 2. Draw trajectory from A to B
+    ctx.beginPath();
+    ctx.moveTo(pointA.x, pointA.y);
+    ctx.quadraticCurveTo(trajectoryControl.x, trajectoryControl.y, pointB.x, pointB.y);
+    ctx.strokeStyle = 'black';
+    ctx.stroke();
+
+    // 3. Draw arrows on trajectory
+    // Arrow 1 (around t=0.3)
+    let t1 = 0.3;
+    let p1x = (1 - t1) * (1 - t1) * pointA.x + 2 * (1 - t1) * t1 * trajectoryControl.x + t1 * t1 * pointB.x;
+    let p1y = (1 - t1) * (1 - t1) * pointA.y + 2 * (1 - t1) * t1 * trajectoryControl.y + t1 * t1 * pointB.y;
+    let dx1 = 2 * (1 - t1) * (trajectoryControl.x - pointA.x) + 2 * t1 * (pointB.x - trajectoryControl.x);
+    let dy1 = 2 * (1 - t1) * (trajectoryControl.y - pointA.y) + 2 * t1 * (pointB.y - trajectoryControl.y);
+    let angle1 = Math.atan2(dy1, dx1);
+    drawArrowhead(ctx, p1x, p1y, angle1, 10);
+    
+    // Arrow 2 (around t=0.7)
+    let t2 = 0.7;
+    let p2x = (1 - t2) * (1 - t2) * pointA.x + 2 * (1 - t2) * t2 * trajectoryControl.x + t2 * t2 * pointB.x;
+    let p2y = (1 - t2) * (1 - t2) * pointA.y + 2 * (1 - t2) * t2 * trajectoryControl.y + t2 * t2 * pointB.y;
+    let dx2 = 2 * (1 - t2) * (trajectoryControl.x - pointA.x) + 2 * t2 * (pointB.x - trajectoryControl.x);
+    let dy2 = 2 * (1 - t2) * (trajectoryControl.y - pointA.y) + 2 * t2 * (pointB.y - trajectoryControl.y);
+    let angle2 = Math.atan2(dy2, dx2);
+    drawArrowhead(ctx, p2x, p2y, angle2, 10);
+
+    // 4. Draw points A and B
+    // Point A
+    ctx.beginPath();
+    ctx.arc(pointA.x, pointA.y, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.textAlign = 'left';
+    ctx.fillText('A', pointA.x + 10, pointA.y - 10);
+
+    // Point B
+    ctx.beginPath();
+    ctx.arc(pointB.x, pointB.y, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('B', pointB.x + 10, pointB.y + 5);
+
+    // 5. Draw distance lines and labels
+    // Line to A
+    ctx.beginPath();
+    ctx.moveTo(planetCenter.x, planetCenter.y);
+    ctx.lineTo(pointA.x, pointA.y);
+    ctx.stroke(); 
+    // Arrowhead for line to A
+    const arrowSizeA = 8;
+    const angleAline = Math.atan2(pointA.y - planetCenter.y, pointA.x - planetCenter.x);
+    ctx.save();
+    ctx.translate(pointA.x, pointA.y); 
+    ctx.rotate(angleAline); 
+    ctx.beginPath();
+    ctx.moveTo(0, 0); 
+    ctx.lineTo(-arrowSizeA, arrowSizeA/2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-arrowSizeA, -arrowSizeA/2);
+    ctx.stroke();
+    ctx.restore();
+    
+    // Label for A
+    ctx.save();
+    ctx.translate(planetCenter.x - 70, planetCenter.y - 65);
+    ctx.rotate(-Math.PI / 4.8);
+    drawScientificNotation(ctx, null, '3.64 × 10', '6', ' m', 0, 0, 'center');
+    ctx.restore();
+    
+    // Line to B
+    ctx.beginPath();
+    ctx.moveTo(planetCenter.x, planetCenter.y);
+    ctx.lineTo(pointB.x, pointB.y);
+    ctx.stroke();
+    
+    // Label for B
+    let midBx = (planetCenter.x + pointB.x) / 2 + 30;
+    let midBy = (planetCenter.y + pointB.y) / 2 + 35;
+    drawScientificNotation(ctx, null, '5.00 × 10', '7', ' m', midBx, midBy, 'center');
+
+    // 6. Draw planet labels
+    const labelX = planetCenter.x - 120;
+    const labelY1 = planetCenter.y + 120;
+    const labelY2 = planetCenter.y + 150;
+    // Line pointer
+    ctx.beginPath();
+    ctx.moveTo(planetCenter.x - planetRadius * 0.707, planetCenter.y + planetRadius * 0.707);
+    ctx.lineTo(labelX, labelY1);
+    ctx.stroke();
+    
+    ctx.textAlign = 'right';
+    ctx.fillText('planet', labelX - 5, labelY1);
+    drawScientificNotation(ctx, 'mass 7.5 × 10', '23', ' kg', labelX - 5, labelY2, 'right');
+
+    // 7. Draw Figure caption
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 1.1 (not to scale)', canvas.width / 2, canvas.height - 20);
+
+</script>
+</body>
+</html>

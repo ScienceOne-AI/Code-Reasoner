@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram 4.35.1</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="circuitCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper functions ---
+        function drawLine(p1, p2) {
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+        }
+
+        function drawDashedLine(p1, p2) {
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawCapacitor(p1, p2, label) {
+            const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+            const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            const gap = 10;
+            const plateLength = 15;
+
+            const p1_end = { x: mid.x - (gap/2) * Math.cos(angle), y: mid.y - (gap/2) * Math.sin(angle) };
+            const p2_start = { x: mid.x + (gap/2) * Math.cos(angle), y: mid.y + (gap/2) * Math.sin(angle) };
+
+            drawLine(p1, p1_end);
+            drawLine(p2, p2_start);
+
+            // Plates
+            const plate1_p1 = { x: p1_end.x - plateLength/2 * Math.sin(angle), y: p1_end.y + plateLength/2 * Math.cos(angle) };
+            const plate1_p2 = { x: p1_end.x + plateLength/2 * Math.sin(angle), y: p1_end.y - plateLength/2 * Math.cos(angle) };
+            drawLine(plate1_p1, plate1_p2);
+
+            const plate2_p1 = { x: p2_start.x - plateLength/2 * Math.sin(angle), y: p2_start.y + plateLength/2 * Math.cos(angle) };
+            const plate2_p2 = { x: p2_start.x + plateLength/2 * Math.sin(angle), y: p2_start.y - plateLength/2 * Math.cos(angle) };
+            drawLine(plate2_p1, plate2_p2);
+
+            if (label) {
+                ctx.fillText(label, mid.x + 10, mid.y);
+            }
+        }
+
+        function drawBattery(p1, p2, label) {
+            const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+            const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            const gap = 12;
+            const longPlate = 18;
+            const shortPlate = 10;
+            
+            const p1_end = { x: mid.x - (gap/2) * Math.cos(angle), y: mid.y - (gap/2) * Math.sin(angle) };
+            const p2_start = { x: mid.x + (gap/2) * Math.cos(angle), y: mid.y + (gap/2) * Math.sin(angle) };
+
+            // Positive plate (long)
+            const plate1_p1 = { x: p1_end.x - longPlate/2 * Math.sin(angle), y: p1_end.y + longPlate/2 * Math.cos(angle) };
+            const plate1_p2 = { x: p1_end.x + longPlate/2 * Math.sin(angle), y: p1_end.y - longPlate/2 * Math.cos(angle) };
+            drawLine(plate1_p1, plate1_p2);
+
+            // Negative plate (short)
+            ctx.save();
+            ctx.lineWidth = 2.5;
+            const plate2_p1 = { x: p2_start.x - shortPlate/2 * Math.sin(angle), y: p2_start.y + shortPlate/2 * Math.cos(angle) };
+            const plate2_p2 = { x: p2_start.x + shortPlate/2 * Math.sin(angle), y: p2_start.y - shortPlate/2 * Math.cos(angle) };
+            drawLine(plate2_p1, plate2_p2);
+            ctx.restore();
+
+            if (label) {
+                ctx.fillText(label, mid.x, mid.y + 20);
+            }
+        }
+
+        // --- Main Drawing ---
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+        ctx.font = 'italic 18px Times New Roman';
+
+        // Cube vertices coordinates
+        const A = { x: 140, y: 70 };
+        const B = { x: 380, y: 70 };
+        const P1 = { x: 90, y: 110 }; // Top front left
+        const P2 = { x: 430, y: 110 }; // Top front right
+        const A_p = { x: 90, y: 290 }; // Bottom front left
+        const B_p = { x: 430, y: 290 }; // Bottom front right
+        const P3 = { x: 140, y: 330 }; // Bottom back left
+        const P4 = { x: 380, y: 330 }; // Bottom back right
+
+        // --- Draw Edges ---
+        // Solid lines
+        drawLine(A, B);
+        drawLine(B, P2);
+        drawLine(P2, P1);
+        drawLine(P1, A); // Top face
+        
+        drawLine(P2, B_p);
+        drawLine(B_p, A_p);
+        
+        // Dashed lines
+        drawDashedLine(A, P3);
+        drawDashedLine(P3, P4);
+        drawDashedLine(P4, B);
+        drawDashedLine(P1, A_p);
+        drawDashedLine(P3, A_p);
+        drawDashedLine(P4, B_p);
+
+        // --- Draw Components ---
+        // Capacitors
+        drawCapacitor(P1, A_p, 'C');
+        drawCapacitor(A_p, P3, 'C');
+        drawCapacitor(A_p, B_p, 'C');
+        drawCapacitor(B_p, P4, 'C');
+        drawCapacitor(P2, B_p, 'C');
+        
+        // EMFs
+        const X1 = { x: (A.x + P1.x)/2, y: (A.y + P1.y)/2 };
+        const Y1 = { x: (B.x + P2.x)/2, y: (B.y + P2.y)/2 };
+        drawDashedLine(X1, Y1);
+        drawBattery( {x: (X1.x+Y1.x)/2 - 20, y: (X1.y+Y1.y)/2}, {x: (X1.x+Y1.x)/2 + 20, y: (X1.y+Y1.y)/2}, 'ℰ₁');
+        
+        const X2 = { x: (A_p.x + P3.x)/2, y: (A_p.y + P3.y)/2 };
+        const Y2 = { x: (B_p.x + P4.x)/2, y: (B_p.y + P4.y)/2 };
+        drawDashedLine(X2, Y2);
+        drawBattery( {x: (X2.x+Y2.x)/2 - 20, y: (X2.y+Y2.y)/2}, {x: (X2.x+Y2.x)/2 + 20, y: (X2.y+Y2.y)/2}, 'ℰ₂');
+
+
+        // --- Draw Labels ---
+        ctx.font = '20px Times New Roman';
+        ctx.fillText('A', A.x - 20, A.y);
+        ctx.fillText('B', B.x + 10, B.y);
+        ctx.fillText("A'", A_p.x - 25, A_p.y + 5);
+        ctx.fillText("B'", B_p.x + 10, B_p.y + 5);
+
+        ctx.font = '18px Times New Roman';
+        ctx.fillText("X₁", X1.x - 10, X1.y - 10);
+        ctx.fillText("Y₁", Y1.x, Y1.y - 10);
+        ctx.fillText("X₂", X2.x - 10, X2.y + 20);
+        ctx.fillText("Y₂", Y2.x, Y2.y + 20);
+        
+        // --- Caption ---
+        ctx.font = '20px KaiTi'; // Or any other suitable font for Chinese
+        ctx.textAlign = 'center';
+        ctx.fillText('电图 4.35.1', canvas.width / 2, 420);
+    </script>
+</body>
+</html>

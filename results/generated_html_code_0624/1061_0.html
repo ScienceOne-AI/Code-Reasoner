@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="420"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Helper function to draw an arrow
+        function drawArrow(ctx, fromx, fromy, tox, toy, headlen = 10) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // Helper function to draw B field symbol (circle with a dot)
+        function drawBField(ctx, x, y, radius = 8) {
+            // Circle
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
+            ctx.stroke();
+            // Dot
+            ctx.beginPath();
+            ctx.arc(x, y, 1.5, 0, 2 * Math.PI, false);
+            ctx.fill();
+        }
+        
+        // --- Main Drawing ---
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'italic 18px Arial';
+
+        // Origin and dimensions
+        const ox = 220;
+        const oy = 210;
+        const sideLength = 140;
+        const halfDiagonal = sideLength / Math.sqrt(2);
+        const shiftX = 50;
+
+        // 1. Draw Coordinate Axes (The Cross)
+        ctx.beginPath();
+        ctx.moveTo(ox, 20);
+        ctx.lineTo(ox, 400);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(20, oy);
+        ctx.lineTo(480, oy);
+        ctx.stroke();
+
+        // 2. Draw Solid Square (Initial Position)
+        const solidVertices = {
+            left: { x: ox, y: oy },
+            top: { x: ox + halfDiagonal, y: oy - halfDiagonal },
+            right: { x: ox + 2 * halfDiagonal, y: oy },
+            bottom: { x: ox + halfDiagonal, y: oy + halfDiagonal }
+        };
+        ctx.beginPath();
+        ctx.moveTo(solidVertices.left.x, solidVertices.left.y);
+        ctx.lineTo(solidVertices.top.x, solidVertices.top.y);
+        ctx.lineTo(solidVertices.right.x, solidVertices.right.y);
+        ctx.lineTo(solidVertices.bottom.x, solidVertices.bottom.y);
+        ctx.closePath();
+        ctx.stroke();
+
+        // 3. Draw Dashed Square (Later Position)
+        const dashedVertices = {
+            left: { x: ox - shiftX, y: oy },
+            top: { x: ox + halfDiagonal - shiftX, y: oy - halfDiagonal },
+            right: { x: ox + 2 * halfDiagonal - shiftX, y: oy },
+            bottom: { x: ox + halfDiagonal - shiftX, y: oy + halfDiagonal }
+        };
+        ctx.save();
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.moveTo(dashedVertices.left.x, dashedVertices.left.y);
+        ctx.lineTo(dashedVertices.top.x, dashedVertices.top.y);
+        ctx.lineTo(dashedVertices.right.x, dashedVertices.right.y);
+        ctx.lineTo(dashedVertices.bottom.x, dashedVertices.bottom.y);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.restore();
+
+        // 4. Draw B-Fields
+        ctx.lineWidth = 1.5;
+        const b_positions = [
+            {x: 100, y: 100}, {x: 380, y: 100},
+            {x: 100, y: 320}, {x: 380, y: 320}
+        ];
+        b_positions.forEach(pos => {
+            drawBField(ctx, pos.x, pos.y);
+            ctx.fillText('B', pos.x + 15, pos.y + 7);
+        });
+
+        // 5. Draw Velocity Arrows and Labels
+        ctx.lineWidth = 2;
+        // Top arrow
+        const top_mid_x = (dashedVertices.left.x + dashedVertices.top.x) / 2;
+        const top_mid_y = (dashedVertices.left.y + dashedVertices.top.y) / 2;
+        drawArrow(ctx, top_mid_x + 30, top_mid_y, top_mid_x - 30, top_mid_y);
+        ctx.fillText('v', top_mid_x - 5, top_mid_y - 12);
+
+        // Bottom arrow
+        const bottom_mid_x = (dashedVertices.left.x + dashedVertices.bottom.x) / 2;
+        const bottom_mid_y = (dashedVertices.left.y + dashedVertices.bottom.y) / 2;
+        drawArrow(ctx, bottom_mid_x + 30, bottom_mid_y, bottom_mid_x - 30, bottom_mid_y);
+        ctx.fillText('v', bottom_mid_x - 5, bottom_mid_y + 22);
+
+        // 6. Add other labels
+        ctx.font = 'italic 20px Arial';
+        // Labels 'a'
+        ctx.fillText('a', (solidVertices.top.x + solidVertices.right.x) / 2 + 10, (solidVertices.top.y + solidVertices.right.y) / 2 - 10);
+        ctx.fillText('a', (solidVertices.bottom.x + solidVertices.right.x) / 2 + 10, (solidVertices.bottom.y + solidVertices.right.y) / 2 + 20);
+        
+        // Find intersection points M, N for labels
+        // From derivation, y_M = oy - shiftX, y_N = oy + shiftX
+        const m_pos = { x: ox, y: oy - shiftX };
+        const n_pos = { x: ox, y: oy + shiftX };
+        ctx.fillText('M', m_pos.x - 30, m_pos.y + 8);
+        ctx.fillText('N', n_pos.x - 30, n_pos.y + 8);
+        
+        // Add caption
+        ctx.font = '16px "SimSun", "STSong"';
+        ctx.fillText('电图 3.9.1', canvas.width / 2 - 40, canvas.height - 10);
+
+    </script>
+</body>
+</html>

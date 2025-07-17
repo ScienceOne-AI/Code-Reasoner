@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physics-diagram" width="600" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-diagram');
+        const ctx = canvas.getContext('2d');
+        const canvasWidth = 600;
+        const canvasHeight = 600;
+
+        // Style setup
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = '24px Arial';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // --- Define coordinates ---
+        const centerX = 280;
+        const sphereY = 450;
+        const sphereRadius = 120;
+        const tubeWidth = 20;
+        const tubeHeight = 160;
+        const containerWidth = 200;
+        const containerHeight = 70;
+
+        // --- Draw Sphere ---
+        const sphereTopY = sphereY - sphereRadius;
+        ctx.beginPath();
+        ctx.arc(centerX, sphereY, sphereRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Draw radius R
+        const angleR = -Math.PI / 4;
+        const R_startX = centerX;
+        const R_startY = sphereY;
+        const R_endX = centerX + sphereRadius * Math.cos(angleR);
+        const R_endY = sphereY + sphereRadius * Math.sin(angleR);
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(R_startX, R_startY);
+        ctx.lineTo(R_endX, R_endY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Label R
+        ctx.font = 'italic 30px "Times New Roman"';
+        ctx.fillText('R', centerX + 0.5 * sphereRadius * Math.cos(angleR) + 5, sphereY + 0.5 * sphereRadius * Math.sin(angleR));
+
+        // --- Draw Tube & Container ---
+        const tubeTopY = sphereTopY - tubeHeight;
+        const tubeLeftX = centerX - tubeWidth / 2;
+        const tubeRightX = centerX + tubeWidth / 2;
+
+        const containerTopY = tubeTopY - containerHeight;
+        const containerLeftX = centerX - containerWidth / 2;
+        const containerRightX = centerX + containerWidth / 2;
+        const containerBottomY = tubeTopY;
+
+        // Draw container first
+        ctx.beginPath();
+        ctx.rect(containerLeftX, containerTopY, containerWidth, containerHeight);
+        ctx.stroke();
+
+        // Draw tube
+        ctx.beginPath();
+        ctx.moveTo(tubeLeftX, sphereTopY);
+        ctx.lineTo(tubeLeftX, containerBottomY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(tubeRightX, sphereTopY);
+        ctx.lineTo(tubeRightX, containerBottomY);
+        ctx.stroke();
+
+        // --- Draw Valves ---
+        function drawValve(y) {
+            const originalFill = ctx.fillStyle;
+            ctx.fillStyle = 'white'; // To create a break for the tube lines
+            ctx.beginPath();
+            ctx.arc(centerX, y, tubeWidth / 2 + 3, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = originalFill;
+            
+            // Draw the screw-like line inside
+            ctx.beginPath();
+            ctx.moveTo(centerX - tubeWidth / 2, y + tubeWidth / 2);
+            ctx.lineTo(centerX + tubeWidth / 2, y - tubeWidth / 2);
+            ctx.stroke();
+        }
+        const bottomValveY = sphereTopY - 25;
+        const topValveY = containerBottomY - 25;
+        drawValve(bottomValveY);
+        drawValve(topValveY);
+
+        // --- Draw Mercury ---
+        const hgTopLevel = containerTopY + containerHeight * 0.4;
+        ctx.beginPath();
+        ctx.moveTo(containerLeftX, hgTopLevel);
+        ctx.lineTo(containerRightX, hgTopLevel);
+        ctx.stroke();
+
+        // Dashed lines for liquid
+        ctx.beginPath();
+        ctx.setLineDash([8, 8]);
+        for (let i = 1; i <= 2; i++) {
+            const y = hgTopLevel + i * 18;
+            ctx.moveTo(containerLeftX + 10, y);
+            ctx.lineTo(containerRightX - 10, y);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Label Hg
+        ctx.font = 'bold 32px "Times New Roman"';
+        ctx.fillText('Hg', containerLeftX + 15, containerTopY + 35);
+
+
+        // --- Draw Circuit ---
+        const batteryX = 480;
+        const batteryTopY = 220;
+        const batteryCellHeight = 25;
+        const batteryBottomY = batteryTopY + 1.5 * batteryCellHeight + batteryCellHeight;
+
+        // Battery
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        // Cell 1
+        ctx.moveTo(batteryX - 20, batteryTopY); // long plate
+        ctx.lineTo(batteryX + 20, batteryTopY);
+        ctx.moveTo(batteryX - 10, batteryTopY + batteryCellHeight); // short plate
+        ctx.lineTo(batteryX + 10, batteryTopY + batteryCellHeight);
+        // Cell 2
+        const cell2TopY = batteryTopY + batteryCellHeight * 1.5;
+        ctx.moveTo(batteryX - 20, cell2TopY); // long plate
+        ctx.lineTo(batteryX + 20, cell2TopY);
+        ctx.moveTo(batteryX - 10, batteryBottomY); // short plate
+        ctx.lineTo(batteryX + 10, batteryBottomY);
+        ctx.stroke();
+
+        // Inter-cell connection
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(batteryX, batteryTopY + batteryCellHeight);
+        ctx.lineTo(batteryX, cell2TopY);
+        ctx.stroke();
+
+        // Ground Symbol
+        const groundY = batteryBottomY + 40;
+        const groundJunctionY = batteryBottomY + 15;
+        ctx.beginPath();
+        ctx.moveTo(batteryX, batteryBottomY);
+        ctx.lineTo(batteryX, groundY - 5);
+        ctx.stroke();
+        // Ground symbol lines
+        ctx.beginPath();
+        ctx.moveTo(batteryX - 25, groundY);
+        ctx.lineTo(batteryX + 25, groundY);
+        ctx.moveTo(batteryX - 15, groundY + 10);
+        ctx.lineTo(batteryX + 15, groundY + 10);
+        ctx.moveTo(batteryX - 8, groundY + 20);
+        ctx.lineTo(batteryX + 8, groundY + 20);
+        ctx.stroke();
+
+        // Wires
+        // Positive wire
+        const wireCornerX = containerRightX + 40;
+        const wireCornerY = containerTopY - 20;
+        ctx.beginPath();
+        ctx.moveTo(batteryX, batteryTopY); // Top of battery (+)
+        ctx.lineTo(wireCornerX, batteryTopY);
+        ctx.lineTo(wireCornerX, wireCornerY);
+        ctx.lineTo(containerRightX, wireCornerY);
+        ctx.lineTo(containerRightX, containerTopY);
+        ctx.stroke();
+        
+        // Electrode into Hg
+        const electrodeX = containerRightX - 40;
+        ctx.beginPath();
+        ctx.moveTo(electrodeX, containerTopY);
+        ctx.lineTo(electrodeX, hgTopLevel);
+        ctx.stroke();
+        
+        // Add + sign on the container wire
+        ctx.font = 'bold 24px Arial';
+        ctx.fillText('+', electrodeX - 20, containerTopY + 25);
+
+
+        // Negative/Ground wire to tube
+        const tubeConnectY = sphereY - 100;
+        ctx.beginPath();
+        ctx.moveTo(batteryX, groundJunctionY); // Start from the wire going to ground
+        ctx.lineTo(tubeRightX + 2, tubeConnectY); // Connect to the right side of the tube
+        ctx.stroke();
+
+        // --- Draw Bottom Text ---
+        ctx.font = '36px "SimSun", "STSong"';
+        ctx.textAlign = 'center';
+        ctx.fillText('电图 1.43.1', canvasWidth/2, canvasHeight - 20);
+
+    </script>
+</body>
+</html>

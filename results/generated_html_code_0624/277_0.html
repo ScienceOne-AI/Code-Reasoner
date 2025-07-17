@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Flywheel with Mass and Spring</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    canvas {
+        border: 1px solid #ccc;
+        background-color: #fff;
+    }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="400" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Define parameters
+    const cx = 200;
+    const cy = 200;
+    const radius = 150;
+    const lineWidth = 2.5;
+
+    // Set global drawing styles
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = lineWidth;
+
+    // --- 1. Draw the Flywheel (Outer Circle) ---
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // --- 2. Draw the Spokes ---
+    // The spokes are at 120-degree intervals.
+    // Angles chosen to match the orientation in the image: 90 (down), 210 (down-left), 330 (up-right).
+    const spokeAnglesDeg = [90, 210, 330];
+    spokeAnglesDeg.forEach(deg => {
+        const rad = deg * Math.PI / 180;
+        const endX = cx + radius * Math.cos(rad);
+        const endY = cy + radius * Math.sin(rad); // In canvas, positive y is down
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+    });
+
+    // --- 3. Draw the Mass and Spring ---
+    const massSpokeAngleRad = 210 * Math.PI / 180;
+    const massDistFromCenter = radius * 0.55;
+    
+    // The spring starts a little away from the center and ends at the mass.
+    const springStartDist = radius * 0.08;
+    const springEndDist = massDistFromCenter;
+
+    // Calculate spring start and end coordinates
+    const springStartX = cx + springStartDist * Math.cos(massSpokeAngleRad);
+    const springStartY = cy + springStartDist * Math.sin(massSpokeAngleRad);
+    const springEndX = cx + springEndDist * Math.cos(massSpokeAngleRad);
+    const springEndY = cy + springEndDist * Math.sin(massSpokeAngleRad);
+    
+    // Custom function to draw a coarse, thick spring like in the diagram
+    function drawCoarseSpring(ctx, x1, y1, x2, y2, segments, amplitude) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
+
+        ctx.save();
+        ctx.translate(x1, y1);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+
+        const segmentLength = distance / segments;
+        for (let i = 0; i < segments; i++) {
+            const x = (i + 0.5) * segmentLength;
+            // Alternate direction for zigzag
+            const y = amplitude * ((i % 2 === 0) ? -1 : 1);
+            ctx.lineTo(x, y);
+        }
+        ctx.lineTo(distance, 0);
+        
+        // Use thick, rounded lines to mimic the hand-drawn spring
+        ctx.lineWidth = 7; 
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // Draw the spring on the spoke
+    drawCoarseSpring(ctx, springStartX, springStartY, springEndX, springEndY, 14, 7);
+
+    // Calculate mass position (same as spring end)
+    const massX = springEndX;
+    const massY = springEndY;
+
+    // Draw the mass as a filled circle
+    ctx.beginPath();
+    ctx.arc(massX, massY, 6, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // --- 4. Add Labels ---
+    ctx.font = 'italic bold 22px serif';
+    ctx.textAlign = 'left'; // Align text from its bottom-left corner
+
+    // Position 'm' relative to the mass, matching the source image
+    ctx.fillText('m', massX + 10, massY - 10);
+
+    // Position 'k' relative to the middle of the spring
+    const k_pos_x = cx + (springStartDist + (springEndDist - springStartDist) * 0.5) * Math.cos(massSpokeAngleRad);
+    const k_pos_y = cy + (springStartDist + (springEndDist - springStartDist) * 0.5) * Math.sin(massSpokeAngleRad);
+    ctx.fillText('k', k_pos_x + 15, k_pos_y + 20);
+    
+    // --- 5. Draw Figure Caption ---
+    ctx.font = '20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Fig. 2.64.', cx, cy + radius + 45);
+
+</script>
+</body>
+</html>

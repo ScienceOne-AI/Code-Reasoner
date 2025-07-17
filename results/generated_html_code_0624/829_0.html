@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Rotating Disk with Masses</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    canvas {
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="physicsCanvas" width="500" height="420"></canvas>
+  <script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Define parameters for the drawing
+    const centerX = 250;
+    const centerY = 200;
+    const radiusX = 160;
+    const radiusY = 60;
+    const diskHeight = 25;
+
+    const diskTopY = centerY;
+    const diskBottomY = centerY + diskHeight;
+    const diskLeftX = centerX - radiusX;
+    const diskRightX = centerX + radiusX;
+
+    // --- Draw the Disk ---
+    ctx.save();
+    // Disk body (side)
+    ctx.fillStyle = '#E0E0E0';
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    ctx.beginPath();
+    ctx.moveTo(diskLeftX, diskBottomY);
+    ctx.lineTo(diskLeftX, diskTopY);
+    ctx.ellipse(centerX, diskTopY, radiusX, radiusY, 0, Math.PI, 2 * Math.PI);
+    ctx.lineTo(diskRightX, diskBottomY);
+    ctx.ellipse(centerX, diskBottomY, radiusX, radiusY, 0, 0, Math.PI);
+    ctx.fill();
+    ctx.stroke();
+    
+    // Disk top surface fill
+    ctx.fillStyle = '#DCDCDC';
+    ctx.beginPath();
+    ctx.ellipse(centerX, diskTopY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Disk texture (hatching)
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(centerX, diskTopY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+    ctx.clip();
+    ctx.strokeStyle = '#BDBDBD';
+    ctx.lineWidth = 1;
+    for (let i = -radiusX * 1.5; i < radiusX * 1.5; i += 5) {
+        ctx.beginPath();
+        ctx.moveTo(centerX + i, diskTopY - radiusY);
+        ctx.lineTo(centerX + i - 30, diskTopY + radiusY);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // Disk top outline
+    ctx.beginPath();
+    ctx.ellipse(centerX, diskTopY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.restore();
+
+    // --- Draw the Axis of Rotation ---
+    ctx.beginPath();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'black';
+    ctx.moveTo(centerX, centerY - 120);
+    ctx.lineTo(centerX, centerY + diskHeight + 90);
+    ctx.stroke();
+
+    // --- Draw the Rotation Arrow and Label (ω) ---
+    const arrowCenterY = centerY - 90;
+    const arrowRadius = 30;
+    ctx.beginPath();
+    ctx.arc(centerX, arrowCenterY, arrowRadius, Math.PI * 1.25, Math.PI * 1.95);
+    ctx.stroke();
+
+    // Arrowhead
+    const headAngle = Math.PI * 1.95;
+    const arrowX = centerX + arrowRadius * Math.cos(headAngle);
+    const arrowY = arrowCenterY + arrowRadius * Math.sin(headAngle);
+    ctx.beginPath();
+    ctx.moveTo(arrowX, arrowY);
+    ctx.lineTo(arrowX + 9, arrowY + 2);
+    ctx.moveTo(arrowX, arrowY);
+    ctx.lineTo(arrowX + 2, arrowY + 9);
+    ctx.stroke();
+
+    // Label ω
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.fillStyle = 'black';
+    ctx.fillText('ω', centerX + arrowRadius + 10, arrowCenterY + 10);
+
+    // --- Draw Masses, String, and Labels ---
+    const r1 = 80;
+    const r2 = 130;
+    const m1_x = centerX - r1;
+    const m2_x = centerX + r2;
+    const mass_y = centerY;
+    const massRadius = 7;
+
+    // String
+    ctx.beginPath();
+    ctx.moveTo(m1_x, mass_y);
+    ctx.lineTo(m2_x, mass_y);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Center point
+    ctx.beginPath();
+    ctx.arc(centerX, mass_y, 2.5, 0, 2 * Math.PI);
+    ctx.fillStyle = 'black';
+    ctx.fill();
+
+    // Masses
+    ctx.beginPath();
+    ctx.arc(m1_x, mass_y, massRadius, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(m2_x, mass_y, massRadius, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Labels m1, m2, r1, r2
+    ctx.font = 'italic 18px Times New Roman';
+    // Label m1
+    ctx.fillText('m', m1_x - 10, mass_y - 18);
+    ctx.font = 'italic 12px Times New Roman';
+    ctx.fillText('1', m1_x, mass_y - 15);
+    // Label m2
+    ctx.font = 'italic 18px Times New Roman';
+    ctx.fillText('m', m2_x - 5, mass_y - 18);
+    ctx.font = 'italic 12px Times New Roman';
+    ctx.fillText('2', m2_x + 5, mass_y - 15);
+    // Label r1
+    ctx.font = 'italic 18px Times New Roman';
+    ctx.fillText('r', centerX - r1 / 2 - 8, mass_y + 25);
+    ctx.font = 'italic 12px Times New Roman';
+    ctx.fillText('1', centerX - r1 / 2, mass_y + 28);
+    // Label r2
+    ctx.font = 'italic 18px Times New Roman';
+    ctx.fillText('r', centerX + r2 / 2 - 8, mass_y + 25);
+    ctx.font = 'italic 12px Times New Roman';
+    ctx.fillText('2', centerX + r2 / 2, mass_y + 28);
+
+    // --- Draw the Caption ---
+    ctx.font = '20px "KaiTi", "SimSun"';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.fillText('习题 1-34 图', centerX, canvas.height - 25);
+  </script>
+</body>
+</html>

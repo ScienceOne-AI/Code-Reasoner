@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="physics-diagram" width="720" height="350"></canvas>
+
+<script>
+    const canvas = document.getElementById('physics-diagram');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper function for drawing hatched surfaces ---
+    function drawHatchedSurface(x, y, length, isVertical) {
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'black';
+        
+        if (isVertical) { // Vertical wall
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + length);
+            ctx.stroke();
+            for (let i = 0; i <= length; i += 8) {
+                ctx.beginPath();
+                ctx.moveTo(x, y + i);
+                ctx.lineTo(x - 8, y + i + 8);
+                ctx.stroke();
+            }
+        } else { // Horizontal support
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + length, y);
+            ctx.stroke();
+            for (let i = 0; i <= length; i += 8) {
+                ctx.beginPath();
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x + i - 8, y + 8);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+    
+    // --- Helper function for drawing dimension lines ---
+    function drawDimension(x1, y1, x2, y2, text, offset) {
+        const y_dim = y1 + offset;
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+
+        // Ticks
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1, y_dim);
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2, y_dim);
+        ctx.stroke();
+
+        // Main line
+        ctx.beginPath();
+        ctx.moveTo(x1, y_dim);
+        ctx.lineTo(x2, y_dim);
+        ctx.stroke();
+        
+        // Arrowheads
+        ctx.beginPath();
+        ctx.moveTo(x1 + 8, y_dim - 4);
+        ctx.lineTo(x1, y_dim);
+        ctx.lineTo(x1 + 8, y_dim + 4);
+        ctx.moveTo(x2 - 8, y_dim - 4);
+        ctx.lineTo(x2, y_dim);
+        ctx.lineTo(x2 - 8, y_dim + 4);
+        ctx.stroke();
+
+        // Text
+        ctx.fillText(text, (x1 + x2) / 2, y_dim - 4);
+        ctx.restore();
+    }
+
+    // --- Draw Diagram (a) ---
+    const scale_a = 60;
+    const yBeam_a = 150;
+    const xA_a = 100;
+    
+    // Coordinates for (a)
+    const pA_a = { x: xA_a, y: yBeam_a };
+    const pC_a = { x: pA_a.x + 2 * scale_a, y: yBeam_a };
+    const pB_a = { x: pC_a.x + 1 * scale_a, y: yBeam_a };
+    const pD_a = { x: pC_a.x, y: yBeam_a - 80 };
+
+    // Wall at A
+    drawHatchedSurface(pA_a.x, 50, 220, true);
+
+    // Support at D
+    drawHatchedSurface(pD_a.x - 30, pD_a.y, 60, false);
+    
+    // Beam AB
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(pA_a.x, pA_a.y);
+    ctx.lineTo(pB_a.x, pB_a.y);
+    ctx.stroke();
+
+    // Rod CD
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(pC_a.x, pC_a.y);
+    ctx.lineTo(pD_a.x, pD_a.y);
+    ctx.stroke();
+
+    // Hinges
+    ctx.fillStyle = 'black';
+    [pA_a, pC_a, pD_a].forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+    });
+
+    // Force F at B
+    ctx.save();
+    const fAngle_a = 240 * Math.PI / 180;
+    const fLen_a = 45;
+    const fEnd_a = { x: pB_a.x + fLen_a * Math.cos(fAngle_a), y: pB_a.y + fLen_a * Math.sin(fAngle_a) };
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(pB_a.x, pB_a.y);
+    ctx.lineTo(fEnd_a.x, fEnd_a.y);
+    ctx.stroke();
+    // Arrowhead
+    ctx.translate(fEnd_a.x, fEnd_a.y);
+    ctx.rotate(fAngle_a);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-10, 5);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-10, -5);
+    ctx.stroke();
+    ctx.restore();
+
+    // Angle 60 for F
+    ctx.save();
+    ctx.lineWidth = 1;
+    // Dashed line
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(pB_a.x, pB_a.y);
+    ctx.lineTo(pB_a.x - 30, pB_a.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Arc
+    ctx.beginPath();
+    ctx.arc(pB_a.x, pB_a.y, 20, Math.PI, fAngle_a);
+    ctx.stroke();
+    // Arrowhead on arc
+    const arcArrowAngle_a = fAngle_a + Math.PI / 2;
+    ctx.translate(pB_a.x + 20 * Math.cos(fAngle_a), pB_a.y + 20 * Math.sin(fAngle_a));
+    ctx.rotate(arcArrowAngle_a);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-5, 0);
+    ctx.lineTo(-2.5, -4.33);
+    ctx.fill();
+    ctx.restore();
+    
+    // Labels
+    ctx.font = 'bold 18px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('A', pA_a.x - 15, pA_a.y);
+    ctx.fillText('B', pB_a.x + 15, pB_a.y - 10);
+    ctx.fillText('C', pC_a.x, pC_a.y + 15);
+    ctx.fillText('D', pD_a.x + 15, pD_a.y);
+    ctx.font = 'bold italic 20px serif';
+    ctx.fillText('F', pB_a.x - 40, pB_a.y - 10);
+    ctx.font = '16px sans-serif';
+    ctx.fillText('60°', pB_a.x - 18, pB_a.y - 20);
+
+    // Dimensions
+    drawDimension(pB_a.x, pB_a.y, pC_a.x, pC_a.y, '1 m', 40);
+    drawDimension(pC_a.x, pC_a.y, pA_a.x, pA_a.y, '2 m', 40);
+    
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillText('(a)', (pA_a.x + pB_a.x) / 2, 280);
+
+
+    // --- Draw Diagram (b) ---
+    const scale_b = 60;
+    const yBeam_b = 150;
+    const xA_b = 400;
+
+    // Coordinates for (b)
+    const pA_b = { x: xA_b, y: yBeam_b };
+    const pC_b = { x: pA_b.x + 2 * scale_b, y: yBeam_b };
+    const pB_b = { x: pC_b.x + 1 * scale_b, y: yBeam_b };
+    const pD_b = { x: pC_b.x, y: yBeam_b + 80 };
+
+    // Wall at A
+    drawHatchedSurface(pA_b.x, 50, 220, true);
+
+    // Support at D
+    drawHatchedSurface(pD_b.x - 30, pD_b.y + 10, 60, false);
+    
+    // Beam AB
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(pA_b.x, pA_b.y);
+    ctx.lineTo(pB_b.x, pB_b.y);
+    ctx.stroke();
+
+    // Rod CD
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(pC_b.x, pC_b.y);
+    ctx.lineTo(pD_b.x, pD_b.y);
+    ctx.stroke();
+
+    // Hinges
+    ctx.fillStyle = 'black';
+    [pA_b, pC_b, pD_b].forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+    });
+
+    // Force F at B
+    ctx.save();
+    const fAngle_b = -60 * Math.PI / 180;
+    const fLen_b = 45;
+    const fEnd_b = { x: pB_b.x + fLen_b * Math.cos(fAngle_b), y: pB_b.y + fLen_b * Math.sin(fAngle_b) };
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(pB_b.x, pB_b.y);
+    ctx.lineTo(fEnd_b.x, fEnd_b.y);
+    ctx.stroke();
+    // Arrowhead
+    ctx.translate(fEnd_b.x, fEnd_b.y);
+    ctx.rotate(fAngle_b);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-10, 5);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-10, -5);
+    ctx.stroke();
+    ctx.restore();
+
+    // Angle 60 for F
+    ctx.save();
+    ctx.lineWidth = 1;
+    // Dashed line
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(pB_b.x, pB_b.y);
+    ctx.lineTo(pB_b.x + 30, pB_b.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Arc
+    ctx.beginPath();
+    ctx.arc(pB_b.x, pB_b.y, 20, 0, fAngle_b, true);
+    ctx.stroke();
+    // Arrowhead on arc
+    const arcArrowAngle_b = fAngle_b - Math.PI / 2;
+    ctx.translate(pB_b.x + 20 * Math.cos(fAngle_b), pB_b.y + 20 * Math.sin(fAngle_b));
+    ctx.rotate(arcArrowAngle_b);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-5, 0);
+    ctx.lineTo(-2.5, -4.33);
+    ctx.fill();
+    ctx.restore();
+    
+    // Labels
+    ctx.font = 'bold 18px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('A', pA_b.x - 15, pA_b.y);
+    ctx.fillText('B', pB_b.x + 15, pB_b.y - 10);
+    ctx.fillText('C', pC_b.x, pC_b.y - 15);
+    ctx.fillText('D', pD_b.x + 15, pD_b.y);
+    ctx.font = 'bold italic 20px serif';
+    ctx.fillText('F', pB_b.x + 40, pB_b.y - 10);
+    ctx.font = '16px sans-serif';
+    ctx.fillText('60°', pB_b.x + 18, pB_b.y - 20);
+
+    // Dimensions
+    drawDimension(pA_b.x, pA_b.y, pC_b.x, pC_b.y, '2 m', 40);
+    drawDimension(pC_b.x, pC_b.y, pB_b.x, pB_b.y, '1 m', 40);
+
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillText('(b)', (pA_b.x + pB_b.x) / 2, 280);
+
+</script>
+</body>
+</html>

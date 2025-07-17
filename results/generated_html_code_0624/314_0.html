@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Circuit Diagram</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="450" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = 'bold 18px sans-serif';
+
+    // --- Helper Functions ---
+
+    function drawResistor(x, y, h) {
+        const w = 15;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y + h * 0.1);
+        ctx.lineTo(x + w, y + h * 0.25);
+        ctx.lineTo(x - w, y + h * 0.50);
+        ctx.lineTo(x + w, y + h * 0.75);
+        ctx.lineTo(x, y + h * 0.9);
+        ctx.lineTo(x, y + h);
+        ctx.stroke();
+    }
+
+    function drawInductor(x, y, w) {
+        const num_loops = 4;
+        const loop_r = w / (2 * num_loops);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        for(let i=0; i < num_loops; i++) {
+            ctx.arc(x + (i * 2 + 1) * loop_r, y, loop_r, Math.PI, 0);
+        }
+        ctx.stroke();
+    }
+
+    function drawGround(x, y) {
+        ctx.beginPath();
+        ctx.moveTo(x, y - 10);
+        ctx.lineTo(x, y);
+        ctx.moveTo(x - 20, y);
+        ctx.lineTo(x + 20, y);
+        ctx.moveTo(x - 13, y + 7);
+        ctx.lineTo(x + 13, y + 7);
+        ctx.moveTo(x - 6, y + 14);
+        ctx.lineTo(x + 6, y + 14);
+        ctx.stroke();
+    }
+
+    // --- Main Drawing ---
+
+    const xA = 100;
+    const xB = 220;
+    const xR_wire = 400; // Right vertical wire
+    const yTop = 100;
+    const yGround = 300;
+    const switchPivotX = 160;
+
+    // Ground line and symbol
+    ctx.beginPath();
+    ctx.moveTo(xA, yGround);
+    ctx.lineTo(xR_wire, yGround);
+    ctx.stroke();
+    drawGround(xB, yGround + 10);
+
+    // Left Branch (A)
+    // Wire from Ground to V-
+    ctx.beginPath();
+    ctx.moveTo(xA, yGround);
+    ctx.lineTo(xA, 260);
+    ctx.stroke();
+    // Voltage Source
+    ctx.beginPath();
+    ctx.moveTo(xA - 12, 260);
+    ctx.lineTo(xA + 12, 260); // short line (negative)
+    ctx.moveTo(xA - 20, 240);
+    ctx.lineTo(xA + 20, 240); // long line (positive)
+    ctx.stroke();
+    // Wire from V+ to Resistor
+    ctx.beginPath();
+    ctx.moveTo(xA, 240);
+    ctx.lineTo(xA, 210);
+    ctx.stroke();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('1V', xA + 25, 250);
+
+    // 1 Ohm Resistor
+    drawResistor(xA, 150, 60);
+    ctx.fillText('1 Ω', xA + 25, 180);
+
+    // Wire from Resistor to Contact A
+    ctx.beginPath();
+    ctx.moveTo(xA, 150);
+    ctx.lineTo(xA, 120);
+    ctx.stroke();
+    // Contact A
+    ctx.beginPath();
+    ctx.arc(xA, 120, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('A', xA - 25, 120);
+
+    // Right Branch (B)
+    // Wire from Ground to Resistor R
+    ctx.beginPath();
+    ctx.moveTo(xB, yGround);
+    ctx.lineTo(xB, 270);
+    ctx.stroke();
+    // Resistor R
+    drawResistor(xB, 130, 140);
+    ctx.fillText('R = 10', xB + 25, 200);
+    ctx.save();
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('4', xB + 80, 196);
+    ctx.restore();
+    ctx.fillText('Ω', xB + 90, 200);
+
+    // Wire from Resistor to Contact B
+    ctx.beginPath();
+    ctx.moveTo(xB, 130);
+    ctx.lineTo(xB, 120);
+    ctx.stroke();
+    // Contact B
+    ctx.beginPath();
+    ctx.arc(xB, 120, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.textAlign = 'center';
+    ctx.fillText('B', xB, 100);
+
+    // Top Section
+    // Wire from switch pivot to inductor
+    ctx.beginPath();
+    ctx.moveTo(switchPivotX, yTop);
+    ctx.lineTo(280, yTop);
+    ctx.stroke();
+    // Inductor
+    drawInductor(280, yTop, 100);
+    ctx.textAlign = 'center';
+    ctx.fillText('L = 1H', 330, yTop + 30);
+    // Wire from inductor to right vertical wire
+    ctx.beginPath();
+    ctx.moveTo(380, yTop);
+    ctx.lineTo(xR_wire, yTop);
+    ctx.stroke();
+
+    // Right vertical wire
+    ctx.beginPath();
+    ctx.moveTo(xR_wire, yTop);
+    ctx.lineTo(xR_wire, yGround);
+    ctx.stroke();
+
+    // Switch S
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('S', switchPivotX, yTop - 5);
+    // Switch arm
+    ctx.beginPath();
+    ctx.moveTo(switchPivotX, yTop);
+    ctx.lineTo(xA, 115);
+    ctx.stroke();
+
+    // Current Loop Arrow
+    ctx.save();
+    ctx.lineWidth = 2;
+    const arrow_cx = 310;
+    const arrow_cy = 200;
+    const arrow_r = 70;
+    ctx.beginPath();
+    ctx.arc(arrow_cx, arrow_cy, arrow_r, 0.7 * Math.PI, -0.1 * Math.PI);
+    ctx.stroke();
+    // Arrowhead
+    const angle = -0.1 * Math.PI;
+    const ax = arrow_cx + arrow_r * Math.cos(angle);
+    const ay = arrow_cy + arrow_r * Math.sin(angle);
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax - 12, ay - 5);
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax + 2, ay - 13);
+    ctx.stroke();
+    ctx.restore();
+
+    // Figure Label
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('Fig. 3.26', 250, 370);
+
+</script>
+</body>
+</html>

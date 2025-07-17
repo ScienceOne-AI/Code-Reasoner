@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Reconstruction</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="450" height="380"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Parameters
+        const a = 30;
+        const centerX = 250;
+        const centerY = 150;
+        const mainLineWidth = 2;
+        const textFont = '20px serif';
+        const textColor = 'black';
+
+        // Center of large circle (origin of the object's coordinate system)
+        const large_cx = centerX;
+        const large_cy = centerY;
+        const large_r = 3 * a;
+
+        // Center and radius of small circle (hole)
+        const small_cx = centerX + a;
+        const small_cy = centerY;
+        const small_r = a;
+
+        // --- Drawing ---
+        ctx.strokeStyle = textColor;
+        ctx.fillStyle = textColor;
+        ctx.lineWidth = mainLineWidth;
+        ctx.font = textFont;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+
+        // 1. Draw Hatching in the solid part
+        ctx.save();
+        // Create a donut-shaped clipping region
+        ctx.beginPath();
+        ctx.arc(large_cx, large_cy, large_r, 0, 2 * Math.PI, false); // Outer boundary
+        ctx.arc(small_cx, small_cy, small_r, 0, 2 * Math.PI, true);  // Inner boundary (hole), counter-clockwise for clipping
+        ctx.clip();
+        
+        // Draw diagonal hatching lines over the clipped area
+        ctx.beginPath();
+        const hatchSpacing = 7;
+        // The loop needs to cover the entire bounding box of the large circle
+        for (let i = - (large_r + large_r); i < (large_r + large_r); i += hatchSpacing) {
+            ctx.moveTo(large_cx + i - large_r, large_cy - large_r);
+            ctx.lineTo(large_cx + i + large_r, large_cy + large_r);
+        }
+        ctx.strokeStyle = textColor;
+        ctx.lineWidth = 1; // Thinner lines for hatching
+        ctx.stroke();
+        ctx.restore(); // Remove the clipping path
+
+        // 2. Draw circle outlines
+        ctx.lineWidth = mainLineWidth;
+        ctx.beginPath();
+        ctx.arc(large_cx, large_cy, large_r, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(small_cx, small_cy, small_r, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // 3. Draw Coordinate System
+        const axis_x_pos = 80;
+        const axis_y_pos = 150;
+        const axis_len = 50;
+        
+        // Y-axis
+        ctx.beginPath();
+        ctx.moveTo(axis_x_pos, axis_y_pos + axis_len);
+        ctx.lineTo(axis_x_pos, axis_y_pos - axis_len);
+        // Arrowhead for y-axis
+        ctx.moveTo(axis_x_pos, axis_y_pos - axis_len);
+        ctx.lineTo(axis_x_pos - 5, axis_y_pos - axis_len + 10);
+        ctx.moveTo(axis_x_pos, axis_y_pos - axis_len);
+        ctx.lineTo(axis_x_pos + 5, axis_y_pos - axis_len + 10);
+        ctx.stroke();
+        ctx.fillText('y', axis_x_pos - 18, axis_y_pos - axis_len);
+
+        // X-axis
+        ctx.beginPath();
+        ctx.moveTo(axis_x_pos, axis_y_pos);
+        ctx.lineTo(axis_x_pos + axis_len + 20, axis_y_pos);
+        // Arrowhead for x-axis
+        ctx.moveTo(axis_x_pos + axis_len + 20, axis_y_pos);
+        ctx.lineTo(axis_x_pos + axis_len + 10, axis_y_pos - 5);
+        ctx.moveTo(axis_x_pos + axis_len + 20, axis_y_pos);
+        ctx.lineTo(axis_x_pos + axis_len + 10, axis_y_pos + 5);
+        ctx.stroke();
+        ctx.fillText('x', axis_x_pos + axis_len + 30, axis_y_pos);
+
+        // 4. Draw Dashed lines, Labels, and Dimensions
+        
+        // Dashed x-axis line through circles
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(centerX - large_r - 20, centerY);
+        ctx.lineTo(centerX + large_r + 20, centerY);
+        ctx.stroke();
+
+        // Label P
+        ctx.fillText('P', centerX + large_r + 15, centerY);
+        
+        // Center marker 'T' for the small circle
+        ctx.beginPath();
+        ctx.moveTo(small_cx, small_cy - 7);
+        ctx.lineTo(small_cx, small_cy + 7);
+        ctx.moveTo(small_cx - 7, small_cy - 7);
+        ctx.lineTo(small_cx + 7, small_cy - 7);
+        ctx.stroke();
+
+        ctx.setLineDash([]); // Reset dash pattern
+
+        // Dimension lines below the figure
+        const dim_y = centerY + large_r + 35;
+        const tick_h = 5;
+
+        // Dashed connector lines from object to dimension line
+        ctx.beginPath();
+        ctx.setLineDash([3, 3]);
+        // From center of small circle down
+        ctx.moveTo(small_cx, small_cy);
+        ctx.lineTo(small_cx, dim_y);
+        // From right edge of large circle down
+        ctx.moveTo(large_cx + large_r, large_cy);
+        ctx.lineTo(large_cx + large_r, dim_y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Horizontal dimension line with ticks
+        ctx.beginPath();
+        // The line itself
+        ctx.moveTo(large_cx, dim_y);
+        ctx.lineTo(large_cx + large_r, dim_y);
+        // Left tick (aligns with large circle center)
+        ctx.moveTo(large_cx, dim_y - tick_h);
+        ctx.lineTo(large_cx, dim_y + tick_h);
+        // Middle tick (aligns with small circle center)
+        ctx.moveTo(small_cx, dim_y - tick_h);
+        ctx.lineTo(small_cx, dim_y + tick_h);
+        // Right tick (aligns with large circle edge)
+        ctx.moveTo(large_cx + large_r, dim_y - tick_h);
+        ctx.lineTo(large_cx + large_r, dim_y + tick_h);
+        ctx.stroke();
+
+        // Dimension text labels
+        ctx.fillText('a', large_cx + 0.5 * a, dim_y + 15);
+        ctx.fillText('2a', small_cx + a, dim_y + 15);
+
+        // 5. Figure Caption
+        ctx.fillText('Fig. 2.21', centerX + a / 2, dim_y + 60);
+
+    </script>
+</body>
+</html>

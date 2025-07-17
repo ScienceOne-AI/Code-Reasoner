@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram Recreation</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 20px Times New Roman';
+
+        // Coordinates and dimensions
+        const y_center = canvas.height / 2;
+        const x_start_wave1 = 80;
+        const x_plate_left = 320;
+        const x_plate_right = 360;
+        const x_end_wave2 = 720;
+        const plate_height = 200;
+        const plate_skew = 25;
+
+        // --- Draw main propagation axis ---
+        ctx.beginPath();
+        ctx.moveTo(30, y_center);
+        ctx.lineTo(770, y_center);
+        ctx.stroke();
+
+        // --- Draw the optical plate ---
+        const plate_top_y = y_center - plate_height / 2;
+        const plate_bottom_y = y_center + plate_height / 2;
+        ctx.beginPath();
+        ctx.moveTo(x_plate_left, plate_top_y);
+        ctx.lineTo(x_plate_left, plate_bottom_y);
+        ctx.lineTo(x_plate_right, plate_bottom_y + plate_skew);
+        ctx.lineTo(x_plate_right, plate_top_y + plate_skew);
+        ctx.lineTo(x_plate_left, plate_top_y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x_plate_right, plate_top_y + plate_skew);
+        ctx.lineTo(x_plate_right, plate_bottom_y + plate_skew);
+        ctx.stroke();
+
+        // --- Helper function for wave envelope ---
+        function envelope(x, start, end) {
+            if (x < start || x > end) return 0;
+            return 0.5 * (1 - Math.cos(2 * Math.PI * (x - start) / (end - start)));
+        }
+        
+        // --- Helper function for drawing an arrow tip ---
+        function drawArrowTip(x, y, angle, size) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, -size/2);
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-size, size/2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Left Side: Incident Wave ---
+        const axis_center_x1 = 180;
+        const axis_len1 = 70;
+        // Vertical axis
+        ctx.beginPath();
+        ctx.moveTo(axis_center_x1, y_center - axis_len1);
+        ctx.lineTo(axis_center_x1, y_center + axis_len1);
+        ctx.stroke();
+        // Diagonal axis for x-hat
+        const angle1_rad = -Math.PI / 4;
+        const x_axis_end_x = axis_center_x1 + axis_len1 * Math.cos(angle1_rad);
+        const x_axis_end_y = y_center + axis_len1 * Math.sin(angle1_rad);
+        ctx.beginPath();
+        ctx.moveTo(axis_center_x1 - axis_len1 * Math.cos(angle1_rad), y_center - axis_len1 * Math.sin(angle1_rad));
+        ctx.lineTo(x_axis_end_x, x_axis_end_y);
+        ctx.stroke();
+        drawArrowTip(x_axis_end_x, x_axis_end_y, angle1_rad, 10);
+        ctx.fillText('x̂', x_axis_end_x + 5, x_axis_end_y + 15);
+
+        // Draw incident wave (rotated)
+        const amp1 = 50;
+        const wl1 = 100;
+        const k1 = 2 * Math.PI / wl1;
+        const num_points = 200;
+        
+        ctx.save();
+        ctx.translate(0, y_center);
+        ctx.rotate(angle1_rad);
+        ctx.translate(0, -y_center);
+        
+        const path1 = new Path2D();
+        path1.moveTo(x_start_wave1, y_center);
+        for (let i = 0; i <= num_points; i++) {
+            const x = x_start_wave1 + i * (x_plate_left - x_start_wave1) / num_points;
+            const y = y_center - envelope(x, x_start_wave1, x_plate_left) * amp1 * Math.sin(k1 * (x - x_start_wave1));
+            path1.lineTo(x, y);
+        }
+        ctx.lineWidth = 2;
+        ctx.stroke(path1);
+        
+        // Hatching for incident wave
+        ctx.save();
+        ctx.clip(path1);
+        ctx.lineWidth = 1.5;
+        // Diagonal hatching becomes vertical in the rotated frame
+        for (let x = x_start_wave1 - 50; x < x_plate_left + 50; x += 6) {
+             const y_start = y_center - amp1 - 20;
+             const y_end = y_center + amp1 + 20;
+             ctx.beginPath();
+             ctx.moveTo(x, y_start);
+             ctx.lineTo(x + (y_end-y_start), y_end); // Draw at 45 degrees
+             ctx.stroke();
+        }
+        ctx.restore(); // remove clip
+        ctx.restore(); // remove rotation
+
+        // --- Right Side: Transmitted Wave ---
+        ctx.lineWidth = 2;
+        const axis_center_x2 = x_end_wave2 - 80;
+        const axis_len2 = 70;
+        // Vertical y-axis
+        ctx.beginPath();
+        ctx.moveTo(axis_center_x2, y_center - axis_len2);
+        ctx.lineTo(axis_center_x2, y_center + axis_len2);
+        ctx.stroke();
+        drawArrowTip(axis_center_x2, y_center - axis_len2, -Math.PI / 2, 10);
+        ctx.fillText('ŷ', axis_center_x2 - 25, y_center - axis_len2 - 5);
+        // Diagonal axis
+        const angle2_rad = Math.PI / 4;
+        ctx.beginPath();
+        ctx.moveTo(axis_center_x2 - axis_len2 * Math.cos(angle2_rad), y_center - axis_len2 * Math.sin(angle2_rad));
+        ctx.lineTo(axis_center_x2 + axis_len2 * Math.cos(angle2_rad), y_center + axis_len2 * Math.sin(angle2_rad));
+        ctx.stroke();
+
+        // Draw transmitted waves
+        const x_start_wave2 = x_plate_right;
+        const wl2 = 90; 
+        const k2 = 2 * Math.PI / wl2;
+        const amp_y = 60; // Vertical component amplitude
+        const amp_x = 35; // Horizontal component amplitude
+
+        // Vertical component (cosine wave)
+        const path_y = new Path2D();
+        path_y.moveTo(x_start_wave2, y_center - envelope(x_start_wave2, x_start_wave2, x_end_wave2) * amp_y);
+        for (let i = 0; i <= num_points; i++) {
+            const x = x_start_wave2 + i * (x_end_wave2 - x_start_wave2) / num_points;
+            const y = y_center - envelope(x, x_start_wave2, x_end_wave2) * amp_y * Math.cos(k2 * (x - x_start_wave2));
+            path_y.lineTo(x, y);
+        }
+        ctx.stroke(path_y);
+
+        // Horizontal component (sine wave, drawn on axis)
+        const path_x = new Path2D();
+        path_x.moveTo(x_start_wave2, y_center);
+        for (let i = 0; i <= num_points; i++) {
+            const x = x_start_wave2 + i * (x_end_wave2 - x_start_wave2) / num_points;
+            const y = y_center - envelope(x, x_start_wave2, x_end_wave2) * amp_x * Math.sin(k2 * (x - x_start_wave2));
+            path_x.lineTo(x, y);
+        }
+        ctx.stroke(path_x);
+
+        // Hatching for transmitted waves (vertical)
+        ctx.lineWidth = 1.5;
+        // Hatch y-wave
+        ctx.save();
+        ctx.clip(path_y);
+        for (let x = x_start_wave2; x < x_end_wave2; x += 6) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+            ctx.stroke();
+        }
+        ctx.restore();
+        // Hatch x-wave
+        ctx.save();
+        ctx.clip(path_x);
+        for (let x = x_start_wave2; x < x_end_wave2; x += 6) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+            ctx.stroke();
+        }
+        ctx.restore();
+        
+        // --- Draw Figure Caption ---
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 24px Times New Roman';
+        ctx.textAlign = 'center';
+        ctx.fillText('Fig. 2.71', canvas.width / 2, canvas.height - 20);
+
+    </script>
+</body>
+</html>

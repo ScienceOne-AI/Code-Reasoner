@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Harmonic Wave Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="650" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Parameters for drawing
+        const originX = 80;
+        const originY = 200;
+        const scale = 350; // pixels per meter
+        const arrowSize = 8;
+
+        // Wave parameters (derived from the problem analysis)
+        // A = 0.2 m, λ = 0.45 m, ω = 10π rad/s, T = 0.2 s
+        // u = 2.25 m/s, Δt = 0.25 s, Δx = u*Δt = 0.5625 m
+        const A = 0.2;
+        const lambda = 0.45;
+        const k = 2 * Math.PI / lambda; // Wavenumber
+
+        // Choose position for P to make the drawing look like the original
+        const x_P = 0.5;
+        const x_shift = 0.5625; // Δx
+
+        // Function to draw axes
+        function drawAxes() {
+            ctx.beginPath();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1.5;
+
+            // Y-axis
+            ctx.moveTo(originX, 50);
+            ctx.lineTo(originX, originY + 100);
+            ctx.lineTo(originX - arrowSize / 2, originY + 100 - arrowSize);
+            ctx.moveTo(originX, originY + 100);
+            ctx.lineTo(originX + arrowSize / 2, originY + 100 - arrowSize);
+            
+            // X-axis
+            ctx.moveTo(originX - 20, originY);
+            ctx.lineTo(600, originY);
+            ctx.lineTo(600 - arrowSize, originY - arrowSize / 2);
+            ctx.moveTo(600, originY);
+            ctx.lineTo(600 - arrowSize, originY + arrowSize / 2);
+
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = 'black';
+            ctx.font = 'italic 18px Times New Roman';
+            ctx.fillText('y/m', originX - 40, 50);
+            ctx.fillText('x/m', 610, originY + 5);
+            ctx.font = '16px Times New Roman';
+            ctx.fillText('0', originX - 20, originY + 5);
+            ctx.fillText('0.2', originX - 35, originY - A * scale + 5);
+        }
+
+        // Function to draw a sine wave
+        function drawWave(t, isDashed) {
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'black';
+
+            if (isDashed) {
+                ctx.setLineDash([6, 6]);
+            } else {
+                ctx.setLineDash([]);
+            }
+
+            // Wave equation: y(x,t) = A*sin(k*x - w*t + phi)
+            // To match the graph at P (y=0, slope<0), we use y = -A*sin(k*(x-x_P)) for t=0
+            // The shifted wave is y = -A*sin(k*(x-x_P-Δx))
+            
+            const dx = isDashed ? x_shift : 0;
+
+            for (let px = 0; px < 600; px++) {
+                const x = (px - originX) / scale;
+                const y = -A * Math.sin(k * (x - x_P - dx));
+                const py = originY - y * scale;
+                if (px === 0) {
+                    ctx.moveTo(px, py);
+                } else {
+                    ctx.lineTo(px, py);
+                }
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        // Function to draw labels and annotations
+        function drawAnnotations() {
+            ctx.fillStyle = 'black';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1;
+
+            // Point P
+            const pX_px = originX + x_P * scale;
+            ctx.beginPath();
+            ctx.arc(pX_px, originY, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = '#444';
+            ctx.fill();
+            ctx.fillStyle = 'black';
+            ctx.font = 'italic 18px Times New Roman';
+            ctx.fillText('P', pX_px - 5, originY + 25);
+            
+            // Dashed line for amplitude
+            ctx.beginPath();
+            ctx.setLineDash([4, 4]);
+            ctx.moveTo(originX, originY - A * scale);
+            ctx.lineTo(originX + (x_P - lambda/4) * scale, originY - A * scale);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Dimension line for 0.45
+            const startX = pX_px;
+            const endX = startX + 0.45 * scale;
+            const y_dim = originY + 60;
+            ctx.beginPath();
+            // Start tick
+            ctx.moveTo(startX, y_dim - 5);
+            ctx.lineTo(startX, y_dim + 5);
+            // End tick
+            ctx.moveTo(endX, y_dim - 5);
+            ctx.lineTo(endX, y_dim + 5);
+            // Horizontal line with arrows
+            ctx.moveTo(startX, y_dim);
+            ctx.lineTo(startX + 5, y_dim);
+            ctx.moveTo(endX, y_dim);
+            ctx.lineTo(endX - 5, y_dim);
+            
+            // Arrowheads
+            ctx.moveTo(startX, y_dim);
+            ctx.lineTo(startX + arrowSize/2, y_dim - arrowSize/2);
+            ctx.moveTo(startX, y_dim);
+            ctx.lineTo(startX + arrowSize/2, y_dim + arrowSize/2);
+            
+            ctx.moveTo(endX, y_dim);
+            ctx.lineTo(endX - arrowSize/2, y_dim - arrowSize/2);
+            ctx.moveTo(endX, y_dim);
+            ctx.lineTo(endX - arrowSize/2, y_dim + arrowSize/2);
+            
+            ctx.stroke();
+            ctx.font = '16px Times New Roman';
+            ctx.textAlign = 'center';
+            ctx.fillText('0.45', (startX + endX) / 2, y_dim - 8);
+            ctx.textAlign = 'start';
+            
+
+            // Wave propagation velocity u
+            ctx.font = 'italic bold 20px Times New Roman';
+            ctx.fillText('u', 250, 100);
+            ctx.beginPath();
+            ctx.lineWidth = 1.5;
+            ctx.moveTo(200, 105);
+            ctx.lineTo(240, 105);
+            ctx.lineTo(240 - arrowSize, 105 - arrowSize / 2);
+            ctx.moveTo(240, 105);
+            ctx.lineTo(240 - arrowSize, 105 + arrowSize / 2);
+            ctx.stroke();
+
+            // Time labels
+            ctx.font = 'italic 16px Times New Roman';
+            
+            // t1=0 label
+            ctx.fillText('t', 350, 130);
+            ctx.font = '12px Times New Roman';
+            ctx.fillText('1', 358, 135);
+            ctx.font = 'italic 16px Times New Roman';
+            ctx.fillText('= 0', 365, 130);
+            
+            // t2=0.25s label
+            ctx.fillText('t', 450, 150);
+            ctx.font = '12px Times New Roman';
+            ctx.fillText('2', 458, 155);
+            ctx.font = 'italic 16px Times New Roman';
+            ctx.fillText('= 0.25 s', 465, 150);
+
+            // Arrows for time labels
+            ctx.beginPath();
+            ctx.lineWidth = 1;
+            // Arrow for t1
+            ctx.moveTo(350, 135);
+            ctx.lineTo(320, 160);
+            ctx.lineTo(320 - arrowSize*0.6, 160 - arrowSize*0.8);
+            ctx.moveTo(320, 160);
+            ctx.lineTo(320 + arrowSize*0.8, 160 - arrowSize*0.6);
+            // Arrow for t2
+            ctx.moveTo(450, 155);
+            ctx.lineTo(415, 175);
+            ctx.lineTo(415 - arrowSize*0.8, 175 - arrowSize*0.6);
+            ctx.moveTo(415, 175);
+            ctx.lineTo(415 + arrowSize*0.6, 175 - arrowSize*0.8);
+            ctx.stroke();
+            
+            // Bottom label
+            ctx.font = '20px "SimSun", "STSong"';
+            ctx.fillText('习题 11-8 图', canvas.width/2 - 60, canvas.height - 20);
+        }
+
+        // Main drawing function
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawAxes();
+            drawWave(0, false); // t=0, solid
+            drawWave(0.25, true); // t=0.25, dashed
+            drawAnnotations();
+        }
+
+        draw();
+    </script>
+</body>
+</html>

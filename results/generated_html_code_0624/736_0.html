@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Helper Functions ---
+        function drawArrow(ctx, fromx, fromy, tox, toy, arrowWidth, color) {
+            const headlen = 10;
+            const angle = Math.atan2(toy - fromy, tox - fromx);
+
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = arrowWidth;
+            
+            //line
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+
+            //arrowhead
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 7), toy - headlen * Math.sin(angle - Math.PI / 7));
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 7), toy - headlen * Math.sin(angle + Math.PI / 7));
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        function drawHatching(ctx, x1, y1, x2, y2, isVertical) {
+            ctx.save();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            
+            // Main line
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // Hatch lines
+            const hatchLength = 10;
+            const hatchSpacing = 10;
+            ctx.lineWidth = 1.5;
+
+            if (isVertical) { // Wall on the left
+                for (let y = y1; y <= y2; y += hatchSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y);
+                    ctx.lineTo(x1 - hatchLength, y + hatchLength);
+                    ctx.stroke();
+                }
+            } else { // Ceiling on top
+                 for (let x = x1; x <= x2; x += hatchSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, y1);
+                    ctx.lineTo(x - hatchLength, y1 - hatchLength);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+
+        // --- Parameters and Coordinates ---
+        // Note: The provided sketch is not to scale. 
+        // We calculate coordinates based on the given angles (60 and 75 degrees) from the problem description.
+        const scale = 50; // pixels per meter
+        const L_ladder = 6 * scale; // 300px
+        const dist_AD = 4 * scale;  // 200px (D is 2m from B, so 4m from A)
+
+        const A = { x: 80, y: 100 }; // Point A coordinates (hinge)
+
+        const angle_ladder_rad = 60 * Math.PI / 180;
+        const B = {
+            x: A.x + L_ladder * Math.cos(angle_ladder_rad),
+            y: A.y + L_ladder * Math.sin(angle_ladder_rad)
+        };
+        
+        // Angle of rope BC with the positive x-axis is 180 - 75 = 105 degrees.
+        const angle_rope_rad = (180 - 75) * Math.PI / 180;
+        const C = {
+            x: B.x - (B.y - A.y) / Math.tan(angle_rope_rad),
+            y: A.y
+        };
+
+        const D = {
+            x: A.x + dist_AD * Math.cos(angle_ladder_rad),
+            y: A.y + dist_AD * Math.sin(angle_ladder_rad)
+        };
+        
+        // --- Drawing ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = '20px serif';
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+
+        // Draw Wall and Ceiling supports
+        drawHatching(ctx, A.x, A.y - 50, A.x, B.y + 20, true);
+        drawHatching(ctx, A.x - 20, C.y, C.x + 20, C.y, false);
+
+        // Draw Coordinate Axes at A
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 1;
+        // y-axis
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y - 40);
+        ctx.lineTo(A.x, A.y + 40);
+        ctx.stroke();
+        // x-axis
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(C.x + 40, A.y);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillText('y', A.x - 25, A.y - 25);
+        ctx.fillText('x', C.x + 45, A.y + 8);
+
+        // Draw Ladder (AB)
+        ctx.save();
+        ctx.lineWidth = 8;
+        ctx.setLineDash([15, 7]);
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw Rope (BC)
+        ctx.beginPath();
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(C.x, C.y);
+        ctx.stroke();
+        
+        // Draw horizontal line at B for angle reference
+        ctx.save();
+        ctx.setLineDash([3, 3]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(B.x, B.y);
+        ctx.lineTo(A.x - 20, B.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Draw Angle 60 degrees
+        const angle60_rad = 60 * Math.PI / 180;
+        const angle_BA_rad = angle_ladder_rad + Math.PI; // Angle of vector B->A
+        ctx.beginPath();
+        ctx.arc(B.x, B.y, 60, Math.PI, angle_BA_rad);
+        ctx.stroke();
+        const arrow60_end_x = B.x + 60 * Math.cos(angle_BA_rad);
+        const arrow60_end_y = B.y + 60 * Math.sin(angle_BA_rad);
+        drawArrow(ctx, B.x + 63 * Math.cos(angle_BA_rad - 0.1), B.y + 63 * Math.sin(angle_BA_rad - 0.1), arrow60_end_x, arrow60_end_y, 1, 'black');
+        ctx.fillText('60°', B.x - 70, B.y - 15);
+
+        // Draw Angle 75 degrees
+        const angle_CB_rad = Math.atan2(B.y-C.y, B.x-C.x); // same as angle_rope_rad
+        ctx.beginPath();
+        // Draw arc from horizontal (PI) to rope angle (angle_CB_rad), clockwise
+        ctx.arc(C.x, C.y, 40, Math.PI, angle_CB_rad, true); 
+        ctx.stroke();
+        const arrow75_end_x = C.x + 40 * Math.cos(angle_CB_rad);
+        const arrow75_end_y = C.y + 40 * Math.sin(angle_CB_rad);
+        drawArrow(ctx, C.x + 43 * Math.cos(angle_CB_rad - 0.15), C.y + 43 * Math.sin(angle_CB_rad - 0.15), arrow75_end_x, arrow75_end_y, 1, 'black');
+        const text75_angle = (Math.PI + angle_CB_rad) / 2;
+        ctx.fillText('75°', C.x + 55 * Math.cos(text75_angle), C.y + 55 * Math.sin(text75_angle) + 10);
+
+        // Draw Arrow at D (representing a force component)
+        const arrow_D_angle = angle_ladder_rad + Math.PI / 2;
+        const arrow_D_start = { x: D.x, y: D.y };
+        const arrow_D_end = {
+            x: D.x + 40 * Math.cos(arrow_D_angle),
+            y: D.y + 40 * Math.sin(arrow_D_angle)
+        };
+        drawArrow(ctx, arrow_D_start.x, arrow_D_start.y, arrow_D_end.x, arrow_D_end.y, 2, 'black');
+
+        // Draw Labels for points
+        ctx.font = '24px serif';
+        ctx.fillText('A', A.x - 25, A.y + 10);
+        ctx.fillText('B', B.x + 10, B.y + 5);
+        ctx.fillText('C', C.x - 15, C.y - 10);
+        ctx.fillText('D', D.x + 10, D.y - 5);
+    </script>
+</body>
+</html>

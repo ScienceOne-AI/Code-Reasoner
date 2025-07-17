@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Photoelectric Effect Graph</title>
+</head>
+<body>
+<canvas id="myCanvas" width="700" height="520"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Layout ---
+    const marginLeft = 80;
+    const marginTop = 30;
+    const marginRight = 30;
+    const marginBottom = 90;
+    const graphWidth = canvas.width - marginLeft - marginRight;
+    const graphHeight = canvas.height - marginTop - marginBottom;
+    const originX = marginLeft;
+    const originY = marginTop + graphHeight;
+
+    const xPhysMin = 1.9;
+    const xPhysMax = 2.4;
+    const yPhysMin = 0.0;
+    const yPhysMax = 0.6;
+
+    // --- Coordinate Transformation Functions ---
+    function toX(physX) {
+        return originX + ((physX - xPhysMin) / (xPhysMax - xPhysMin)) * graphWidth;
+    }
+    function toY(physY) {
+        return originY - ((physY - yPhysMin) / (yPhysMax - yPhysMin)) * graphHeight;
+    }
+
+    // --- Clear Canvas ---
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // --- Draw Grid ---
+    // Minor grid lines
+    ctx.strokeStyle = '#cccccc';
+    ctx.lineWidth = 0.5;
+
+    const xStepMinor = 0.01;
+    for (let x = xPhysMin; x <= xPhysMax + xStepMinor/2; x += xStepMinor) {
+        ctx.beginPath();
+        ctx.moveTo(toX(x), toY(yPhysMin));
+        ctx.lineTo(toX(x), toY(yPhysMax));
+        ctx.stroke();
+    }
+    
+    const yStepMinor = 0.02;
+    for (let y = yPhysMin; y <= yPhysMax + yStepMinor/2; y += yStepMinor) {
+        ctx.beginPath();
+        ctx.moveTo(toX(xPhysMin), toY(y));
+        ctx.lineTo(toX(xPhysMax), toY(y));
+        ctx.stroke();
+    }
+    
+    // Major grid lines
+    ctx.strokeStyle = '#888888';
+    ctx.lineWidth = 1;
+
+    const xStepMajor = 0.1;
+    for (let x = xPhysMin; x <= xPhysMax + xStepMajor/2; x += xStepMajor) {
+        ctx.beginPath();
+        ctx.moveTo(toX(x), toY(yPhysMin));
+        ctx.lineTo(toX(x), toY(yPhysMax));
+        ctx.stroke();
+    }
+
+    const yStepMajor = 0.2;
+    for (let y = yPhysMin; y <= yPhysMax + yStepMajor/2; y += yStepMajor) {
+        ctx.beginPath();
+        ctx.moveTo(toX(xPhysMin), toY(y));
+        ctx.lineTo(toX(xPhysMax), toY(y));
+        ctx.stroke();
+    }
+    
+    // --- Draw Labels and Ticks ---
+    ctx.fillStyle = 'black';
+    ctx.font = '16px Arial';
+
+    // Y-axis labels
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let y = yPhysMin; y <= yPhysMax + yStepMajor/2; y += yStepMajor) {
+        ctx.fillText(y.toFixed(1), toX(xPhysMin) - 8, toY(y));
+    }
+
+    // X-axis labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let x = xPhysMin; x <= xPhysMax + xStepMajor/2; x += xStepMajor) {
+        ctx.fillText(x.toFixed(1), toX(x), toY(yPhysMin) + 8);
+    }
+    
+    // --- Draw Axis Titles ---
+    // Y-axis title: E_MAX / eV
+    ctx.save();
+    const yLabelX = marginLeft / 2 - 15;
+    const yLabelY = marginTop + graphHeight / 2;
+    ctx.translate(yLabelX, yLabelY);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    let currentXPos = -55;
+    ctx.font = 'italic 18px Arial';
+    ctx.fillText('E', currentXPos, 0);
+    currentXPos += ctx.measureText('E').width - 2;
+    ctx.font = 'italic 12px Arial';
+    ctx.fillText('MAX', currentXPos, 3);
+    currentXPos += ctx.measureText('MAX').width;
+    ctx.font = '18px Arial';
+    ctx.fillText(' / eV', currentXPos + 5, 0);
+    ctx.restore();
+
+    // X-axis title: 1/λ / 10^6 m^-1
+    const xTitleY = originY + 60;
+    const centerX = originX + graphWidth / 2;
+    const restOfText = ' / 10\u2076 m\u207B\u00B9';
+    const lambda = '\u03BB';
+    const one = '1';
+
+    ctx.font = '16px Arial';
+    const restMetrics = ctx.measureText(restOfText);
+    ctx.font = 'italic 16px Arial';
+    const lambdaMetrics = ctx.measureText(lambda);
+    ctx.font = '16px Arial';
+    const oneMetrics = ctx.measureText(one);
+    const fracWidth = Math.max(lambdaMetrics.width, oneMetrics.width) + 4;
+    const totalWidth = fracWidth + restMetrics.width;
+    let currentX = centerX - totalWidth / 2;
+    
+    // Draw fraction 1/λ
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '16px Arial';
+    ctx.fillText(one, currentX + fracWidth / 2, xTitleY - 8);
+    ctx.beginPath();
+    ctx.moveTo(currentX, xTitleY);
+    ctx.lineTo(currentX + fracWidth, xTitleY);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'black';
+    ctx.stroke();
+    ctx.font = 'italic 16px Arial';
+    ctx.fillText(lambda, currentX + fracWidth / 2, xTitleY + 11);
+    currentX += fracWidth;
+
+    // Draw rest of label
+    ctx.textAlign = 'left';
+    ctx.font = '16px Arial';
+    ctx.fillText(restOfText, currentX, xTitleY + 3);
+
+    // --- Draw the Data Line ---
+    const p1 = { x: 2.04, y: 0.14 };
+    const p2 = { x: 2.37, y: 0.54 };
+    
+    ctx.beginPath();
+    ctx.moveTo(toX(p1.x), toY(p1.y));
+    ctx.lineTo(toX(p2.x), toY(p2.y));
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // --- Draw Figure Caption ---
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'black';
+    ctx.fillText('Fig. 11.1', canvas.width / 2, canvas.height - 20);
+
+</script>
+</body>
+</html>

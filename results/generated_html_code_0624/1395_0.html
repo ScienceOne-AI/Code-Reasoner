@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Collision Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            background-color: #fff;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="650" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Parameters
+        const r = 50; // Radius of the balls
+        const lineWidth = 2.5;
+        const centerDotRadius = 4;
+
+        // Positioning
+        // Let the contact point of balls 2 and 3 be the origin of our local coordinate system.
+        const cx = 350;
+        const cy = 250;
+        
+        // As per the problem description, balls 2, 3, 4 are identical and tangent.
+        // The distance from the center of ball 4 to the vertical line of balls 2 and 3
+        // must be sqrt(3)*r for them to be tangent.
+        const c4_x_offset = r * Math.sqrt(3);
+
+        // Gap between ball 1 and the 2-3 pair
+        const gap1_23 = 1.5 * r;
+        const c1_x_offset = r + gap1_23 + r; // radius_1 + gap + radius_2
+        
+        const centers = {
+            c1: { x: cx - c1_x_offset, y: cy },
+            c2: { x: cx, y: cy - r },
+            c3: { x: cx, y: cy + r },
+            c4: { x: cx + c4_x_offset, y: cy }
+        };
+
+        // --- Drawing Functions ---
+
+        // Function to draw a ball (circle, center dot, label)
+        function drawBall(center, label, labelPosition) {
+            // Draw circle outline
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, r, 0, 2 * Math.PI);
+            ctx.lineWidth = lineWidth;
+            ctx.strokeStyle = 'black';
+            ctx.stroke();
+
+            // Draw center dot
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, centerDotRadius, 0, 2 * Math.PI);
+            ctx.fillStyle = 'black';
+            ctx.fill();
+            
+            // Draw label
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 28px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            let labelX = center.x;
+            let labelY;
+
+            switch(labelPosition) {
+                case 'top':
+                    labelY = center.y - r - 25;
+                    break;
+                case 'bottom':
+                    labelY = center.y + r + 25;
+                    break;
+            }
+            ctx.fillText(label, labelX, labelY);
+        }
+
+        // Function to draw the velocity vector
+        function drawVelocityVector() {
+            const startX = centers.c1.x + r + 20;
+            const endX = centers.c2.x - r;
+            const y = cy;
+            const arrowheadLength = 15;
+            const arrowheadAngle = Math.PI / 6;
+
+            ctx.beginPath();
+            ctx.moveTo(startX, y);
+            ctx.lineTo(endX, y);
+            ctx.lineWidth = lineWidth;
+            ctx.strokeStyle = 'black';
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(endX, y);
+            ctx.lineTo(endX - arrowheadLength * Math.cos(arrowheadAngle), y - arrowheadLength * Math.sin(arrowheadAngle));
+            ctx.moveTo(endX, y);
+            ctx.lineTo(endX - arrowheadLength * Math.cos(arrowheadAngle), y + arrowheadLength * Math.sin(arrowheadAngle));
+            ctx.stroke();
+            
+            // Label v₀
+            const labelX = startX + (endX - startX) * 0.4;
+            const labelY = y - 25;
+            
+            ctx.font = 'italic bold 26px serif';
+            ctx.textAlign = 'right';
+            ctx.fillText('v', labelX, labelY);
+            
+            ctx.font = 'bold 18px serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('0', labelX, labelY + 6);
+        }
+
+
+        // --- Main Drawing Logic ---
+
+        // 1. Draw dashed lines for alignment
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([6, 6]);
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#333';
+        // Horizontal line
+        ctx.moveTo(centers.c1.x, cy);
+        ctx.lineTo(centers.c4.x, cy);
+        // Vertical line
+        ctx.moveTo(cx, centers.c2.y);
+        ctx.lineTo(cx, centers.c3.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Draw the balls
+        drawBall(centers.c1, '1', 'top');
+        drawBall(centers.c2, '2', 'top');
+        drawBall(centers.c3, '3', 'bottom');
+        drawBall(centers.c4, '4', 'top');
+
+        // 3. Draw the velocity vector
+        drawVelocityVector();
+
+    </script>
+</body>
+</html>

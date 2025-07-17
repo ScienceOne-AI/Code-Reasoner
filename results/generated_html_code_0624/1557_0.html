@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="mechanicsCanvas" width="800" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('mechanicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        
+        // --- Helper Functions ---
+        
+        function drawArrow(fromx, fromy, tox, toy) {
+            ctx.save();
+            ctx.lineWidth = 3;
+            const headlen = 10; 
+            const angle = Math.atan2(toy - fromy, tox - fromx);
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 7), toy - headlen * Math.sin(angle - Math.PI / 7));
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 7), toy - headlen * Math.sin(angle + Math.PI / 7));
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawGround(x_center, y_base, width) {
+            ctx.save();
+            ctx.lineWidth = 1.5;
+            const height = 12;
+            const x_start = x_center - width / 2;
+            ctx.beginPath();
+            ctx.moveTo(x_start, y_base);
+            ctx.lineTo(x_start + width, y_base);
+            ctx.stroke();
+
+            const num_lines = 7;
+            for (let i = 0; i <= num_lines; i++) {
+                ctx.beginPath();
+                const x_pos = x_start + (i * width / num_lines);
+                ctx.moveTo(x_pos, y_base);
+                ctx.lineTo(x_pos - height, y_base + height);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawPin(x, y, radius = 8) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(x, y, radius / 4, 0, 2 * Math.PI);
+            ctx.fillStyle = 'black';
+            ctx.fill();
+            ctx.restore();
+        }
+        
+        function drawPivot(x, y, radius = 9) {
+            ctx.save();
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x - 15, y + 20);
+            ctx.lineTo(x, y);
+            ctx.lineTo(x + 15, y + 20);
+            ctx.stroke();
+            ctx.restore();
+            drawPin(x, y, radius);
+        }
+
+        function drawDimHorizontal(x1, y1, x2, y2, y_line, label) {
+            ctx.save();
+            ctx.lineWidth = 1;
+            ctx.font = 'italic 20px "Times New Roman"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+
+            // Extension lines
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1, y_line + 5);
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2, y_line + 5);
+            ctx.stroke();
+            
+            // Main line
+            ctx.beginPath();
+            ctx.moveTo(x1, y_line);
+            ctx.lineTo(x2, y_line);
+            ctx.stroke();
+
+            // Arrows
+            const arrowSize = 6;
+            ctx.beginPath();
+            ctx.moveTo(x1, y_line);
+            ctx.lineTo(x1 + arrowSize, y_line - arrowSize/2);
+            ctx.lineTo(x1 + arrowSize, y_line + arrowSize/2);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(x2, y_line);
+            ctx.lineTo(x2 - arrowSize, y_line - arrowSize/2);
+            ctx.lineTo(x2 - arrowSize, y_line + arrowSize/2);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Label
+            ctx.fillText(label, (x1 + x2) / 2, y_line - 5);
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+        ctx.lineWidth = 4;
+        
+        // Coordinates and dimensions
+        const b_pivot_pos = { x: 170, y: 100 };
+        const a_dist = 50;
+        const q_line_x = b_pivot_pos.x - a_dist;
+        const a_pos = { x: q_line_x, y: b_pivot_pos.y }; 
+        const b_dist = 280;
+        const c_pin_pos = { x: b_pivot_pos.x + b_dist, y: b_pivot_pos.y };
+        
+        const d_pin_pos = { x: c_pin_pos.x, y: 270 };
+        const c_dist = 70;
+        const e_pivot_pos = { x: d_pin_pos.x - c_dist, y: d_pin_pos.y };
+        
+        const l_dist = 180;
+        const x_dist = 70;
+        const p_initial_x = d_pin_pos.x + l_dist;
+        const p_final_x = p_initial_x + x_dist;
+        const lever2_end_x = p_final_x + 60;
+
+        // Ground Supports
+        drawPivot(b_pivot_pos.x, b_pivot_pos.y);
+        drawGround(b_pivot_pos.x, b_pivot_pos.y + 20, 60);
+        drawPivot(e_pivot_pos.x, e_pivot_pos.y);
+        drawGround(e_pivot_pos.x, e_pivot_pos.y + 20, 60);
+
+        // Lever ABC (rigid body)
+        ctx.beginPath();
+        ctx.moveTo(a_pos.x, a_pos.y + 50); // Bottom of vertical part
+        ctx.lineTo(a_pos.x, a_pos.y);     // Up to horizontal bar
+        ctx.lineTo(c_pin_pos.x, c_pin_pos.y);  // Horizontal bar to C
+        ctx.stroke();
+
+        // Rod CD
+        ctx.beginPath();
+        ctx.moveTo(c_pin_pos.x, c_pin_pos.y);
+        ctx.lineTo(d_pin_pos.x, d_pin_pos.y);
+        ctx.stroke();
+
+        // Lever EDF
+        ctx.beginPath();
+        ctx.moveTo(e_pivot_pos.x - 30, e_pivot_pos.y);
+        ctx.lineTo(lever2_end_x, e_pivot_pos.y);
+        ctx.stroke();
+
+        // Pins and Pivots on top
+        drawPin(b_pivot_pos.x, b_pivot_pos.y, 9);
+        drawPin(c_pin_pos.x, c_pin_pos.y);
+        drawPin(d_pin_pos.x, d_pin_pos.y);
+        drawPin(e_pivot_pos.x, e_pivot_pos.y, 9);
+        
+        // Force Q
+        const q_start_y = a_pos.y + 50;
+        drawArrow(a_pos.x, q_start_y, a_pos.x, q_start_y + 40);
+
+        // Weight P
+        const p_hanger_y = e_pivot_pos.y;
+        function drawRollerHanger(x, y) {
+            ctx.save();
+            ctx.lineWidth=2;
+            ctx.beginPath();
+            ctx.arc(x, y, 10, Math.PI, 2 * Math.PI);
+            ctx.lineTo(x - 10, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + 20);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(x, y+20, 4, 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.restore();
+        }
+        drawRollerHanger(p_initial_x, p_hanger_y);
+        
+        const p_block_w = 50;
+        const p_block_h = 30;
+        const p_block_y = p_hanger_y + 25;
+        ctx.strokeRect(p_initial_x - p_block_w / 2, p_block_y, p_block_w, p_block_h);
+
+        // New position marker for P
+        ctx.save();
+        ctx.setLineDash([6, 6]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(p_final_x, p_hanger_y);
+        ctx.lineTo(p_final_x, p_block_y + p_block_h + 30);
+        ctx.stroke();
+        ctx.restore();
+        
+        ctx.save();
+        ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.arc(p_final_x, p_hanger_y, 8, -Math.PI / 2, Math.PI / 2, true);
+        ctx.stroke();
+        ctx.restore();
+        
+        // End F marker
+        ctx.save();
+        ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.arc(lever2_end_x, e_pivot_pos.y, 8, -Math.PI / 2, Math.PI / 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // Dimensions
+        drawDimHorizontal(a_pos.x, a_pos.y, b_pivot_pos.x, b_pivot_pos.y, a_pos.y + 25, 'a');
+        drawDimHorizontal(b_pivot_pos.x, b_pivot_pos.y, c_pin_pos.x, c_pin_pos.y, a_pos.y + 55, 'b');
+        drawDimHorizontal(e_pivot_pos.x, e_pivot_pos.y, d_pin_pos.x, d_pin_pos.y, e_pivot_pos.y + 40, 'c');
+        const dim_y3 = p_block_y + p_block_h + 40;
+        drawDimHorizontal(d_pin_pos.x, d_pin_pos.y, p_initial_x, p_block_y + p_block_h, dim_y3, 'l');
+        drawDimHorizontal(p_initial_x, p_block_y + p_block_h, p_final_x, dim_y3, dim_y3, 'x');
+
+        // Labels
+        ctx.font = 'italic bold 24px "Times New Roman"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('A', a_pos.x - 20, a_pos.y - 15);
+        ctx.fillText('B', b_pivot_pos.x + 15, b_pivot_pos.y - 15);
+        ctx.fillText('C', c_pin_pos.x + 15, c_pin_pos.y - 15);
+        ctx.fillText('Q', a_pos.x - 25, q_start_y + 25);
+
+        ctx.fillText('D', d_pin_pos.x + 20, d_pin_pos.y - 15);
+        ctx.fillText('E', e_pivot_pos.x - 20, e_pivot_pos.y - 15);
+        ctx.fillText('F', lever2_end_x + 15, e_pivot_pos.y);
+        ctx.fillText('P', p_initial_x - p_block_w, p_block_y + p_block_h / 2);
+
+    </script>
+</body>
+</html>

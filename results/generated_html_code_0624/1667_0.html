@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wave Train and Frequency Spectrum</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="900" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // General settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        function drawArrow(fromX, fromY, toX, toY, headLength = 10) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        function drawDoubleArrow(x1, y1, x2, y2, headLength = 8) {
+             drawArrow(x1, y1, x2, y2, headLength);
+             drawArrow(x2, y2, x1, y1, headLength);
+        }
+
+        // --- 1. Draw Time Domain Plot (Left) ---
+        function drawTimeDomain() {
+            const originX = 170;
+            const originY = 225;
+            const axisLengthX = 350;
+            const axisLengthY = 200;
+
+            // Draw axes
+            drawArrow(originX - axisLengthX / 2 - 20, originY, originX + axisLengthX / 2 + 20, originY); // t-axis
+            drawArrow(originX, originY + axisLengthY / 2, originX, originY - axisLengthY / 2 - 20); // E(t)-axis
+
+            // Draw labels
+            ctx.font = 'italic 22px Arial';
+            ctx.fillText('E(t)', originX - 35, originY - axisLengthY / 2);
+            ctx.fillText('t', originX + axisLengthX / 2 + 10, originY + 20);
+
+            // Draw the wave train
+            const amplitude = 50;
+            const durationPixels = 280; // Corresponds to tau_c
+            const period = 14; // pixels per cycle
+            
+            ctx.beginPath();
+            ctx.lineWidth = 1.5;
+            const startX = originX - durationPixels / 2;
+            const endX = originX + durationPixels / 2;
+
+            for (let x = startX; x <= endX; x += 0.5) {
+                const y = originY - amplitude * Math.cos((x - originX) * 2 * Math.PI / period);
+                if (x === startX) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+
+            // Draw duration marker (tau_c)
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(startX, originY);
+            ctx.lineTo(startX, originY + 50);
+            ctx.moveTo(endX, originY);
+            ctx.lineTo(endX, originY + 50);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            drawDoubleArrow(startX, originY + 40, endX, originY + 40);
+            
+            ctx.font = 'italic 22px Arial';
+            const tauX = originX;
+            const tauY = originY + 40;
+            ctx.fillText('τ', tauX, tauY);
+            ctx.font = 'italic 16px Arial';
+            ctx.fillText('c', tauX + 8, tauY + 6);
+        }
+
+        // --- 2. Draw Frequency Domain Plot (Right) ---
+        function drawFrequencyDomain() {
+            const originX = 600;
+            const originY = 380;
+            const axisLengthX = 300;
+            const axisLengthY = 300;
+
+            // Draw axes
+            ctx.lineWidth = 2;
+            drawArrow(originX - 30, originY, originX + axisLengthX, originY); // nu-axis
+            drawArrow(originX, originY + 20, originX, originY - axisLengthY - 20); // I(nu)-axis
+
+            // Draw labels
+            ctx.font = 'italic 22px Arial';
+            ctx.fillText('I(ν)', originX - 35, originY - axisLengthY);
+            ctx.fillText('ν', originX + axisLengthX, originY + 20);
+
+            // Draw the spectrum (sinc^2 function)
+            ctx.lineWidth = 2;
+            const peakX = originX + 100;
+            const peakHeight = 220;
+            const lobeWidth = 40; // half-width of main lobe at base
+            
+            ctx.beginPath();
+            const sincSquared = (z) => {
+                if (z === 0) return 1;
+                return Math.pow(Math.sin(z) / z, 2);
+            };
+
+            for (let x_offset = -lobeWidth * 2.5; x_offset <= lobeWidth * 2.5; x_offset += 0.5) {
+                const z = x_offset * Math.PI / lobeWidth;
+                const y = originY - peakHeight * sincSquared(z);
+                const x = peakX + x_offset;
+                if (x_offset === -lobeWidth * 2.5) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.lineTo(peakX + lobeWidth * 2.5, originY);
+            ctx.moveTo(peakX - lobeWidth * 2.5, originY);
+            ctx.lineTo(originX-30, originY);
+            
+            ctx.stroke();
+
+            // Mark nu_0
+            ctx.font = 'italic 22px Arial';
+            ctx.fillText('ν', peakX, originY + 20);
+            ctx.font = 'italic 16px Arial';
+            ctx.fillText('0', peakX + 8, originY + 26);
+            
+            // Mark Delta nu (FWHM)
+            const fwhmY = originY - peakHeight / 2;
+            // FWHM of sinc^2(ax) is approx 0.886 / a. Here a = pi/lobeWidth
+            // Delta_x = 0.886 * lobeWidth / PI
+            const fwhm_half_width = 0.443 * lobeWidth;
+            
+            ctx.lineWidth = 1;
+            drawDoubleArrow(peakX - fwhm_half_width, fwhmY, peakX + fwhm_half_width, fwhmY, 6);
+            
+            ctx.font = 'italic 22px Arial';
+            ctx.fillText('Δν', peakX + fwhm_half_width + 40, fwhmY);
+        }
+
+        // --- 3. Draw Transformation Arrow ---
+        function drawTransformArrow() {
+            ctx.lineWidth = 3;
+            ctx.fillStyle = 'black';
+            
+            const fromX = 420;
+            const toX = 530;
+            const y = 225;
+            const headLength = 15;
+            const headWidth = 10;
+            
+            ctx.beginPath();
+            ctx.moveTo(fromX, y);
+            ctx.lineTo(toX - headLength, y);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(toX, y);
+            ctx.lineTo(toX - headLength, y - headWidth / 2);
+            ctx.lineTo(toX - headLength, y + headWidth / 2);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // --- Execute Drawing ---
+        drawTimeDomain();
+        drawFrequencyDomain();
+        drawTransformArrow();
+
+    </script>
+</body>
+</html>

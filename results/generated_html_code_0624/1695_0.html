@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Newton's Rings Setup</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Style and Color Definitions ---
+    const lensColor = '#E6E6E6';
+    const gapColor = '#A9A9A9';
+    const lineColor = '#000000';
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = lineColor;
+
+    // --- Geometry Definitions ---
+    const lensLeft = 100;
+    const lensRight = 500;
+    const lensCenterX = 300;
+
+    // Y-coordinates for interfaces
+    const l1_top_y = 150;
+    const l2_bottom_y = 350;
+    const interface1_y_edge = 240;      // Bottom of L1 at edge
+    const interface1_y_center_tip = 230; // Bottom of L1 at center
+    const interface2_y_edge = 260;      // Top of L2 at edge
+    const interface2_y_center_tip = 270; // Top of L2 at center
+
+    // Control points for the quadratic Bezier curves
+    // The y-coordinate of the control point for a parabolic arc is 2*y_center - y_edge
+    const control1_y = 2 * interface1_y_center_tip - interface1_y_edge; // = 220
+    const control2_y = 2 * interface2_y_center_tip - interface2_y_edge; // = 280
+
+    // --- Drawing Functions ---
+
+    // Draw Lens L1
+    ctx.fillStyle = lensColor;
+    ctx.beginPath();
+    ctx.moveTo(lensLeft, l1_top_y);
+    ctx.lineTo(lensRight, l1_top_y);
+    ctx.lineTo(lensRight, interface1_y_edge);
+    ctx.quadraticCurveTo(lensCenterX, control1_y, lensLeft, interface1_y_edge);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Draw Lens L2
+    ctx.fillStyle = lensColor;
+    ctx.beginPath();
+    ctx.moveTo(lensLeft, l2_bottom_y);
+    ctx.lineTo(lensRight, l2_bottom_y);
+    ctx.lineTo(lensRight, interface2_y_edge);
+    ctx.quadraticCurveTo(lensCenterX, control2_y, lensLeft, interface2_y_edge);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Draw the gap medium n2
+    ctx.fillStyle = gapColor;
+    ctx.beginPath();
+    ctx.moveTo(lensLeft, interface1_y_edge);
+    ctx.quadraticCurveTo(lensCenterX, control1_y, lensRight, interface1_y_edge); // Top curve
+    ctx.lineTo(lensRight, interface2_y_edge);                                    // Right side
+    ctx.quadraticCurveTo(lensCenterX, control2_y, lensLeft, interface2_y_edge);   // Bottom curve
+    ctx.closePath();                                                              // Left side
+    ctx.fill();
+    ctx.stroke();
+
+    // Draw Light Rays
+    const ray_xs = [200, 300, 400];
+    const ray_y_start = 50;
+    const ray_y_end = 450;
+    const arrow_size = 6;
+    const arrow_ys_top = [80, 105, 130];
+    
+    ctx.beginPath();
+    ray_xs.forEach(x => {
+        // Main line for the ray
+        ctx.moveTo(x, ray_y_start);
+        ctx.lineTo(x, ray_y_end);
+        
+        // Function to draw a downward-pointing arrowhead on the path
+        const drawDownArrow = (y) => {
+            ctx.moveTo(x - arrow_size, y - arrow_size);
+            ctx.lineTo(x, y);
+            ctx.lineTo(x + arrow_size, y - arrow_size);
+        };
+
+        // Top arrowheads
+        arrow_ys_top.forEach(y => drawDownArrow(y));
+        
+        // Bottom arrowhead
+        drawDownArrow(ray_y_end);
+    });
+    ctx.stroke();
+
+    // --- Add Labels ---
+    ctx.fillStyle = lineColor;
+    ctx.textBaseline = 'middle';
+
+    // Helper function for drawing text with a subscript
+    function drawSub(base, sub, x, y) {
+        ctx.textAlign = 'left';
+        ctx.font = '28px Times New Roman';
+        ctx.fillText(base, x, y);
+        const baseWidth = ctx.measureText(base).width;
+        ctx.font = '18px Times New Roman';
+        ctx.fillText(sub, x + baseWidth * 0.8, y + 6);
+    }
+    
+    // Draw L1 and L2 labels
+    drawSub('L', '1', 40, 195);
+    drawSub('L', '2', 40, 305);
+    
+    // Draw n1, n2, n3 labels with pointers
+    const label_n_x = 520;
+    
+    // n1
+    drawSub('n', '1', label_n_x, 200);
+    ctx.beginPath();
+    ctx.moveTo(label_n_x - 5, 200);
+    ctx.lineTo(lensRight, 200);
+    ctx.stroke();
+    
+    // n2
+    drawSub('n', '2', label_n_x, 250);
+    ctx.beginPath();
+    ctx.moveTo(label_n_x - 5, 250);
+    ctx.lineTo(lensRight, 250);
+    ctx.stroke();
+
+    // n3
+    drawSub('n', '3', label_n_x, 305);
+    ctx.beginPath();
+    ctx.moveTo(label_n_x - 5, 305);
+    ctx.lineTo(lensRight, 305);
+    ctx.stroke();
+
+</script>
+</body>
+</html>

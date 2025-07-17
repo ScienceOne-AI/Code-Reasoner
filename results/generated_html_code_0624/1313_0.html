@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="canvas" width="800" height="450" style="border: 1px solid black;"></canvas>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Helper Functions ---
+    function drawArrowHead(ctx, fromX, fromY, toX, toY, arrowSize) {
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - arrowSize * Math.cos(angle - Math.PI / 6), toY - arrowSize * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(toX - arrowSize * Math.cos(angle + Math.PI / 6), toY - arrowSize * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawArrow(ctx, fromX, fromY, toX, toY, arrowSize) {
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+        drawArrowHead(ctx, fromX, fromY, toX, toY, arrowSize);
+    }
+
+    function drawLens(ctx, x, yMid, height, type, label) {
+        const hHalf = height / 2;
+        const arrowSize = 10;
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        
+        // Main vertical line
+        ctx.beginPath();
+        ctx.moveTo(x, yMid - hHalf);
+        ctx.lineTo(x, yMid + hHalf);
+        ctx.stroke();
+
+        // Arrowheads representing lens type
+        if (type === 'converging') {
+            // Top: ^
+            drawArrowHead(ctx, x, yMid - hHalf - 1, x, yMid - hHalf, arrowSize);
+            // Bottom: v
+            drawArrowHead(ctx, x, yMid + hHalf + 1, x, yMid + hHalf, arrowSize);
+        } else if (type === 'diverging') {
+            // Top: v
+            drawArrowHead(ctx, x, yMid - hHalf + 1, x, yMid - hHalf, arrowSize);
+            // Bottom: ^
+            drawArrowHead(ctx, x, yMid + hHalf - 1, x, yMid + hHalf, arrowSize);
+        }
+        
+        // Label
+        ctx.font = 'italic 24px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(label, x, yMid - hHalf - 15);
+        ctx.restore();
+    }
+
+    function drawDimensionLine(ctx, x1, x2, y, label, options = {}) {
+        const {
+            arrowSize = 8,
+            tickSize = 5,
+            textBaseline = 'middle',
+            textOffset = 0,
+            font = 'italic 22px serif'
+        } = options;
+        
+        ctx.save();
+        ctx.lineWidth = 1;
+
+        // Horizontal Line
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x2, y);
+        ctx.stroke();
+
+        // Vertical Ticks
+        ctx.beginPath();
+        ctx.moveTo(x1, y - tickSize);
+        ctx.lineTo(x1, y + tickSize);
+        ctx.moveTo(x2, y - tickSize);
+        ctx.lineTo(x2, y + tickSize);
+        ctx.stroke();
+
+        // Arrowheads (double)
+        drawArrowHead(ctx, x2, y, x1, y, arrowSize);
+        drawArrowHead(ctx, x1, y, x2, y, arrowSize);
+
+        // Label
+        ctx.font = font;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = textBaseline;
+        ctx.fillText(label, (x1 + x2) / 2, y + textOffset);
+        ctx.restore();
+    }
+
+
+    // --- Main Drawing ---
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+
+    // Parameters and Coordinates
+    const yMid = 180;
+    const objectX = 120;
+    const objectHeight = 60;
+    const lens1X = 350;
+    const lensHeight = 70;
+    const dDist = 120; // visual distance for d
+    const lDist = 225; // visual distance for l
+    const lens2X = lens1X + dDist;
+    const screenX = lens1X + lDist;
+
+    // 1. Draw Principal Axis
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(20, yMid);
+    ctx.lineTo(780, yMid);
+    ctx.stroke();
+
+    // 2. Draw Axis Break
+    const breakX = 250;
+    const breakWidth = 20;
+    const breakAmp = 6;
+    ctx.save();
+    ctx.fillStyle = 'white';
+    ctx.fillRect(breakX - breakWidth/2, yMid-10, breakWidth, 20);
+    ctx.restore();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(breakX - breakWidth/2, yMid - breakAmp);
+    ctx.bezierCurveTo(breakX, yMid, breakX, yMid, breakX + breakWidth/2, yMid + breakAmp);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(breakX - breakWidth/2, yMid + breakAmp);
+    ctx.bezierCurveTo(breakX, yMid, breakX, yMid, breakX + breakWidth/2, yMid - breakAmp);
+    ctx.stroke();
+
+    // 3. Draw Object and f₁ Label
+    ctx.lineWidth = 2;
+    drawArrow(ctx, objectX, yMid, objectX, yMid - objectHeight, 10);
+    ctx.font = '24px "Songti SC", serif'; // Common Chinese serif font
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText("物", objectX - 25, yMid - objectHeight / 2);
+    
+    ctx.font = 'italic 22px serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText("f₁=3.00cm", objectX + 20, yMid - objectHeight + 5);
+
+    // 4. Draw Lenses L₁ and L₂
+    drawLens(ctx, lens1X, yMid, lensHeight, 'converging', 'L₁');
+    drawLens(ctx, lens2X, yMid, lensHeight, 'diverging', 'L₂');
+
+    // 5. Draw Screen P
+    ctx.lineWidth = 1.5;
+    const screenHeight = lensHeight + 10;
+    ctx.beginPath();
+    ctx.moveTo(screenX, yMid - screenHeight);
+    ctx.lineTo(screenX, yMid + screenHeight);
+    ctx.stroke();
+    // Hatching for the screen
+    const hatchLen = 10;
+    const hatchGap = 10;
+    ctx.save();
+    ctx.lineWidth = 1;
+    for (let y = yMid - screenHeight; y <= yMid + screenHeight; y += hatchGap) {
+        ctx.beginPath();
+        ctx.moveTo(screenX, y);
+        ctx.lineTo(screenX + hatchLen, y - hatchLen);
+        ctx.stroke();
+    }
+    ctx.restore();
+    ctx.font = 'italic 24px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText("P", screenX, yMid - screenHeight - 15);
+    
+    // 6. Draw Dimension Lines
+    const u1_dim_y = 340;
+    const d_dim_y = 280;
+    const l_dim_y = 310;
+    
+    // u₁ dimension line
+    drawDimensionLine(ctx, objectX, lens1X, u1_dim_y, 'u₁');
+    
+    // d dimension line
+    drawDimensionLine(ctx, lens1X, lens2X, d_dim_y, 'd');
+    
+    // l dimension line
+    drawDimensionLine(ctx, lens1X, screenX, l_dim_y, 'l=4.50cm', {
+        font: 'italic 20px serif', 
+        textBaseline: 'top', 
+        textOffset: 5
+    });
+</script>
+</body>
+</html>

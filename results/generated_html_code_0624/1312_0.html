@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Optical Path Diagram</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      background-color: white;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="opticalCanvas" width="800" height="450"></canvas>
+  <script>
+    const canvas = document.getElementById('opticalCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style and coordinate settings
+    const axisY = 225;
+    const objectX = 120;
+    const breakStartX = 190;
+    const breakEndX = 250;
+    const lens1X = 350;
+    const lens2X = 450;
+    const screenX = 650;
+    
+    const lensHalfHeight = 90;
+    const objectHeight = 60;
+    
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 1.5;
+
+    // Helper function to draw an arrowhead
+    function drawArrowhead(ctx, x, y, angle) {
+      const headLength = 10;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-headLength, -headLength / 2.5);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-headLength, headLength / 2.5);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Helper function to draw a break symbol `)(`
+    function drawBreakSymbol(ctx, x, y, h, gap) {
+      ctx.save();
+      ctx.lineWidth = 1.5;
+      const radius = h / 2;
+      // Draw first part `)`
+      ctx.beginPath();
+      ctx.arc(x - gap / 2, y, radius, -Math.PI / 2, Math.PI / 2);
+      ctx.stroke();
+      // Draw second part `(`
+      ctx.beginPath();
+      ctx.arc(x + gap / 2, y, radius, Math.PI / 2, -Math.PI / 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 1. Draw Optical Axis with a break
+    ctx.beginPath();
+    ctx.moveTo(0, axisY);
+    ctx.lineTo(breakStartX, axisY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(breakEndX, axisY);
+    ctx.lineTo(canvas.width, axisY);
+    ctx.stroke();
+    drawBreakSymbol(ctx, (breakStartX + breakEndX) / 2, axisY, 20, 4);
+
+    // 2. Draw Object
+    ctx.beginPath();
+    ctx.moveTo(objectX, axisY);
+    ctx.lineTo(objectX, axisY - objectHeight);
+    ctx.stroke();
+    drawArrowhead(ctx, objectX, axisY - objectHeight, -Math.PI / 2);
+    ctx.font = '24px "KaiTi", "SimSun"';
+    ctx.textAlign = 'center';
+    ctx.fillText('物', objectX - 30, axisY - objectHeight / 2);
+
+    // 3. Draw Lens L1 (Convex)
+    ctx.beginPath();
+    ctx.moveTo(lens1X, axisY - lensHalfHeight);
+    ctx.lineTo(lens1X, axisY + lensHalfHeight);
+    ctx.stroke();
+    // Top arrowhead
+    ctx.beginPath();
+    ctx.moveTo(lens1X - 8, axisY - lensHalfHeight + 12);
+    ctx.lineTo(lens1X, axisY - lensHalfHeight);
+    ctx.lineTo(lens1X + 8, axisY - lensHalfHeight + 12);
+    ctx.stroke();
+    // Bottom arrowhead
+    ctx.beginPath();
+    ctx.moveTo(lens1X - 8, axisY + lensHalfHeight - 12);
+    ctx.lineTo(lens1X, axisY + lensHalfHeight);
+    ctx.lineTo(lens1X + 8, axisY + lensHalfHeight - 12);
+    ctx.stroke();
+    ctx.font = '22px Arial';
+    ctx.fillText('L\u2081', lens1X, axisY - lensHalfHeight - 25);
+
+    // 4. Draw Lens L2 (Concave)
+    ctx.beginPath();
+    ctx.moveTo(lens2X, axisY - lensHalfHeight);
+    ctx.lineTo(lens2X, axisY + lensHalfHeight);
+    ctx.stroke();
+    // Top arrowhead
+    ctx.beginPath();
+    ctx.moveTo(lens2X - 8, axisY - lensHalfHeight);
+    ctx.lineTo(lens2X, axisY - lensHalfHeight + 12);
+    ctx.lineTo(lens2X + 8, axisY - lensHalfHeight);
+    ctx.stroke();
+    // Bottom arrowhead
+    ctx.beginPath();
+    ctx.moveTo(lens2X - 8, axisY + lensHalfHeight);
+    ctx.lineTo(lens2X, axisY + lensHalfHeight - 12);
+    ctx.lineTo(lens2X + 8, axisY + lensHalfHeight);
+    ctx.stroke();
+    ctx.fillText('L\u2082', lens2X, axisY - lensHalfHeight - 25);
+
+    // 5. Draw Screen P
+    const screenHeight = lensHalfHeight + 20;
+    ctx.beginPath();
+    ctx.moveTo(screenX, axisY - screenHeight);
+    ctx.lineTo(screenX, axisY + screenHeight);
+    ctx.stroke();
+    ctx.fillText('P', screenX, axisY - screenHeight - 25);
+    // Hatching
+    ctx.save();
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 2 * screenHeight; i += 15) {
+      ctx.beginPath();
+      ctx.moveTo(screenX, axisY - screenHeight + i);
+      ctx.lineTo(screenX + 10, axisY - screenHeight + i - 10);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // 6. Draw Dimensions and Labels
+    ctx.textBaseline = 'middle';
+
+    // f1 label
+    ctx.textAlign = 'left';
+    ctx.font = 'italic 24px Arial';
+    ctx.fillText('f', objectX + 15, axisY - objectHeight - 20);
+    ctx.font = 'italic 18px Arial';
+    ctx.fillText('\u2081', objectX + 27, axisY - objectHeight - 15);
+    ctx.font = '24px Arial';
+    ctx.fillText('=3.00cm', objectX + 37, axisY - objectHeight - 20);
+    ctx.textAlign = 'center';
+
+    // u1 dimension line
+    const dimY1 = axisY + 50;
+    const arrowSpacing1 = 30;
+    // Line with break
+    ctx.beginPath();
+    ctx.moveTo(objectX, dimY1);
+    ctx.lineTo(breakStartX, dimY1);
+    ctx.moveTo(breakEndX, dimY1);
+    ctx.lineTo(lens1X, dimY1);
+    ctx.stroke();
+    // T-bar at start
+    ctx.beginPath();
+    ctx.moveTo(objectX, dimY1 - 8);
+    ctx.lineTo(objectX, dimY1 + 8);
+    ctx.stroke();
+    // Arrows
+    drawArrowhead(ctx, objectX + arrowSpacing1, dimY1, Math.PI);
+    drawArrowhead(ctx, lens1X - arrowSpacing1, dimY1, 0);
+    // Break symbol
+    drawBreakSymbol(ctx, (breakStartX + breakEndX) / 2, dimY1, 15, 3);
+    // Label
+    ctx.font = 'italic 24px Arial';
+    ctx.fillText('u\u2081', (breakStartX + breakEndX) / 2, dimY1 + 25);
+
+    // d dimension line
+    const dimY2 = axisY + 100;
+    ctx.beginPath();
+    ctx.moveTo(lens1X, dimY2);
+    ctx.lineTo(lens2X, dimY2);
+    ctx.stroke();
+    drawArrowhead(ctx, lens1X, dimY2, Math.PI);
+    drawArrowhead(ctx, lens2X, dimY2, 0);
+    ctx.fillStyle = 'white'; // Erase behind text for clarity
+    ctx.fillRect((lens1X + lens2X) / 2 - 12, dimY2 - 12, 24, 24);
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 24px Arial';
+    ctx.fillText('d', (lens1X + lens2X) / 2, dimY2);
+    
+    // l dimension line
+    const dimY3 = axisY + 150;
+    // Line
+    ctx.beginPath();
+    ctx.moveTo(lens1X, dimY3);
+    ctx.lineTo(screenX, dimY3);
+    ctx.stroke();
+    // T-bar at start
+    ctx.beginPath();
+    ctx.moveTo(lens1X, dimY3 - 8);
+    ctx.lineTo(lens1X, dimY3 + 8);
+    ctx.stroke();
+    // Arrowhead at end
+    drawArrowhead(ctx, screenX, dimY3, 0);
+    // Label
+    const l_center_x = (lens1X + screenX) / 2;
+    const val_text = "=4.50cm";
+    ctx.font = '24px Arial';
+    const val_width = ctx.measureText(val_text).width;
+    ctx.font = 'italic 24px Arial';
+    const l_width = ctx.measureText('l').width;
+    const total_width = l_width + 5 + val_width;
+    const start_x = l_center_x - total_width / 2;
+    ctx.fillText('l', start_x + l_width / 2, dimY3);
+    ctx.font = '24px Arial';
+    ctx.fillText(val_text, start_x + l_width + 5 + val_width / 2, dimY3);
+
+  </script>
+</body>
+</html>

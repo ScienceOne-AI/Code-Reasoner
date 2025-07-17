@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Circuit Diagram 5.15.1</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="circuitCanvas" width="600" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('circuitCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Style and Helper Functions ---
+  ctx.lineWidth = 1.5;
+  ctx.font = '16px Arial';
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+
+  function drawResistor(x, y, width, height, label) {
+    ctx.strokeRect(x - width / 2, y - height / 2, width, height);
+    ctx.fillText(label, x + width / 2 + 5, y + 5);
+  }
+
+  function drawVarResistor(x, y, width, height, label) {
+    drawResistor(x, y, width, height, label);
+    // Arrow line
+    ctx.beginPath();
+    ctx.moveTo(x - width, y + height);
+    ctx.lineTo(x + width, y - height);
+    ctx.stroke();
+    // Arrowhead
+    ctx.save();
+    ctx.translate(x + width, y - height);
+    ctx.rotate(Math.atan2(-2*height, 2*width));
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-10, 5);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-10, -5);
+    ctx.stroke();
+    ctx.restore();
+  }
+  
+  function drawCapacitor(x, y, plateWidth, gap, label) {
+    ctx.beginPath();
+    ctx.moveTo(x - plateWidth / 2, y - gap / 2);
+    ctx.lineTo(x + plateWidth / 2, y - gap / 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - plateWidth / 2, y + gap / 2);
+    ctx.lineTo(x + plateWidth / 2, y + gap / 2);
+    ctx.stroke();
+    ctx.fillText(label, x + plateWidth / 2 + 5, y);
+  }
+
+  function drawBattery(x, y, height, label) {
+    const shortPlate = 15;
+    const longPlate = 30;
+    // Positive plate
+    ctx.beginPath();
+    ctx.moveTo(x - longPlate / 2, y - height / 2);
+    ctx.lineTo(x + longPlate / 2, y - height / 2);
+    ctx.stroke();
+    // Negative plate
+    ctx.beginPath();
+    ctx.moveTo(x - shortPlate / 2, y + height / 2);
+    ctx.lineTo(x + shortPlate / 2, y + height / 2);
+    ctx.stroke();
+    ctx.fillText(label, x - longPlate/2 - 45, y);
+  }
+  
+  function drawSwitch(x, y, length, angle, label) {
+    // terminals
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + length, y, 3, 0, 2 * Math.PI);
+    ctx.fill();
+    // arm
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(length, 0);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillText(label, x + length/4, y - 15);
+  }
+  
+  function drawGround(x, y) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y + 15);
+      ctx.stroke();
+      let h_len = 20;
+      for (let i = 0; i < 3; i++) {
+          ctx.beginPath();
+          ctx.moveTo(x - h_len / 2, y + 15 + i * 5);
+          ctx.lineTo(x + h_len / 2, y + 15 + i * 5);
+          ctx.stroke();
+          h_len -= 7;
+      }
+  }
+
+  // --- Main Drawing Logic ---
+  
+  // Coordinates
+  const opamp_in_x = 280;
+  const opamp_out_x = 380;
+  const opamp_a_y = 200;
+  const opamp_b_y = 280;
+  const opamp_p_y = (opamp_a_y + opamp_b_y) / 2;
+  const ground_y = 400;
+
+  // Op-Amp
+  ctx.beginPath();
+  ctx.moveTo(opamp_in_x, 180);
+  ctx.lineTo(opamp_out_x, opamp_p_y);
+  ctx.lineTo(opamp_in_x, 300);
+  ctx.closePath();
+  ctx.stroke();
+  
+  // Op-Amp labels
+  ctx.font = 'italic 18px Times New Roman';
+  ctx.fillText('A', opamp_in_x - 20, opamp_a_y + 5);
+  ctx.fillText('B', opamp_in_x - 20, opamp_b_y + 5);
+  ctx.fillText('P', opamp_out_x + 10, opamp_p_y + 5);
+  ctx.font = '16px Arial';
+
+  // Op-Amp power to ground (notch)
+  ctx.beginPath();
+  ctx.moveTo(opamp_in_x, opamp_b_y + 20); // bottom of op-amp
+  ctx.lineTo(310, 320);
+  ctx.arc(310, 325, 5, -Math.PI/2, Math.PI/2, true);
+  ctx.lineTo(310, 330);
+  ctx.lineTo(310, ground_y);
+  ctx.stroke();
+
+  // Ground line and symbol
+  drawGround(310, ground_y);
+
+  // --- Right Side (Schmitt Trigger feedback) ---
+  const r1_x = 500;
+  const r1_top_y = opamp_p_y;
+  const r1_bot_y = 310;
+  const r2_top_y = r1_bot_y;
+  const r2_bot_y = 360;
+
+  // Wires from P to R1/R2
+  ctx.beginPath();
+  ctx.moveTo(opamp_out_x, opamp_p_y);
+  ctx.lineTo(r1_x, r1_top_y);
+  ctx.lineTo(r1_x, r1_top_y - 25);
+  ctx.moveTo(r1_x, r1_top_y + 25);
+  ctx.lineTo(r1_x, r2_top_y - 25);
+  ctx.moveTo(r1_x, r2_top_y + 25);
+  ctx.lineTo(r1_x, r2_bot_y);
+  ctx.lineTo(r1_x, ground_y);
+  ctx.stroke();
+
+  // R1
+  drawResistor(r1_x, r1_top_y, 20, 50, 'R₁=5 kΩ');
+  
+  // R2
+  drawVarResistor(r1_x, r2_top_y, 20, 25, 'R₂');
+  
+  // Wire to input B
+  ctx.beginPath();
+  ctx.moveTo(r1_x, r2_top_y);
+  ctx.lineTo(opamp_in_x, r2_top_y);
+  ctx.lineTo(opamp_in_x, opamp_b_y);
+  ctx.stroke();
+
+  // --- Top Side (RC Feedback) ---
+  const fb_top_y = 100;
+  const fb_bot_y = opamp_a_y;
+  const r3_x = 220;
+  const c_x = 320;
+  const p_line_x = 440;
+
+  // Feedback rails
+  ctx.beginPath();
+  ctx.moveTo(opamp_out_x, opamp_p_y);
+  ctx.lineTo(p_line_x, opamp_p_y);
+  ctx.lineTo(p_line_x, fb_top_y);
+  ctx.lineTo(r3_x, fb_top_y);
+  ctx.moveTo(c_x, fb_top_y);
+  ctx.lineTo(r3_x, fb_top_y);
+  ctx.moveTo(opamp_in_x, fb_bot_y);
+  ctx.lineTo(r3_x, fb_bot_y);
+  ctx.moveTo(c_x, fb_bot_y);
+  ctx.lineTo(r3_x, fb_bot_y);
+  ctx.stroke();
+  
+  // R3
+  ctx.beginPath();
+  ctx.moveTo(r3_x, fb_top_y);
+  ctx.lineTo(r3_x, fb_bot_y);
+  ctx.stroke();
+  drawResistor(r3_x, (fb_top_y + fb_bot_y) / 2, 20, 30, 'R₃=5 kΩ');
+  
+  // C
+  ctx.beginPath();
+  ctx.moveTo(c_x, fb_top_y);
+  ctx.lineTo(c_x, fb_bot_y);
+  ctx.stroke();
+  drawCapacitor(c_x, (fb_top_y + fb_bot_y) / 2, 30, 8, 'C=10 μF');
+  
+  // --- Left Side (Input circuit) ---
+  const in_junc_x = 180;
+  const r4_x = in_junc_x;
+  const r4_top_y = fb_bot_y;
+  const r4_bot_y = 300;
+  
+  // Wire from A to junction
+  ctx.beginPath();
+  ctx.moveTo(opamp_in_x, opamp_a_y);
+  ctx.lineTo(in_junc_x, opamp_a_y);
+  ctx.stroke();
+  
+  // R4
+  ctx.beginPath();
+  ctx.moveTo(r4_x, r4_top_y);
+  ctx.lineTo(r4_x, r4_bot_y - 15);
+  ctx.moveTo(r4_x, r4_bot_y + 15);
+  ctx.lineTo(r4_x, ground_y);
+  ctx.stroke();
+  drawResistor(r4_x, r4_bot_y, 20, 30, 'R₄=5 kΩ');
+
+  // Switch and Battery
+  const switch_x = 120;
+  const battery_x = 100;
+
+  // Wire from junction to switch
+  ctx.beginPath();
+  ctx.moveTo(in_junc_x, opamp_a_y);
+  ctx.lineTo(switch_x + 40, opamp_a_y);
+  ctx.stroke();
+  
+  // Switch K
+  drawSwitch(switch_x, opamp_a_y, 40, -Math.PI / 6, 'K');
+  
+  // Wire from switch to battery
+  ctx.beginPath();
+  ctx.moveTo(switch_x, opamp_a_y);
+  ctx.lineTo(battery_x, opamp_a_y);
+  ctx.lineTo(battery_x, 250);
+  ctx.stroke();
+  
+  // Battery
+  drawBattery(battery_x, 270, 20, '1.5 V');
+  
+  // Wire from battery to ground
+  ctx.beginPath();
+  ctx.moveTo(battery_x, 290);
+  ctx.lineTo(battery_x, ground_y);
+  ctx.stroke();
+
+  // --- Final Caption ---
+  ctx.font = '20px SimHei, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('电图 5.15.1', canvas.width / 2, 435);
+
+</script>
+</body>
+</html>

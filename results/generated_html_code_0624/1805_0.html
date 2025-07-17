@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Conical Pendulum</title>
+<style>
+    body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+    canvas { background-color: #ffffff; border: 1px solid #ccc; }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="450" height="420"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings to mimic hand-drawn look
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.font = 'italic 24px "Comic Sans MS", cursive, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Define central origin point for drawing
+    const origin = { x: 225, y: 110 };
+
+    // Pendulum geometric properties
+    const l_pixels = 140; // Length of the string in pixels
+    const theta = Math.PI / 4.8; // Angle with the vertical (~37.5 degrees)
+
+    // Calculate key positions based on geometry
+    const massPos = {
+        x: origin.x + l_pixels * Math.sin(theta),
+        y: origin.y + l_pixels * Math.cos(theta)
+    };
+    const circleCenter = { x: origin.x, y: massPos.y };
+    const circleRadiusX = l_pixels * Math.sin(theta);
+    const circleRadiusY = 30; // Vertical radius for perspective ellipse
+
+    // --- Start Drawing ---
+
+    // 1. Draw Axes
+    // z-axis (vertical)
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y - 90);
+    ctx.lineTo(origin.x, circleCenter.y + circleRadiusY + 30);
+    ctx.stroke();
+    // z-axis arrowhead
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y - 90);
+    ctx.lineTo(origin.x - 7, origin.y - 80);
+    ctx.moveTo(origin.x, origin.y - 90);
+    ctx.lineTo(origin.x + 7, origin.y - 80);
+    ctx.stroke();
+    ctx.fillText('z', origin.x - 25, origin.y - 85);
+
+    // x-axis (horizontal)
+    ctx.beginPath();
+    ctx.moveTo(origin.x - 40, origin.y);
+    ctx.lineTo(origin.x + 130, origin.y);
+    ctx.stroke();
+    // x-axis arrowhead
+    ctx.beginPath();
+    ctx.moveTo(origin.x + 130, origin.y);
+    ctx.lineTo(origin.x + 120, origin.y - 7);
+    ctx.moveTo(origin.x + 130, origin.y);
+    ctx.lineTo(origin.x + 120, origin.y + 7);
+    ctx.stroke();
+    ctx.fillText('x', origin.x + 145, origin.y);
+
+    // 2. Draw Dashed Lines for construction and perspective
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 2;
+
+    // Dashed vertical line from origin along z-axis
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(circleCenter.x, circleCenter.y);
+    ctx.stroke();
+
+    // Dashed circular path (as an ellipse for perspective)
+    ctx.beginPath();
+    ctx.ellipse(circleCenter.x, circleCenter.y, circleRadiusX, circleRadiusY, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // Dashed helper lines within the circle plane
+    // Horizontal radius
+    ctx.beginPath();
+    ctx.moveTo(circleCenter.x, circleCenter.y);
+    ctx.lineTo(massPos.x, massPos.y);
+    ctx.stroke();
+    // Vertical diameter and ticks for perspective
+    ctx.moveTo(circleCenter.x, circleCenter.y - circleRadiusY);
+    ctx.lineTo(circleCenter.x, circleCenter.y + circleRadiusY);
+    ctx.moveTo(circleCenter.x - 10, circleCenter.y - circleRadiusY);
+    ctx.lineTo(circleCenter.x + 10, circleCenter.y - circleRadiusY);
+    ctx.moveTo(circleCenter.x - 10, circleCenter.y);
+    ctx.lineTo(circleCenter.x + 10, circleCenter.y);
+    ctx.moveTo(circleCenter.x - 10, circleCenter.y + circleRadiusY);
+    ctx.lineTo(circleCenter.x + 10, circleCenter.y + circleRadiusY);
+    ctx.stroke();
+
+    ctx.restore(); // Restore to solid, thick lines
+
+    // 3. Draw the Pendulum itself
+    // String (solid line)
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y);
+    ctx.lineTo(massPos.x, massPos.y);
+    ctx.stroke();
+    // Mass (filled circle)
+    ctx.beginPath();
+    ctx.arc(massPos.x, massPos.y, 7, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 4. Draw Arrows indicating motion
+    // Tangential velocity arrow from mass
+    ctx.beginPath();
+    ctx.moveTo(massPos.x, massPos.y);
+    ctx.lineTo(massPos.x + 50, massPos.y);
+    ctx.stroke();
+    // Arrowhead for velocity
+    ctx.beginPath();
+    ctx.moveTo(massPos.x + 50, massPos.y);
+    ctx.lineTo(massPos.x + 40, massPos.y - 6);
+    ctx.moveTo(massPos.x + 50, massPos.y);
+    ctx.lineTo(massPos.x + 40, massPos.y + 6);
+    ctx.stroke();
+    
+    // Curved rotation arrow
+    const rotArrowY = circleCenter.y + circleRadiusY + 15;
+    const rotArrowStartX = circleCenter.x - 60;
+    const rotArrowEndX = circleCenter.x + 60;
+    ctx.beginPath();
+    ctx.moveTo(rotArrowStartX, rotArrowY);
+    ctx.quadraticCurveTo(circleCenter.x, rotArrowY + 15, rotArrowEndX, rotArrowY);
+    ctx.stroke();
+    // Arrowhead for rotation
+    ctx.beginPath();
+    ctx.moveTo(rotArrowEndX, rotArrowY);
+    ctx.lineTo(rotArrowEndX - 12, rotArrowY - 2);
+    ctx.moveTo(rotArrowEndX, rotArrowY);
+    ctx.lineTo(rotArrowEndX - 5, rotArrowY - 9);
+    ctx.stroke();
+
+    // 5. Draw Angle Arc
+    ctx.beginPath();
+    ctx.arc(origin.x, origin.y, 35, Math.PI / 2, Math.PI / 2 + theta, false);
+    ctx.stroke();
+
+    // 6. Add all Labels
+    // 'l' for string length
+    ctx.fillText('l', origin.x + 45, origin.y + 55);
+    
+    // 'θ' for the angle
+    ctx.fillText('θ', origin.x + 25, origin.y + 30);
+
+    // 'm' for the mass
+    ctx.fillText('m', massPos.x + 20, massPos.y - 18);
+    
+    // 'φ̇' (phi-dot) for angular velocity
+    ctx.fillText('φ\u0307', circleCenter.x + 85, rotArrowY);
+
+    // 7. Add Caption
+    ctx.font = 'bold 22px "Times New Roman"';
+    ctx.fillText('Fig. 2.14.', origin.x, 390);
+
+</script>
+</body>
+</html>

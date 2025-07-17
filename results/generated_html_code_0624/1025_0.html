@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Optics Prism Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Function to draw an arrowhead
+        function drawArrowhead(ctx, fromX, fromY, toX, toY, angle, length) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const lineAngle = Math.atan2(dy, dx);
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - length * Math.cos(lineAngle - angle), toY - length * Math.sin(lineAngle - angle));
+            ctx.lineTo(toX - length * Math.cos(lineAngle + angle), toY - length * Math.sin(lineAngle + angle));
+            ctx.closePath();
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Clear canvas with a light gray background similar to the image
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // --- Main Drawing ---
+
+        // 1. Draw the container
+        ctx.strokeStyle = '#0066cc';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+        
+        // 2. Define prism vertices (visually chosen to match the image)
+        const A = { x: 400, y: 110 };
+        const B = { x: 680, y: 480 };
+        const C = { x: 220, y: 480 };
+
+        // 3. Draw and fill the prism
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.lineTo(C.x, C.y);
+        ctx.closePath();
+        
+        ctx.fillStyle = 'rgba(212, 235, 252, 1)';
+        ctx.fill();
+        ctx.strokeStyle = '#003366';
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+
+        // 4. Draw the incident light ray and normal
+        // Point of incidence on face AB
+        const incidencePoint = { x: 578, y: 340 }; 
+        const rayStartPoint = { x: 750, y: 340 };
+        
+        // Draw incident ray
+        ctx.beginPath();
+        ctx.moveTo(rayStartPoint.x, rayStartPoint.y);
+        ctx.lineTo(incidencePoint.x, incidencePoint.y);
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        drawArrowhead(ctx, rayStartPoint.x, rayStartPoint.y, incidencePoint.x, incidencePoint.y, Math.PI / 8, 20);
+
+        // Draw the normal line (N)
+        const normalAngle = 160 * Math.PI / 180; // 20 degrees up from the left horizontal
+        const normalLength = 100;
+        const normalEnd = {
+            x: incidencePoint.x + normalLength * Math.cos(normalAngle),
+            y: incidencePoint.y + normalLength * Math.sin(normalAngle)
+        };
+        
+        ctx.beginPath();
+        ctx.setLineDash([8, 6]);
+        ctx.moveTo(incidencePoint.x, incidencePoint.y);
+        ctx.lineTo(normalEnd.x, normalEnd.y);
+        ctx.strokeStyle = '#ff8c00'; // Orange
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset dash pattern
+
+        // 5. Draw angle arcs and text
+        ctx.fillStyle = 'black';
+        ctx.strokeStyle = '#4a90e2';
+        ctx.lineWidth = 1.5;
+
+        // Angle 20°
+        ctx.beginPath();
+        ctx.arc(incidencePoint.x, incidencePoint.y, 60, normalAngle, Math.PI);
+        ctx.stroke();
+        ctx.font = 'bold 28px Arial';
+        ctx.fillText('20°', incidencePoint.x + 20, incidencePoint.y - 30);
+        ctx.font = 'bold 32px Arial';
+        ctx.fillText('N', normalEnd.x - 30, normalEnd.y - 5);
+
+
+        // Angle 40° at vertex A
+        ctx.beginPath();
+        const angleA_start = Math.atan2(B.y - A.y, B.x - A.x);
+        const angleA_end = Math.atan2(C.y - A.y, C.x - A.x);
+        ctx.arc(A.x, A.y, 60, angleA_start, angleA_end);
+        ctx.stroke();
+        ctx.font = 'bold 28px Arial';
+        ctx.fillText('40°', A.x - 20, A.y + 70);
+
+        // Angle 60° at vertex B
+        ctx.beginPath();
+        const angleB_start = Math.atan2(A.y - B.y, A.x - B.x);
+        const angleB_end = Math.atan2(C.y - B.y, C.x - B.x);
+        ctx.arc(B.x, B.y, 80, angleB_start, angleB_end);
+        ctx.stroke();
+        ctx.fillText('60°', B.x - 85, B.y - 35);
+        
+        // 6. Add text labels
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 32px Arial';
+
+        // Vertex labels
+        ctx.fillText('A', A.x - 10, A.y - 20);
+        ctx.fillText('B', B.x + 10, B.y + 5);
+        ctx.fillText('C', C.x - 30, C.y + 5);
+
+        // Refractive index labels
+        ctx.font = 'bold 28px Arial';
+        ctx.fillText('n=1.1', 50, 150);
+        ctx.fillText('n=1.1', 650, 150);
+        ctx.fillText('n=1.6', A.x - 20, A.y + 170);
+
+        // Ground label
+        ctx.font = '28px Arial';
+        ctx.fillText('ground', 50, 450);
+
+    </script>
+</body>
+</html>

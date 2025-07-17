@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram: Collision with Spring-Mass System</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const config = {
+            groundY: 300,
+            wallX: 80,
+            lineWidth: 2,
+            fontFamily: 'serif',
+            hatchSpacing: 10,
+            hatchLength: 10,
+            arrowHeadSize: 8,
+            colors: {
+                main: '#000',
+            }
+        };
+
+        const block = {
+            x: 550,
+            width: 120,
+            height: 100
+        };
+        block.y = config.groundY - block.height;
+
+        const bullet = {
+            x: 350,
+            y: block.y + block.height / 2,
+            rx: 25,
+            ry: 10
+        };
+
+        // --- Helper Functions ---
+
+        function drawArrow(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // Arrowhead
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.save();
+            ctx.translate(x2, y2);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-config.arrowHeadSize, -config.arrowHeadSize / 2);
+            ctx.lineTo(-config.arrowHeadSize, config.arrowHeadSize / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawDoubleArrowLine(x1, y, x2, label) {
+            // Main line
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+
+            // Left arrowhead
+            let angle_left = Math.PI;
+            ctx.save();
+            ctx.translate(x1, y);
+            ctx.rotate(angle_left);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(config.arrowHeadSize, -config.arrowHeadSize / 2);
+            ctx.lineTo(config.arrowHeadSize, config.arrowHeadSize / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            // Right arrowhead
+            let angle_right = 0;
+            ctx.save();
+            ctx.translate(x2, y);
+            ctx.rotate(angle_right);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-config.arrowHeadSize, -config.arrowHeadSize / 2);
+            ctx.lineTo(-config.arrowHeadSize, config.arrowHeadSize / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            // Vertical bars
+            ctx.beginPath();
+            ctx.moveTo(x1, y - 10);
+            ctx.lineTo(x1, y + 10);
+            ctx.moveTo(x2, y - 10);
+            ctx.lineTo(x2, y + 10);
+            ctx.stroke();
+            
+            // Label
+            ctx.font = `italic 24px ${config.fontFamily}`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(label, (x1 + x2) / 2, y - 5);
+        }
+
+        function drawSpring(x1, y, x2, numCoils, coilRadius) {
+            ctx.beginPath();
+            const length = x2 - x1;
+            const straightPartLength = 20;
+            const coilSectionLength = length - 2 * straightPartLength;
+            const coilWidth = coilSectionLength / numCoils;
+
+            // Start straight part
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x1 + straightPartLength, y);
+
+            // Coils
+            let currentX = x1 + straightPartLength;
+            for (let i = 0; i < numCoils; i++) {
+                ctx.arc(currentX + coilWidth / 2, y - coilRadius, coilRadius, Math.PI, 0, false);
+                currentX += coilWidth;
+            }
+             // Reposition to end of last arc
+            ctx.moveTo(x1 + straightPartLength + coilSectionLength, y);
+
+            // End straight part
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+        }
+        
+        function drawSpringSimple(x1, y, x2, numCoils = 8, coilHeight = 15) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y);
+            
+            const totalLength = x2 - x1;
+            const leadLength = 20;
+            const coilPartLength = totalLength - 2 * leadLength;
+            const coilSegmentLength = coilPartLength / (numCoils * 2);
+
+            let currentX = x1 + leadLength;
+            ctx.lineTo(currentX, y);
+
+            for (let i = 0; i < numCoils; i++) {
+                ctx.lineTo(currentX + coilSegmentLength, y + coilHeight);
+                ctx.lineTo(currentX + 2 * coilSegmentLength, y);
+                currentX += 2 * coilSegmentLength;
+            }
+
+            ctx.lineTo(x2, y);
+            ctx.stroke();
+        }
+
+        function drawHatching(x1, y1, x2, y2, isVertical) {
+            ctx.save();
+            ctx.lineWidth = 1;
+            const spacing = config.hatchSpacing;
+            const length = config.hatchLength;
+
+            if (isVertical) { // For the wall
+                for (let y = y1 + spacing; y < y2; y += spacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y);
+                    ctx.lineTo(x1 - length, y + length);
+                    ctx.stroke();
+                }
+            } else { // For the ground
+                for (let x = x1; x < x2; x += spacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, y1);
+                    ctx.lineTo(x - length, y1 + length);
+                    ctx.stroke();
+                }
+            }
+            ctx.restore();
+        }
+
+        // --- Main Drawing ---
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Set styles
+        ctx.strokeStyle = config.colors.main;
+        ctx.fillStyle = config.colors.main;
+        ctx.lineWidth = config.lineWidth;
+
+        // Draw Ground
+        ctx.beginPath();
+        ctx.moveTo(config.wallX, config.groundY);
+        ctx.lineTo(canvas.width, config.groundY);
+        ctx.stroke();
+        drawHatching(config.wallX, config.groundY, canvas.width - 50, 0, false);
+
+
+        // Draw Wall
+        ctx.beginPath();
+        ctx.moveTo(config.wallX, 0);
+        ctx.lineTo(config.wallX, config.groundY);
+        ctx.stroke();
+        drawHatching(config.wallX, 50, config.groundY, 0, true);
+
+        // Draw Block
+        ctx.strokeRect(block.x, block.y, block.width, block.height);
+        ctx.font = `italic 36px ${config.fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('M', block.x + block.width / 2, block.y + block.height / 2);
+
+        // Draw dimension 'd'
+        drawDoubleArrowLine(block.x, block.y - 30, block.x + block.width, 'd');
+
+
+        // Draw Spring
+        const springY = block.y + block.height / 2;
+        const springStartX = config.wallX;
+        const springEndX = block.x;
+        // The original image has a slightly different spring style, let's replicate that
+        ctx.beginPath();
+        ctx.moveTo(springStartX, springY);
+        ctx.lineTo(springStartX + 30, springY); // Initial straight part
+        const numCoils = 6;
+        const coilLength = (springEndX - (springStartX + 60)) / numCoils;
+        const coilRadius = 12;
+        let sx = springStartX + 30;
+        for (let i=0; i < numCoils; i++) {
+            ctx.arc(sx + coilLength/2, springY - coilRadius, coilRadius, Math.PI, 0, false);
+            sx += coilLength;
+        }
+        ctx.moveTo(sx, springY);
+        ctx.lineTo(springEndX, springY); // Final straight part
+        ctx.stroke();
+
+        // Spring Label 'R'
+        ctx.font = `italic 30px ${config.fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('R', config.wallX + 120, springY - 30);
+
+
+        // Draw Bullet
+        ctx.beginPath();
+        ctx.ellipse(bullet.x, bullet.y, bullet.rx, bullet.ry, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Bullet Label 'm'
+        ctx.font = `italic 30px ${config.fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('m', bullet.x, bullet.y - 30);
+
+
+        // Draw Velocity Vector
+        const arrowStartX = bullet.x + bullet.rx + 15;
+        const arrowEndX = block.x - 20;
+        drawArrow(arrowStartX, bullet.y, arrowEndX, bullet.y);
+
+        // Velocity Label 'v₀'
+        const v_x = arrowStartX + 30;
+        const v_y = bullet.y - 25;
+        ctx.font = `italic 28px ${config.fontFamily}`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('v', v_x, v_y);
+        
+        ctx.font = `20px ${config.fontFamily}`;
+        ctx.fillText('0', v_x + 12, v_y + 8);
+
+    </script>
+</body>
+</html>

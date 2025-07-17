@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Position vs. Time Graph</title>
+</head>
+<body>
+<canvas id="physics-graph" width="550" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physics-graph');
+    const ctx = canvas.getContext('2d');
+
+    // Graph parameters
+    const margin = { top: 20, right: 20, bottom: 50, left: 60 };
+    const plotWidth = canvas.width - margin.left - margin.right;
+    const plotHeight = canvas.height - margin.top - margin.bottom;
+
+    const t_min = 0;
+    const t_max = 10;
+    const pos_min = 0.0;
+    const pos_max = 6.0;
+
+    // Coordinate transformation functions
+    function xCoord(t) {
+        return margin.left + (t - t_min) / (t_max - t_min) * plotWidth;
+    }
+
+    function yCoord(pos) {
+        return margin.top + plotHeight - (pos - pos_min) / (pos_max - pos_min) * plotHeight;
+    }
+
+    // Clear canvas with white background
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // --- Draw Grid ---
+    ctx.strokeStyle = '#a9a9a9'; // Dark gray for the grid
+    ctx.lineWidth = 1;
+
+    // Vertical grid lines (every 1 second)
+    for (let t = t_min; t <= t_max; t++) {
+        const x = xCoord(t);
+        ctx.beginPath();
+        ctx.moveTo(x, yCoord(pos_min));
+        ctx.lineTo(x, yCoord(pos_max));
+        ctx.stroke();
+    }
+
+    // Horizontal grid lines (every 1 meter)
+    for (let pos = pos_min; pos <= pos_max; pos++) {
+        const y = yCoord(pos);
+        ctx.beginPath();
+        ctx.moveTo(xCoord(t_min), y);
+        ctx.lineTo(xCoord(t_max), y);
+        ctx.stroke();
+    }
+
+    // --- Draw Axes ---
+    // The axes are visually part of the grid in the original.
+    // We'll draw them black to make them stand out slightly.
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1.5;
+    // Y-axis
+    ctx.beginPath();
+    ctx.moveTo(xCoord(t_min), yCoord(pos_min));
+    ctx.lineTo(xCoord(t_min), yCoord(pos_max));
+    ctx.stroke();
+    // X-axis
+    ctx.beginPath();
+    ctx.moveTo(xCoord(t_min), yCoord(pos_min));
+    ctx.lineTo(xCoord(t_max), yCoord(pos_min));
+    ctx.stroke();
+
+
+    // --- Draw Labels and Tick Marks ---
+    ctx.fillStyle = 'black';
+    ctx.font = 'bold 16px sans-serif';
+
+    // Y-axis label
+    ctx.save();
+    ctx.translate(margin.left - 45, margin.top + plotHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText('Position (m)', 0, 0);
+    ctx.restore();
+
+    // X-axis label
+    ctx.textAlign = 'center';
+    ctx.fillText('Time (s)', margin.left + plotWidth / 2, canvas.height - 20);
+
+    // Tick labels
+    ctx.font = 'bold 14px sans-serif';
+    
+    // Y-axis ticks
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let pos = pos_min; pos <= pos_max; pos++) {
+        ctx.fillText(pos.toFixed(1), xCoord(t_min) - 8, yCoord(pos));
+    }
+
+    // X-axis ticks
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let t of [0, 5, 10]) {
+        ctx.fillText(t, xCoord(t), yCoord(pos_min) + 8);
+    }
+    
+    // --- Draw the curve ---
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    
+    // From the graph, we can deduce the equation of motion.
+    // The equilibrium position is at (5.0 + 3.0)/2 = 4.0 m.
+    // The amplitude is (5.0 - 3.0)/2 = 1.0 m.
+    // The motion starts at a minimum (y=3.0 at t=0) and reaches the next minimum at t=8.0 s.
+    // So, the period T = 8.0 s.
+    // The function is y(t) = Equilibrium - Amplitude * cos(2*pi/T * t)
+    // y(t) = 4.0 - 1.0 * cos((2*pi/8.0) * t)
+    const amplitude = 1.0;
+    const equilibrium = 4.0;
+    const period = 8.0;
+    const angularFrequency = 2 * Math.PI / period;
+
+    let firstPoint = true;
+    for (let t = t_min; t <= t_max; t += 0.01) {
+        const pos = equilibrium - amplitude * Math.cos(angularFrequency * t);
+        const x = xCoord(t);
+        const y = yCoord(pos);
+
+        if (firstPoint) {
+            ctx.moveTo(x, y);
+            firstPoint = false;
+        } else {
+            ctx.lineTo(x, y);
+        }
+    }
+    ctx.stroke();
+
+</script>
+</body>
+</html>

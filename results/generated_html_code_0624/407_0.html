@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Damped Oscillation and Frequency Spectrum</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="1000" height="400"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'black';
+    ctx.strokeStyle = 'black';
+    ctx.font = 'italic 20px Times New Roman';
+
+    // --- Helper function for drawing arrow heads ---
+    function arrowHead(x, y, angle, headLength = 10) {
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - headLength * Math.cos(angle - Math.PI / 6), y - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - headLength * Math.cos(angle + Math.PI / 6), y - headLength * Math.sin(angle + Math.PI / 6));
+    }
+
+    // --- Left Graph: Damped Oscillation E(t) ---
+    const originX1 = 100;
+    const originY1 = 200;
+    const axisLenX1 = 350;
+    const axisLenY1 = 150;
+
+    // Axes
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    // Y-axis
+    ctx.moveTo(originX1, originY1 + axisLenY1/2);
+    ctx.lineTo(originX1, originY1 - axisLenY1);
+    arrowHead(originX1, originY1 - axisLenY1, Math.PI / 2);
+    // X-axis
+    ctx.moveTo(originX1, originY1);
+    ctx.lineTo(originX1 + axisLenX1, originY1);
+    arrowHead(originX1 + axisLenX1, originY1, 0);
+    ctx.stroke();
+    
+    // Labels for left graph
+    ctx.textAlign = 'center';
+    ctx.fillText('E(t)', originX1, originY1 - axisLenY1 - 5);
+    ctx.textAlign = 'left';
+    ctx.fillText('t', originX1 + axisLenX1 + 10, originY1 + 8);
+
+    // Damped wave parameters
+    const E0 = 120; // Initial amplitude in pixels
+    const tau_c_pixels = 180; // Damping time constant in pixels
+    const period = 28; // Period of oscillation in pixels
+    
+    // Draw the damped wave
+    ctx.beginPath();
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(originX1, originY1 - E0);
+    for (let t = 1; t < 300; t += 0.5) {
+        const x = originX1 + t;
+        const y = originY1 - E0 * Math.exp(-t / tau_c_pixels) * Math.cos(2 * Math.PI * t / period);
+        ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Draw the envelope (dashed lines)
+    ctx.beginPath();
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    // Upper envelope
+    ctx.moveTo(originX1, originY1 - E0);
+    for (let t = 1; t <= 300; t += 5) {
+        const x = originX1 + t;
+        const y_upper = originY1 - E0 * Math.exp(-t / tau_c_pixels);
+        ctx.lineTo(x, y_upper);
+    }
+    // Lower envelope
+    ctx.moveTo(originX1, originY1 + E0);
+    for (let t = 1; t <= 300; t += 5) {
+        const x = originX1 + t;
+        const y_lower = originY1 + E0 * Math.exp(-t / tau_c_pixels);
+        ctx.lineTo(x, y_lower);
+    }
+    ctx.stroke();
+    
+    // τ_c indicator
+    const tau_y_pos = originY1 + 50;
+    ctx.beginPath();
+    ctx.setLineDash([]); // Solid line for arrow
+    ctx.lineWidth = 1;
+    ctx.moveTo(originX1, tau_y_pos);
+    ctx.lineTo(originX1 + tau_c_pixels, tau_y_pos);
+    arrowHead(originX1, tau_y_pos, Math.PI);
+    arrowHead(originX1 + tau_c_pixels, tau_y_pos, 0);
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.fillText('τ', originX1 + tau_c_pixels / 2 - 5, tau_y_pos - 5);
+    ctx.font = 'italic 14px Times New Roman';
+    ctx.fillText('c', originX1 + tau_c_pixels / 2 + 2, tau_y_pos - 2);
+    ctx.font = 'italic 20px Times New Roman';
+
+    // Dashed line for τ_c
+    ctx.beginPath();
+    ctx.setLineDash([4, 4]);
+    ctx.moveTo(originX1 + tau_c_pixels, tau_y_pos);
+    ctx.lineTo(originX1 + tau_c_pixels, originY1);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // --- Transformation Arrow ---
+    ctx.beginPath();
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.moveTo(480, 200);
+    ctx.lineTo(580, 200);
+    arrowHead(580, 200, 0, 15);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+
+    // --- Right Graph: Frequency Spectrum I(ν) ---
+    const originX2 = 650;
+    const originY2 = 300;
+    const axisLenX2 = 250;
+    const axisLenY2 = 200;
+
+    // Axes
+    ctx.beginPath();
+    ctx.lineWidth = 1;
+    // Y-axis
+    ctx.moveTo(originX2, originY2 + 20);
+    ctx.lineTo(originX2, originY2 - axisLenY2);
+    arrowHead(originX2, originY2 - axisLenY2, Math.PI/2);
+    // X-axis
+    ctx.moveTo(originX2, originY2);
+    ctx.lineTo(originX2 + axisLenX2, originY2);
+    arrowHead(originX2 + axisLenX2, originY2, 0);
+    ctx.stroke();
+
+    // Labels for right graph
+    ctx.textAlign = 'center';
+    ctx.fillText('I(ν)', originX2, originY2 - axisLenY2 - 5);
+    ctx.textAlign = 'left';
+    ctx.fillText('ν', originX2 + axisLenX2 + 10, originY2 + 8);
+
+    // Lorentzian peak parameters
+    const v0_pos = originX2 + 120; // Center frequency position
+    const peakHeight = 180; // Peak intensity in pixels
+    const fwhm = 6000 / tau_c_pixels; // FWHM in pixels.
+    const hwhm = fwhm / 2; // Half-width at half-maximum
+
+    // Draw the Lorentzian peak
+    ctx.beginPath();
+    ctx.lineWidth = 1.5;
+    const plotStart = v0_pos - 100;
+    const plotEnd = v0_pos + 100;
+    ctx.moveTo(plotStart, originY2);
+    for (let x = plotStart; x <= plotEnd; x++) {
+        const dx = x - v0_pos;
+        const y = originY2 - peakHeight * (hwhm**2) / (dx**2 + hwhm**2);
+        ctx.lineTo(x, y);
+    }
+    ctx.lineTo(plotEnd, originY2);
+    ctx.stroke();
+    
+    // ν₀ label
+    ctx.beginPath();
+    ctx.moveTo(v0_pos, originY2);
+    ctx.lineTo(v0_pos, originY2 + 5);
+    ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.fillText('ν', v0_pos - 5, originY2 + 25);
+    ctx.font = 'italic 14px Times New Roman';
+    ctx.fillText('0', v0_pos + 2, originY2 + 28);
+    ctx.font = 'italic 20px Times New Roman';
+
+    // Δν indicator
+    const y_half = originY2 - peakHeight / 2;
+    const x_left = v0_pos - hwhm;
+    const x_right = v0_pos + hwhm;
+    ctx.beginPath();
+    ctx.lineWidth = 1;
+    ctx.moveTo(x_left, y_half);
+    ctx.lineTo(x_right, y_half);
+    arrowHead(x_left, y_half, Math.PI);
+    arrowHead(x_right, y_half, 0);
+    ctx.stroke();
+    
+    ctx.textAlign = 'right';
+    ctx.fillText('Δν', x_right, y_half - 10);
+
+</script>
+</body>
+</html>

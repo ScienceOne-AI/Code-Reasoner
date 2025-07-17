@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Electromagnetic Field Diagram</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="500" height="400"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  /**
+   * Draws a cross symbol (X).
+   * @param {CanvasRenderingContext2D} ctx - The canvas context.
+   * @param {number} x - The x-coordinate of the center.
+   * @param {number} y - The y-coordinate of the center.
+   * @param {number} size - Half the width/height of the cross.
+   */
+  function drawCross(ctx, x, y, size) {
+    ctx.beginPath();
+    ctx.moveTo(x - size, y - size);
+    ctx.lineTo(x + size, y + size);
+    ctx.moveTo(x + size, y - size);
+    ctx.lineTo(x - size, y + size);
+    ctx.stroke();
+  }
+
+  /**
+   * Draws an arrowhead.
+   * @param {CanvasRenderingContext2D} ctx - The canvas context.
+   * @param {number} x - The x-coordinate of the tip.
+   * @param {number} y - The y-coordinate of the tip.
+   * @param {number} angle - The angle of the arrowhead in radians.
+   * @param {number} size - The length of the arrowhead sides.
+   */
+  function drawArrowhead(ctx, x, y, angle, size) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, -size / 2.5);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-size, size / 2.5);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // --- Main Drawing ---
+
+  // Default styles
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#000';
+  ctx.fillStyle = '#000';
+  ctx.lineCap = 'round';
+
+  // 1. Draw Magnetic Field
+  ctx.font = 'italic 30px Times New Roman';
+  ctx.fillText('B', 40, 60);
+  drawCross(ctx, 75, 55, 7);
+
+  const crossPositions = [
+    [250, 55], [420, 55],
+    [150, 260], [320, 270],
+    [80, 340], [250, 340], [420, 340]
+  ];
+  crossPositions.forEach(([x, y]) => {
+    drawCross(ctx, x, y, 7);
+  });
+
+  // 2. Define Rod properties
+  const cx = 250;
+  const cy = 200;
+  const rodLength = 380;
+  const rodAngle = -28 * Math.PI / 180; // Angle in radians
+  const rodThickness = 6;
+
+  // 3. Draw the Rod
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rodAngle);
+  // Draw two parallel lines for the rod
+  ctx.beginPath();
+  ctx.moveTo(-rodLength / 2, -rodThickness / 2);
+  ctx.lineTo(rodLength / 2, -rodThickness / 2);
+  ctx.moveTo(-rodLength / 2, rodThickness / 2);
+  ctx.lineTo(rodLength / 2, rodThickness / 2);
+  // Draw end caps
+  ctx.moveTo(-rodLength / 2, -rodThickness / 2);
+  ctx.lineTo(-rodLength / 2, rodThickness / 2);
+  ctx.moveTo(rodLength / 2, -rodThickness / 2);
+  ctx.lineTo(rodLength / 2, rodThickness / 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // 4. Draw the Fixed Axis (Pivot)
+  const pivotRadius = 4.5;
+  ctx.beginPath();
+  ctx.arc(cx, cy, pivotRadius, 0, 2 * Math.PI);
+  ctx.fillStyle = 'gray';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy, pivotRadius, 0, 2 * Math.PI);
+  ctx.strokeStyle = '#000';
+  ctx.stroke();
+
+  ctx.font = '24px KaiTi';
+  ctx.fillStyle = '#000';
+  ctx.textAlign = 'center';
+  ctx.fillText('固定轴', cx, cy + 50);
+  ctx.textAlign = 'start'; // Reset alignment
+
+  // 5. Draw the Ring and its labels
+  const ringDist = 80; // Distance from pivot
+  const ringX = cx + ringDist * Math.cos(rodAngle);
+  const ringY = cy + ringDist * Math.sin(rodAngle);
+  
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(ringX, ringY, 14, 8, rodAngle, 0, 2 * Math.PI);
+  // Fill with white to hide the rod line passing through
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.font = 'italic 24px Times New Roman';
+  ctx.fillText('m, q', ringX + 25, ringY + 20);
+
+  // 6. Draw Rotation Arrows and ω
+  ctx.lineWidth = 1.5;
+  ctx.font = 'italic 28px Times New Roman';
+
+  // Top-right arrow
+  const omegaTopX = 350;
+  const omegaTopY = 100;
+  ctx.fillText('ω', omegaTopX, omegaTopY);
+  const arcTopCenterX = omegaTopX + 15;
+  const arcTopCenterY = omegaTopY + 25;
+  const arcTopRadius = 30;
+  const arcTopStartAngle = Math.PI * 1.3;
+  const arcTopEndAngle = Math.PI * 1.8;
+  ctx.beginPath();
+  ctx.arc(arcTopCenterX, arcTopCenterY, arcTopRadius, arcTopStartAngle, arcTopEndAngle);
+  ctx.stroke();
+  const arrowheadTopX = arcTopCenterX + arcTopRadius * Math.cos(arcTopEndAngle);
+  const arrowheadTopY = arcTopCenterY + arcTopRadius * Math.sin(arcTopEndAngle);
+  const arrowheadTopAngle = arcTopEndAngle + Math.PI / 2;
+  drawArrowhead(ctx, arrowheadTopX, arrowheadTopY, arrowheadTopAngle, 10);
+
+  // Bottom-left arrow
+  const omegaBottomX = 120;
+  const omegaBottomY = 310;
+  ctx.fillText('ω', omegaBottomX, omegaBottomY);
+  const arcBottomCenterX = omegaBottomX - 15;
+  const arcBottomCenterY = omegaBottomY - 25;
+  const arcBottomRadius = 30;
+  const arcBottomStartAngle = Math.PI * 0.3;
+  const arcBottomEndAngle = Math.PI * 0.8;
+  ctx.beginPath();
+  ctx.arc(arcBottomCenterX, arcBottomCenterY, arcBottomRadius, arcBottomStartAngle, arcBottomEndAngle);
+  ctx.stroke();
+  const arrowheadBottomX = arcBottomCenterX + arcBottomRadius * Math.cos(arcBottomEndAngle);
+  const arrowheadBottomY = arcBottomCenterY + arcBottomRadius * Math.sin(arcBottomEndAngle);
+  const arrowheadBottomAngle = arcBottomEndAngle + Math.PI / 2;
+  drawArrowhead(ctx, arrowheadBottomX, arrowheadBottomY, arrowheadBottomAngle, 10);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Capacitor with Dielectric and Circuit</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    background-color: #fff;
+  }
+</style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="800" height="450"></canvas>
+<script>
+  const canvas = document.getElementById('physicsCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Style settings
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  ctx.lineWidth = 2;
+  ctx.font = '20px serif';
+
+  // Helper function to draw an arrow
+  function drawArrow(fromX, fromY, toX, toY) {
+    const headlen = 10;
+    const dx = toX - fromY;
+    const dy = toY - fromY;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+  }
+  
+  // --- Component Coordinates ---
+  const capY = 180;
+  const capD = 80;
+  const capL = 200;
+  const capX = 300;
+  
+  const slabL = 200;
+  const slabX = 200;
+
+  // --- Draw Dielectric Slab ---
+  ctx.beginPath();
+  ctx.rect(slabX, capY, slabL, capD);
+  ctx.stroke();
+
+  // --- Draw Capacitor Plates ---
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(capX, capY);
+  ctx.lineTo(capX + capL, capY);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(capX, capY + capD);
+  ctx.lineTo(capX + capL, capY + capD);
+  ctx.stroke();
+  ctx.lineWidth = 2;
+
+  // --- Draw Force F ---
+  const forceY = capY + capD / 2;
+  drawArrow(140, forceY, 190, forceY);
+  ctx.font = 'italic bold 22px serif';
+  ctx.fillText('F', 125, forceY);
+  ctx.font = '20px serif';
+
+  // --- Draw Labels ---
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('S, l', slabX + (capX - slabX)/2, capY - 10);
+  ctx.textBaseline = 'top';
+  ctx.fillText('S, l', slabX + (capX - slabX)/2, capY + capD + 10);
+
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('S', capX + capL - 50, capY - 15);
+  ctx.fillText('l', capX + capL - 50, capY - 40);
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  
+  // Epsilon_r label
+  ctx.font = '24px serif';
+  ctx.fillText('ε', slabX + 40, forceY);
+  ctx.font = '16px serif';
+  ctx.fillText('r', slabX + 52, forceY + 6);
+  ctx.font = '20px serif';
+  
+  // 'd' dimension lines
+  function drawDimLine(x, y1, y2, label) {
+    ctx.beginPath();
+    ctx.moveTo(x, y1);
+    ctx.lineTo(x, y2);
+    ctx.stroke();
+    drawArrow(x, y1 + 10, x, y1);
+    drawArrow(x, y2 - 10, x, y2);
+    ctx.fillText(label, x + 8, (y1 + y2) / 2);
+  }
+  
+  drawDimLine(capX - 10, capY, capY + capD, 'd');
+  drawDimLine(capX + capL + 10, capY, capY + capD, 'd');
+  
+
+  // --- Draw Circuit ---
+  const connectX = capX + capL;
+  const circuitX = 650;
+  const topWireY = capY;
+  const resistorY = 240;
+  const sourceY = 320;
+  const bottomWireY = 380;
+  
+  // Top part of the circuit: plate -> switch -> right corner
+  const switchX = connectX + 70;
+  ctx.beginPath();
+  ctx.moveTo(connectX, topWireY);
+  ctx.lineTo(switchX - 10, topWireY);
+  ctx.moveTo(switchX + 10, topWireY);
+  ctx.lineTo(circuitX, topWireY);
+  ctx.stroke();
+
+  // Switch K
+  ctx.beginPath();
+  ctx.arc(switchX, topWireY, 4, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(switchX - 20, topWireY, 4, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('K', switchX - 10, topWireY - 10);
+
+  // Vertical wire on the right
+  ctx.beginPath();
+  ctx.moveTo(circuitX, topWireY);
+  ctx.lineTo(circuitX, resistorY - 20);
+  ctx.moveTo(circuitX, resistorY + 20);
+  ctx.lineTo(circuitX, sourceY - 15);
+  ctx.moveTo(circuitX, sourceY + 15);
+  ctx.lineTo(circuitX, bottomWireY);
+  ctx.stroke();
+  
+  // Resistor R
+  ctx.strokeRect(circuitX - 10, resistorY - 20, 20, 40);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('R', circuitX + 15, resistorY);
+
+  // Voltage Source U0
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(circuitX - 15, sourceY - 15); // long plate
+  ctx.lineTo(circuitX + 15, sourceY - 15);
+  ctx.stroke();
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(circuitX - 10, sourceY + 15); // short plate
+  ctx.lineTo(circuitX + 10, sourceY + 15);
+  ctx.stroke();
+  ctx.lineWidth = 2;
+  
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.font = '22px serif';
+  ctx.fillText('U', circuitX + 22, sourceY);
+  ctx.font = '16px serif';
+  ctx.fillText('0', circuitX + 34, sourceY + 8);
+  ctx.font = '20px serif';
+  
+  // Bottom part of circuit
+  ctx.beginPath();
+  ctx.moveTo(circuitX, bottomWireY);
+  ctx.lineTo(connectX, bottomWireY);
+  ctx.lineTo(connectX, capY + capD);
+  ctx.stroke();
+</script>
+</body>
+</html>

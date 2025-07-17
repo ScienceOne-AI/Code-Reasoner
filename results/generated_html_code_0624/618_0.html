@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="physicsCanvas" width="450" height="350"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style and Color settings
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = 'italic 22px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Geometric Parameters
+    const Ax = 100;
+    const Ay = 250;
+    const tanAlpha = 0.5;
+    const alpha = Math.atan(tanAlpha);
+    const beamHorizontalLength = 250;
+    const beamVerticalLength = beamHorizontalLength * tanAlpha;
+    const Bx = Ax + beamHorizontalLength;
+    const By = Ay - beamVerticalLength;
+    const supportWidth = 50;
+
+    // Helper function for drawing hatching lines
+    function drawHatching(rectX, rectY, rectW, rectH) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(rectX, rectY, rectW, rectH);
+        ctx.clip();
+        ctx.lineWidth = 2;
+        const spacing = 8;
+        // Draw diagonal lines
+        for (let i = -rectH; i < rectW; i += spacing) {
+            ctx.beginPath();
+            ctx.moveTo(rectX + i, rectY);
+            ctx.lineTo(rectX + i + rectH, rectY + rectH);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    // --- 1. Draw Supports ---
+    ctx.lineWidth = 3;
+
+    // Right Support (under B)
+    const supportBx = Bx - supportWidth / 2;
+    const supportBy = By;
+    const supportBh = canvas.height - supportBy;
+    ctx.beginPath();
+    ctx.rect(supportBx, supportBy, supportWidth, supportBh);
+    ctx.stroke();
+    drawHatching(supportBx, supportBy, supportWidth, supportBh);
+
+    // Left Support (under A)
+    const supportAx = Ax - supportWidth / 2;
+    const supportAy = Ay;
+    const supportAh = canvas.height - supportAy;
+    ctx.beginPath();
+    ctx.rect(supportAx, supportAy, supportWidth, supportAh);
+    ctx.stroke();
+    drawHatching(supportAx, supportAy, supportWidth, supportAh);
+    
+    // Fixture at A (as shown in the detailed crop)
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay);
+    ctx.lineTo(Ax - 25, Ay);
+    ctx.lineTo(Ax - 25, Ay + 12);
+    ctx.closePath();
+    ctx.fill();
+
+    // --- 2. Draw Coordinate Axes ---
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 5]);
+
+    // x-axis
+    ctx.beginPath();
+    ctx.moveTo(Ax - 80, Ay);
+    ctx.lineTo(Bx + 60, Ay);
+    ctx.stroke();
+
+    // y-axis
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay + 50);
+    ctx.lineTo(Ax, By - 60);
+    ctx.stroke();
+
+    ctx.setLineDash([]); // Reset line dash
+
+    // --- 3. Draw the Beam AB ---
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'butt';
+    ctx.beginPath();
+    ctx.moveTo(Ax, Ay);
+    ctx.lineTo(Bx, By);
+    ctx.stroke();
+
+    // --- 4. Draw the Angle α ---
+    ctx.lineWidth = 1.5;
+    // Position the vertex of the angle symbol for clarity
+    const angleVertexX = Ax + 140;
+    const angleVertexY = Ay;
+    const angleRadius = 45;
+
+    // Arc for the angle
+    ctx.beginPath();
+    ctx.arc(angleVertexX, angleVertexY, angleRadius, -alpha, 0);
+    ctx.stroke();
+
+    // Arrowhead on the beam side of the arc
+    const arrowAngle = -alpha;
+    const arrowTipX = angleVertexX + angleRadius * Math.cos(arrowAngle);
+    const arrowTipY = angleVertexY + angleRadius * Math.sin(arrowAngle);
+    ctx.save();
+    ctx.translate(arrowTipX, arrowTipY);
+    ctx.rotate(arrowAngle + Math.PI / 2);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-4, 5);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(4, 5);
+    ctx.stroke();
+    ctx.restore();
+
+    // Perpendicular bar on the horizontal side of the arc
+    const barEndX = angleVertexX + angleRadius;
+    const barEndY = angleVertexY;
+    ctx.beginPath();
+    ctx.moveTo(barEndX, barEndY - 5);
+    ctx.lineTo(barEndX, barEndY + 5);
+    ctx.stroke();
+
+    // --- 5. Add Labels ---
+    // Label 'A'
+    ctx.fillText('A', Ax - 15, Ay - 15);
+
+    // Label 'B'
+    ctx.fillText('B', Bx, By - 18);
+
+    // Label 'y'
+    ctx.fillText('y', Ax - 25, By - 40);
+
+    // Label 'x'
+    ctx.fillText('x', Bx + 40, Ay + 15);
+
+    // Label 'α'
+    const alphaLabelAngle = -alpha * 0.55;
+    const alphaLabelRadius = angleRadius * 0.7;
+    const alphaLabelX = angleVertexX + alphaLabelRadius * Math.cos(alphaLabelAngle);
+    const alphaLabelY = angleVertexY + alphaLabelRadius * Math.sin(alphaLabelAngle);
+    ctx.fillText('α', alphaLabelX + 5, alphaLabelY);
+
+</script>
+</body>
+</html>

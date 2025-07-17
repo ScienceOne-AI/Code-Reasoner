@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+</head>
+<body>
+<canvas id="myCanvas" width="800" height="450" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // --- Styles and Constants ---
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const scale = 38; // pixels per meter
+    const y_beam = 150;
+    const y_base_pins = 300;
+    const h = y_base_pins - y_beam;
+    const x_offset = 80;
+
+    // --- Calculated Coordinates ---
+    const x_B = x_offset;
+    const x_C = x_offset + 6 * scale;
+    const x_A = x_offset + 8 * scale;
+    const x_D = x_A + (x_A - x_C);
+    const x_E = x_A + (x_A - x_B);
+
+    const a_dist = 4 * scale;
+    const x_P = x_B + a_dist;
+
+    const alpha_rad = Math.PI / 3; // 60 degrees
+    const horz_proj = h / Math.tan(alpha_rad);
+
+    const x_B_base = x_B;
+    const x_C_base = x_C - horz_proj;
+    const x_D_base = x_D + horz_proj;
+    const x_E_base = x_E;
+
+    const pinRadius = 5;
+    const loadRadius = 25;
+    const mainLineWidth = 2.5;
+    const auxLineWidth = 1.5;
+
+    // --- Helper function for drawing pin joints ---
+    function drawPin(x, y) {
+        ctx.save();
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(x, y, pinRadius, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.restore();
+    }
+    
+    // --- Drawing starts here ---
+    
+    // 1. Draw Ground and Base Plates
+    ctx.save();
+    const plate_width = 2 * pinRadius + 8;
+    const plate_y = y_base_pins + pinRadius + 1;
+    const ground_y = plate_y;
+    const ground_start_x = x_C_base - 50;
+    const ground_end_x = x_D_base + 50;
+    
+    // Plates on the ground
+    ctx.lineWidth = mainLineWidth;
+    [x_B_base, x_C_base, x_D_base, x_E_base].forEach(x_base => {
+        ctx.beginPath();
+        ctx.moveTo(x_base - plate_width / 2, plate_y);
+        ctx.lineTo(x_base + plate_width / 2, plate_y);
+        ctx.stroke();
+    });
+
+    // Ground hatching
+    ctx.lineWidth = auxLineWidth;
+    ctx.beginPath();
+    ctx.moveTo(ground_start_x, ground_y);
+    ctx.lineTo(ground_end_x, ground_y);
+    ctx.stroke();
+    for (let i = ground_start_x; i < ground_end_x; i += 10) {
+        ctx.beginPath();
+        ctx.moveTo(i, ground_y);
+        ctx.lineTo(i - 10, ground_y + 10);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // 2. Draw X-axis (dash-dot)
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.setLineDash([10, 4, 2, 4]);
+    ctx.beginPath();
+    ctx.moveTo(x_C_base - 30, y_base_pins);
+    ctx.lineTo(x_D_base + 80, y_base_pins);
+    ctx.stroke();
+    ctx.restore();
+
+    // 3. Draw Beams
+    ctx.save();
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(x_B, y_beam);
+    ctx.lineTo(x_A - 3, y_beam);
+    ctx.moveTo(x_A + 3, y_beam);
+    ctx.lineTo(x_E, y_beam);
+    ctx.stroke();
+    ctx.restore();
+
+    // 4. Draw Rods
+    ctx.save();
+    ctx.lineWidth = mainLineWidth;
+    ctx.beginPath();
+    ctx.moveTo(x_B, y_beam); ctx.lineTo(x_B_base, y_base_pins);
+    ctx.moveTo(x_C, y_beam); ctx.lineTo(x_C_base, y_base_pins);
+    ctx.moveTo(x_D, y_beam); ctx.lineTo(x_D_base, y_base_pins);
+    ctx.moveTo(x_E, y_beam); ctx.lineTo(x_E_base, y_base_pins);
+    ctx.stroke();
+    ctx.restore();
+
+    // 5. Draw Load P
+    ctx.save();
+    ctx.lineWidth = mainLineWidth;
+    ctx.beginPath();
+    ctx.arc(x_P, y_beam - loadRadius, loadRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.font = 'italic 24px Times New Roman';
+    ctx.fillText('P', x_P, y_beam - loadRadius);
+    
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 3]);
+    ctx.beginPath();
+    ctx.moveTo(x_P, y_beam - 2 * loadRadius);
+    ctx.lineTo(x_P, y_beam);
+    ctx.stroke();
+    ctx.restore();
+
+    // 6. Draw all Pin joints
+    drawPin(x_B, y_beam);
+    drawPin(x_C, y_beam);
+    drawPin(x_A, y_beam);
+    drawPin(x_D, y_beam);
+    drawPin(x_E, y_beam);
+    drawPin(x_B_base, y_base_pins);
+    drawPin(x_C_base, y_base_pins);
+    drawPin(x_D_base, y_base_pins);
+    drawPin(x_E_base, y_base_pins);
+
+    // 7. Draw Labels, Dimensions, and Axes
+    ctx.save();
+    ctx.font = 'italic 22px Times New Roman';
+    ctx.lineWidth = auxLineWidth;
+    
+    // Points
+    ctx.fillText('B', x_B - 25, y_beam);
+    ctx.fillText('C', x_C - 25, y_beam);
+    ctx.fillText('A', x_A, y_beam + 25);
+    
+    // Rods
+    ctx.fillText('1', x_B - 15, y_beam + h/2);
+    ctx.fillText('2', x_C - 45, y_beam + h/2);
+    ctx.fillText('3', x_D + 45, y_beam + h/2);
+    ctx.fillText('4', x_E + 15, y_beam + h/2);
+    
+    // Dimension 'a'
+    const dim_y = y_beam + 35;
+    ctx.beginPath();
+    ctx.moveTo(x_B, dim_y); ctx.lineTo(x_P, dim_y);
+    ctx.moveTo(x_B, dim_y - 5); ctx.lineTo(x_B, dim_y + 5);
+    ctx.moveTo(x_P, y_beam); ctx.lineTo(x_P, dim_y + 5);
+    // Arrows
+    ctx.moveTo(x_B, dim_y); ctx.lineTo(x_B + 8, dim_y - 4);
+    ctx.moveTo(x_B, dim_y); ctx.lineTo(x_B + 8, dim_y + 4);
+    ctx.moveTo(x_P, dim_y); ctx.lineTo(x_P - 8, dim_y - 4);
+    ctx.moveTo(x_P, dim_y); ctx.lineTo(x_P - 8, dim_y + 4);
+    ctx.stroke();
+    ctx.fillText('a', x_B + a_dist / 2, dim_y - 2);
+    
+    // Coordinate Axes
+    // Y-axis
+    ctx.beginPath();
+    ctx.moveTo(x_B - 40, y_beam + 20);
+    ctx.lineTo(x_B - 40, y_beam - 50);
+    ctx.lineTo(x_B - 40 - 5, y_beam - 42);
+    ctx.moveTo(x_B - 40, y_beam - 50);
+    ctx.lineTo(x_B - 40 + 5, y_beam - 42);
+    ctx.stroke();
+    ctx.fillText('y', x_B - 40, y_beam - 65);
+    
+    // X-axis label and arrow
+    const x_axis_end = x_D_base + 80;
+    ctx.beginPath();
+    ctx.moveTo(x_axis_end, y_base_pins);
+    ctx.lineTo(x_axis_end - 8, y_base_pins - 4);
+    ctx.moveTo(x_axis_end, y_base_pins);
+    ctx.lineTo(x_axis_end - 8, y_base_pins + 4);
+    ctx.stroke();
+    ctx.fillText('x', x_axis_end + 15, y_base_pins);
+    
+    // Angles 'α'
+    const angle_radius = 30;
+    function drawAngleArrow(cx, cy, r, angle) {
+        let p_on_arc_x = cx + r * Math.cos(angle);
+        let p_on_arc_y = cy + r * Math.sin(angle);
+        let normal_angle = angle;
+        let p_base_x = p_on_arc_x - 6 * Math.cos(normal_angle);
+        let p_base_y = p_on_arc_y - 6 * Math.sin(normal_angle);
+        let tangent_angle = normal_angle + Math.PI/2;
+        ctx.beginPath();
+        ctx.moveTo(p_on_arc_x, p_on_arc_y);
+        ctx.lineTo(p_base_x + 4 * Math.cos(tangent_angle), p_base_y + 4 * Math.sin(tangent_angle));
+        ctx.moveTo(p_on_arc_x, p_on_arc_y);
+        ctx.lineTo(p_base_x - 4 * Math.cos(tangent_angle), p_base_y - 4 * Math.sin(tangent_angle));
+        ctx.stroke();
+    }
+    
+    // Angle for rod 2
+    const angle2_start = 0;
+    const angle2_end = -alpha_rad;
+    ctx.beginPath();
+    ctx.arc(x_C_base, y_base_pins, angle_radius, angle2_start, angle2_end, true);
+    ctx.stroke();
+    drawAngleArrow(x_C_base, y_base_pins, angle_radius, angle2_end + 0.2);
+    ctx.fillText('α', x_C_base + angle_radius + 15, y_base_pins - 15);
+
+    // Angle for rod 3
+    const angle3_start = -Math.PI;
+    const angle3_end = -Math.PI + alpha_rad;
+    ctx.beginPath();
+    ctx.arc(x_D_base, y_base_pins, angle_radius, angle3_start, angle3_end, false);
+    ctx.stroke();
+    drawAngleArrow(x_D_base, y_base_pins, angle_radius, angle3_end - 0.2);
+    ctx.fillText('α', x_D_base - angle_radius - 15, y_base_pins - 15);
+    
+    ctx.restore();
+</script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Static Force Analysis Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="statics-canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('statics-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Configuration ---
+        const a = 75;
+        const margin = 50;
+        const supportStructureHeight = 25;
+        const linkHeight = 15;
+
+        // --- Canvas and Coordinate Setup ---
+        const canvasWidth = 6 * a + 2 * margin + 20;
+        const canvasHeight = a + supportStructureHeight + 2 * margin + 30;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        const xA = margin;
+        const xB = margin + 2 * a;
+        const xC = margin + 4 * a;
+        const xD = margin + 6 * a;
+
+        const yTop = margin + 20;
+        const yBottom = margin + 20 + a; // Level of the support pins
+        const yGround = yBottom + supportStructureHeight;
+
+        // --- Drawing Helper Functions ---
+        function drawPinSupport(x, y, groundY) {
+            // Pin circle
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Triangle base
+            ctx.beginPath();
+            ctx.moveTo(x - 15, groundY);
+            ctx.lineTo(x + 15, groundY);
+            ctx.lineTo(x, y);
+            ctx.closePath();
+            ctx.fillStyle = 'black';
+            ctx.fill();
+        }
+
+        function drawRollerSupport(x, y, groundY) {
+            // Top pin
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Bottom pin and link
+            const yBottomPin = y + linkHeight;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, yBottomPin);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(x, yBottomPin, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.stroke();
+
+            // Ground fixture
+            const groundPatchWidth = 30;
+            ctx.beginPath();
+            ctx.moveTo(x - groundPatchWidth / 2, groundY);
+            ctx.lineTo(x + groundPatchWidth / 2, groundY);
+            ctx.stroke();
+            
+            // Hatching for fixture
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                let hx = x - groundPatchWidth / 2 + (i * groundPatchWidth / 4);
+                ctx.moveTo(hx, groundY);
+                ctx.lineTo(hx - 5, groundY + 8);
+                ctx.stroke();
+            }
+        }
+        
+        function drawArrow(x1, y1, x2, y2, size) {
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - size * Math.cos(angle - Math.PI / 6), y2 - size * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(x2 - size * Math.cos(angle + Math.PI / 6), y2 - size * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fillStyle = 'black';
+            ctx.fill();
+        }
+
+        // --- Main Drawing ---
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+        // 1. Draw Main Structure
+        const filletY = yTop + 0.3 * a;
+        const controlY = yTop; // Control point for arch curves
+        ctx.beginPath();
+        // Outer path (defines overall shape)
+        ctx.moveTo(xA, yBottom);
+        ctx.lineTo(xA, yTop);
+        ctx.lineTo(xD, yTop);
+        ctx.lineTo(xD, yBottom);
+        ctx.closePath();
+        // Inner paths (define cutouts/holes)
+        [xA, xB, xC].forEach(x_start => {
+            let x_end = x_start + 2 * a;
+            ctx.moveTo(x_start, yBottom);
+            ctx.lineTo(x_start, filletY);
+            ctx.quadraticCurveTo(x_start + a, controlY, x_end, filletY);
+            ctx.lineTo(x_end, yBottom);
+            ctx.closePath();
+        });
+        ctx.fillStyle = 'black';
+        ctx.fill('evenodd');
+
+        // 2. Draw Dashed Line connecting supports
+        ctx.beginPath();
+        ctx.setLineDash([7, 5]);
+        ctx.lineWidth = 2;
+        ctx.moveTo(xA, yBottom);
+        ctx.lineTo(xD, yBottom);
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 3. Draw Supports and Ground Line
+        ctx.lineWidth = 3;
+        drawPinSupport(xA, yBottom, yGround);
+        drawRollerSupport(xB, yBottom, yGround);
+        drawRollerSupport(xC, yBottom, yGround);
+        drawPinSupport(xD, yBottom, yGround);
+        
+        // Main ground line
+        ctx.beginPath();
+        ctx.moveTo(xA - 30, yGround);
+        ctx.lineTo(xD + 30, yGround);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // Hatching
+        ctx.lineWidth = 1;
+        for (let i = xA - 30; i <= xD + 30; i += 10) {
+            ctx.beginPath();
+            ctx.moveTo(i, yGround);
+            ctx.lineTo(i - 8, yGround + 12);
+            ctx.stroke();
+        }
+
+        // 4. Draw Hinges on Top Beam
+        const hingeRadius = 5.5;
+        [xA + a, xA + 3 * a, xA + 5 * a].forEach(x => {
+            ctx.beginPath();
+            ctx.arc(x, yTop, hingeRadius, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        });
+
+        // 5. Draw Force P
+        drawArrow(xA - 60, yTop, xA, yTop, 12);
+        ctx.font = 'bold 24px serif';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.fillText('P', xA - 75, yTop + 8);
+
+        // 6. Draw Dimensions
+        ctx.font = 'italic 18px serif';
+        ctx.lineWidth = 1.5;
+        
+        // Horizontal Dimensions 'a'
+        const yDimH = yBottom - 20;
+        const yDimConnector = yDimH - 25; // level for dashed lines
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1;
+        [xA + a, xA + 3 * a, xA + 5*a].forEach(x => { // From hinges
+             ctx.moveTo(x, yTop); ctx.lineTo(x, yDimConnector);
+        });
+        [xB, xC].forEach(x => { // From supports
+             ctx.moveTo(x, yBottom); ctx.lineTo(x, yDimConnector);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+        
+        const yDimLine = yDimConnector + 15;
+        for (let i = 0; i < 6; i++) {
+            const x1 = xA + i * a;
+            const x2 = xA + (i + 1) * a;
+            const mid = (x1 + x2) / 2;
+            
+            ctx.beginPath();
+            ctx.lineWidth = 1.5;
+            // Left arrow
+            ctx.moveTo(mid, yDimLine); ctx.lineTo(x1, yDimLine);
+            ctx.moveTo(x1, yDimLine); ctx.lineTo(x1 + 8, yDimLine - 4);
+            ctx.moveTo(x1, yDimLine); ctx.lineTo(x1 + 8, yDimLine + 4);
+            // Right arrow
+            ctx.moveTo(mid, yDimLine); ctx.lineTo(x2, yDimLine);
+            ctx.moveTo(x2, yDimLine); ctx.lineTo(x2 - 8, yDimLine - 4);
+            ctx.moveTo(x2, yDimLine); ctx.lineTo(x2 - 8, yDimLine + 4);
+            // Center tick
+            ctx.moveTo(mid, yDimLine - 5); ctx.lineTo(mid, yDimLine + 5);
+            ctx.stroke();
+
+            ctx.fillText('a', mid, yDimLine + 20);
+        }
+
+        // Vertical Dimension 'a'
+        const xDimV = xD + 25;
+        ctx.beginPath();
+        ctx.lineWidth = 1.5;
+        ctx.moveTo(xDimV, yTop);
+        ctx.lineTo(xDimV, yBottom);
+        // Arrows
+        ctx.moveTo(xDimV, yTop); ctx.lineTo(xDimV - 4, yTop + 8); ctx.moveTo(xDimV, yTop); ctx.lineTo(xDimV + 4, yTop + 8);
+        ctx.moveTo(xDimV, yBottom); ctx.lineTo(xDimV - 4, yBottom - 8); ctx.moveTo(xDimV, yBottom); ctx.lineTo(xDimV + 4, yBottom - 8);
+        ctx.stroke();
+        ctx.textAlign = 'left';
+        ctx.fillText('a', xDimV + 8, yTop + a / 2 + 5);
+
+        // 7. Draw Support Labels
+        ctx.font = 'bold 20px serif';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.fillText('A', xA, yGround + 20);
+        ctx.fillText('B', xB, yGround + 20);
+        ctx.fillText('C', xC, yGround + 20);
+        ctx.fillText('D', xD, yGround + 20);
+
+    </script>
+</body>
+</html>

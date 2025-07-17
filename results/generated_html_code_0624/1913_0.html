@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>U-tube Oscillation Diagram</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="800" height="420"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Drawing Parameters ---
+        const R = 50;      // Bend centerline radius
+        const r_in = 12;   // Tube inner radius (half of bore width)
+        const wall_thickness = 4;
+        const r_out = r_in + wall_thickness; // Tube outer radius
+        const H = 160;     // Straight height of arms above bend center
+        const liquid_color = '#C0C0C0';
+        const line_width = 1.5;
+
+        // Figure 1 position
+        const CX1 = 200, CY = 240;
+        
+        // Figure 2 position
+        const CX2 = 600, CY = 240;
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws the U-shaped tube.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} cx - The x-coordinate of the center of the U-bend.
+         * @param {number} cy - The y-coordinate of the center of the U-bend.
+         * @param {number} R_bend - The radius of the centerline of the U-bend.
+         * @param {number} r_inner - The inner radius of the tube's cross-section.
+         * @param {number} r_outer - The outer radius of the tube's cross-section.
+         * @param {number} height - The height of the straight arms.
+         */
+        function drawTube(ctx, cx, cy, R_bend, r_inner, r_outer, height) {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = line_width;
+
+            // Draw the complete U-tube shape
+            ctx.beginPath();
+            // Outer wall
+            ctx.moveTo(cx - R_bend - r_outer, cy - height);
+            ctx.lineTo(cx - R_bend - r_outer, cy);
+            ctx.arc(cx, cy, R_bend + r_outer, Math.PI, 0, false);
+            ctx.lineTo(cx + R_bend + r_outer, cy - height);
+
+            // Inner wall
+            ctx.moveTo(cx - R_bend + r_inner, cy - height);
+            ctx.lineTo(cx - R_bend + r_inner, cy);
+            ctx.arc(cx, cy, R_bend - r_inner, Math.PI, 0, false);
+            ctx.lineTo(cx + R_bend + r_inner, cy - height);
+            
+            ctx.stroke();
+        }
+
+        /**
+         * Draws the liquid inside the U-tube.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} cx - The x-coordinate of the center of the U-bend.
+         * @param {number} cy - The y-coordinate of the center of the U-bend.
+         * @param {number} R_bend - The radius of the centerline of the U-bend.
+         * @param {number} r_inner - The inner radius of the tube's cross-section.
+         * @param {number} y_left - The y-coordinate of the liquid surface in the left arm.
+         * @param {number} y_right - The y-coordinate of the liquid surface in the right arm.
+         */
+        function drawLiquid(ctx, cx, cy, R_bend, r_inner, y_left, y_right) {
+            const meniscus_depth = 4;
+            const x_li = cx - R_bend - r_inner; // left-inner
+            const x_lo = cx - R_bend + r_inner; // left-outer
+            const x_ri = cx + R_bend - r_inner; // right-inner
+            const x_ro = cx + R_bend + r_inner; // right-outer
+
+            // Fill the shape
+            ctx.beginPath();
+            ctx.moveTo(x_li, y_left);
+            ctx.quadraticCurveTo(cx - R_bend, y_left - meniscus_depth, x_lo, y_left);
+            ctx.lineTo(x_lo, cy);
+            ctx.arc(cx, cy, R_bend + r_inner, Math.PI, 0, false);
+            ctx.lineTo(x_ro, cy);
+            ctx.lineTo(x_ro, y_right);
+            ctx.quadraticCurveTo(cx + R_bend, y_right - meniscus_depth, x_ri, y_right);
+            ctx.lineTo(x_ri, cy);
+            ctx.arc(cx, cy, R_bend - r_inner, 0, Math.PI, true);
+            ctx.lineTo(x_li, cy);
+            ctx.closePath();
+            
+            ctx.fillStyle = liquid_color;
+            ctx.fill();
+
+            // Stroke the outline
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = line_width;
+            
+            // Meniscuses
+            ctx.beginPath();
+            ctx.moveTo(x_li, y_left);
+            ctx.quadraticCurveTo(cx - R_bend, y_left - meniscus_depth, x_lo, y_left);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x_ri, y_right);
+            ctx.quadraticCurveTo(cx + R_bend, y_right - meniscus_depth, x_ro, y_right);
+            ctx.stroke();
+
+            // Vertical lines of liquid
+            ctx.beginPath();
+            ctx.moveTo(x_li, y_left); ctx.lineTo(x_li, cy);
+            ctx.moveTo(x_lo, y_left); ctx.lineTo(x_lo, cy);
+            ctx.moveTo(x_ri, y_right); ctx.lineTo(x_ri, cy);
+            ctx.moveTo(x_ro, y_right); ctx.lineTo(x_ro, cy);
+            ctx.stroke();
+            
+            // Bend lines of liquid
+            ctx.beginPath();
+            ctx.arc(cx, cy, R_bend - r_inner, Math.PI, 0, false);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(cx, cy, R_bend + r_inner, Math.PI, 0, false);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws a vertical dimension line with T-bars at the ends.
+         * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+         * @param {number} x - The x-coordinate of the dimension line.
+         * @param {number} y1 - The start y-coordinate.
+         * @param {number} y2 - The end y-coordinate.
+         * @param {number} bar_len - The length of the T-bars.
+         */
+        function drawDimensionLine(ctx, x, y1, y2, bar_len = 10) {
+            ctx.beginPath();
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, y2);
+            ctx.moveTo(x - bar_len / 2, y1);
+            ctx.lineTo(x + bar_len / 2, y1);
+            ctx.moveTo(x - bar_len / 2, y2);
+            ctx.lineTo(x + bar_len / 2, y2);
+            ctx.stroke();
+        }
+
+
+        // --- Draw Figure 3.1 ---
+        const y_eq = CY - 80;
+        
+        drawTube(ctx, CX1, CY, R, r_in, r_out, H);
+        drawLiquid(ctx, CX1, CY, R, r_in, y_eq, y_eq);
+
+        // Annotations for Fig 3.1
+        // Equilibrium line
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(CX1 - R - r_out - 30, y_eq);
+        ctx.lineTo(CX1 + R + r_out + 30, y_eq);
+        ctx.stroke();
+        ctx.restore();
+
+        // Label L
+        const L_line_x_left = CX1 - R - r_out - 15;
+        const L_line_x_right = CX1 + R + r_out + 15;
+        
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        // Dashed lines for L (left)
+        ctx.beginPath();
+        ctx.moveTo(CX1 - R - r_out, y_eq);
+        ctx.lineTo(L_line_x_left, y_eq);
+        ctx.moveTo(CX1 - R - r_out, CY);
+        ctx.lineTo(L_line_x_left, CY);
+        ctx.stroke();
+        // Dashed lines for L (right)
+        ctx.beginPath();
+        ctx.moveTo(CX1 + R + r_out, y_eq);
+        ctx.lineTo(L_line_x_right, y_eq);
+        ctx.moveTo(CX1 + R + r_out, CY);
+        ctx.lineTo(L_line_x_right, CY);
+        ctx.stroke();
+        ctx.restore();
+        
+        ctx.save();
+        ctx.lineWidth = 1;
+        // Dimension line for L (left)
+        drawDimensionLine(ctx, L_line_x_left, y_eq, CY);
+        // Dimension line for L (right)
+        drawDimensionLine(ctx, L_line_x_right, y_eq, CY);
+        ctx.restore();
+        
+        // Text labels for L
+        ctx.font = "italic 16px 'Times New Roman'";
+        ctx.textAlign = 'right';
+        ctx.fillText("L", L_line_x_left - 5, CY - 40);
+        ctx.textAlign = 'left';
+        ctx.fillText("L", L_line_x_right + 5, CY - 40);
+        
+        // Decorative dashed arc at the bottom
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        const arc_radius = R + r_out + 10;
+        const arc_center_y = CY + 5;
+        ctx.arc(CX1, arc_center_y, arc_radius, 1.15 * Math.PI, 1.85 * Math.PI);
+        ctx.stroke();
+        // Center marker
+        ctx.beginPath();
+        ctx.moveTo(CX1, arc_center_y);
+        ctx.lineTo(CX1, arc_center_y - arc_radius);
+        ctx.stroke();
+        ctx.restore();
+
+        // Figure label
+        ctx.font = "bold 16px 'Arial'";
+        ctx.textAlign = 'center';
+        ctx.fillText("Fig. 3.1", CX1, CY + R + 60);
+
+
+        // --- Draw Figure 3.2 ---
+        const displacement_x = 30;
+        const y_left = y_eq - displacement_x;
+        const y_right = y_eq + displacement_x;
+
+        drawTube(ctx, CX2, CY, R, r_in, r_out, H);
+        drawLiquid(ctx, CX2, CY, R, r_in, y_left, y_right);
+        
+        // Annotations for Fig 3.2
+        // Equilibrium line
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(CX2 - R - r_out - 30, y_eq);
+        ctx.lineTo(CX2 + R + r_out + 30, y_eq);
+        ctx.stroke();
+        ctx.restore();
+
+        // Labels for x
+        const x_line_x_left = CX2 - R - r_out - 15;
+        const x_line_x_right = CX2 + R + r_out + 15;
+        
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        // Dashed lines for x (left)
+        ctx.beginPath();
+        ctx.moveTo(CX2 - R - r_out, y_left);
+        ctx.lineTo(x_line_x_left, y_left);
+        ctx.moveTo(CX2 - R - r_out, y_eq);
+        ctx.lineTo(x_line_x_left, y_eq);
+        ctx.stroke();
+        // Dashed lines for x (right)
+        ctx.beginPath();
+        ctx.moveTo(CX2 + R + r_out, y_right);
+        ctx.lineTo(x_line_x_right, y_right);
+        ctx.moveTo(CX2 + R + r_out, y_eq);
+        ctx.lineTo(x_line_x_right, y_eq);
+        ctx.stroke();
+        ctx.restore();
+        
+        ctx.save();
+        ctx.lineWidth = 1;
+        // Dimension line for x (left)
+        drawDimensionLine(ctx, x_line_x_left, y_left, y_eq);
+        // Dimension line for x (right)
+        drawDimensionLine(ctx, x_line_x_right, y_eq, y_right);
+        ctx.restore();
+
+        // Text labels for x
+        ctx.font = "italic 16px 'Times New Roman'";
+        ctx.textAlign = 'right';
+        ctx.fillText("x", x_line_x_left - 5, y_eq - displacement_x / 2 + 5);
+        ctx.textAlign = 'left';
+        ctx.fillText("x", x_line_x_right + 5, y_eq + displacement_x / 2 + 5);
+
+        // Figure label
+        ctx.font = "bold 16px 'Arial'";
+        ctx.textAlign = 'center';
+        ctx.fillText("Fig. 3.2", CX2, CY + R + 60);
+
+    </script>
+</body>
+</html>

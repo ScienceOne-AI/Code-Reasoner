@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Circuit Diagram 5.7.1</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+  }
+  canvas {
+    background-color: #fff;
+    border: 1px solid #ccc;
+  }
+</style>
+</head>
+<body>
+<canvas id="circuitCanvas" width="500" height="400"></canvas>
+<script>
+  const canvas = document.getElementById('circuitCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // --- Helper Functions ---
+
+  function drawResistor(ctx, x, y, width, height) {
+    ctx.strokeRect(x, y - height / 2, width, height);
+  }
+
+  function drawInductor(ctx, x, y, length, coils) {
+    const coilWidth = length / coils;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    for (let i = 0; i < coils; i++) {
+        ctx.arc(x + i * coilWidth + coilWidth / 2, y, coilWidth / 2, Math.PI, 0);
+    }
+    ctx.stroke();
+  }
+
+  function drawACSource(ctx, x, y, radius) {
+    // Circle
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.stroke();
+    
+    // Sine wave inside
+    ctx.beginPath();
+    const sineWidth = radius * 1.5;
+    const sineHeight = radius * 0.6;
+    ctx.moveTo(x - sineWidth / 2, y);
+    ctx.quadraticCurveTo(x - sineWidth / 4, y - sineHeight, x, y);
+    ctx.quadraticCurveTo(x + sineWidth / 4, y + sineHeight, x + sineWidth / 2, y);
+    ctx.stroke();
+  }
+
+  function drawArrow(ctx, fromX, fromY, toX, toY, headLength = 8) {
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const angle = Math.atan2(dy, dx);
+    ctx.beginPath();
+    // main line, if needed. For just an arrow head, we can skip this.
+    // ctx.moveTo(fromX, fromY);
+    // ctx.lineTo(toX, toY);
+    
+    // arrow head
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+    ctx.stroke();
+  }
+
+  // --- Main Drawing Logic ---
+
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'black';
+  
+  // --- Define coordinates ---
+  const y_source = 350;
+  const y_main = 150;
+  const y_inductor = 80;
+  const x_left = 50;
+  const x_right = 450;
+  const x_r1_start = 80; const x_r1_end = 160;
+  const x_junct1 = 200;
+  const x_junct2 = 400;
+  const x_p_start = 220; const x_p_end = 380;
+  const centerX = 250;
+
+  // --- Draw Wires ---
+  ctx.beginPath();
+  // Left leg
+  ctx.moveTo(x_left, y_source); ctx.lineTo(x_left, y_main);
+  // Top-left wire + R1 gap
+  ctx.lineTo(x_r1_start, y_main);
+  ctx.moveTo(x_r1_end, y_main); ctx.lineTo(x_junct1, y_main);
+  // Right leg
+  ctx.moveTo(x_junct2, y_main); ctx.lineTo(x_right, y_main);
+  ctx.lineTo(x_right, y_source);
+  // Bottom leg + source gap
+  ctx.lineTo(centerX + 25, y_source);
+  ctx.moveTo(centerX - 25, y_source);
+  ctx.lineTo(x_left, y_source);
+  // Parallel Wires
+  // Top (L) branch
+  ctx.moveTo(x_junct1, y_main); ctx.lineTo(x_junct1, y_inductor);
+  ctx.lineTo(x_p_start, y_inductor);
+  ctx.moveTo(x_p_end, y_inductor); ctx.lineTo(x_junct2, y_inductor);
+  ctx.lineTo(x_junct2, y_main);
+  // Bottom (R) branch
+  ctx.moveTo(x_junct1, y_main); ctx.lineTo(x_p_start, y_main);
+  ctx.moveTo(x_p_end, y_main); ctx.lineTo(x_junct2, y_main);
+  ctx.stroke();
+
+  // --- Draw Components ---
+  drawACSource(ctx, centerX, y_source, 25);
+  drawResistor(ctx, x_r1_start, y_main, x_r1_end - x_r1_start, 30);
+  drawInductor(ctx, x_p_start, y_inductor, x_p_end - x_p_start, 4);
+  drawResistor(ctx, x_p_start, y_main, x_p_end - x_p_start, 30);
+
+  // --- Draw Labels ---
+  ctx.textAlign = 'center';
+  
+  // Component Labels
+  ctx.font = "italic 22px 'Times New Roman'";
+  ctx.fillText("R", (x_r1_start + x_r1_end) / 2, y_main - 20);
+  ctx.fillText("L", (x_p_start + x_p_end) / 2, y_inductor - 20);
+  ctx.fillText("R", (x_p_start + x_p_end) / 2, y_main - 20);
+
+  // EMF label ε(t)
+  ctx.font = "italic 24px 'Times New Roman'";
+  ctx.fillText("\u2130", centerX, 270);
+  ctx.font = "italic 20px 'Times New Roman'";
+  ctx.fillText("(t)", centerX + 18, 270);
+
+  // Current Labels with Arrows
+  // Current i
+  ctx.font = "italic 22px 'Times New Roman'";
+  ctx.fillText("i", x_left - 15, 250);
+  ctx.beginPath(); ctx.moveTo(x_left, 270); ctx.lineTo(x_left, 230); ctx.stroke();
+  drawArrow(ctx, x_left, 270, x_left, 230);
+
+  // Current i_L
+  ctx.fillText("i", x_junct1 + 10, y_inductor - 5);
+  ctx.font = "italic 16px 'Times New Roman'";
+  ctx.fillText("L", x_junct1 + 18, y_inductor);
+  ctx.beginPath(); ctx.moveTo(x_junct1 + 10, y_inductor); ctx.lineTo(x_p_start - 10, y_inductor); ctx.stroke();
+  drawArrow(ctx, x_junct1 + 10, y_inductor, x_p_start - 10, y_inductor);
+
+  // Current i_R
+  ctx.font = "italic 22px 'Times New Roman'";
+  ctx.fillText("i", x_junct1 + 10, y_main - 5);
+  ctx.font = "italic 16px 'Times New Roman'";
+  ctx.fillText("R", x_junct1 + 18, y_main);
+  ctx.beginPath(); ctx.moveTo(x_junct1 + 10, y_main); ctx.lineTo(x_p_start - 10, y_main); ctx.stroke();
+  drawArrow(ctx, x_junct1 + 10, y_main, x_p_start - 10, y_main);
+  
+  // --- Draw Caption ---
+  ctx.font = "24px 'SimSun', 'STSong'";
+  ctx.fillText("电图 5.7.1", centerX, 390);
+  
+</script>
+</body>
+</html>

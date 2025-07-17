@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="myCanvas" width="600" height="400" style="border:1px solid #d3d3d3;"></canvas>
+<script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    /**
+     * Draws an arrow on a context.
+     * @param {CanvasRenderingContext2D} ctx The canvas context.
+     * @param {number} fromx Start x-coordinate.
+     * @param {number} fromy Start y-coordinate.
+     * @param {number} tox End x-coordinate.
+     * @param {number} toy End y-coordinate.
+     * @param {number} arrowWidth The width of the arrow head.
+     */
+    function drawArrow(ctx, fromx, fromy, tox, toy, arrowWidth = 5) {
+        const headlen = 10;
+        const dx = tox - fromx;
+        const dy = toy - fromy;
+        const angle = Math.atan2(dy, dx);
+        ctx.beginPath();
+        ctx.moveTo(fromx, fromy);
+        ctx.lineTo(tox, toy);
+        ctx.stroke(); 
+        ctx.beginPath();
+        ctx.moveTo(tox, toy);
+        ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+    }
+    
+    /**
+     * Draws a fraction text.
+     * @param {CanvasRenderingContext2D} ctx The canvas context.
+     * @param {string} numerator The text for the numerator.
+     * @param {string} denominator The text for the denominator.
+     * @param {number} x The center x-coordinate of the fraction.
+     * @param {number} y The y-coordinate of the numerator's baseline.
+     * @param {number} fontSize The font size.
+     */
+    function drawFraction(ctx, numerator, denominator, x, y, fontSize = 20) {
+        ctx.font = `italic ${fontSize}px 'Times New Roman'`;
+        const numWidth = ctx.measureText(numerator).width;
+        const denWidth = ctx.measureText(denominator).width;
+        const barWidth = Math.max(numWidth, denWidth) + 6;
+        const barY = y + 3;
+
+        ctx.fillText(numerator, x - numWidth / 2, y);
+        ctx.font = `${fontSize}px 'Times New Roman'`;
+        ctx.fillText(denominator, x - denWidth / 2, y + fontSize + 2);
+        
+        ctx.beginPath();
+        ctx.moveTo(x - barWidth / 2, barY);
+        ctx.lineTo(x + barWidth / 2, barY);
+        ctx.stroke();
+    }
+
+    // Parameters
+    const cx = 270;
+    const cy = 200;
+    const L = 400; // Represents length 'l'
+    const theta_deg = 15;
+    const theta_rad = theta_deg * Math.PI / 180;
+
+    // Styles
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.lineWidth = 2;
+    ctx.font = "italic 22px 'Times New Roman'";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // 1. Horizontal Dashed Line
+    ctx.save();
+    ctx.setLineDash([6, 6]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx - L / 2 - 50, cy);
+    ctx.lineTo(cx + L / 2 + 50, cy);
+    ctx.stroke();
+    ctx.restore();
+
+    // 2. Rod
+    const rod_x1 = cx - (L / 2) * Math.cos(theta_rad);
+    const rod_y1 = cy - (L / 2) * Math.sin(theta_rad);
+    const rod_x2 = cx + (L / 2) * Math.cos(theta_rad);
+    const rod_y2 = cy + (L / 2) * Math.sin(theta_rad);
+    ctx.beginPath();
+    ctx.moveTo(rod_x1, rod_y1);
+    ctx.lineTo(rod_x2, rod_y2);
+    ctx.stroke();
+    
+    // 3. Pivot O
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('O', cx + 15, cy - 10);
+
+    // 4. Rod Mass 'm'
+    const rod_m_x = cx - (L / 3) * Math.cos(theta_rad);
+    const rod_m_y = cy - (L / 3) * Math.sin(theta_rad);
+    ctx.fillText('m', rod_m_x, rod_m_y - 20);
+    
+    // 5. Falling Beetle
+    const beetle_fall_x = cx + L / 4;
+    const beetle_fall_y = cy - 70;
+    ctx.beginPath();
+    ctx.arc(beetle_fall_x, beetle_fall_y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.fillText('m', beetle_fall_x, beetle_fall_y - 20);
+    drawArrow(ctx, beetle_fall_x, beetle_fall_y + 5, beetle_fall_x, beetle_fall_y + 45);
+
+    // 6. Dimension l/4
+    ctx.beginPath();
+    ctx.arc(cx + L / 4, cy, 3, 0, 2 * Math.PI);
+    ctx.fill();
+
+    const dim_l4_y = cy + 40;
+    const dim_l4_x_start = cx;
+    const dim_l4_x_end = cx + L / 4;
+    const tickHeight = 10;
+    
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(dim_l4_x_start, dim_l4_y);
+    ctx.lineTo(dim_l4_x_end, dim_l4_y);
+    ctx.moveTo(dim_l4_x_start, dim_l4_y - tickHeight / 2);
+    ctx.lineTo(dim_l4_x_start, dim_l4_y + tickHeight / 2);
+    ctx.moveTo(dim_l4_x_end, dim_l4_y - tickHeight / 2);
+    ctx.lineTo(dim_l4_x_end, dim_l4_y + tickHeight / 2);
+    ctx.stroke();
+
+    const arrowMidX = (dim_l4_x_start + dim_l4_x_end) / 2;
+    drawArrow(ctx, arrowMidX, dim_l4_y, dim_l4_x_start, dim_l4_y);
+    drawArrow(ctx, arrowMidX, dim_l4_y, dim_l4_x_end, dim_l4_y);
+    
+    ctx.fillStyle = "white"; 
+    ctx.fillRect(arrowMidX - 15, dim_l4_y - 18, 30, 25);
+    ctx.fillStyle = "black";
+    drawFraction(ctx, 'l', '4', arrowMidX, dim_l4_y - 12, 18);
+    ctx.restore();
+
+    // 7. Beetle on Rod
+    const R = L * 0.4; 
+    const beetle_on_rod_x = cx + R * Math.cos(theta_rad);
+    const beetle_on_rod_y = cy + R * Math.sin(theta_rad);
+    ctx.beginPath();
+    ctx.arc(beetle_on_rod_x, beetle_on_rod_y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // 8. Dimension 'r'
+    const dim_r_dist = 40; 
+    const perp_dx = -dim_r_dist * Math.sin(theta_rad);
+    const perp_dy = dim_r_dist * Math.cos(theta_rad);
+    const r_start_x = cx + perp_dx;
+    const r_start_y = cy + perp_dy;
+    const r_end_x = beetle_on_rod_x + perp_dx;
+    const r_end_y = beetle_on_rod_y + perp_dy;
+    
+    ctx.save();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(r_start_x, r_start_y);
+    ctx.lineTo(r_end_x, r_end_y);
+    ctx.moveTo(r_start_x, r_start_y);
+    ctx.lineTo(cx, cy);
+    ctx.moveTo(r_end_x, r_end_y);
+    ctx.lineTo(beetle_on_rod_x, beetle_on_rod_y);
+    ctx.stroke();
+
+    const r_arrow_mid_x = (r_start_x + r_end_x)/2;
+    const r_arrow_mid_y = (r_start_y + r_end_y)/2;
+    drawArrow(ctx, r_arrow_mid_x, r_arrow_mid_y, r_start_x, r_start_y);
+    drawArrow(ctx, r_arrow_mid_x, r_arrow_mid_y, r_end_x, r_end_y);
+    
+    ctx.fillStyle = "white"; 
+    ctx.fillRect(r_arrow_mid_x - 10, r_arrow_mid_y + 8, 20, 20);
+    ctx.fillStyle = "black";
+    ctx.fillText('r', r_arrow_mid_x, r_arrow_mid_y + 18);
+    ctx.restore();
+
+    // 9. Crawling Arrows
+    const crawl_arrow_len = 15;
+    const crawl_s_R = R + 15;
+    const crawl_e_R = crawl_s_R + crawl_arrow_len;
+    const perp_shift = 4;
+    const crawl_perp_dx = -perp_shift * Math.sin(theta_rad);
+    const crawl_perp_dy = perp_shift * Math.cos(theta_rad);
+
+    let fromX = cx + crawl_s_R * Math.cos(theta_rad) + crawl_perp_dx;
+    let fromY = cy + crawl_s_R * Math.sin(theta_rad) + crawl_perp_dy;
+    let toX = cx + crawl_e_R * Math.cos(theta_rad) + crawl_perp_dx;
+    let toY = cy + crawl_e_R * Math.sin(theta_rad) + crawl_perp_dy;
+    drawArrow(ctx, fromX, fromY, toX, toY);
+
+    fromX = cx + crawl_s_R * Math.cos(theta_rad) - crawl_perp_dx;
+    fromY = cy + crawl_s_R * Math.sin(theta_rad) - crawl_perp_dy;
+    toX = cx + crawl_e_R * Math.cos(theta_rad) - crawl_perp_dx;
+    toY = cy + crawl_e_R * Math.sin(theta_rad) - crawl_perp_dy;
+    drawArrow(ctx, fromX, fromY, toX, toY);
+
+    // 10. Rotation Arrow
+    const rot_arrow_rad = L / 2 + 30;
+    const rot_start_angle = theta_rad + 0.15;
+    const rot_end_angle = theta_rad + 0.55;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rot_arrow_rad, rot_start_angle, rot_end_angle);
+    ctx.stroke();
+
+    const arrow_x = cx + rot_arrow_rad * Math.cos(rot_end_angle);
+    const arrow_y = cy + rot_arrow_rad * Math.sin(rot_end_angle);
+    const tangent_angle = rot_end_angle + Math.PI/2;
+    const headlen = 10;
+    ctx.beginPath();
+    ctx.moveTo(arrow_x, arrow_y);
+    ctx.lineTo(arrow_x - headlen * Math.cos(tangent_angle - Math.PI / 6), arrow_y - headlen * Math.sin(tangent_angle - Math.PI / 6));
+    ctx.lineTo(arrow_x - headlen * Math.cos(tangent_angle + Math.PI / 6), arrow_y - headlen * Math.sin(tangent_angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+
+</script>
+</body>
+</html>

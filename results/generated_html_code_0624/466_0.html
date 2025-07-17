@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Velocity vs. Time Graph</title>
+</head>
+<body>
+    <canvas id="physics-graph" width="600" height="450"></canvas>
+    <script>
+        const canvas = document.getElementById('physics-graph');
+        const ctx = canvas.getContext('2d');
+
+        // Graph parameters
+        const margin = { top: 30, right: 30, bottom: 50, left: 70 };
+        const graphWidth = canvas.width - margin.left - margin.right;
+        const graphHeight = canvas.height - margin.top - margin.bottom;
+
+        // Data ranges from the image
+        const tMin = 0, tMax = 10;
+        const vMin = -10, vMax = 10;
+
+        // Coordinate transformation functions
+        function mapX(t) {
+            return margin.left + (t - tMin) / (tMax - tMin) * graphWidth;
+        }
+
+        function mapY(v) {
+            // Invert Y-axis for canvas coordinates (0,0 is top-left)
+            return margin.top + graphHeight - (v - vMin) / (vMax - vMin) * graphHeight;
+        }
+
+        // --- Start Drawing ---
+
+        // Clear canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 1. Draw Grid
+        ctx.strokeStyle = '#cccccc'; // Light gray for grid lines
+        ctx.lineWidth = 1;
+        ctx.font = '16px Arial';
+
+        // Vertical grid lines and x-axis labels
+        for (let t = tMin; t <= tMax; t++) {
+            const x = mapX(t);
+            ctx.beginPath();
+            ctx.moveTo(x, margin.top);
+            ctx.lineTo(x, margin.top + graphHeight);
+            ctx.stroke();
+
+            // Draw x-axis labels
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText(t, x, margin.top + graphHeight + 5);
+        }
+
+        // Horizontal grid lines and y-axis labels
+        for (let v = vMin; v <= vMax; v += 2) {
+            const y = mapY(v);
+            ctx.beginPath();
+            ctx.moveTo(margin.left, y);
+            ctx.lineTo(margin.left + graphWidth, y);
+            ctx.stroke();
+
+            // Draw y-axis labels for -10, 0, 10 as in the original image
+            if (v === -10 || v === 0 || v === 10) {
+                 ctx.fillStyle = 'black';
+                 ctx.textAlign = 'right';
+                 ctx.textBaseline = 'middle';
+                 ctx.fillText(v, margin.left - 10, y);
+            }
+        }
+
+        // 2. Draw Main Axes (thicker lines)
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        // Y-axis (at t=0)
+        ctx.beginPath();
+        ctx.moveTo(mapX(0), mapY(vMin));
+        ctx.lineTo(mapX(0), mapY(vMax));
+        ctx.stroke();
+
+        // X-axis (at v=0)
+        ctx.beginPath();
+        ctx.moveTo(mapX(tMin), mapY(0));
+        ctx.lineTo(mapX(tMax), mapY(0));
+        ctx.stroke();
+
+        // 3. Draw Axis Titles
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 16px Arial';
+
+        // X-axis title
+        ctx.textAlign = 'center';
+        ctx.fillText('Time (s)', canvas.width / 2, canvas.height - 15);
+
+        // Y-axis title
+        ctx.save();
+        ctx.translate(25, canvas.height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('Velocity (m/s)', 0, 0);
+        ctx.restore();
+
+        // 4. Draw the velocity curve
+        // The curve is best described by the function: v(t) = 8 * cos( (pi/5)*(t-5) )
+        // This function passes through (0, -8), (2.5, 0), (5, 8), (7.5, 0), and (10, -8).
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+
+        const t_start = 0;
+        const v_start = 8 * Math.cos(Math.PI / 5 * (t_start - 5));
+        ctx.moveTo(mapX(t_start), mapY(v_start));
+
+        // Draw the curve by plotting points
+        for (let t = t_start + 0.05; t <= tMax; t += 0.05) {
+            const v = 8 * Math.cos(Math.PI / 5 * (t - 5));
+            ctx.lineTo(mapX(t), mapY(v));
+        }
+        ctx.stroke();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Fig 2.30 - Coupled Oscillators on a Circle</title>
+</head>
+<body>
+<canvas id="canvas" width="400" height="400"></canvas>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// --- Style setup ---
+// Set styles to mimic the hand-drawn, bold look of the original image.
+ctx.lineWidth = 2.5;
+ctx.lineCap = 'round';
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'black';
+
+// --- Geometric parameters ---
+const cx = 200;
+const cy = 180; // Center vertically adjusted to leave space for the caption
+const radius = 120; // Radius of the circular path
+const massRadius = 4; // Radius of the dots representing the masses
+
+// --- Spring drawing function ---
+/**
+ * Draws a spring-like line between two points using quadratic curves for a rounded, coiled effect.
+ * @param {CanvasRenderingContext2D} ctx - The canvas rendering context.
+ * @param {number} x1 - Start x-coordinate.
+ * @param {number} y1 - Start y-coordinate.
+ * @param {number} x2 - End x-coordinate.
+ * @param {number} y2 - End y-coordinate.
+ * @param {number} numBumps - The number of coils or bumps in the spring.
+ * @param {number} amplitude - The height of each bump from the central axis.
+ */
+function drawSpring(ctx, x1, y1, x2, y2, numBumps, amplitude) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    
+    // Calculate the perpendicular vector to the line segment for creating bumps.
+    const perpX = -dy / dist;
+    const perpY = dx / dist;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+
+    // Iterate through each segment of the spring to draw a bump.
+    for (let i = 1; i <= numBumps; i++) {
+        // Calculate the start and end points of the current segment along the straight line.
+        const t_prev = (i - 0.5) / numBumps; // Using 0.5 for smoother connection
+        const t_curr = i / numBumps;
+        
+        const x_curr = x1 + dx * t_curr;
+        const y_curr = y1 + dy * t_curr;
+
+        // Calculate the control point for the quadratic curve, which forms the peak of the bump.
+        const controlX = x1 + dx * t_prev + perpX * amplitude;
+        const controlY = y1 + dy * t_prev + perpY * amplitude;
+        
+        ctx.quadraticCurveTo(controlX, controlY, x_curr, y_curr);
+    }
+    ctx.stroke();
+}
+
+// --- Main drawing logic ---
+
+// 1. Draw the outer circle (the constraint path).
+ctx.beginPath();
+ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+ctx.stroke();
+
+// 2. Calculate the positions of the four masses.
+// They form an inscribed square. The original image shows it slightly rotated.
+// A standard inscribed square has vertices at 45, 135, 225, 315 degrees.
+// We apply a small rotation to match the figure.
+const rotation = -Math.PI / 12; // -15 degrees rotation
+const angles = [
+    (Math.PI / 4) + rotation,
+    (3 * Math.PI / 4) + rotation,
+    (5 * Math.PI / 4) + rotation,
+    (7 * Math.PI / 4) + rotation
+];
+
+const masses = angles.map(angle => ({
+    x: cx + radius * Math.cos(angle),
+    y: cy + radius * Math.sin(angle)
+}));
+
+// 3. Draw the four springs connecting the masses.
+const springBumps = 10;
+const springAmplitude = 10;
+
+drawSpring(ctx, masses[0].x, masses[0].y, masses[1].x, masses[1].y, springBumps, springAmplitude);
+drawSpring(ctx, masses[1].x, masses[1].y, masses[2].x, masses[2].y, springBumps, springAmplitude);
+drawSpring(ctx, masses[2].x, masses[2].y, masses[3].x, masses[3].y, springBumps, springAmplitude);
+drawSpring(ctx, masses[3].x, masses[3].y, masses[0].x, masses[0].y, springBumps, springAmplitude);
+
+
+// 4. Draw the masses on top of the spring connections.
+masses.forEach(mass => {
+    ctx.beginPath();
+    ctx.arc(mass.x, mass.y, massRadius, 0, 2 * Math.PI);
+    ctx.fill();
+});
+
+// 5. Draw the figure caption.
+ctx.font = 'bold 24px serif';
+ctx.textAlign = 'center';
+ctx.fillText('Fig. 2.30.', cx, cy + radius + 50);
+
+</script>
+</body>
+</html>

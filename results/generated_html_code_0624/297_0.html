@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Capacitor Diagram</title>
+</head>
+<body>
+    <canvas id="canvas" width="450" height="550"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const mainLineWidth = 3;
+        const thinLineWidth = 1.5;
+        const hatchSpacing = 6;
+
+        // --- Helper Functions ---
+
+        /**
+         * Draws a rectangle with diagonal hatching.
+         * @param {number} x - The x-coordinate of the top-left corner.
+         * @param {number} y - The y-coordinate of the top-left corner.
+         * @param {number} w - The width of the rectangle.
+         * @param {number} h - The height of the rectangle.
+         */
+        function drawHatchedRect(x, y, w, h) {
+            // Draw outline
+            ctx.lineWidth = mainLineWidth;
+            ctx.strokeRect(x, y, w, h);
+
+            // Draw hatching
+            ctx.save();
+            ctx.lineWidth = thinLineWidth;
+            ctx.beginPath();
+            ctx.rect(x, y, w, h);
+            ctx.clip();
+
+            // Draw diagonal lines that cover the entire clipped area
+            const maxDim = w + h;
+            for (let i = -maxDim; i < maxDim; i += hatchSpacing) {
+                ctx.moveTo(x + i, y);
+                ctx.lineTo(x + i + h, y + h);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        /**
+         * Draws a dimension line with ticks and a label.
+         * @param {number} x1 - The starting x-coordinate.
+         * @param {number} y - The y-coordinate of the line.
+         * @param {number} x2 - The ending x-coordinate.
+         * @param {string} label - The text label for the dimension.
+         */
+        function drawDimensionLine(x1, y, x2, label) {
+            ctx.lineWidth = thinLineWidth;
+            ctx.beginPath();
+            // Horizontal line
+            ctx.moveTo(x1, y);
+            ctx.lineTo(x2, y);
+            // Ticks
+            ctx.moveTo(x1, y - 5);
+            ctx.lineTo(x1, y + 5);
+            ctx.moveTo(x2, y - 5);
+            ctx.lineTo(x2, y + 5);
+            ctx.stroke();
+
+            // Label
+            ctx.fillText(label, (x1 + x2) / 2, y - 15);
+        }
+
+        /**
+         * Draws a standard electrical ground symbol.
+         * @param {number} x - The x-coordinate for the top of the symbol.
+         * @param {number} y - The y-coordinate for the top of the symbol's stem.
+         */
+        function drawGround(x, y) {
+            ctx.lineWidth = thinLineWidth;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + 15); // Vertical stem
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x - 12, y + 15);
+            ctx.lineTo(x + 12, y + 15); // Top bar
+            ctx.moveTo(x - 8, y + 20);
+            ctx.lineTo(x + 8, y + 20); // Middle bar
+            ctx.moveTo(x - 4, y + 25);
+            ctx.lineTo(x + 4, y + 25); // Bottom bar
+            ctx.stroke();
+        }
+
+        // --- Main Drawing ---
+
+        // Core dimensions
+        const centerX = 225;
+        const centerY = 240;
+        const plateHeight = 320;
+        const L_gap = 100;
+        const plateThickness = 16;
+        const wallThickness = 16;
+
+        // Calculated coordinates
+        const yTop = centerY - plateHeight / 2;
+        const yBottom = centerY + plateHeight / 2;
+
+        const xCenterPlateLeft = centerX - plateThickness / 2;
+        const xCenterPlateRight = centerX + plateThickness / 2;
+
+        const xLeftPlateInner = xCenterPlateLeft - L_gap;
+        const xRightPlateInner = xCenterPlateRight + L_gap;
+
+        const xLeftWallOuter = xLeftPlateInner - wallThickness;
+        const xRightWallOuter = xRightPlateInner + wallThickness;
+
+        // 1. Draw Container Walls
+        drawHatchedRect(xLeftWallOuter, yTop, wallThickness, plateHeight); // Left wall
+        drawHatchedRect(xRightPlateInner, yTop, wallThickness, plateHeight); // Right wall
+        
+        ctx.lineWidth = mainLineWidth;
+        ctx.beginPath();
+        ctx.moveTo(xLeftWallOuter, yTop);
+        ctx.lineTo(xRightWallOuter, yTop);
+        ctx.moveTo(xLeftWallOuter, yBottom);
+        ctx.lineTo(xRightWallOuter, yBottom);
+        ctx.stroke();
+
+        // 2. Draw Center Plate
+        drawHatchedRect(xCenterPlateLeft, yTop, plateThickness, plateHeight);
+
+        // 3. Draw Seals
+        const sealWidth = 26;
+        const sealHeight = 18;
+        ctx.fillRect(centerX - sealWidth / 2, yTop, sealWidth, sealHeight);
+        ctx.fillRect(centerX - sealWidth / 2, yBottom - sealHeight, sealWidth, sealHeight);
+
+        // 4. Draw Ground Connections
+        const yConn = centerY + 30;
+        const connLength = 50;
+        const groundY = yConn + 20;
+
+        // Left connection
+        ctx.lineWidth = thinLineWidth;
+        ctx.beginPath();
+        ctx.moveTo(xLeftWallOuter + wallThickness / 2, yConn);
+        ctx.lineTo(xLeftWallOuter - connLength, yConn);
+        ctx.lineTo(xLeftWallOuter - connLength, groundY);
+        ctx.stroke();
+        drawGround(xLeftWallOuter - connLength, groundY);
+
+        // Right connection
+        ctx.beginPath();
+        ctx.moveTo(xRightWallOuter - wallThickness / 2, yConn);
+        ctx.lineTo(xRightWallOuter + connLength, yConn);
+        ctx.lineTo(xRightWallOuter + connLength, groundY);
+        ctx.stroke();
+        drawGround(xRightWallOuter + connLength, groundY);
+
+        // 5. Draw Annotations
+        // 'L' dimensions
+        const yDim = centerY + 80;
+        ctx.font = 'italic bold 22px serif';
+        drawDimensionLine(xLeftPlateInner, yDim, xCenterPlateLeft, 'L');
+        drawDimensionLine(xCenterPlateRight, yDim, xRightPlateInner, 'L');
+
+        // 'x' displacement
+        const yX = centerY - 60;
+        const displacementVis = 50;
+        const xArrowStart = xCenterPlateRight;
+        const xArrowEnd = xArrowStart + displacementVis;
+        const yArrow = yX;
+
+        // Dashed line for virtual position
+        ctx.lineWidth = thinLineWidth;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(xArrowEnd, yArrow - 25);
+        ctx.lineTo(xArrowEnd, yArrow + 25);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset line dash
+
+        // Arrow for 'x'
+        ctx.beginPath();
+        ctx.moveTo(xArrowStart, yArrow);
+        ctx.lineTo(xArrowEnd, yArrow);
+        // Arrowhead
+        ctx.moveTo(xArrowEnd, yArrow);
+        ctx.lineTo(xArrowEnd - 8, yArrow - 5);
+        ctx.moveTo(xArrowEnd, yArrow);
+        ctx.lineTo(xArrowEnd - 8, yArrow + 5);
+        ctx.stroke();
+
+        // 'x' label
+        ctx.font = 'italic bold 22px serif';
+        ctx.fillText('x', (xArrowStart + xArrowEnd) / 2, yArrow - 15);
+
+        // 6. Draw Figure Caption
+        ctx.font = 'bold 24px serif';
+        ctx.fillText('Fig. 1.56', centerX, yBottom + 80);
+
+    </script>
+</body>
+</html>

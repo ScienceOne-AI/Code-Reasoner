@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Electromagnetic Field Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="physicsCanvas" width="500" height="480"></canvas>
+    <script>
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Style settings
+        const axisColor = 'black';
+        const wireColor = 'black';
+        const textColor = 'black';
+        const axisWidth = 2;
+        const wireWidth = 3;
+        const labelFont = 'italic 24px Times New Roman';
+        const captionFont = 'bold 22px Times New Roman';
+
+        /**
+         * Draws a double-line arrow.
+         * @param {CanvasRenderingContext2D} ctx The canvas context.
+         * @param {number} fromx Start x-coordinate.
+         * @param {number} fromy Start y-coordinate.
+         * @param {number} tox End x-coordinate of the arrow body.
+         * @param {number} toy End y-coordinate of the arrow body.
+         * @param {number} width The distance between the two parallel lines.
+         */
+        function drawDoubleLineArrow(ctx, fromx, fromy, tox, toy, width) {
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            if (len === 0) return;
+            const udx = dx / len;
+            const udy = dy / len;
+            const px = -udy * width / 2;
+            const py = udx * width / 2;
+
+            const p1_start = { x: fromx - px, y: fromy - py };
+            const p1_end = { x: tox - px, y: toy - py };
+            const p2_start = { x: fromx + px, y: fromy + py };
+            const p2_end = { x: tox + px, y: toy + py };
+
+            ctx.moveTo(p1_start.x, p1_start.y);
+            ctx.lineTo(p1_end.x, p1_end.y);
+            ctx.moveTo(p2_start.x, p2_start.y);
+            ctx.lineTo(p2_end.x, p2_end.y);
+
+            // Arrowhead
+            const headlen = 7;
+            const head_tip = { x: tox + udx * headlen, y: toy + udy * headlen };
+            ctx.moveTo(p1_end.x, p1_end.y);
+            ctx.lineTo(head_tip.x, head_tip.y);
+            ctx.moveTo(p2_end.x, p2_end.y);
+            ctx.lineTo(head_tip.x, head_tip.y);
+        }
+
+        // --- Main Drawing ---
+
+        // Axes
+        ctx.beginPath();
+        ctx.strokeStyle = axisColor;
+        ctx.lineWidth = axisWidth;
+
+        const ox = 220, oy = 250;
+        const z_end_x = 420, z_end_y = 250;
+        const y_end_x = 160, y_end_y = 160;
+        const nx_end_x = 140, nx_end_y = 340;
+
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(z_end_x, z_end_y);
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(y_end_x, y_end_y);
+        ctx.moveTo(ox, oy);
+        ctx.lineTo(nx_end_x, nx_end_y);
+        ctx.stroke();
+
+        // Axis Labels
+        ctx.fillStyle = textColor;
+        ctx.font = labelFont;
+        ctx.fillText('z', z_end_x + 10, z_end_y + 8);
+        ctx.fillText('y', y_end_x - 25, y_end_y);
+        ctx.fillText('-x', nx_end_x - 30, nx_end_y + 10);
+
+        // Wires
+        ctx.beginPath();
+        ctx.strokeStyle = wireColor;
+        ctx.lineWidth = wireWidth;
+        const w1_start_x = 150, w1_start_y = 320;
+        const w1_end_x = 190, w1_end_y = 250;
+        const w2_start_x = 200, w2_start_y = 320;
+        const w2_end_x = 240, w2_end_y = 250;
+        ctx.moveTo(w1_start_x, w1_start_y);
+        ctx.lineTo(w1_end_x, w1_end_y);
+        ctx.moveTo(w2_start_x, w2_start_y);
+        ctx.lineTo(w2_end_x, w2_end_y);
+        ctx.stroke();
+
+        // Current labels and arrows
+        ctx.fillText('I', 125, 290);
+        ctx.fillText('I', 178, 290);
+
+        ctx.beginPath();
+        ctx.lineWidth = 1;
+        const arrow_len = 20;
+        const wire_dx = w1_end_x - w1_start_x;
+        const wire_dy = w1_end_y - w1_start_y;
+        const wire_len = Math.sqrt(wire_dx*wire_dx + wire_dy*wire_dy);
+        const u_wire_dx = wire_dx / wire_len;
+        const u_wire_dy = wire_dy / wire_len;
+        
+        const arrow1_end_x = 142;
+        const arrow1_end_y = 280;
+        const arrow1_start_x = arrow1_end_x - u_wire_dx * arrow_len;
+        const arrow1_start_y = arrow1_end_y - u_wire_dy * arrow_len;
+        drawDoubleLineArrow(ctx, arrow1_start_x, arrow1_start_y, arrow1_end_x, arrow1_end_y, 4);
+
+        const arrow2_end_x = 192;
+        const arrow2_end_y = 280;
+        const arrow2_start_x = arrow2_end_x - u_wire_dx * arrow_len;
+        const arrow2_start_y = arrow2_end_y - u_wire_dy * arrow_len;
+        drawDoubleLineArrow(ctx, arrow2_start_x, arrow2_start_y, arrow2_end_x, arrow2_end_y, 4);
+        ctx.stroke();
+
+        // Dimension "2a"
+        ctx.beginPath();
+        ctx.lineWidth = axisWidth;
+        const y_vec_x = y_end_x - ox;
+        const y_vec_y = y_end_y - oy;
+        const p_on_y_x = ox + y_vec_x * 0.4;
+        const p_on_y_y = oy + y_vec_y * 0.4;
+        const dim_len = 80;
+        const p_dim_end_x = p_on_y_x + dim_len;
+        const p_dim_end_y = p_on_y_y;
+        
+        // Dimension line
+        ctx.moveTo(p_on_y_x, p_on_y_y);
+        ctx.lineTo(p_dim_end_x, p_dim_end_y);
+        
+        // Ticks
+        ctx.moveTo(p_on_y_x, p_on_y_y - 8);
+        ctx.lineTo(p_on_y_x, p_on_y_y + 8);
+        ctx.moveTo(p_dim_end_x, p_dim_end_y - 8);
+        ctx.lineTo(p_dim_end_x, p_dim_end_y + 8);
+        
+        // Parallel line segment
+        const para_line_len_factor = 0.4;
+        const para_line_center_x = p_dim_end_x + y_vec_x * 0.05;
+        const para_line_center_y = p_dim_end_y + y_vec_y * 0.05;
+        ctx.moveTo(para_line_center_x + y_vec_x * para_line_len_factor * -0.5, para_line_center_y + y_vec_y * para_line_len_factor * -0.5);
+        ctx.lineTo(para_line_center_x + y_vec_x * para_line_len_factor * 0.5, para_line_center_y + y_vec_y * para_line_len_factor * 0.5);
+        ctx.stroke();
+        
+        // Dimension Label
+        ctx.fillText('2a', p_on_y_x + dim_len/2 - 15, p_on_y_y - 10);
+
+        // Caption
+        ctx.font = captionFont;
+        ctx.fillText('Fig. 2.75', 240, 430);
+    </script>
+</body>
+</html>

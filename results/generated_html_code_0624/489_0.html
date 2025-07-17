@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Circuit Diagram Fig. 7.1</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="650" height="500"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Style settings
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'black';
+    ctx.font = '18px Arial';
+    ctx.textBaseline = 'middle';
+
+    // --- Helper functions ---
+
+    function drawLine(x1, y1, x2, y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    function drawResistor(x, y, w, h) {
+        ctx.strokeRect(x, y, w, h);
+    }
+
+    function drawThermistor(x, y, w, h) {
+        drawResistor(x, y, w, h);
+        // Draw the diagonal line for the thermistor
+        drawLine(x - 5, y + h + 5, x + w + 5, y - 5);
+    }
+
+    function drawCircle(x, y, radius, fill = false, stroke = true) {
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        if (fill) {
+            ctx.fill();
+        }
+        if (stroke) {
+            ctx.stroke();
+        }
+    }
+
+    function drawGround(x, y) {
+        drawLine(x, y, x, y + 15);
+        drawLine(x - 15, y + 15, x + 15, y + 15);
+        drawLine(x - 10, y + 20, x + 10, y + 20);
+        drawLine(x - 5, y + 25, x + 5, y + 25);
+    }
+
+    function drawText(text, x, y, align = 'center') {
+        ctx.textAlign = align;
+        ctx.fillText(text, x, y);
+    }
+
+    // --- Main Drawing Logic ---
+
+    // Coordinates definition
+    const vcc_y = 50;
+    const gnd_y = 400;
+    const opamp_center_y = 225;
+    const opamp_h = 120;
+    const opamp_top_y = opamp_center_y - opamp_h / 2; // 165
+    const opamp_bottom_y = opamp_center_y + opamp_h / 2; // 285
+    const v_minus_y = opamp_top_y + 0.25 * opamp_h; // 195
+    const v_plus_y = opamp_top_y + 0.75 * opamp_h; // 255
+
+    const left_branch_x = 120;
+    const right_branch_x = 240;
+    const opamp_base_x = 350;
+    const opamp_w = 120;
+    const opamp_tip_x = opamp_base_x + opamp_w; // 470
+    const output_end_x = 580;
+
+    const res_w = 20;
+    const res_h = 60;
+
+    // --- Draw Components ---
+
+    // VCC and GND Rails
+    drawLine(left_branch_x, vcc_y, opamp_base_x, vcc_y);
+    drawLine(left_branch_x, gnd_y, output_end_x - 150, gnd_y);
+    drawGround(output_end_x - 150, gnd_y);
+    drawCircle(left_branch_x, gnd_y, 2.5, true);
+    drawCircle(right_branch_x, gnd_y, 2.5, true);
+    drawCircle(left_branch_x, vcc_y, 2.5, true);
+    drawCircle(right_branch_x, vcc_y, 2.5, true);
+
+    // Left Branch (Thermistor and R)
+    const rt_y = 70;
+    const r_y = 280;
+    const left_mid_y = v_minus_y;
+    drawLine(left_branch_x, vcc_y, left_branch_x, rt_y);
+    drawThermistor(left_branch_x - res_w / 2, rt_y, res_w, res_h);
+    drawText('R', left_branch_x - 45, rt_y + res_h / 2);
+    ctx.save(); ctx.font = '14px Arial'; drawText('T', left_branch_x - 38, rt_y + res_h / 2 + 8); ctx.restore();
+    drawLine(left_branch_x, rt_y + res_h, left_branch_x, left_mid_y);
+    drawCircle(left_branch_x, left_mid_y, 2.5, true);
+    drawLine(left_branch_x, left_mid_y, left_branch_x, r_y);
+    drawResistor(left_branch_x - res_w / 2, r_y, res_w, res_h);
+    drawText('R', left_branch_x - 30, r_y + res_h / 2);
+    drawLine(left_branch_x, r_y + res_h, left_branch_x, gnd_y);
+
+    // Right Branch (1.8k and 2.4k)
+    const r1_y = 100;
+    const r2_y = 280;
+    const right_mid_y = v_plus_y;
+    drawLine(right_branch_x, vcc_y, right_branch_x, r1_y);
+    drawResistor(right_branch_x - res_w / 2, r1_y, res_w, res_h);
+    drawText('1.8 kΩ', right_branch_x + 50, r1_y + res_h / 2);
+    drawLine(right_branch_x, r1_y + res_h, right_branch_x, right_mid_y);
+    drawCircle(right_branch_x, right_mid_y, 2.5, true);
+    drawLine(right_branch_x, right_mid_y, right_branch_x, r2_y);
+    drawResistor(right_branch_x - res_w / 2, r2_y, res_w, res_h);
+    drawText('2.4 kΩ', right_branch_x + 50, r2_y + res_h / 2);
+    drawLine(right_branch_x, r2_y + res_h, right_branch_x, gnd_y);
+
+    // Op-Amp
+    // Body
+    ctx.beginPath();
+    ctx.moveTo(opamp_base_x, opamp_top_y);
+    ctx.lineTo(opamp_base_x, opamp_bottom_y);
+    ctx.lineTo(opamp_tip_x, opamp_center_y);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Inputs and connections
+    drawLine(left_branch_x, left_mid_y, opamp_base_x, v_minus_y);
+    drawLine(right_branch_x, right_mid_y, opamp_base_x, v_plus_y);
+
+    // Input symbols
+    ctx.font = '24px Arial';
+    drawText('-', opamp_base_x + 18, v_minus_y);
+    drawText('+', opamp_base_x + 18, v_plus_y);
+    ctx.font = '18px Arial';
+
+    // Power supply connections
+    drawLine(opamp_base_x, opamp_top_y, opamp_base_x, vcc_y);
+    drawCircle(opamp_base_x, vcc_y, 2.5, true);
+    drawLine(opamp_base_x, opamp_bottom_y, opamp_base_x, opamp_bottom_y + 40);
+
+    // Output
+    drawLine(opamp_tip_x, opamp_center_y, output_end_x, opamp_center_y);
+    ctx.save();
+    ctx.fillStyle = 'white';
+    drawCircle(output_end_x, opamp_center_y, 4, true);
+    ctx.restore();
+
+    // Arrow for V_OUT
+    const arrow_x = output_end_x + 30;
+    const arrow_top_y = opamp_center_y + 20;
+    const arrow_bottom_y = gnd_y - 20;
+    drawLine(arrow_x, arrow_bottom_y, arrow_x, arrow_top_y);
+    drawLine(arrow_x - 5, arrow_top_y + 10, arrow_x, arrow_top_y);
+    drawLine(arrow_x + 5, arrow_top_y + 10, arrow_x, arrow_top_y);
+
+    // --- Labels ---
+    ctx.textAlign = 'left';
+    drawText('+5.0 V', left_branch_x - 70, vcc_y - 15);
+    drawText('+5.0 V', opamp_base_x + 10, vcc_y - 15);
+    drawText('-5.0 V', opamp_base_x + 10, opamp_bottom_y + 40);
+
+    drawText('V', arrow_x + 10, (arrow_top_y + arrow_bottom_y) / 2);
+    ctx.save(); ctx.font = '14px Arial'; drawText('OUT', arrow_x + 18, (arrow_top_y + arrow_bottom_y) / 2 + 5); ctx.restore();
+
+    ctx.textAlign = 'center';
+    drawText('Fig. 7.1', canvas.width / 2, canvas.height - 20);
+
+</script>
+</body>
+</html>

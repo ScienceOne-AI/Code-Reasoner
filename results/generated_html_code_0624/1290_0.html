@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Y-Delta Transformation Diagram</title>
+</head>
+<body>
+<canvas id="circuitCanvas" width="800" height="450"></canvas>
+<script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    /**
+     * Draws a resistor symbol between two points.
+     * @param {CanvasRenderingContext2D} ctx - The rendering context.
+     * @param {number} x1 - Start point x-coordinate.
+     * @param {number} y1 - Start point y-coordinate.
+     * @param {number} x2 - End point x-coordinate.
+     * @param {number} y2 - End point y-coordinate.
+     * @param {number} resLength - The length of the resistor box along the wire.
+     * @param {number} resThickness - The thickness of the resistor box perpendicular to the wire.
+     */
+    function drawResistor(ctx, x1, y1, x2, y2, resLength = 50, resThickness = 20) {
+        ctx.save();
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1.5;
+
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        
+        const wireLen = (len - resLength) / 2;
+        const ux = dx / len;
+        const uy = dy / len;
+
+        const p1x = x1 + ux * wireLen;
+        const p1y = y1 + uy * wireLen;
+        const p2x = x2 - ux * wireLen;
+        const p2y = y2 - uy * wireLen;
+
+        // Draw connecting lines
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(p1x, p1y);
+        ctx.moveTo(p2x, p2y);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Draw resistor rectangle
+        const angle = Math.atan2(dy, dx);
+        ctx.translate((p1x + p2x) / 2, (p1y + p2y) / 2);
+        ctx.rotate(angle);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(-resLength / 2, -resThickness / 2, resLength, resThickness);
+        ctx.strokeRect(-resLength / 2, -resThickness / 2, resLength, resThickness);
+        
+        ctx.restore();
+    }
+    
+    /**
+     * Draws a terminal point with a label.
+     * @param {CanvasRenderingContext2D} ctx - The rendering context.
+     * @param {number} x - The x-coordinate of the terminal.
+     * @param {number} y - The y-coordinate of the terminal.
+     * @param {string} label - The text label for the terminal.
+     * @param {number} labelOffsetX - The x-offset for the label.
+     * @param {number} labelOffsetY - The y-offset for the label.
+     */
+    function drawTerminal(ctx, x, y, label, labelOffsetX, labelOffsetY) {
+        // Draw filled circle
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, 2 * Math.PI);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+
+        // Draw label
+        ctx.fillStyle = 'black';
+        ctx.font = "italic 24px 'Times New Roman'";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, x + labelOffsetX, y + labelOffsetY);
+    }
+    
+    /**
+     * Draws a label with a main part and a subscript part.
+     * @param {CanvasRenderingContext2D} ctx - The rendering context.
+     * @param {string} main - The main part of the label.
+     * @param {string} sub - The subscript part of the label.
+     * @param {number} x - The starting x-coordinate for the label.
+     * @param {number} y - The y-coordinate for the baseline of the main text.
+     */
+    function drawLabelWithSubscript(ctx, main, sub, x, y) {
+        ctx.fillStyle = 'black';
+        ctx.font = "italic 22px 'Times New Roman'";
+        ctx.textAlign = 'start';
+        ctx.textBaseline = 'alphabetic';
+        
+        ctx.fillText(main, x, y);
+        const mainWidth = ctx.measureText(main).width;
+        
+        ctx.font = "italic 16px 'Times New Roman'";
+        ctx.fillText(sub, x + mainWidth * 0.95, y + 6);
+    }
+
+    // --- Main Drawing Logic ---
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+
+    // --- Delta (Δ) Network ---
+    const A = { x: 150, y: 120 };
+    const B = { x: 350, y: 120 };
+    const C = { x: 250, y: 120 + 200 * Math.sin(Math.PI / 3) }; // Approx (250, 293.2)
+    
+    drawResistor(ctx, A.x, A.y, B.x, B.y, 60, 22);
+    drawLabelWithSubscript(ctx, 'R', 'AB', 235, 105);
+
+    drawResistor(ctx, B.x, B.y, C.x, C.y, 60, 22);
+    drawLabelWithSubscript(ctx, 'R', 'BC', 310, 220);
+
+    drawResistor(ctx, C.x, C.y, A.x, A.y, 60, 22);
+    drawLabelWithSubscript(ctx, 'R', 'CA', 165, 220);
+
+    drawTerminal(ctx, A.x, A.y, 'A', -20, 0);
+    drawTerminal(ctx, B.x, B.y, 'B', 20, 0);
+    drawTerminal(ctx, C.x, C.y, 'C', 0, 25);
+
+
+    // --- Y (Wye) Network ---
+    const center = { x: 650, y: 210 };
+    const a = { x: 550, y: 120 };
+    const b = { x: 750, y: 120 };
+    const c_term = { x: 650, y: 320 };
+    
+    drawResistor(ctx, a.x, a.y, center.x, center.y, 60, 22);
+    drawLabelWithSubscript(ctx, 'R', 'a', 570, 155);
+
+    drawResistor(ctx, b.x, b.y, center.x, center.y, 60, 22);
+    drawLabelWithSubscript(ctx, 'R', 'b', 700, 155);
+
+    drawResistor(ctx, c_term.x, c_term.y, center.x, center.y, 60, 22);
+    drawLabelWithSubscript(ctx, 'R', 'c', 670, 260);
+    
+    drawTerminal(ctx, a.x, a.y, 'a', -20, 0);
+    drawTerminal(ctx, b.x, b.y, 'b', 20, 0);
+    drawTerminal(ctx, c_term.x, c_term.y, 'c', 0, 25);
+    
+    
+    // --- Caption ---
+    ctx.fillStyle = 'black';
+    ctx.font = "24px 'KaiTi', 'SimSun'";
+    ctx.textAlign = 'center';
+    ctx.fillText('图 1', canvas.width / 2, 400);
+
+</script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Telescope Diagram</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="telescopeCanvas" width="850" height="500"></canvas>
+
+    <script>
+        const canvas = document.getElementById('telescopeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Style settings to mimic the hand-drawn look ---
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.font = 'bold 24px "Comic Sans MS", cursive, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // --- Helper function to draw subscript text (e.g., L₁) ---
+        function drawSubscriptText(text, sub, x, y) {
+            const baseFont = 'bold 24px "Comic Sans MS", cursive, sans-serif';
+            const subFont = 'bold 18px "Comic Sans MS", cursive, sans-serif';
+            
+            ctx.font = baseFont;
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillText(text, x - textWidth/2, y);
+
+            ctx.font = subFont;
+            ctx.fillText(sub, x + textWidth/2 -2, y + 5);
+
+            ctx.font = baseFont; // Reset font
+        }
+        
+        // --- Helper function to draw a biconvex lens ---
+        // L1 has a simple style, L2 and L3 have an inner element.
+        function drawLens(x, y, h, w, style) {
+            ctx.beginPath();
+            // Right curve
+            ctx.moveTo(x, y - h / 2);
+            ctx.quadraticCurveTo(x + w, y, x, y + h / 2);
+            // Left curve
+            ctx.moveTo(x, y - h / 2);
+            ctx.quadraticCurveTo(x - w, y, x, y + h / 2);
+            // Center line
+            ctx.moveTo(x, y - h / 2);
+            ctx.lineTo(x, y + h / 2);
+            ctx.stroke();
+
+            // L2/L3 have a stylized inner lens symbol
+            if (style === 'inner') {
+                ctx.beginPath();
+                const innerH = h * 0.9;
+                const innerW = w * 0.7;
+                ctx.moveTo(x, y - innerH / 2);
+                ctx.quadraticCurveTo(x + innerW, y, x, y + innerH / 2);
+                ctx.moveTo(x, y - innerH / 2);
+                ctx.quadraticCurveTo(x - innerW, y, x, y + innerH / 2);
+                ctx.stroke();
+            }
+        }
+
+        // --- Helper function to draw an arrow ---
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headLength = 15;
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle - Math.PI / 6), toY - headLength * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLength * Math.cos(angle + Math.PI / 6), toY - headLength * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        // --- Helper function to draw the stylized eye ---
+        function drawEye(x, y) {
+            const eyeWidth = 50;
+            const eyeHeight = 35;
+            const pupilRadius = 4;
+            
+            ctx.beginPath();
+            ctx.moveTo(x, y); // Tip of the eye
+            ctx.quadraticCurveTo(x + eyeWidth * 0.6, y - eyeHeight, x + eyeWidth, y - eyeHeight * 0.4); // Top lid
+            ctx.moveTo(x, y);
+            ctx.quadraticCurveTo(x + eyeWidth * 0.6, y + eyeHeight*0.9, x + eyeWidth, y + eyeHeight * 0.4); // Bottom lid
+            ctx.stroke();
+            
+            // Pupil
+            ctx.beginPath();
+            ctx.arc(x + eyeWidth * 0.6, y, pupilRadius, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Eyelash
+            ctx.beginPath();
+            ctx.moveTo(x + eyeWidth, y - eyeHeight * 0.4);
+            ctx.lineTo(x + eyeWidth + 10, y - eyeHeight * 0.6);
+            ctx.stroke();
+
+            // Viewing point
+            ctx.beginPath();
+            ctx.moveTo(x-5, y);
+            ctx.lineTo(x-15, y);
+            ctx.stroke();
+
+            ctx.fillText('eye', x + eyeWidth/2, y + eyeHeight);
+        }
+
+        // --- Main Drawing ---
+        const centerY = 250;
+        const scale = 38; // pixels per cm
+
+        // Component positions
+        const x1 = 150;
+        const x2 = x1 + 10 * scale;
+        const x3 = x2 + 2 * scale;
+
+        // 1. Draw Principal Axis (as a reference line)
+        ctx.beginPath();
+        ctx.moveTo(20, centerY);
+        ctx.lineTo(x3 + 180, centerY);
+        ctx.stroke();
+
+        // 2. Draw Incoming Light
+        drawArrow(50, centerY - 40, 110, centerY - 40);
+        drawArrow(50, centerY + 40, 110, centerY + 40);
+        ctx.fillText('light', 80, centerY - 70);
+
+        // 3. Draw Lenses
+        drawLens(x1, centerY, 140, 25, 'simple'); // L1
+        drawLens(x2, centerY, 70, 18, 'inner'); // L2
+        drawLens(x3, centerY, 60, 15, 'inner'); // L3
+
+        // 4. Add Lens Labels
+        drawSubscriptText('L', '1', x1, centerY + 95);
+        drawSubscriptText('L', '2', x2, centerY + 60);
+        drawSubscriptText('L', '3', x3, centerY + 55);
+
+        // 5. Draw Dimension Lines
+        const dimY = centerY - 120;
+        // 10 cm dimension
+        ctx.beginPath();
+        ctx.moveTo(x1, centerY); ctx.lineTo(x1, dimY);
+        ctx.moveTo(x2, centerY); ctx.lineTo(x2, dimY);
+        ctx.moveTo(x1, dimY); ctx.lineTo(x2, dimY);
+        ctx.moveTo(x1, dimY - 10); ctx.lineTo(x1, dimY + 10);
+        ctx.moveTo(x2, dimY - 10); ctx.lineTo(x2, dimY + 10);
+        ctx.stroke();
+        ctx.fillText('10 cm', (x1 + x2) / 2, dimY - 25);
+
+        // 2 cm dimension
+        ctx.beginPath();
+        ctx.moveTo(x2, centerY); ctx.lineTo(x2, dimY);
+        ctx.moveTo(x3, centerY); ctx.lineTo(x3, dimY);
+        ctx.moveTo(x2, dimY); ctx.lineTo(x3, dimY);
+        ctx.moveTo(x2, dimY - 10); ctx.lineTo(x2, dimY + 10);
+        ctx.moveTo(x3, dimY - 10); ctx.lineTo(x3, dimY + 10);
+        ctx.stroke();
+        ctx.fillText('2 cm', (x2 + x3) / 2, dimY - 25);
+
+        // 6. Draw the Eye
+        drawEye(x3 + 50, centerY);
+
+        // 7. Add Figure Caption
+        ctx.font = 'bold 28px "Comic Sans MS", cursive, sans-serif';
+        ctx.fillText('Fig. 1.46', canvas.width / 2, canvas.height - 40);
+        
+    </script>
+</body>
+</html>

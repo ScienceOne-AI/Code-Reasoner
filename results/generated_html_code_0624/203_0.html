@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Physics Diagram: Sphere on a Wedge</title>
+    <style>
+        canvas {
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+<canvas id="physicsCanvas" width="600" height="550"></canvas>
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'black';
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 2;
+
+    // --- Helper function to draw an arrow head at a point with a given angle ---
+    function drawArrowhead(ctx, x, y, angle) {
+        const headlen = 10;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headlen, headlen / 2);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-headlen, -headlen / 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+    
+    // --- Define Geometry and Parameters ---
+    const origin = { x: 70, y: 450 };
+    const phi = 30 * Math.PI / 180; // Angle of the wedge in radians
+
+    // Wedge parameters
+    const wedgeXOffset = 80; // Distance of the wedge's back from the y-axis
+    const wedgeHeight = 160;
+    const wedgeWidth = wedgeHeight / Math.tan(phi);
+    const wedgeP1 = { x: origin.x + wedgeXOffset, y: origin.y - wedgeHeight }; // Top-left
+    const wedgeP2 = { x: origin.x + wedgeXOffset, y: origin.y };               // Bottom-left
+    const wedgeP3 = { x: origin.x + wedgeXOffset + wedgeWidth, y: origin.y }; // Bottom-right
+
+    // Sphere parameters
+    const sphereRadius = 45;
+    const xi = 120; // Distance rolled down the slope from the top corner
+
+    // Calculate sphere position
+    const contactPoint = {
+        x: wedgeP1.x + xi * Math.cos(phi),
+        y: wedgeP1.y + xi * Math.sin(phi)
+    };
+    const sphereCenter = {
+        x: contactPoint.x - sphereRadius * Math.sin(phi),
+        y: contactPoint.y - sphereRadius * Math.cos(phi)
+    };
+
+    // --- Drawing ---
+
+    // 1. Coordinate Axes
+    ctx.beginPath();
+    // Y-axis
+    ctx.moveTo(origin.x, origin.y + 20);
+    ctx.lineTo(origin.x, 50);
+    drawArrowhead(ctx, origin.x, 50, -Math.PI / 2);
+    // X-axis
+    ctx.moveTo(origin.x - 20, origin.y);
+    ctx.lineTo(origin.x + wedgeWidth + wedgeXOffset + 80, origin.y);
+    drawArrowhead(ctx, origin.x + wedgeWidth + wedgeXOffset + 80, origin.y, 0);
+    ctx.stroke();
+
+    // Axes Labels
+    ctx.font = 'italic 24px serif';
+    ctx.fillText('y', origin.x - 30, 70);
+    ctx.fillText('x', origin.x + wedgeWidth + wedgeXOffset + 85, origin.y + 10);
+
+    // 2. Wedge
+    ctx.beginPath();
+    ctx.moveTo(wedgeP2.x, wedgeP2.y);
+    ctx.lineTo(wedgeP1.x, wedgeP1.y);
+    ctx.lineTo(wedgeP3.x, wedgeP3.y);
+    ctx.stroke();
+
+    // 3. Sphere
+    ctx.beginPath();
+    ctx.arc(sphereCenter.x, sphereCenter.y, sphereRadius, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 4. Annotations and Labels
+    ctx.font = 'italic 20px serif';
+    
+    // Label 'x'
+    ctx.beginPath();
+    ctx.moveTo(origin.x, origin.y + 15);
+    ctx.lineTo(wedgeP2.x, origin.y + 15);
+    ctx.moveTo(origin.x, origin.y + 10);
+    ctx.lineTo(origin.x, origin.y + 20);
+    ctx.moveTo(wedgeP2.x, origin.y + 10);
+    ctx.lineTo(wedgeP2.x, origin.y + 20);
+    ctx.stroke();
+    ctx.fillText('x', origin.x + wedgeXOffset / 2 - 5, origin.y + 35);
+
+    // Label 'φ' (phi)
+    ctx.beginPath();
+    ctx.arc(wedgeP3.x, wedgeP3.y, 40, Math.PI, Math.PI - phi, true);
+    ctx.stroke();
+    ctx.fillText('φ', wedgeP3.x - 55, wedgeP3.y - 10);
+    
+    // Label 'ξ' (xi)
+    ctx.save();
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(wedgeP1.x, wedgeP1.y);
+    ctx.lineTo(contactPoint.x, contactPoint.y);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillText('ξ', wedgeP1.x + 30, wedgeP1.y + 25);
+    
+    // Dashed lines for 'y'
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1.5;
+    // Perpendicular from center to incline
+    ctx.beginPath();
+    ctx.moveTo(sphereCenter.x, sphereCenter.y);
+    ctx.lineTo(contactPoint.x, contactPoint.y);
+    ctx.stroke();
+    // Vertical line from contact point
+    ctx.beginPath();
+    ctx.moveTo(contactPoint.x, contactPoint.y);
+    ctx.lineTo(contactPoint.x, origin.y);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillText('y', contactPoint.x + 8, contactPoint.y + (origin.y - contactPoint.y) / 2);
+    
+    // Markings inside sphere for 'θ'
+    const thetaAngle = -60 * Math.PI / 180; // Clockwise angle from vertical
+    ctx.save();
+    // Dashed vertical reference line
+    ctx.setLineDash([3, 3]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(sphereCenter.x, sphereCenter.y);
+    ctx.lineTo(sphereCenter.x, sphereCenter.y + sphereRadius);
+    ctx.stroke();
+    ctx.restore();
+    // Solid radius line
+    ctx.beginPath();
+    ctx.moveTo(sphereCenter.x, sphereCenter.y);
+    const thetaEndX = sphereCenter.x + sphereRadius * Math.sin(thetaAngle);
+    const thetaEndY = sphereCenter.y + sphereRadius * Math.cos(thetaAngle);
+    ctx.lineTo(thetaEndX, thetaEndY);
+    ctx.stroke();
+    // Angle arc
+    ctx.beginPath();
+    ctx.arc(sphereCenter.x, sphereCenter.y, 15, Math.PI / 2, Math.PI / 2 + thetaAngle, true);
+    ctx.stroke();
+    ctx.fillText('θ', sphereCenter.x - 18, sphereCenter.y + 18);
+
+    // Angular velocity arrow 'θ̇'
+    const rotArrowRadius = sphereRadius + 15;
+    const rotArrowAngleStart = -0.7 * Math.PI;
+    const rotArrowAngleEnd = -0.3 * Math.PI;
+    ctx.beginPath();
+    ctx.arc(sphereCenter.x, sphereCenter.y, rotArrowRadius, rotArrowAngleStart, rotArrowAngleEnd);
+    ctx.stroke();
+    // Arrowhead for rotation
+    const arrowTipX = sphereCenter.x + rotArrowRadius * Math.cos(rotArrowAngleEnd);
+    const arrowTipY = sphereCenter.y + rotArrowRadius * Math.sin(rotArrowAngleEnd);
+    const arrowAngle = rotArrowAngleEnd + Math.PI / 2; // Tangent angle
+    drawArrowhead(ctx, arrowTipX, arrowTipY, arrowAngle);
+    ctx.fillText('θ\u0307', sphereCenter.x + 5, sphereCenter.y - rotArrowRadius - 5);
+
+    // Figure caption
+    ctx.font = '16px serif';
+    ctx.fillText('Fig. 2.18.', canvas.width / 2 - 40, 520);
+
+</script>
+</body>
+</html>

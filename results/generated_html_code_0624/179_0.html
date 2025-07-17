@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Depth of Field Diagram</title>
+</head>
+<body>
+<canvas id="optical_diagram" width="850" height="450" style="border:1px solid #000;"></canvas>
+
+<script>
+    const canvas = document.getElementById("optical_diagram");
+    const ctx = canvas.getContext("2d");
+
+    // --- Style and Settings ---
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "black";
+    ctx.lineWidth = 2;
+    ctx.font = "italic 22px 'Times New Roman'";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+
+    // --- Geometric Parameters (in pixels) ---
+    const y_axis = 225;
+    const x_lens = 400;
+    const lens_width = 25;
+    const D_px = 160;
+    const y_top = y_axis - D_px / 2;
+    const y_bot = y_axis + D_px / 2;
+
+    // Object positions
+    const x_p_far = 50;
+    const x_p_near = 170;
+
+    // Image positions
+    const x_i_near = 620; // Image of the far object
+    const x_i_far = 780;  // Image of the near object
+
+    // --- Helper Functions ---
+
+    function drawLine(x1, y1, x2, y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    function drawLabel(text, x, y) {
+        ctx.fillText(text, x, y);
+    }
+
+    // Draws a horizontal dimension line with a label
+    function drawHorizDimLine(x1, x2, y, label) {
+        // Line and end ticks
+        drawLine(x1, y, x2, y);
+        drawLine(x1, y - 5, x1, y + 5);
+        drawLine(x2, y - 5, x2, y + 5);
+
+        // Label
+        const midX = (x1 + x2) / 2;
+        if (label.includes("'")) {
+            const char = label.replace("'", "");
+            const charWidth = ctx.measureText(char).width;
+            ctx.fillText(char, midX, y + 8);
+            ctx.fillText("'", midX + charWidth / 2 + 2, y + 5);
+        } else {
+            ctx.fillText(label, midX, y + 8);
+        }
+    }
+
+    // --- Drawing ---
+
+    // 1. Optical Axis
+    drawLine(0, y_axis, canvas.width, y_axis);
+
+    // 2. Biconvex Lens
+    ctx.beginPath();
+    ctx.moveTo(x_lens, y_top);
+    ctx.quadraticCurveTo(x_lens + lens_width, y_axis, x_lens, y_bot);
+    ctx.quadraticCurveTo(x_lens - lens_width, y_axis, x_lens, y_top);
+    ctx.stroke();
+
+    // 3. Ray Cones
+    // Cone from Far Object (P_far) to its image (I_near)
+    drawLine(x_p_far, y_axis, x_lens, y_top);
+    drawLine(x_p_far, y_axis, x_lens, y_bot);
+    drawLine(x_lens, y_top, x_i_near, y_axis);
+    drawLine(x_lens, y_bot, x_i_near, y_axis);
+
+    // Cone from Near Object (P_near) to its image (I_far)
+    drawLine(x_p_near, y_axis, x_lens, y_top);
+    drawLine(x_p_near, y_axis, x_lens, y_bot);
+    drawLine(x_lens, y_top, x_i_far, y_axis);
+    drawLine(x_lens, y_bot, x_i_far, y_axis);
+
+
+    // 4. Dimension Lines and Labels
+    const drop_down_base = y_axis + 120;
+    const dim_y_delta_q = y_axis + 60;
+    const dim_y_q_q_prime = y_axis + 90;
+
+    // -- Object Space (Left of Lens) --
+    // Vertical drop-down lines
+    drawLine(x_p_far, y_axis, x_p_far, drop_down_base);
+    drawLine(x_p_near, y_axis, x_p_near, dim_y_delta_q + 20);
+    drawLine(x_lens, y_axis, x_lens, drop_down_base);
+    
+    // Dimension line for Δq
+    drawHorizDimLine(x_p_far, x_p_near, dim_y_delta_q, "Δq");
+
+    // Dimension line for q
+    drawHorizDimLine(x_p_far, x_lens, dim_y_q_q_prime, "q");
+
+    // -- Image Space (Right of Lens) --
+    // Vertical drop-down lines
+    drawLine(x_i_near, y_axis, x_i_near, drop_down_base);
+    drawLine(x_i_far, y_axis, x_i_far, drop_down_base);
+
+    // Combined dimension line for q' and Δq'
+    // Main line
+    drawLine(x_lens, dim_y_q_q_prime, x_i_far, dim_y_q_q_prime);
+    // Ticks
+    drawLine(x_lens, dim_y_q_q_prime - 5, x_lens, dim_y_q_q_prime + 5);
+    drawLine(x_i_near, dim_y_q_q_prime - 5, x_i_near, dim_y_q_q_prime + 5);
+    drawLine(x_i_far, dim_y_q_q_prime - 5, x_i_far, dim_y_q_q_prime + 5);
+    // Labels
+    drawLabel("q'", (x_lens + x_i_near) / 2, dim_y_q_q_prime + 8);
+    ctx.fillText("'", (x_lens + x_i_near) / 2 + 8, dim_y_q_q_prime + 5);
+    drawLabel("Δq'", (x_i_near + x_i_far) / 2, dim_y_q_q_prime + 8);
+    ctx.fillText("'", (x_i_near + x_i_far) / 2 + 22, dim_y_q_q_prime + 5);
+
+    // -- Lens Diameter Label 'D' --
+    const x_D = x_lens + 40;
+    drawLine(x_D, y_top, x_D, y_bot);
+    drawLine(x_D - 5, y_top, x_D + 5, y_top);
+    drawLine(x_D - 5, y_bot, x_D + 5, y_bot);
+    drawLabel("D", x_D, y_axis - 15);
+
+    // -- Circle of Confusion Label 'l' --
+    // The blur circle 'l' is formed by the rays from P_near at the image plane of P_far (x_i_near).
+    const ray_slope = (y_axis - y_top) / (x_i_far - x_lens);
+    const y_intersect = y_top + ray_slope * (x_i_near - x_lens);
+    const l_half_height = y_axis - y_intersect;
+
+    const y_l_top = y_axis - l_half_height;
+    const y_l_bot = y_axis + l_half_height;
+    
+    // Vertical line for l
+    drawLine(x_i_near, y_l_top, x_i_near, y_l_bot);
+    drawLine(x_i_near - 5, y_l_top, x_i_near + 5, y_l_top);
+    drawLine(x_i_near - 5, y_l_bot, x_i_near + 5, y_l_bot);
+    
+    // Label 'l'
+    drawLabel("l", x_i_near + 20, y_axis - 15);
+
+    // Angle arc
+    ctx.beginPath();
+    const angle_end = Math.atan2(y_top - y_axis, x_lens - x_i_near);
+    ctx.arc(x_i_near, y_axis, 25, angle_end, 0);
+    ctx.stroke();
+
+    // 5. Figure Caption
+    ctx.font = "bold 22px 'Times New Roman'";
+    drawLabel("Fig. 1.15", canvas.width / 2, canvas.height - 30);
+
+</script>
+</body>
+</html>
