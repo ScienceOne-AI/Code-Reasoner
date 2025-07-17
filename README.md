@@ -5,7 +5,7 @@
 2nd place in ICML 2025 AI4MATH Challenge [Track 2: Physics Reasoning with Diagrams and Expressions (SeePhys)](https://www.codabench.org/competitions/7925/#/pages-tab)
 
 ## 📖 Introduction
-> **More inference token is all you need**
+> **More inference tokens are all you need**
 
 Our goal is to squeeze pass@k accuracy into pass@1. From an optimization perspective, auto-regressive models mostly learn to match token patterns, not the underlying physics. Giving the model more inference tokens expands its guessing space and can boost pass@1 accuracy. 
 

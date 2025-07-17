@@ -3,7 +3,7 @@
 ICML 2025 AI4MATH 挑战赛 [Track 2: Physics Reasoning with Diagrams and Expressions (SeePhys)](https://www.codabench.org/competitions/7925/#/pages-tab) 第二名
 
 ## 📖 简介
-> **More inference token is all you need**
+> **More inference tokens are all you need**
 
 我们的目标是将 pass@k 的准确率压缩到 pass@1。从优化的角度来看，自回归模型主要学习匹配 token 模式，而不是理解底层物理规律。给予模型更多推理 token 可以扩展其猜测空间，从而提升 pass@1 的准确率。
 
